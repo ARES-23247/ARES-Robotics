@@ -489,7 +489,11 @@ class NT4Server(
             val s = serverInstance ?: return
             val cleanTopic = if (topic.startsWith("/")) topic.substring(1) else topic
             s.putTopic(cleanTopic, value)
-            s.flush()
+        }
+
+        @JvmStatic
+        fun flushServer() {
+            serverInstance?.flush()
         }
 
         @JvmStatic

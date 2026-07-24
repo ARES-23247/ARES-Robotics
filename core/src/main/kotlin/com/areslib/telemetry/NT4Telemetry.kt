@@ -61,7 +61,7 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun update() {
-        try { inst.defaultServer?.flush() } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.flushServer() } catch (e: Exception) { /* swallow */ }
     }
 
     override fun close() {
