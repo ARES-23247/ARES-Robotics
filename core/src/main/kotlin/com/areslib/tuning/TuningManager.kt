@@ -36,8 +36,11 @@ class TuningManager(
                     defaultJson.add(key, element)
                 }
 
-                val loadedState = gson.fromJson(defaultJson, TuningState::class.java)
+                var loadedState = gson.fromJson(defaultJson, TuningState::class.java)
                 if (loadedState != null) {
+                    if (loadedState.driveFeedforward.kS == 0.0 && loadedState.driveFeedforward.kV == 0.0 && loadedState.driveFeedforward.kA == 0.0) {
+                        loadedState = loadedState.copy(driveFeedforward = com.areslib.control.tuning.SimpleFeedforwardCoeffs(0.05, 0.638, 0.02))
+                    }
                     store.dispatch(RobotAction.UpdateTuningState(loadedState))
                 }
             } catch (e: Exception) {
