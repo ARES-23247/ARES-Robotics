@@ -23,8 +23,8 @@ data class TuningState(
     val headingDeadzoneDeg: Double = 1.0,
     val teleOpTurnScale: Double = 0.50,
 
-    // Drivetrain Feedforward & Slew Acceleration Limits
-    val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.05, kV = 0.12, kA = 0.01),
+    // Drivetrain Feedforward & Slew Acceleration Limits (GoBilda 312 RPM Mecanum Baseline)
+    val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.05, kV = 0.638, kA = 0.02),
     val driveSlewRateLimit: Double? = null,
 
     // Motor Velocity Closed-Loop PIDF (Qualcomm DcMotorEx SDK level)
