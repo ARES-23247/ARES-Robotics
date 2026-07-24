@@ -194,9 +194,23 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      */
     @kotlin.jvm.JvmOverloads
     fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true, dtSeconds: Double = 0.02) {
-        val turnScale = store.state.tuning.teleOpTurnScale
-        val joystickForward = -driver.leftStickY.value.toDouble()
-        val joystickRight = driver.leftStickX.value.toDouble()
+        val isTurbo = driver.rightBumper.isPressed
+        val isSlow = driver.leftBumper.isPressed
+
+        val speedMult = when {
+            isTurbo -> 1.0
+            isSlow -> 0.40
+            else -> 0.75
+        }
+
+        val turnScale = when {
+            isTurbo -> 0.85
+            isSlow -> 0.30
+            else -> store.state.tuning.teleOpTurnScale
+        }
+
+        val joystickForward = -driver.leftStickY.value.toDouble() * speedMult
+        val joystickRight = driver.leftStickX.value.toDouble() * speedMult
         val rotate = -driver.rightStickX.value.toDouble() * turnScale
         
         var fieldVx = joystickRight
