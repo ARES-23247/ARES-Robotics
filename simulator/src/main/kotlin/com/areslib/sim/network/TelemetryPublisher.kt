@@ -42,6 +42,10 @@ object TelemetryPublisher {
     private val teleopModePub = ntInst.getBooleanTopic("Drive/TeleopMode").publish()
     private val redAlliancePub = ntInst.getBooleanTopic("Drive/RedAlliance").publish()
 
+    private val targetPoseBuf = DoubleArray(3)
+    private val estimatedPoseBuf = DoubleArray(3)
+    private val truePoseBuf = DoubleArray(3)
+
     // --- Web Dashboard Inputs Subscribers ---
     private val webVxSub = ntInst.getDoubleTopic("ARES/Input/vx").subscribe(0.0)
     private val webVySub = ntInst.getDoubleTopic("ARES/Input/vy").subscribe(0.0)
@@ -115,15 +119,16 @@ object TelemetryPublisher {
     }
 
     /**
-     * Publishes the target trajectory pose for AdvantageScope "ghost" rendering.
-     * AdvantageScope 2D/3D pose arrays expect [x, y, rotation_radians].
+     * Publishes the target pose for AdvantageScope rendering.
      *
      * @param pose The field-relative target pose.
      */
     fun publishTargetPose(pose: com.areslib.math.geometry.Pose2d) {
-        val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
-        targetPosePublisher.set(arr)
-        NT4Server.publishTopic("ARES/TargetPose", arr)
+        targetPoseBuf[0] = pose.x
+        targetPoseBuf[1] = pose.y
+        targetPoseBuf[2] = pose.heading.radians
+        targetPosePublisher.set(targetPoseBuf)
+        NT4Server.publishTopic("ARES/TargetPose", targetPoseBuf)
         ntInst.flush()
     }
 
@@ -133,9 +138,11 @@ object TelemetryPublisher {
      * @param pose The field-relative estimated pose.
      */
     fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
-        val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
-        estimatedPosePublisher.set(arr)
-        NT4Server.publishTopic("ARES/EstimatedPose", arr)
+        estimatedPoseBuf[0] = pose.x
+        estimatedPoseBuf[1] = pose.y
+        estimatedPoseBuf[2] = pose.heading.radians
+        estimatedPosePublisher.set(estimatedPoseBuf)
+        NT4Server.publishTopic("ARES/EstimatedPose", estimatedPoseBuf)
         NT4Server.publishTopic("ARES/EstimatedPose/0", pose.x)
         NT4Server.publishTopic("ARES/EstimatedPose/1", pose.y)
         NT4Server.publishTopic("ARES/EstimatedPose/2", pose.heading.radians)
@@ -151,9 +158,11 @@ object TelemetryPublisher {
      * @param pose The true field-relative physics pose.
      */
     fun publishTruePose(pose: com.areslib.math.geometry.Pose2d) {
-        val arr = doubleArrayOf(pose.x, pose.y, pose.heading.radians)
-        truePosePublisher.set(arr)
-        NT4Server.publishTopic("ARES/TruePose", arr)
+        truePoseBuf[0] = pose.x
+        truePoseBuf[1] = pose.y
+        truePoseBuf[2] = pose.heading.radians
+        truePosePublisher.set(truePoseBuf)
+        NT4Server.publishTopic("ARES/TruePose", truePoseBuf)
         NT4Server.publishTopic("ARES/TruePose/0", pose.x)
         NT4Server.publishTopic("ARES/TruePose/1", pose.y)
         NT4Server.publishTopic("ARES/TruePose/2", pose.heading.radians)

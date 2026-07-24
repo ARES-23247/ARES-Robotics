@@ -244,20 +244,11 @@ class MecanumRobotDouble {
         pinpoint.velX = actualVx
         pinpoint.velY = actualVy
 
-        // Feed simulated Limelight vision coordinates only when an AprilTag is inside the camera's FOV and range
-        val simTags = mapOf(
-            1 to Pair(1.8, 1.8),
-            2 to Pair(-1.8, 1.8),
-            3 to Pair(1.8, -1.8),
-            4 to Pair(-1.8, -1.8),
-            11 to Pair(0.0, 1.8)
-        )
-
         var visibleTagId: Int? = null
         val hFovRad = Math.toRadians(35.0)
         val maxRangeMeters = 3.5
 
-        for ((tagId, pos) in simTags) {
+        for ((tagId, pos) in SIM_TAGS) {
             val dx = pos.first - trueX
             val dy = pos.second - trueY
             val dist = kotlin.math.sqrt(dx * dx + dy * dy)
@@ -288,3 +279,11 @@ class MecanumRobotDouble {
         }
     }
 }
+
+private val SIM_TAGS = mapOf(
+    1 to Pair(1.8, 1.8),
+    2 to Pair(-1.8, 1.8),
+    3 to Pair(1.8, -1.8),
+    4 to Pair(-1.8, -1.8),
+    11 to Pair(0.0, 1.8)
+)

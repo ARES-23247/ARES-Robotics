@@ -159,7 +159,7 @@ object VisionMahalanobisFilter {
         val ambiguityScale = 1.0 + 10.0 * (measurement.ambiguity * measurement.ambiguity)
         val finalScale = incidenceScale * ambiguityScale
 
-        val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
+        val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.coerceAtLeast(1).toDouble())
         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
         val scaledStdDevsX = visionStdDevs.x * (multiTagFactor * distFactor * finalScale)
         val scaledStdDevsY = visionStdDevs.y * (multiTagFactor * distFactor * finalScale)
