@@ -193,6 +193,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
      * @param dtSeconds Timestep delta duration in seconds.
      */
+    @kotlin.jvm.JvmOverloads
     fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true, dtSeconds: Double = 0.02) {
         val turnScale = store.state.tuning.teleOpTurnScale
         val joystickForward = -driver.leftStickY.value.toDouble()
