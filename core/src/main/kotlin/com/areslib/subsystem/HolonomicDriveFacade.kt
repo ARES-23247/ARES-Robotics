@@ -7,7 +7,6 @@ import com.areslib.math.filter.LowPassFilter
 import com.areslib.pathing.Path
 import com.areslib.math.wrapAngle
 import com.areslib.control.feedback.PIDController
-
 import com.areslib.control.tuning.PIDFCoefficients
 
 /**
@@ -16,8 +15,8 @@ import com.areslib.control.tuning.PIDFCoefficients
  */
 abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     protected val store: Store,
-    headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
-    headingDeadzoneDeg: Double = 0.5
+    headingGains: PIDFCoefficients = PIDFCoefficients(1.8, 0.0, 0.08),
+    headingDeadzoneDeg: Double = 1.0
 ) {
     /**
      * The maximum linear speed of the robot in meters per second.

@@ -46,11 +46,16 @@ class TuningManager(
         }
     }
 
+    private var lastUpdateTimestamp = 0L
+
     /**
      * Call this in the periodic robot update loop.
      * Polls NT4 for any tuning changes and dispatches them to the store.
      */
-    fun update() {
+    fun update(timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()) {
+        if (timestampMs - lastUpdateTimestamp < 500L) return
+        lastUpdateTimestamp = timestampMs
+
         val currentState = store.state.tuning
         
         // Flatten state to JsonObject to push NT4 schema and poll for changes
