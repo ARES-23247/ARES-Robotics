@@ -37,19 +37,27 @@ object RevBulkDataReader {
         }
     }
 
+    private var rrIndex = 0
+
     private fun startPollingThreadIfNeeded() {
         if (pollingRunning) return
         pollingRunning = true
         pollingThread = Thread {
             while (pollingRunning) {
-                for (motorInstance in motorsList) {
-                    motorInstance.pollCurrentSync()
-                }
                 try {
-                    Thread.sleep(50) // 20Hz
+                    val list = motorsList
+                    if (list.isNotEmpty()) {
+                        val index = Math.abs(rrIndex) % list.size
+                        val motorInstance = list.getOrNull(index)
+                        motorInstance?.pollCurrentSync()
+                        rrIndex++
+                    }
+                    Thread.sleep(50) // 20Hz round-robin (only 1 I2C current read per 50ms)
                 } catch (_: InterruptedException) {
                     Thread.currentThread().interrupt()
                     break
+                } catch (_: Exception) {
+                    // Ignore concurrent modification or polling errors
                 }
             }
         }.apply {

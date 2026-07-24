@@ -141,6 +141,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
             val map = logger.obtainMap()
             map.putAll(currentFrame)
             logger.logFrame(map)
+            currentFrame.clear()
         }
         
         // Forward the update trigger to live streaming network tables (only on NT-enabled frames)
