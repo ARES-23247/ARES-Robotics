@@ -47,6 +47,28 @@ class TuningManager(
                 System.err.println("TuningManager: Failed to load tuning config from ${saveFile.absolutePath}: ${e.message}")
             }
         }
+        
+        // Publish current constants once on startup so dashboard populates immediately
+        publishInitialState()
+    }
+
+    /**
+     * Publishes all tuning constants once over NT4 without running continuous polling.
+     */
+    fun publishInitialState() {
+        val stateJson = gson.toJsonTree(store.state.tuning).asJsonObject
+        for ((key, element) in stateJson.entrySet()) {
+            if (element.isJsonPrimitive && element.asJsonPrimitive.isNumber) {
+                telemetry.putNumber("Tuning/$key", element.asDouble)
+            } else if (element.isJsonObject) {
+                val nestedObj = element.asJsonObject
+                for ((nestedKey, nestedElement) in nestedObj.entrySet()) {
+                    if (nestedElement.isJsonPrimitive && nestedElement.asJsonPrimitive.isNumber) {
+                        telemetry.putNumber("Tuning/$key/$nestedKey", nestedElement.asDouble)
+                    }
+                }
+            }
+        }
     }
 
     private var lastUpdateTimestamp = 0L

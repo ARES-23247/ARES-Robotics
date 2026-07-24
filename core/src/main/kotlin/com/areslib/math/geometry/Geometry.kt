@@ -45,8 +45,7 @@ data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
  *
  * @param rawRadians The raw rotation value in radians ($rad$).
  */
-@JvmInline
-value class Rotation2d(val rawRadians: Double = 0.0) {
+data class Rotation2d(val rawRadians: Double = 0.0) {
     /** 
      * The wrapped rotation value in radians ($rad$) bounded to $[-\pi, \pi)$. 
      * $$ \theta_{\text{wrapped}} = (\theta + \pi \pmod{2\pi}) - \pi $$
