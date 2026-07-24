@@ -111,8 +111,9 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * @param vy Field-centric Y-axis velocity effort scaled between [-1.0, 1.0].
      * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
+     * @param dtSeconds Timestep delta duration in seconds.
      */
-    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false) {
+    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false, dtSeconds: Double = 0.02) {
         val headingRad = pose.heading.radians
         val cos = kotlin.math.cos(headingRad)
         val sin = kotlin.math.sin(headingRad)
@@ -139,7 +140,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             useHeadingLock && !isRotating && target == null -> {
                 val physicalAngularVelocity = angularVelocity
 
-                if (kotlin.math.abs(physicalAngularVelocity) < 0.08) {
+                if (kotlin.math.abs(physicalAngularVelocity) < 0.03) {
                     store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
                     store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
                     headingErrorFilter.reset(0.0)
@@ -156,8 +157,12 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 headingPID.d = tuning.headingGains.kD
                 headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
 
-                // Let PIDController handle continuous input wrapping natively
-                finalOmega = headingPID.calculate(headingRad, target, 0.02) / maxAngularSpeedRps
+                // Clamp heading hold correction effort to max 40% power to prevent oscillation and snapping
+                val maxEffort = maxAngularSpeedRps * 0.4
+                headingPID.setOutputLimits(-maxEffort, maxEffort)
+
+                // Compute PID correction using real loop dtSeconds
+                finalOmega = headingPID.calculate(headingRad, target, dtSeconds) / maxAngularSpeedRps
                 fromHeadingHold = true
             }
         }
@@ -186,11 +191,13 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      *
      * @param driver The GamepadState object containing the driver's joystick inputs.
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
+     * @param dtSeconds Timestep delta duration in seconds.
      */
-    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) {
+    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true, dtSeconds: Double = 0.02) {
+        val turnScale = store.state.tuning.teleOpTurnScale
         val joystickForward = -driver.leftStickY.value.toDouble()
         val joystickRight = driver.leftStickX.value.toDouble()
-        val rotate = -driver.rightStickX.value.toDouble()
+        val rotate = -driver.rightStickX.value.toDouble() * turnScale
         
         var fieldVx = joystickRight
         var fieldVy = joystickForward
@@ -204,7 +211,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             vx = fieldVx, 
             vy = fieldVy, 
             omega = rotate,
-            useHeadingLock = useHeadingLock
+            useHeadingLock = useHeadingLock,
+            dtSeconds = dtSeconds
         )
     }
 }

@@ -19,8 +19,9 @@ data class TuningState(
     val pathRotationGains: PIDFCoefficients = PIDFCoefficients(2.5, 0.0, 0.05),
 
     // Drive Feedback (Heading Lock PID)
-    val headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
-    val headingDeadzoneDeg: Double = 0.5,
+    val headingGains: PIDFCoefficients = PIDFCoefficients(2.2, 0.0, 0.12),
+    val headingDeadzoneDeg: Double = 0.75,
+    val teleOpTurnScale: Double = 0.75,
 
     // Drivetrain Feedforward & Slew Acceleration Limits
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.0),

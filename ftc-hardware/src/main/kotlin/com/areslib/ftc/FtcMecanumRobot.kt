@@ -50,8 +50,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     // Drivetrain Tunable Constants
     val trackWidthMeters: Double = 0.45,
     val wheelBaseMeters: Double = 0.45,
-    val headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
-    val headingDeadzoneDeg: Double = 0.5,
+    val headingGains: PIDFCoefficients = PIDFCoefficients(2.2, 0.0, 0.12),
+    val headingDeadzoneDeg: Double = 0.75,
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.05, 0.12, 0.01),
     val useClosedLoopVelocity: Boolean = false,
     val driveSlewRateLimit: Double? = null,

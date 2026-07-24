@@ -11,6 +11,6 @@ import com.areslib.control.tuning.PIDFCoefficients
  */
 class MecanumDriveFacade @kotlin.jvm.JvmOverloads constructor(
     store: Store,
-    headingGains: PIDFCoefficients = PIDFCoefficients(4.5, 0.0, 0.25),
-    headingDeadzoneDeg: Double = 0.5
+    headingGains: PIDFCoefficients = PIDFCoefficients(2.2, 0.0, 0.12),
+    headingDeadzoneDeg: Double = 0.75
 ) : HolonomicDriveFacade(store, headingGains, headingDeadzoneDeg)
