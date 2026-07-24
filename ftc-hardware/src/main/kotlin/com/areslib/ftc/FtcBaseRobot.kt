@@ -90,6 +90,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val telemetryManager = FtcTelemetryManager(store)
     val powerManager = FtcPowerManager(hardwareMap)
     val profiler = FtcLoopProfiler()
+    var isLiveTuningEnabled: Boolean = false
 
     // Sensors
     val pinpointIO: PinpointIO? get() = hardwareInitializer.pinpointIO

@@ -155,7 +155,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
-        tuningManager.update()
+        if (isLiveTuningEnabled) {
+            tuningManager.update()
+        }
         calibrationController.updateHardwareInputs(
             store = store,
             telemetryManager = telemetryManager,
