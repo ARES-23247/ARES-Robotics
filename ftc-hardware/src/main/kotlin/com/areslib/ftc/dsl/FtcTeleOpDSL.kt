@@ -104,7 +104,6 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
                 // Initial update pass with empty gamepad state
                 updateRobot(robot, GamepadState(), GamepadState())
                 builder.onInitBlock?.invoke(robot, telemetry)
-                sleep(10)
             }
             if (isStopRequested || Thread.currentThread().isInterrupted) return
 
