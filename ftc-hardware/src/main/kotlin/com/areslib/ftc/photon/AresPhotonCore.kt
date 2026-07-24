@@ -112,8 +112,19 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
      * @return Corresponding output value or Unit.
      */
     fun attachEventLoop(@Suppress("UNUSED_PARAMETER") context: Context, eventLoop: FtcEventLoop) {
-        (eventLoop.opModeManager as? OpModeManagerNotifier)?.registerListener(this)
-        opModeManager = eventLoop.opModeManager
+        try {
+            val manager = eventLoop.opModeManager
+            if (manager is OpModeManagerNotifier) {
+                val methods = manager.javaClass.methods
+                val regMethod = methods.firstOrNull { it.name == "registerListener" && it.parameterCount == 1 }
+                regMethod?.invoke(manager, this)
+            }
+        } catch (t: Throwable) {
+            RobotLog.ww("AresPhotonCore", "Could not attach OpModeManagerNotifier: ${t.message}")
+        }
+        try {
+            opModeManager = eventLoop.opModeManager
+        } catch (_: Throwable) {}
     }
 
     @Throws(LynxUnsupportedCommandException::class, InterruptedException::class)
@@ -246,9 +257,11 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
      * @return Corresponding output value or Unit.
      */
     override fun onOpModePreInit(opMode: OpMode) {
+        if (!isEnabled.get()) return
         if (opModeManager?.activeOpModeName == OpModeManager.DEFAULT_OP_MODE_NAME) {
             return
         }
+        try {
 
         val map = opMode.hardwareMap
 
@@ -412,45 +425,21 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
             threadEnabled.set(true)
             thisThread!!.start()
         }
+        } catch (t: Throwable) {
+            RobotLog.ww("AresPhotonCore", "Photon preInit skipped: ${t.message}")
+        }
     }
 
-    private fun setLynxObject(
-        device: Any,
-        replacements: HashMap<LynxModule, AresPhotonLynxModule>,
-        visited: MutableSet<Any> = java.util.Collections.newSetFromMap(java.util.IdentityHashMap())
-    ) {
-        if (device in visited) return
-        visited.add(device)
-
-        val clazz = device.javaClass
-        val packageName = clazz.name
-        if (!packageName.startsWith("com.qualcomm") && !packageName.startsWith("org.firstinspires") && !packageName.startsWith("com.areslib")) {
-            return
-        }
-
-        var currentClazz: Class<*>? = clazz
-        while (currentClazz != null) {
-            val fields = try {
-                currentClazz.declaredFields
-            } catch (e: Throwable) {
-                emptyArray()
-            }
-            for (f in fields) {
-                f.isAccessible = true
-                try {
-                    val value = f.get(device) ?: continue
-                    if (value is LynxModule && value !is AresPhotonLynxModule) {
-                        if (replacements.containsKey(value)) {
-                            f.set(device, replacements[value])
-                        }
-                    } else if (value !is String && value !is Number && value !is Boolean && value !is Enum<*> && !value.javaClass.isPrimitive && !value.javaClass.isArray) {
-                        setLynxObject(value, replacements, visited)
-                    }
-                } catch (e: Throwable) {
-                    // Ignore exceptions for safety
+    private fun setLynxObject(device: Any, replacements: HashMap<LynxModule, AresPhotonLynxModule>) {
+        val f = AresPhotonReflectionUtils.getField(device.javaClass, LynxModule::class.java)
+        if (f != null) {
+            f.isAccessible = true
+            try {
+                val module = f.get(device) as? LynxModule
+                if (module != null && replacements.containsKey(module)) {
+                    f.set(device, replacements[module])
                 }
-            }
-            currentClazz = currentClazz.superclass
+            } catch (_: Exception) {}
         }
     }
 

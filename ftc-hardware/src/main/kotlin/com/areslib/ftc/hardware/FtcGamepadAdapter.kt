@@ -28,17 +28,9 @@ class FtcGamepadAdapter(
         val rawLeftTrigger = gamepad.left_trigger.toDouble()
         val rawRightTrigger = gamepad.right_trigger.toDouble()
 
-        // Apply deadband
-        val dbLeftX = InputMath.applyDeadband(rawLeftX, deadband)
-        val dbLeftY = InputMath.applyDeadband(rawLeftY, deadband)
-        val dbRightX = InputMath.applyDeadband(rawRightX, deadband)
-        val dbRightY = InputMath.applyDeadband(rawRightY, deadband)
-
-        // Apply curve
-        val curvedLeftX = InputMath.applyCurve(dbLeftX, curveExponent)
-        val curvedLeftY = InputMath.applyCurve(dbLeftY, curveExponent)
-        val curvedRightX = InputMath.applyCurve(dbRightX, curveExponent)
-        val curvedRightY = InputMath.applyCurve(dbRightY, curveExponent)
+        // Process joysticks using radial vector magnitude deadbanding & desaturation
+        val (curvedLeftX, curvedLeftY) = InputMath.processJoystickVector(rawLeftX, rawLeftY, deadband, curveExponent)
+        val (curvedRightX, curvedRightY) = InputMath.processJoystickVector(rawRightX, rawRightY, deadband, curveExponent)
 
         return ControllerState(
             a = gamepad.a,

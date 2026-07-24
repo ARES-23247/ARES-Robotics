@@ -34,5 +34,22 @@ object InputMath {
         return sign(value) * abs(value).pow(exponent)
     }
 
+    /**
+     * Applies radial deadband, unit-circle clamping, and exponential power curve to a 2D joystick vector [x, y].
+     * Preserves exact directional angle theta while preventing square-stick corner saturation.
+     *
+     * @return Pair of scaled [x, y] vector components bounded to unit circle magnitude [0.0, 1.0].
+     */
+    fun processJoystickVector(rawX: Double, rawY: Double, deadband: Double = 0.05, exponent: Double = 1.0): Pair<Double, Double> {
+        val mag = kotlin.math.hypot(rawX, rawY)
+        if (mag < deadband || mag.isNaN()) return Pair(0.0, 0.0)
+
+        val normMag = ((mag - deadband) / (1.0 - deadband)).coerceIn(0.0, 1.0)
+        val curvedMag = applyCurve(normMag, exponent)
+
+        val scaledX = (rawX / mag) * curvedMag
+        val scaledY = (rawY / mag) * curvedMag
+        return Pair(scaledX, scaledY)
+    }
 }
 

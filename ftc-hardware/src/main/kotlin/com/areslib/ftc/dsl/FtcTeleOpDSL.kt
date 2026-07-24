@@ -80,8 +80,6 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
     override fun runOpMode() {
         val builder = define()
         
-        // AresPhotonCore: only enable() for now. onOpModePreInit() does deep reflection
-        // to replace LynxModules which can corrupt USB comms and crash the robot.
         try {
             com.areslib.ftc.photon.AresPhotonCore.enable()
         } catch(e: Exception) {
