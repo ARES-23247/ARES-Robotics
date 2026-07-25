@@ -48,8 +48,8 @@ class InterpolatingTable<K : Comparable<K>, V : Interpolatable<V>> {
         if (floorKey == null) return map[ceilingKey]
         if (ceilingKey == null) return map[floorKey]
 
-        val floorVal = map[floorKey]!!
-        val ceilingVal = map[ceilingKey]!!
+        val floorVal = map[floorKey] ?: return null
+        val ceilingVal = map[ceilingKey] ?: return null
 
         val k = key.toDouble()
         val fK = floorKey.toDouble()

@@ -178,7 +178,7 @@ class MecanumRobotDouble {
                                             Int::class.javaPrimitiveType -> 0
                                             Long::class.javaPrimitiveType -> 0L
                                             String::class.java -> ""
-                                            else -> null
+                                            else -> throw UnsupportedOperationException("Method ${method.name} not implemented in dynamic mock for ${classOrType.simpleName}")
                                         }
                                     }
                                 ) as T

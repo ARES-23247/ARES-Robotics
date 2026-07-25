@@ -34,6 +34,7 @@ class FtcLimelightIO(
     private val visionMeasurementPool = Array(10) { VisionMeasurement() }
     private val translationPool = Array(20) { Translation3d() }
     private val rotationPool = Array(20) { Rotation3d() }
+    private val emptyTargetPose = Pose3d()
     private val posePool = Array(20) { Pose3d() }
     private var visionMeasurementPoolIndex = 0
     private var translationPoolIndex = 0
@@ -130,7 +131,7 @@ class FtcLimelightIO(
 
                     measurement.timestampMs = now
                     measurement.targetPose = fieldPose
-                    measurement.robotPoseTargetSpace = relTargetPose ?: Pose3d()
+                    measurement.robotPoseTargetSpace = relTargetPose ?: emptyTargetPose
                     measurement.tagId = tagId
                     measurement.ambiguity = 0.0
 

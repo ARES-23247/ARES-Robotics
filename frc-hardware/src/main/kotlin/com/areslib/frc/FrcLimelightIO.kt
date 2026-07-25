@@ -152,15 +152,13 @@ class FrcLimelightIO(
             }
             val tagId = tidSub.get().toInt()
             
-            val measurement = VisionMeasurement(
-                timestampMs = timestampMs,
-                targetPose = targetPose,
-                tagId = tagId,
-                ambiguity = ambiguity,
-                robotPoseTargetSpace = robotPoseTargetSpace
-            )
+            cachedMeasurement.timestampMs = timestampMs
+            cachedMeasurement.targetPose = targetPose
+            cachedMeasurement.tagId = tagId
+            cachedMeasurement.ambiguity = ambiguity
+            cachedMeasurement.robotPoseTargetSpace = robotPoseTargetSpace
             
-            inputs.measurements = listOf(measurement)
+            inputs.measurements = cachedMeasurementList
         } else {
             inputs.measurements = emptyList()
         }

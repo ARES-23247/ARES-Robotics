@@ -55,7 +55,6 @@ object LogManagerServer : NanoHTTPD(5002) {
                 uri == "/" && method == Method.GET -> serveDashboard()
                 uri == "/api/logs" && method == Method.GET -> serveApiLogs()
                 uri == "/api/download" && method == Method.GET -> handleApiDownload(session)
-                uri == "/api/upload" && method == Method.POST -> handleApiUpload(session)
                 uri == "/api/delete" && method == Method.POST -> handleApiDelete(session)
                 else -> newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "404 Not Found")
             }
@@ -104,24 +103,6 @@ object LogManagerServer : NanoHTTPD(5002) {
             newChunkedResponse(Response.Status.OK, mimeType, file.inputStream())
         } catch (e: Exception) {
             newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "Failed to read file: ${e.message}")
-        }
-    }
-
-    private fun handleApiUpload(session: IHTTPSession): Response {
-        session.parseBody(HashMap())
-        val fileName = session.parameters["file"]?.firstOrNull()
-            ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error": "Missing file parameter"}""")
-
-        val file = File(logDir, fileName)
-        if (!file.exists() || !file.isFile) {
-            return newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json", """{"error": "File not found"}""")
-        }
-
-        val error = CloudExporter.uploadFile(file)
-        return if (error == null) {
-            newFixedLengthResponse(Response.Status.OK, "application/json", """{"success": true}""")
-        } else {
-            newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "application/json", """{"error": "$error"}""")
         }
     }
 

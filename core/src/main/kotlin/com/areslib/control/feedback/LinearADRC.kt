@@ -97,16 +97,18 @@ class LinearADRC(
 
         if (isContinuous) {
             val range = continuousMax - continuousMin
-            var errorBound = (actualTarget - actualMeasurement) % range
-
-            if (abs(errorBound) > (range / 2.0)) {
-                if (errorBound > 0.0) {
-                    errorBound -= range
-                } else {
-                    errorBound += range
+            if (range > 1e-9) {
+                var errorBound = (actualTarget - actualMeasurement) % range
+    
+                if (abs(errorBound) > (range / 2.0)) {
+                    if (errorBound > 0.0) {
+                        errorBound -= range
+                    } else {
+                        errorBound += range
+                    }
                 }
+                actualTarget = actualMeasurement + errorBound
             }
-            actualTarget = actualMeasurement + errorBound
         }
 
         val l1 = 2.0 * omegaO

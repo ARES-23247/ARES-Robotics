@@ -20,7 +20,8 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
     private var cachedGreen = 0
     private var cachedBlue = 0
     private var cachedAlpha = 0
-    private val cachedNormalized = DoubleArray(4)
+    private val normalizedBuffers = Array(2) { DoubleArray(4) }
+    private var readBufferIndex = 0
     private val threadBuffer = DoubleArray(4)
 
     init {
@@ -79,7 +80,8 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
                     cachedGreen = g
                     cachedBlue = b
                     cachedAlpha = a
-                    System.arraycopy(threadBuffer, 0, cachedNormalized, 0, 4)
+                    System.arraycopy(threadBuffer, 0, normalizedBuffers[1 - readBufferIndex], 0, 4)
+                    readBufferIndex = 1 - readBufferIndex
                 }
 
                 try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
@@ -100,7 +102,7 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
         get() = synchronized(lock) { cachedAlpha }
 
     override val normalizedRgb: DoubleArray
-        get() = synchronized(lock) { cachedNormalized }
+        get() = synchronized(lock) { normalizedBuffers[readBufferIndex] }
 
     /**
      * close declaration.
