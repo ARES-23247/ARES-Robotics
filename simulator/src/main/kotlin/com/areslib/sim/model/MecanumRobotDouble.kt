@@ -178,7 +178,11 @@ class MecanumRobotDouble {
                                             Int::class.javaPrimitiveType -> 0
                                             Long::class.javaPrimitiveType -> 0L
                                             String::class.java -> ""
-                                            else -> throw UnsupportedOperationException("Method ${method.name} not implemented in dynamic mock for ${classOrType.simpleName}")
+                                            Void.TYPE -> null
+                                            else -> {
+                                                System.err.println("[SimHardwareMap] WARNING: Unhandled method ${method.name}() -> ${method.returnType.simpleName} on mock ${classOrType.simpleName}. Returning null.")
+                                                null
+                                            }
                                         }
                                     }
                                 ) as T
