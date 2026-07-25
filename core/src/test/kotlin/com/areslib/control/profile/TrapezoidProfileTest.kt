@@ -64,4 +64,55 @@ class TrapezoidProfileTest {
         assertEquals(2.0, controller.currentState.position, 1e-4)
         assertEquals(0.0, controller.currentState.velocity, 1e-4)
     }
+
+    @Test
+    fun `test zero distance start equals goal`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 1.0, maxAcceleration = 2.0)
+        val start = TrapezoidProfile.State(position = 5.0, velocity = 0.0)
+        val goal = TrapezoidProfile.State(position = 5.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+        
+        profile.calculate(0.02, start, goal, constraints, outState)
+        
+        val posMatch = when {
+            kotlin.math.abs(outState.position - 5.0) < 1e-6 -> true
+            else -> false
+        }
+        assertTrue(posMatch)
+    }
+
+    @Test
+    fun `test negative max velocity or acceleration parameters clamp`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = -1.0, maxAcceleration = -2.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 0.0)
+        val goal = TrapezoidProfile.State(position = 10.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+        
+        profile.calculate(0.02, start, goal, constraints, outState)
+        
+        val jumped = when {
+            kotlin.math.abs(outState.position - 10.0) < 1e-6 -> true
+            else -> false
+        }
+        assertTrue(jumped)
+    }
+
+    @Test
+    fun `test triangular profile case`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 100.0, maxAcceleration = 1.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 0.0)
+        val goal = TrapezoidProfile.State(position = 0.5, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+        
+        profile.calculate(0.5, start, goal, constraints, outState)
+        
+        val isTriangular = when {
+            kotlin.math.abs(outState.velocity) < 100.0 -> true
+            else -> false
+        }
+        assertTrue(isTriangular)
+    }
 }

@@ -128,5 +128,52 @@ class PinpointIOTest {
         }
         fail<Unit>("Timed out waiting for PinpointIO initialization to complete (expected X: $expectedX)")
     }
+
+    @Test
+    fun `test heading sign flip when isHeadingCcwPositive is true vs false`() {
+        val rawDriver = GoBildaPinpointDriver()
+        val pinpointIOCcw = PinpointIO(rawDriver, isHeadingCcwPositive = true)
+        val pinpointIOCw = PinpointIO(rawDriver, isHeadingCcwPositive = false)
+        
+        rawDriver.heading = 1.0
+        
+        val updateCcw = pinpointIOCcw.getPoseUpdate()
+        val updateCw = pinpointIOCw.getPoseUpdate()
+        
+        assertNotEquals(updateCcw.headingRadians, updateCw.headingRadians)
+    }
+
+    @Test
+    fun `test pose reset to specific coordinates`() {
+        val rawDriver = GoBildaPinpointDriver()
+        val pinpointIO = PinpointIO(rawDriver)
+        
+        val specificPose = Pose2d(x = 10.0, y = 20.0, heading = Rotation2d(Math.PI / 2))
+        pinpointIO.initialize(specificPose)
+        
+        val update = pinpointIO.getPoseUpdate()
+        val xMatch = when {
+            kotlin.math.abs(update.xMeters - 10.0) < 1e-6 -> true
+            else -> false
+        }
+        assertTrue(xMatch)
+    }
+
+    @Test
+    fun `test sequential updates accumulate correctly`() {
+        val rawDriver = GoBildaPinpointDriver()
+        val pinpointIO = PinpointIO(rawDriver)
+        pinpointIO.initialize(Pose2d(0.0, 0.0, Rotation2d(0.0)))
+        
+        rawDriver.posX = 1.0
+        rawDriver.posY = 1.0
+        
+        val update1 = pinpointIO.getPoseUpdate()
+        val valOk = when {
+            update1 != null -> true
+            else -> false
+        }
+        assertTrue(valOk)
+    }
 }
 

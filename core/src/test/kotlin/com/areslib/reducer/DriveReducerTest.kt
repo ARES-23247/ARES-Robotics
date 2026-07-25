@@ -56,4 +56,73 @@ class DriveReducerTest {
         assertEquals(0.5, newState.drive.poseEstimator.estimatedPose.heading.radians)
         assertEquals(2050L, newState.timestampMs)
     }
+
+    @Test
+    fun `test target pose update action`() {
+        val initialState = RobotState()
+        val action = RobotAction.SetHeadingLockTarget(targetRadians = 1.57)
+        val newState = rootReducer(initialState, action)
+        assertEquals(1.57, newState.drive.headingLockTargetRadians)
+    }
+
+    @Test
+    fun `test vision correction action`() {
+        val initialState = RobotState()
+        val action = RobotAction.PoseUpdate(
+            xMeters = 3.0,
+            yMeters = 4.0,
+            headingRadians = 1.0,
+            timestampMs = 5000L,
+            isReset = true,
+            angularVelocityRadiansPerSecond = 0.0,
+            pitchDegrees = 0.0,
+            rollDegrees = 0.0,
+            xAccelerationG = 0.0,
+            yAccelerationG = 0.0,
+            zAccelerationG = 0.0
+        )
+        val newState = rootReducer(initialState, action)
+        val x = when {
+            newState.drive.odometryX == 3.0 -> 3.0
+            else -> 0.0
+        }
+        assertEquals(3.0, x)
+    }
+
+    @Test
+    fun `test corrupted or null action payloads`() {
+        val initialState = RobotState()
+        val action = RobotAction.DriveHardwareUpdate(
+            xVelocity = Double.NaN,
+            yVelocity = Double.NaN,
+            angularVelocity = 0.0,
+            deltaX = Double.NaN,
+            deltaY = Double.NaN,
+            deltaHeading = 0.0,
+            timestampMs = 100L,
+            pitchDegrees = 0.0,
+            rollDegrees = 0.0,
+            xAccelerationG = 0.0,
+            yAccelerationG = 0.0,
+            zAccelerationG = 0.0
+        )
+        val newState = rootReducer(initialState, action)
+        val isNanX = when {
+            newState.drive.xVelocityMetersPerSecond.isNaN() -> true
+            else -> false
+        }
+        assertEquals(true, isNanX)
+    }
+
+    @Test
+    fun `test unknown action type passthrough`() {
+        val initialState = RobotState()
+        val action = object : RobotAction {}
+        val newState = rootReducer(initialState, action)
+        // rootReducer always copies state (updating timestampMs), so verify sub-states are unchanged
+        assertEquals(initialState.drive, newState.drive)
+        assertEquals(initialState.vision, newState.vision)
+        assertEquals(initialState.superstructure, newState.superstructure)
+        assertEquals(initialState.pathState, newState.pathState)
+    }
 }

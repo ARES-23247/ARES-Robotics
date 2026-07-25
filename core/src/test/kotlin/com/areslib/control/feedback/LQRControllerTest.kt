@@ -423,4 +423,49 @@ class LQRControllerTest {
             prevOutput = u[0]
         }
     }
+
+    @Test
+    fun `zero state vector returns zero output`() {
+        controller.reset(doubleArrayOf(0.0, 0.0))
+        val u = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(0.0, 0.0),
+            dtSeconds = 0.02
+        )
+        val out = when {
+            u[0] == 0.0 -> 0.0
+            else -> u[0]
+        }
+        assertEquals(0.0, out, 1e-6)
+    }
+
+    @Test
+    fun `output value bounds and saturation`() {
+        controller.maxU = 7.0
+        controller.minU = -7.0
+        val u = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(100.0, 100.0),
+            dtSeconds = 0.02
+        )
+        val isClamped = when {
+            u[0] <= 7.0 && u[0] >= -7.0 -> true
+            else -> false
+        }
+        assertTrue(isClamped)
+    }
+
+    @Test
+    fun `large state values do not produce NaN`() {
+        val u = controller.calculate(
+            y = doubleArrayOf(1e10),
+            xRef = doubleArrayOf(-1e10, 0.0),
+            dtSeconds = 0.02
+        )
+        val isFinite = when {
+            u[0].isFinite() -> true
+            else -> false
+        }
+        assertTrue(isFinite)
+    }
 }
