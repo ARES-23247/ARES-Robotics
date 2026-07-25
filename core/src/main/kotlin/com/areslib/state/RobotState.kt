@@ -32,6 +32,7 @@ data class RobotState(
 enum class DriveMode {
     TELEOP,
     HEADING_HOLD,
+    POSITION_HOLD,
     X_BRAKE
 }
 
@@ -56,6 +57,8 @@ data class DriveState(
     val zAccelerationG: Double = 0.0,
     val driveMode: DriveMode = DriveMode.TELEOP,
     val headingLockTargetRadians: Double? = null,
+    val positionLockX: Double? = null,
+    val positionLockY: Double? = null,
     val isFieldCentric: Boolean = true,
     val isXLock: Boolean = false,
     val alliance: Alliance = Alliance.BLUE,

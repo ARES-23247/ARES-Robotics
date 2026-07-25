@@ -80,6 +80,18 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
 
     protected val headingErrorFilter = com.areslib.math.filter.LowPassFilter(0.0)
 
+    /** Pre-allocated PID controller for position hold X-axis correction (field-relative). */
+    protected val positionPidX = com.areslib.control.feedback.PIDController(1.5, 0.0, 0.1).apply {
+        setOutputLimits(-1.4, 1.4)  // ~40% of maxSpeedMps
+        deadzone = 0.02
+    }
+
+    /** Pre-allocated PID controller for position hold Y-axis correction (field-relative). */
+    protected val positionPidY = com.areslib.control.feedback.PIDController(1.5, 0.0, 0.1).apply {
+        setOutputLimits(-1.4, 1.4)
+        deadzone = 0.02
+    }
+
     /**
      * Executes robot-relative drivetrain movement effort.
      *
@@ -110,16 +122,17 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * @param vy Field-centric Y-axis velocity effort scaled between [-1.0, 1.0].
      * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
+     * @param usePositionHold Enables active EKF closed-loop position hold when joystick inputs are released.
      * @param dtSeconds Timestep delta duration in seconds.
      */
-    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false, dtSeconds: Double = 0.02) {
+    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false, usePositionHold: Boolean = false, dtSeconds: Double = 0.02) {
         val headingRad = pose.heading.radians
         val cos = kotlin.math.cos(headingRad)
         val sin = kotlin.math.sin(headingRad)
 
         // Translate field-relative to robot-relative velocities
-        val robotVx = vx * cos + vy * sin
-        val robotVy = -vx * sin + vy * cos
+        var finalRobotVx = vx * cos + vy * sin
+        var finalRobotVy = -vx * sin + vy * cos
 
         var finalOmega = omega
         var fromHeadingHold = false
@@ -166,7 +179,64 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             }
         }
 
-        robotRelativeDrive(robotVx, robotVy, finalOmega, fromHeadingHold)
+        // --- Position Hold (mirrors heading lock pattern) ---
+        val posLockX = store.state.drive.positionLockX
+        val posLockY = store.state.drive.positionLockY
+        val hasLinearInput = kotlin.math.abs(vx) > 0.05 || kotlin.math.abs(vy) > 0.05
+
+        when {
+            !usePositionHold && posLockX != null -> {
+                // Position hold was disabled — release lock
+                store.dispatch(RobotAction.SetPositionLockTarget(null, null))
+            }
+            usePositionHold && hasLinearInput && posLockX != null -> {
+                // Driver is moving — release lock
+                store.dispatch(RobotAction.SetPositionLockTarget(null, null))
+                if (store.state.drive.driveMode == com.areslib.state.DriveMode.POSITION_HOLD) {
+                    store.dispatch(RobotAction.SetDriveMode(
+                        if (target != null) com.areslib.state.DriveMode.HEADING_HOLD
+                        else com.areslib.state.DriveMode.TELEOP
+                    ))
+                }
+            }
+            usePositionHold && !hasLinearInput && posLockX == null -> {
+                // Driver released joystick — check if robot is stationary enough to latch
+                val linearVelocity = kotlin.math.sqrt(xVelocity * xVelocity + yVelocity * yVelocity)
+                if (linearVelocity < 0.05) {
+                    store.dispatch(RobotAction.SetPositionLockTarget(pose.x, pose.y))
+                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.POSITION_HOLD))
+                    positionPidX.reset()
+                    positionPidY.reset()
+                }
+            }
+            usePositionHold && !hasLinearInput && posLockX != null -> {
+                // Actively correct back to locked position
+                val tuning = store.state.tuning
+                positionPidX.p = tuning.positionHoldGains.kP
+                positionPidX.i = tuning.positionHoldGains.kI
+                positionPidX.d = tuning.positionHoldGains.kD
+                positionPidX.deadzone = tuning.positionHoldDeadzoneMeters
+                positionPidY.p = tuning.positionHoldGains.kP
+                positionPidY.i = tuning.positionHoldGains.kI
+                positionPidY.d = tuning.positionHoldGains.kD
+                positionPidY.deadzone = tuning.positionHoldDeadzoneMeters
+
+                // Clamp correction to 40% max speed
+                val maxCorrection = maxSpeedMps * 0.4
+                positionPidX.setOutputLimits(-maxCorrection, maxCorrection)
+                positionPidY.setOutputLimits(-maxCorrection, maxCorrection)
+
+                // Compute field-relative correction velocities, then rotate to robot-relative
+                val corrVx = positionPidX.calculate(pose.x, posLockX, dtSeconds) / maxSpeedMps
+                val corrVy = positionPidY.calculate(pose.y, posLockY!!, dtSeconds) / maxSpeedMps
+                val cos = kotlin.math.cos(headingRad)
+                val sin = kotlin.math.sin(headingRad)
+                finalRobotVx = corrVx * cos + corrVy * sin
+                finalRobotVy = -corrVx * sin + corrVy * cos
+            }
+        }
+
+        robotRelativeDrive(finalRobotVx, finalRobotVy, finalOmega, fromHeadingHold)
     }
 
     /**
@@ -190,10 +260,11 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      *
      * @param driver The GamepadState object containing the driver's joystick inputs.
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
+     * @param usePositionHold Enables active EKF closed-loop position hold when joystick inputs are released.
      * @param dtSeconds Timestep delta duration in seconds.
      */
     @kotlin.jvm.JvmOverloads
-    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true, dtSeconds: Double = 0.02) {
+    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true, usePositionHold: Boolean = false, dtSeconds: Double = 0.02) {
         val isTurbo = driver.rightBumper.isPressed
         val isSlow = driver.leftBumper.isPressed
 
@@ -226,6 +297,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             vy = fieldVy, 
             omega = rotate,
             useHeadingLock = useHeadingLock,
+            usePositionHold = usePositionHold,
             dtSeconds = dtSeconds
         )
     }

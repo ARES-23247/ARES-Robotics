@@ -97,7 +97,9 @@ object DriveReducer {
                     xAccelerationG = action.xAccelerationG,
                     yAccelerationG = action.yAccelerationG,
                     zAccelerationG = action.zAccelerationG,
-                    headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians
+                    headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians,
+                    positionLockX = if (action.isReset) null else state.positionLockX,
+                    positionLockY = if (action.isReset) null else state.positionLockY
                 ).updateDiagnostics(action.xMeters, action.yMeters, action.headingRadians, updatedEstimator)
             }
             is RobotAction.SetDriveMode -> {
@@ -108,6 +110,9 @@ object DriveReducer {
             }
             is RobotAction.SetHeadingLockTarget -> {
                 state.copy(headingLockTargetRadians = action.targetRadians)
+            }
+            is RobotAction.SetPositionLockTarget -> {
+                state.copy(positionLockX = action.targetX, positionLockY = action.targetY)
             }
             is RobotAction.JoystickDriveIntent -> {
                 val hasLinearInput = kotlin.math.abs(action.targetXVelocity) > 0.05 || kotlin.math.abs(action.targetYVelocity) > 0.05
@@ -126,12 +131,17 @@ object DriveReducer {
                     state.headingLockTargetRadians
                 }
 
+                val newPosLockX = if (hasLinearInput) null else state.positionLockX
+                val newPosLockY = if (hasLinearInput) null else state.positionLockY
+
                 state.copy(
                     xVelocityMetersPerSecond = action.targetXVelocity,
                     yVelocityMetersPerSecond = action.targetYVelocity,
                     angularVelocityRadiansPerSecond = action.targetAngularVelocity,
                     driveMode = newMode,
                     headingLockTargetRadians = newTargetHeading,
+                    positionLockX = newPosLockX,
+                    positionLockY = newPosLockY,
                     isFieldCentric = action.isFieldCentric,
                     isXLock = action.isXLock
                 )

@@ -21,6 +21,11 @@ data class TuningState(
     // Drive Feedback (Heading Lock PID)
     val headingGains: PIDFCoefficients = PIDFCoefficients(1.8, 0.0, 0.08),
     val headingDeadzoneDeg: Double = 1.0,
+
+    // Drive Feedback (Position Hold PID)
+    val positionHoldGains: PIDFCoefficients = PIDFCoefficients(1.5, 0.0, 0.1),
+    val positionHoldDeadzoneMeters: Double = 0.02,
+
     val teleOpTurnScale: Double = 0.50,
 
     // Drivetrain Feedforward & Slew Acceleration Limits (GoBilda 312 RPM Mecanum Baseline)

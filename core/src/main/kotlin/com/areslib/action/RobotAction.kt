@@ -129,6 +129,18 @@ interface RobotAction {
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
+    /**
+     * Sets or clears the position lock target for automatic position hold.
+     * When joystick inputs are released, the robot actively drives back to this latched position.
+     * @property targetX Target X position in meters (field-relative), or null to disable position lock.
+     * @property targetY Target Y position in meters (field-relative), or null to disable position lock.
+     */
+    data class SetPositionLockTarget(
+        val targetX: Double?,
+        val targetY: Double?,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction
+
     // Human Intent
 
     /**
