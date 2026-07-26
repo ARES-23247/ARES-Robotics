@@ -20,7 +20,7 @@ data class TuningState(
 
     // Drive Feedback (Heading Lock PID)
     val headingGains: PIDFCoefficients = PIDFCoefficients(1.8, 0.0, 0.08),
-    val headingDeadzoneDeg: Double = 1.0,
+    val headingDeadzoneDeg: Double = 2.5,
 
     // Drive Feedback (Position Hold PID)
     val positionHoldGains: PIDFCoefficients = PIDFCoefficients(1.5, 0.0, 0.1),
