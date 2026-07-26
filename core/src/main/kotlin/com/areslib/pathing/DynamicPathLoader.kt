@@ -157,8 +157,8 @@ object DynamicPathLoader {
      * @param timestampMs Reference base timestamp for FSM task instantiation.
      * @return The constructed [Task] sequence.
      */
-    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long): Task {
+    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long, alliance: com.areslib.state.Alliance = com.areslib.state.Alliance.BLUE): Task {
         val jsonString = loadAutoJsonString(autoName)
-        return PathPlannerAutoParser.parseAuto(jsonString, follower, timestampMs)
+        return PathPlannerAutoParser.parseAuto(jsonString, follower, timestampMs, alliance)
     }
 }

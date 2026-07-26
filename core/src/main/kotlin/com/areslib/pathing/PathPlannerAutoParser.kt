@@ -65,17 +65,19 @@ object PathPlannerAutoParser {
     fun parseAuto(
         jsonString: String,
         follower: HolonomicPathFollower,
-        timestampMs: Long
+        timestampMs: Long,
+        alliance: com.areslib.state.Alliance = com.areslib.state.Alliance.BLUE
     ): Task {
         val root = gson.fromJson(jsonString, JsonObject::class.java)
         val commandObj = root.getAsJsonObject("command") ?: error("No root 'command' object in .auto file")
-        return parseCommandNode(commandObj, follower, timestampMs)
+        return parseCommandNode(commandObj, follower, timestampMs, alliance)
     }
 
     private fun parseCommandNode(
         node: JsonObject,
         follower: HolonomicPathFollower,
-        timestampMs: Long
+        timestampMs: Long,
+        alliance: com.areslib.state.Alliance
     ): Task {
         val type = node.get("type")?.asString ?: error("Command node missing 'type'")
         val data = node.getAsJsonObject("data") ?: error("Command node '$type' missing 'data'")
@@ -85,7 +87,7 @@ object PathPlannerAutoParser {
                 val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
                 val tasks = mutableListOf<Task>()
                 for (i in 0 until cmdsArray.size()) {
-                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
+                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs, alliance))
                 }
                 SequentialTaskGroup(tasks)
             }
@@ -93,7 +95,7 @@ object PathPlannerAutoParser {
                 val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
                 val tasks = mutableListOf<Task>()
                 for (i in 0 until cmdsArray.size()) {
-                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
+                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs, alliance))
                 }
                 ParallelTaskGroup(tasks)
             }
@@ -101,7 +103,7 @@ object PathPlannerAutoParser {
                 val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
                 val tasks = mutableListOf<Task>()
                 for (i in 0 until cmdsArray.size()) {
-                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
+                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs, alliance))
                 }
                 ParallelRaceGroup(tasks)
             }
@@ -110,17 +112,20 @@ object PathPlannerAutoParser {
                 if (cmdsArray.size() == 0) {
                     SequentialTaskGroup(emptyList())
                 } else {
-                    val deadlineTask = parseCommandNode(cmdsArray.get(0).asJsonObject, follower, timestampMs)
+                    val deadlineTask = parseCommandNode(cmdsArray.get(0).asJsonObject, follower, timestampMs, alliance)
                     val otherTasks = mutableListOf<Task>()
                     for (i in 1 until cmdsArray.size()) {
-                        otherTasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
+                        otherTasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs, alliance))
                     }
                     ParallelDeadlineGroup(deadlineTask, otherTasks)
                 }
             }
             "path" -> {
                 val pathName = data.get("pathName")?.asString ?: error("Path command missing 'pathName'")
-                val path = DynamicPathLoader.loadPath(pathName)
+                var path = DynamicPathLoader.loadPath(pathName)
+                if (alliance == com.areslib.state.Alliance.RED) {
+                    path = path.mirrorForRedAlliance()
+                }
                 FollowPathTask(follower, path)
             }
             "wait" -> {

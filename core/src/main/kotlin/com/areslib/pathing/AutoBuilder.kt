@@ -1,6 +1,7 @@
 package com.areslib.pathing
 
 import com.areslib.sequencer.Task
+import com.areslib.state.Alliance
 
 /**
  * A declarative builder facade for constructing Autonomous routines from PathPlanner
@@ -25,9 +26,9 @@ class AutoBuilder {
      * @param autoName The name of the .auto file (without extension)
      * @param timestampMs The base timestamp used for generating the sequence
      */
-    fun buildAuto(autoName: String, timestampMs: Long): Task {
+    fun buildAuto(autoName: String, timestampMs: Long, alliance: Alliance = Alliance.BLUE): Task {
         val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
-        return DynamicPathLoader.loadAuto(autoName, activeFollower, timestampMs)
+        return DynamicPathLoader.loadAuto(autoName, activeFollower, timestampMs, alliance)
     }
 
     /**
@@ -36,9 +37,12 @@ class AutoBuilder {
      * 
      * @param pathName The name of the .path file (without extension)
      */
-    fun buildPath(pathName: String): Task {
+    fun buildPath(pathName: String, alliance: Alliance = Alliance.BLUE): Task {
         val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
-        val path = DynamicPathLoader.loadPath(pathName)
+        var path = DynamicPathLoader.loadPath(pathName)
+        if (alliance == Alliance.RED) {
+            path = path.mirrorForRedAlliance()
+        }
         return com.areslib.sequencer.FollowPathTask(activeFollower, path)
     }
 }

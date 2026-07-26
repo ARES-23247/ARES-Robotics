@@ -66,7 +66,8 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         var pathLoadError: String? = null
         try {
             val jsonString = com.areslib.pathing.DynamicPathLoader.loadAutoJsonString(pathName)
-            autoTask = robot.autoBuilder.buildAuto(pathName, com.areslib.util.RobotClock.currentTimeMillis())
+            val alliance = robot.store.state.drive.alliance
+            autoTask = robot.autoBuilder.buildAuto(pathName, com.areslib.util.RobotClock.currentTimeMillis(), alliance)
             
             // Extract starting pose and seed EKF
             var startPose = com.areslib.pathing.PathPlannerAutoParser.getStartingPose(jsonString)
