@@ -199,6 +199,17 @@ interface RobotAction {
         override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
     ) : RobotAction
 
+    /**
+     * Sets a named goBILDA Prism RGB LED Driver to a pulse width in microseconds (500–2500µs).
+     * @param name Hardware map name of the Prism driver.
+     * @param pulseWidthUs Pulse width in microseconds (500 to 2500).
+     */
+    data class SetPrismDriver(
+        val name: String,
+        val pulseWidthUs: Int,
+        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    ) : RobotAction
+
     // Path Following and Switching Actions
 
     /**

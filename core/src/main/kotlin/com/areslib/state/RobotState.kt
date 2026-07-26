@@ -128,6 +128,8 @@ interface SubsystemState
 data class SuperstructureState(
     /** Maps indicator light hardware names to their target servo positions (0.0 to 1.0). */
     val indicatorLights: Map<String, Double> = emptyMap(),
+    /** Maps goBILDA Prism RGB LED Driver hardware names to their target pulse width in microseconds (500–2500µs). */
+    val prismDrivers: Map<String, Int> = emptyMap(),
     // Custom extensible container for season/robot-specific states
     val custom: Any? = null
 )

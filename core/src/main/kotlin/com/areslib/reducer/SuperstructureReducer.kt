@@ -22,6 +22,11 @@ object SuperstructureReducer {
                     indicatorLights = state.indicatorLights + (action.name to action.position)
                 )
             }
+            is RobotAction.SetPrismDriver -> {
+                state.copy(
+                    prismDrivers = state.prismDrivers + (action.name to action.pulseWidthUs)
+                )
+            }
             else -> state
         }
     }
