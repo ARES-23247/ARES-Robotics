@@ -26,7 +26,7 @@ data class TuningState(
     val positionHoldGains: PIDFCoefficients = PIDFCoefficients(1.5, 0.0, 0.1),
     val positionHoldDeadzoneMeters: Double = 0.02,
 
-    val teleOpTurnScale: Double = 0.50,
+    val teleOpTurnScale: Double = 0.60,
 
     // Drivetrain Feedforward & Slew Acceleration Limits (GoBilda 312 RPM Mecanum Baseline)
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.05, kV = 0.638, kA = 0.02),

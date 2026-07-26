@@ -271,7 +271,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         val speedMult = when {
             isTurbo -> 1.0
             isSlow -> 0.40
-            else -> 0.75
+            else -> 0.65
         }
 
         val turnScale = when {
