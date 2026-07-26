@@ -104,8 +104,15 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
                     )
                 )
 
-                // The simulator intercepts PoseUpdate(isReset=true) via its sync function, 
-                // or driver station can intercept ARES/Simulator/Teleport natively via ARES-Analytics.
+                // 2. Reset Pinpoint odometry hardware to match the EKF seed.
+                // Without this, the Pinpoint reports stale position from the
+                // previous OpMode and the EKF snaps to the wrong location.
+                robot.resetPose(
+                    com.areslib.math.geometry.Pose2d(
+                        x, y,
+                        com.areslib.math.geometry.Rotation2d(heading)
+                    )
+                )
             }
         } catch (e: Exception) {
             pathLoadError = e.message ?: "Unknown error"
