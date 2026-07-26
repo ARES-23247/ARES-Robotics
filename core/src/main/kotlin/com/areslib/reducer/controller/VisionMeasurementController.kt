@@ -27,7 +27,7 @@ object VisionMeasurementController {
 
         for (i in 0 until measurements.size) {
             val it = measurements[i]
-            if (it.tagId == 1 || VisionOutlierFilter.isValid(
+            if (VisionOutlierFilter.isValid(
                     config = state.vision.filterConfig,
                     measurement = it,
                     robotHeadingRad = robotHeading,

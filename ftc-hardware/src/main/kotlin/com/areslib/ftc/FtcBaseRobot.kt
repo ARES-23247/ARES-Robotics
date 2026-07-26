@@ -245,6 +245,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      */
     fun resetPose(pose: Pose2d = Pose2d()) {
         pinpointIO?.initialize(pose, resetHardware = false)
+        visionTracker.hasInitializedPoseWithVision = true
         store.dispatch(
             RobotAction.PoseUpdate(
                 xMeters = pose.x,
