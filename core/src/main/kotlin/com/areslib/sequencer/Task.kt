@@ -246,7 +246,7 @@ class ActionDispatchTask(
 class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val follower: com.areslib.pathing.HolonomicPathFollower,
     private val path: com.areslib.pathing.Path,
-    private val symmetry: com.areslib.math.coordinate.FieldSymmetry = com.areslib.math.coordinate.FieldSymmetry.MIRRORED,
+    private val symmetry: com.areslib.math.coordinate.FieldSymmetry = com.areslib.math.coordinate.FieldSymmetry.ROTATIONAL,
     private val fieldLength: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
     private val fieldWidth: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
     private val mirrorForAlliance: Boolean = true
