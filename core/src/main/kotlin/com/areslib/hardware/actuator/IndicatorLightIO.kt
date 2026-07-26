@@ -17,7 +17,8 @@ enum class IndicatorLightColor(val position: Double) {
     BLUE(0.611),
     PURPLE(0.722),
     VIOLET(0.722),
-    WHITE(0.833);
+    WHITE(0.833),
+    RAINBOW(-1.0);
 }
 
 /**
