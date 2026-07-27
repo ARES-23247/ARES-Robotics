@@ -40,6 +40,62 @@ class SrsHubServoIO(private val srsHub: SrsHubDriver, private val port: Int) : S
 }
 
 /**
+ * SRS Hub Adapter for the goBILDA Prism RGB LED Driver (SKU 3118-2855-0001).
+ * Commands microsecond pulse widths (500µs to 2500µs) directly through SRS Hub PWM port [port].
+ *
+ * @param srsHub The SrsHubDriver instance.
+ * @param port SRS Hub PWM Servo port index (0 to 3).
+ */
+class SrsHubPrismDriverIO(
+    private val srsHub: SrsHubDriver,
+    val port: Int = 0
+) : com.areslib.hardware.actuator.PrismDriverIO {
+
+    override var currentPulseWidthUs: Int = 1000
+        private set
+
+    override fun setPulseWidthUs(pulseWidthUs: Int) {
+        val clampedUs = pulseWidthUs.coerceIn(500, 2500)
+        currentPulseWidthUs = clampedUs
+
+        // Map 500µs - 2500µs to SRS Hub PWM duty cycle (0.0 to 1.0)
+        val normalizedPos = (clampedUs - 500.0) / 2000.0
+        srsHub.setPwmDutyCycle(port, normalizedPos)
+    }
+
+    override fun setSolidColorRgb(r: Int, g: Int, b: Int) {
+        val rNorm = (r.coerceIn(0, 255)) / 255.0
+        val gNorm = (g.coerceIn(0, 255)) / 255.0
+        val bNorm = (b.coerceIn(0, 255)) / 255.0
+
+        val maxC = maxOf(rNorm, gNorm, bNorm)
+        val minC = minOf(rNorm, gNorm, bNorm)
+        val delta = maxC - minC
+
+        val hue = when {
+            delta < 1e-4 -> 0.0
+            maxC == rNorm -> ((gNorm - bNorm) / delta) % 6.0
+            maxC == gNorm -> ((bNorm - rNorm) / delta) + 2.0
+            else -> ((rNorm - gNorm) / delta) + 4.0
+        } * 60.0
+
+        val normalizedHue = (if (hue < 0) hue + 360.0 else hue) / 360.0
+        val pulseWidth = (1050 + normalizedHue * 899.0).toInt()
+        setPulseWidthUs(pulseWidth)
+    }
+
+    override fun safe() {
+        setPreset(com.areslib.hardware.actuator.PrismPwmPreset.SOLID_RED)
+    }
+
+    override fun refresh() {}
+
+    override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/PulseWidthUs", currentPulseWidthUs.toDouble())
+    }
+}
+
+/**
  * Hardware IO abstraction layer for SRS Hub Encoders.
  */
 class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) : MotorIO {
