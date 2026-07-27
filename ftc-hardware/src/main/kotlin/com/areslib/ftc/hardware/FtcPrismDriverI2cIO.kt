@@ -69,6 +69,8 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     override var currentPulseWidthUs: Int = 1000
         private set
 
+    override var maxBrightnessPercent: Int = 75
+
     init {
         i2cDevice.i2cAddress = I2cAddr.create7bit(i2cAddress)
     }
@@ -117,15 +119,16 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Configures Layer 0 with a Solid Color animation (RGB 0-255).
+     * Configures Layer 0 with a Solid Color animation (RGB 0-255), scaled by [maxBrightnessPercent].
      */
     override fun setSolidColorRgb(r: Int, g: Int, b: Int) {
-        val red = r.coerceIn(0, 255)
-        val green = g.coerceIn(0, 255)
-        val blue = b.coerceIn(0, 255)
+        val scale = maxBrightnessPercent.coerceIn(0, 100) / 100.0
+        val red = (r.coerceIn(0, 255) * scale).toInt()
+        val green = (g.coerceIn(0, 255) * scale).toInt()
+        val blue = (b.coerceIn(0, 255) * scale).toInt()
 
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x00, ANIM_SOLID_COLOR.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, 100.toByte()))
+        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, maxBrightnessPercent.coerceIn(0, 100).toByte()))
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x02, 0.toByte()))
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x03, 255.toByte()))
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x04, red.toByte(), green.toByte(), blue.toByte()))
@@ -135,8 +138,9 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
      * Configures Layer 0 with a classic full spectrum Rainbow animation over I²C.
      */
     fun setRainbowAnimation(speed: Float = 0.5f, brightness: Int = 100) {
+        val cappedBrightness = ((brightness.coerceIn(0, 100) * (maxBrightnessPercent.coerceIn(0, 100) / 100.0))).toInt()
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x00, ANIM_RAINBOW.toByte()))
-        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, brightness.coerceIn(0, 100).toByte()))
+        i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, cappedBrightness.toByte()))
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x02, 0.toByte()))
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x03, 255.toByte()))
     }

@@ -32,6 +32,8 @@ class FtcPrismDriverIO(
     override var currentPulseWidthUs: Int = 1000
         private set
 
+    override var maxBrightnessPercent: Int = 75
+
     override fun setPulseWidthUs(pulseWidthUs: Int) {
         val clampedUs = pulseWidthUs.coerceIn(500, 2500)
         currentPulseWidthUs = clampedUs

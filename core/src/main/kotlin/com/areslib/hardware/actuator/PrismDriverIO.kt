@@ -110,6 +110,9 @@ interface PrismDriverIO : SubsystemIO {
     /** Current commanded pulse width in microseconds (500 to 2500). */
     val currentPulseWidthUs: Int
 
+    /** Maximum allowed brightness cap (0 to 100%). Default is 75% to conserve robot battery power. */
+    var maxBrightnessPercent: Int
+
     /** Sets the Prism driver to a raw pulse width in microseconds (500–2500µs). */
     fun setPulseWidthUs(pulseWidthUs: Int)
 
