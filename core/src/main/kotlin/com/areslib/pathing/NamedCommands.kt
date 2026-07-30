@@ -30,10 +30,46 @@ object NamedCommands {
 
     /**
      * Resolves a registered command by name. Returns null if not found.
+     * Supports dynamic resolution for indicator light commands:
+     * - `SetIndicatorColor_<color>` (Light 1 / "indicator")
+     * - `SetSecondIndicatorColor_<color>` (Light 2 / "indicator2")
+     * - `SetThirdIndicatorColor_<color>` (Light 3 / "indicator3")
+     * - `SetFourthIndicatorColor_<color>` (Light 4 / "indicator4")
+     * - `SetIndicatorColor_<lightName>_<color>` (Custom target light name)
      */
     fun getCommand(name: String, timestampMs: Long): Task? {
-        val builder = registry[name] ?: return null
-        return builder(timestampMs)
+        val builder = registry[name]
+        if (builder != null) return builder(timestampMs)
+
+        if (name.contains("IndicatorColor_")) {
+            val parts = name.split("_")
+            if (parts.size == 3 && parts[0] == "SetIndicatorColor") {
+                val targetLight = parts[1]
+                val colorName = parts[2]
+                val color = com.areslib.hardware.actuator.IndicatorLightColor.entries.firstOrNull { it.name.equals(colorName, ignoreCase = true) }
+                if (color != null) {
+                    return com.areslib.sequencer.tasks.SetIndicatorColorTask(targetLight, color)
+                }
+            } else if (parts.size == 2) {
+                val prefix = parts[0]
+                val colorName = parts[1]
+                val color = com.areslib.hardware.actuator.IndicatorLightColor.entries.firstOrNull { it.name.equals(colorName, ignoreCase = true) }
+                if (color != null) {
+                    val targetLight = when (prefix) {
+                        "SetIndicatorColor" -> "indicator"
+                        "SetSecondIndicatorColor" -> "indicator2"
+                        "SetThirdIndicatorColor" -> "indicator3"
+                        "SetFourthIndicatorColor" -> "indicator4"
+                        else -> null
+                    }
+                    if (targetLight != null) {
+                        return com.areslib.sequencer.tasks.SetIndicatorColorTask(targetLight, color)
+                    }
+                }
+            }
+        }
+
+        return null
     }
 
     /**
