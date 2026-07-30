@@ -133,7 +133,7 @@ class FtcLimelightIO(
                     measurement.targetPose = fieldPose
                     measurement.robotPoseTargetSpace = relTargetPose ?: emptyTargetPose
                     measurement.tagId = tagId
-                    measurement.ambiguity = 0.0
+                    measurement.ambiguity = if (numTags > 1) 0.0 else 0.1
 
                     currentMeasurementList.add(measurement)
                 }

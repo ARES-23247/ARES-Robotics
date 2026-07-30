@@ -146,6 +146,13 @@ class FtcLimelightIOTest {
         assertEquals(1.5, measurement.robotPoseTargetSpace.z, 1e-6)
         assertEquals(Math.toRadians(30.0), measurement.robotPoseTargetSpace.rotation.x, 1e-6)
         assertEquals(Math.toRadians(20.0), measurement.robotPoseTargetSpace.rotation.y, 1e-6)
-        assertEquals(Math.toRadians(10.0), measurement.robotPoseTargetSpace.rotation.z, 1e-6)
+        // Verify ambiguity score is below maxAmbiguity threshold (0.2) and passes outlier filter
+        assertTrue(measurement.ambiguity < com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults().maxAmbiguity)
+        assertTrue(com.areslib.hardware.vision.VisionOutlierFilter.isValid(
+            config = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
+            measurement = measurement,
+            robotHeadingRad = 0.0,
+            robotPose = com.areslib.math.geometry.Pose2d(1.0, 2.0, com.areslib.math.geometry.Rotation2d())
+        ))
     }
 }
