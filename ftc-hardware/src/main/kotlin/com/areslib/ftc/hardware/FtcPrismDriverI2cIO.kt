@@ -6,29 +6,6 @@ import com.areslib.telemetry.ITelemetry
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.I2cAddr
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
-import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType
-import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties
-
-/**
- * Native FTC I²C Hardware Driver for the goBILDA Prism RGB LED Driver (SKU 3118-2855-0001).
- *
- * Hardware Connections:
- * Connects to any REV Control Hub or Expansion Hub I²C Port (I2C 0, 1, 2, or 3)
- * via a 4-pos JST-PH cable. Default I²C 7-bit address is 0x38.
- *
- * Provides complete control over Layer 0-9 animations, solid colors, brightness,
- * clearing animations, and loading/saving Artboards to device EPROM memory.
- *
- * @param hardwareMap The FTC HardwareMap.
- * @param name Hardware configuration name in Driver Station App (default: "prism").
- * @param i2cAddress 7-bit I²C address (default: 0x38).
- */
-@I2cDeviceType
-@DeviceProperties(
-    name = "goBILDA Prism RGB LED Driver",
-    description = "I2C Driver for goBILDA Prism RGB LED Driver",
-    xmlTag = "GoBildaPrism"
-)
 class FtcPrismDriverI2cIO @JvmOverloads constructor(
     hardwareMap: HardwareMap,
     val name: String = "prism",

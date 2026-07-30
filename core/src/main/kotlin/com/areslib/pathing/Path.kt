@@ -205,23 +205,24 @@ data class Path(
     }
 
     /**
-     * Creates a 180°-rotated version of this path for the Red Alliance.
+     * Creates a mirrored version of this path across the X-axis for the Red Alliance.
      *
      * PathPlanner paths are authored from the BLUE alliance perspective.
-     * For RED alliance, the entire path is rotated 180° through the field origin:
-     * - X and Y are negated
-     * - Heading and tangent angles are offset by π radians
-     * - Curvature sign is preserved (rotation doesn't flip curvature)
+     * For RED alliance, the path is mirrored across the X-axis (field mirror symmetry):
+     * - X is preserved
+     * - Y is negated
+     * - Heading and tangent angles are negated
+     * - Curvature sign is flipped (reflection inverts curvature)
      * - Distance along the path is preserved
      */
     fun mirrorForRedAlliance(): Path {
         val mirroredPoints = points.map { p ->
             PathPoint(
-                pose = Pose2d(-p.pose.x, -p.pose.y, Rotation2d(p.pose.heading.radians + Math.PI)),
+                pose = Pose2d(p.pose.x, -p.pose.y, Rotation2d(-p.pose.heading.radians)),
                 velocityMps = p.velocityMps,
                 distanceMeters = p.distanceMeters,
-                curvature = p.curvature,
-                tangentRadians = p.tangentRadians + Math.PI
+                curvature = -p.curvature,
+                tangentRadians = -p.tangentRadians
             )
         }
         return Path(mirroredPoints, events)

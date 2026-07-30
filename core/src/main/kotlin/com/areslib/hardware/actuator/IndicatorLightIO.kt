@@ -9,6 +9,7 @@ import com.areslib.hardware.SubsystemIO
  */
 enum class IndicatorLightColor(val position: Double) {
     OFF(0.0),
+    RAINBOW(-1.0),
     RED(0.279),
     ORANGE(0.333),
     YELLOW(0.388),
@@ -17,8 +18,7 @@ enum class IndicatorLightColor(val position: Double) {
     BLUE(0.611),
     PURPLE(0.722),
     VIOLET(0.722),
-    WHITE(0.833),
-    RAINBOW(-1.0);
+    WHITE(0.833);
 }
 
 /**

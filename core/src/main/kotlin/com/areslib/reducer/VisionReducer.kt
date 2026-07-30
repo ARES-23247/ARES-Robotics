@@ -42,7 +42,7 @@ object VisionReducer {
                 }
 
                 if (validBuf.isEmpty()) {
-                    state
+                    state.copy(hasTarget = action.measurements.isNotEmpty())
                 } else {
                     // Keep last N measurements to avoid memory leak while retaining chronological history
                     val stateMeasurements = state.measurements

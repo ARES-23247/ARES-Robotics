@@ -72,21 +72,26 @@ class FtcLimelightIO(
                 currentMeasurementList.clear()
 
                 val now = com.areslib.util.RobotClock.currentTimeMillis()
-                val botpose = result.getBotpose()
+                val fiducials = result.getFiducialResults()
+                val numTags = fiducials.size
+                val tagId = if (numTags > 0) fiducials[0].getFiducialId() else -1
 
-                if (botpose != null) {
+                val botposeRaw = result.getBotpose()
+
+                if (botposeRaw != null) {
+                    val posMeters = botposeRaw.position.toUnit(org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER)
                     translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
                     val fieldTrans = translationPool[translationPoolIndex]
-                    fieldTrans.x = botpose.position.x
-                    fieldTrans.y = botpose.position.y
-                    fieldTrans.z = botpose.position.z
+                    fieldTrans.x = posMeters.x
+                    fieldTrans.y = posMeters.y
+                    fieldTrans.z = posMeters.z
 
                     rotationPoolIndex = (rotationPoolIndex + 1) % rotationPool.size
                     val fieldRot = rotationPool[rotationPoolIndex]
                     fieldRot.setEulerAngles(
-                        Math.toRadians(botpose.orientation.getRoll(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES)),
-                        Math.toRadians(botpose.orientation.getPitch(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES)),
-                        Math.toRadians(botpose.orientation.getYaw(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES))
+                        Math.toRadians(botposeRaw.orientation.getRoll(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES)),
+                        Math.toRadians(botposeRaw.orientation.getPitch(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES)),
+                        Math.toRadians(botposeRaw.orientation.getYaw(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES))
                     )
 
                     posePoolIndex = (posePoolIndex + 1) % posePool.size
@@ -94,21 +99,17 @@ class FtcLimelightIO(
                     fieldPose.translation = fieldTrans
                     fieldPose.rotation = fieldRot
 
-                    val fiducials = result.getFiducialResults()
-                    val numTags = fiducials.size
-                    val tagId = if (numTags > 0) fiducials[0].getFiducialId() else -1
-
-                    var targetPose: Pose3d? = null
                     var relTargetPose: Pose3d? = null
                     if (numTags > 0) {
                         val fiducial = fiducials[0]
                         val targetPoseRaw = fiducial.getRobotPoseTargetSpace()
+                        val targetPosMeters = targetPoseRaw.position.toUnit(org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER)
 
                         translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
                         val targetTrans = translationPool[translationPoolIndex]
-                        targetTrans.x = targetPoseRaw.position.x
-                        targetTrans.y = targetPoseRaw.position.y
-                        targetTrans.z = targetPoseRaw.position.z
+                        targetTrans.x = targetPosMeters.x
+                        targetTrans.y = targetPosMeters.y
+                        targetTrans.z = targetPosMeters.z
 
                         rotationPoolIndex = (rotationPoolIndex + 1) % rotationPool.size
                         val targetRot = rotationPool[rotationPoolIndex]
@@ -122,7 +123,6 @@ class FtcLimelightIO(
                         val tPose = posePool[posePoolIndex]
                         tPose.translation = targetTrans
                         tPose.rotation = targetRot
-                        targetPose = tPose
                         relTargetPose = tPose
                     }
 

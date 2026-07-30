@@ -69,30 +69,34 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
             val alliance = robot.store.state.drive.alliance
             autoTask = robot.autoBuilder.buildAuto(pathName, com.areslib.util.RobotClock.currentTimeMillis(), alliance)
             
-            // Extract starting pose and seed EKF
-            var startPose = com.areslib.pathing.PathPlannerAutoParser.getStartingPose(jsonString)
+            // Extract starting pose directly from the first path trajectory (with alliance mirroring) to guarantee 100% pose alignment
+            var startPose: com.areslib.math.geometry.Pose2d? = null
+            val firstPathName = com.areslib.pathing.PathPlannerAutoParser.getFirstPathName(jsonString)
+            if (firstPathName != null) {
+                val path = com.areslib.pathing.DynamicPathLoader.loadPath(firstPathName)
+                val mirroredPath = com.areslib.math.coordinate.AllianceMirroring.mirror(
+                    path, robot.store.state.drive.alliance,
+                    com.areslib.math.coordinate.FieldSymmetry.MIRRORED
+                )
+                val wp = mirroredPath.points.firstOrNull()
+                if (wp != null) {
+                    startPose = com.areslib.math.geometry.Pose2d(wp.pose.x, wp.pose.y, wp.pose.heading)
+                }
+            }
             if (startPose == null) {
-                val firstPath = com.areslib.pathing.PathPlannerAutoParser.getFirstPathName(jsonString)
-                if (firstPath != null) {
-                    val path = com.areslib.pathing.DynamicPathLoader.loadPath(firstPath)
-                    val wp = path.points.firstOrNull()
-                    if (wp != null) {
-                        startPose = com.areslib.math.geometry.Pose2d(wp.pose.x, wp.pose.y, wp.pose.heading)
-                    }
+                val rawPose = com.areslib.pathing.PathPlannerAutoParser.getStartingPose(jsonString)
+                if (rawPose != null) {
+                    startPose = com.areslib.math.coordinate.AllianceMirroring.mirror(
+                        rawPose, robot.store.state.drive.alliance,
+                        com.areslib.math.coordinate.FieldSymmetry.MIRRORED
+                    )
                 }
             }
 
             if (startPose != null) {
-                var x = startPose.x
-                var y = startPose.y
-                var heading = startPose.heading.radians
-
-                if (robot.store.state.drive.alliance == com.areslib.state.Alliance.RED) {
-                    // Mirror pose for FTC field (0,0 center)
-                    x = -x
-                    y = -y
-                    heading = heading + Math.PI
-                }
+                val x = startPose.x
+                val y = startPose.y
+                val heading = startPose.heading.radians
 
                 // 1. Hard-reset the OpMode EKF
                 robot.store.dispatch(
@@ -105,14 +109,15 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
                     )
                 )
 
-                // 2. Reset Pinpoint odometry hardware to match the EKF seed.
-                // Without this, the Pinpoint reports stale position from the
-                // previous OpMode and the EKF snaps to the wrong location.
+                // 2. Hard-reset Pinpoint odometry hardware to match the EKF seed.
+                //    Uses resetHardware=true to zero the Pinpoint's internal state,
+                //    preventing stale accumulated position from previous OpModes.
                 robot.resetPose(
                     com.areslib.math.geometry.Pose2d(
                         x, y,
                         com.areslib.math.geometry.Rotation2d(heading)
-                    )
+                    ),
+                    resetHardware = true
                 )
             }
         } catch (e: Exception) {
@@ -131,6 +136,7 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         try {
             waitForStart()
             com.areslib.telemetry.RobotStatusTracker.activeOpMode = "Auto"
+            robot.visionTracker.hasInitializedPoseWithVision = true
 
             if (autoTask == null) {
                 telemetry.addData("CRASH", "Aborting: Path not loaded. Error: $pathLoadError")

@@ -54,6 +54,11 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     initialState = RobotState(
         vision = VisionState(
             filterConfig = visionFilterConfig
+        ),
+        tuning = com.areslib.state.TuningState(
+            pinpointXOffsetMm = pinpointXOffsetMm,
+            pinpointYOffsetMm = pinpointYOffsetMm,
+            pinpointEncoderResolution = pinpointEncoderResolution ?: 20.44
         )
     ),
     reducer = reducer
@@ -243,8 +248,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
-    fun resetPose(pose: Pose2d = Pose2d()) {
-        pinpointIO?.initialize(pose, resetHardware = false)
+    fun resetPose(pose: Pose2d = Pose2d(), resetHardware: Boolean = false) {
+        pinpointIO?.initialize(pose, resetHardware = resetHardware)
         visionTracker.hasInitializedPoseWithVision = true
         store.dispatch(
             RobotAction.PoseUpdate(

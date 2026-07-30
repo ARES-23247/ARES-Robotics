@@ -185,8 +185,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             com.areslib.math.estimation.PoseEstimator.qTheta = currentTuning.odomQtheta
 
             pinpointIO?.let {
-                it.setOffsets(currentTuning.pinpointXOffsetMm, currentTuning.pinpointYOffsetMm)
-                it.setEncoderResolution(currentTuning.pinpointEncoderResolution)
+                if (currentTuning.pinpointXOffsetMm != 0.0 || currentTuning.pinpointYOffsetMm != 0.0) {
+                    it.setOffsets(currentTuning.pinpointXOffsetMm, currentTuning.pinpointYOffsetMm)
+                }
+                if (currentTuning.pinpointEncoderResolution != 0.0) {
+                    it.setEncoderResolution(currentTuning.pinpointEncoderResolution)
+                }
             }
             lastTuning = currentTuning
         }

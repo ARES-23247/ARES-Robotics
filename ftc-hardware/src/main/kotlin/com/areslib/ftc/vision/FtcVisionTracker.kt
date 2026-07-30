@@ -75,7 +75,13 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
         val filterConfig = store.state.vision.filterConfig
 
-        if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity) {
+        val tuning = store.state.tuning
+        val velThreshold = tuning.stolenRobotVelocityThreshold
+        val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < velThreshold &&
+                           kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < velThreshold &&
+                           kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < velThreshold
+
+        if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity && isStationary) {
             val snapPose = measurement.targetPose.toPose2d()
             pinpointIO?.initialize(snapPose, resetHardware = false)
             hasInitializedPoseWithVision = true
@@ -89,15 +95,11 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             ))
         } else {
             // Kidnapped Robot Recovery (Active Play)
-            val isRejected = lastVisionStatus.startsWith("REJ_")
+            // Triggered if vision observation is rejected by EKF OR pose error relative to EKF > 0.4m
+            val isRejectedOrDivergent = lastVisionStatus.startsWith("REJ_") || distance > 0.4
             val isHighConfidence = measurement.ambiguity < filterConfig.maxAmbiguity
-            val tuning = store.state.tuning
-            val velThreshold = tuning.stolenRobotVelocityThreshold
-            val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < velThreshold &&
-                               kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < velThreshold &&
-                               kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < velThreshold
 
-            if (isRejected && isHighConfidence && isStationary) {
+            if (isRejectedOrDivergent && isHighConfidence && isStationary) {
                 consecutiveVisionRejections++
                 if (consecutiveVisionRejections >= tuning.stolenRobotRejectionThreshold.toInt()) {
                     val snapPose = measurement.targetPose.toPose2d()
@@ -112,7 +114,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                         isReset = true
                     ))
                 }
-            } else {
+            } else if (!isRejectedOrDivergent) {
                 consecutiveVisionRejections = 0
             }
         }
@@ -166,12 +168,12 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                     if (closestIndex != -1) {
                         val baseEntry = currentEstimator.history[closestIndex]
                         val numTags = visionInputs.measurements.size
-                        val multiTagFactor = 1.0 / kotlin.math.sqrt(numTags.toDouble())
+                        val tagFactor = if (numTags <= 1) 2.5 else (1.0 / kotlin.math.sqrt(numTags.toDouble()))
                         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
                         
-                        val scaledStdDevsX = stdDevs.x * (multiTagFactor * distFactor)
-                        val scaledStdDevsY = stdDevs.y * (multiTagFactor * distFactor)
-                        val scaledStdDevsZ = stdDevs.z * (multiTagFactor * distFactor)
+                        val scaledStdDevsX = stdDevs.x * (tagFactor * distFactor)
+                        val scaledStdDevsY = stdDevs.y * (tagFactor * distFactor)
+                        val scaledStdDevsZ = stdDevs.z * (tagFactor * distFactor)
                         
                         val rXX = scaledStdDevsX * scaledStdDevsX
                         val rYY = scaledStdDevsY * scaledStdDevsY

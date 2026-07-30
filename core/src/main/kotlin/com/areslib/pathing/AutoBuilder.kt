@@ -39,10 +39,8 @@ class AutoBuilder {
      */
     fun buildPath(pathName: String, alliance: Alliance = Alliance.BLUE): Task {
         val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
-        var path = DynamicPathLoader.loadPath(pathName)
-        if (alliance == Alliance.RED) {
-            path = path.mirrorForRedAlliance()
-        }
-        return com.areslib.sequencer.FollowPathTask(activeFollower, path)
+        val path = DynamicPathLoader.loadPath(pathName)
+        val mirroredPath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, com.areslib.math.coordinate.FieldSymmetry.MIRRORED)
+        return com.areslib.sequencer.FollowPathTask(activeFollower, mirroredPath, mirrorForAlliance = false)
     }
 }
