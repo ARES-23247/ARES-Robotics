@@ -22,7 +22,7 @@ data class VisionFilterConfig(
     val maxFieldZ: Double = 1.0,
     val maxAngularVelocityRadPerSec: Double = 2.0,
     val maxAccelerationG: Double = 2.5,
-    val mahalanobisThreshold: Double = 12.0
+    val mahalanobisThreshold: Double = 18.0
 ) {
     companion object {
         @JvmStatic

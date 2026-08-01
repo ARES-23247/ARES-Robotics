@@ -47,7 +47,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointIsCcwPositive: Boolean = false,
 
     // Vision Configuration
-    val visionStdDevs: Vector3 = Vector3(0.05, 0.05, 0.1),
+    val visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
     val visionFilterConfig: VisionFilterConfig = VisionFilterConfig.ftcDefaults(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) : AresRobot(

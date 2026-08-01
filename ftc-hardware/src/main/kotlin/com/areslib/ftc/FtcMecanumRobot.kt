@@ -76,7 +76,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val ticksPerMeter: Double = 2000.0,
 
     // Vision Filtering Constants
-    visionStdDevs: Vector3 = Vector3(0.05, 0.05, 0.1),
+    visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
     visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) : FtcBaseRobot(

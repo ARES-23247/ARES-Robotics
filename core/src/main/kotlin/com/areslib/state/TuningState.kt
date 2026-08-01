@@ -36,14 +36,14 @@ data class TuningState(
     val motorGains: PIDFCoefficients? = null,
 
     // Vision Filtering baseline standard deviations
-    val visionStdDevsX: Double = 0.05,
-    val visionStdDevsY: Double = 0.05,
-    val visionStdDevsHeading: Double = 0.1,
+    val visionStdDevsX: Double = 0.35,
+    val visionStdDevsY: Double = 0.35,
+    val visionStdDevsHeading: Double = 0.80,
 
     // Vision Outlier Rejection Thresholds
     val visionMaxDistanceMeters: Double = 6.0,
     val visionMaxAmbiguity: Double = 0.2,
-    val visionMahalanobisThreshold: Double = 12.0,
+    val visionMahalanobisThreshold: Double = 18.0,
 
     // Localization / EKF Noise Tuning
     val odomQx: Double = 0.01,
