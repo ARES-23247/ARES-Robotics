@@ -121,9 +121,45 @@ class FtcVisionTrackerTest {
         val m10 = mockMeasurement.copy(timestampMs = 1200L)
         visionIO.mockMeasurements = listOf(m10)
         tracker.update(1200L)
-        
+
         // It SHOULD snap
         assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
         assertEquals(1.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
+    }
+
+    @Test
+    fun `test kidnapped robot recovery averages stationary poses over time`() {
+        val store = Store(RobotState(), ::rootReducer)
+        store.dispatch(RobotAction.DriveHardwareUpdate(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0L))
+
+        val initM = VisionMeasurement(
+            tagId = 1,
+            targetPose = Pose3d(Translation3d(1.0, 1.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+            ambiguity = 0.01,
+            timestampMs = 100
+        )
+        val visionIO = MockVisionIO(listOf(initM))
+        val tracker = FtcVisionTracker(store, visionIO, pinpointIO = null)
+        tracker.update(100)
+        assertEquals("INIT_ALIGN_SNAP", tracker.lastVisionStatus)
+
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, 200L, isReset = true))
+
+        // Supply 10 readings with varying X (from 1.0 to 3.0, sum = 20.0, avg = 2.0)
+        for (i in 1..10) {
+            val xVal = 1.0 + (i - 1) * (2.0 / 9.0)
+            val m = VisionMeasurement(
+                tagId = 1,
+                targetPose = Pose3d(Translation3d(xVal, 2.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
+                ambiguity = 0.01,
+                timestampMs = 200L + i * 100L
+            )
+            visionIO.mockMeasurements = listOf(m)
+            tracker.update(200L + i * 100L)
+        }
+
+        assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
+        assertEquals(2.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-3)
+        assertEquals(2.0, store.state.drive.poseEstimator.estimatedPose.y, 1e-3)
     }
 }

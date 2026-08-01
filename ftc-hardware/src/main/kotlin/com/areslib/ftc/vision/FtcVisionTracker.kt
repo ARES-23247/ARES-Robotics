@@ -34,6 +34,10 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     override val isConnected: Boolean
         get() = limelightIO != null && visionInputs.isConnected
     private var consecutiveVisionRejections = 0
+    private var accumX = 0.0
+    private var accumY = 0.0
+    private var accumSin = 0.0
+    private var accumCos = 0.0
     var hasInitializedPoseWithVision = false
 
     // Pre-allocated structure to guarantee Zero-GC compliance inside EKF verification loops
@@ -100,11 +104,28 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             val isHighConfidence = measurement.ambiguity < filterConfig.maxAmbiguity
 
             if (isRejectedOrDivergent && isHighConfidence && isStationary) {
+                val p2d = measurement.targetPose.toPose2d()
+                accumX += p2d.x
+                accumY += p2d.y
+                accumSin += kotlin.math.sin(p2d.heading.radians)
+                accumCos += kotlin.math.cos(p2d.heading.radians)
                 consecutiveVisionRejections++
-                if (consecutiveVisionRejections >= tuning.stolenRobotRejectionThreshold.toInt()) {
-                    val snapPose = measurement.targetPose.toPose2d()
+
+                val reqThreshold = tuning.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
+                if (consecutiveVisionRejections >= reqThreshold) {
+                    val avgX = accumX / consecutiveVisionRejections
+                    val avgY = accumY / consecutiveVisionRejections
+                    val avgHeading = kotlin.math.atan2(accumSin, accumCos)
+                    val snapPose = Pose2d(avgX, avgY, Rotation2d(avgHeading))
+
                     pinpointIO?.initialize(snapPose, resetHardware = false)
+
                     consecutiveVisionRejections = 0
+                    accumX = 0.0
+                    accumY = 0.0
+                    accumSin = 0.0
+                    accumCos = 0.0
+
                     lastVisionStatus = "RESEED_SNAP"
                     store.dispatch(RobotAction.PoseUpdate(
                         xMeters = snapPose.x,
@@ -114,8 +135,12 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                         isReset = true
                     ))
                 }
-            } else if (!isRejectedOrDivergent) {
+            } else {
                 consecutiveVisionRejections = 0
+                accumX = 0.0
+                accumY = 0.0
+                accumSin = 0.0
+                accumCos = 0.0
             }
         }
 
