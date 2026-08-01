@@ -81,9 +81,10 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         val tuning = store.state.tuning
         val velThreshold = tuning.stolenRobotVelocityThreshold
+        val angularThreshold = tuning.stolenRobotAngularVelocityThreshold
         val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < velThreshold &&
                            kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < velThreshold &&
-                           kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < velThreshold
+                           kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
 
         if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity && isStationary) {
             val snapPose = measurement.targetPose.toPose2d()

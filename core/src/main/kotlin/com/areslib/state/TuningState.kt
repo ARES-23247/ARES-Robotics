@@ -65,6 +65,7 @@ data class TuningState(
     // Kidnapped / Stolen Robot Recovery
     val stolenRobotRejectionThreshold: Double = 45.0,
     val stolenRobotVelocityThreshold: Double = 0.1,
+    val stolenRobotAngularVelocityThreshold: Double = 0.25,
 
     // Pathfinding / Trajectory Limits
     val pathVelocityScale: Double = 0.85,
