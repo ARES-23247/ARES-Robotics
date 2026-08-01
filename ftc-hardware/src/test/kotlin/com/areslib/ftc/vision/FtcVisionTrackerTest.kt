@@ -107,8 +107,8 @@ class FtcVisionTrackerTest {
         // Move the physical robot to 0,0 (in EKF) to simulate driving away
         store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, 200L, isReset = true))
         
-        // Now feed 9 consecutive high-confidence but highly disjointed readings (Mahalanobis rejection)
-        for (i in 1..9) {
+        // Now feed 29 consecutive high-confidence but highly disjointed readings (Mahalanobis rejection)
+        for (i in 1..29) {
             val m = mockMeasurement.copy(timestampMs = 200L + i * 100L)
             visionIO.mockMeasurements = listOf(m)
             tracker.update(200L + i * 100L)
@@ -117,10 +117,10 @@ class FtcVisionTrackerTest {
             assertEquals(0.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
         }
         
-        // Feed the 10th reading
-        val m10 = mockMeasurement.copy(timestampMs = 1200L)
-        visionIO.mockMeasurements = listOf(m10)
-        tracker.update(1200L)
+        // Feed the 30th reading
+        val m30 = mockMeasurement.copy(timestampMs = 3200L)
+        visionIO.mockMeasurements = listOf(m30)
+        tracker.update(3200L)
 
         // It SHOULD snap
         assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
@@ -145,9 +145,9 @@ class FtcVisionTrackerTest {
 
         store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, 200L, isReset = true))
 
-        // Supply 10 readings with varying X (from 1.0 to 3.0, sum = 20.0, avg = 2.0)
-        for (i in 1..10) {
-            val xVal = 1.0 + (i - 1) * (2.0 / 9.0)
+        // Supply 30 readings with varying X (from 1.0 to 3.0, avg = 2.0)
+        for (i in 1..30) {
+            val xVal = 1.0 + (i - 1) * (2.0 / 29.0)
             val m = VisionMeasurement(
                 tagId = 1,
                 targetPose = Pose3d(Translation3d(xVal, 2.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
