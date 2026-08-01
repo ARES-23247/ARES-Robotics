@@ -63,7 +63,7 @@ data class TuningState(
     val driverSlewRateLimit: Double = 999.0,
 
     // Kidnapped / Stolen Robot Recovery
-    val stolenRobotRejectionThreshold: Double = 30.0,
+    val stolenRobotRejectionThreshold: Double = 45.0,
     val stolenRobotVelocityThreshold: Double = 0.1,
 
     // Pathfinding / Trajectory Limits
