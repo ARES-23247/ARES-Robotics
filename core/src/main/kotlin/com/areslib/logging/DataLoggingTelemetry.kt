@@ -29,9 +29,9 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
 
     /**
      * The minimum time interval in milliseconds between file-based logging writes.
-     * Defaults to 20ms (maximum 50Hz logging rate) to prevent storage and CPU congestion.
+     * Defaults to 0ms (unthrottled per-frame logging rate) to capture every control loop iteration.
      */
-    var minLogIntervalMs: Long = 20L
+    var minLogIntervalMs: Long = 0L
     
     private var lastLogTimeMs = 0L
 
