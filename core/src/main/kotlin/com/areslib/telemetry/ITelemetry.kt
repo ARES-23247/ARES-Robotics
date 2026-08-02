@@ -179,6 +179,15 @@ fun ITelemetry.logGamepad(prefix: String, gamepad: GamepadState) {
     putBoolean("$prefix/DpadRight", gamepad.dpadRight)
     putBoolean("$prefix/LeftBumper", gamepad.leftBumper)
     putBoolean("$prefix/RightBumper", gamepad.rightBumper)
+    putBoolean("$prefix/C", gamepad.c)
+    putBoolean("$prefix/Z", gamepad.z)
+    putBoolean("$prefix/M1", gamepad.m1)
+    putBoolean("$prefix/M2", gamepad.m2)
+    putBoolean("$prefix/M3", gamepad.m3)
+    putBoolean("$prefix/M4", gamepad.m4)
+    putBoolean("$prefix/Touchpad", gamepad.touchpad)
+    putBoolean("$prefix/Share", gamepad.share)
+    putBoolean("$prefix/Options", gamepad.options)
 }
 
 /**

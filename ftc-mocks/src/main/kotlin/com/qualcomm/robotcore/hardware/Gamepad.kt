@@ -32,6 +32,16 @@ open class Gamepad {
     @JvmField var left_stick_button: Boolean = false
     @JvmField var right_stick_button: Boolean = false
 
+    @JvmField var touchpad: Boolean = false
+    @JvmField var share: Boolean = false
+    @JvmField var options: Boolean = false
+    @JvmField var c: Boolean = false
+    @JvmField var z: Boolean = false
+    @JvmField var m1: Boolean = false
+    @JvmField var m2: Boolean = false
+    @JvmField var m3: Boolean = false
+    @JvmField var m4: Boolean = false
+
     /**
      * copy declaration.
      *
@@ -60,5 +70,14 @@ open class Gamepad {
         this.guide = other.guide
         this.left_stick_button = other.left_stick_button
         this.right_stick_button = other.right_stick_button
+        this.touchpad = other.touchpad
+        this.share = other.share
+        this.options = other.options
+        this.c = other.c
+        this.z = other.z
+        this.m1 = other.m1
+        this.m2 = other.m2
+        this.m3 = other.m3
+        this.m4 = other.m4
     }
 }

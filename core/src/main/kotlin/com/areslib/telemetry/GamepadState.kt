@@ -25,7 +25,16 @@ class GamepadState(
     var leftStickButton: Boolean = false,
     var rightStickButton: Boolean = false,
     var start: Boolean = false,
-    var back: Boolean = false
+    var back: Boolean = false,
+    var touchpad: Boolean = false,
+    var share: Boolean = false,
+    var options: Boolean = false,
+    var c: Boolean = false,
+    var z: Boolean = false,
+    var m1: Boolean = false,
+    var m2: Boolean = false,
+    var m3: Boolean = false,
+    var m4: Boolean = false
 ) {
     /**
      * copyFrom declaration.
@@ -54,6 +63,15 @@ class GamepadState(
         this.rightStickButton = other.rightStickButton
         this.start = other.start
         this.back = other.back
+        this.touchpad = other.touchpad
+        this.share = other.share
+        this.options = other.options
+        this.c = other.c
+        this.z = other.z
+        this.m1 = other.m1
+        this.m2 = other.m2
+        this.m3 = other.m3
+        this.m4 = other.m4
     }
 
     /**
@@ -83,5 +101,14 @@ class GamepadState(
         this.rightStickButton = false
         this.start = false
         this.back = false
+        this.touchpad = false
+        this.share = false
+        this.options = false
+        this.c = false
+        this.z = false
+        this.m1 = false
+        this.m2 = false
+        this.m3 = false
+        this.m4 = false
     }
 }

@@ -34,4 +34,13 @@ fun GamepadState.update(gamepad: Gamepad) {
     rightStickButton = gamepad.right_stick_button
     start = gamepad.start
     back = gamepad.back
+    touchpad = gamepad.touchpad
+    share = gamepad.share
+    options = gamepad.options
+    c = gamepad.c || gamepad.options
+    z = gamepad.z || gamepad.guide
+    m1 = gamepad.m1 || gamepad.touchpad
+    m2 = gamepad.m2 || gamepad.share
+    m3 = gamepad.m3
+    m4 = gamepad.m4
 }

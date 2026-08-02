@@ -46,6 +46,15 @@ class AresGamepad {
     val rightStickButton = BindableButton { it.rightStickButton }
     val start = BindableButton { it.start }
     val back = BindableButton { it.back }
+    val touchpad = BindableButton { it.touchpad }
+    val share = BindableButton { it.share }
+    val options = BindableButton { it.options }
+    val c = BindableButton { it.c }
+    val z = BindableButton { it.z }
+    val m1 = BindableButton { it.m1 }
+    val m2 = BindableButton { it.m2 }
+    val m3 = BindableButton { it.m3 }
+    val m4 = BindableButton { it.m4 }
 
     val leftStick = BindableStick { state -> Pair(state.leftStickX, state.leftStickY) }
     val rightStick = BindableStick { state -> Pair(state.rightStickX, state.rightStickY) }
@@ -61,7 +70,9 @@ class AresGamepad {
         dpadUp, dpadDown, dpadLeft, dpadRight, 
         leftBumper, rightBumper, 
         leftStickButton, rightStickButton, 
-        start, back
+        start, back,
+        touchpad, share, options,
+        c, z, m1, m2, m3, m4
     )
 
     /**
