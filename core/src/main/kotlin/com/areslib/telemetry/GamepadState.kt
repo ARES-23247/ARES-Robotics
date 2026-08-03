@@ -34,7 +34,19 @@ class GamepadState(
     var m1: Boolean = false,
     var m2: Boolean = false,
     var m3: Boolean = false,
-    var m4: Boolean = false
+    var m4: Boolean = false,
+    var f1: Boolean = false,
+    var f2: Boolean = false,
+    var f3: Boolean = false,
+    var f4: Boolean = false,
+    var f5: Boolean = false,
+    var f6: Boolean = false,
+    var f7: Boolean = false,
+    var f8: Boolean = false,
+    var f9: Boolean = false,
+    var f10: Boolean = false,
+    var f11: Boolean = false,
+    var f12: Boolean = false
 ) {
     /**
      * copyFrom declaration.
@@ -72,6 +84,18 @@ class GamepadState(
         this.m2 = other.m2
         this.m3 = other.m3
         this.m4 = other.m4
+        this.f1 = other.f1
+        this.f2 = other.f2
+        this.f3 = other.f3
+        this.f4 = other.f4
+        this.f5 = other.f5
+        this.f6 = other.f6
+        this.f7 = other.f7
+        this.f8 = other.f8
+        this.f9 = other.f9
+        this.f10 = other.f10
+        this.f11 = other.f11
+        this.f12 = other.f12
     }
 
     /**
@@ -110,5 +134,17 @@ class GamepadState(
         this.m2 = false
         this.m3 = false
         this.m4 = false
+        this.f1 = false
+        this.f2 = false
+        this.f3 = false
+        this.f4 = false
+        this.f5 = false
+        this.f6 = false
+        this.f7 = false
+        this.f8 = false
+        this.f9 = false
+        this.f10 = false
+        this.f11 = false
+        this.f12 = false
     }
 }
