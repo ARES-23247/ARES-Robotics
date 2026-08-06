@@ -231,9 +231,9 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                     val rawCorrVx = positionPidX.calculate(pose.x, posLockX, dtSeconds)
                     val rawCorrVy = positionPidY.calculate(pose.y, posLockY, dtSeconds)
 
-                    // Apply minimum static friction feedforward (kS = 0.06) so small position errors
-                    // overcome Mecanum wheel breakout friction and drive the robot back to the target pose
-                    val kS = 0.06
+                    // Apply minimum static friction feedforward from tuning state (tuning.driveFeedforward.kS)
+                    // so small position errors overcome wheel breakout friction and drive the robot back
+                    val kS = tuning.driveFeedforward.kS
                     val normX = errX / distError
                     val normY = errY / distError
 
