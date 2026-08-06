@@ -15,34 +15,54 @@ import com.areslib.subsystem.DriveSubsystem
 import com.areslib.util.RobotClock
 
 /**
- * Class implementation for Mecanum Trajectory Follower.
+ * Autonomous path planning, trajectory generation, and obstacle avoidance module for FTC Mecanum Robots.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Encapsulates a [HolonomicPathFollower], an [AutoBuilder] trajectory generator, and costmap-based [PathfindToPoseTask]
+ * pathfinders for dynamic real-time obstacle avoidance.
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Mathematical Formulations & Coordinate Conventions:
+ * - **Field Reference Frame**: Origin $(0, 0)$ at field center. $+X$ forward, $+Y$ left.
+ * - **Heading**: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ * - **Velocities & Limits**: Scaled by tuning parameters `pathVelocityScale` and acceleration limit `pathAccelerationLimit` ($m/s, m/s^2$).
+ *
+ * ### Zero-GC Guarantee:
+ * Once [activePathfindTask] is initialized, trajectory evaluation loops execute with zero dynamic heap allocations.
+ *
+ * @param drive Drive subsystem reference for motion commands.
+ *
+ * @see HolonomicPathFollower
+ * @see PathfindToPoseTask
+ * @see AutoBuilder
  */
 class MecanumTrajectoryFollower(
     private val drive: DriveSubsystem
 ) {
+    /** Lazy-initialized holonomic path follower instance. */
     val pathfindFollower by lazy { HolonomicPathFollower(drive) }
 
+    /** Autonomous trajectory builder instance for path creation. */
     val autoBuilder by lazy { AutoBuilder().configureFollower(pathfindFollower) }
 
+    /** Active pathfinding task instance (or `null` if idle). */
     var activePathfindTask: PathfindToPoseTask? = null
         private set
 
     private var pathfindStartMs = 0L
+
+    /** Status flag indicating whether pathfinding was requested in the previous loop frame. */
     var wasPathfindRequested = false
         private set
 
-    @kotlin.jvm.JvmOverloads
     /**
-     * driveToPose declaration.
+     * Navigates the robot to a specified target pose, constructing a costmap pathfinder task if needed.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param store Redux state store reference.
+     * @param mecanumIO Drivetrain hardware IO cluster.
+     * @param targetPose Destination pose $(x, y, \theta)$ ($m, m, rad$).
+     * @param isRequested Flag indicating whether trajectory execution is actively requested.
+     * @param mirrorForAlliance Inverts coordinate axes if alliance assignment is Blue Alliance.
      */
+    @kotlin.jvm.JvmOverloads
     fun driveToPose(
         store: Store,
         mecanumIO: MecanumHardwareIO,
@@ -94,13 +114,17 @@ class MecanumTrajectoryFollower(
         }
     }
 
-    @kotlin.jvm.JvmOverloads
     /**
-     * driveToWaypoint declaration.
+     * Navigates the robot to a named waypoint loaded from autonomous field configuration.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param store Redux state store reference.
+     * @param mecanumIO Drivetrain hardware IO cluster.
+     * @param telemetryManager Telemetry manager for driver station error messages.
+     * @param name Named waypoint identifier string.
+     * @param isRequested Flag indicating whether waypoint navigation is requested.
+     * @param mirrorForAlliance Inverts coordinate axes if alliance assignment is Blue Alliance.
      */
+    @kotlin.jvm.JvmOverloads
     fun driveToWaypoint(
         store: Store,
         mecanumIO: MecanumHardwareIO,
@@ -121,10 +145,9 @@ class MecanumTrajectoryFollower(
     }
 
     /**
-     * updateTuning declaration.
+     * Updates PID controller gain values across translational and rotational path controllers from [TuningState].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param currentTuning Desired tuning parameters snapshot from Redux state.
      */
     fun updateTuning(currentTuning: TuningState) {
         if (wasPathfindRequested || activePathfindTask != null) {
@@ -140,3 +163,4 @@ class MecanumTrajectoryFollower(
         }
     }
 }
+

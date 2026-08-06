@@ -4,25 +4,35 @@ import com.areslib.math.geometry.Translation2d
 import kotlin.math.roundToInt
 
 /**
- * A high-performance 2D occupancy grid costmap for global robot navigation.
+ * 2D Occupancy Grid Costmap for Global Robot Navigation and Obstacle Avoidance.
  *
  * Exposes a field grid model designed for fast obstacle intersection tests and dynamic updates.
  * Features circular bumper radius obstacle inflation to prevent the robot boundary from clipping
- * walls or structural field corners. Uses a single 1D primitive array backing internally to avoid
+ * walls or structural field corners. Uses a single 1D flat boolean primitive array backing internally to avoid
  * multi-dimensional index pointer dereference overhead and dynamic allocations during execution.
  *
- * @property widthMeters Total width of the field in meters. Defaults to `16.0`.
- * @property heightMeters Total height of the field in meters. Defaults to `8.0`.
- * @property resolutionMeters Grid cell size resolution in meters. Defaults to `0.1` (10cm).
- * @property origin Field-relative translation coordinate mapping to the grid's top-left cell.
- */
-/**
- * Class implementation for Costmap.
+ * ### Mathematical Formulation:
+ * 1. **World $(x,y)$ to Discrete Grid $(c, r)$ Index Mapping**:
+ *    $$c = \text{round}\left(\frac{x - x_{\text{origin}}}{\text{res}}\right), \quad r = \text{round}\left(\frac{y - y_{\text{origin}}}{\text{res}}\right)$$
+ * 2. **Flat 1D Row-Major Indexing**:
+ *    $$\text{index}(c, r) = r \cdot N_{\text{widthCells}} + c$$
+ * 3. **Circular Inflation Mask Condition**:
+ *    $$\Delta c^2 + \Delta r^2 \le r_{\text{cell}}^2, \quad r_{\text{cell}} = \left\lceil \frac{r_{\text{bumper}}}{\text{res}} \right\rceil$$
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * ### Physical Units & Coordinate Conventions:
+ * - Dimensions $(W, H)$: Field width and height in meters ($m$)
+ * - Resolution ($\text{res}$): Grid cell size in meters per cell ($m/\text{cell}$)
+ * - World Coordinates $(x, y)$: Meters ($m$)
+ * - Inflation Radius ($r_{\text{bumper}}$): Robot bumper radius in meters ($m$)
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Zero-GC Guarantee:
+ * Allocates 1D primitive `BooleanArray` buffers (`grid`, `inflatedGrid`) during construction.
+ * Grid queries (`isTraversable`, `isCellTraversable`) operate in $O(1)$ time with zero dynamic memory allocation.
+ *
+ * @property widthMeters Total width of the field in meters ($m$). Defaults to $16.0$.
+ * @property heightMeters Total height of the field in meters ($m$). Defaults to $8.0$.
+ * @property resolutionMeters Grid cell size resolution in meters ($m$). Defaults to $0.1$ ($10\,\text{cm}$).
+ * @property origin Field-relative translation coordinate mapping to grid cell $(0,0)$ in meters ($m$).
  */
 class Costmap(
     val widthMeters: Double = 16.0,
@@ -30,6 +40,7 @@ class Costmap(
     val resolutionMeters: Double = 0.1,
     val origin: Translation2d = Translation2d(-widthMeters / 2.0, -heightMeters / 2.0)
 ) {
+
     val widthCells: Int
     val heightCells: Int
 

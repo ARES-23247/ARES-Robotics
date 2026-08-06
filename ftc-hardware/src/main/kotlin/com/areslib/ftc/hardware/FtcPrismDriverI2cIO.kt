@@ -6,6 +6,26 @@ import com.areslib.telemetry.ITelemetry
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.I2cAddr
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
+/**
+ * Direct I2C hardware IO driver for the Blinkin/Prism LED Strip Controller module.
+ *
+ * Interacts over I2C (default address `0x38`) using 32-bit register payloads to control animations,
+ * solid colors, brightness levels, and EEPROM Artboard slots (0..7).
+ * Implements [PrismDriverIO] and maps legacy PWM pulse widths ($500\mu s \dots 2500\mu s$) to equivalent I2C animation patterns.
+ *
+ * ### Physical Units & Protocol Specifications:
+ * - Default I2C Address: 7-bit `0x38`.
+ * - Color Channels ($R, G, B$): Unscaled 8-bit integers $[0, 255]$.
+ * - Maximum Brightness: Percentage $[0\%, 100\%]$ (default 75%).
+ * - PWM Compatibility Range: Microseconds ($\mu s$), range $[500, 2500]$.
+ *
+ * @param hardwareMap FTC OpMode hardware map instance.
+ * @param name Hardware map name string for the Prism device (default `"prism"`).
+ * @param i2cAddress 7-bit I2C device address (default `0x38`).
+ *
+ * @see PrismDriverIO
+ * @see I2cDeviceSynch
+ */
 class FtcPrismDriverI2cIO @JvmOverloads constructor(
     hardwareMap: HardwareMap,
     val name: String = "prism",
@@ -13,6 +33,7 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
 ) : PrismDriverIO, AutoCloseable {
 
     companion object {
+        /** Default 7-bit I2C slave address for the Prism driver module. */
         const val DEFAULT_I2C_ADDRESS = 0x38
 
         // I2C Register Addresses
@@ -43,9 +64,12 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     private val i2cDevice: I2cDeviceSynch = hardwareMap.get(I2cDeviceSynch::class.java, name)
+
+    /** Active equivalent PWM pulse width representation in microseconds ($\mu s$). */
     override var currentPulseWidthUs: Int = 1000
         private set
 
+    /** Maximum global LED brightness cap percentage $[0, 100]$. */
     override var maxBrightnessPercent: Int = 75
 
     init {
@@ -53,7 +77,9 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Reads the device ID (Default is 0x03).
+     * Reads the device hardware identification byte from register `0x00` (default return value `0x03`).
+     *
+     * @return Hardware device ID byte.
      */
     fun readDeviceId(): Byte {
         return i2cDevice.read8(REG_DEVICE_ID)
@@ -70,7 +96,7 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Clears all active animations from the strip.
+     * Sends a control bit command clearing all active animations from the LED strip.
      */
     fun clearAnimations() {
         // Control register bit 25 = Clear animations
@@ -78,7 +104,9 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Loads a user-saved Artboard (Slots 0 to 7) from EPROM.
+     * Loads a pre-programmed user Artboard animation preset from EEPROM slot $[0 \dots 7]$.
+     *
+     * @param slot EEPROM artboard slot index $[0, 7]$.
      */
     fun loadArtboard(slot: Int) {
         val clampedSlot = slot.coerceIn(0, 7)
@@ -87,7 +115,9 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Saves current displayed animations to an EPROM Artboard slot (Slots 0 to 7).
+     * Saves the current active animation layers into an EEPROM Artboard slot $[0 \dots 7]$.
+     *
+     * @param slot EEPROM artboard slot index $[0, 7]$.
      */
     fun saveArtboard(slot: Int) {
         val clampedSlot = slot.coerceIn(0, 7)
@@ -96,7 +126,11 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Configures Layer 0 with a Solid Color animation (RGB 0-255), scaled by [maxBrightnessPercent].
+     * Configures Layer 0 with a solid RGB color scaled by [maxBrightnessPercent].
+     *
+     * @param r Red intensity $[0, 255]$.
+     * @param g Green intensity $[0, 255]$.
+     * @param b Blue intensity $[0, 255]$.
      */
     override fun setSolidColorRgb(r: Int, g: Int, b: Int) {
         val scale = maxBrightnessPercent.coerceIn(0, 100) / 100.0
@@ -112,7 +146,10 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * Configures Layer 0 with a classic full spectrum Rainbow animation over I²C.
+     * Configures Layer 0 with a full-spectrum rainbow scrolling animation.
+     *
+     * @param speed Scroll animation cycle speed multiplier (default 0.5).
+     * @param brightness Animation peak brightness percentage $[0, 100]$ (default 100).
      */
     fun setRainbowAnimation(speed: Float = 0.5f, brightness: Int = 100) {
         val cappedBrightness = ((brightness.coerceIn(0, 100) * (maxBrightnessPercent.coerceIn(0, 100) / 100.0))).toInt()
@@ -123,7 +160,9 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     }
 
     /**
-     * PWM interface compatibility: maps pulse width to equivalent I²C animation / artboard commands.
+     * PWM compatibility hook translating legacy pulse width signals $[500\mu s, 2500\mu s]$ into direct I2C commands.
+     *
+     * @param pulseWidthUs PWM pulse width duration in microseconds ($\mu s$).
      */
     override fun setPulseWidthUs(pulseWidthUs: Int) {
         val clampedUs = pulseWidthUs.coerceIn(500, 2500)
@@ -145,19 +184,35 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Clears all animations and sets the driver to a safe idle state.
+     */
     override fun safe() {
         clearAnimations()
     }
 
+    /**
+     * No-op refresh hook (actuator device is write-only).
+     */
     override fun refresh() {
         // Write-only device — no sensor reads needed
     }
 
+    /**
+     * Logs active equivalent pulse width duration to network telemetry.
+     *
+     * @param telemetry Telemetry sink instance.
+     * @param prefix Telemetry topic prefix string.
+     */
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/PulseWidthUs", currentPulseWidthUs.toDouble())
     }
 
+    /**
+     * Safely clears LED animations and releases hardware device handles.
+     */
     override fun close() {
         safe()
     }
 }
+

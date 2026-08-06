@@ -8,18 +8,42 @@ import com.areslib.math.wrapAngle
 import kotlin.math.hypot
 
 /**
- * Handles Cubic Bezier & Hermite spline interpolation, numerical curvature calculation,
- * decoupled rotation/point-towards zone heading interpolation, and forward/backward velocity sweeps.
+ * Spline Trajectory Motion Profiling and Kinematic Velocity Sweep Engine.
+ *
+ * Evaluates Cubic Bezier and Hermite splines, numerical path curvature $\kappa$,
+ * decoupled heading orientation profiles (including Point-Towards target zones),
+ * and forward/backward velocity sweeps to enforce acceleration ($a_{\text{max}}$) and centripetal cornering limits.
+ *
+ * ### Mathematical Formulations:
+ * 1. **Numerical Curvature $\kappa$**:
+ *    $$\kappa = \frac{d\theta}{ds} \approx \frac{\text{wrapAngle}(\theta_{k+1} - \theta_{k-1})}{s_{k+1} - s_{k-1}}$$
+ * 2. **Centripetal Velocity Cap**:
+ *    $$v_{\text{corner}} = \min\left(v_{\text{max}}, \sqrt{\frac{a_{\text{max}}}{|\kappa|}}\right)$$
+ * 3. **Forward Velocity Integration Pass**:
+ *    $$v_k^{(f)} = \min\left(v_{\text{corner}}, \sqrt{\left(v_{k-1}^{(f)}\right)^2 + 2 a_{\text{max}} \Delta s}\right)$$
+ * 4. **Backward Velocity Integration Pass**:
+ *    $$v_k^{(b)} = \min\left(v_k^{(f)}, \sqrt{\left(v_{k+1}^{(b)}\right)^2 + 2 a_{\text{max}} \Delta s}\right)$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Robot Heading $(\theta)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Velocity ($v$): Meters per second ($m/s$)
+ * - Acceleration ($a$): Meters per second squared ($m/s^2$)
+ * - Curvature ($\kappa$): Inverse radius of curvature ($m^{-1}$)
+ *
+ * @see BezierSpline
+ * @see SCurveTrajectoryParameterizer
  */
 object SplineMotionProfiler {
 
     /**
-     * buildProfiledPath declaration.
+     * Constructs a fully profiled [Path] from parsed PathPlanner JSON trajectory data.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param data Parsed trajectory structure [PathPlannerJsonParser.ParsedPathData].
+     * @return Fully parameterized and velocity-profiled [Path].
      */
     fun buildProfiledPath(data: PathPlannerJsonParser.ParsedPathData): Path {
+
         val parsedWaypoints = data.waypoints
         if (parsedWaypoints.isEmpty()) return Path(emptyList())
 

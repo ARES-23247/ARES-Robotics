@@ -11,17 +11,21 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
 /**
  * Limelight 3A hardware IO wrapper for AprilTag tracking, MegaTag2 field localization, and target alignment.
  *
- * Enforces zero-GC object pool allocation guarantees during 50Hz update cycles and maps Limelight target-space coordinates
- * to the standard **CCW-positive** robot reference frame.
+ * Pre-allocates fixed object pools (`visionMeasurementPool`, `translationPool`, `rotationPool`, `posePool`) to guarantee
+ * zero-GC heap allocations during high-frequency 50Hz update cycles.
  *
  * ### Limelight Target-Space Coordinate Frame:
- * - **$X+$**: Right of the AprilTag face (meters)
- * - **$Y+$**: Vertical height axis (meters)
- * - **$Z+$**: Distance/depth outward from tag face (meters)
- * - **Rotation Yaw**: Extracted from `rotation.y` (negated to convert to CCW-positive heading)
+ * - **$X+$**: Right of the AprilTag face in meters ($m$).
+ * - **$Y+$**: Vertical height axis in meters ($m$).
+ * - **$Z+$**: Distance/depth outward from tag face in meters ($m$).
+ * - **Rotation Yaw**: Extracted from `rotation.y` (negated to align with **CCW-positive** robot heading standard).
  *
- * @param limelight Physical `Limelight3A` FTC hardware map instance.
- * @param cameraPoses List of 3D mounting transforms of camera lenses relative to robot center.
+ * @param limelight Physical [Limelight3A] FTC hardware map instance.
+ * @param cameraPoses List of 3D mounting transforms ([Pose3d]) of camera lenses relative to robot center.
+ *
+ * @see VisionIO
+ * @see VisionIOInputs
+ * @see VisionMeasurement
  */
 class FtcLimelightIO(
     private val limelight: Limelight3A,
@@ -58,9 +62,10 @@ class FtcLimelightIO(
     /**
      * Polled 50Hz update cycle extracting latest AprilTag vision measurements into [inputs].
      *
-     * @param inputs Pre-allocated inputs structure receiving vision measurements.
+     * @param inputs Pre-allocated [VisionIOInputs] structure receiving vision measurements in-place.
      */
     override fun updateInputs(inputs: VisionIOInputs) {
+
         inputs.cameraPoses = cameraPoses
         try {
             val result = limelight.getLatestResult()

@@ -6,20 +6,27 @@ import com.ctre.phoenix6.swerve.SwerveRequest
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 
 /**
- * Writer class for CTRE Phoenix6 Swerve Drivetrain hardware actuation.
+ * Actuation writer for CTRE Phoenix 6 [SwerveDrivetrain] hardware platforms.
  *
- * Hardware IO abstraction layer mapping immutable Redux state representations into physical robot actuator commands.
- * 
- * PHYSICAL UNITS & CONVENTIONS:
- * - Velocities: $m/s$ for X/Y translation, $rad/s$ for rotation.
- * - Angle convention: **CCW-positive**.
- * 
- * PERFORMANCE:
- * Guaranteed zero-GC allocations during the high-frequency motor control loop.
+ * Translates immutable Redux [DriveState] target velocities into CTRE Phoenix 6 [SwerveRequest.FieldCentric]
+ * or [SwerveRequest.ApplyRobotSpeeds] commands.
  *
- * @param drivetrain The CTRE `SwerveDrivetrain` to dispatch requests to.
+ * ### Physical Units & Conventions:
+ * - Translation Velocities ($V_x, V_y$): Meters per second ($m/s$).
+ * - Rotational Rate ($\omega$): Radians per second ($rad/s$).
+ * - Angular Convention: **CCW-positive** standard.
+ *
+ * ### Zero-GC Guarantee:
+ * Reuses internal request objects (`fieldCentricRequest`, `robotSpeedsRequest`, `scratchSpeeds`) to ensure zero-GC heap allocations during 50Hz control cycles.
+ *
+ * @param drivetrain Physical CTRE [SwerveDrivetrain] instance.
+ *
+ * @see SwerveDrivetrain
+ * @see SwerveRequest
+ * @see DriveState
  */
 class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *, *>) {
+
     private val fieldCentricRequest = SwerveRequest.FieldCentric()
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
     private val scratchSpeeds = ChassisSpeeds()

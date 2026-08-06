@@ -9,9 +9,25 @@ import com.areslib.hardware.actuator.ServoIO
 import com.qualcomm.robotcore.hardware.Servo
 
 /**
- * Class implementation for Rev Motor Controller.
+ * Direct hardware IO controller for REV Expansion Hub and Control Hub [DcMotorEx] actuators.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Implements motor power scaling, stall detection ($>9.2\text{A}$ current spike or low-velocity drive command for $>500\text{ms}$),
+ * encoder count caching, and I2C power write caching ($0.001$ change threshold).
+ *
+ * ### Physical Units & Limits:
+ * - Duty Cycle Output Power: Range $[-1.0, 1.0]$.
+ * - Current Monitoring: Amperes ($A$), stall protection limit threshold $9.2\text{A}$.
+ * - Velocity: Encoder ticks per second ($ticks/s$).
+ * - Position: Encoder ticks ($ticks$).
+ *
+ * ### Zero-GC Compliance:
+ * [updateInputs] and [pollCurrentSync] populate primitive properties (`cachedPosition`, `cachedVelocity`, `cachedAmps`) in-place.
+ *
+ * @param motor FTC SDK [DcMotorEx] hardware instance.
+ * @param name Optional hardware configuration name for [HardwareRegistry] registration.
+ *
+ * @see MotorIO
+ * @see RevBulkDataReader
  */
 class RevMotorController(
     private val motor: DcMotorEx,
@@ -87,12 +103,7 @@ class RevMotorController(
             } catch (_: Exception) {}
         }
 
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Updates motor position and velocity cache variables from REV bulk data cache. */
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble() - encoderOffset
@@ -105,12 +116,7 @@ class RevMotorController(
         }
     }
 
-    /**
-     * pollCurrentSync declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Synchronously queries physical motor current draw in Amperes ($A$). */
     fun pollCurrentSync() {
         try {
             if (motor.javaClass.simpleName.contains("Mock")) {
@@ -123,12 +129,7 @@ class RevMotorController(
         } catch (_: Exception) {}
     }
 
-    /**
-     * refresh declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Refreshes motor input values. */
     override fun refresh() {
         updateInputs()
     }
@@ -142,12 +143,7 @@ class RevMotorController(
     override val currentAmps: Double
         get() = synchronized(currentLock) { cachedAmps }
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Resets the physical encoder count position to zero. */
     override fun resetEncoder() {
         try {
             encoderOffset = motor.currentPosition.toDouble()
@@ -155,21 +151,20 @@ class RevMotorController(
         } catch (_: Exception) {}
     }
 
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Unregisters motor from background current polling thread. */
     override fun close() {
         RevBulkDataReader.unregisterMotor(this)
     }
 }
 
 /**
- * Class implementation for Rev C R Servo Controller.
+ * Direct hardware IO controller for Continuous Rotation (CR) Servos.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @param crServo FTC SDK [CRServo] hardware instance.
+ * @param externalEncoder Optional external feedback encoder ([MotorIO]).
+ * @param name Optional hardware configuration name.
+ *
+ * @see MotorIO
  */
 class RevCRServoController(
     private val crServo: CRServo,
@@ -215,21 +210,19 @@ class RevCRServoController(
     override val position: Double
         get() = externalEncoder?.position ?: 0.0
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Resets external encoder position reference if present. */
     override fun resetEncoder() {
         externalEncoder?.resetEncoder()
     }
 }
 
 /**
- * Class implementation for Rev Encoder Controller.
+ * Direct hardware IO controller for standalone motor port quadrature encoders.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @param motor FTC SDK [DcMotorEx] hardware instance acting as encoder counter input.
+ * @param name Optional hardware configuration name.
+ *
+ * @see MotorIO
  */
 class RevEncoderController(
     private val motor: DcMotorEx,
@@ -250,12 +243,7 @@ class RevEncoderController(
         @Suppress("UNUSED_PARAMETER")
         set(value) {}
 
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Updates position and velocity cache variables from REV bulk data. */
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble() - encoderOffset
@@ -265,12 +253,7 @@ class RevEncoderController(
         } catch (_: Exception) {}
     }
 
-    /**
-     * refresh declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Refreshes encoder position and velocity readings. */
     override fun refresh() {
         updateInputs()
     }
@@ -281,12 +264,7 @@ class RevEncoderController(
     override val position: Double
         get() = cachedPosition
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Resets raw encoder position counter to zero. */
     override fun resetEncoder() {
         try {
             encoderOffset = motor.currentPosition.toDouble()
@@ -296,9 +274,12 @@ class RevEncoderController(
 }
 
 /**
- * Class implementation for Rev Composite Motor Controller.
+ * Composite hardware controller pairing a motor power output actuator with an independent encoder feedback sensor.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @param actuator Actuator motor interface ([MotorIO]).
+ * @param sensor Feedback sensor interface ([MotorIO]).
+ *
+ * @see MotorIO
  */
 class RevCompositeMotorController(
     private val actuator: MotorIO,
@@ -319,21 +300,21 @@ class RevCompositeMotorController(
     override val currentAmps: Double
         get() = actuator.currentAmps
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Resets feedback sensor encoder position. */
     override fun resetEncoder() {
         sensor.resetEncoder()
     }
 }
 
 /**
- * Class implementation for Rev Servo Controller.
+ * Direct hardware IO controller for standard 180° / 270° PWM servos plugged into REV Hub servo ports.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Performs write caching with $0.001$ position change tolerance threshold.
+ *
+ * @param servo FTC SDK [Servo] hardware instance.
+ * @param name Optional hardware configuration name.
+ *
+ * @see ServoIO
  */
 class RevServoController(
     private val servo: Servo,
@@ -362,3 +343,4 @@ class RevServoController(
             } catch (_: Exception) {}
         }
 }
+

@@ -1,25 +1,33 @@
 package com.areslib.math.estimation
 
 /**
- * A highly optimized, single-variable (1D) Linear Kalman Filter.
+ * Optimized 1D Discrete Linear Kalman Filter.
  *
- * Recursively estimates the true state of a system from a series of noisy measurements.
- * Ideal for filtering continuous signals like drivetrain odometry velocity, battery voltage,
- * or gyro heading rates by balancing process model confidence (Q) against physical measurement
- * noise (R).
+ * Recursively estimates the true state of a scalar 1-DOF physical system from a sequence of noisy sensor observations.
+ * Ideal for filtering continuous signals like drivetrain velocity, analog distance sensors, battery voltage,
+ * or gyro heading rates by balancing process model uncertainty ($Q$) against physical measurement noise ($R$).
  *
- * @param processNoise Confidence covariance in the system process model (Q). Smaller means model is highly trusted.
- * @param measurementNoise Confidence covariance in the sensor reading (R). Smaller means sensor is highly trusted.
- */
-/**
- * Class implementation for Kalman Filter.
+ * ### Mathematical Formulation:
+ * 1. **Time Update (Predict)**:
+ *    $$\hat{x}_k^- = \hat{x}_{k-1}$$
+ *    $$P_k^- = P_{k-1} + Q$$
+ * 2. **Measurement Update (Correct)**:
+ *    $$K_k = \frac{P_k^-}{P_k^- + R}$$
+ *    $$\hat{x}_k = \hat{x}_k^- + K_k \cdot (z_k - \hat{x}_k^-)$$
+ *    $$P_k = (1 - K_k) \cdot P_k^-$$
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * ### Physical Units & Properties:
+ * - State $\hat{x}_k$, Measurement $z_k$: Arbitrary physical signal units ($m$, $m/s$, $rad/s$, $V$)
+ * - Process Noise Covariance $Q$: Variance in system state transition ($[units]^2$)
+ * - Measurement Noise Covariance $R$: Variance in physical sensor readings ($[units]^2$)
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * ### Zero-GC Guarantee:
+ * Executes in $O(1)$ time with zero dynamic memory allocations on hot 50Hz/100Hz control loops.
+ *
+ * @param processNoise Initial process noise covariance variance $Q$.
+ * @param measurementNoise Initial measurement noise covariance variance $R$.
+ * @param initialState Seed initial state estimate $\hat{x}_0$ (default $0.0$).
+ * @param initialError Seed initial error covariance $P_0$ (default $1.0$).
  */
 class KalmanFilter(
     private var processNoise: Double,
@@ -32,9 +40,10 @@ class KalmanFilter(
     private var hasFirstValue = false
 
     /**
-     * Updates the filter state with a new raw measurement and returns the optimal estimate.
-     * @param measurement The raw sensor measurement.
-     * @return The optimal state estimate.
+     * Updates the filter state with a new raw measurement and returns the optimal estimate $\hat{x}_k$.
+     *
+     * @param measurement Raw sensor measurement value $z_k$.
+     * @return Calculated optimal state estimate $\hat{x}_k$.
      */
     fun calculate(measurement: Double): Double {
         if (!measurement.isFinite() || !processNoise.isFinite() || !measurementNoise.isFinite()) {
@@ -49,7 +58,6 @@ class KalmanFilter(
         }
 
         // 1. Predict (Time Update)
-        // x_predict = x (assuming static state model between measurements)
         p += processNoise
 
         // 2. Correct (Measurement Update)
@@ -67,7 +75,10 @@ class KalmanFilter(
     }
 
     /**
-     * Dynamically updates the process and measurement noise covariances.
+     * Dynamically updates the process and measurement noise variance parameters.
+     *
+     * @param processNoise New process noise covariance $Q$.
+     * @param measurementNoise New measurement noise covariance $R$.
      */
     fun setNoiseParameters(processNoise: Double, measurementNoise: Double) {
         this.processNoise = processNoise
@@ -75,7 +86,10 @@ class KalmanFilter(
     }
 
     /**
-     * Resets the filter to a specific state and covariance.
+     * Resets the filter to a specific baseline state estimate and error covariance.
+     *
+     * @param state Baseline state estimate $\hat{x}_0$.
+     * @param error Baseline error covariance $P_0$.
      */
     fun reset(state: Double = 0.0, error: Double = 1.0) {
         x = state
@@ -84,7 +98,7 @@ class KalmanFilter(
     }
 
     /**
-     * Clears internal history, forcing the next measurement to initialize state directly.
+     * Clears internal state memory, forcing the next measurement to initialize state directly without filtering.
      */
     fun clear() {
         x = 0.0
@@ -92,9 +106,8 @@ class KalmanFilter(
         hasFirstValue = false
     }
 
-    /**
-     * Returns the last computed optimal estimate.
-     */
+    /** Returns the last computed optimal estimate $\hat{x}_k$. */
     val value: Double
         get() = x
 }
+

@@ -19,15 +19,35 @@ import java.nio.ByteOrder
     description = "OctoQuad 8-channel quadrature encoder / localizer module"
 )
 /**
- * Class implementation for Octo Quad F Wv3.
+ * Hardware IO driver and synchronous/asynchronous cache manager for the DigitalChickenLabs OctoQuad FWv3.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Provides an 8-channel quadrature encoder / PWM reader over I2C (`0x30`) with integrated pose localizer hardware.
+ * Runs a 200Hz background sampling thread (`ARES-Octoquad-Thread`) that performs bulk 32-byte and 12-byte register reads,
+ * double-buffering results into thread-safe arrays to guarantee zero main-thread loop latency and zero dynamic allocations.
+ *
+ * ### Physical Units & Scalers:
+ * - Direct Encoder Channels (0..7): 32-bit signed integer encoder counts.
+ * - Velocity Channels (0..7): 32-bit signed integer counts per second ($counts/s$).
+ * - PWM Pulse Width Channels (0..7): Unsigned 16-bit integers in microseconds ($\mu s$).
+ * - Localizer Position ($X, Y$): 16-bit signed integers in millimeters ($mm$).
+ * - Localizer Heading ($\theta$): Scaled radians ($rad$), conversion factor $\text{SCALAR\_HEADING} = 0.001$.
+ * - Localizer Heading Velocity ($\dot{\theta}$): Scaled radians per second ($rad/s$), conversion factor $\text{SCALAR\_HEADING\_VELOCITY} = 0.001$.
+ *
+ * @param deviceClient Qualcomm FTC SDK [I2cDeviceSynch] bus client.
+ *
+ * @see I2cDeviceSynchDevice
+ * @see OctoQuadEncoderIO
+ * @see OctoQuadAbsolutePWMEncoder
+ * @see OctoQuadOdometryIO
  */
 class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true), AutoCloseable {
 
     companion object {
+        /** Default 7-bit I2C slave address for OctoQuad modules. */
         const val OCTOQUAD_I2C_ADDRESS = 0x30
+        /** Hardware chip ID byte (`0x51`). */
         const val OCTOQUAD_CHIP_ID: Byte = 0x51
+        /** Expected major firmware version rating. */
         const val SUPPORTED_FW_VERSION_MAJ = 3
 
         const val REG_CHIP_ID = 0x00
@@ -49,7 +69,9 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         const val REG_LOC_VEL_H = 0x6C
         
         val OCTOQUAD_ENDIAN = ByteOrder.LITTLE_ENDIAN
+        /** Multiplier scaling raw 16-bit localizer heading readings to radians ($rad$). */
         const val SCALAR_LOCALIZER_HEADING = 0.001f
+        /** Multiplier scaling raw 16-bit localizer heading rate to radians per second ($rad/s$). */
         const val SCALAR_LOCALIZER_HEADING_VELOCITY = 0.001f
     }
 
@@ -160,10 +182,9 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     /**
-     * doInitialize declaration.
+     * Initializes the OctoQuad I2C communications bus and validates device chip ID (`0x51`).
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return `true` if initialization succeeded and chip ID matches.
      */
     override fun doInitialize(): Boolean {
         return try {
@@ -182,57 +203,27 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * getManufacturer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns hardware manufacturer tag ([Manufacturer.Other]). */
     override fun getManufacturer(): Manufacturer = Manufacturer.Other
 
-    /**
-     * getDeviceName declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns human-readable device identifier string. */
     override fun getDeviceName(): String = "OctoQuad FWv3"
 
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** No-op update hook (handled asynchronously by background sampling thread). */
     fun update() {
         // Background thread handles update
     }
 
-    /**
-     * getCachedPosition declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns thread-safe cached encoder position for channel $[0 \dots 7]$. */
     fun getCachedPosition(channel: Int): Int = synchronized(lock) { cachedPositions.getOrElse(channel) { 0 } }
-    /**
-     * getCachedVelocity declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Returns thread-safe cached encoder velocity ($counts/s$) for channel $[0 \dots 7]$. */
     fun getCachedVelocity(channel: Int): Int = synchronized(lock) { cachedVelocities.getOrElse(channel) { 0 } }
-    /**
-     * getCachedPulseWidth declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Returns thread-safe cached PWM pulse width ($\mu s$) for channel $[0 \dots 7]$. */
     fun getCachedPulseWidth(channel: Int): Int = synchronized(lock) { cachedPulseWidths.getOrElse(channel) { 0 } }
 
-    /**
-     * Reads a single encoder position (legacy, non-cached fallback)
-     */
+    /** Reads single encoder position synchronously from I2C bus (legacy fallback). */
     fun readEncoderPosition(channel: Int): Int {
         return try {
             val bytes = deviceClient.read(REG_ENC_0 + (channel * 4), 4)
@@ -243,9 +234,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * Reads a single encoder velocity (legacy, non-cached fallback)
-     */
+    /** Reads single encoder velocity synchronously from I2C bus (legacy fallback). */
     fun readEncoderVelocity(channel: Int): Int {
         return try {
             val bytes = deviceClient.read(REG_VEL_0 + (channel * 4), 4)
@@ -256,9 +245,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * Reads the pulse width of a channel in microseconds (legacy, non-cached fallback)
-     */
+    /** Reads single channel PWM pulse width synchronously in microseconds ($\mu s$) (legacy fallback). */
     fun readChannelPulseWidth(channel: Int): Int {
         return try {
             val bytes = deviceClient.read(REG_PULSE_WIDTH_0 + (channel * 2), 2)
@@ -269,9 +256,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * Resets a single encoder
-     */
+    /** Sends a command byte resetting the specified encoder channel position counter $[0 \dots 7]$ to zero. */
     fun resetEncoder(channel: Int) {
         try {
             val cmdBytes = byteArrayOf(0x01, channel.toByte())
@@ -280,9 +265,14 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     /**
-     * Class implementation for Localizer Data Block.
+     * Immutable snapshot data block containing raw localizer telemetry outputs.
      *
-     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     * @property posX_mm Field X position in millimeters ($mm$).
+     * @property posY_mm Field Y position in millimeters ($mm$).
+     * @property heading_rad Field heading in radians ($rad$).
+     * @property velX_mmS Field X velocity in millimeters per second ($mm/s$).
+     * @property velY_mmS Field Y velocity in millimeters per second ($mm/s$).
+     * @property velHeading_radS Rotational velocity in radians per second ($rad/s$).
      */
     data class LocalizerDataBlock(
         var posX_mm: Short = 0,
@@ -293,24 +283,15 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         var velHeading_radS: Float = 0f
     )
 
-    /**
-     * readLocalizerData declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns thread-safe cached copy of current localizer data block. */
     fun readLocalizerData(): LocalizerDataBlock = synchronized(lock) { cachedLocalizerData }
 
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Terminates background sampling thread and releases device client handles. */
     override fun close() {
         running = false
     }
 }
+
 
 /**
  * Wrapper for an individual encoder plugged into the OctoQuad.

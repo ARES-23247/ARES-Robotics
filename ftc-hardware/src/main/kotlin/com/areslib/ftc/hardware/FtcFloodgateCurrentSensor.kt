@@ -4,27 +4,39 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.util.RobotClock
 
 /**
- * Interface implementation for Analog Voltage Input.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Minimal abstraction interface for reading analog voltage signals ($V$).
  */
 interface AnalogVoltageInput {
+    /** Measured analog signal level in Volts ($V$). */
     val voltage: Double
 }
 
 /**
- * Driver for the goBILDA Floodgate V2 Power Switch.
- * 
- * Maps the 0V - 3.3V analog output telemetry port of the Floodgate V2 to real-time current draw (Amperes).
- * Incorporates a low-pass filter to smooth out noisy motor spikes, estimates battery energy usage, 
- * and tracks thermal load to proactively prevent blowing the 60A main fuse or tripping the 80A smart limit.
- * 
- * Connect the Floodgate's analog telemetry port to any analog input port on your REV Control or Expansion Hub.
- */
-/**
- * Class implementation for Ftc Floodgate Current Sensor.
+ * Driver and thermal monitoring model for the goBILDA Floodgate V2 Power Switch.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Maps the $0.0\text{V} \dots 3.3\text{V}$ analog telemetry output of the Floodgate V2 to real-time current draw in Amperes ($A$).
+ * Incorporates an exponential moving average low-pass filter to smooth motor starting spikes, integrates battery charge consumption ($Ah$, $Wh$),
+ * and models thermal accumulation ($I^2 \cdot t$) to prevent tripping the 80A smart breaker or blowing the 20A main battery fuse.
+ *
+ * ### Mathematical Formulations:
+ * 1. Current conversion from analog telemetry voltage $V$:
+ *    $$I_{raw} = \frac{V}{3.3} \cdot I_{max}$$
+ * 2. Low-pass exponential filtering ($\alpha = \text{filterAlpha}$):
+ *    $$I_{filtered} = \alpha \cdot I_{raw} + (1 - \alpha) \cdot I_{filtered, k-1}$$
+ * 3. Thermal accumulation model ($I^2 \cdot t$ heating with linear cooling):
+ *    $$\text{Load}_k = \max\left(0, \text{Load}_{k-1} + I_{raw}^2 \Delta t - 0.1 \cdot \text{Load}_{k-1} \Delta t\right)$$
+ *
+ * ### Physical Units:
+ * - Telemetry Input: Volts ($V$), range $[0.0, 3.3] \text{ V}$.
+ * - Current Draw: Amperes ($A$).
+ * - Charge Consumption: Ampere-Seconds ($A \cdot s$) and Ampere-Hours ($Ah$).
+ * - Energy Consumption: Watt-Hours ($Wh$, assuming nominal 12.0V bus).
+ * - Fuse Thermal Strain: Percentage $[0.0\%, 100.0\%]$.
+ *
+ * @param analogInput Analog voltage supplier interface ([AnalogVoltageInput] or FTC SDK [AnalogInput]).
+ * @param maxCurrentAmps Maximum current rating corresponding to 3.3V analog output ($A$, default 80A for Floodgate V2).
+ * @param filterAlpha Low-pass smoothing alpha coefficient $[0.0, 1.0]$.
+ * @param fuseRatingAmps Rating of the main battery fuse ($A$, default 20A standard FTC fuse).
  */
 class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogVoltageInput,
@@ -32,6 +44,7 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private val filterAlpha: Double = 0.15,    // Low-pass filter smoothing coefficient (0.0 to 1.0)
     private val fuseRatingAmps: Double = 20.0  // Standard FTC main battery fuse rating
 ) {
+
     // Secondary constructors for backward compatibility with Qualcomm's concrete AnalogInput class
     constructor(analogInput: AnalogInput) : this(
         object : AnalogVoltageInput {

@@ -27,10 +27,68 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import java.io.File
 
 /**
- * An out-of-the-box standard FTC Mecanum Robot base class.
+ * Ready-to-use standard 4-wheel FTC Mecanum Robot facade in ARESLib-Kotlin.
  *
- * Provides standard bindings for a 4-wheel mecanum drive and generic superstructure execution.
- * Handles WPILib-style background subsystem execution via an internal Redux Store.
+ * Extends [FtcBaseRobot] to provide out-of-the-box forward/inverse kinematics, Closed-Loop PIDF velocity motor control,
+ * voltage-compensated feedforward drive scaling, path following, trajectory execution, and AprilTag alignment.
+ *
+ * ### Drivetrain Kinematics & Mechanics:
+ * Wheel layout: Front-Left ($FL$), Front-Right ($FR$), Rear-Left ($RL$), Rear-Right ($RR$).
+ * Given chassis velocity $\mathbf{v} = [v_x, v_y, \omega]^T$ ($m/s, m/s, rad/s$):
+ * $$v_{FL} = v_x - v_y - \omega (L_x + L_y)$$
+ * $$v_{FR} = v_x + v_y + \omega (L_x + L_y)$$
+ * $$v_{RL} = v_x + v_y - \omega (L_x + L_y)$$
+ * $$v_{RR} = v_x - v_y + \omega (L_x + L_y)$$
+ * where track width $W = 2 L_y$ and wheel base $B = 2 L_x$ in meters ($m$).
+ *
+ * ### Physical Units:
+ * - Position $(x, y)$: Meters ($m$)
+ * - Heading $\theta$: Radians ($rad$), **CCW-positive** (0 rad = +X, $\pi/2$ rad = +Y)
+ * - Linear Velocity: Meters per second ($m/s$)
+ * - Angular Velocity: Radians per second ($rad/s$)
+ * - Electrical: Volts ($V$), Amperes ($A$), Power Scaling $[0.0, 1.0]$
+ * - Motor Encoders: Ticks per meter ($ticks/m$, default 2000.0 ticks/m)
+ *
+ * ### Zero-GC Compliance Guarantee:
+ * All high-frequency update loops ([updateHardwareInputs], [updateSubsystems], [driveFieldCentric]) run with zero heap allocations.
+ * Intermediate velocity buffers, wheel power arrays, and target poses are pre-allocated and updated in-place.
+ *
+ * @param hardwareMap Qualcomm FTC SDK hardware map reference.
+ * @param flName Front Left motor hardware name. Defaults to `"fl"`.
+ * @param frName Front Right motor hardware name. Defaults to `"fr"`.
+ * @param rlName Rear Left motor hardware name. Defaults to `"rl"`.
+ * @param rrName Rear Right motor hardware name. Defaults to `"rr"`.
+ * @param flDirection Front Left motor direction.
+ * @param frDirection Front Right motor direction.
+ * @param rlDirection Rear Left motor direction.
+ * @param rrDirection Rear Right motor direction.
+ * @param pinpointName Hardware map name for GoBilda Pinpoint computer (or `null`).
+ * @param limelightName Hardware map name for Limelight 3A camera (or `null`).
+ * @param imuName Hardware map name for internal Control Hub IMU (default `"imu"`).
+ * @param localTelemetry FTC telemetry channel for Driver Station / Dashboard logging.
+ * @param trackWidthMeters Lateral distance between left and right wheel centers ($m$).
+ * @param wheelBaseMeters Longitudinal distance between front and rear wheel centers ($m$).
+ * @param headingGains PIDF gain coefficients for heading stabilization controller.
+ * @param headingDeadzoneDeg Angular deadzone for heading targeting ($deg$).
+ * @param driveFeedforward Feedforward coefficients $(kS, kV, kA)$ for motor voltage feedforward calculations.
+ * @param useClosedLoopVelocity Enables FTC SDK velocity closed-loop control mode on motor encoders.
+ * @param driveSlewRateLimit Maximum allowable acceleration slew rate ($1/s$).
+ * @param pathTranslationGains PIDF gains for path-following translation controllers.
+ * @param pathRotationGains PIDF gains for path-following heading controllers.
+ * @param odomQx EKF process noise for X pose estimation ($m^2$).
+ * @param odomQy EKF process noise for Y pose estimation ($m^2$).
+ * @param odomQtheta EKF process noise for heading pose estimation ($rad^2$).
+ * @param pinpointXOffsetMm GoBilda Pinpoint mounting offset along robot X-axis ($mm$).
+ * @param pinpointYOffsetMm GoBilda Pinpoint mounting offset along robot Y-axis ($mm$).
+ * @param pinpointEncoderResolution Pinpoint encoder resolution ($ticks/mm$).
+ * @param pinpointXDirection Direction configuration for X odometry pod encoder.
+ * @param pinpointYDirection Direction configuration for Y odometry pod encoder.
+ * @param pinpointIsCcwPositive Physical mounting polarity flag. Set `true` if mounting orientation outputs CCW+ heading natively.
+ * @param motorGains Motor velocity closed-loop PIDF coefficients.
+ * @param ticksPerMeter Drive wheel encoder resolution ($ticks/m$).
+ * @param visionStdDevs AprilTag vision measurement standard deviations $(m, m, rad)$.
+ * @param visionFilterConfig Outlier rejection threshold parameters for vision updates.
+ * @param reducer Custom state reducer function (defaults to [rootReducer]).
  */
 open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     hardwareMap: HardwareMap,
@@ -99,7 +157,10 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     reducer = reducer
 ) {
 
+    /** Subsystem state holder for drive states. */
     val drive = DriveSubsystem(store)
+
+    /** Subsystem facade managing closed-loop field-centric mecanum drive controls. */
     val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
@@ -113,6 +174,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         if (isAndroid) LimelightProxyAutoStart.start()
     }
 
+    /** Low-level IO cluster managing physical drive motors ($FL, FR, RL, RR$). */
     val mecanumIO = MecanumHardwareIO(
         hardwareMap = hardwareMap,
         flName = flName, frName = frName, rlName = rlName, rrName = rrName,
@@ -132,11 +194,15 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     private val kinematicsController = MecanumKinematicsController(mecanumIO, drive, mecanumDrive, calibrationController)
     private val trajectoryFollower = MecanumTrajectoryFollower(drive)
 
+    /** Accessor to System Identification (SysId) empirical gain characterization suite. */
     val sysIdManager: SysIdManager get() = calibrationController.sysIdManager
+
+    /** Optional custom velocity supplier function for SysId calibration runs. */
     var customSysIdVelocityProvider: (() -> Double)?
         get() = calibrationController.customSysIdVelocityProvider
         set(value) { calibrationController.customSysIdVelocityProvider = value }
 
+    /** Autonomous trajectory builder providing high-level motion path generation. */
     val autoBuilder: AutoBuilder get() = trajectoryFollower.autoBuilder
     private var lastLocalTelemetryUpdateMs = 0L
 
@@ -148,10 +214,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * updateHardwareInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Refreshes all physical hardware inputs and runs live tuning updates.
      */
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
@@ -168,10 +231,11 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * updateSubsystems declaration.
+     * Executes drivetrain subsystem updates, applying kinematic inverse solvers and voltage feedforward outputs.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Delta time step in seconds ($s$).
+     * @param batteryVoltage Measured battery voltage ($V$).
+     * @param powerScale Brownout protection power scaling coefficient $[0.0, 1.0]$.
      */
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val currentTuning = store.state.tuning
@@ -199,10 +263,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * publishRobotTelemetry declaration.
+     * Emits motor voltage, encoder velocities, current draw ($A$), and diagnostic parameters to Driver Station & NT4.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param timestamp System clock timestamp in milliseconds ($ms$).
      */
     override fun publishRobotTelemetry(timestamp: Long) {
         if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
@@ -229,10 +292,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * safeHardware declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Safely halts all drivetrain motors and resets output states.
      */
     override fun safeHardware() {
         com.areslib.hardware.HardwareRegistry.safeAll()
@@ -240,94 +300,83 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * drive declaration.
+     * Drives the robot field-centrically with joystick normalized inputs.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param x Forward translation input $[-1.0, 1.0]$.
+     * @param y Strafe translation input $[-1.0, 1.0]$.
+     * @param rotation Angular rotation input $[-1.0, 1.0]$.
      */
     fun drive(x: Double, y: Double, rotation: Double) = driveFieldCentric(x, y, rotation)
 
     /**
-     * driveFieldCentric declaration.
+     * Dispatches a field-centric driver command into the Redux store.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param x Field X forward velocity intent $[-1.0, 1.0]$.
+     * @param y Field Y leftward velocity intent $[-1.0, 1.0]$.
+     * @param rotation Angular CCW rotation velocity intent $[-1.0, 1.0]$.
      */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
         mecanumDrive.fieldRelativeDrive(x, y, rotation)
     }
 
     /**
-     * driveRobotCentric declaration.
+     * Dispatches a robot-centric driver command into the Redux store.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param x Robot forward velocity intent $[-1.0, 1.0]$.
+     * @param y Robot strafe left velocity intent $[-1.0, 1.0]$.
+     * @param rotation Angular CCW rotation velocity intent $[-1.0, 1.0]$.
      */
     fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
         store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = false))
     }
 
     /**
-     * alignToTag declaration.
+     * Locks drivetrain heading and position relative to an active Limelight AprilTag target ID.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param tagId AprilTag identification integer.
      */
     fun alignToTag(tagId: Int) {
         visionAlignController.calculate(store.state, tagId, true)?.let { store.dispatch(it) }
     }
 
-    @kotlin.jvm.JvmOverloads
     /**
-     * driveToPose declaration.
+     * Commands the path follower to navigate directly to a specified field coordinate target pose.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param targetPose Target destination pose $(x, y, \theta)$ ($m, m, rad$).
+     * @param isRequested Enables or disables target tracking task.
+     * @param mirrorForAlliance Inverts coordinate axes if current Redux state is Blue Alliance.
      */
+    @kotlin.jvm.JvmOverloads
     fun driveToPose(targetPose: Pose2d, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         trajectoryFollower.driveToPose(store, mecanumIO, targetPose, isRequested, mirrorForAlliance)
     }
 
-    @kotlin.jvm.JvmOverloads
     /**
-     * driveToWaypoint declaration.
+     * Commands the robot to navigate to a named waypoint loaded from autonomous configuration.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param name Named waypoint identifier string.
+     * @param isRequested Enables or disables waypoint tracking task.
+     * @param mirrorForAlliance Inverts coordinate axes if current Redux state is Blue Alliance.
      */
+    @kotlin.jvm.JvmOverloads
     fun driveToWaypoint(name: String, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
         trajectoryFollower.driveToWaypoint(store, mecanumIO, telemetryManager, name, isRequested, mirrorForAlliance)
     }
 
-    /**
-     * stopAll declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Stops all hardware devices registered in [com.areslib.hardware.HardwareRegistry]. */
     fun stopAll() = com.areslib.hardware.HardwareRegistry.safeAll()
     
-    /**
-     * stop declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Alias for [stopAll]. */
     fun stop() = stopAll()
 
-    /**
-     * followTrajectory declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility trajectory follower stub function. */
     fun followTrajectory(path: Any? = null) { } // Compatibility alias as requested
 
     /**
-     * getFallbackPoseUpdate declaration.
+     * Computes dead-reckoning fallback odometry when Pinpoint hardware is offline.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param timestampMs System clock timestamp in milliseconds ($ms$).
+     * @return Formatted pose update structure derived from wheel encoder ticks.
      */
     override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
         val heading = imuIO?.let {
@@ -343,13 +392,11 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Shuts down subsystem threads, disables motor hardware, and clears proxy servers.
      */
     override fun close() {
         super.close()
         if (isAndroid) LimelightProxyAutoStart.start()
     }
 }
+

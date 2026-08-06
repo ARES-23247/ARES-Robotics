@@ -10,8 +10,25 @@ import com.areslib.math.geometry.Quaternion
 import edu.wpi.first.networktables.NetworkTableInstance
 
 /**
- * FRC-specific implementation of the VisionIO abstraction for Limelight.
- * Reads 3D field-relative robot pose data directly from NetworkTables (NT4).
+ * NetworkTables 4 (NT4) vision IO wrapper for Limelight 3/3G/4 camera sensors on FRC platforms.
+ *
+ * Implements MegaTag1 vs MegaTag2 hybrid localization strategy:
+ * - **MegaTag1 (`botpose_wpiblue`)**: Active when robot linear speed $<0.15\text{m/s}$ and yaw rate $<10^\circ/s$ to correct EKF yaw drift.
+ * - **MegaTag2 (`botpose_wpiblue_mt2`)**: Active when robot is moving to prevent 3D pose-flipping under high angular rates.
+ *
+ * ### Physical Units & Coordinates:
+ * - Target Space Depth ($Z$): Meters ($m$).
+ * - Rotation Yaw/Pitch/Roll: Radians ($rad$) internally, converted from NetworkTables Degrees ($^\circ$).
+ * - Timestamp Latency Correction: Milliseconds ($ms$) from `botpose[6]`.
+ *
+ * @param tableName Limelight NetworkTables table name (default `"limelight"`).
+ * @param cameraPoses List of 3D camera mounting offsets ([Pose3d]) relative to robot center.
+ * @param defaultPipeline Active pipeline index (default 0).
+ * @param imuMode Limelight IMU mode (default 4 = `INTERNAL_EXTERNAL_ASSIST`).
+ *
+ * @see VisionIO
+ * @see VisionIOInputs
+ * @see VisionMeasurement
  */
 class FrcLimelightIO(
     val tableName: String = "limelight",
@@ -53,10 +70,15 @@ class FrcLimelightIO(
     }
 
     /**
-     * setOrientation declaration.
+     * Publishes robot orientation payload to Limelight for MegaTag2 gyro-assisted pose estimation.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param yawDegrees Robot yaw heading in degrees ($^\circ$).
+     * @param yawRateDegPerSec Robot angular velocity in degrees per second ($^\circ/s$).
+     * @param pitchDegrees Robot pitch angle in degrees ($^\circ$).
+     * @param pitchRateDegPerSec Robot pitch rate in degrees per second ($^\circ/s$).
+     * @param rollDegrees Robot roll angle in degrees ($^\circ$).
+     * @param rollRateDegPerSec Robot roll rate in degrees per second ($^\circ/s$).
+     * @param linearVelocityMps Total linear chassis velocity in meters per second ($m/s$).
      */
     override fun setOrientation(
         yawDegrees: Double, yawRateDegPerSec: Double,
@@ -78,12 +100,12 @@ class FrcLimelightIO(
     }
 
     /**
-     * updateInputs declaration.
+     * Polled update cycle extracting latest AprilTag vision measurements into [inputs].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param inputs Pre-allocated [VisionIOInputs] target container.
      */
     override fun updateInputs(inputs: VisionIOInputs) {
+
         inputs.cameraPoses = cameraPoses
         
         val tv = tvSub.get()

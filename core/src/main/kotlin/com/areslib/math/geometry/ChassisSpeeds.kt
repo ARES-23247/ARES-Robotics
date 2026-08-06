@@ -1,14 +1,27 @@
 package com.areslib.math.geometry
 
 /**
- * Class implementation for Chassis Speeds.
+ * Holonomic Chassis Velocity State Representation.
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * Stores translational linear velocities $(v_x, v_y)$ and rotational angular velocity $\omega$
+ * in either robot-centric or field-centric frames of reference.
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * ### Mathematical Formulation:
+ * Field-relative to Robot-centric inverse rotation transformation:
+ * $$\begin{bmatrix} v_{x, \text{robot}} \\ v_{y, \text{robot}} \end{bmatrix} = \begin{bmatrix} \cos\theta & \sin\theta \\ -\sin\theta & \cos\theta \end{bmatrix} \begin{bmatrix} v_{x, \text{field}} \\ v_{y, \text{field}} \end{bmatrix}$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - $v_x$: Forward linear velocity in meters per second ($m/s$). Positive is forward.
+ * - $v_y$: Leftward (strafe) linear velocity in meters per second ($m/s$). Positive is left.
+ * - $\omega$: Angular velocity in radians per second ($rad/s$). **CCW-positive**.
+ * - Heading $(\theta)$: Robot heading in radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$).
+ *
+ * ### Zero-GC Guarantee:
+ * Value-oriented primitive fields with minimal allocation overhead during high-frequency control loops.
+ *
+ * @property vxMetersPerSecond Linear velocity along X-axis in meters per second ($m/s$).
+ * @property vyMetersPerSecond Linear velocity along Y-axis in meters per second ($m/s$).
+ * @property omegaRadiansPerSecond Angular velocity about Z-axis in radians per second ($rad/s$).
  */
 data class ChassisSpeeds(
     var vxMetersPerSecond: Double = 0.0,
@@ -17,8 +30,14 @@ data class ChassisSpeeds(
 ) {
     companion object {
         /**
-         * Converts field-relative velocities into robot-centric ChassisSpeeds.
-         * The math rotates the field vector by the inverse of the robot's current heading.
+         * Converts field-relative velocities $(v_{x, \text{field}}, v_{y, \text{field}}, \omega)$ into robot-centric [ChassisSpeeds].
+         * Applies the inverse rotation matrix $\mathbf{R}(-\theta)$.
+         *
+         * @param vxMetersPerSecond Field-centric X velocity in meters per second ($m/s$).
+         * @param vyMetersPerSecond Field-centric Y velocity in meters per second ($m/s$).
+         * @param omegaRadiansPerSecond Rotational velocity in radians per second ($rad/s$).
+         * @param robotHeading Current robot heading orientation [Rotation2d].
+         * @return Equivalent robot-centric [ChassisSpeeds].
          */
         fun fromFieldRelativeSpeeds(
             vxMetersPerSecond: Double,
@@ -36,3 +55,4 @@ data class ChassisSpeeds(
         }
     }
 }
+

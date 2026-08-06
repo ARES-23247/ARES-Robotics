@@ -7,8 +7,13 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.ftc.update
 
 /**
- * Generic DSL Builder class for constructing a TeleOp.
- * @param R The type of the Robot facade.
+ * Generic DSL Builder class for configuring declarative FTC TeleOp OpModes.
+ *
+ * Configures initialization callbacks ([onInit]), driver gamepad mappings ([onConfigure]), and main teleoperated loops ([onLoop]).
+ *
+ * @param R Type of team robot facade class.
+ *
+ * @see FtcTeleOpBase
  */
 class FtcTeleOpBuilder<R> {
     internal var onInitBlock: ((R, Telemetry) -> Unit)? = null
@@ -16,30 +21,27 @@ class FtcTeleOpBuilder<R> {
     internal var onLoopBlock: ((R, AresGamepad, Telemetry) -> Unit)? = null
 
     /**
-     * onInit declaration.
+     * Registers a callback executed repeatedly while the OpMode is in the `"Init"` state.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param block Initialization logic lambda receiving the team robot wrapper [R] and FTC [Telemetry].
      */
     fun onInit(block: (robot: R, telemetry: Telemetry) -> Unit) {
         onInitBlock = block
     }
     
     /**
-     * onConfigure declaration.
+     * Registers a callback executed once during initialization to configure Driver Station controls and button labels.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param block Configuration logic lambda receiving team robot wrapper [R] and driver [AresGamepad].
      */
     fun onConfigure(block: (robot: R, driver: AresGamepad) -> Unit) {
         onConfigureBlock = block
     }
 
     /**
-     * onLoop declaration.
+     * Registers the main TeleOp execution loop callback executed every frame (50Hz–100Hz frequency).
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param block Loop logic lambda receiving team robot wrapper [R], driver [AresGamepad], and FTC [Telemetry].
      */
     fun onLoop(block: (robot: R, driver: AresGamepad, telemetry: Telemetry) -> Unit) {
         onLoopBlock = block
@@ -47,35 +49,60 @@ class FtcTeleOpBuilder<R> {
 }
 
 /**
- * Generic Base class for declarative student OpModes.
- * Manages lifecycle loops, proxy starting, log uploading, Redux loops, and telemetry flushing.
+ * Generic base class for student-facing declarative FTC TeleOp OpModes.
+ *
+ * Manages OpMode lifecycle transitions, proxy background servers, pose restoration from Autonomous ([com.areslib.util.PoseStorage]),
+ * web dashboard simulation input bridges ([com.areslib.telemetry.SimInputBridge]), gamepad polling, and safe hardware shutdowns.
+ *
+ * ### TeleOp Lifecycle Flow:
+ * 1. **Init Phase**: Evaluates [FtcTeleOpBuilder.onInit] blocks and refreshes EKF state with zero gamepad input.
+ * 2. **Start Phase**: Restores previous autonomous pose from [com.areslib.util.PoseStorage] or sets alliance default starting pose.
+ * 3. **Active Loop Phase**:
+ *    - Updates [GamepadState] snapshots for Driver 1 and Driver 2 in-place (zero-GC).
+ *    - Bridges web simulation inputs if active.
+ *    - Invokes [FtcTeleOpBuilder.onLoop] DSL blocks.
+ *    - Updates physical robot actuators via [updateRobot].
+ * 4. **Cleanup Phase**: Safely halts motor outputs and releases resources via [closeRobot].
+ *
+ * @param R Type of team robot facade class.
+ *
+ * @see LinearOpMode
+ * @see FtcTeleOpBuilder
+ * @see GamepadState
  */
 abstract class FtcTeleOpBase<R> : LinearOpMode() {
     /**
-     * Define the DSL layout for this OpMode.
+     * Constructs the DSL configuration layout for this TeleOp OpMode.
+     *
+     * @return [FtcTeleOpBuilder] containing registered `onInit`, `onConfigure`, and `onLoop` blocks.
      */
     abstract fun define(): FtcTeleOpBuilder<R>
 
     /**
-     * Provide a method to build your team's specific robot wrapper.
+     * Factory hook constructing the team robot facade instance.
+     *
+     * @return Initialized team robot wrapper instance [R].
      */
     abstract fun buildRobot(): R
 
     /**
-     * Define how your team's robot handles periodic updates during the loop.
+     * Periodic update hook executing hardware sensor reads and subsystem updates for the team robot facade.
+     *
+     * @param robot Team robot wrapper instance.
+     * @param g1 In-place updated Driver 1 [GamepadState] snapshot.
+     * @param g2 In-place updated Driver 2 [GamepadState] snapshot.
      */
     abstract fun updateRobot(robot: R, g1: GamepadState, g2: GamepadState)
     
     /**
-     * Define how your team's robot handles shutdown sequences.
+     * Shutdown hook releasing active hardware resources upon TeleOp completion.
+     *
+     * @param robot Team robot wrapper instance.
      */
     abstract fun closeRobot(robot: R)
 
     /**
-     * runOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Main execution entry point for FTC LinearOpMode lifecycle.
      */
     override fun runOpMode() {
         val builder = define()
@@ -176,4 +203,5 @@ abstract class FtcTeleOpBase<R> : LinearOpMode() {
         }
     }
 }
+
 

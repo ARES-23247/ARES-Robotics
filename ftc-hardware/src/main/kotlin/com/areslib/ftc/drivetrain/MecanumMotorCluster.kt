@@ -10,29 +10,35 @@ import com.areslib.hardware.HardwareRegistry
 import com.areslib.util.RobotClock
 
 /**
- * Manages the physical 4-motor hardware cluster (FL, FR, RL, RR) for an FTC Mecanum drivetrain.
+ * Manages physical 4-motor hardware cluster ($FL, FR, RL, RR$) for an FTC Mecanum drivetrain.
  *
- * Handles CachedDcMotorEx wrapping, direction mapping, encoder modes, and exception-safe motor power writes.
+ * Handles [CachedDcMotorEx] wrapping, direction mapping, encoder run modes (`RUN_USING_ENCODER` vs `RUN_WITHOUT_ENCODER`),
+ * PIDF gain configurations, and exception-safe motor power assignments.
+ *
+ * ### Physical Units & Limits:
+ * - Duty Cycle Output Power: Normalized voltage ratio $[-1.0, 1.0]$.
+ * - PIDF Coefficients: Closed-loop velocity gains ($K_p, K_i, K_d, K_f$).
+ *
+ * ### Zero-GC Guarantee:
+ * Executes [setMotorPowers], [applyPowerScale], and [updateInputs] without heap object allocations during 50Hz–100Hz execution.
  *
  * @param hardwareMap FTC OpMode hardware map instance.
- * @param flName Front-left motor hardware name (default: "fl").
- * @param frName Front-right motor hardware name (default: "fr").
- * @param rlName Rear-left motor hardware name (default: "rl").
- * @param rrName Rear-right motor hardware name (default: "rr").
+ * @param flName Front-left motor hardware map name (default `"fl"`).
+ * @param frName Front-right motor hardware map name (default `"fr"`).
+ * @param rlName Rear-left motor hardware map name (default `"rl"`).
+ * @param rrName Rear-right motor hardware map name (default `"rr"`).
  * @param flDirection Front-left motor direction polarity.
  * @param frDirection Front-right motor direction polarity.
  * @param rlDirection Rear-left motor direction polarity.
  * @param rrDirection Rear-right motor direction polarity.
- * @param useClosedLoopVelocity True to configure motors in RUN_USING_ENCODER mode.
+ * @param useClosedLoopVelocity Configures motors in `RUN_USING_ENCODER` mode when `true`.
  * @param motorKp Optional PIDF proportional gain $K_p$.
  * @param motorKi Optional PIDF integral gain $K_i$.
  * @param motorKd Optional PIDF derivative gain $K_d$.
  * @param motorKf Optional PIDF feedforward gain $K_f$.
- */
-/**
- * Class implementation for Mecanum Motor Cluster.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @see CachedDcMotorEx
+ * @see EstimateMotorIO
  */
 class MecanumMotorCluster(
     val hardwareMap: HardwareMap,
@@ -50,6 +56,7 @@ class MecanumMotorCluster(
     val motorKd: Double? = null,
     val motorKf: Double? = null
 ) : AutoCloseable {
+
 
     /** Front-left `DcMotorEx` hardware wrapper. */
     val frontLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, flName))

@@ -2,10 +2,23 @@ package com.areslib.pathing
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.JsonArray
 import com.areslib.math.geometry.Translation2d
 
 /**
- * Deserializes PathPlanner JSON strings into structured AST data models.
+ * PathPlanner `.path` Trajectory Data JSON Parser.
+ *
+ * Extracts raw Bezier control points, rotation targets, point-towards zones, constraint zones,
+ * and marker events from PathPlanner `.path` JSON strings.
+ *
+ * ### Physical Units:
+ * - Waypoint Coordinates $(x, y)$: Meters ($m$)
+ * - Headings & Rotation Targets: Degrees ($^\circ$) in JSON, converted to **CCW-positive** radians ($rad$)
+ * - Velocities: Meters per second ($m/s$)
+ * - Accelerations: Meters per second squared ($m/s^2$)
+ *
+ * @see DynamicPathLoader
+ * @see SplineMotionProfiler
  */
 object PathPlannerJsonParser {
     private val gson = Gson()

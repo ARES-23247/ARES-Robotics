@@ -17,21 +17,15 @@ package com.areslib.math.filter
  * - Time Step ($\Delta t$): Seconds ($s$)
  * - Input/Output: Arbitrary physical measurement units ($V$, $A$, $m$, $m/s$)
  *
+ * ### Zero-GC Guarantee:
+ * $O(1)$ scalar math execution with zero dynamic memory allocation.
+ *
  * @param timeConstantSeconds Time constant $RC$ in seconds ($s$). Larger values provide smoother filtering but introduce lag.
- */
-/**
- * Class implementation for Low Pass Filter.
- *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
- *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
  */
 class LowPassFilter(
     private var timeConstantSeconds: Double
 ) {
+
     private var lastEstimate = 0.0
     private var hasFirstValue = false
 

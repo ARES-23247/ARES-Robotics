@@ -5,23 +5,30 @@ import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
 /**
- * Reader class for CTRE Phoenix6 Swerve Drivetrain hardware telemetry.
+ * Telemetry reader for CTRE Phoenix 6 [SwerveDrivetrain] hardware platforms.
  *
- * Hardware IO abstraction layer bridging physical robot sensors into immutable Redux state representations.
- * Synchronizes Phoenix6 CAN signals via BaseStatusSignal to avoid CAN bus thrashing.
- * 
- * PHYSICAL UNITS & CONVENTIONS:
- * - Current: Amperes ($A$).
- * - Angles/Heading: Radians ($rad$), **CCW-positive**.
- * - Pitch/Roll: Degrees for internal Phoenix signals, though Redux outputs might map to rads.
- * - Velocities: Meters per second ($m/s$) and radians per second ($rad/s$).
- * 
- * PERFORMANCE:
- * Guaranteed zero-GC allocations during the high-frequency CAN refresh and read loops.
+ * Configures CANivore CAN-FD signal update frequencies ($50\text{Hz}$ CANcoder absolute positions, $20\text{Hz}$ motor current draws,
+ * $20\text{Hz}$ Pigeon2 pitch/roll, $4\text{Hz}$ hardware fault diagnostics) and synchronizes signals via [BaseStatusSignal.refreshAll].
  *
- * @param drivetrain The underlying CTRE `SwerveDrivetrain` to poll signals from.
+ * ### Physical Units & Conventions:
+ * - Motor Current: Amperes ($A$).
+ * - Module Absolute Encoded Steering: Rotations / Radians ($rad$).
+ * - Inclination: Pitch and Roll in Degrees ($^\circ$).
+ * - Odometry Position: Meters ($m$).
+ * - Chassis Velocities: Meters per second ($m/s$) and Radians per second ($rad/s$).
+ * - Heading: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ *
+ * ### Zero-GC Guarantee:
+ * [refresh], [getCurrents], [getEncoderPositions], and [getModuleSpeeds] write directly into pre-allocated primitive array targets.
+ *
+ * @param drivetrain Physical CTRE [SwerveDrivetrain] instance.
+ *
+ * @see SwerveDrivetrain
+ * @see BaseStatusSignal
+ * @see DriveState
  */
 class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, *>) {
+
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
     private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
     private val currentDraw3 = drivetrain.getModule(2).driveMotor.supplyCurrent

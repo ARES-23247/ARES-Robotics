@@ -9,35 +9,41 @@ import com.areslib.hardware.HardwareRegistry
 
 /**
  * Facade class combining physical motor hardware cluster management with drive motion feedforwards.
- * Provides hardware abstraction for Mecanum drivetrains.
  *
- * PHYSICAL UNITS & CONVENTIONS:
- * - Distance: meters ($m$)
- * - Velocity: meters per second ($m/s$) for linear, radians per second ($rad/s$) for angular.
- * - Voltage: volts ($V$)
- * - Heading/Angular: **CCW-positive** (standard math convention).
+ * Provides complete hardware abstraction and voltage-compensated motor control for 4-wheel FTC Mecanum drivetrains.
  *
- * PERFORMANCE:
- * Guaranteed zero-GC allocations during high-frequency 50Hz/100Hz hardware update loops.
- * 
- * @param hardwareMap FTC hardware map.
- * @param flName Front-left motor device name.
- * @param frName Front-right motor device name.
- * @param rlName Rear-left motor device name.
- * @param rrName Rear-right motor device name.
- * @param maxWheelSpeedMetersPerSecond Maximum expected wheel speed in $m/s$.
- * @param flDirection Direction for front-left motor.
- * @param frDirection Direction for front-right motor.
- * @param rlDirection Direction for rear-left motor.
- * @param rrDirection Direction for rear-right motor.
- * @param initialKs Static friction feedforward constant.
- * @param useClosedLoopVelocity Whether to use onboard motor velocity PID.
- * @param ticksPerMeter Encoder ticks per meter of travel.
- * @param initialSlewRateLimit Maximum allowed acceleration in $V/s$ or proportional unit.
- * @param motorKp Velocity PID proportional gain.
- * @param motorKi Velocity PID integral gain.
- * @param motorKd Velocity PID derivative gain.
- * @param motorKf Velocity feedforward gain.
+ * ### Physical Units & Coordinate Conventions:
+ * - Position: Meters ($m$).
+ * - Linear Velocity: Meters per second ($m/s$).
+ * - Angular Velocity: Radians per second ($rad/s$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ * - Electrical: Volts ($V$), Amperes ($A$).
+ * - Encoders: Ticks per meter ($ticks/m$).
+ *
+ * ### Zero-GC Execution Compliance:
+ * High-frequency update functions ([drive], [apply], [updateInputs]) operate using pre-allocated primitive buffers ([speedBuffer], [powerBuffer])
+ * to guarantee zero dynamic heap allocations during 50Hz–100Hz execution.
+ *
+ * @param hardwareMap Qualcomm FTC SDK hardware map reference.
+ * @param flName Front-left motor hardware map name. Defaults to `"fl"`.
+ * @param frName Front-right motor hardware map name. Defaults to `"fr"`.
+ * @param rlName Rear-left motor hardware map name. Defaults to `"rl"`.
+ * @param rrName Rear-right motor hardware map name. Defaults to `"rr"`.
+ * @param maxWheelSpeedMetersPerSecond Maximum expected wheel surface speed ($m/s$).
+ * @param flDirection Front-left motor direction polarity.
+ * @param frDirection Front-right motor direction polarity.
+ * @param rlDirection Rear-right motor direction polarity.
+ * @param rrDirection Rear-right motor direction polarity.
+ * @param initialKs Static friction feedforward constant ($k_S$).
+ * @param useClosedLoopVelocity Enables FTC SDK velocity closed-loop control mode on motor encoders.
+ * @param ticksPerMeter Drive wheel encoder resolution ($ticks/m$).
+ * @param initialSlewRateLimit Maximum acceleration slew rate limit.
+ * @param motorKp Velocity PID proportional gain $K_p$.
+ * @param motorKi Velocity PID integral gain $K_i$.
+ * @param motorKd Velocity PID derivative gain $K_d$.
+ * @param motorKf Velocity feedforward gain $K_f$.
+ *
+ * @see MecanumMotorCluster
+ * @see MecanumDriveFeedforward
  */
 class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
@@ -85,24 +91,35 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         initialSlewRateLimit = initialSlewRateLimit
     )
 
+    /** Front-left `DcMotorEx` hardware instance. */
     val frontLeft: DcMotorEx get() = motorCluster.frontLeft
+    /** Front-right `DcMotorEx` hardware instance. */
     val frontRight: DcMotorEx get() = motorCluster.frontRight
+    /** Rear-left `DcMotorEx` hardware instance. */
     val rearLeft: DcMotorEx get() = motorCluster.rearLeft
+    /** Rear-right `DcMotorEx` hardware instance. */
     val rearRight: DcMotorEx get() = motorCluster.rearRight
 
+    /** Front-left non-blocking IO cache. */
     val flIO: EstimateMotorIO get() = motorCluster.flIO
+    /** Front-right non-blocking IO cache. */
     val frIO: EstimateMotorIO get() = motorCluster.frIO
+    /** Rear-left non-blocking IO cache. */
     val rlIO: EstimateMotorIO get() = motorCluster.rlIO
+    /** Rear-right non-blocking IO cache. */
     val rrIO: EstimateMotorIO get() = motorCluster.rrIO
 
+    /** Static friction feedforward coefficient $k_S$. */
     var kS: Double
         get() = feedforward.kS
         set(value) { feedforward.kS = value }
 
+    /** Maximum acceleration slew rate limit. */
     var slewRateLimit: Double?
         get() = feedforward.slewRateLimit
         set(value) { feedforward.slewRateLimit = value }
 
+    /** Enables automatic voltage-compensated slew rate limiting. */
     var enableVoltageCompensatedSlew: Boolean
         get() = feedforward.enableVoltageCompensatedSlew
         set(value) { feedforward.enableVoltageCompensatedSlew = value }
@@ -116,55 +133,45 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Updates motor PID gains.
+     * Dynamically updates motor PID gains across velocity controllers.
      * 
-     * @param kp Proportional gain.
-     * @param ki Integral gain.
-     * @param kd Derivative gain.
+     * @param kp Proportional gain $K_p$.
+     * @param ki Integral gain $K_i$.
+     * @param kd Derivative gain $K_d$.
      */
     fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
         feedforward.updateMotorGains(kp, ki, kd)
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Releases motor hardware cluster resources upon OpMode completion.
      */
     override fun close() {
         motorCluster.close()
     }
 
     /**
-     * refresh declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Refreshes encoder position and velocity inputs from hardware caches.
      */
     override fun refresh() {
         updateInputs()
     }
 
     /**
-     * safe declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Safely halts all 4 drivetrain motors by setting zero target power.
      */
     override fun safe() {
         motorCluster.safe()
     }
 
     /**
-     * Coordinate-centric Mecanum drive calculation wrapper.
-     * Calculates required wheel speeds and applies them to the motor cluster.
-     * Zero-GC allocation loop.
+     * Solves inverse kinematics for chassis speeds and updates physical motor outputs.
+     * Zero-GC execution loop.
      * 
-     * @param driveState The desired chassis speeds ($m/s$ and $rad/s$).
-     * @param kinematics The Mecanum kinematics model.
-     * @param batteryVolts Current battery voltage in $V$.
-     * @param dtSeconds Loop time delta in seconds ($s$).
+     * @param driveState State object containing target linear $(v_x, v_y)$ ($m/s$) and angular $\omega$ ($rad/s$) velocities.
+     * @param kinematics Mecanum kinematics model solver.
+     * @param batteryVolts Current measured battery bus voltage in Volts ($V$).
+     * @param dtSeconds Loop time step interval in seconds ($s$).
      */
     fun drive(
         driveState: com.areslib.state.DriveState,
@@ -189,18 +196,16 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             powerScale = flIO.powerScale
         )
 
-
-
         applyPowerScale(flIO.powerScale)
     }
 
     /**
-     * Applies specific wheel speeds to the motor cluster using feedforwards.
+     * Applies computed 4-wheel target speeds to the motor cluster using voltage feedforwards and PID feedback.
      * 
-     * @param speeds Array of 4 wheel speeds in $m/s$ [FL, FR, RL, RR].
-     * @param batteryVolts Current battery voltage in $V$.
-     * @param dtSeconds Loop delta time in $s$.
-     * @param powerScale Scaling factor [0..1] for output powers.
+     * @param speeds Array of 4 target wheel surface speeds $[FL, FR, RL, RR]$ in $m/s$.
+     * @param batteryVolts Current battery voltage in Volts ($V$).
+     * @param dtSeconds Loop step in seconds ($s$).
+     * @param powerScale Master power scaling coefficient $[0.0, 1.0]$.
      */
     @kotlin.jvm.JvmOverloads
     fun apply(speeds: DoubleArray, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
@@ -219,18 +224,16 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             outputPowers = powerBuffer
         )
 
-
-
         motorCluster.setMotorPowers(powerBuffer[0], powerBuffer[1], powerBuffer[2], powerBuffer[3])
     }
 
     /**
-     * Applies specific wheel speeds to the motor cluster.
+     * Applies target wheel speeds struct to the motor cluster.
      * 
-     * @param speeds Target speeds in $m/s$ for each wheel.
-     * @param batteryVolts Current battery voltage in $V$.
-     * @param dtSeconds Loop delta time in $s$.
-     * @param powerScale Scaling factor [0..1] for output powers.
+     * @param speeds [MecanumWheelSpeeds] struct containing target speeds for all 4 wheels ($m/s$).
+     * @param batteryVolts Current battery voltage in Volts ($V$).
+     * @param dtSeconds Loop step in seconds ($s$).
+     * @param powerScale Master power scaling coefficient $[0.0, 1.0]$.
      */
     @kotlin.jvm.JvmOverloads
     fun apply(speeds: MecanumWheelSpeeds, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
@@ -242,30 +245,31 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Applies a uniform power scaling factor to all motors.
+     * Sets a uniform power scale factor $[0.0, 1.0]$ across all motor IO caches.
      * 
-     * @param scale Scaling factor [0..1].
+     * @param scale Master power scale factor.
      */
     fun applyPowerScale(scale: Double) {
         motorCluster.applyPowerScale(scale)
     }
 
     /**
-     * Sets raw fractional motor powers [-1.0..1.0].
+     * Commands raw duty-cycle powers $[-1.0, 1.0]$ to all 4 drivetrain motors.
      * 
-     * @param fl Front-left power.
-     * @param fr Front-right power.
-     * @param rl Rear-left power.
-     * @param rr Rear-right power.
+     * @param fl Front-left motor power.
+     * @param fr Front-right motor power.
+     * @param rl Rear-left motor power.
+     * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
         motorCluster.setMotorPowers(fl, fr, rl, rr)
     }
 
     /**
-     * Updates motor IO readings from hardware. Zero-GC.
+     * Refreshes encoder position and velocity registers for all 4 motors. Zero-GC guarantee.
      */
     fun updateInputs() {
         motorCluster.updateInputs()
     }
 }
+

@@ -10,16 +10,33 @@ import com.areslib.action.RobotAction
 import com.areslib.subsystem.DriveSubsystem
 
 /**
- * Concrete single-motor testing testbed facade.
- * Extends FtcBaseRobot and uses null sensors for AprilTag and pinpoint localization.
+ * Single-motor testbed facade for hardware unit testing and empirical motor characterization.
+ *
+ * Extends [FtcBaseRobot] while bypassing odometry and vision sensors (`pinpointName = null`, `limelightName = null`).
+ * Wraps a single REV motor (`"revMotor"`) and IMU (`"imu"`), allowing isolated testing of velocity, feedforward, and voltage responses.
+ *
+ * ### Physical Units & Control:
+ * - Voltage target: Derived from Redux odometry state scaled to $[0.0, 12.0]$ Volts ($V$).
+ * - Angular velocity: Radians per second ($rad/s$).
+ * - IMU Euler angles: Pitch and roll converted to degrees ($deg$), yaw velocity in $rad/s$.
+ *
+ * ### Zero-GC Guarantee:
+ * Uses pre-allocated [ImuInputs] buffers to read IMU roll, pitch, and yaw velocity without heap allocations in [updateHardwareInputs].
+ *
+ * @param hardwareMap Qualcomm FTC SDK hardware map reference.
+ *
+ * @see FtcBaseRobot
+ * @see com.areslib.ftc.hardware.FtcMotor
  */
 class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinpointName = null, limelightName = null) {
 
-    // Subsystem Facades
+    /** Subsystem facade managing drive state actions. */
     val drive = DriveSubsystem(store)
     
-    // 1. Concrete FTC Hardware wrappers
+    /** Hardware IO wrapper for single REV Expansion/Control Hub motor (`"revMotor"`). */
     val motor = FtcMotor(hardwareMap.get(DcMotorEx::class.java, "revMotor"))
+
+    /** Hardware IO wrapper for Control Hub internal IMU sensor (`"imu"`). */
     val imu = FtcImu(hardwareMap.get(IMU::class.java, "imu"))
     
     private val imuInputs = ImuInputs()
@@ -30,10 +47,7 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
     }
 
     /**
-     * updateHardwareInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Reads IMU inputs into pre-allocated memory buffers and dispatches drive state update actions.
      */
     override fun updateHardwareInputs() {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
@@ -54,10 +68,11 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
     }
 
     /**
-     * updateSubsystems declaration.
+     * Updates motor voltage output based on current state parameters.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Delta time step in seconds ($s$).
+     * @param batteryVoltage Bus battery voltage in Volts ($V$).
+     * @param powerScale Dynamic power limit scaling factor $[0.0, 1.0]$.
      */
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val targetVolts = (store.state.drive.odometryX * 0.1) * 12.0
@@ -65,21 +80,18 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
     }
 
     /**
-     * publishRobotTelemetry declaration.
+     * Telemetry output hook for testbed diagnostics.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param timestamp System clock timestamp in milliseconds ($ms$).
      */
     override fun publishRobotTelemetry(timestamp: Long) {}
 
     /**
-     * safeHardware declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Safely cuts power to all registered testbed motor devices.
      */
     override fun safeHardware() {
         com.areslib.hardware.HardwareRegistry.safeAll()
     }
 }
+
 

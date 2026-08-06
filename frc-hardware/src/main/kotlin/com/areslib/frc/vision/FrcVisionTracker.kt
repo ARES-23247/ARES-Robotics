@@ -8,11 +8,24 @@ import com.areslib.subsystem.VisionTracker
 import com.areslib.telemetry.RobotStatusTracker
 
 /**
- * FRC implementation of the [VisionTracker] interface.
+ * AprilTag vision tracking and field pose estimation manager for FRC platforms.
  *
- * Polls Limelight/PhotonVision cameras for AprilTag measurements,
- * feeds valid observations into the CTRE swerve pose estimator (when on real hardware),
- * and dispatches vision data to the Redux store for EKF fusion.
+ * Feeds robot orientation (yaw, yaw rate, pitch, roll, linear speed) to Limelight vision hardware for MegaTag2 gyro-assisted localization.
+ * Filters AprilTag vision measurements based on distance cutoff ($<6.0\text{m}$) and ambiguity thresholds ($<0.3$) before passing pose observations to CTRE swerve EKF via `swerveIO.addVisionMeasurement`.
+ *
+ * ### Filtering Thresholds & Physical Units:
+ * - Maximum Tag Distance: $6.0$ meters ($m$).
+ * - Maximum Tag Ambiguity: $0.3$.
+ * - Orientation Parameters: Radians ($rad$), Degrees ($^\circ$), and Meters per Second ($m/s$).
+ *
+ * @param store Redux store instance holding [RobotState].
+ * @param visionIO Limelight or PhotonVision camera IO instance ([VisionIO]).
+ * @param swerveIO Physical CTRE swerve hardware IO ([SwerveHardwareIO]).
+ * @param isSimulation `true` when running in WPILib simulation mode.
+ *
+ * @see VisionTracker
+ * @see FrcLimelightIO
+ * @see SwerveHardwareIO
  */
 class FrcVisionTracker(
     private val store: Store,
@@ -21,29 +34,26 @@ class FrcVisionTracker(
     private val isSimulation: Boolean
 ) : VisionTracker {
 
+    /** Vision inputs container polled each loop frame. */
     val visionInputs = VisionIOInputs()
 
     private var _lastVisionStatus: String = "INIT"
 
-    /**
-     * Human-readable status string describing the last vision processing result.
-     */
+    /** Human-readable status string describing active vision filter state (`"ACCEPTED"`, `"REJECTED_FAR"`, `"REJECTED_AMBIGUOUS"`, `"NO TARGET"`, `"OFFLINE"`). */
     override val lastVisionStatus: String
         get() = _lastVisionStatus
 
-    /**
-     * True if the vision sensor hardware is connected and responding.
-     */
+    /** True if vision hardware is connected and producing valid telemetry. */
     override val isConnected: Boolean
         get() = visionIO != null && visionInputs.isConnected
 
     /**
-     * Polls the vision inputs, passes vehicle state to the camera (for MegaTag2),
-     * and streams valid measurements back to the drivetrain Kalman filter and Redux store.
+     * Executes 50Hz vision update: passes chassis gyro orientation to camera, reads AprilTag measurements, filters outliers, and feeds observations to CTRE swerve pose estimator.
      *
-     * @param timestampMs Current timestamp from [com.areslib.util.RobotClock].
+     * @param timestampMs System timestamp in milliseconds ($ms$).
      */
     override fun update(timestampMs: Long) {
+
         visionIO?.let { io ->
             val drive = store.state.drive
             val yawRate = swerveIO?.yawRateDegreesPerSecond ?: Math.toDegrees(drive.angularVelocityRadiansPerSecond)

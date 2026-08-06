@@ -3,29 +3,32 @@ package com.areslib.pathing
 import com.areslib.sequencer.Task
 
 /**
- * Object implementation for Named Commands.
+ * Autonomous Marker Event Named Command Registry.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
- *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * Maps named string keys embedded within PathPlanner `.path` and `.auto` files
+ * to executable subsystem [Task] factories or lambda actions.
  */
 object NamedCommands {
-    private val registry = mutableMapOf<String, (Long) -> Task>()
+    private val commands = mutableMapOf<String, (Long) -> Task>()
 
     /**
-     * Registers a command builder by name.
-     * The builder lambda takes a base timestamp (reference timestamp) and returns a [Task].
+     * Registers a named command key with a timestamp-parameterized [Task] generator function.
+     *
+     * @param name Unique event trigger string key (e.g., `"intake_deploy"`).
+     * @param taskFactory Lambda taking system timestamp ($ms$) and returning executable [Task].
      */
-    fun registerCommand(name: String, builder: (Long) -> Task) {
-        registry[name] = builder
+    fun registerCommand(name: String, taskFactory: (Long) -> Task) {
+        commands[name] = taskFactory
     }
 
     /**
-     * Registers a constant static command by name.
+     * Registers a named command key with a static non-timestamped [Task].
+     *
+     * @param name Unique event trigger string key.
+     * @param task Executable [Task] instance.
      */
     fun registerCommand(name: String, task: Task) {
-        registry[name] = { task }
+        commands[name] = { task }
     }
 
     /**
@@ -36,9 +39,13 @@ object NamedCommands {
      * - `SetThirdIndicatorColor_<color>` (Light 3 / "indicator3")
      * - `SetFourthIndicatorColor_<color>` (Light 4 / "indicator4")
      * - `SetIndicatorColor_<lightName>_<color>` (Custom target light name)
+     *
+     * @param name Target command name.
+     * @param timestampMs Execution timestamp in milliseconds ($ms$).
+     * @return Resolved [Task], or `null` if unregistered.
      */
     fun getCommand(name: String, timestampMs: Long): Task? {
-        val builder = registry[name]
+        val builder = commands[name]
         if (builder != null) return builder(timestampMs)
 
         if (name.contains("IndicatorColor_")) {
@@ -76,6 +83,7 @@ object NamedCommands {
      * Clears all registered commands.
      */
     fun clear() {
-        registry.clear()
+        commands.clear()
     }
 }
+

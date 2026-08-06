@@ -4,14 +4,27 @@ import com.areslib.telemetry.GamepadState
 import com.qualcomm.robotcore.hardware.Gamepad
 
 /**
- * Converts an FTC SDK Gamepad into a platform-agnostic GamepadState
- * for the ARESLib logging pipeline.
+ * Converts a Qualcomm FTC SDK [Gamepad] instance into a platform-agnostic [GamepadState] data snapshot.
+ *
+ * Copies joysticks $[-1.0, 1.0]$, triggers $[0.0, 1.0]$, standard buttons $(A, B, X, Y)$, D-pad inputs,
+ * and extended macro buttons ($C, Z, M1 \dots M4$) into a newly allocated [GamepadState].
+ *
+ * @receiver Qualcomm FTC SDK [Gamepad] instance.
+ * @return Newly allocated platform-agnostic [GamepadState] populated with current controller values.
+ *
+ * @see GamepadState.update
  */
 fun Gamepad.toState() = GamepadState().apply { update(this@toState) }
 
 /**
- * Updates a platform-agnostic GamepadState in-place from an FTC SDK Gamepad.
- * This should be used on the hot path to avoid garbage collection allocations.
+ * Updates a platform-agnostic [GamepadState] instance in-place from a Qualcomm FTC SDK [Gamepad].
+ *
+ * ### Zero-GC Compliance Guarantee:
+ * Mutates primitive fields in-place on the existing [GamepadState] reference. This function MUST be used on the
+ * 50Hz–100Hz hot execution path instead of [Gamepad.toState] to enforce a zero-heap allocation footprint.
+ *
+ * @receiver Target [GamepadState] snapshot object to update in-place.
+ * @param gamepad Source FTC SDK [Gamepad] instance read from Driver Station hardware.
  */
 fun GamepadState.update(gamepad: Gamepad) {
     leftStickX = gamepad.left_stick_x
@@ -44,3 +57,4 @@ fun GamepadState.update(gamepad: Gamepad) {
     m3 = gamepad.m3
     m4 = gamepad.m4
 }
+

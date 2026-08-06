@@ -10,9 +10,20 @@ import com.qualcomm.robotcore.hardware.DigitalChannel
 import com.areslib.hardware.actuator.MotorIO
 
 /**
- * Class implementation for Rev Imu Controller.
+ * Asynchronous hardware IO controller for REV Control Hub internal IMU (BNO055 / BHI260AP).
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Polling executes on a dedicated 50Hz background thread (`ARES-Asynchronous-IMU-Thread`) to read robot yaw, pitch, roll,
+ * and Z-axis rotational rate without blocking the main control loop.
+ *
+ * ### Physical Units & Coordinate System:
+ * - Angles: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ * - Angular Rate: Radians per second ($rad/s$).
+ * - Default Orientation: Logo facing UP, USB facing FORWARD.
+ *
+ * @param imu Underlying FTC SDK [IMU] hardware instance.
+ *
+ * @see ImuIO
+ * @see ImuInputs
  */
 class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     private var headingOffset = 0.0
@@ -79,10 +90,9 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     }
 
     /**
-     * updateInputs declaration.
+     * Updates IMU heading, pitch, roll, and yaw velocity inputs into pre-allocated [ImuInputs] target.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param inputs Pre-allocated [ImuInputs] object to update in-place.
      */
     override fun updateInputs(inputs: com.areslib.hardware.sensor.ImuInputs) {
         synchronized(lock) {
@@ -95,10 +105,7 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     }
 
     /**
-     * resetHeading declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Resets IMU zero heading offset reference to current physical yaw position.
      */
     override fun resetHeading() {
         synchronized(lock) {
@@ -107,10 +114,7 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background thread execution and releases IMU hardware handles.
      */
     override fun close() {
         running = false
@@ -119,9 +123,11 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
 }
 
 /**
- * Class implementation for Rev Analog Sensor Controller.
+ * Asynchronous hardware IO controller for generic analog voltage sensors plugged into REV Hub analog ports.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Runs a 50Hz background sampling thread (`ARES-AnalogSensor-Thread`) to cache voltage readings.
+ *
+ * @param analogInput FTC SDK [AnalogInput] hardware interface.
  */
 class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoCloseable {
     private val lock = Any()
@@ -154,20 +160,16 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
     }
 
     /**
-     * getVoltage declaration.
+     * Reads thread-safe cached analog voltage reading in Volts ($V$).
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return Instantaneous analog signal level $[0.0, 3.3] \text{ V}$.
      */
     fun getVoltage(): Double {
         return synchronized(lock) { latestVoltage }
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background thread execution and unregisters sensor.
      */
     override fun close() {
         running = false
@@ -176,9 +178,11 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
 }
 
 /**
- * Class implementation for Rev Digital Sensor Controller.
+ * Asynchronous hardware IO controller for digital sensors (e.g. limit switches, optical beam breaks) connected to REV Hub digital ports.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Runs a 50Hz background sampling thread (`ARES-DigitalSensor-Thread`) to cache logic states.
+ *
+ * @param digitalChannel FTC SDK [DigitalChannel] hardware interface.
  */
 class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : AutoCloseable {
     private val lock = Any()
@@ -215,20 +219,16 @@ class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : A
     }
 
     /**
-     * getState declaration.
+     * Reads thread-safe cached digital pin state (`true` for HIGH, `false` for LOW).
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return Active digital pin state.
      */
     fun getState(): Boolean {
         return synchronized(lock) { latestState }
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background thread execution and unregisters digital channel.
      */
     override fun close() {
         running = false
@@ -237,9 +237,17 @@ class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : A
 }
 
 /**
- * Class implementation for Rev Absolute Analog Encoder Controller.
+ * Asynchronous hardware IO controller for absolute analog encoders (e.g. REV Through Bore Encoder, Axon absolute encoder).
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Runs a 200Hz background sampling thread (`ARES-AnalogEncoder-Thread`) that converts $0.0\text{V} \dots 3.3\text{V}$ signals
+ * into scaled encoder position ticks without main-thread latency.
+ *
+ * @param analogInput FTC SDK [AnalogInput] hardware interface.
+ * @param version REV encoder revision variant ([com.areslib.hardware.actuator.RevEncoderVersion.V1] vs [com.areslib.hardware.actuator.RevEncoderVersion.V2]).
+ * @param ticksPerRev Encoder tick resolution rating ($ticks/rev$, default 8192.0).
+ * @param name Optional hardware configuration name for registry binding.
+ *
+ * @see MotorIO
  */
 class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogInput,
@@ -287,10 +295,7 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
         set(value) {}
 
     /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Calculates scaled position ticks from latest analog voltage reading.
      */
     fun updateInputs() {
         try {
@@ -307,10 +312,7 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
         get() = cachedPosition
 
     /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Calibrates zero position offset reference to current analog voltage position.
      */
     override fun resetEncoder() {
         try {
@@ -321,13 +323,11 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background thread execution and unregisters encoder.
      */
     override fun close() {
         running = false
         thread.interrupt()
     }
 }
+

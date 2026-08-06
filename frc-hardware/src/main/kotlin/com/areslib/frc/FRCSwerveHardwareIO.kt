@@ -11,23 +11,27 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  *
  * Integrates CTRE [SwerveDrivetrain] (operating natively on 250Hz CANivore CAN-FD loops) into the pure mathematical
  * ARESLib Redux architecture. Handles CANcoder absolute position signals, TalonFX motor current draws, Pigeon2 IMU readings,
- * and AdvantageScope signal logging.
+ * and AdvantageScope signal logging via [SwerveCtreDrivetrainReader] and [SwerveCtreSpeedRequestWriter].
  *
  * ### Physical Units & Coordinates:
  * - Position: Meters ($m$)
  * - Velocity: Meters per second ($m/s$)
- * - Heading: Radians ($rad$), counter-clockwise positive
+ * - Heading: Radians ($rad$), counter-clockwise positive ($0 = +X$, $\pi/2 = +Y$)
  * - Angular Velocity: Radians per second ($rad/s$)
  * - Motor Current: Amperes ($A$)
+ * - Inclination: Pitch and Roll in Degrees ($^\circ$)
+ *
+ * ### Zero-GC Guarantee:
+ * Reads and writes pass through pre-allocated primitive arrays (`scratchSpeeds`, `scratchCurrents`, etc.) to prevent allocation stalls in 50Hz/250Hz loops.
  *
  * @param drivetrain CTRE Phoenix 6 [SwerveDrivetrain] instance.
- */
-/**
- * Class implementation for F R C Swerve Hardware I O.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @see SwerveHardwareIO
+ * @see SwerveCtreDrivetrainReader
+ * @see SwerveCtreSpeedRequestWriter
  */
 class FRCSwerveHardwareIO(drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
+
 
     private val reader = SwerveCtreDrivetrainReader(drivetrain)
     private val writer = SwerveCtreSpeedRequestWriter(drivetrain)

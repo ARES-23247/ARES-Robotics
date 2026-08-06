@@ -17,16 +17,20 @@ import kotlin.math.sign
  * Power effort with PID feedback and voltage scaling:
  * $$u_{out} = \text{coerceIn}\left((u_{FF} + u_{PID}) \cdot \text{powerScale}, -1.0, 1.0\right)$$
  *
+ * ### Physical Units & Range Boundaries:
+ * - Wheel Surface Velocities: Meters per second ($m/s$).
+ * - Measured Voltage: Volts ($V$).
+ * - Static Friction $k_S$: Dimensionless normalized voltage feedforward offset $[0.0, 1.0]$.
+ * - Output Power: Duty cycle percent $[-1.0, 1.0]$.
+ *
+ * ### Zero-GC Compliance:
+ * Computes all 4 motor power outputs in [calculateMotorPowers] using pre-allocated arrays and primitive variables with zero dynamic heap allocations.
+ *
  * @param initialKs Static friction feedforward voltage offset $k_S$.
  * @param motorKp Proportional gain $K_p$ for wheel velocity PID feedback.
  * @param motorKi Integral gain $K_i$ for wheel velocity PID feedback.
  * @param motorKd Derivative gain $K_d$ for wheel velocity PID feedback.
  * @param initialSlewRateLimit Acceleration slew rate limit ($1/s$).
- */
-/**
- * Class implementation for Mecanum Drive Feedforward.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 class MecanumDriveFeedforward(
     var initialKs: Double = 0.0,
@@ -35,6 +39,7 @@ class MecanumDriveFeedforward(
     var motorKd: Double? = null,
     var initialSlewRateLimit: Double? = null
 ) {
+
     /** Static friction feedforward coefficient $k_S$. */
     var kS: Double = initialKs
 

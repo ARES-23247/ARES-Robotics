@@ -6,18 +6,41 @@ import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
 
 /**
- * Object implementation for Detour Generator.
+ * Dynamic Real-Time Obstacle Avoidance Detour Trajectory Generator.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Evaluates field costmap collisions along an active trajectory, generates an any-angle Theta* grid path
+ * around obstacles, and parameterizes the path into a jerk-limited S-curve trajectory [Path].
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Mathematical Formulation:
+ * 1. **Obstacle Collision Detection**:
+ *    Ray-casts along current trajectory $\mathbf{x}(t)$ against inflated costmap cells:
+ *    $$\text{collision}(t) = \text{costmap.isTraversable}(x(t), y(t)) == \text{false}$$
+ * 2. **Theta* Waypoint Smoothing & Bezier Fitting**:
+ *    Connects waypoints $\mathbf{W}_0, \mathbf{W}_1, \dots, \mathbf{W}_k$ with piecewise cubic Bezier splines $\mathbf{B}_i(t)$.
+ * 3. **Kinematic Parameterization**:
+ *    Enforces max velocity $v_{\text{max}}$, max acceleration $a_{\text{max}}$, and max jerk $j_{\text{max}}$ constraints.
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position & Waypoints: Field-centric meters ($m$)
+ * - Velocity Bounds ($v_{\text{max}}$): Meters per second ($m/s$)
+ * - Acceleration Bounds ($a_{\text{max}}$): Meters per second squared ($a_{\text{max}}$)
+ * - Heading: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ *
+ * @see ThetaStarPlanner
+ * @see SCurveTrajectoryParameterizer
  */
 object DetourGenerator {
 
     /**
      * Generates a smooth, coordinate-snap-free transition path from the robot's active real-time state
      * to intercept a target detour path, then stitches the remaining detour path points.
+     *
+     * @param startPose Robot current 2D pose in meters ($m$) and CCW-positive radians ($rad$).
+     * @param currentVelMps Current robot linear velocity in meters per second ($m/s$).
+     * @param targetPath Target detour trajectory [Path] to intercept.
+     * @param interceptLookaheadMeters Distance ahead on target path to target for interception in meters ($m$).
+     * @param maxVelocityMps Maximum speed limit in meters per second ($m/s$).
+     * @return Stitched transition [Path].
      */
     fun generateTangentArc(
         startPose: Pose2d,
@@ -26,6 +49,7 @@ object DetourGenerator {
         interceptLookaheadMeters: Double = 1.0,
         maxVelocityMps: Double = 2.0
     ): Path {
+
         if (targetPath.points.isEmpty()) return Path(emptyList())
 
         // 1. Find the intercept point on the target path

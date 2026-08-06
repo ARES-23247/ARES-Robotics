@@ -75,7 +75,11 @@ class LQRController(
     private var lastWarningTime: Long = 0L
 
     /**
-     * Initializes state space matrices.
+     * Initializes the discrete state-space dynamic system matrices $A$, $B$, and $C$.
+     *
+     * @param aData Row-major flattened array of state transition matrix coefficients $A$ ($n \times n$).
+     * @param bData Row-major flattened array of input matrix coefficients $B$ ($n \times m$).
+     * @param cData Row-major flattened array of output measurement matrix coefficients $C$ ($p \times n$).
      */
     fun setSystemCoefficients(aData: DoubleArray, bData: DoubleArray, cData: DoubleArray) {
         A = Matrix(numStates, numStates, aData)
@@ -84,7 +88,9 @@ class LQRController(
     }
 
     /**
-     * Resets the estimated state to the initial condition.
+     * Resets the estimated state vector $\hat{x}$ to the specified initial condition vector $x_0$.
+     *
+     * @param initialState Array of initial state values $[x_1, x_2, \dots, x_n]^T$ matching state dimension $n$.
      */
     fun reset(initialState: DoubleArray) {
         require(initialState.size == numStates) { "Initial state must match system dimensions" }
@@ -94,12 +100,14 @@ class LQRController(
 
     /**
      * Solves the Discrete-Time Algebraic Riccati Equation (DARE) dynamically
-     * using the dynamic programming value iteration approach to compute the optimal gain matrix K.
+     * using dynamic programming value iteration to resolve the optimal state feedback gain matrix $K$:
+     * $$P_{k+1} = A^T P_k A - A^T P_k B (R + B^T P_k B)^{-1} B^T P_k A + Q$$
+     * $$K = (R + B^T P_{\infty} B)^{-1} B^T P_{\infty} A$$
      *
-     * @param Q State cost weighting matrix (numStates x numStates)
-     * @param R Control cost weighting matrix (numInputs x numInputs)
-     * @param maxIterations Number of iterations to solve DARE.
-     * @param tolerance Convergence tolerance.
+     * @param Q State cost penalty matrix ($n \times n$).
+     * @param R Control effort cost penalty matrix ($m \times m$).
+     * @param maxIterations Maximum allowable DARE value iterations (default: 1000).
+     * @param tolerance Convergence tolerance threshold for $\|P_{k+1} - P_k\|_{\infty}$ (default: $10^{-6}$).
      */
     fun computeFeedbackGains(Q: Matrix, R: Matrix, maxIterations: Int = 1000, tolerance: Double = 1e-6) {
         require(Q.rows == numStates && Q.cols == numStates)
@@ -141,14 +149,18 @@ class LQRController(
     }
 
     /**
-     * Calculates the optimal control input voltage.
-     * Updates the discrete Kalman observer state under the hood.
+     * Calculates optimal control inputs $u(k)$ and updates the internal Discrete Kalman Filter (LQE) state observer estimate $\hat{x}_k$.
      *
-     * WARNING: Returns a pre-allocated array. Do not store the reference or use across threads.
+     * Computes optimal control effort $u = -K (\hat{x} - x_{ref})$, applies voltage saturation limits $[u_{min}, u_{max}]$ and slew rate limits,
+     * and advances the Kalman observer equation:
+     * $$\hat{x}_{k+1} = A \hat{x}_k + B u_k + L (y_k - C \hat{x}_k)$$
      *
-     * @param y Measured sensor outputs from the system.
-     * @param xRef Desired reference target state.
-     * @param dtSeconds Elapsed time since last update.
+     * **Zero-GC Compliance**: Operates in-place on pre-allocated matrix buffers. Returns a reference to an internal pre-allocated array `outU`.
+     *
+     * @param y Array of measured physical sensor outputs $y_k$ matching output dimension $p$.
+     * @param xRef Array of target reference state values $x_{\text{ref}, k}$ matching state dimension $n$.
+     * @param dtSeconds Loop cycle elapsed time in seconds ($\Delta t > 0$).
+     * @return Reference to internal pre-allocated array containing computed control efforts $[u_1, u_2, \dots, u_m]^T$ (e.g. Volts).
      */
     fun calculate(
         y: DoubleArray,

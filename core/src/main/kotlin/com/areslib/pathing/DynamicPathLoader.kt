@@ -7,12 +7,22 @@ import java.io.IOException
 import com.areslib.sequencer.Task
 
 /**
- * Highly resilient, cross-platform PathPlanner path loader.
- * Prioritizes dynamic filesystem scanning (ideal for wireless ADB tuning pushes on Android FTC hubs
- * or FRC RoboRIOs) before gracefully falling back to embedded classpath resources or throwing
- * clean diagnostic errors.
+ * Resilient Cross-Platform PathPlanner Trajectory File Loader.
+ *
+ * Dynamically loads and parses PathPlanner `.path` and `.auto` JSON trajectory files
+ * across Android Control Hub storage (`/sdcard/FIRST/...`) and FRC RoboRIO deploy directories (`/deploy/pathplanner/...`).
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Heading ($\theta$): Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Velocity ($v$): Meters per second ($m/s$)
+ * - Acceleration ($a$): Meters per second squared ($m/s^2$)
+ *
+ * @see PathPlannerJsonParser
+ * @see PathPlannerAutoParser
  */
 object DynamicPathLoader {
+
 
     private val SEARCH_PATHS = listOf(
         "/sdcard/FIRST/tuning/paths",

@@ -11,9 +11,29 @@ import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.control.drivetrain.HolonomicDriveController
 
 /**
- * Class implementation for Vision Extrinsic Calibration Controller.
+ * Controller for Vision Camera Extrinsic Calibration Sweeps.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Executes a controlled $360^\circ$ ($2\pi$ rad) rotational sweep while pinning robot translation ($v_x = 0, v_y = 0$).
+ * Captures AprilTag observations across multiple view angles to estimate precise camera-to-robot body frame transform matrices.
+ *
+ * ### Sweep Kinematics & Transformation:
+ * Heading target trajectory over time:
+ * $$\theta_{target}(t) = \theta_{start} + \omega_{sweep} \cdot t$$
+ * Transform logging payload vector:
+ * $$\mathbf{T}_{cam \to tag} = \begin{bmatrix} t_x & t_y & t_z & q_w & q_x & q_y & q_z \end{bmatrix}^T$$
+ *
+ * ### Physical Units & Coordinates:
+ * - Rotational Sweep Speed (`sweepSpeedRadPerSec`): Radians per second ($rad/s$), CCW positive
+ * - Translation Errors ($x, y$): Locked to 0.0 meters ($m$)
+ * - Gyro Heading: Radians ($rad$), CCW positive
+ * - Camera Transform Translations ($t_x, t_y, t_z$): Meters ($m$) in camera frame
+ * - Timestep ($\Delta t$): Seconds ($s$)
+ *
+ * @param store Global Redux store instance for dispatching calibration actions.
+ * @param holonomicDriveController Drivetrain holonomic controller for closed-loop heading tracking.
+ * @param publisher Network state publisher for live NT4 calibration telemetry streaming.
+ * @param sweepSpeedRadPerSec Constant rotational velocity during calibration sweep in rad/s (default: $0.5$ rad/s).
+ * @see HolonomicDriveController
  */
 class VisionExtrinsicCalibrationController(
     private val store: Store,
@@ -21,9 +41,11 @@ class VisionExtrinsicCalibrationController(
     private val publisher: ARESNetworkStatePublisher,
     private val sweepSpeedRadPerSec: Double = 0.5
 ) {
+    /** `true` if a calibration sweep is currently in progress; `false` otherwise. */
     var isActive: Boolean = false
         private set
 
+    /** Index of the camera currently under calibration. */
     var cameraIndex: Int = 0
         private set
 
@@ -31,10 +53,10 @@ class VisionExtrinsicCalibrationController(
     private var currentTargetHeading: Double = 0.0
 
     /**
-     * start declaration.
+     * Starts a new extrinsic calibration sweep sequence for the specified camera.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param cameraIndex Zero-indexed identifier of the target camera sensor.
+     * @param currentHeading Initial robot heading orientation in radians ($rad$).
      */
     fun start(cameraIndex: Int, currentHeading: Double) {
         isActive = true
@@ -46,10 +68,15 @@ class VisionExtrinsicCalibrationController(
     }
 
     /**
-     * update declaration.
+     * Updates calibration sweep trajectory and processes detected vision target measurements.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Commanded rotational velocity rotates the robot while translation is locked. Dispatches
+     * calibration frames when AprilTag targets are observed. Automatically stops after completing a full $2\pi$ rotation.
+     *
+     * @param currentPose Current estimated robot pose on the field ($m, rad$).
+     * @param measurements List of active vision measurements received in the current frame.
+     * @param dtSeconds Elapsed cycle loop timestep in seconds ($s$).
+     * @return Commanded robot-frame [ChassisSpeeds] (m/s, rad/s).
      */
     fun update(
         currentPose: Pose2d,

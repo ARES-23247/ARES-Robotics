@@ -3,43 +3,45 @@ package com.areslib.kinematics
 import com.areslib.math.geometry.ChassisSpeeds
 
 /**
- * Mecanum Drivetrain Forward and Inverse Kinematics Calculator.
+ * Drivetrain Forward and Inverse Kinematics Calculator for 4-Wheel Mecanum Drivetrains.
  *
- * Converts robot-frame velocities $[v_x, v_y, \omega]$ into 4 individual wheel surface speeds ($v_{FL}, v_{FR}, v_{BL}, v_{BR}$)
- * and vice versa using the physical drivetrain geometry footprint.
+ * Converts robot-frame chassis velocities $[v_x, v_y, \omega]^T$ into 4 individual wheel surface speeds ($v_{FL}, v_{FR}, v_{BL}, v_{BR}$)
+ * (Inverse Kinematics) and resolves measured wheel velocities back into chassis-frame velocities (Forward Kinematics).
  *
- * ### Inverse Kinematics Equations:
+ * ### Inverse Kinematics Matrix Equation:
  * For effective rotation moment arm $k = \frac{\text{trackWidth}}{2} + \frac{\text{wheelBase}}{2}$:
- * $$v_{FL} = v_x - v_y - \omega \cdot k$$
- * $$v_{FR} = v_x + v_y + \omega \cdot k$$
- * $$v_{BL} = v_x + v_y - \omega \cdot k$$
- * $$v_{BR} = v_x - v_y + \omega \cdot k$$
+ * $$\begin{bmatrix} v_{FL} \\ v_{FR} \\ v_{BL} \\ v_{BR} \end{bmatrix} = \begin{bmatrix} 1 & -1 & -k \\ 1 & 1 & k \\ 1 & 1 & -k \\ 1 & -1 & k \end{bmatrix} \begin{bmatrix} v_x \\ v_y \\ \omega \end{bmatrix}$$
  *
- * ### Forward Kinematics Equations:
- * $$v_x = \frac{v_{FL} + v_{FR} + v_{BL} + v_{BR}}{4}$$
- * $$v_y = \frac{-v_{FL} + v_{FR} + v_{BL} - v_{BR}}{4}$$
- * $$\omega = \frac{-v_{FL} + v_{FR} - v_{BL} + v_{BR}}{4 \cdot k}$$
+ * ### Forward Kinematics Matrix Equation:
+ * $$\begin{bmatrix} v_x \\ v_y \\ \omega \end{bmatrix} = \frac{1}{4} \begin{bmatrix} 1 & 1 & 1 & 1 \\ -1 & 1 & 1 & -1 \\ -\frac{1}{k} & \frac{1}{k} & -\frac{1}{k} & \frac{1}{k} \end{bmatrix} \begin{bmatrix} v_{FL} \\ v_{FR} \\ v_{BL} \\ v_{BR} \end{bmatrix}$$
  *
- * ### Physical Units & Coordinates:
+ * ### Physical Units & Coordinate System:
  * - Linear Dimensions: Meters ($m$)
- * - Linear Velocities: Meters per second ($m/s$)
+ * - Linear Velocities: Meters per second ($m/s$), +X forward, +Y left
  * - Angular Velocities: Radians per second ($rad/s$), counter-clockwise positive
+ * - Rotational Moment Arm Constant ($k$): Meters ($m$)
  *
- * @param trackWidthMeters Distance between left and right wheel centers in meters.
- * @param wheelBaseMeters Distance between front and rear wheel centers in meters.
+ * ### Zero-GC Guarantees:
+ * High-frequency update loops (50Hz–1000Hz) must call the primitive overload [toWheelSpeeds] passing a pre-allocated
+ * `DoubleArray(4)` buffer to ensure zero heap allocations in hot paths.
+ *
+ * @property trackWidthMeters Distance between left and right wheel contact centers in meters ($m$).
+ * @property wheelBaseMeters Distance between front and rear wheel contact centers in meters ($m$).
+ * @see MecanumWheelSpeeds
  */
 class MecanumKinematics(
     private val trackWidthMeters: Double,
     private val wheelBaseMeters: Double
 ) {
-    /** The effective rotational moment arm constant $k = (W/2) + (L/2)$ in meters. */
+    /** The effective rotational moment arm constant $k = \frac{W}{2} + \frac{L}{2}$ in meters ($m$). */
     val k: Double = (trackWidthMeters / 2.0) + (wheelBaseMeters / 2.0)
 
     /**
-     * Converts robot-centric [ChassisSpeeds] into individual [MecanumWheelSpeeds].
+     * Calculates individual wheel surface speeds from robot-centric [ChassisSpeeds].
      *
-     * @param speeds Desired robot-frame velocities $[v_x, v_y, \omega]$ (m/s, rad/s).
-     * @return Calculated [MecanumWheelSpeeds] (m/s).
+     * @param speeds Desired robot-frame velocity vector $[v_x, v_y, \omega]^T$ (m/s, rad/s).
+     * @return Calculated immutable [MecanumWheelSpeeds] containing $[v_{FL}, v_{FR}, v_{BL}, v_{BR}]$ in m/s.
+     * @see toWheelSpeeds
      */
     fun toWheelSpeeds(speeds: ChassisSpeeds): MecanumWheelSpeeds {
         val vx = speeds.vxMetersPerSecond
@@ -55,7 +57,13 @@ class MecanumKinematics(
     }
 
     /**
-     * Converts individual wheel surface speeds into robot-frame [ChassisSpeeds].
+     * Converts four individual wheel surface velocities into robot-frame chassis velocities [ChassisSpeeds].
+     *
+     * @param fl Front-left wheel surface velocity in meters per second ($m/s$).
+     * @param fr Front-right wheel surface velocity in meters per second ($m/s$).
+     * @param bl Back-left (rear-left) wheel surface velocity in meters per second ($m/s$).
+     * @param br Back-right (rear-right) wheel surface velocity in meters per second ($m/s$).
+     * @return Calculated robot-frame [ChassisSpeeds] velocity vector $[v_x, v_y, \omega]^T$ (m/s, rad/s).
      */
     fun toChassisSpeeds(fl: Double, fr: Double, bl: Double, br: Double): ChassisSpeeds {
         val vx = (fl + fr + bl + br) / 4.0
@@ -65,12 +73,14 @@ class MecanumKinematics(
     }
 
     /**
-     * Zero-GC variant converting primitive velocity parameters into a pre-allocated 4-element output array.
+     * Zero-GC inverse kinematics variant that populates a pre-allocated 4-element output array.
      *
-     * @param vx Robot forward velocity in m/s.
-     * @param vy Robot strafe velocity (left positive) in m/s.
-     * @param omega Robot rotation rate (CCW positive) in rad/s.
-     * @param outSpeeds Output 4-element array storing $[v_{FL}, v_{FR}, v_{BL}, v_{BR}]$.
+     * Eliminates heap allocations completely in 50Hz–1000Hz robot control loops.
+     *
+     * @param vx Robot forward linear velocity in meters per second ($m/s$).
+     * @param vy Robot strafe linear velocity (left positive) in meters per second ($m/s$).
+     * @param omega Robot rotational velocity (CCW positive) in radians per second ($rad/s$).
+     * @param outSpeeds Pre-allocated 4-element array receiving $[v_{FL}, v_{FR}, v_{BL}, v_{BR}]$ in m/s.
      */
     fun toWheelSpeeds(vx: Double, vy: Double, omega: Double, outSpeeds: DoubleArray) {
         if (outSpeeds.size < 4) return

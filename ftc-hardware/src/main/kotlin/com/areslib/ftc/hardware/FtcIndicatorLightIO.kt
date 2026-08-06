@@ -8,20 +8,21 @@ import com.qualcomm.robotcore.hardware.Servo
 import kotlin.math.abs
 
 /**
- * FTC hardware implementation for the GoBilda RGB Indicator Light (3118-0808-0002).
- * Connects to a standard servo port on the Control Hub / Expansion Hub.
- * The light's color is set by writing a position value (0.0 to 1.0) corresponding
- * to the GoBilda color gradient (see Product Insight #4 for exact mapping).
+ * Hardware IO actuator wrapper for the GoBilda RGB Indicator Light (SKU 3118-0808-0002).
  *
- * Includes position caching to skip redundant I2C writes and reduce bus congestion.
+ * Connects to a standard PWM servo output port on REV Control or Expansion Hubs. Color selection is controlled
+ * by mapping normalized servo positions $[0.0, 1.0]$ across the GoBilda color spectrum gradient.
  *
- * @param hardwareMap The FTC HardwareMap.
- * @param name The hardware configuration name for this indicator light servo.
- */
-/**
- * Class implementation for Ftc Indicator Light I O.
+ * ### Physical Units & Bus Optimization:
+ * - Position Signal: Normalized PWM servo duty cycle $[0.0, 1.0]$.
+ * - Servo Position Tolerance: $0.001$ change threshold prevents redundant REV I2C writes.
+ * - Hardware Mode: Output-only actuator device.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @param hardwareMap FTC OpMode hardware map instance.
+ * @param name Hardware map name for the indicator light servo.
+ *
+ * @see IndicatorLightIO
+ * @see IndicatorLightColor
  */
 class FtcIndicatorLightIO(
     hardwareMap: HardwareMap,
@@ -35,10 +36,10 @@ class FtcIndicatorLightIO(
         private set
 
     /**
-     * setPosition declaration.
+     * Commands the indicator light servo to a new normalized position $[0.0, 1.0]$.
+     * Skips write execution if delta position is below $0.001$ tolerance.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param position Target normalized servo position $[0.0, 1.0]$.
      */
     override fun setPosition(position: Double) {
         val clamped = position.coerceIn(0.0, 1.0)
@@ -51,42 +52,34 @@ class FtcIndicatorLightIO(
     }
 
     /**
-     * safe declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Resets the indicator light to the [IndicatorLightColor.OFF] state ($0.0$ position).
      */
     override fun safe() {
         setPosition(IndicatorLightColor.OFF.position)
     }
 
     /**
-     * refresh declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * No-op refresh hook (actuator is write-only).
      */
     override fun refresh() {
         // Write-only device — no sensor reads needed
     }
 
     /**
-     * logTelemetry declaration.
+     * Logs current indicator light servo position to network telemetry.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param telemetry Telemetry sink instance.
+     * @param prefix Telemetry topic prefix string.
      */
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/Position", currentPosition)
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Safely turns off the indicator light and releases hardware references.
      */
     override fun close() {
         safe()
     }
 }
+

@@ -14,28 +14,35 @@ import com.areslib.telemetry.*
 import kotlin.math.abs
 
 /**
- * FRC Swerve Robot — a clean, drivebase-only swerve robot facade.
+ * FRC Swerve Robot — high-level drivebase robot container facade.
  *
- * Extends [FrcBaseRobot] to wire CTRE Phoenix 6 swerve drivetrain IO,
- * optional AprilTag vision tracking, and beached-chassis detection.
- * Season-specific superstructure mechanisms are added by team code via
- * [registerSubsystem] and [FrcTelemetryManager.customPublishers].
+ * Extends [FrcBaseRobot] to wire CTRE Phoenix 6 swerve drivetrain IO ([SwerveHardwareIO]),
+ * AprilTag vision tracking ([FrcVisionTracker]), and beached-chassis traction loss recovery.
  *
- * @param swerveIO The swerve drivetrain hardware IO (null for simulation-only).
- * @param visionIO The vision camera IO (null to disable vision tracking).
- * @param isSimulation True when running in WPILib simulation mode.
- * @param initialState The initial immutable robot state snapshot.
- * @param reducer The root reducer function.
- * @param baseTelemetry The platform telemetry backend.
- * @param isEnabledProvider Supplier returning whether the robot is currently enabled.
- * @param robotModeProvider Supplier returning the current robot mode string.
- */
-/**
- * Class implementation for Frc Swerve Robot.
+ * ### Beached-Chassis Recovery Logic:
+ * Detects chassis high-centering when IMU pitch/roll $>8.0^\circ$ and wheel module speeds $>1.5\text{m/s}$ with current draw $<8.0\text{A}$ across $\ge 2$ modules.
+ * Holds EKF pose estimation constant and re-seeds CANivore odometry upon recovery.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * ### Physical Units & Coordinates:
+ * - Position: Meters ($m$)
+ * - Velocity: Meters per second ($m/s$)
+ * - Heading: Radians ($rad$), **CCW-positive** standard
+ *
+ * @param swerveIO Underlying CTRE Phoenix 6 swerve hardware IO (or `null` in simulation).
+ * @param visionIO Optional Limelight / AprilTag vision IO (or `null`).
+ * @param isSimulation `true` when running in WPILib simulation mode.
+ * @param initialState Initial immutable [RobotState] snapshot.
+ * @param reducer Root Redux reducer function composing state transitions.
+ * @param baseTelemetry Platform telemetry backend ([FRCTelemetry]).
+ * @param isEnabledProvider Lambda returning active DriverStation enable state.
+ * @param robotModeProvider Lambda returning active FRC match mode string.
+ *
+ * @see FrcBaseRobot
+ * @see SwerveHardwareIO
+ * @see SwerveDriveFacade
  */
 class FrcSwerveRobot(
+
     private val swerveIO: SwerveHardwareIO? = null,
     private val visionIO: VisionIO? = null,
     private val isSimulation: Boolean = false,

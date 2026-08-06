@@ -1,23 +1,21 @@
 package com.areslib.pathing.planner
 
 /**
- * Class implementation for Long Heap.
+ * Primitive Long-Packed Binary Min-Heap Priority Queue for Zero-GC Pathfinding.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Packs 32-bit floating point $f$-cost bits and 32-bit integer grid node indices into primitive 64-bit `Long` elements
+ * to achieve $O(\log N)$ priority queue insertion and extraction with zero heap allocations.
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Bit-Packing Layout:
+ * `element = (fCostBits.toLong() shl 32) or (nodeIndex.toLong() and 0xFFFFFFFFL)`
+ *
+ * @param capacity Initial primitive array capacity.
  */
 class LongHeap(capacity: Int) {
     var data = LongArray(capacity)
     var size = 0
 
-    /**
-     * add declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Pushes a packed 64-bit `(fCost, nodeIndex)` key into the min-heap. */
     fun add(value: Long) {
         if (size == data.size) {
             data = data.copyOf(data.size * 2)
@@ -33,12 +31,7 @@ class LongHeap(capacity: Int) {
         data[i] = value
     }
 
-    /**
-     * poll declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Extracts and returns the minimum `(fCost, nodeIndex)` key from the min-heap root. */
     fun poll(): Long {
         val result = data[0]
         size--
@@ -59,32 +52,24 @@ class LongHeap(capacity: Int) {
         return result
     }
 
-    /**
-     * clear declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Resets heap element count to 0 in $O(1)$ constant time without array reallocation. */
     fun clear() { size = 0 }
     
-    /**
-     * isNotEmpty declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns true if the heap contains at least one active element. */
     fun isNotEmpty(): Boolean = size > 0
 }
 
 /**
- * Class implementation for Planner State.
+ * Thread-Local Epoch-Resetting Theta* Search State Scratchpad.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Maintains pre-allocated arrays (`gCosts`, `parents`, `generations`) and an epoch generation counter (`generation`).
+ * Calling [ensureCapacity] increments the epoch counter, invalidating stale array entries in $O(1)$ constant time
+ * without requiring array zeroing passes or dynamic object allocations.
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * @param capacity Maximum grid node count ($N_{\text{rows}} \times N_{\text{cols}}$).
  */
 class PlannerState(capacity: Int) {
+
     var gCosts = DoubleArray(capacity)
     var parents = IntArray(capacity)
     var generations = IntArray(capacity)

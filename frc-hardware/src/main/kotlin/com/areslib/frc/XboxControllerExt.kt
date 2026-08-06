@@ -4,8 +4,15 @@ import com.areslib.telemetry.GamepadState
 import edu.wpi.first.wpilibj.XboxController
 
 /**
- * Converts a WPILib XboxController into a platform-agnostic GamepadState
- * for the ARESLib unified logging pipeline.
+ * Converts a WPILib [XboxController] into a platform-agnostic [GamepadState] data snapshot.
+ *
+ * Maps left/right sticks $[-1.0, 1.0]$, trigger axes $[0.0, 1.0]$, ABXY buttons, DPAD angle degrees ($0^\circ, 90^\circ, 180^\circ, 270^\circ$),
+ * bumpers, stick buttons, and start/back controls into standard normalized fields.
+ *
+ * @return Immutable [GamepadState] snapshot.
+ *
+ * @see GamepadState
+ * @see XboxController
  */
 fun XboxController.toState() = GamepadState(
     leftStickX = leftX.toFloat(),
@@ -31,12 +38,13 @@ fun XboxController.toState() = GamepadState(
 )
 
 /**
- * XboxController declaration.
+ * Mutates an existing [GamepadState] container in-place with latest physical inputs from WPILib [XboxController].
+ * Checks [DriverStation.isJoystickConnected] to clear inputs to safe defaults if controller disconnects.
  *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
+ * @param state Pre-allocated [GamepadState] target to update in-place.
  */
 fun XboxController.updateState(state: GamepadState) {
+
     if (!edu.wpi.first.wpilibj.DriverStation.isJoystickConnected(this.port)) {
         state.reset()
         return

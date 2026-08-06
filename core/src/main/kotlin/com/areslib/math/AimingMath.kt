@@ -4,23 +4,54 @@ import kotlin.math.atan2
 import kotlin.math.sqrt
 
 /**
- * Pure math utilities for target aiming and velocity compensation.
+ * Lead-shot target aiming and field-relative velocity compensation calculator.
+ *
+ * Solves the quadratic time-of-flight equation for projectile launch vectors from a moving robot
+ * to hit a stationary target coordinate (e.g. goal basket or target zone).
+ *
+ * ### Mathematical Formulation:
+ * Given relative displacement $\mathbf{d} = \mathbf{p}_{\text{target}} - \mathbf{p}_{\text{robot}}$
+ * and robot velocity $\mathbf{v}_{\text{robot}} = [v_x, v_y]^T$, the launch vector $\mathbf{v}_{\text{launch}}$
+ * with speed $v_{\text{shot}} = \|\mathbf{v}_{\text{launch}}\|$ satisfies:
+ * $$\mathbf{v}_{\text{launch}} t + \mathbf{v}_{\text{robot}} t = \mathbf{d}$$
+ * $$\|\mathbf{v}_{\text{launch}}\|^2 t^2 = \|\mathbf{d} - \mathbf{v}_{\text{robot}} t\|^2$$
+ *
+ * Expanding into standard quadratic form $a t^2 + b t + c = 0$:
+ * $$a = v_{\text{shot}}^2 - \|\mathbf{v}_{\text{robot}}\|^2$$
+ * $$b = 2 (\mathbf{d} \cdot \mathbf{v}_{\text{robot}}) = 2 (d_x v_x + d_y v_y)$$
+ * $$c = -\|\mathbf{d}\|^2 = -(d_x^2 + d_y^2)$$
+ *
+ * Solving for positive time of flight $t$:
+ * $$t = \frac{-b + \sqrt{b^2 - 4ac}}{2a}$$
+ *
+ * The compensated launch velocity components and robot heading $\theta$ are:
+ * $$\mathbf{v}_{\text{launch}} = \frac{\mathbf{d}}{t} - \mathbf{v}_{\text{robot}}$$
+ * $$\theta = \text{atan2}(v_{\text{launch}, y}, v_{\text{launch}, x})$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Velocity $(v_x, v_y, v_{\text{shot}})$: Field-centric meters per second ($m/s$)
+ * - Time $(t)$: Seconds ($s$)
+ * - Heading $(\theta)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ *
+ * ### Zero-GC Guarantee:
+ * Uses primitive scalar arithmetic and zero object allocations, making it 100% zero-GC safe for high-frequency control loops.
  */
 object AimingMath {
 
     /**
-     * Calculates the required robot heading to hit a target while moving.
-     * Combines the robot's coordinate offset and field-relative velocity vector
-     * to solve for the time of flight and relative launching angle.
+     * Calculates the required field-relative robot heading to launch a projectile at [shotSpeed]
+     * and hit [targetX], [targetY] while moving at field velocity [vx], [vy].
      *
-     * @param robotX Robot's current X position on the field (meters)
-     * @param robotY Robot's current Y position on the field (meters)
-     * @param vx Robot's current field-relative X velocity (m/s)
-     * @param vy Robot's current field-relative Y velocity (m/s)
-     * @param targetX High goal X coordinate (meters)
-     * @param targetY High goal Y coordinate (meters)
-     * @param shotSpeed Ball exit velocity relative to the shooter (m/s)
-     * @return The required robot heading in radians (CCW-positive)
+     * @param robotX Current field-centric X position of the robot in meters ($m$).
+     * @param robotY Current field-centric Y position of the robot in meters ($m$).
+     * @param vx Field-relative X velocity of the robot in meters per second ($m/s$).
+     * @param vy Field-relative Y velocity of the robot in meters per second ($m/s$).
+     * @param targetX Target X coordinate in meters ($m$).
+     * @param targetY Target Y coordinate in meters ($m$).
+     * @param shotSpeed Exit velocity magnitude of the projectile relative to the robot shooter in meters per second ($m/s$).
+     * @return Compensated target heading in radians ($rad$), CCW-positive ($0 = +X$, $\frac{\pi}{2} = +Y$).
+     *         Returns uncompensated geometric angle $\text{atan2}(d_y, d_x)$ if no real non-negative solution exists.
      */
     fun calculateCompensatedHeading(
         robotX: Double,

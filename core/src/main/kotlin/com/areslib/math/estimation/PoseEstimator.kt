@@ -6,14 +6,17 @@ import com.areslib.math.wrapAngle
 import com.areslib.math.geometry.*
 
 /**
- * Class implementation for Pose History Entry.
+ * Pre-allocated single snapshot entry in the EKF state history ring buffer.
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * Stores state estimates and associated covariance matrices at past timestamps to enable
+ * latency-compensated retroactive vision measurement updates.
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * @property timestampMs System timestamp in milliseconds ($ms$).
+ * @property x Robot field-centric X position in meters ($m$).
+ * @property y Robot field-centric Y position in meters ($m$).
+ * @property headingRad Robot field-centric heading in radians ($rad$), **CCW-positive**.
+ * @property covariance 3x3 error covariance matrix $\mathbf{P}$ at [timestampMs].
+ * @property qScale Dynamic process noise scaling factor $s_q$ active during this update frame.
  */
 data class PoseHistoryEntry(
     var timestampMs: Long = 0L,
@@ -23,6 +26,7 @@ data class PoseHistoryEntry(
     var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
     var qScale: Double = 1.0
 ) {
+    /** Gets or sets the [Pose2d] representation of this historical entry. */
     var pose: Pose2d
         get() = Pose2d(x, y, Rotation2d(headingRad))
         set(value) {
@@ -33,14 +37,16 @@ data class PoseHistoryEntry(
 }
 
 /**
- * Class implementation for History Buffer.
+ * Fixed-capacity circular ring-buffer storing historical [PoseHistoryEntry] records.
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * Enables $O(1)$ constant-time insertion and lookup during 100Hz odometry state propagation
+ * and retroactive vision rewind passes with zero heap allocations.
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * ### Zero-GC Guarantee:
+ * Pre-allocates array entries upon construction (`Array(capacity) { PoseHistoryEntry() }`).
+ * Concurrent thread scratchpads obtain deep copies via a 256-instance static object pool.
+ *
+ * @param capacity Maximum number of historical frames to retain (default $50$, corresponding to $0.5$-$1.0\,\text{s}$ of history).
  */
 class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEntry>() {
     private val entries = Array(capacity) { PoseHistoryEntry() }
@@ -50,10 +56,11 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     override val size: Int get() = count
 
     /**
-     * get declaration.
+     * Gets the historical entry at [index] (0 = oldest entry in active history window, `size-1` = newest).
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param index Logical index into the active history buffer $[0, \text{size}-1]$.
+     * @return Pre-allocated [PoseHistoryEntry] instance.
+     * @throws IndexOutOfBoundsException If [index] is negative or $\ge \text{size}$.
      */
     override fun get(index: Int): PoseHistoryEntry {
         if (index < 0 || index >= count) throw IndexOutOfBoundsException("Index: $index, Size: $count")
@@ -62,10 +69,12 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     }
 
     /**
-     * addEntry declaration.
+     * Pushes a new historical pose entry into the ring buffer, overwriting the oldest entry if at full capacity.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param pose Robot 2D pose in meters ($m$) and radians ($rad$).
+     * @param covariance 3x3 state error covariance matrix $\mathbf{P}$.
+     * @param qScale Process noise scaling factor.
      */
     fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
         val entry = entries[head]
@@ -77,6 +86,16 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         if (count < capacity) count++
     }
 
+    /**
+     * Pushes primitive scalar pose parameters directly into the ring buffer without creating intermediate [Pose2d] objects.
+     *
+     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param x Robot X position in meters ($m$).
+     * @param y Robot Y position in meters ($m$).
+     * @param headingRad Robot heading in radians ($rad$), CCW-positive.
+     * @param covariance 3x3 state error covariance matrix $\mathbf{P}$.
+     * @param qScale Process noise scaling factor.
+     */
     fun addEntryDirect(timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
         val entry = entries[head]
         entry.timestampMs = timestampMs
@@ -90,10 +109,9 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     }
 
     /**
-     * deepCopy declaration.
+     * Creates a deep-copy of this history buffer.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return Newly allocated or pooled copy of [HistoryBuffer].
      */
     fun deepCopy(): HistoryBuffer {
         val newBuf = HistoryBuffer(capacity)
@@ -113,10 +131,9 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     }
 
     /**
-     * copyInto declaration.
+     * Copies the full state of this buffer into pre-allocated [destination] buffer without heap allocations.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param destination Target pre-allocated [HistoryBuffer] instance.
      */
     fun copyInto(destination: HistoryBuffer) {
         destination.head = this.head
@@ -133,7 +150,15 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         }
     }
     
-    // allow setting existing entry to avoid object creation
+    /**
+     * Updates an existing historical entry at [index] in-place with new pose data.
+     *
+     * @param index Logical history index $[0, \text{size}-1]$.
+     * @param timestampMs Updated timestamp in milliseconds ($ms$).
+     * @param pose Updated pose.
+     * @param covariance Updated 3x3 error covariance matrix.
+     * @param qScale Process noise scaling factor.
+     */
     fun updateEntry(index: Int, timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
         val entry = get(index)
         entry.timestampMs = timestampMs
@@ -143,10 +168,15 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     }
 
     /**
-     * updateEntryDirect declaration.
+     * Updates an existing historical entry at [index] in-place using primitive scalar values to enforce Zero-GC compliance.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param index Logical history index $[0, \text{size}-1]$.
+     * @param timestampMs Updated timestamp in milliseconds ($ms$).
+     * @param x Updated X coordinate in meters ($m$).
+     * @param y Updated Y coordinate in meters ($m$).
+     * @param headingRad Updated heading in radians ($rad$), CCW-positive.
+     * @param covariance Updated 3x3 error covariance matrix.
+     * @param qScale Process noise scaling factor.
      */
     fun updateEntryDirect(index: Int, timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
         val entry = get(index)
@@ -162,6 +192,12 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         private val pool = Array(256) { HistoryBuffer(50) }
         private val poolIndex = java.util.concurrent.atomic.AtomicInteger(0)
 
+        /**
+         * Obtains a thread-safe copy of [src] using a pre-allocated 256-instance ring pool to prevent GC allocation.
+         *
+         * @param src Source [HistoryBuffer] to clone.
+         * @return Pooled [HistoryBuffer] instance pre-populated with data from [src].
+         */
         fun obtainCopy(src: HistoryBuffer): HistoryBuffer {
             val idx = (poolIndex.getAndIncrement() and 0x7FFFFFFF) % 256
             val dest = pool[idx]
@@ -170,6 +206,7 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
         }
     }
 }
+
 
 /**
  * Immutable chronological state representation of the Pose Estimator.
@@ -278,10 +315,19 @@ object PoseEstimator {
     var activeTags: Map<Int, Pose3d> = FieldLayouts.SQUARE_STANDARD_TAGS
 
     /**
-     * addOdometryObservation declaration.
+     * Integrates a high-rate dead-wheel odometry observation into the active EKF state.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param state Active EKF state snapshot.
+     * @param timestampMs Measurement timestamp in milliseconds ($ms$).
+     * @param deltaTranslation Robot-frame displacement vector in meters ($m$).
+     * @param deltaHeading Robot-frame rotation change in radians ($rad$).
+     * @param pitchDegrees IMU pitch angle in degrees ($^\circ$).
+     * @param rollDegrees IMU roll angle in degrees ($^\circ$).
+     * @param pitchVelocityDegPerSec IMU pitch rate in degrees per second ($^\circ/s$).
+     * @param rollVelocityDegPerSec IMU roll rate in degrees per second ($^\circ/s$).
+     * @param gyroRateRadPerSec Raw IMU yaw rate in radians per second ($rad/s$).
+     * @param dtSeconds Elapsed time since last update cycle in seconds ($\Delta t$).
+     * @return Updated [PoseEstimatorState].
      */
     fun addOdometryObservation(
         state: PoseEstimatorState,
@@ -303,6 +349,22 @@ object PoseEstimator {
         )
     }
 
+    /**
+     * Integrates primitive scalar dead-wheel odometry deltas directly with Zero-GC overhead.
+     *
+     * @param state Active EKF state snapshot.
+     * @param timestampMs Measurement timestamp in milliseconds ($ms$).
+     * @param deltaX Local X displacement in meters ($m$).
+     * @param deltaY Local Y displacement in meters ($m$).
+     * @param deltaHeadingRad Local heading change in radians ($rad$).
+     * @param pitchDegrees IMU pitch in degrees ($^\circ$).
+     * @param rollDegrees IMU roll in degrees ($^\circ$).
+     * @param pitchVelocityDegPerSec IMU pitch rate in degrees per second ($^\circ/s$).
+     * @param rollVelocityDegPerSec IMU roll rate in degrees per second ($^\circ/s$).
+     * @param gyroRateRadPerSec Raw IMU yaw rate in radians per second ($rad/s$).
+     * @param dtSeconds Elapsed time in seconds ($\Delta t$).
+     * @return Updated [PoseEstimatorState].
+     */
     fun addOdometryObservationDirect(
         state: PoseEstimatorState,
         timestampMs: Long,
@@ -325,10 +387,16 @@ object PoseEstimator {
     }
 
     /**
-     * addVisionMeasurement declaration.
+     * Fuses an asynchronous 3D AprilTag vision observation with statistical Mahalanobis distance outlier rejection and trajectory rewind.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param state Active EKF state snapshot.
+     * @param measurement Observed AprilTag 3D pose measurement.
+     * @param visionStdDevs Baseline standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ in meters and radians.
+     * @param numTags Number of detected tags in the current frame.
+     * @param useMahalanobisRejection If true, rejects measurements exceeding [mahalanobisThreshold].
+     * @param mahalanobisThreshold Chi-squared threshold $d_M^2$ for outlier rejection (default $12.0$).
+     * @param maxAmbiguity Maximum acceptable tag pose solver ambiguity (default $0.2$).
+     * @return Updated [PoseEstimatorState].
      */
     fun addVisionMeasurement(
         state: PoseEstimatorState,
@@ -348,3 +416,4 @@ object PoseEstimator {
         )
     }
 }
+

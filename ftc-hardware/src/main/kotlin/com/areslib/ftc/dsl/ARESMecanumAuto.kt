@@ -6,52 +6,79 @@ import com.areslib.util.RobotClock
 import com.areslib.ftc.FtcMecanumRobot
 
 /**
- * A simplified, clean autonomous OpMode base class.
- * Coordinates EKF fused state updating and path-following with high-level facade calls.
- * @param R The type of the Robot facade.
+ * Abstract foundational base class for declarative FTC Autonomous OpModes.
+ *
+ * Coordinates EKF pose initialization, trajectory loading via [com.areslib.pathing.DynamicPathLoader],
+ * PathPlanner JSON auto parsing via [com.areslib.pathing.PathPlannerAutoParser], alliance color mirroring,
+ * high-frequency task sequence execution, and loop-time watchdog profiling.
+ *
+ * ### Autonomous Lifecycle Flow:
+ * 1. **Initialization (`runOpMode`)**:
+ *    - Instantiates team robot facade via [buildRobot].
+ *    - Parses named trajectory JSON (`pathName`).
+ *    - Extracts trajectory start pose, applies alliance mirroring if needed, and hard-resets EKF + Pinpoint hardware encoders.
+ * 2. **Active Execution**:
+ *    - Polls physical hardware sensors via [updateRobot].
+ *    - Evaluates active task sequence via [com.areslib.sequencer.TaskExecutor].
+ *    - Dispatches resulting [com.areslib.action.RobotAction] actions into Redux state store.
+ *    - Measures loop execution time and logs overrun warnings (>30ms).
+ * 3. **Termination**:
+ *    - Stops drivetrain motor outputs.
+ *    - Persists final autonomous pose into [com.areslib.util.PoseStorage] for seamless transition into TeleOp.
+ *    - Releases hardware resources via [closeRobot].
+ *
+ * ### Physical Units & Coordinates:
+ * - Field Coordinates: Meters ($m$), $+X$ forward, $+Y$ left.
+ * - Heading: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ * - Execution Frequency: Target 50Hz ($20\text{ms}$ loop pacing), overrun alert threshold set to 30ms.
+ *
+ * @param R Type of team robot facade class.
+ *
+ * @see LinearOpMode
+ * @see FtcMecanumRobot
+ * @see com.areslib.sequencer.TaskExecutor
  */
 abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
 
+    /** Name of the autonomous trajectory file to load from assets or flash storage. Defaults to `"Example Path"`. */
     open val pathName: String = "Example Path"
 
     companion object {
-        /** Threshold above which we log a loop overrun warning (50 Hz = 20ms) */
+        /** Threshold duration above which loop overrun warnings are recorded (50Hz = 20ms baseline). */
         private const val OVERRUN_THRESHOLD_MS = 30L
     }
+
     /**
-     * buildRobot declaration.
+     * Factory hook constructing the team robot facade instance.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return Initialized robot wrapper instance [R].
      */
     abstract fun buildRobot(): R
+
     /**
-     * getMecanumRobot declaration.
+     * Extracts the core [FtcMecanumRobot] reference from the team robot wrapper [robot].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param robot Team robot wrapper instance.
+     * @return Core [FtcMecanumRobot] base instance.
      */
     abstract fun getMecanumRobot(robot: R): FtcMecanumRobot
+
     /**
-     * updateRobot declaration.
+     * Periodic update hook executing hardware sensor reads and subsystem updates for the team robot facade.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param robot Team robot wrapper instance.
      */
     abstract fun updateRobot(robot: R)
+
     /**
-     * closeRobot declaration.
+     * Shutdown hook releasing active hardware resources upon Autonomous completion.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param robot Team robot wrapper instance.
      */
     abstract fun closeRobot(robot: R)
 
     /**
-     * runOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Main execution entry point for FTC LinearOpMode lifecycle.
      */
     override fun runOpMode() {
         // --- 1. Initialization ---
@@ -206,4 +233,5 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         }
     }
 }
+
 

@@ -7,44 +7,40 @@ import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.wrapAngle
 
 /**
- * Extended Kalman Filter (EKF) vision measurement update and outlier rejection pipeline.
+ * Extended Kalman Filter (EKF) Vision Measurement Update and Mahalanobis Outlier Rejection Pipeline.
  *
  * Implements 3-DOF ($x, y, \theta$) EKF correction from camera-observed AprilTag poses
- * with statistical Mahalanobis distance outlier filtering and historical re-propagation.
+ * with statistical Mahalanobis distance outlier filtering and historical trajectory rewind.
  *
  * ### Mathematical Formulation:
  * 1. **Innovation Residual ($\mathbf{y}$)**:
- *    $$\mathbf{y} = \begin{bmatrix} x_{vision} - x_{est} \\ y_{vision} - y_{est} \\ \text{wrapAngle}(\theta_{vision} - \theta_{est}) \end{bmatrix}$$
+ *    $$\mathbf{y} = \begin{bmatrix} x_{\text{vision}} - x_{\text{est}} \\ y_{\text{vision}} - y_{\text{est}} \\ \text{wrapAngle}(\theta_{\text{vision}} - \theta_{\text{est}}) \end{bmatrix}$$
  * 2. **Measurement Noise Covariance ($\mathbf{R}$)**:
  *    Scales baseline standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ by distance, multi-tag count, incidence angle, and tag ambiguity:
- *    $$\sigma_{scaled} = \sigma_{base} \cdot \frac{\sqrt{1 + d^2}}{\sqrt{N_{tags}}} \cdot \frac{1}{\cos^2(\phi)} \cdot (1 + 10 \cdot \text{ambiguity}^2)$$
+ *    $$\sigma_{\text{scaled}} = \sigma_{\text{base}} \cdot \frac{\sqrt{1 + d^2}}{\sqrt{N_{\text{tags}}}} \cdot \frac{1}{\cos^2(\phi)} \cdot (1 + 10 \cdot \text{ambiguity}^2)$$
  * 3. **Innovation Covariance ($\mathbf{S}$)** & **Mahalanobis Distance ($d_M^2$)**:
- *    $$\mathbf{S} = \mathbf{P}_{history} + \mathbf{R}$$
+ *    $$\mathbf{S} = \mathbf{P}_{\text{history}} + \mathbf{R}$$
  *    $$d_M^2 = \mathbf{y}^T \mathbf{S}^{-1} \mathbf{y}$$
  * 4. **Kalman Gain ($\mathbf{K}$)** & **Covariance Update**:
- *    $$\mathbf{K} = \mathbf{P}_{history} \mathbf{S}^{-1}$$
- *    $$\mathbf{P}_{updated} = (\mathbf{I} - \mathbf{K}) \mathbf{P}_{history}$$
+ *    $$\mathbf{K} = \mathbf{P}_{\text{history}} \mathbf{S}^{-1}$$
+ *    $$\mathbf{P}_{\text{updated}} = (\mathbf{I} - \mathbf{K}) \mathbf{P}_{\text{history}}$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y, d)$: Meters ($m$)
+ * - Heading $(\theta, \phi)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Standard Deviations $(\sigma_x, \sigma_y, \sigma_\theta)$: Meters ($m$) and Radians ($rad$)
  *
  * ### Zero-GC Guarantee:
  * Uses caller-supplied pre-allocated matrix scratchpads (`scratchR`, `scratchS`, `scratchSInv`, `scratchK`, `scratchCov`)
- * and a 16-slot ring buffer (`kalmanGainPool`) to operate at 100Hz with zero dynamic heap allocations.
+ * and a 16-slot ring pool (`kalmanGainPool`) to maintain zero dynamic heap allocations.
  *
  * @see PoseEstimator
  * @see EKFStatePropagator
  */
-/**
- * Object implementation for Vision Mahalanobis Filter.
- *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
- *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
- */
 object VisionMahalanobisFilter {
     private val kalmanGainPool = Array(16) { DoubleArray(9) }
     private var kalmanGainPoolIndex = 0
+
 
     /**
      * Processes a single AprilTag visual measurement, performs ambiguity, NaN, bounds, and Mahalanobis rejection,

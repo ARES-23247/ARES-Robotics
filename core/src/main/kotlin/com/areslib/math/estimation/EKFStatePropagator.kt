@@ -4,44 +4,46 @@ import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.wrapAngle
 
 /**
- * Extended Kalman Filter (EKF) state transition and historical trajectory re-propagation engine.
+ * Extended Kalman Filter (EKF) State Transition and Historical Trajectory Re-propagation Engine.
  *
- * Handles zero-GC covariance propagation $\mathbf{P}_{k} = \mathbf{F} \mathbf{P}_{k-1} \mathbf{F}^T + \mathbf{Q}$
- * and re-computes historical pose buffer entries whenever a delayed visual observation corrects a past state.
+ * Propagates 3-DOF ($x, y, \theta$) pose state error covariance matrices forward using linearized local motion Jacobians ($\mathbf{F}_k$),
+ * and executes 100Hz historical trajectory rewind passes whenever a delayed AprilTag vision measurement arrives to correct past states.
  *
- * ### Jacobian Matrix ($\mathbf{F}$):
- * For non-linear drivetrain motion where $\mathbf{f}(x, y, \theta) = [x + \Delta x \cos\theta - \Delta y \sin\theta, y + \Delta x \sin\theta + \Delta y \cos\theta, \theta + \Delta\theta]^T$:
- * $$\mathbf{F} = \begin{bmatrix} 1 & 0 & -\Delta x \sin\theta_{mid} - \Delta y \cos\theta_{mid} \\ 0 & 1 & \Delta x \cos\theta_{mid} - \Delta y \sin\theta_{mid} \\ 0 & 0 & 1 \end{bmatrix}$$
+ * ### Mathematical Formulation:
+ * 1. **Kinematic Motion Model**:
+ *    $$\mathbf{f}(x, y, \theta) = \begin{bmatrix} x + \Delta x \cos\theta_{\text{mid}} - \Delta y \sin\theta_{\text{mid}} \\ y + \Delta x \sin\theta_{\text{mid}} + \Delta y \cos\theta_{\text{mid}} \\ \text{wrapAngle}(\theta + \Delta\theta) \end{bmatrix}$$
+ * 2. **Motion Model Jacobian ($\mathbf{F}_k$)**:
+ *    $$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -\Delta x \sin\theta_{\text{mid}} - \Delta y \cos\theta_{\text{mid}} \\ 0 & 1 & \Delta x \cos\theta_{\text{mid}} - \Delta y \sin\theta_{\text{mid}} \\ 0 & 0 & 1 \end{bmatrix}$$
+ * 3. **Covariance Propagation ($\mathbf{P}_k$)**:
+ *    $$\mathbf{P}_k = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^T + \mathbf{Q}$$
+ * 4. **Historical Trajectory Re-propagation**:
+ *    Starting from the closest historical frame index $i = k_{\text{vision}}$, applies innovation shift $[\delta x, \delta y, \delta\theta]^T$,
+ *    then sequentially integrates stored odometry deltas $(\Delta x_j, \Delta y_j, \Delta\theta_j)$ forward to the current timestamp:
+ *    $$\mathbf{P}_j \leftarrow \mathbf{F}_j \mathbf{P}_{j-1} \mathbf{F}_j^T + s_j \mathbf{Q}$$
  *
- * ### Units:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Milliseconds ($ms$)
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y, \Delta x, \Delta y)$: Field-centric and robot-centric meters ($m$)
+ * - Heading $(\theta, \Delta\theta, \theta_{\text{mid}})$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Time ($t$): Milliseconds ($ms$)
+ *
+ * ### Zero-GC Guarantee:
+ * Uses pre-allocated primitive array buffers (`covarianceArray`) and caller-supplied matrix scratchpads (`scratchCov2`, `scratchHistory`)
+ * to eliminate heap allocations during 100Hz trajectory rewind passes.
  *
  * @see PoseEstimator
  * @see VisionMahalanobisFilter
  */
-/**
- * Object implementation for E K F State Propagator.
- *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
- *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
- */
 object EKFStatePropagator {
 
     /**
-     * Propagates a 3x3 covariance matrix forward one odometry step using local displacement deltas.
+     * Propagates a 3x3 state error covariance matrix forward one step using linearized local displacement deltas.
      *
-     * @param covarianceArray Flattened 9-element 3x3 covariance matrix $[P_{00}, P_{01}, \dots, P_{22}]$.
-     * @param deltaX Local robot-frame displacement along X axis (meters).
-     * @param deltaY Local robot-frame displacement along Y axis (meters).
-     * @param thetaMid Midpoint heading $\theta_{prev} + \frac{\Delta\theta}{2}$ for trapezoidal integration (radians).
+     * @param covarianceArray Flattened 9-element 3x3 covariance matrix array $[P_{00}, P_{01}, \dots, P_{22}]$.
+     * @param deltaX Local robot-frame displacement along X axis in meters ($m$).
+     * @param deltaY Local robot-frame displacement along Y axis in meters ($m$).
+     * @param thetaMid Midpoint heading $\theta_{\text{prev}} + \frac{\Delta\theta}{2}$ for trapezoidal integration in radians ($rad$).
      * @param qMatrix Process noise covariance matrix $\mathbf{Q}$.
-     * @param outCovariance Output 3x3 matrix storing the propagated covariance.
+     * @param outCovariance Output [Matrix3x3] scratchpad storing the updated covariance matrix $\mathbf{P}_k$.
      */
     fun propagate(
         covarianceArray: DoubleArray,
@@ -78,20 +80,21 @@ object EKFStatePropagator {
     }
 
     /**
-     * Re-propagates the entire pose history and covariance buffer from a delayed vision measurement timestamp to the present frame.
+     * Re-propagates the pose history and covariance buffer from a delayed vision measurement timestamp to the present frame.
      *
      * @param state Active EKF pose estimator state snapshot.
-     * @param closestIndex Buffer index of historical entry corresponding to the vision observation timestamp.
+     * @param closestIndex Buffer index of the historical pose entry matching the vision observation timestamp.
      * @param baseEntry Historical pose entry prior to vision correction.
-     * @param dxX Innovation correction shift in X (meters).
-     * @param dxY Innovation correction shift in Y (meters).
-     * @param dxZ Innovation correction shift in heading (radians).
+     * @param dxX Innovation shift correction along X axis in meters ($m$).
+     * @param dxY Innovation shift correction along Y axis in meters ($m$).
+     * @param dxZ Innovation shift correction in heading in radians ($rad$).
      * @param updatedCovariance Vision-corrected 3x3 covariance matrix at [closestIndex].
      * @param baseQ Baseline process noise covariance matrix $\mathbf{Q}$.
      * @param scratchHistory Scratchpad history buffer to store re-propagated trajectory entries.
      * @param scratchCov2 Scratchpad 3x3 matrix for incremental covariance propagation.
      */
     fun repropagateHistory(
+
         state: PoseEstimatorState,
         closestIndex: Int,
         baseEntry: PoseHistoryEntry,

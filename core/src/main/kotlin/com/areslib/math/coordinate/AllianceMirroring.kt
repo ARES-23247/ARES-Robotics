@@ -7,37 +7,51 @@ import com.areslib.pathing.PathPoint
 import com.areslib.math.wrapAngle
 
 /**
- * FieldSymmetry declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
+ * Defines the geometric field symmetry mapping between Red and Blue alliance field halves.
  */
 enum class FieldSymmetry {
+    /** Rotational (180° point reflection) symmetry about the center of the field. */
     ROTATIONAL,
+
+    /** Mirrored (line reflection) symmetry across the field center dividing axis. */
     MIRRORED
 }
 
 /**
- * Object implementation for Alliance Mirroring.
+ * Universal Alliance Pose and Path Mirroring Engine.
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * Automatically mirrors 2D field poses, translations, and dense trajectory paths for the active alliance
+ * (Blue Alliance poses are passed through unmodified, while Red Alliance poses are mirrored according
+ * to the specified [FieldSymmetry]).
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * ### Mathematical Formulations:
+ * 1. **Center-Origin Rotational Symmetry (180° Point Reflection)**:
+ *    $$\begin{bmatrix} x' \\ y' \end{bmatrix} = \begin{bmatrix} -x \\ -y \end{bmatrix}, \quad \theta' = \text{wrapAngle}(\theta + \pi)$$
+ * 2. **Center-Origin Mirrored Symmetry (Reflection across X-axis)**:
+ *    $$\begin{bmatrix} x' \\ y' \end{bmatrix} = \begin{bmatrix} x \\ -y \end{bmatrix}, \quad \theta' = \text{wrapAngle}(-\theta), \quad \kappa' = -\kappa$$
+ * 3. **Corner-Origin Field Extensions** ($L_{\text{field}}, W_{\text{field}}$):
+ *    - Rotational: $x' = L_{\text{field}} - x, \; y' = W_{\text{field}} - y, \; \theta' = \text{wrapAngle}(\theta + \pi)$
+ *    - Reflectional: $x' = x, \; y' = W_{\text{field}} - y, \; \theta' = \text{wrapAngle}(-\theta)$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Heading $(\theta)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Path Curvature ($\kappa$): Radians per meter ($rad/m$)
+ *
+ * @see CoordinateTransformers
+ * @see Path
  */
 object AllianceMirroring {
 
     /**
-     * Mirrors a 2D pose based on the alliance color and the field's symmetry layout.
-     * 
-     * @param pose The input Pose2d to transform.
-     * @param alliance The active alliance color.
-     * @param symmetry The symmetry style of the field.
-     * @param fieldLength Bounding length of the field in meters (X-axis limit).
-     * @param fieldWidth Bounding width of the field in meters (Y-axis limit).
-     * @return The mirrored Pose2d.
+     * Mirrors a 2D spatial pose [pose] based on active [alliance] color and field [symmetry].
+     *
+     * @param pose Input [Pose2d] in field-centric meters ($m$) and radians ($rad$).
+     * @param alliance Active team alliance color ([Alliance.BLUE] returns [pose] unchanged).
+     * @param symmetry Field geometry symmetry layout ([FieldSymmetry.ROTATIONAL] or [FieldSymmetry.MIRRORED]).
+     * @param fieldLength Total X-axis length of the field in meters ($m$).
+     * @param fieldWidth Total Y-axis width of the field in meters ($m$).
+     * @return The alliance-adjusted [Pose2d].
      */
     fun mirror(
         pose: Pose2d,
@@ -78,14 +92,14 @@ object AllianceMirroring {
     }
 
     /**
-     * Mirrors a 2D translation based on the alliance color and the field's symmetry layout.
-     * 
-     * @param translation The input Translation2d to transform.
-     * @param alliance The active alliance color.
-     * @param symmetry The symmetry style of the field.
-     * @param fieldLength Bounding length of the field in meters (X-axis limit).
-     * @param fieldWidth Bounding width of the field in meters (Y-axis limit).
-     * @return The mirrored Translation2d.
+     * Mirrors a 2D translational vector [translation] based on active [alliance] color and field [symmetry].
+     *
+     * @param translation Input [Translation2d] in meters ($m$).
+     * @param alliance Active team alliance color ([Alliance.BLUE] passes through).
+     * @param symmetry Field geometry symmetry layout.
+     * @param fieldLength Total field X length in meters ($m$).
+     * @param fieldWidth Total field Y width in meters ($m$).
+     * @return The alliance-adjusted [Translation2d].
      */
     fun mirror(
         translation: Translation2d,
@@ -116,15 +130,15 @@ object AllianceMirroring {
     }
 
     /**
-     * Mirrors an entire trajectory path based on the alliance color and symmetry layout.
-     * Automatically adjusts coordinates and flips the curvature sign for reflectional symmetry.
-     * 
-     * @param path The input path to mirror.
-     * @param alliance The active alliance color.
-     * @param symmetry The symmetry style of the field.
-     * @param fieldLength Bounding length of the field in meters (X-axis limit).
-     * @param fieldWidth Bounding width of the field in meters (Y-axis limit).
-     * @return The mirrored Path.
+     * Mirrors an entire trajectory path [path] for the Red alliance.
+     * Automatically flips coordinates, tangent headings, and path curvature signs for reflectional symmetry.
+     *
+     * @param path Input trajectory [Path].
+     * @param alliance Active team alliance color.
+     * @param symmetry Field geometry symmetry layout.
+     * @param fieldLength Total field X length in meters ($m$).
+     * @param fieldWidth Total field Y width in meters ($m$).
+     * @return The alliance-adjusted [Path].
      */
     fun mirror(
         path: Path,
@@ -158,3 +172,4 @@ object AllianceMirroring {
         return path.copy(points = mirroredPoints)
     }
 }
+

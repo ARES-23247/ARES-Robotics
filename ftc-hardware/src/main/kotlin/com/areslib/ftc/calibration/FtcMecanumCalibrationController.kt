@@ -13,21 +13,52 @@ import com.areslib.Store
 import com.areslib.util.RobotClock
 
 /**
- * Manages SysId routines and physical calibration state machine execution and data logging
- * for FTC mecanum drivetrains.
+ * Subsystem controller managing System Identification (SysId) routines and physical calibration workflows for FTC Mecanum drivetrains.
+ *
+ * Drives automated data collection routines for empirical parameter identification:
+ * - **SysId Characterization**: Quasistatic and Dynamic voltage ramps ($\text{Linear}, \text{Angular}, \text{Flywheel}$) to fit feedforward coefficients $(kS, kV, kA)$.
+ * - **Pinpoint Odometry Characterization**: Zero-offset calibration and rotational center estimation for GoBilda Pinpoint pods.
+ * - **Track Width Calibration**: Empirical spin tests to determine effective kinematically equivalent track width ($W$, $m$).
+ * - **Vision AprilTag Alignment Calibration**: Empirical offset and variance estimation against known field target tags.
+ * - **Linear Drive Distance Tuning**: Ticks-per-meter encoder calibration ($ticks/m$).
+ *
+ * ### Physical Units & Commands:
+ * - Voltage: Volts ($V$), mapped into normalized motor power $[-1.0, 1.0]$ based on live battery bus voltage ($V$).
+ * - Position / Distance: Meters ($m$).
+ * - Heading / Angular displacement: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ * - Velocities: Linear $m/s$, Angular $rad/s$.
+ * - Time: Milliseconds ($ms$) or seconds ($s$).
+ *
+ * ### Zero-GC Guarantee:
+ * Pre-allocates constant buffers (e.g., [EMPTY_SYSID_DATA]) and updates primitive metrics arrays in-place to avoid dynamic heap allocations inside 50Hz update loops.
+ *
+ * @see SysIdManager
+ * @see MecanumHardwareIO
+ * @see PinpointIO
  */
 class FtcMecanumCalibrationController {
+    /** Manager executing Quasistatic and Dynamic SysId routines. */
     val sysIdManager = SysIdManager()
+
+    /** Optional custom velocity provider function for Flywheel or custom mechanism SysId routines ($rad/s$ or $m/s$). */
     var customSysIdVelocityProvider: (() -> Double)? = null
 
     private var lastCommandProcessed = ""
+
+    /** Identifier name of the currently active physical calibration routine (`"NONE"`, `"PINPOINT_SPIN"`, `"TRACK_WIDTH_SPIN"`, etc.). */
     var activeCalibration = "NONE"
         private set
     private var calibrationStartTimeMs = 0L
     private val EMPTY_SYSID_DATA = DoubleArray(0)
 
     /**
-     * Polls NT4 for SysId / Calibration commands and updates active state.
+     * Polls NetworkTables (`"SysId/Command"`) for active calibration triggers and initializes routine state machines.
+     *
+     * @param store Redux state store reference.
+     * @param telemetryManager Telemetry manager for NT4 communication.
+     * @param mecanumIO Drivetrain hardware IO cluster.
+     * @param pinpointIO Physical GoBilda Pinpoint odometry IO wrapper (or `null`).
+     * @param onResetTuning Callback invoked to reset cached tuning parameters when calibration terminates.
      */
     fun updateHardwareInputs(
         store: Store,
@@ -98,8 +129,14 @@ class FtcMecanumCalibrationController {
     }
 
     /**
-     * Executes active SysId or physical calibration test routines.
-     * @return true if calibration/SysId actively overrode motor powers; false if standard driving should take place.
+     * Advances active SysId tests or empirical calibration state routines, overriding manual driving commands.
+     *
+     * @param store Redux state store reference.
+     * @param batteryVoltage Measured bus battery voltage ($V$).
+     * @param mecanumIO Drivetrain hardware IO cluster.
+     * @param telemetryManager Telemetry manager for NT4 logging.
+     * @param onResetTuning Callback to reset tuning flags upon sequence termination.
+     * @return `true` if calibration routine actively took control of motor outputs; `false` if normal driving should proceed.
      */
     fun updateSubsystems(
         store: Store,
@@ -168,7 +205,16 @@ class FtcMecanumCalibrationController {
     }
 
     /**
-     * Streams SysId and Calibration telemetry metrics to NetworkTables / data logs.
+     * Publishes high-frequency calibration data streams (`"SysId/Data"`, `"SysId/Status"`) to NetworkTables and local disk logs.
+     *
+     * @param timestamp System clock timestamp in milliseconds ($ms$).
+     * @param store Redux state store reference.
+     * @param telemetryManager Telemetry manager for NT4 logging.
+     * @param mecanumIO Drivetrain hardware IO cluster.
+     * @param imuIO Control Hub IMU IO interface (or `null`).
+     * @param visionTracker Vision tracking engine reference.
+     * @param ticksPerMeterSetting Configured encoder ticks per meter setting ($ticks/m$).
+     * @param defaultTicksPerMeter Default fallback encoder ticks per meter ($ticks/m$).
      */
     fun publishRobotTelemetry(
         timestamp: Long,
@@ -299,3 +345,4 @@ class FtcMecanumCalibrationController {
         }
     }
 }
+

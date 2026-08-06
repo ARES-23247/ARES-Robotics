@@ -6,7 +6,23 @@ import com.qualcomm.robotcore.hardware.DistanceSensor
 import org.firstinspires.ftc.robotcore.external.navigation.Distance
 
 /**
- * Wraps a standard FTC I2C/ToF/LiDAR distance sensor (e.g. REV 2m Distance Sensor, goBILDA ToF Sensor).
+ * Asynchronous hardware IO wrapper for FTC I2C, Time-of-Flight (ToF), and LiDAR distance sensors.
+ *
+ * Compatible with REV 2m Distance Sensors (VL53L0X), goBILDA ToF sensors, and STMicroelectronics rangefinders.
+ * Utilizes a dedicated 50Hz background thread (`ARES-DistanceSensor-Thread`) to poll distance measurements asynchronously,
+ * preventing slow I2C bus transactions from stalling high-frequency 50Hz–100Hz control loops.
+ *
+ * ### Physical Units & Range Boundaries:
+ * - Distance: Meters ($m$).
+ * - Out-of-range / Error state: Returns [Double.NaN] when target object is beyond maximum sensor range.
+ *
+ * ### Zero-GC Execution Compliance:
+ * Reads and updates [cachedDistance] in-place inside `synchronized` blocks without allocating heap memory objects.
+ *
+ * @param sensor Underlying FTC SDK [DistanceSensor] instance.
+ *
+ * @see DistanceSensorIO
+ * @see DistanceSensor
  */
 class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, AutoCloseable {
     private val lock = Any()
@@ -33,17 +49,16 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, 
         thread.start()
     }
 
+    /** Measured distance reading in meters ($m$). Returns [Double.NaN] if out of range or uninitialized. */
     override val distanceMeters: Double
         get() = synchronized(lock) { cachedDistance }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background sampling thread and unregisters hardware resources.
      */
     override fun close() {
         running = false
     }
 }
+
 

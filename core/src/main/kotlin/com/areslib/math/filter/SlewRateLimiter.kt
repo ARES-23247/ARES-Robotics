@@ -3,38 +3,32 @@ package com.areslib.math.filter
 /**
  * Signal rate-of-change limiter (Slew Rate Limiter).
  *
- * Prevents rapid changes in control signals by bounding the derivative $\frac{du}{dt}$ between asymmetric positive ($r_{pos}$)
- * and negative ($r_{neg}$) rate limits. Essential for smoothing driver joystick inputs, limiting drivetrain acceleration
+ * Prevents rapid changes in control signals by bounding the derivative $\frac{du}{dt}$ between asymmetric positive ($r_{\text{pos}}$)
+ * and negative ($r_{\text{neg}}$) rate limits. Essential for smoothing driver joystick inputs, limiting drivetrain acceleration
  * to prevent wheel slip, and mitigating high-current battery brownout spikes.
  *
  * ### Mathematical Formulation:
- * $$\Delta u = \text{coerceIn}(u_{input} - u_{last}, -|r_{neg}| \cdot \Delta t, |r_{pos}| \cdot \Delta t)$$
- * $$u_{output} = u_{last} + \Delta u$$
+ * $$\Delta u = \text{coerceIn}(u_{\text{input}} - u_{\text{last}}, -|r_{\text{neg}}| \cdot \Delta t, |r_{\text{pos}}| \cdot \Delta t)$$
+ * $$u_{\text{output}} = u_{\text{last}} + \Delta u$$
  *
  * ### Physical Units:
  * - Signal $u$: Arbitrary units (e.g. Volts $V$, Duty cycle percent $-1.0 \dots +1.0$, or Velocity $m/s$)
  * - Rate Limit $r$: Signal units per second (e.g. $V/s$, $1/s$, or $m/s^2$)
  * - Time Step $\Delta t$: Seconds ($s$)
  *
- * @param positiveRateLimit Maximum allowed rate of increase per second ($r_{pos} > 0$).
- * @param negativeRateLimit Maximum allowed rate of decrease per second ($r_{neg} < 0$). Defaults to $-positiveRateLimit$.
+ * ### Zero-GC Guarantee:
+ * Operates in $O(1)$ time using primitive scalar arithmetic with zero dynamic memory allocation.
+ *
+ * @param positiveRateLimit Maximum allowed rate of increase per second ($r_{\text{pos}} > 0$).
+ * @param negativeRateLimit Maximum allowed rate of decrease per second ($r_{\text{neg}} < 0$). Defaults to $-positiveRateLimit$.
  * @param initialValue Starting output signal value before first update (default: 0.0).
- */
-/**
- * Class implementation for Slew Rate Limiter.
- *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
- *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
  */
 class SlewRateLimiter(
     private var positiveRateLimit: Double,
     private var negativeRateLimit: Double = -positiveRateLimit,
     initialValue: Double = 0.0
 ) {
+
     private var lastValue = initialValue
     private var hasBeenCalled = false
 

@@ -3,85 +3,69 @@ package com.areslib.control.safety
 import com.areslib.hardware.actuator.MotorIO
 
 /**
- * System-level current budget manager for FTC robots.
+ * System-Level Power & Current Budget Manager for FTC and FRC Drivetrains.
  *
- * Prevents blowing the 20A main fuse by estimating total robot current draw
- * and applying graduated power scaling when the budget is exceeded.
+ * Prevents main breaker/fuse trips (e.g. 20A main fuse) by estimating real-time current draw across all registered motors
+ * using the electromechanical DC motor model and applying graduated power scaling when total current consumption exceeds safety thresholds.
  *
- * ## Why estimation instead of direct reads?
- * On REV hubs, `motor.getCurrent()` is a **blocking I2C call** (~2-3ms per motor).
- * With 4+ motors, that's 8-16ms — nearly the entire 20ms loop budget at 50Hz.
- * Instead, we use the DC motor model to estimate current from power and velocity,
- * which are already available from the bulk cache at zero additional cost.
+ * ### DC Motor Electromechanical Model Equations:
+ * To avoid blocking I2C reads (~2-3ms per motor), current is estimated from bulk-cached velocity and commanded power:
+ * $$R_{motor} = \frac{V_{nominal}}{I_{stall}}, \quad K_v = \frac{V_{nominal}}{\omega_{free}}$$
+ * $$I_{estimated} = \max\left(0, \frac{V_{battery} \cdot |\text{power}| \cdot \text{scale} - K_v \cdot |v_{encoder}|}{R_{motor}}\right) + I_{calibrationOffset}$$
  *
- * ## Motor Model
- * ```
- * I_estimated = (V_battery × |power| - Kv × |velocity_tps|) / R_motor
- * ```
- * Where:
- * - `V_battery` = current battery voltage (from VoltageSensor, already read for BrownoutGuard)
- * - `power` = commanded motor power [-1.0, 1.0]
- * - `velocity_tps` = encoder velocity in ticks/sec (from bulk cache)
- * - `Kv` = back-EMF constant (volts per tick/sec)
- * - `R_motor` = winding resistance (ohms)
+ * ### Power Scaling State Machine:
+ * 1. **Healthy State** ($I_{total} \le I_{warning}$): $\text{powerScale} = 1.0$
+ * 2. **Warning State** ($I_{warning} < I_{total} < I_{critical}$): Linear power scaling down to $\alpha_{min}$
+ * 3. **Critical State** ($I_{total} \ge I_{critical}$): $\text{powerScale} = \alpha_{min}$ (Aggressive current limiting)
  *
- * ## Optional Calibration
- * One motor's actual current is read per loop cycle (round-robin) to calibrate
- * the model. This adds only ~2ms per loop instead of reading all motors.
+ * ### Physical Units & Properties:
+ * - Current Thresholds ($I_{warning}, I_{critical}, I_{hysteresis}$): Amperes ($A$)
+ * - Battery Voltage ($V_{battery}, V_{nominal}$): Volts ($V$)
+ * - Motor Resistance ($R_{motor}$): Ohms ($\Omega$)
+ * - Motor Back-EMF Constant ($K_v$): Volts per tick/sec ($V / tps$)
+ * - Memory Footprint: Zero allocations in hot path [update] loops.
  *
- * Zero allocations in the hot path.
- */
-/**
- * Class implementation for Current Budget Manager.
+ * @property warningCurrentAmps Total current threshold in Amps ($A$) where graduated power scaling begins.
+ * @property criticalCurrentAmps Total current threshold in Amps ($A$) where maximum current limiting is enforced.
+ * @property minPowerScale Minimum allowable power scaling factor at critical boundary.
+ * @property hysteresisAmps Hysteresis band in Amps ($A$) to prevent state boundary oscillation.
  *
- * Robotics framework control component.
+ * @see MotorIO
+ * @see CurrentBudgetState
  */
 class CurrentBudgetManager(
-    /** Maximum total current draw before graduated scaling begins (Amps) */
     val warningCurrentAmps: Double = 15.0,
-    /** Maximum total current draw before full power cutoff (Amps) */
     val criticalCurrentAmps: Double = 18.0,
-    /** Minimum power scale at the critical boundary */
     val minPowerScale: Double = 0.2,
-    /** Hysteresis band in Amps to prevent oscillation */
     val hysteresisAmps: Double = 1.5
 ) {
-    /**
-     * Registered motor slots. Each slot tracks a motor, its model parameters,
-     * and its estimated current draw.
-     */
+    /** Registered motor slots tracking electrical parameters and estimated current draw. */
     private val slots = ArrayList<MotorSlot>(8)
     private var calibrationIndex = 0
 
-    /** Current computed power scale factor (0.0 to 1.0) */
+    /** Current computed system-wide power scale factor ($0.0 \dots 1.0$). */
     var powerScale: Double = 1.0
         private set
 
-    /** Current budget state */
+    /** Current current-budget state machine state ([CurrentBudgetState.HEALTHY], [CurrentBudgetState.WARNING], [CurrentBudgetState.CRITICAL]). */
     var state: CurrentBudgetState = CurrentBudgetState.HEALTHY
         private set
 
-    /** Total estimated current draw across all motors (Amps) */
+    /** Total estimated current draw across all registered motors in Amperes ($A$). */
     var totalEstimatedAmps: Double = 0.0
         private set
 
-    /** Number of times the budget has been exceeded since last reset */
+    /** Cumulative count of budget trip events since last reset. */
     var tripCount: Int = 0
         private set
 
     /**
-     * Register a motor with its electrical characteristics for current estimation.
+     * Registers a motor with its electromechanical characteristics for current estimation.
      *
-     * Common FTC motor parameters:
-     * - **GoBilda 5203 (312 RPM)**: stallCurrentAmps=9.2, freeSpeedTps=2786, motorResistanceOhms=1.3
-     * - **GoBilda 5203 (435 RPM)**: stallCurrentAmps=9.2, freeSpeedTps=3892, motorResistanceOhms=1.3
-     * - **REV HD Hex (40:1)**: stallCurrentAmps=11.2, freeSpeedTps=2240, motorResistanceOhms=1.07
-     * - **AndyMark NeveRest**: stallCurrentAmps=11.5, freeSpeedTps=2506, motorResistanceOhms=1.04
-     *
-     * @param motor The MotorIO instance to monitor
-     * @param stallCurrentAmps Motor stall current at 12V (from datasheet)
-     * @param freeSpeedTps Motor free speed in encoder ticks per second
-     * @param nominalVoltage Motor rated voltage (typically 12.0V)
+     * @param motor [MotorIO] actuator interface instance to monitor.
+     * @param stallCurrentAmps Motor stall current at 12V in Amps ($A$, from motor datasheet).
+     * @param freeSpeedTps Motor free-speed rotational velocity in encoder ticks per second ($tps$).
+     * @param nominalVoltage Rated nominal voltage in Volts ($V$, default: $12.0$ V).
      */
     fun register(
         motor: MotorIO,
@@ -99,11 +83,12 @@ class CurrentBudgetManager(
     }
 
     /**
-     * Update current estimates and apply power budget scaling.
-     * Call once per loop iteration.
+     * Updates motor current estimates and evaluates total power budget scaling.
      *
-     * @param batteryVoltage Current battery voltage (already read for BrownoutGuard — no extra I2C)
-     * @param enableCalibration If true, reads one actual motor current per cycle for model calibration
+     * Call once per loop iteration. Zero heap allocations.
+     *
+     * @param batteryVoltage Current measured battery voltage in Volts ($V$).
+     * @param enableCalibration If `true`, reads one actual motor current per cycle round-robin to calibrate the model (~2ms per cycle).
      */
     fun update(batteryVoltage: Double, enableCalibration: Boolean = false) {
         if (slots.isEmpty()) return
@@ -207,15 +192,22 @@ class CurrentBudgetManager(
         }
     }
 
-    /** Returns estimated current draw for a specific motor slot (0-indexed) */
+    /**
+     * Returns estimated current draw in Amperes ($A$) for a specific registered motor slot.
+     *
+     * @param index Zero-based index of the registered motor slot.
+     * @return Estimated current draw in Amps ($A$).
+     */
     fun getMotorAmps(index: Int): Double {
         return if (index in slots.indices) slots[index].estimatedAmps else 0.0
     }
 
-    /** Returns the number of registered motors */
+    /** Total number of registered motor slots. */
     val motorCount: Int get() = slots.size
 
-    /** Resets state and trip counter */
+    /**
+     * Resets state machine baseline and trip counter.
+     */
     fun reset() {
         state = CurrentBudgetState.HEALTHY
         powerScale = 1.0
@@ -231,10 +223,10 @@ class CurrentBudgetManager(
     }
 
     /**
-     * isRegistered declaration.
+     * Checks if a motor instance is registered with the current budget manager.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param motor [MotorIO] instance to check.
+     * @return `true` if registered; `false` otherwise.
      */
     fun isRegistered(motor: MotorIO): Boolean {
         for (i in 0 until slots.size) {
@@ -244,10 +236,7 @@ class CurrentBudgetManager(
     }
 
     /**
-     * clear declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Clears all registered motor slots and resets internal state.
      */
     fun clear() {
         slots.clear()
@@ -255,7 +244,11 @@ class CurrentBudgetManager(
     }
 
     companion object {
-        /** Pre-configured for standard FTC robot (20A fuse) */
+        /**
+         * Factory constructor pre-configured with standard FTC defaults (20A main battery fuse).
+         *
+         * @return Pre-configured FTC [CurrentBudgetManager] instance.
+         */
         fun ftcDefaults(): CurrentBudgetManager = CurrentBudgetManager(
             warningCurrentAmps = 45.0,
             criticalCurrentAmps = 60.0,
@@ -265,7 +258,7 @@ class CurrentBudgetManager(
     }
 }
 
-/** Internal tracking for a single motor */
+/** Internal tracking structure for a registered motor slot. */
 internal class MotorSlot(
     val motor: MotorIO,
     val resistance: Double,
@@ -276,12 +269,12 @@ internal class MotorSlot(
     var calibrationOffset: Double = 0.0
 )
 
-/** Current budget state machine states */
+/** Current budget state machine states. */
 enum class CurrentBudgetState {
-    /** Total current is within budget — full power allowed */
+    /** Total current is within budget ($I_{total} \le I_{warning}$) — full power allowed (1.0). */
     HEALTHY,
-    /** Total current exceeds warning — graduated power reduction active */
+    /** Total current exceeds warning ($I_{warning} < I_{total} < I_{critical}$) — graduated power reduction active. */
     WARNING,
-    /** Total current at or near fuse limit — aggressive power reduction */
+    /** Total current at or near fuse limit ($I_{total} \ge I_{critical}$) — aggressive power reduction enforced. */
     CRITICAL
 }

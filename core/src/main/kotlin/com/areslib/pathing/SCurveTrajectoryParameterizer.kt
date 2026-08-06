@@ -10,27 +10,43 @@ import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
- * A high-performance **Jerk-Limited S-Curve Trajectory Parameterizer**.
+ * High-Performance Jerk-Limited S-Curve Trajectory Parameterizer.
  *
- * Translates static spatial waypoints into a dynamically optimized [Path]. It designs a smooth velocity
- * profile along the trajectory path by executing sequential forward and backward integration passes to enforce:
- * - Maximum velocity limits ($V_{\text{max}}$ in $m/s$).
- * - Maximum forward/backward acceleration limits ($A_{\text{max}}$ in $m/s^2$).
- * - Maximum jerk limits ($J_{\text{max}}$ in $m/s^3$) to prevent sharp torque transitions, wheel slippage, and chassis rocking.
- * - Local centripetal lateral acceleration boundaries ($V_{\text{limit}} = \sqrt{a_{\text{centripetal}} / |\kappa|}$)
- *   along curved path segments to prevent tipping or sliding.
+ * Parameterizes discrete spatial waypoints into a dynamically smooth, jerk-bounded trajectory [Path].
+ * Applies cubic Bezier spline interpolation and 7-segment velocity profiling to limit velocity ($v_{\text{max}}$),
+ * acceleration ($a_{\text{max}}$), jerk ($j_{\text{max}}$), and centripetal cornering acceleration ($a_{\text{centripetal}}$).
  *
- * ### Coordinate System & Physical Units:
- * - **Position:** Field-centric meters ($m$) relative to origin.
- * - **Heading:** Radians ($rad$), counter-clockwise positive (CCW+).
- * - **Velocity:** Meters per second ($m/s$).
- * - **Acceleration:** Meters per second squared ($m/s^2$).
- * - **Jerk:** Meters per second cubed ($m/s^3$).
+ * ### Mathematical Formulations:
+ * 1. **7-Segment Jerk Integration Equations**:
+ *    $$j(t) = \pm j_{\text{max}}$$
+ *    $$a(t) = a_0 + j(t) \cdot t$$
+ *    $$v(t) = v_0 + a_0 t + \frac{1}{2} j(t) \cdot t^2$$
+ *    $$s(t) = s_0 + v_0 t + \frac{1}{2} a_0 t^2 + \frac{1}{6} j(t) \cdot t^3$$
+ * 2. **Centripetal Cornering Velocity Constraint**:
+ *    $$v_{\text{corner}} = \sqrt{\frac{a_{\text{centripetal}}}{\max(\epsilon, |\kappa|)}}$$
+ * 3. **Forward/Backward Constraint Integration**:
+ *    $$v_k = \min\left(v_{\text{corner}}, \sqrt{v_{k-1}^2 + 2 a_{\text{max}} \Delta s}\right)$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Robot Heading $(\theta)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Velocity ($v$): Meters per second ($m/s$)
+ * - Acceleration ($a$): Meters per second squared ($m/s^2$)
+ * - Jerk ($j$): Meters per second cubed ($m/s^3$)
+ * - Curvature ($\kappa$): Inverse radius of curvature ($m^{-1}$)
+ *
+ * @see BezierSpline
+ * @see SplineMotionProfiler
  */
 object SCurveTrajectoryParameterizer {
 
     /**
-     * Parameters for trajectory generation.
+     * Kinematic velocity, acceleration, jerk, and centripetal motion boundaries.
+     *
+     * @property maxVelocityMps Maximum linear speed $v_{\text{max}}$ in meters per second ($m/s$).
+     * @property maxAccelerationMps2 Maximum linear acceleration $a_{\text{max}}$ in meters per second squared ($m/s^2$).
+     * @property maxJerkMps3 Maximum linear jerk $j_{\text{max}}$ in meters per second cubed ($m/s^3$).
+     * @property maxCentripetalAccelMps2 Maximum centripetal cornering acceleration $a_{\text{centripetal}}$ in $m/s^2$.
      */
     data class Constraints(
         val maxVelocityMps: Double,
@@ -38,6 +54,7 @@ object SCurveTrajectoryParameterizer {
         val maxJerkMps3: Double,
         val maxCentripetalAccelMps2: Double = 2.5
     )
+
 
     /**
      * Parameterizes a list of waypoints into a smooth, jerk-limited Path.

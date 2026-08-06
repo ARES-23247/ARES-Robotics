@@ -3,22 +3,28 @@ package com.areslib.control.feedback
 import com.areslib.util.RobotClock
 
 /**
- * Pure mathematical Proportional-Integral-Derivative (PID) feedback controller with anti-windup and continuous input wrapping.
+ * Pure Mathematical Proportional-Integral-Derivative (PID) Feedback Controller with Anti-Windup and Continuous Input Domain Wrapping.
  *
- * Designed for high-frequency (50Hz–1000Hz) closed-loop control in zero-GC Redux architecture pipelines.
+ * Designed for zero-allocation high-frequency (50Hz–1000Hz) closed-loop feedback control in robotics Redux architecture pipelines.
  *
- * ### Mathematical Formulation:
- * Continuous-time error dynamics:
- * $$e(t) = r(t) - y(t)$$
- * Control law with discrete integration and derivative calculation:
- * $$u(k) = K_p \cdot e(k) + K_i \sum_{i=0}^{k} e(i) \Delta t + K_d \frac{e(k) - e(k-1)}{\Delta t}$$
+ * ### Discrete-Time Control Law:
+ * Error definition: $e(k) = r(k) - y(k)$
+ * Integral accumulation with anti-windup clamping:
+ * $$I(k) = \text{clamp}\left(I(k-1) + e(k) \Delta t, I_{min}, I_{max}\right)$$
+ * Finite-difference derivative:
+ * $$\dot{e}(k) = \frac{e(k) - e(k-1)}{\Delta t}$$
+ * Total control output with output saturation clamping:
+ * $$u(k) = \text{clamp}\left(K_p \cdot e(k) + K_i \cdot I(k) + K_d \cdot \dot{e}(k), u_{min}, u_{max}\right)$$
  *
- * ### Anti-Windup & Output Clamping:
- * Integral accumulator is bounded between $[I_{min}, I_{max}]$. Final effort output $u(k)$ is clamped to $[u_{min}, u_{max}]$.
+ * ### Physical Units & Properties:
+ * - Gains ($K_p, K_i, K_d$): Output effort per error unit
+ * - Control Effort Output ($u$): Motor Voltage ($V$) or normalized duty cycle ($-1.0 \dots +1.0$)
+ * - Timestep ($\Delta t$): Seconds ($s$)
+ * - Memory Footprint: 100% Zero-GC allocation compliance during update cycles.
  *
- * @param p Proportional gain coefficient $K_p$.
- * @param i Integral gain coefficient $K_i$.
- * @param d Derivative gain coefficient $K_d$.
+ * @property p Proportional gain coefficient $K_p$.
+ * @property i Integral gain coefficient $K_i$.
+ * @property d Derivative gain coefficient $K_d$.
  */
 class PIDController(
     var p: Double,
@@ -38,16 +44,16 @@ class PIDController(
     private var minIntegral: Double = Double.NaN
     private var maxIntegral: Double = Double.NaN
 
-    /** Error deadzone threshold below which control effort is forced to 0.0. */
+    /** Error deadzone threshold below which control effort output is forced to 0.0. */
     var deadzone: Double = 0.0
 
     private var lastWarningTime: Long = 0L
 
     /**
-     * Enables continuous input domain wrapping (e.g., $[-\pi, \pi]$ or $[0, 360^\circ]$) to compute the shortest error path.
+     * Enables continuous circular input domain wrapping (e.g., $[-\pi, +\pi]$ or $[0, 360^\circ]$) to compute the shortest error path.
      *
-     * @param minimumInput Lower bound of continuous domain.
-     * @param maximumInput Upper bound of continuous domain.
+     * @param minimumInput Lower bound of continuous domain (e.g. $-\pi$).
+     * @param maximumInput Upper bound of continuous domain (e.g. $+\pi$).
      */
     fun enableContinuousInput(minimumInput: Double, maximumInput: Double) {
         isContinuous = true
@@ -57,7 +63,7 @@ class PIDController(
     }
 
     /**
-     * Sets the minimum and maximum output effort clamping bounds $[u_{min}, u_{max}]$.
+     * Sets the minimum and maximum control output clamping bounds $[u_{min}, u_{max}]$.
      *
      * @param min Minimum allowable control output.
      * @param max Maximum allowable control output.
@@ -68,10 +74,10 @@ class PIDController(
     }
 
     /**
-     * Configures absolute anti-windup bounds $[I_{min}, I_{max}]$ on the accumulated error sum.
+     * Configures absolute anti-windup limits $[I_{min}, I_{max}]$ on the accumulated integral sum.
      *
-     * @param min Minimum allowable integral sum.
-     * @param max Maximum allowable integral sum.
+     * @param min Minimum allowable integral sum bound.
+     * @param max Maximum allowable integral sum bound.
      */
     fun setIntegratorRange(min: Double, max: Double) {
         minIntegral = min
@@ -81,7 +87,7 @@ class PIDController(
     private var isFirstStep: Boolean = true
 
     /**
-     * Resets the accumulated integral error and previous error state to zero.
+     * Resets accumulated integral error sum ($I = 0.0$) and previous error state to zero.
      */
     fun reset() {
         prevError = 0.0
@@ -90,21 +96,21 @@ class PIDController(
     }
 
     /**
-     * Sets the target setpoint $r(t)$.
+     * Configures the target setpoint $r(k)$.
      *
-     * @param setpoint Desired target state value.
+     * @param setpoint Desired target reference value.
      */
     fun setSetpoint(setpoint: Double) {
         this.setpoint = setpoint
     }
 
     /**
-     * Calculates control effort given current measurement, target setpoint, and loop timestep $\Delta t$.
+     * Calculates control effort output $u(k)$ given current measurement $y(k)$, target setpoint $r(k)$, and loop timestep $\Delta t$.
      *
      * @param measurement Measured process variable $y(k)$.
-     * @param setpoint Desired target setpoint $r(k)$.
+     * @param setpoint Desired target setpoint reference $r(k)$.
      * @param dtSeconds Timestep duration in seconds ($\Delta t > 0$).
-     * @return Computed control effort $u(k)$.
+     * @return Computed control effort output $u(k)$.
      */
     fun calculate(measurement: Double, setpoint: Double, dtSeconds: Double): Double {
         this.setpoint = setpoint
@@ -112,11 +118,11 @@ class PIDController(
     }
 
     /**
-     * Calculates control effort using the pre-configured target setpoint and current measurement.
+     * Calculates control effort output $u(k)$ using the pre-configured target setpoint and current measurement $y(k)$.
      *
      * @param measurement Measured process variable $y(k)$.
      * @param dtSeconds Timestep duration in seconds ($\Delta t > 0$).
-     * @return Computed control effort $u(k)$.
+     * @return Computed control effort output $u(k)$.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
         if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0) {

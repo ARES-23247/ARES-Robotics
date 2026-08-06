@@ -3,16 +3,25 @@ package com.areslib.pathing
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonArray
-import com.areslib.sequencer.*
+import com.areslib.sequencer.Task
+import com.areslib.sequencer.SequentialTaskGroup
+import com.areslib.sequencer.ParallelTaskGroup
+import com.areslib.sequencer.ParallelRaceGroup
+import com.areslib.sequencer.ParallelDeadlineGroup
+import com.areslib.sequencer.FollowPathTask
+import com.areslib.sequencer.TimeWaitTask
+import com.areslib.state.Alliance
 import java.io.File
 
+
 /**
- * Object implementation for Path Planner Auto Parser.
+ * PathPlanner `.auto` JSON File Sequencer Parser.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Deserializes PathPlanner autonomous routine structures into executable [Task] trees
+ * (supporting sequential task sequences, parallel task triggers, named event commands, and path followers).
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * @see AutoBuilder
+ * @see DynamicPathLoader
  */
 object PathPlannerAutoParser {
     private val gson = Gson()

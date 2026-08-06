@@ -4,15 +4,28 @@ import com.areslib.sequencer.Task
 import com.areslib.state.Alliance
 
 /**
- * A declarative builder facade for constructing Autonomous routines from PathPlanner
- * .auto files and associated configurations.
+ * Declarative Autonomous Routine Construction Facade.
+ *
+ * Compiles PathPlanner `.auto` and `.path` JSON files into executable sequencer [Task] graphs
+ * (such as [com.areslib.sequencer.SequentialTaskGroup], [com.areslib.sequencer.ParallelTaskGroup],
+ * or [com.areslib.sequencer.FollowPathTask]).
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position: Meters ($m$)
+ * - Heading: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Time: Milliseconds ($ms$) base timestamp
+ *
+ * @see DynamicPathLoader
+ * @see HolonomicPathFollower
  */
 class AutoBuilder {
     private var follower: HolonomicPathFollower? = null
 
     /**
-     * Configures the path follower that will be used to execute paths
-     * spawned from this AutoBuilder.
+     * Configures the active holonomic path follower that will be bound to path execution tasks.
+     *
+     * @param follower Configured [HolonomicPathFollower] instance.
+     * @return This [AutoBuilder] instance for fluent method chaining.
      */
     fun configureFollower(follower: HolonomicPathFollower): AutoBuilder {
         this.follower = follower
@@ -20,11 +33,12 @@ class AutoBuilder {
     }
 
     /**
-     * Builds a comprehensive [Task] representing the entire autonomous routine
-     * defined in the PathPlanner .auto file.
+     * Builds a comprehensive sequencer [Task] tree representing an entire autonomous routine loaded from a PathPlanner `.auto` file.
      * 
-     * @param autoName The name of the .auto file (without extension)
-     * @param timestampMs The base timestamp used for generating the sequence
+     * @param autoName Name of the `.auto` file (without extension).
+     * @param timestampMs Reference base timestamp for sequencer instantiation in milliseconds ($ms$).
+     * @param alliance Active team alliance color ([Alliance.BLUE] or [Alliance.RED]).
+     * @return Top-level executable [Task] tree.
      */
     fun buildAuto(autoName: String, timestampMs: Long, alliance: Alliance = Alliance.BLUE): Task {
         val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
@@ -32,10 +46,11 @@ class AutoBuilder {
     }
 
     /**
-     * Builds a [Task] that directly follows a single PathPlanner .path file,
-     * without needing a surrounding .auto routine file.
+     * Builds a [Task] that directly follows a single PathPlanner `.path` file without requiring a `.auto` file wrapper.
      * 
-     * @param pathName The name of the .path file (without extension)
+     * @param pathName Name of the `.path` file (without extension).
+     * @param alliance Active team alliance color ([Alliance.BLUE] or [Alliance.RED]).
+     * @return Single [com.areslib.sequencer.FollowPathTask] ready for execution.
      */
     fun buildPath(pathName: String, alliance: Alliance = Alliance.BLUE): Task {
         val activeFollower = follower ?: error("AutoBuilder requires a configured follower. Call configureFollower() first.")
@@ -44,3 +59,4 @@ class AutoBuilder {
         return com.areslib.sequencer.FollowPathTask(activeFollower, mirroredPath, mirrorForAlliance = false)
     }
 }
+

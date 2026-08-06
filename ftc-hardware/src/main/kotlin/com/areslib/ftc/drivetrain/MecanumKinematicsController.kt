@@ -9,9 +9,29 @@ import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
 
 /**
- * Class implementation for Mecanum Kinematics Controller.
+ * Controller managing kinematics modeling, live gain tuning updates, and subsystem drives for FTC Mecanum Robots.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Re-instantiates [MecanumKinematics] solvers upon track width ($W$, $m$) or wheel base ($B$, $m$) tuning updates,
+ * updates motor velocity PIDF gains, and routes drive commands between physical calibration controllers and normal OpMode operation.
+ *
+ * ### Physical Units & Kinematics Parameters:
+ * - Track Width $W$: Lateral distance between left and right wheel centers in meters ($m$).
+ * - Wheel Base $B$: Longitudinal distance between front and rear wheel centers in meters ($m$).
+ * - Kinematic constant $k$:
+ *   $$k = \frac{W + B}{2}$$
+ * - Linear Velocity: Meters per second ($m/s$).
+ * - Angular Velocity: Radians per second ($rad/s$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ *
+ * ### Zero-GC Guarantee:
+ * Executes [updateSubsystems] without dynamic heap allocations, mutating stored kinematics references in-place.
+ *
+ * @param mecanumIO Low-level mecanum hardware IO interface.
+ * @param drive Drive subsystem state model.
+ * @param mecanumDrive Mecanum drive subsystem facade.
+ * @param calibrationController Physical calibration state machine controller.
+ *
+ * @see MecanumKinematics
+ * @see MecanumHardwareIO
  */
 class MecanumKinematicsController(
     val mecanumIO: MecanumHardwareIO,
@@ -19,14 +39,14 @@ class MecanumKinematicsController(
     private val mecanumDrive: MecanumDriveFacade,
     private val calibrationController: FtcMecanumCalibrationController
 ) {
+    /** Current active [MecanumKinematics] solver instance. */
     var kinematics = MecanumKinematics(0.45, 0.45)
         private set
 
     /**
-     * updateTuning declaration.
+     * Updates kinematics geometry parameters and motor controller gains from a new [TuningState] snapshot.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param currentTuning Desired tuning parameters snapshot from Redux state.
      */
     fun updateTuning(currentTuning: TuningState) {
         kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
@@ -49,10 +69,14 @@ class MecanumKinematicsController(
     }
 
     /**
-     * updateSubsystems declaration.
+     * Updates drivetrain subsystem execution, delegating to [calibrationController] if SysId or calibration is active,
+     * or executing normal inverse kinematics driving via [mecanumIO].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param store Redux state store reference.
+     * @param batteryVoltage Measured battery voltage in Volts ($V$).
+     * @param dtSeconds Loop time step interval in seconds ($s$).
+     * @param telemetryManager Telemetry manager for NT4 logging.
+     * @param onResetTuning Callback to reset tuning flags upon calibration stop.
      */
     fun updateSubsystems(
         store: Store,
@@ -78,3 +102,4 @@ class MecanumKinematicsController(
         }
     }
 }
+

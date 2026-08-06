@@ -7,9 +7,22 @@ import com.areslib.hardware.drive.SwerveModuleIO
 import com.areslib.hardware.drive.SwerveModuleInputs
 
 /**
- * Class implementation for Swerve Module I O Phoenix6.
+ * Individual swerve pod hardware IO wrapper for CTRE Phoenix 6 [TalonFX] drive and steer motors.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Synchronizes CANivore CAN-FD 250Hz status signals using `BaseStatusSignal.waitForAll(0.02, ...)` to eliminate
+ * phase-lag jitter between drive velocity, drive encoder position, and CANcoder absolute steering angle signals.
+ *
+ * ### Physical Units:
+ * - Position: Radians ($rad$)
+ * - Velocity: Radians per second ($rad/s$)
+ * - CANivore Timestamp: Microseconds converted to Milliseconds ($ms$)
+ *
+ * @param driveMotor CTRE Phoenix 6 [TalonFX] drive motor hardware instance.
+ * @param steerMotor CTRE Phoenix 6 [TalonFX] steer motor hardware instance.
+ * @param storeDispatch Redux action dispatch callback function.
+ *
+ * @see SwerveModuleIO
+ * @see SwerveModuleInputs
  */
 class SwerveModuleIOPhoenix6(
     private val driveMotor: TalonFX,
@@ -22,10 +35,9 @@ class SwerveModuleIOPhoenix6(
     private val steerPosition = steerMotor.position
 
     /**
-     * updateInputs declaration.
+     * Synchronizes and updates drive position, drive velocity, and absolute steer position into [inputs].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param inputs Pre-allocated [SwerveModuleInputs] target container.
      */
     override fun updateInputs(inputs: SwerveModuleInputs) {
         // FRC CANivore "Airlock" - block until all signals are perfectly synchronized (timeout capped at 20ms)
@@ -41,10 +53,7 @@ class SwerveModuleIOPhoenix6(
     }
     
     /**
-     * dispatchHardwareUpdate declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Reads CANivore synchronized signals and dispatches [RobotAction.DriveHardwareUpdate] to the Redux store.
      */
     fun dispatchHardwareUpdate() {
         val inputs = SwerveModuleInputs()
@@ -64,3 +73,4 @@ class SwerveModuleIOPhoenix6(
         storeDispatch(action)
     }
 }
+

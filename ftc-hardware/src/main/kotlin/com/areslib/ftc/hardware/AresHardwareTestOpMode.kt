@@ -7,25 +7,34 @@ import com.areslib.ftc.update
 import com.areslib.telemetry.AresGamepad
 
 /**
- * Standard TeleOp demonstrating how novice students write code using ARESLib.
- * All complex Redux dispatches, state tracking, and raw hardware polling
- * are entirely encapsulated behind clean, intuitive subsystem facades.
+ * Standard FTC TeleOp OpMode demonstrating hardware integration and subsystem facade usage in ARESLib-Kotlin.
+ *
+ * Demonstrates clean encapsulation where low-level Redux actions, EKF odometry updates,
+ * and hardware I/O polling are automatically driven by high-frequency facade methods.
+ *
+ * ### Performance & Loop Watchdog:
+ * - Baseline target loop rate: 50Hz ($20\text{ms}$ delta time step).
+ * - Loop overrun warning threshold: 30ms.
+ * - Hardware safety: Per-iteration failsafe catches runtime exceptions and cuts motor power gracefully.
+ *
+ * @see FtcMecanumRobot
+ * @see AresGamepad
  */
 @TeleOp(name = "ARES: Hardware Integration Test", group = "ARES")
 class AresHardwareTestOpMode : LinearOpMode() {
 
     companion object {
-        /** Target loop period in milliseconds (50 Hz = 20ms) */
+        /** Target loop period in milliseconds (50Hz = 20ms). */
         private const val TARGET_LOOP_MS = 20L
-        /** Threshold above which we log a loop overrun warning */
+        /** Threshold duration above which loop overrun warnings are logged. */
         private const val OVERRUN_THRESHOLD_MS = 30L
     }
 
     /**
-     * runOpMode declaration.
+     * Main entry point for FTC LinearOpMode execution.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Initializes the [FtcMecanumRobot] container, sets up gamepad control bindings, and executes
+     * the teleoperated control loop.
      */
     override fun runOpMode() {
         telemetry.addData("Status", "Initializing Robot Facade...")
@@ -92,4 +101,5 @@ class AresHardwareTestOpMode : LinearOpMode() {
         }
     }
 }
+
 

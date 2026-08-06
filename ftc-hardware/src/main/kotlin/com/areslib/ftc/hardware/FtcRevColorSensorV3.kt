@@ -11,11 +11,26 @@ import com.qualcomm.robotcore.hardware.NormalizedColorSensor
 import org.firstinspires.ftc.robotcore.external.navigation.Distance
 
 /**
- * Integrated wrapper for the REV Color Sensor V3.
- * 
- * Since the REV V3 physical hardware contains both a multi-spectral color sensor 
- * and an infrared proximity/rangefinder, this class implements both ColorSensorIO 
- * and DistanceSensorIO for unified, frictionless reading.
+ * Asynchronous hardware IO wrapper for the REV Color Sensor V3 (SKU REV-31-1557).
+ *
+ * Integrates both the multi-spectral color channel sensor and the IR proximity/rangefinder into a single device interface,
+ * implementing both [ColorSensorIO] and [DistanceSensorIO]. Uses a dedicated 50Hz background thread (`ARES-ColorSensorV3-Thread`)
+ * and double-buffered thread-safe memory transfers to eliminate main control loop I2C stalls.
+ *
+ * ### Physical Units & Range Boundaries:
+ * - Raw Color Channels ($R, G, B, \alpha$): 16-bit unscaled ADC counts $[0, 65535]$.
+ * - Normalized Color Channels: Double-precision floating point ratios $[0.0, 1.0]$.
+ * - Integrated IR Proximity Distance: Distance in meters ($m$). Returns [Double.NaN] when out of range.
+ *
+ * ### Zero-GC Execution Compliance:
+ * Background thread writes into pre-allocated double-buffers (`threadBuffer`, `cachedNormalized`).
+ * Property getters access primitives inside `synchronized` blocks without heap object instantiations.
+ *
+ * @param device Underlying FTC SDK [ColorSensor] hardware instance.
+ *
+ * @see ColorSensorIO
+ * @see DistanceSensorIO
+ * @see NormalizedColorSensor
  */
 class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, DistanceSensorIO, AutoCloseable {
     
@@ -106,32 +121,36 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
         thread.start()
     }
 
+    /** Cached raw red channel reading $[0, 65535]$. */
     override val red: Int
         get() = synchronized(lock) { cachedRed }
+
+    /** Cached raw green channel reading $[0, 65535]$. */
     override val green: Int
         get() = synchronized(lock) { cachedGreen }
+
+    /** Cached raw blue channel reading $[0, 65535]$. */
     override val blue: Int
         get() = synchronized(lock) { cachedBlue }
+
+    /** Cached raw alpha/luminance channel reading $[0, 65535]$. */
     override val alpha: Int
         get() = synchronized(lock) { cachedAlpha }
 
+    /** Cached double-buffered normalized $[R, G, B, \alpha]$ array $[0.0, 1.0]$. */
     override val normalizedRgb: DoubleArray
         get() = synchronized(lock) { cachedNormalized }
 
-    /**
-     * Reads the integrated proximity rangefinder distance in meters.
-     */
+    /** Cached IR proximity rangefinder reading in meters ($m$). Returns [Double.NaN] if out of range. */
     override val distanceMeters: Double
         get() = synchronized(lock) { cachedDistance }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background thread execution and releases hardware resources.
      */
     override fun close() {
         running = false
     }
 }
+
 

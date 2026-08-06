@@ -5,9 +5,12 @@ import org.firstinspires.ftc.ftccommon.external.WebHandlerRegistrar
 import com.qualcomm.robotcore.util.WebHandlerManager
 
 /**
- * Object implementation for Limelight Proxy Auto Start.
+ * Automatic initializer for [LimelightProxy] HTTP stream tunneling.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Annotates [registerWebHandlers] with `@WebHandlerRegistrar` to hook into the FTC Control Hub web server startup lifecycle.
+ * Spawns port forwarding tunnels allowing desktop browsers and ARES-Analytics to view Limelight camera streams via the Control Hub IP (`192.168.43.1:5800`).
+ *
+ * @see LimelightProxy
  */
 object LimelightProxyAutoStart {
     private var proxy: LimelightProxy? = null
@@ -15,10 +18,10 @@ object LimelightProxyAutoStart {
     @WebHandlerRegistrar
     @JvmStatic
     /**
-     * registerWebHandlers declaration.
+     * Called automatically by FTC SDK web server initialization to register proxy tunnels.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param context Application context instance.
+     * @param manager Web handler manager interface.
      */
     fun registerWebHandlers(@Suppress("UNUSED_PARAMETER") context: Context, @Suppress("UNUSED_PARAMETER") manager: WebHandlerManager) {
         start()
@@ -26,10 +29,7 @@ object LimelightProxyAutoStart {
     }
 
     /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Starts active Limelight HTTP proxy stream tunnels if not already running.
      */
     fun start() {
         if (proxy == null) {
@@ -41,10 +41,7 @@ object LimelightProxyAutoStart {
     }
 
     /**
-     * stop declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates active Limelight HTTP proxy stream tunnels.
      */
     fun stop() {
         proxy?.stop()
@@ -52,3 +49,4 @@ object LimelightProxyAutoStart {
         System.out.println("LimelightProxyAutoStart: Stopped Limelight Proxy tunnels.")
     }
 }
+

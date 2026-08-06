@@ -1,52 +1,66 @@
 package com.areslib.control.assist
 
 /**
- * Interface representing a modular robot action.
+ * Interface representing an executable modular robot action or autonomous state machine node.
+ *
+ * Designed to compose complex multi-subsystem behavior sequences (sequential, parallel, timed, or event-driven)
+ * with deterministic startup, periodic updates, finished condition checking, and cleanup/interruption hooks.
+ *
+ * ### Physical Units & Properties:
+ * - Timestep (`dtSeconds`): Seconds ($s$)
  */
 interface Action {
     /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Initializes state and triggers immediate startup logic when the action is scheduled.
      */
     fun start() {}
+
     /**
-     * update declaration.
+     * Periodic update loop executed every robot frame cycle while the action is active.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Elapsed time since the last iteration step in seconds ($s$).
      */
     fun update(dtSeconds: Double)
+
     /**
-     * isFinished declaration.
+     * Checks if the termination criteria for this action have been satisfied.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return `true` if the action has completed successfully; `false` otherwise.
      */
     fun isFinished(): Boolean
+
     /**
-     * end declaration.
+     * Called when the action terminates, either naturally upon finishing or when aborted by an emergency interlock.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param interrupted `true` if terminated early due to preemptive cancellation or safety abort; `false` if completed naturally.
      */
     fun end(interrupted: Boolean) {}
 }
 
 /**
- * High-performance, student-friendly Coordinated Action Executor.
- * Manages concurrent, sequential, and timed tasks with strict safety interlock monitoring.
+ * High-performance Coordinated Action Executor for autonomous and telemetry-assisted state machines.
+ *
+ * Manages active action lifecycle and enforces safety interlocks dynamically to prevent mechanical damage or unsafe motion.
+ *
+ * @param safetyCheck Dynamic safety interlock lambda returning `false` if an active hazard is detected.
+ *
+ * @see Action
  */
 class CoordinatedActionExecutor(
     private val safetyCheck: () -> Boolean = { true }
 ) {
-    private var activeAction: Action? = null
+    /** Currently active running action instance, or `null` if idle. */
+    var activeAction: Action? = null
+        private set
+
+    /** Emergency abort state flag. When `true`, prevents action dispatch until explicitly reset via [resetAbort]. */
     var isEmergencyAborted: Boolean = false
         private set
 
     /**
-     * Queues/starts a new action. Interrupts the previous action if one was running.
+     * Schedules a new [action] for execution. Interrupts and terminates the previously active action if one was running.
+     *
+     * @param action Target [Action] to initialize and execute.
      */
     fun startAction(action: Action) {
         if (isEmergencyAborted) return
@@ -56,8 +70,11 @@ class CoordinatedActionExecutor(
     }
 
     /**
-     * Periodic update loop. Must be called in the robot's main loop.
-     * @param dtSeconds Elapsed time since last loop.
+     * Periodic update loop. Must be invoked inside the robot's main 50Hz periodic loop.
+     *
+     * Evaluates dynamic safety interlocks; if a safety check fails, aborts active execution immediately.
+     *
+     * @param dtSeconds Elapsed cycle loop time in seconds ($s$).
      */
     fun update(dtSeconds: Double) {
         if (isEmergencyAborted) return
@@ -78,7 +95,7 @@ class CoordinatedActionExecutor(
     }
 
     /**
-     * Aborts the currently active action and prevents further execution until reset.
+     * Aborts the currently active action with `interrupted = true` and latches [isEmergencyAborted].
      */
     fun abort() {
         activeAction?.end(true)
@@ -87,29 +104,30 @@ class CoordinatedActionExecutor(
     }
 
     /**
-     * Resets the emergency abort flag to resume operations.
+     * Clears the emergency abort flag [isEmergencyAborted], restoring normal action scheduling capabilities.
      */
     fun resetAbort() {
         isEmergencyAborted = false
     }
 
     /**
-     * Check if the executor is currently running an action sequence.
+     * Checks if the executor is currently running an active action sequence.
+     *
+     * @return `true` if [activeAction] is non-null; `false` if idle.
      */
     fun isRunning(): Boolean = activeAction != null
 }
 
 /**
- * Action that executes a series of actions sequentially.
+ * Composite composite action that executes a sequence of sub-actions in strict linear series order.
+ *
+ * @param actions Variadic array of child [Action] components executed sequentially.
  */
 class SequentialAction(private vararg val actions: Action) : Action {
     private var currentIndex = 0
 
     /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Initializes the sequence and starts the first action if present.
      */
     override fun start() {
         currentIndex = 0
@@ -119,10 +137,9 @@ class SequentialAction(private vararg val actions: Action) : Action {
     }
 
     /**
-     * update declaration.
+     * Updates the currently active child action in the sequence and transitions when completed.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Timestep in seconds ($s$).
      */
     override fun update(dtSeconds: Double) {
         if (currentIndex >= actions.size) return
@@ -143,20 +160,18 @@ class SequentialAction(private vararg val actions: Action) : Action {
     }
 
     /**
-     * isFinished declaration.
+     * Checks if all child actions in the sequence have completed.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return `true` when [currentIndex] reaches the end of the array; `false` otherwise.
      */
     override fun isFinished(): Boolean {
         return currentIndex >= actions.size
     }
 
     /**
-     * end declaration.
+     * Cleans up the active child action if the composite sequence is interrupted.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param interrupted `true` if the sequence was aborted prior to natural completion.
      */
     override fun end(interrupted: Boolean) {
         if (interrupted && currentIndex < actions.size) {
@@ -166,17 +181,16 @@ class SequentialAction(private vararg val actions: Action) : Action {
 }
 
 /**
- * Action that executes multiple actions in parallel.
- * Finishes when ALL sub-actions have finished.
+ * Composite action that executes multiple sub-actions in parallel concurrently.
+ * Completes only when ALL child actions have finished.
+ *
+ * @param actions Variadic array of child [Action] components executed in parallel.
  */
 class ParallelAction(private vararg val actions: Action) : Action {
     private val activeActions = mutableListOf<Action>()
 
     /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Starts all child actions concurrently.
      */
     override fun start() {
         activeActions.clear()
@@ -187,10 +201,9 @@ class ParallelAction(private vararg val actions: Action) : Action {
     }
 
     /**
-     * update declaration.
+     * Updates all active parallel child actions and cleans up finished sub-actions.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Timestep in seconds ($s$).
      */
     override fun update(dtSeconds: Double) {
         var i = 0
@@ -207,20 +220,18 @@ class ParallelAction(private vararg val actions: Action) : Action {
     }
 
     /**
-     * isFinished declaration.
+     * Checks if all parallel child actions have finished.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return `true` when [activeActions] list becomes empty; `false` otherwise.
      */
     override fun isFinished(): Boolean {
         return activeActions.isEmpty()
     }
 
     /**
-     * end declaration.
+     * Cleans up all currently running parallel child actions if interrupted.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param interrupted `true` if the parallel group was cancelled early.
      */
     override fun end(interrupted: Boolean) {
         if (interrupted) {
@@ -232,36 +243,33 @@ class ParallelAction(private vararg val actions: Action) : Action {
 }
 
 /**
- * Action that pauses for a specified duration of time.
+ * Utility action that pauses execution for a specified duration before finishing.
+ *
+ * @param durationSeconds Total delay time in seconds ($s$).
  */
 class WaitAction(private val durationSeconds: Double) : Action {
     private var elapsedSeconds = 0.0
 
     /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Resets internal timer accumulator to 0.0 seconds.
      */
     override fun start() {
         elapsedSeconds = 0.0
     }
 
     /**
-     * update declaration.
+     * Accumulates elapsed time $\Delta t$.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Timestep in seconds ($s$).
      */
     override fun update(dtSeconds: Double) {
         elapsedSeconds += dtSeconds
     }
 
     /**
-     * isFinished declaration.
+     * Checks if the accumulated time has reached [durationSeconds].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return `true` when $t_{elapsed} \ge t_{duration}$; `false` otherwise.
      */
     override fun isFinished(): Boolean {
         return elapsedSeconds >= durationSeconds
@@ -269,28 +277,27 @@ class WaitAction(private val durationSeconds: Double) : Action {
 }
 
 /**
- * Action that executes a lambda instantly.
+ * Action wrapper that executes a single synchronous block/lambda instantly and completes immediately.
+ *
+ * @param runnable Closure function to execute upon startup.
  */
 class InstantAction(private val runnable: () -> Unit) : Action {
     /**
-     * update declaration.
+     * No-op update for instant action execution.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Timestep in seconds ($s$).
      */
     override fun update(dtSeconds: Double) {}
+
     /**
-     * isFinished declaration.
+     * Instantly returns `true` since instant actions finish on frame 0.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @return Always `true`.
      */
     override fun isFinished(): Boolean = true
+
     /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Executes the wrapped [runnable] lambda block.
      */
     override fun start() {
         runnable()

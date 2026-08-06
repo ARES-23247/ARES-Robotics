@@ -7,7 +7,18 @@ import kotlin.math.*
 import com.areslib.math.wrapAngle
 
 /**
- * Pre-allocated result container for zero-allocation ShotSetup calculations.
+ * Pre-allocated result container for zero-allocation Shoot-on-the-Move (SOTM) trajectory calculations.
+ *
+ * Populated in-place by [ShotSetup.calculate] to maintain 100% Zero-GC compliance during 50Hz update loops.
+ *
+ * @property virtualTargetX X coordinate of the virtual lookahead target in field coordinates ($m$).
+ * @property virtualTargetY Y coordinate of the virtual lookahead target in field coordinates ($m$).
+ * @property aimAngleRad Field-relative aiming angle towards virtual target in radians ($rad$, CCW positive).
+ * @property robotTargetHeadingRad Required robot chassis heading angle in radians ($rad$, CCW positive).
+ * @property aimDistanceMeters Distance from shooter offset to virtual target in meters ($m$).
+ * @property targetFlywheelRpm Target interpolated flywheel velocity in Revolutions Per Minute ($RPM$).
+ * @property targetCowlAngleDegrees Target interpolated cowl/hood angle in degrees ($^\circ$).
+ * @property angularVelocityFeedforwardRadPerSec Direct derivative feedforward rate for heading rotation in radians per second ($rad/s$).
  */
 class ShotResult {
     var virtualTargetX: Double = 0.0
@@ -21,29 +32,20 @@ class ShotResult {
 }
 
 /**
- * Configuration for a robot's specific shooting geometry and ballistic tuning.
+ * Robot-specific shooting mechanism geometry footprint and ballistic tuning configuration.
  *
- * Contains all the robot-specific constants needed for the Shoot-on-the-Move solver:
- * - Shooter offset from chassis center (back-mounted, side-mounted, etc.)
- * - Time-of-flight interpolation tables
- * - Flywheel RPM and cowl angle interpolation tables keyed by distance
+ * Encapsulates physical offset distance of the shooter relative to chassis center of mass,
+ * system latency compensation, and 1D distance lookup tables for time-of-flight, flywheel RPM, and cowl angle.
  *
- * Each season's robot defines its own [ShotConfig] instance with its tuned values.
- *
- * @property shooterOffsetX X offset (meters) of the shooter relative to chassis center (positive = forward).
- * @property shooterOffsetY Y offset (meters) of the shooter relative to chassis center (positive = left).
- * @property tofKeys Distance breakpoints (meters) for time-of-flight interpolation, sorted ascending.
- * @property tofValues Time-of-flight values (seconds) corresponding to each distance breakpoint.
- * @property shotKeys Distance breakpoints (meters) for RPM and cowl interpolation, sorted ascending.
- * @property shotRpm Target flywheel RPM values corresponding to each shot distance breakpoint.
- * @property shotCowl Target cowl angle values (degrees) corresponding to each shot distance breakpoint.
- * @property delayCompensationSeconds Total latency compensation (seconds) for lookahead prediction.
- * @property shooterFacesRearward If true, the robot's front is 180° from the aim direction (back-mounted shooter).
- */
-/**
- * Class implementation for Shot Config.
- *
- * Robotics framework control component.
+ * @property shooterOffsetX Forward offset of shooter center relative to chassis center in meters ($m$).
+ * @property shooterOffsetY Lateral left offset of shooter center relative to chassis center in meters ($m$).
+ * @property tofKeys Sorted distance breakpoints for time-of-flight interpolation ($m$).
+ * @property tofValues Projectile time-of-flight corresponding to each distance breakpoint ($s$).
+ * @property shotKeys Sorted distance breakpoints for RPM and cowl angle interpolation ($m$).
+ * @property shotRpm Target flywheel rotational speeds corresponding to distance breakpoints ($RPM$).
+ * @property shotCowl Target cowl hood angles corresponding to distance breakpoints ($^\circ$).
+ * @property delayCompensationSeconds Phase delay compensation for system latency ($s$).
+ * @property shooterFacesRearward `true` if shooter points out the rear of the robot (180° offset from front).
  */
 data class ShotConfig(
     val shooterOffsetX: Double,
@@ -66,54 +68,71 @@ data class ShotConfig(
 /**
  * Pure functional lookahead coordinate solver for Shoot-on-the-Move (SOTM).
  *
- * Computes exact target flywheel RPM, cowl angle, and angular velocity feedforward
- * using iterative latency-compensated lookahead convergence.
+ * Computes exact virtual target aiming vector, target flywheel RPM, cowl angle, and rotational feedforward ($\omega_{FF}$)
+ * using an iterative latency-compensated lookahead convergence algorithm.
  *
- * This class is **robot-agnostic** — all robot-specific tuning constants are provided
- * via the [ShotConfig] parameter. The SOTM math algorithm is reusable across any
- * FTC or FRC robot with a turret/shooter mechanism.
+ * ### Mathematical Algorithm:
+ * 1. **Phase Delay Compensation**:
+ *    $$\mathbf{x}_{comp} = \mathbf{x}_{robot} + \mathbf{v}_{chassis} \cdot \Delta t_{delay}, \quad \theta_{comp} = \theta_{robot} + \omega_{chassis} \cdot \Delta t_{delay}$$
+ * 2. **Shooter Offset Transformation**:
+ *    $$\begin{bmatrix} o_{x,rot} \\ o_{y,rot} \end{bmatrix} = \begin{bmatrix} \cos\theta_{comp} & -\sin\theta_{comp} \\ \sin\theta_{comp} & \cos\theta_{comp} \end{bmatrix} \begin{bmatrix} o_x \\ o_y \end{bmatrix}$$
+ *    $$\mathbf{x}_{shooter} = \mathbf{x}_{comp} + \mathbf{o}_{rot}$$
+ * 3. **Field Velocity of Shooter**:
+ *    $$v_{shooter,x} = v_{x,field} - \omega \cdot o_{y,rot}, \quad v_{shooter,y} = v_{y,field} + \omega \cdot o_{x,rot}$$
+ * 4. **Iterative Lookahead Convergence (5 steps)**:
+ *    $$\mathbf{x}_{virtual}^{(k+1)} = \mathbf{x}_{target} - \mathbf{v}_{shooter} \cdot \text{TOF}\left(\|\mathbf{x}_{virtual}^{(k)} - \mathbf{x}_{shooter}\|\right)$$
+ * 5. **Heading Feedforward Calculation**:
+ *    $$\omega_{FF} = \frac{-\Delta x_{final} \cdot v_{shooter,y} + \Delta y_{final} \cdot v_{shooter,x}}{\|\Delta \mathbf{x}_{final}\|^2}$$
  *
- * **Zero-GC compliance**: All calculations use primitives. The [ShotResult] output
- * container is pre-allocated by the caller and populated in-place.
+ * ### Zero-GC Compliance:
+ * Operates strictly using primitive calculations. Populates a pre-allocated [ShotResult] output container in-place.
  *
- * @param config Robot-specific shooting geometry and ballistic tuning tables.
- */
-/**
- * Class implementation for Shot Setup.
- *
- * Robotics framework control component.
+ * @param config Robot-specific physical geometry and ballistic calibration table [ShotConfig].
+ * @see ShotConfig
+ * @see ShotResult
  */
 class ShotSetup(private val config: ShotConfig) {
 
     /**
-     * Linearly interpolates the projectile time-of-flight (seconds) for a given aim distance (meters).
+     * Linearly interpolates projectile time-of-flight in seconds ($s$) for a given aim distance in meters ($m$).
+     *
+     * @param distance Straight-line aim distance to virtual target in meters ($m$).
+     * @return Interpolated time-of-flight in seconds ($s$).
      */
     fun interpolateTof(distance: Double): Double {
         return interpolate(config.tofKeys, config.tofValues, distance)
     }
 
     /**
-     * Linearly interpolates the target flywheel RPM for a given aim distance (meters).
+     * Linearly interpolates target flywheel velocity in Revolutions Per Minute ($RPM$) for a given aim distance in meters ($m$).
+     *
+     * @param distance Straight-line aim distance to virtual target in meters ($m$).
+     * @return Interpolated flywheel target speed ($RPM$).
      */
     fun interpolateRpm(distance: Double): Double {
         return interpolate(config.shotKeys, config.shotRpm, distance)
     }
 
     /**
-     * Linearly interpolates the target cowl angle (degrees) for a given aim distance (meters).
+     * Linearly interpolates target cowl/hood angle in degrees ($^\circ$) for a given aim distance in meters ($m$).
+     *
+     * @param distance Straight-line aim distance to virtual target in meters ($m$).
+     * @return Interpolated cowl hood angle in degrees ($^\circ$).
      */
     fun interpolateCowl(distance: Double): Double {
         return interpolate(config.shotKeys, config.shotCowl, distance)
     }
 
     /**
-     * Performs a latency-compensated iterative convergence calculation for SOTM.
-     * Populates [result] in-place to prevent runtime allocations.
+     * Performs a latency-compensated iterative convergence calculation for Shoot-on-the-Move (SOTM).
      *
-     * @param robotPose Current robot position and orientation on the field.
-     * @param fieldCentricSpeeds Current velocity vector of the chassis in field coordinates.
-     * @param target Field coordinates of the goal (e.g., Speaker opening).
-     * @param result Pre-allocated output container.
+     * Computes virtual target coordinates, aim distance, heading orientation, flywheel RPM, cowl angle,
+     * and rotational feedforward rate. Populates [result] in-place with zero heap allocations.
+     *
+     * @param robotPose Current estimated robot position and heading orientation on the field ($m, rad$).
+     * @param fieldCentricSpeeds Current velocity vector of the chassis in field coordinates ($m/s, rad/s$).
+     * @param target Field coordinates of the scoring target opening ($m$).
+     * @param result Pre-allocated [ShotResult] container populated in-place.
      */
     fun calculate(
         robotPose: Pose2d,

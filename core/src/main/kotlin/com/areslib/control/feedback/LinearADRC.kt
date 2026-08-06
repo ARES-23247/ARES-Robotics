@@ -5,36 +5,39 @@ import kotlin.math.abs
 /**
  * Linear Active Disturbance Rejection Controller (LADRC) with Extended State Observer (ESO).
  *
- * Replaces classical PID control by modeling all unmodeled dynamics, physical friction, parameter drift,
- * and external disturbances into a single extended state $f(t) = x_2$.
+ * Replaces classical PID control by treating all unmodeled dynamics, internal parameter variations, physical friction,
+ * and external disturbances as an extended total disturbance state $f(t) = x_2$.
  *
  * ### Extended State Observer (ESO) Equations:
  * Observer gains parameterized by observer bandwidth $\omega_o$: $l_1 = 2\omega_o$, $l_2 = \omega_o^2$.
  * $$\dot{\hat{x}}_1 = \hat{x}_2 + b_0 u + 2\omega_o (y - \hat{x}_1)$$
  * $$\dot{\hat{x}}_2 = \omega_o^2 (y - \hat{x}_1)$$
  *
- * ### Control Law:
- * Proportional feedback control effort parameterized by controller bandwidth $\omega_c$:
+ * ### Control Law Equations:
+ * Proportional tracking feedback effort parameterized by controller bandwidth $\omega_c$:
  * $$u_0 = \omega_c (r - \hat{x}_1)$$
  * $$u = \frac{u_0 - \hat{x}_2}{b_0}$$
  *
- * ### Physical Units & Properties:
- * - Control Output: Motor voltage ($V$) or normalized duty cycle ($-1.0$ to $+1.0$)
- * - Time Step: Seconds ($s$)
- * - Bandwidth $\omega_c, \omega_o$: Radians per second ($rad/s$), typically $\omega_o \approx (3 \dots 5) \cdot \omega_c$
+ * ### Physical Units & Bandwidth Recommendations:
+ * - Control Output ($u$): Motor Voltage ($V$) or normalized duty cycle ($-1.0 \dots +1.0$)
+ * - System Input Gain ($b_0$): System responsiveness parameter ($\Delta y / \Delta u$)
+ * - Controller Bandwidth ($\omega_c$): Radians per second ($rad/s$), controls response speed
+ * - Observer Bandwidth ($\omega_o$): Radians per second ($rad/s$), typically set to $\omega_o \approx (3 \dots 5) \cdot \omega_c$
+ * - Timestep ($\Delta t$): Seconds ($s$)
  *
- * @param b0 Estimated input gain (responsiveness ratio $\Delta v / \Delta u$).
- * @param omegaC Controller tracking bandwidth ($\text{rad/s}$). Higher values increase response speed.
+ * @property b0 Estimated system input gain parameter ($\Delta \text{velocity} / \Delta \text{voltage}$).
+ * @property omegaC Controller tracking bandwidth in radians per second ($rad/s$).
+ * @property omegaO Extended state observer bandwidth in radians per second ($rad/s$).
  */
 class LinearADRC(
     var b0: Double,
     var omegaC: Double,
     var omegaO: Double
 ) {
-    /** Estimated system state (position or velocity). */
+    /** Estimated system state $\hat{x}_1$ (position or velocity). */
     var xHat1: Double = 0.0
 
-    /** Estimated total disturbance ($f(t)$) in physical units per second. */
+    /** Estimated total disturbance state $\hat{x}_2 = f(t)$ in physical state units per second. */
     var xHat2: Double = 0.0
 
     private var uPrev: Double = 0.0
@@ -47,10 +50,10 @@ class LinearADRC(
     private var continuousMax: Double = 0.0
 
     /**
-     * Enables continuous circular input wrapping (e.g. $[-\pi, \pi]$ radians) to take the shortest angular path.
+     * Enables continuous circular input domain wrapping (e.g. $[-\pi, +\pi]$ radians) to take the shortest angular path.
      *
-     * @param minimumInput Lower bound of input range (e.g., $-\pi$).
-     * @param maximumInput Upper bound of input range (e.g., $+\pi$).
+     * @param minimumInput Lower bound of continuous input domain (e.g. $-\pi$).
+     * @param maximumInput Upper bound of continuous input domain (e.g. $+\pi$).
      */
     fun enableContinuousInput(minimumInput: Double, maximumInput: Double) {
         isContinuous = true
@@ -59,10 +62,10 @@ class LinearADRC(
     }
 
     /**
-     * Sets output saturation clamping bounds.
+     * Sets output saturation limits $[u_{min}, u_{max}]$ on commanded control effort.
      *
-     * @param min Lower output limit.
-     * @param max Upper output limit.
+     * @param min Lower allowable control output bound.
+     * @param max Upper allowable control output bound.
      */
     fun setOutputLimits(min: Double, max: Double) {
         minOutput = min
@@ -70,10 +73,10 @@ class LinearADRC(
     }
 
     /**
-     * Resets internal observer states ($\hat{x}_1, \hat{x}_2$) to match a fresh sensor measurement.
-     * Prevents control output spikes upon activation.
+     * Resets internal observer state estimates ($\hat{x}_1 = y_{current}, \hat{x}_2 = 0$) to match a new initial measurement.
+     * Prevents initial control effort spikes upon activation.
      *
-     * @param measurement Current sensor measurement value.
+     * @param measurement Measured plant output value to reset observer position to.
      */
     fun reset(measurement: Double) {
         xHat1 = measurement
@@ -82,12 +85,12 @@ class LinearADRC(
     }
 
     /**
-     * Calculates the commanded control effort $u$ based on the setpoint target and current measurement.
+     * Calculates commanded control effort $u(k)$ based on target setpoint $r$, current plant measurement $y$, and loop timestep $\Delta t$.
      *
-     * @param target Desired target setpoint.
-     * @param measurement Measured plant output.
-     * @param dtSeconds Time step in seconds.
-     * @return Commanded control effort (e.g., motor voltage or duty-cycle).
+     * @param target Desired target setpoint $r$.
+     * @param measurement Measured plant output $y$.
+     * @param dtSeconds Timestep duration in seconds ($\Delta t > 0$).
+     * @return Commanded control effort $u(k)$ (e.g. Volts or duty cycle).
      */
     fun calculate(target: Double, measurement: Double, dtSeconds: Double): Double {
         if (dtSeconds <= 0.0) return 0.0

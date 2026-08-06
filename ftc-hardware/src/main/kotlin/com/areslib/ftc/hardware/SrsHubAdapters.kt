@@ -9,28 +9,44 @@ import com.areslib.hardware.drive.OdometryIO
 import com.areslib.math.geometry.Pose2d
 
 /**
- * Hardware IO abstraction layer for SRS Hub Analog Inputs.
+ * Analog voltage input IO adapter for SRS Hub analog ports $[0 \dots 3]$.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub analog port channel $[0 \dots 3]$.
+ *
+ * @see AnalogVoltageInput
  */
 class SrsHubAnalogIO(private val srsHub: SrsHubDriver, private val port: Int) : AnalogVoltageInput {
+    /** Measured analog input voltage in Volts ($V$). */
     override val voltage: Double
         get() = srsHub.getAnalogVoltage(port)
 }
 
 /**
- * Hardware IO abstraction layer for SRS Hub Digital Inputs.
+ * Digital channel IO adapter for SRS Hub digital ports $[0 \dots 3]$.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub digital port channel $[0 \dots 3]$.
  */
 class SrsHubDigitalIO(private val srsHub: SrsHubDriver, private val port: Int) {
+    /** Reads digital pin logic state (`true` for HIGH, `false` for LOW). */
     fun getState(): Boolean {
         return srsHub.getDigitalState(port)
     }
 }
 
 /**
- * Hardware IO abstraction layer for SRS Hub Servos.
+ * PWM Servo output IO adapter for SRS Hub servo ports $[0 \dots 3]$.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub PWM servo port channel $[0 \dots 3]$.
+ *
+ * @see ServoIO
  */
 class SrsHubServoIO(private val srsHub: SrsHubDriver, private val port: Int) : ServoIO {
     private var currentTarget = 0.0
 
+    /** Target normalized servo position $[0.0, 1.0]$. Writes trigger SRS Hub PWM duty cycle updates. */
     override var position: Double
         get() = currentTarget
         set(value) {
@@ -40,11 +56,13 @@ class SrsHubServoIO(private val srsHub: SrsHubDriver, private val port: Int) : S
 }
 
 /**
- * SRS Hub Adapter for the goBILDA Prism RGB LED Driver (SKU 3118-2855-0001).
- * Commands microsecond pulse widths (500µs to 2500µs) directly through SRS Hub PWM port [port].
+ * SRS Hub Adapter for the GoBilda Prism RGB LED Driver (SKU 3118-2855-0001).
+ * Commands microsecond pulse widths ($500\mu s \dots 2500\mu s$) directly through SRS Hub PWM port [port].
  *
- * @param srsHub The SrsHubDriver instance.
- * @param port SRS Hub PWM Servo port index (0 to 3).
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub PWM Servo port index $[0 \dots 3]$ (default 0).
+ *
+ * @see com.areslib.hardware.actuator.PrismDriverIO
  */
 class SrsHubPrismDriverIO(
     private val srsHub: SrsHubDriver,
@@ -56,6 +74,11 @@ class SrsHubPrismDriverIO(
 
     override var maxBrightnessPercent: Int = 75
 
+    /**
+     * Commands equivalent PWM pulse width in microseconds ($\mu s$), mapping $[500\mu s, 2500\mu s]$ to normalized $[0.0, 1.0]$.
+     *
+     * @param pulseWidthUs Pulse width duration in microseconds ($\mu s$).
+     */
     override fun setPulseWidthUs(pulseWidthUs: Int) {
         val clampedUs = pulseWidthUs.coerceIn(500, 2500)
         currentPulseWidthUs = clampedUs
@@ -65,6 +88,13 @@ class SrsHubPrismDriverIO(
         srsHub.setPwmDutyCycle(port, normalizedPos)
     }
 
+    /**
+     * Converts RGB color values into equivalent HSV hue degrees and sets matching PWM pulse width.
+     *
+     * @param r Red intensity $[0, 255]$.
+     * @param g Green intensity $[0, 255]$.
+     * @param b Blue intensity $[0, 255]$.
+     */
     override fun setSolidColorRgb(r: Int, g: Int, b: Int) {
         val rNorm = (r.coerceIn(0, 255)) / 255.0
         val gNorm = (g.coerceIn(0, 255)) / 255.0
@@ -86,19 +116,27 @@ class SrsHubPrismDriverIO(
         setPulseWidthUs(pulseWidth)
     }
 
+    /** Resets the Prism driver to solid red safe preset. */
     override fun safe() {
         setPreset(com.areslib.hardware.actuator.PrismPwmPreset.SOLID_RED)
     }
 
+    /** No-op refresh hook (actuator is write-only). */
     override fun refresh() {}
 
+    /** Logs current pulse width ($\mu s$) to telemetry network. */
     override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/PulseWidthUs", currentPulseWidthUs.toDouble())
     }
 }
 
 /**
- * Hardware IO abstraction layer for SRS Hub Encoders.
+ * Quadrature encoder IO adapter for SRS Hub encoder channels $[0 \dots 3]$.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub encoder port channel $[0 \dots 3]$.
+ *
+ * @see MotorIO
  */
 class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) : MotorIO {
     override var power: Double
@@ -108,14 +146,23 @@ class SrsHubEncoderIO(private val srsHub: SrsHubDriver, private val port: Int) :
     override val velocity: Double
         get() = 0.0
 
+    /** Encoder count position read directly from 256-byte bulk telemetry buffer. */
     override val position: Double
         get() = srsHub.readEncoder(port).toDouble()
 
+    /** No-op reset hook (managed by SRS Hub internal registers). */
     override fun resetEncoder() {}
 }
 
 /**
- * Wrapper for an absolute analog encoder plugged into the SRS Hub.
+ * Absolute analog encoder IO adapter for SRS Hub analog ports $[0 \dots 3]$.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub analog port channel $[0 \dots 3]$.
+ * @param version REV encoder revision variant.
+ * @param ticksPerRev Encoder tick resolution rating ($ticks/rev$, default 8192.0).
+ *
+ * @see MotorIO
  */
 class SrsHubAbsoluteAnalogEncoder(
     private val srsHub: SrsHubDriver,
@@ -132,19 +179,28 @@ class SrsHubAbsoluteAnalogEncoder(
     override val velocity: Double
         get() = 0.0
 
+    /** Position in ticks calculated from analog voltage telemetry. */
     override val position: Double
         get() {
             val normalized = srsHub.getAnalogVoltage(port) / version.maxVoltage
             return (normalized * ticksPerRev) - offset
         }
 
+    /** Calibrates zero position offset reference to current analog voltage position. */
     override fun resetEncoder() {
         offset = (srsHub.getAnalogVoltage(port) / version.maxVoltage) * ticksPerRev
     }
 }
 
 /**
- * Wrapper for an absolute PWM encoder plugged into the SRS Hub.
+ * Absolute PWM encoder IO adapter for SRS Hub PWM ports $[0 \dots 3]$.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub PWM port channel $[0 \dots 3]$.
+ * @param version REV encoder revision variant.
+ * @param ticksPerRev Encoder tick resolution rating ($ticks/rev$, default 8192.0).
+ *
+ * @see MotorIO
  */
 class SrsHubAbsolutePWMEncoder(
     private val srsHub: SrsHubDriver,
@@ -158,6 +214,7 @@ class SrsHubAbsolutePWMEncoder(
         get() = 0.0
         set(@Suppress("UNUSED_PARAMETER") value) {}
 
+    /** Refreshes SRS Hub telemetry registers. */
     fun updateInputs() {
         srsHub.update()
     }
@@ -165,6 +222,7 @@ class SrsHubAbsolutePWMEncoder(
     override val velocity: Double
         get() = 0.0
 
+    /** Position in ticks calculated from PWM pulse width duration ($\mu s$). */
     override val position: Double
         get() {
             val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
@@ -174,6 +232,7 @@ class SrsHubAbsolutePWMEncoder(
             return (clampedNormalized * ticksPerRev) - offset
         }
 
+    /** Calibrates zero position offset reference to current PWM pulse width. */
     override fun resetEncoder() {
         val pulseUs = srsHub.getPwmPulseWidth(port).toDouble()
         val range = version.maxPulseUs - version.minPulseUs
@@ -188,7 +247,14 @@ class SrsHubAbsolutePWMEncoder(
 // ==========================================
 
 /**
- * Wrapper for a VL53L5CX multizone ToF sensor plugged into an I2C expansion port of the SRS Hub.
+ * Multizone distance sensor IO adapter for VL53L5CX sensors connected to SRS Hub I2C ports.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub I2C port channel $[0 \dots 3]$.
+ * @param rows Matrix row resolution (default 8).
+ * @param columns Matrix column resolution (default 8).
+ *
+ * @see MultizoneDistanceSensorIO
  */
 class SrsHubVL53L5CX(
     private val srsHub: SrsHubDriver,
@@ -198,6 +264,7 @@ class SrsHubVL53L5CX(
 ) : MultizoneDistanceSensorIO {
     private var lastDistances = DoubleArray(0)
 
+    /** Latest zone distances converted to meters ($m$). Access is zero-GC. */
     override val distancesMeters: DoubleArray
         get() {
             val raw = srsHub.getVL53L5CXDistances(port)
@@ -212,7 +279,13 @@ class SrsHubVL53L5CX(
 }
 
 /**
- * Wrapper for an APDS9151 (REV Color Sensor V3) plugged into an I2C expansion port of the SRS Hub.
+ * Multi-spectral color and distance sensor IO adapter for REV Color Sensor V3 connected to SRS Hub I2C ports.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub I2C port channel $[0 \dots 3]$.
+ *
+ * @see ColorSensorIO
+ * @see DistanceSensorIO
  */
 class SrsHubRevColorSensorV3(
     private val srsHub: SrsHubDriver,
@@ -243,7 +316,12 @@ class SrsHubRevColorSensorV3(
 }
 
 /**
- * Wrapper for a VL53L0X (REV 2M Distance / Adafruit ToF) plugged into an I2C expansion port of the SRS Hub.
+ * Distance sensor IO adapter for REV 2m Distance Sensors (VL53L0X) connected to SRS Hub I2C ports.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub I2C port channel $[0 \dots 3]$.
+ *
+ * @see DistanceSensorIO
  */
 class SrsHubVL53L0X(
     private val srsHub: SrsHubDriver,
@@ -254,17 +332,24 @@ class SrsHubVL53L0X(
 }
 
 /**
- * Wrapper for a GoBilda Pinpoint Odometry Computer plugged into an I2C expansion port of the SRS Hub.
+ * Hardware odometry IO adapter for GoBilda Pinpoint odometry computers connected to SRS Hub I2C ports.
+ *
+ * @param srsHub Active [SrsHubDriver] instance.
+ * @param port SRS Hub I2C port channel $[0 \dots 3]$.
+ *
+ * @see OdometryIO
  */
 class SrsHubPinpointOdometry(
     private val srsHub: SrsHubDriver,
     private val port: Int
 ) : OdometryIO {
+    /** Resets Pinpoint odometry position counter on SRS Hub port [port]. */
     override fun initialize(startPose: Pose2d) {
         srsHub.resetI2cOdometry(port)
         srsHub.registerPinpoint(port)
     }
 
+    /** Updates odometry pose inputs into [OdometryInputs] container in meters ($m$) and radians ($rad$, CCW+). */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
         srsHub.updateI2cOdometry()
         inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0
@@ -276,3 +361,4 @@ class SrsHubPinpointOdometry(
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
+

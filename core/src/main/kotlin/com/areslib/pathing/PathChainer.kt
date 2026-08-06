@@ -9,18 +9,24 @@ import kotlin.math.sqrt
 import kotlin.math.PI
 
 /**
- * Object implementation for Path Chainer.
+ * Trajectory Path Segment Stitching and Velocity Continuity Chainer.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Blends consecutive trajectory paths $[P_1, P_2, \dots, P_k]$ into a single continuous [Path],
+ * re-parameterizing cumulative distance metrics $s(t)$ and maintaining velocity continuity across path junctions.
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Heading ($\theta$): Radians ($rad$), **CCW-positive**
+ * - Velocity ($v$): Meters per second ($m/s$)
+ * - Cumulative Distance ($s$): Meters ($m$)
  */
 object PathChainer {
 
     /**
-     * Stitches multiple PathPlanner paths into a single continuous Path.
-     * Smoothes joint transitions and sweeps the resulting profile to respect acceleration limits.
+     * Chains a list of independent trajectory paths into a single continuous trajectory [Path].
+     *
+     * @param paths Ordered list of segment paths [Path].
+     * @return Single concatenated [Path].
      */
     fun chainPaths(
         paths: List<Path>,

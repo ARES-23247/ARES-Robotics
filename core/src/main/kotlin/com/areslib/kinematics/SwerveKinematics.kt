@@ -8,37 +8,40 @@ import kotlin.math.atan2
 import com.areslib.math.wrapAngle
 
 /**
- * Swerve Drivetrain Forward and Inverse Kinematics Calculator.
+ * Swerve Drivetrain Forward and Inverse Kinematics Calculator with Second-Order Dynamics Constraints.
  *
- * Converts robot-frame velocities $[v_x, v_y, \omega]$ into individual wheel drive speeds ($m/s$) and steering angles ($\theta$).
- * Supports second-order kinematics limits (steering velocity $\omega_{steer}$, steering acceleration $\alpha_{steer}$, and drive acceleration $a_{drive}$).
+ * Converts robot-frame chassis velocities $[v_x, v_y, \omega]^T$ into individual module drive velocities ($m/s$) and steering angles ($\theta$).
+ * Applies second-order kinematics bounds to limit steering angular velocity ($\omega_{steer}$), steering angular acceleration ($\alpha_{steer}$),
+ * and drive linear acceleration ($a_{drive}$).
  *
  * ### Inverse Kinematics Formulation:
- * For each module $i$ at physical offset position $[x_i, y_i]$ from the robot center of rotation:
+ * For each module $i$ positioned at physical offset vector $[x_i, y_i]^T$ relative to the robot center of rotation:
  * $$v_{x,i} = v_x - \omega \cdot y_i$$
  * $$v_{y,i} = v_y + \omega \cdot x_i$$
  * $$v_{module,i} = \sqrt{v_{x,i}^2 + v_{y,i}^2}, \quad \theta_{module,i} = \text{atan2}(v_{y,i}, v_{x,i})$$
  *
  * ### Steer Angle Optimization ($\le 90^\circ$ Rule):
- * If the target steer angle $\theta_{target}$ differs from the current module angle $\theta_{current}$ by more than $90^\circ$,
- * the target angle is flipped by $180^\circ$ ($\pi$ rad) and the drive velocity magnitude is negated to minimize module rotation time.
+ * If the steering angular delta $\Delta \theta = \text{wrap}(\theta_{target} - \theta_{current})$ exceeds $90^\circ$ ($\pi/2$ rad):
+ * $$\theta_{optimized} = \text{wrap}(\theta_{target} + \pi), \quad v_{optimized} = -v_{target}$$
  *
  * ### Physical Units & Coordinate System:
- * - Module Positions: Meters ($m$) relative to robot center of mass (+X forward, +Y left)
+ * - Module Positions: Meters ($m$) relative to robot center (+X forward, +Y left)
  * - Drive Velocity: Meters per second ($m/s$)
  * - Module Heading: Radians ($rad$), counter-clockwise positive (0° = +X forward)
- * - Angular Velocity: Radians per second ($rad/s$)
- * - Time step: Seconds ($s$)
+ * - Steering Velocity Limit ($\omega_{steer}$): Radians per second ($rad/s$)
+ * - Steering Acceleration Limit ($\alpha_{steer}$): Radians per second squared ($rad/s^2$)
+ * - Drive Acceleration Limit ($a_{drive}$): Meters per second squared ($m/s^2$)
+ * - Timestep ($\Delta t$): Seconds ($s$)
  *
- * @param moduleTranslations Array of 2D translation vectors defining physical module locations relative to robot center.
- * @param maxSteerVelRadPerSec Maximum steering rotation speed limit in rad/s (default: $4\pi$ rad/s).
- * @param maxSteerAccelRadPerSec2 Maximum steering angular acceleration limit in rad/s² (default: $8\pi$ rad/s²).
- * @param maxDriveAccelMps2 Maximum linear drive acceleration limit in m/s² (default: 8.0 m/s²).
- */
-/**
- * Class implementation for Swerve Kinematics.
+ * ### Zero-GC Guarantees:
+ * High-frequency update loops (50Hz–1000Hz) should call [toSwerveModuleStates] with a pre-allocated array of
+ * [SwerveModuleState] objects to avoid heap allocation overhead.
  *
- * Robotics framework control component.
+ * @property moduleTranslations List of 2D translation vectors defining physical module positions relative to robot center of mass ($m$).
+ * @property maxSteerVelRadPerSec Maximum allowable steering rotation speed limit in rad/s (default: $4\pi$ rad/s).
+ * @property maxSteerAccelRadPerSec2 Maximum allowable steering angular acceleration limit in rad/s² (default: $8\pi$ rad/s²).
+ * @property maxDriveAccelMps2 Maximum allowable linear drive acceleration limit in m/s² (default: $8.0$ m/s²).
+ * @see SwerveModuleState
  */
 class SwerveKinematics(
     val moduleTranslations: List<Translation2d>,
@@ -145,15 +148,13 @@ class SwerveKinematics(
         hasPreviousState = true
     }
 
-    private infix fun Int.meInts(range: IntRange): IntRange = range
-
     /**
-     * Minimizes module rotation delta by flipping target heading by 180° ($\pi$ rad) and negating speed
-     * if the angle difference exceeds 90° ($\pi/2$ rad).
+     * Minimizes module steering angular travel by flipping target orientation by $180^\circ$ ($\pi$ rad)
+     * and negating drive velocity magnitude if the steering angular delta exceeds $90^\circ$ ($\pi/2$ rad).
      *
-     * @param desired Raw desired state.
-     * @param currentAngle Current module steering orientation.
-     * @return Optimized [SwerveModuleState].
+     * @param desired Raw desired target [SwerveModuleState].
+     * @param currentAngle Current measured module steering orientation [Rotation2d] ($rad$).
+     * @return Optimized target [SwerveModuleState].
      */
     fun optimizeModuleState(desired: SwerveModuleState, currentAngle: Rotation2d): SwerveModuleState {
         val out = SwerveModuleState()
@@ -162,7 +163,11 @@ class SwerveKinematics(
     }
 
     /**
-     * Zero-GC variant of optimizeModuleState.
+     * Zero-GC variant of [optimizeModuleState] populating a pre-allocated output [out] instance in-place.
+     *
+     * @param desired Raw desired target [SwerveModuleState].
+     * @param currentAngle Current measured module steering orientation [Rotation2d] ($rad$).
+     * @param out Pre-allocated [SwerveModuleState] output container receiving optimized parameters.
      */
     fun optimizeModuleState(desired: SwerveModuleState, currentAngle: Rotation2d, out: SwerveModuleState) {
         var delta = wrapAngle(desired.angle.radians - currentAngle.radians)
@@ -178,10 +183,12 @@ class SwerveKinematics(
     }
 
     /**
-     * Normalizes wheel speeds to fit within a physical maximum speed constraint ($v_{max}$).
+     * Normalizes all module drive speeds in-place if any single module velocity magnitude exceeds $v_{max}$.
      *
-     * @param moduleStates Array of swerve states to normalize in-place.
-     * @param maxSpeedMps Maximum allowed physical speed in meters per second.
+     * Scales all drive velocities uniformly by $\beta = \frac{v_{max}}{\max(|v_i|)}$ to maintain trajectory path curvature.
+     *
+     * @param moduleStates Array of [SwerveModuleState] targets modified in-place.
+     * @param maxSpeedMps Maximum allowable physical drive speed in meters per second ($m/s$).
      */
     fun desaturateWheelSpeeds(moduleStates: Array<SwerveModuleState>, maxSpeedMps: Double) {
         var realMaxSpeed = 0.0

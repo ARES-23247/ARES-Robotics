@@ -3,19 +3,28 @@ package com.areslib.pathing.planner
 import com.areslib.pathing.Costmap
 
 /**
- * Object implementation for Grid Costmap Inflator.
+ * Occupancy Grid Obstacle Inflation and Dynamic Obstacle Inserter.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * Expands raw obstacle cells outward by the robot's physical bumper radius $r_{\text{bumper}}$,
+ * preventing trajectory waypoints from placing robot chassis edges into field structures.
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Mathematical Formulation:
+ * Inflation Cell Offset Condition:
+ * $$\Delta c^2 + \Delta r^2 \le r_{\text{cell}}^2, \quad r_{\text{cell}} = \left\lceil \frac{r_{\text{bumper}}}{\text{res}} \right\rceil$$
+ *
+ * ### Zero-GC Guarantee:
+ * Mutates 1D flat boolean arrays (`inflatedGrid`) in-place with zero dynamic allocations.
  */
 object GridCostmapInflator {
     /**
-     * inflate declaration.
+     * Inflates occupied obstacle cells in [grid] outward into [inflatedGrid] by [robotRadiusMeters].
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param grid Source raw occupancy boolean array.
+     * @param inflatedGrid Destination inflated occupancy boolean array.
+     * @param widthCells Grid column count ($N_{\text{cols}}$).
+     * @param heightCells Grid row count ($N_{\text{rows}}$).
+     * @param robotRadiusMeters Robot physical bumper radius in meters ($m$).
+     * @param resolutionMeters Grid cell size resolution in meters ($m$).
      */
     fun inflate(
         grid: BooleanArray,
@@ -25,6 +34,7 @@ object GridCostmapInflator {
         robotRadiusMeters: Double,
         resolutionMeters: Double
     ) {
+
         inflatedGrid.fill(false)
         val cellRadius = (robotRadiusMeters / resolutionMeters).toInt().coerceAtLeast(1)
 

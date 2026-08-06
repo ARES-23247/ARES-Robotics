@@ -3,8 +3,8 @@ package com.areslib.math.filter
 /**
  * Sliding window Median Filter for non-linear outlier spike rejection.
  *
- * Tracks a sliding ring-buffer of $N$ recent sensor samples, sorts them in $O(N \log N)$ time using a pre-allocated
- * scratch array, and outputs the sample median. Completely rejects impulse noise spikes (e.g. ultrasonic sensor dropouts,
+ * Tracks a sliding ring-buffer of $N$ recent sensor samples, sorts them using a pre-allocated
+ * primitive scratch array, and outputs the sample median. Completely rejects impulse noise spikes (e.g. ultrasonic sensor dropouts,
  * optical sensor reflection glints) without phase lag or attenuation.
  *
  * ### Mathematical Definition:
@@ -16,19 +16,10 @@ package com.areslib.math.filter
  *
  * @param windowSize Total number of historical samples to track ($N \ge 1$).
  */
-/**
- * Class implementation for Median Filter.
- *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
- *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
- */
 class MedianFilter(
     private val windowSize: Int
 ) {
+
     init {
         require(windowSize > 0) { "Window size must be greater than 0" }
     }

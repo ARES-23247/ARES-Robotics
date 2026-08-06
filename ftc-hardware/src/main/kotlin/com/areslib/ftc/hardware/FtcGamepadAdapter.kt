@@ -5,8 +5,28 @@ import com.areslib.input.ControllerState
 import com.areslib.math.InputMath
 
 /**
- * Adapter that converts a mutable FTC Gamepad into a pure, immutable ControllerState.
- * It applies deadbands and curves to the analog sticks.
+ * Adapter converting a Qualcomm FTC SDK [Gamepad] into an immutable [ControllerState] snapshot.
+ *
+ * Inverts raw FTC Y-axis stick inputs (where pushing up outputs negative values), applies radial vector magnitude deadbanding,
+ * and shapes stick sensitivity using non-linear curve exponents ($y = x^n$).
+ *
+ * ### Mathematical Formulations:
+ * 1. Y-axis inversion:
+ *    $$y_{raw} = -y_{gamepad}$$
+ * 2. Radial deadband and curve processing:
+ *    $$\mathbf{v}_{curved} = \text{processJoystickVector}(x_{raw}, y_{raw}, \text{deadband}, \text{curveExponent})$$
+ *
+ * ### Range & Boundaries:
+ * - Normalized Sticks: Double-precision values $[-1.0, 1.0]$.
+ * - Triggers: Double-precision values $[0.0, 1.0]$.
+ * - Deadband: Absolute radial threshold below which stick values are suppressed to zero.
+ *
+ * @param gamepad Qualcomm FTC SDK [Gamepad] hardware instance.
+ * @param deadband Radial joystick deadband threshold $[0.0, 1.0]$ (default 0.05).
+ * @param curveExponent Non-linear sensitivity curve exponent $n$ (default 2.0).
+ *
+ * @see ControllerState
+ * @see InputMath.processJoystickVector
  */
 class FtcGamepadAdapter(
     private val gamepad: Gamepad,
@@ -14,7 +34,9 @@ class FtcGamepadAdapter(
     private val curveExponent: Double = 2.0
 ) {
     /**
-     * Polls the hardware Gamepad and returns a new immutable ControllerState.
+     * Polls current hardware gamepad state and returns an immutable, deadbanded [ControllerState] object.
+     *
+     * @return Immutable [ControllerState] snapshot populated with processed joystick and button states.
      */
     fun getControllerState(): ControllerState {
         // Read raw axes
@@ -57,3 +79,4 @@ class FtcGamepadAdapter(
         )
     }
 }
+

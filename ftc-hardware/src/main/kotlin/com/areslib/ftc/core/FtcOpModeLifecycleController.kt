@@ -3,16 +3,26 @@ package com.areslib.ftc.core
 import com.qualcomm.robotcore.hardware.HardwareMap
 
 /**
- * Controller managing FTC OpMode lifecycle transitions, web server initialization, and loop rate throttling.
+ * Subsystem controller managing FTC OpMode lifecycle transitions, web server initialization, and loop rate throttling.
  *
- * Handles transition state tracking ("Init", "TeleOp", "Autonomous"), HTTP telemetry server startup, and desktop simulation sleep timing.
+ * Tracks OpMode state transitions (`"Init"`, `"TeleOp"`, `"Autonomous"`), manages local HTTP telemetry/log server startup
+ * ([com.areslib.telemetry.RobotWebServer] on port 5001, [com.areslib.logging.LogManagerServer] on port 5002), and enforces
+ * desktop simulation loop timing rate limiting ($50\text{Hz} = 20\text{ms}$).
+ *
+ * ### Physical Units & Timing:
+ * - Target loop rate: 50Hz ($20\text{ms}$ delta time step $\Delta t$).
+ * - Wall-clock timestamps: Milliseconds ($ms$).
+ *
+ * @see com.areslib.telemetry.RobotStatusTracker
+ * @see com.areslib.telemetry.RobotWebServer
+ * @see com.areslib.logging.LogManagerServer
  */
 class FtcOpModeLifecycleController {
 
     /**
-     * Initializes performance managers, starts local HTTP web/log servers, and sets initial OpMode status to "Init".
+     * Initializes hardware performance managers, starts HTTP web telemetry and log servers, and sets active OpMode status to `"Init"`.
      *
-     * @param hardwareMap FTC OpMode hardware map instance.
+     * @param hardwareMap Qualcomm FTC SDK hardware map reference.
      */
     fun init(hardwareMap: HardwareMap) {
         com.areslib.ftc.hardware.FtcPerformanceManager.initialize(hardwareMap)
@@ -23,7 +33,7 @@ class FtcOpModeLifecycleController {
     }
 
     /**
-     * Updates OpMode status tracker flags and manages background web server lifecycle transitions.
+     * Monitors active OpMode state transitions and toggles HTTP telemetry web servers based on driver station status.
      */
     fun update() {
         if (!com.areslib.telemetry.RobotStatusTracker.isEnabled && com.areslib.telemetry.RobotStatusTracker.activeOpMode != "Init") {
@@ -38,10 +48,10 @@ class FtcOpModeLifecycleController {
     }
 
     /**
-     * Throttles desktop simulation loop cycles to match target 50Hz (20ms) loop pacing.
+     * Throttles loop execution timing on desktop simulation environments to enforce a target 50Hz ($20\text{ms}$) loop frequency.
      *
-     * @param lastUpdateTime Timestamp of previous loop cycle start (ms).
-     * @param isAndroid True when executing on physical Android Control Hub.
+     * @param lastUpdateTime Wall-clock timestamp of previous iteration start in milliseconds ($ms$).
+     * @param isAndroid `true` when running on physical Android hardware (Control Hub / Driver Station); `false` on desktop simulation.
      */
     fun sleepForTargetDt(lastUpdateTime: Long, isAndroid: Boolean) {
         if (!isAndroid && lastUpdateTime != 0L) {
@@ -58,10 +68,10 @@ class FtcOpModeLifecycleController {
     }
 
     /**
-     * Sleeps for remaining loop time on desktop simulations to enforce 50Hz execution timing.
+     * Pauses the current execution thread on desktop simulation runs for the remaining duration of a 20ms frame cycle.
      *
-     * @param timestamp Cycle start timestamp (ms).
-     * @param isAndroid True when executing on physical Android Control Hub.
+     * @param timestamp Loop iteration start timestamp in milliseconds ($ms$).
+     * @param isAndroid `true` when running on physical Android hardware (Control Hub / Driver Station); `false` on desktop simulation.
      */
     fun sleepRemaining(timestamp: Long, isAndroid: Boolean) {
         if (!isAndroid) {
@@ -78,10 +88,11 @@ class FtcOpModeLifecycleController {
     }
 
     /**
-     * Stops web servers and resets lifecycle tracking flags.
+     * Halts background web servers and resets robot status tracking state.
      */
     fun close() {
         com.areslib.telemetry.RobotStatusTracker.isEnabled = false
         com.areslib.telemetry.RobotWebServer.stop()
     }
 }
+

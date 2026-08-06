@@ -3,29 +3,46 @@ package com.areslib.ftc
 import com.areslib.telemetry.GamepadState
 
 /**
- * Android HID Keyboard Event Listener for FTC Driver Station / Control Hub.
- * Captures function key presses (F1 through F12) emitted by custom gamepads
- * (such as Flydigi Vader 4/5 Pro) in keyboard macro mode and updates a [GamepadState].
+ * Android Human Interface Device (HID) Keyboard Event Listener for FTC Driver Station & Control Hub.
+ *
+ * Captures external function key events ($F1$ through $F12$) emitted by custom controllers
+ * (e.g., Flydigi Vader 4/5 Pro in keyboard macro mapping mode) and propagates key states
+ * into a platform-agnostic [GamepadState] for telemetry logging and robot control actions.
+ *
+ * ### Android HID Key Mapping Table:
+ * | Function Key | Android KeyCode | KeyCode Constant |
+ * | :--- | :--- | :--- |
+ * | $F1 \dots F12$ | $131 \dots 142$ | `KEYCODE_F1` $\dots$ `KEYCODE_F12` |
+ *
+ * ### Zero-GC Guarantee:
+ * Mutates primitive boolean fields directly inside the passed [GamepadState] reference without allocating
+ * heap memory or creating temporary event wrappers during high-frequency gamepad sampling.
+ *
+ * @see com.areslib.telemetry.GamepadState
  */
 class FtcKeyboardListener {
 
     /**
-     * Handles incoming Android [android.view.KeyEvent] keydown actions.
-     * 
-     * @param keyCode The Android keycode integer (e.g. 131 for KEYCODE_F1).
-     * @param state The target [GamepadState] to modify.
-     * @return True if the keycode was recognized and handled as a function key.
+     * Processes an incoming Android keydown event for function keys ($F1 \dots F12$).
+     *
+     * Sets the corresponding function key boolean field in [state] to `true`.
+     *
+     * @param keyCode Android keycode integer (e.g., 131 for `KEYCODE_F1` through 142 for `KEYCODE_F12`).
+     * @param state Platform-agnostic [GamepadState] instance to update in-place.
+     * @return `true` if [keyCode] was a valid function key ($131 \dots 142$); `false` otherwise.
      */
     fun onKeyDown(keyCode: Int, state: GamepadState): Boolean {
         return updateKeyState(keyCode, true, state)
     }
 
     /**
-     * Handles incoming Android [android.view.KeyEvent] keyup actions.
-     * 
-     * @param keyCode The Android keycode integer.
-     * @param state The target [GamepadState] to modify.
-     * @return True if the keycode was recognized and handled as a function key.
+     * Processes an incoming Android keyup event for function keys ($F1 \dots F12$).
+     *
+     * Sets the corresponding function key boolean field in [state] to `false`.
+     *
+     * @param keyCode Android keycode integer (e.g., 131 for `KEYCODE_F1` through 142 for `KEYCODE_F12`).
+     * @param state Platform-agnostic [GamepadState] instance to update in-place.
+     * @return `true` if [keyCode] was a valid function key ($131 \dots 142$); `false` otherwise.
      */
     fun onKeyUp(keyCode: Int, state: GamepadState): Boolean {
         return updateKeyState(keyCode, false, state)
@@ -50,3 +67,4 @@ class FtcKeyboardListener {
         }
     }
 }
+

@@ -3,8 +3,27 @@ package com.areslib.ftc.drivetrain
 import com.areslib.action.RobotAction
 
 /**
- * Manages wheel encoder mecanum forward kinematics pose estimation
- * as a fallback when primary odometry (e.g. GoBilda Pinpoint) is unavailable or offline.
+ * Fallback dead-reckoning pose estimator using Mecanum wheel encoder forward kinematics.
+ *
+ * Provides backup localization when primary hardware (e.g. GoBilda Pinpoint odometry computer) is unavailable or offline.
+ *
+ * ### Mathematical Formulation (Forward Kinematics):
+ * Given wheel encoder displacement deltas $[\Delta s_{FL}, \Delta s_{FR}, \Delta s_{RL}, \Delta s_{RR}]^T$ in meters ($m$):
+ * $$\Delta x_{robot} = \frac{\Delta s_{FL} + \Delta s_{FR} + \Delta s_{RL} + \Delta s_{RR}}{4}$$
+ * $$\Delta y_{robot} = \frac{-\Delta s_{FL} + \Delta s_{FR} + \Delta s_{RL} - \Delta s_{RR}}{4}$$
+ * Transformed into field-centric coordinates using heading angle $\theta$ (radians):
+ * $$\Delta x_{field} = \Delta x_{robot} \cos(\theta) - \Delta y_{robot} \sin(\theta)$$
+ * $$\Delta y_{field} = \Delta x_{robot} \sin(\theta) + \Delta y_{robot} \cos(\theta)$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position: Meters ($m$).
+ * - Heading: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
+ * - Encoders: Cumulative ticks ($ticks$) converted using configured $ticks/m$.
+ *
+ * ### Zero-GC Compliance:
+ * Computes forward kinematic displacement in-place without dynamic object allocations during loop updates.
+ *
+ * @see RobotAction.PoseUpdate
  */
 class MecanumFallbackOdometry {
     private var fallbackX = 0.0
@@ -16,7 +35,17 @@ class MecanumFallbackOdometry {
     private var isFallbackInitialized = false
 
     /**
-     * Calculates field-centric pose update using mecanum forward kinematics on wheel encoders.
+     * Computes field-centric pose updates from drive wheel encoder tick counts.
+     *
+     * @param timestampMs System clock timestamp in milliseconds ($ms$).
+     * @param flPosTicks Front-left cumulative encoder ticks.
+     * @param frPosTicks Front-right cumulative encoder ticks.
+     * @param rlPosTicks Rear-left cumulative encoder ticks.
+     * @param rrPosTicks Rear-right cumulative encoder ticks.
+     * @param ticksPerMeterSetting Primary encoder resolution setting ($ticks/m$).
+     * @param defaultTicksPerMeter Default fallback resolution ($ticks/m$).
+     * @param headingRadians Current gyro/IMU heading angle in CCW-positive radians ($rad$).
+     * @return Formatted [RobotAction.PoseUpdate] containing calculated field positions.
      */
     fun getFallbackPoseUpdate(
         timestampMs: Long,
@@ -83,7 +112,7 @@ class MecanumFallbackOdometry {
     }
 
     /**
-     * Resets internal pose tracking to origin.
+     * Resets fallback pose accumulators to field origin $(0.0, 0.0)$.
      */
     fun reset() {
         fallbackX = 0.0
@@ -95,3 +124,4 @@ class MecanumFallbackOdometry {
         isFallbackInitialized = false
     }
 }
+

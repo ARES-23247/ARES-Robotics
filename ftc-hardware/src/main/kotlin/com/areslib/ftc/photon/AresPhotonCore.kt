@@ -33,12 +33,23 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Object implementation for Ares Photon Core.
+ * SolversLib Photon reflective integration engine for FTC Control Hub and Expansion Hub platforms.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Intercepts low-level REV Expansion Hub [LynxCommand] transactions and parallelizes motor power ([LynxSetMotorConstantPowerCommand])
+ * and servo pulse width ([LynxSetServoPulseWidthCommand]) I2C/USB writes across dedicated async background threads.
+ *
+ * ### Performance Acceleration & Memory Rules:
+ * - **Write Parallelization**: Bypasses synchronous FTDI USB serial serialization blocks for motor and servo output channels.
+ * - **Concurrency Limits**: Bounds maximum parallel pending commands per REV Hub module via [ExperimentalParameters.maximumParallelCommands] (default 8).
+ * - **Lifecycle Management**: Automatically Hooks into FTC [FtcEventLoop] via `@OnCreateEventLoop` annotations and registers [OpModeManagerNotifier.Notifications].
+ *
+ * @see LynxModule
+ * @see LynxUsbDevice
+ * @see AresPhotonLynxModule
  */
 object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
+    /** Global flag indicating whether Photon parallelized write acceleration is active. */
     val isEnabled = AtomicBoolean(true)
     private val threadEnabled = AtomicBoolean(false)
 
@@ -53,28 +64,38 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     private val originalModules = HashMap<AresPhotonLynxModule, LynxModule>()
     private var lastUsbDevice: LynxUsbDeviceImpl? = null
 
+    /** Control Hub [LynxModule] reference (if present on embedded serial number). */
     var CONTROL_HUB: LynxModule? = null
+    /** Expansion Hub [LynxModule] reference. */
     var EXPANSION_HUB: LynxModule? = null
 
+    /** Toggle controlling whether servo PWM write commands are parallelized alongside motor power commands. */
     var PARALLELIZE_SERVOS = true
 
     private var opModeManager: OpModeManagerImpl? = null
 
     /**
-     * Class implementation for Experimental Parameters.
-     *
-     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     * Configuration parameters controlling single-threaded execution optimizations and maximum parallel command queues.
      */
     class ExperimentalParameters {
+        /** Enforces single-threaded optimization pipeline when `true`. */
         val singlethreadedOptimized = AtomicBoolean(true)
+        /** Maximum number of parallel outstanding commands permitted in the REV Hub queue before throttling (default 8). */
         val maximumParallelCommands = AtomicInteger(8)
 
+        /**
+         * Sets maximum allowable parallel outstanding commands in the REV queue.
+         *
+         * @param max Target positive integer limit.
+         * @return `true` if limit was valid and applied successfully.
+         */
         fun setMaximumParallelCommands(max: Int): Boolean {
             if (max <= 0) return false
             maximumParallelCommands.set(max)
             return true
         }
     }
+
 
     val experimental = ExperimentalParameters()
 

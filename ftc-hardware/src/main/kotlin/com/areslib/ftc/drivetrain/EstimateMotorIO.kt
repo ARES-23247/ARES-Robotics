@@ -7,12 +7,24 @@ import com.areslib.util.RobotClock
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 
 /**
- * Non-blocking motor IO wrapper for REV Expansion Hub `DcMotorEx` actuators.
+ * Non-blocking, cached motor IO wrapper for REV Expansion and Control Hub `DcMotorEx` actuators.
  *
- * Caches position, calculated velocity, and electrical current draw locally to prevent blocking reads/writes
- * on high-frequency robot control loops.
+ * Caches cumulative encoder position ($ticks$), calculated velocity ($ticks/s$), and electrical current draw ($A$) locally
+ * to prevent blocking I2C/USB reads on high-frequency 50Hz–100Hz robot control loops.
  *
- * @param motor FTC `DcMotorEx` hardware map instance.
+ * ### Physical Units & Metrics:
+ * - Motor Position: Cumulative encoder ticks ($ticks$).
+ * - Motor Velocity: Encoder ticks per second ($ticks/s$).
+ * - Electrical Current: Amperes ($A$).
+ * - Duty Cycle Output Power: Normalized voltage ratio $[-1.0, 1.0]$.
+ *
+ * ### Zero-GC Guarantee:
+ * Updates internal primitive registers in [updateInputs] and [pollSync] without allocating temporary objects during loop execution.
+ *
+ * @param motor FTC SDK `DcMotorEx` hardware map instance.
+ *
+ * @see com.areslib.hardware.actuator.MotorIO
+ * @see com.areslib.hardware.SyncPolledDevice
  */
 class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, SyncPolledDevice {
     override var power: Double = 0.0
@@ -24,14 +36,22 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     private var lastPosition = 0.0
     private var lastTime = 0L
 
-    /** Synchronously updates electrical current draw reading in Amperes. */
+    /**
+     * Synchronously polls physical electrical current draw ($A$) from REV Lynx Hub hardware registers.
+     */
     override fun pollSync() {
         try {
             cachedAmps = motor.getCurrent(CurrentUnit.AMPS)
         } catch (_: Exception) {}
     }
 
-    /** Updates local position and velocity estimates from REV bulk-read data. */
+    /**
+     * Updates local position and velocity estimates from REV bulk-read cache registers.
+     *
+     * Calculates velocity via backward finite difference:
+     * $$v = \frac{x_k - x_{k-1}}{\Delta t}$$
+     * Zero-GC compliance: zero dynamic heap allocations.
+     */
     fun updateInputs() {
         try {
             cachedPosition = motor.currentPosition.toDouble()
@@ -47,11 +67,11 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
         } catch (_: Exception) {}
     }
 
-    /** Measured motor velocity in encoder ticks per second. */
+    /** Measured motor velocity in encoder ticks per second ($ticks/s$). */
     override val velocity: Double
         get() = cachedVelocity
 
-    /** Measured motor position in total cumulative encoder ticks. */
+    /** Measured motor position in total cumulative encoder ticks ($ticks$). */
     override val position: Double
         get() = cachedPosition
 
@@ -59,7 +79,7 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     override val currentAmps: Double
         get() = cachedAmps
 
-    /** Resets the local motor encoder zero reference. */
+    /** Resets the local motor encoder zero reference (no-op to preserve cached estimates). */
     override fun resetEncoder() {
         // No-op to avoid side-effects in estimation wrapper
     }
@@ -68,3 +88,4 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     override fun close() {
     }
 }
+

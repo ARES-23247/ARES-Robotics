@@ -10,33 +10,30 @@ import com.areslib.subsystem.VisionTracker
 import com.areslib.telemetry.*
 
 /**
- * Abstract base class for all FRC robots built on ARESLib.
+ * Abstract base container class for all FRC robots built on ARESLib.
  *
- * Provides the complete FRC robot lifecycle:
- * 1. Hardware refresh and status tracking
- * 2. Platform-specific sensor reads (swerve, tank, etc.)
+ * Coordinates the complete 50Hz FRC robot control loop:
+ * 1. Hardware refresh and status tracking via [HardwareRegistry]
+ * 2. Platform-specific sensor reads ([updateHardwareInputs])
  * 3. Vision tracking via pluggable [VisionTracker]
- * 4. Registered [com.areslib.subsystem.Subsystem] sensor reads
- * 5. Power/brownout management via [FrcPowerManager]
- * 6. Registered subsystem output writes
- * 7. Platform-specific hardware output writes
- * 8. Unified telemetry publishing
+ * 4. Subsystem sensor reads ([readAllSensors])
+ * 5. Power/brownout scaling via [FrcPowerManager]
+ * 6. Subsystem output writes ([writeAllOutputs])
+ * 7. Hardware output writes ([writeHardwareOutputs])
+ * 8. Telemetry publishing via [FrcTelemetryManager]
  *
- * Concrete subclasses (e.g., [FrcSwerveRobot]) override [updateHardwareInputs]
- * and [writeHardwareOutputs] to wire their specific drivetrain IO.
+ * @param initialState Initial immutable [RobotState] snapshot.
+ * @param reducer Root Redux reducer function composing state transitions.
+ * @param baseTelemetry Platform telemetry backend (defaults to NT4 via [FRCTelemetry]).
+ * @param isEnabledProvider Lambda returning active DriverStation enable state (`true`/`false`).
+ * @param robotModeProvider Lambda returning active FRC match mode string (`"Auto"`, `"Teleop"`, `"Test"`, `"Disabled"`).
  *
- * @param initialState The initial immutable robot state snapshot.
- * @param reducer The root reducer function composing all domain-specific sub-reducers.
- * @param baseTelemetry The platform telemetry backend (defaults to NT4 via [FRCTelemetry]).
- * @param isEnabledProvider Supplier returning whether the robot is currently enabled.
- * @param robotModeProvider Supplier returning the current robot mode string.
- */
-/**
- * Class implementation for Frc Base Robot.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @see AresRobot
+ * @see FrcTelemetryManager
+ * @see FrcPowerManager
  */
 abstract class FrcBaseRobot(
+
     initialState: RobotState = RobotState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
     baseTelemetry: ITelemetry = FRCTelemetry(),

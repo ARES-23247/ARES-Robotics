@@ -22,9 +22,60 @@ import com.areslib.ftc.core.FtcHardwareInitializer
 import com.areslib.ftc.core.FtcOpModeLifecycleController
 
 /**
- * Abstract base class for all FTC robots.
- * Manages unified hardware registries, performance parameters,
- * power managers, telemetry pipelines, and vision trackers.
+ * Abstract foundational base class for all FTC robots in ARESLib-Kotlin.
+ *
+ * `FtcBaseRobot` serves as the central hardware-to-software bridge on FTC target platforms.
+ * It manages the lifecycle of the Redux state engine ([store]), physical sensor polling,
+ * Extended Kalman Filter (EKF) localization fusion, vision tracking pipelines, power management,
+ * loop-time diagnostics profiling, and NT4/Driver Station telemetry.
+ *
+ * ### Architectural & State Flow:
+ * ```
+ * Physical Sensors (Pinpoint/IMU/Limelight) ──> readSensors() ──> Dispatch RobotAction.PoseUpdate
+ *                                                                             │
+ * Redux Store State Transition <── rootReducer <──────────────────────────────┘
+ *             │
+ *             ├──> updateSubsystems() ──> Physical Motor Outputs / Servos
+ *             └──> FtcTelemetryManager ──> Driver Station / Cloud / Log Files
+ * ```
+ *
+ * ### Mathematical Formulations & Coordinate Conventions:
+ * - **Field Coordinate Frame**: Origin at field center. Axis $+X$ points forward (0 rad), $+Y$ points left ($\pi/2$ rad, toward Blue Alliance station wall).
+ * - **Heading Convention**: Counter-Clockwise (CCW) positive math standard:
+ *   $$\theta \in [-\pi, \pi], \quad 0 \text{ rad} = +X, \quad +\frac{\pi}{2} \text{ rad} = +Y$$
+ * - **EKF Process Noise Covariance**:
+ *   $$\mathbf{Q} = \text{diag}(\sigma_x^2, \sigma_y^2, \sigma_\theta^2) = \text{diag}(\text{odomQx}, \text{odomQy}, \text{odomQtheta})$$
+ *
+ * ### Hardware Boundaries:
+ * - **GoBilda Pinpoint Odometry Computer**: Mounted $x/y$ offsets in millimeters ($mm$). Direction defaults to FORWARD.
+ *   Heading polarity is normalized to CCW-positive natively at the [PinpointIO] layer (using `pinpointIsCcwPositive`).
+ * - **Limelight 3D Vision**: Fused via [FtcVisionTracker] with customizable standard deviation covariance $\mathbf{R}_{\text{vision}} = \text{diag}(\sigma_x^2, \sigma_y^2, \sigma_\theta^2)$.
+ *
+ * ### Zero-GC Execution Compliance:
+ * The 50Hz–100Hz execution loop in [update] and [readSensors] strictly satisfies a zero-GC allocation footprint.
+ * Sensor values, bulk readers, and diagnostics vectors rely on pre-allocated object instances and thread-safe primitive registers.
+ *
+ * @param hardwareMap Qualcomm FTC SDK hardware map reference.
+ * @param pinpointName Hardware map name for the GoBilda Pinpoint computer (e.g., `"pinpoint"`). Pass `null` if disabled.
+ * @param limelightName Hardware map name for the Limelight 3A camera (e.g., `"limelight"`). Pass `null` if disabled.
+ * @param imuName Hardware map name for the REV Lynx/Control Hub IMU (e.g., `"imu"`). Pass `null` if disabled.
+ * @param localTelemetry FTC Driver Station [Telemetry] instance for on-screen debugging.
+ * @param odomQx EKF process noise covariance along X axis ($m^2$).
+ * @param odomQy EKF process noise covariance along Y axis ($m^2$).
+ * @param odomQtheta EKF process noise covariance for heading ($rad^2$).
+ * @param pinpointXOffsetMm Pinpoint computer physical mounting offset along robot X-axis ($mm$).
+ * @param pinpointYOffsetMm Pinpoint computer physical mounting offset along robot Y-axis ($mm$).
+ * @param pinpointEncoderResolution Pinpoint odometry wheel resolution ($ticks/mm$). Defaults to GoBilda 4-bar standard (20.44 ticks/mm).
+ * @param pinpointXDirection Direction configuration for X odometry pod encoder.
+ * @param pinpointYDirection Direction configuration for Y odometry pod encoder.
+ * @param pinpointIsCcwPositive Physical mounting polarity flag. Set `true` if upside-down mount reverses raw Pinpoint CCW readings.
+ * @param visionStdDevs Initial standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ for AprilTag pose updates ($m, m, rad$).
+ * @param visionFilterConfig Outlier rejection threshold and gating configuration for vision updates.
+ * @param reducer Redux state reducer function. Defaults to root [rootReducer].
+ *
+ * @see com.areslib.subsystem.AresRobot
+ * @see com.areslib.ftc.drivetrain.PinpointIO
+ * @see com.areslib.ftc.vision.FtcVisionTracker
  */
 abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
@@ -86,27 +137,44 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     companion object {
+        /**
+         * Evaluates whether the current runtime environment is an Android OS target (Control Hub / Driver Station).
+         */
         val isAndroid: Boolean by lazy {
             val javaVendor = System.getProperty("java.vendor") ?: ""
             javaVendor.contains("Android", ignoreCase = true) || java.io.File("/sdcard").exists()
         }
+
+        /**
+         * Static reference to the currently active [FtcBaseRobot] instance.
+         */
         @Volatile
         @JvmStatic
         var activeInstance: FtcBaseRobot? = null
     }
 
-    // Telemetry & recording pipelines
+    /** Telemetry manager handling dashboard NetworkTables and local logging pipelines. */
     val telemetryManager = FtcTelemetryManager(store)
+
+    /** Robot power monitor tracking battery voltage ($V$) and total current consumption ($A$). */
     val powerManager = FtcPowerManager(hardwareMap)
+
+    /** High-precision loop profiler tracking nano-second hardware reads and subsystem compute stages. */
     val profiler = FtcLoopProfiler()
+
+    /** Toggles real-time live-tuning configuration over NetworkTables. */
     var isLiveTuningEnabled: Boolean = false
 
-    // Sensors
+    /** GoBilda Pinpoint odometry computer IO layer interface. */
     val pinpointIO: PinpointIO? get() = hardwareInitializer.pinpointIO
+
+    /** Control Hub internal IMU sensor IO layer interface. */
     val imuIO: ImuIO? get() = hardwareInitializer.imuIO
+
+    /** Limelight 3D vision IO layer interface. */
     val limelightIO: VisionIO? get() = hardwareInitializer.limelightIO
 
-    // Vision Tracker
+    /** AprilTag localization and pose fusion tracking engine. */
     val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO, visionStdDevs)
 
     private var lastPinpointWarningTime = 0L
@@ -114,10 +182,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private var hasReadSensorsThisFrame = false
 
     /**
-     * readSensors declaration.
+     * Executes the zero-GC sensor sampling cycle for the current robot loop frame.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * 1. Clears REV Lynx Hub bulk caches via [FtcPerformanceManager.clearBulkCaches].
+     * 2. Calls [updateHardwareInputs] for subclass motor and encoder polling.
+     * 3. Fetches pose updates from [pinpointIO] or fallback IMU dead-reckoning.
+     * 4. Dispatches the resulting [RobotAction.PoseUpdate] into the Redux [store].
+     * 5. Updates the [visionTracker] pipeline.
+     * 6. Records execution metrics in [profiler].
+     *
+     * Zero-GC Guarantee: Performs zero heap allocations inside the 50Hz execution cycle.
      */
     fun readSensors() {
         if (hasReadSensorsThisFrame) return
@@ -156,6 +230,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         profiler.publishSensorsProfiling(telemetryManager)
     }
 
+    /**
+     * Generates a fallback pose update when physical odometry hardware (e.g. Pinpoint) is unavailable.
+     *
+     * Pulls yaw velocity ($rad/s$) and heading ($rad$) directly from [imuIO] if configured, defaulting
+     * coordinate positions to $(0.0, 0.0)$.
+     *
+     * @param timestampMs System clock timestamp in milliseconds ($ms$).
+     * @return Formatted [RobotAction.PoseUpdate] containing estimated position and heading.
+     */
     protected open fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
         var heading = 0.0
         var yawVel = 0.0
@@ -174,14 +257,17 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     private var lastWallTime: Long = 0L
 
+    /**
+     * Executes one complete iteration of the robot control loop (50Hz–100Hz frequency).
+     *
+     * Performs synchronized sensor reads, power monitoring, subsystem logic execution,
+     * telemetry transmission, and loop frequency rate-limiting.
+     *
+     * @param gamepad1 Telemetry snapshot of Driver 1 gamepad inputs.
+     * @param gamepad2 Telemetry snapshot of Driver 2 gamepad inputs.
+     */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
         lifecycleController.sleepForTargetDt(lastWallTime, isAndroid)
         lastWallTime = System.currentTimeMillis()
@@ -234,24 +320,40 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         }
     }
 
+    /** Subclass hook for sampling hardware encoders, analog sensors, and digital inputs into memory. */
     protected abstract fun updateHardwareInputs()
-    protected abstract fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double)
-    protected abstract fun publishRobotTelemetry(timestamp: Long)
+
     /**
-     * safeHardware declaration.
+     * Subclass hook for processing subsystem logic and dispatching commands to physical actuators.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param dtSeconds Loop time step in seconds ($s$).
+     * @param batteryVoltage Measured bus voltage in Volts ($V$).
+     * @param powerScale Dynamic power scaling multiplier factor $[0.0, 1.0]$ enforced by brownout protection.
+     */
+    protected abstract fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double)
+
+    /**
+     * Subclass hook for emitting custom telemetry data fields to the dashboard and log streams.
+     *
+     * @param timestamp System clock timestamp in milliseconds ($ms$).
+     */
+    protected abstract fun publishRobotTelemetry(timestamp: Long)
+
+    /**
+     * Safely cuts power to all physical motors and actuators to prevent runaway robot motion upon stop or crash.
      */
     abstract fun safeHardware()
 
-    @kotlin.jvm.JvmOverloads
     /**
-     * resetPose declaration.
+     * Resets the robot pose estimation to a specified field location.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Dispatches a reset [RobotAction.PoseUpdate] to the Redux store and re-initializes the physical
+     * [pinpointIO] hardware computer if attached.
+     *
+     * @param pose Target zero pose in field coordinates $(x, y, \theta)$ ($m, m, rad$). Defaults to $(0,0,0)$.
+     * @param resetHardware If `true`, re-homes raw physical odometry encoders on the Pinpoint hardware board.
      */
+    @kotlin.jvm.JvmOverloads
     fun resetPose(pose: Pose2d = Pose2d(), resetHardware: Boolean = false) {
         pinpointIO?.initialize(pose, resetHardware = resetHardware)
         visionTracker.hasInitializedPoseWithVision = true
@@ -267,10 +369,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * resetPoseForAlliance declaration.
+     * Resets the robot starting pose according to the current alliance assignment in Redux state.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * - **Red Alliance**: Pose $(0.0, -1.2 \text{ m}, +\pi/2 \text{ rad})$ facing blue wall.
+     * - **Blue Alliance**: Pose $(0.0, +1.2 \text{ m}, -\pi/2 \text{ rad})$ facing red wall.
      */
     fun resetPoseForAlliance() {
         val alliance = store.state.drive.alliance
@@ -283,10 +385,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Releases active hardware resources, background HTTP/NT4 threads, and closes telemetry channels.
      */
     open fun close() {
         activeInstance = null
@@ -296,3 +395,4 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         hardwareInitializer.close()
     }
 }
+

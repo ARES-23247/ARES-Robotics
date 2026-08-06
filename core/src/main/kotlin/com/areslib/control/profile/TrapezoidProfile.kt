@@ -4,38 +4,42 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
- * Zero-allocation 1D kinematic Trapezoidal Motion Profile generator.
+ * Zero-Allocation 1D Kinematic Trapezoidal Motion Profile Generator.
  *
- * Computes deterministic position and velocity setpoints to transition a physical mechanism from an initial
- * state $(x_0, v_0)$ to a target goal state $(x_{goal}, v_{goal})$ while respecting physical maximum velocity ($v_{max}$)
- * and maximum acceleration ($a_{max}$) constraints.
+ * Computes deterministic position ($x$) and velocity ($v$) trajectory setpoints to transition a physical mechanism from an initial
+ * state $(x_0, v_0)$ to a target goal state $(x_{goal}, v_{goal})$ while strictly respecting physical maximum cruise velocity ($v_{max}$)
+ * and maximum acceleration ($a_{max}$) limits.
  *
  * ### Kinematic Equations:
- * Accelerated motion phase ($t \le t_{accel}$):
- * $$v(t) = v_0 + a_{max} \cdot t$$
- * $$x(t) = x_0 + v_0 \cdot t + \frac{1}{2} a_{max} \cdot t^2$$
- * Constant velocity cruise phase ($t_{accel} < t \le t_{decel}$):
- * $$v(t) = v_{cruise}$$
- * $$x(t) = x_{accel} + v_{cruise} \cdot (t - t_{accel})$$
- * Deceleration phase ($t > t_{decel}$):
- * $$v(t) = v_{cruise} - a_{max} \cdot (t - t_{decel})$$
+ * 1. **Acceleration Phase** ($t \le t_{accel}$):
+ *    $$v(t) = v_0 + \text{dir} \cdot a_{max} \cdot t$$
+ *    $$x(t) = x_0 + v_0 \cdot t + \frac{1}{2} \cdot \text{dir} \cdot a_{max} \cdot t^2$$
+ * 2. **Constant Velocity Cruise Phase** ($t_{accel} < t \le t_{accel} + t_{cruise}$):
+ *    $$v(t) = \text{dir} \cdot v_{max}$$
+ *    $$x(t) = x_{accel} + v(t) \cdot (t - t_{accel})$$
+ * 3. **Deceleration Phase** ($t_{accel} + t_{cruise} < t \le t_{total}$):
+ *    $$v(t) = v_{cruise} - \text{dir} \cdot a_{max} \cdot (t - t_{accel} - t_{cruise})$$
+ *    $$x(t) = x_{decel} + v_{cruise} \cdot (t') - \frac{1}{2} \cdot \text{dir} \cdot a_{max} \cdot (t')^2$$
  *
  * ### Physical Units & Properties:
- * - Position: Meters ($m$) or Radians ($rad$)
- * - Velocity: Meters per second ($m/s$) or Radians per second ($rad/s$)
- * - Acceleration: Meters per second squared ($m/s^2$) or Radians per second squared ($rad/s^2$)
+ * - Position ($x$): Meters ($m$) or Radians ($rad$)
+ * - Velocity ($v$): Meters per second ($m/s$) or Radians per second ($rad/s$)
+ * - Acceleration ($a$): Meters per second squared ($m/s^2$) or Radians per second squared ($rad/s^2$)
  * - Timestep ($\Delta t$): Seconds ($s$)
- * - Zero-GC Footprint: Writes directly into a pre-allocated output [State] instance.
+ * - Memory Footprint: 100% Zero-GC allocation compliance during update cycles.
+ *
+ * @see State
+ * @see Constraints
  */
 class TrapezoidProfile {
     private val currentLocal = State()
     private val goalLocal = State()
 
     /**
-     * Profile constraints defining maximum kinematic bounds for the mechanism.
+     * Physical kinematic maximum velocity and acceleration limits bounding mechanism movement.
      *
-     * @property maxVelocity Maximum allowable cruise velocity $v_{max}$ (units/s).
-     * @property maxAcceleration Maximum allowable acceleration $a_{max}$ (units/$s^2$).
+     * @property maxVelocity Maximum allowable cruise velocity limit $v_{max}$ ($m/s$ or $rad/s$).
+     * @property maxAcceleration Maximum allowable acceleration limit $a_{max}$ ($m/s^2$ or $rad/s^2$).
      */
     data class Constraints(
         var maxVelocity: Double = 0.0,
@@ -43,10 +47,10 @@ class TrapezoidProfile {
     )
 
     /**
-     * Trajectory state representation at a discrete time instant.
+     * Trajectory state representation at a discrete time instant $(x(t), v(t))$.
      *
-     * @property position Mechanism position $x(t)$ (meters or radians).
-     * @property velocity Mechanism velocity $v(t)$ (units/s).
+     * @property position Mechanism position $x(t)$ in meters ($m$) or radians ($rad$).
+     * @property velocity Mechanism velocity $v(t)$ in meters per second ($m/s$) or radians per second ($rad/s$).
      */
     data class State(
         var position: Double = 0.0,
@@ -55,7 +59,7 @@ class TrapezoidProfile {
         /**
          * Copies values from another state into this instance without heap allocations.
          *
-         * @param other Source state to copy.
+         * @param other Source [State] to copy from.
          */
         fun setTo(other: State) {
             this.position = other.position
@@ -64,13 +68,13 @@ class TrapezoidProfile {
     }
 
     /**
-     * Computes the interpolated profile state after $\Delta t$ seconds, writing the result directly into [outState].
+     * Computes the interpolated motion profile state after $\Delta t$ seconds, writing the result directly into [outState].
      *
      * @param dtSeconds Timestep duration in seconds ($\Delta t > 0$).
      * @param current Current mechanism state $(x_0, v_0)$.
      * @param goal Target mechanism state $(x_{goal}, v_{goal})$.
-     * @param constraints Physical velocity and acceleration constraints.
-     * @param outState Pre-allocated output state receiving the calculated trajectory point.
+     * @param constraints Physical velocity ($v_{max}$) and acceleration ($a_{max}$) constraints [Constraints].
+     * @param outState Pre-allocated [State] output container receiving computed position and velocity setpoints.
      */
     fun calculate(
         dtSeconds: Double,

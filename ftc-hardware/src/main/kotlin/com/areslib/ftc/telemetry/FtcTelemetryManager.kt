@@ -19,20 +19,50 @@ import com.areslib.telemetry.logPoseArray2d
 import com.areslib.math.geometry.toFormattedString
 
 /**
- * Manages the robot's data telemetry, AdvantageScope NT4 networking,
- * and background file logging pipelines (input and action JSONL loggers).
+ * High-performance telemetry orchestrator for FTC target platforms.
+ *
+ * Coordinates NetworkTables 4 (NT4) real-time data streaming over [NT4Telemetry], structured disk file logging via [DataLoggingTelemetry]
+ * and [ActionLogger], brownout protection monitoring via [com.areslib.control.safety.BrownoutGuard], and non-blocking Driver Station updates
+ * driven by a dedicated 4Hz background thread (`ARES-DriverStation-Thread`).
+ *
+ * ### Telemetry Network Topics & Physical Units:
+ * - `Drive/Pose_X`: EKF X position in meters ($m$).
+ * - `Drive/Pose_Y`: EKF Y position in meters ($m$).
+ * - `Drive/Drive_Heading`: EKF heading in radians ($rad$), **CCW-positive** standard.
+ * - `Hardware/Motors/{name}/Power`: Motor duty-cycle output power $[-1.0, 1.0]$.
+ * - `Hardware/Motors/{name}/CurrentAmps`: Motor current draw in Amperes ($A$).
+ * - `ARES/DriverStation/Telemetry/{i}`: Driver station text console lines.
+ *
+ * ### Performance Guarantees:
+ * Pushes Driver Station console updates asynchronously to an [ArrayBlockingQueue], completely eliminating 15–30ms WiFi socket pauses
+ * on main 50Hz control loops.
+ *
+ * @param store Redux state store instance.
+ *
+ * @see RobotTelemetryManager
+ * @see NT4Telemetry
+ * @see ActionLogger
+ * @see DataLoggingTelemetry
  */
 class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
+    /** Unique UUID string identifying this match execution run. */
     val runId = java.util.UUID.randomUUID().toString()
+    /** Standard robot identifier string (`"ares_robot"`). */
     val robotId = "ares_robot"
 
+    /** Core NT4 network tables client interface. */
     val nt4 = NT4Telemetry()
+    /** Integrated disk and NT4 network telemetry logger. */
     override val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
+    /** Network state publisher translating Redux [RobotState] into NT4 topics. */
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
+    /** Battery voltage brownout guard instance configured with FTC defaults. */
     val brownoutGuard = com.areslib.control.safety.BrownoutGuard.ftcDefaults()
 
+    /** List of custom telemetry publisher callbacks executed every frame. */
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
+    /** Active action logger recording Redux actions into disk storage. */
     var actionLogger = ActionLogger(runId, robotId, 0, "BLUE", "Init")
         private set
         
@@ -42,6 +72,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     @Volatile private var isRunning = true
     private val telemetryQueue = java.util.concurrent.ArrayBlockingQueue<List<Pair<String, String>>>(3)
     @Volatile private var currentLocalTelemetry: Telemetry? = null
+
+    /** Thread-safe map storing custom telemetry strings displayed on the Driver Station console. */
     val customDriverStationText = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     private val driverStationThread = kotlin.concurrent.thread(start = true, name = "ARES-DriverStation-Thread") {
@@ -70,10 +102,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
 
     private var telemetryFrameCounter = 0
 
-    /**
-     * Disable NT4 streaming entirely (e.g. during official matches to save CPU/bandwidth).
-     * Disk logging will still occur normally.
-     */
+    /** Toggle controlling whether live NT4 network streaming is active (can be disabled during official matches). */
     var enableNetworkStreaming: Boolean = true
 
     init {
@@ -83,9 +112,13 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     }
 
     /**
-     * Publishes the current robot state via the core interface contract.
-     * Invokes [ARESNetworkStatePublisher], [HardwareRegistry] telemetry,
-     * and all registered [customPublishers].
+     * Standard telemetry publish pass updating NT4 streams, disk logs, and custom telemetry sinks.
+     *
+     * @param state Current [RobotState] snapshot.
+     * @param gamepad1 Driver 1 [GamepadState] input snapshot (or `null`).
+     * @param gamepad2 Driver 2 [GamepadState] input snapshot (or `null`).
+     * @param dtSeconds Loop time step interval in seconds ($s$).
+     * @param batteryVoltage Measured main battery voltage in Volts ($V$).
      */
     override fun publish(
         state: RobotState,
@@ -117,9 +150,17 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     }
 
     /**
-     * Full FTC-specific publish method with vision tracker telemetry and local
-     * driver station console output. Retained for backward compatibility with
-     * existing OpMode code.
+     * Extended FTC publish pass incorporating vision tracking telemetry, custom subclass hooks, and non-blocking Driver Station console output.
+     *
+     * @param state Current [RobotState] snapshot.
+     * @param gamepad1 Driver 1 [GamepadState] input snapshot (or `null`).
+     * @param gamepad2 Driver 2 [GamepadState] input snapshot (or `null`).
+     * @param dtSeconds Loop time step interval in seconds ($s$).
+     * @param batteryVoltage Measured main battery voltage in Volts ($V$).
+     * @param visionTracker Active [FtcVisionTracker] instance.
+     * @param timestamp System time in milliseconds ($ms$).
+     * @param localTelemetry FTC SDK [Telemetry] console instance.
+     * @param onSubclassPublish Custom lambda hook executed prior to flushing telemetry.
      */
     fun publishFull(
         state: RobotState,
@@ -203,17 +244,14 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         dataLoggingTelemetry.ntEnabled = true
     }
 
-    /**
-     * Captures motor telemetry. This MUST be called at the end of the OpMode loop,
-     * after all motor powers have been written to the hardware.
-     */
+    /** Legacy motor telemetry hook (obsolete, retained for compatibility). */
     @Suppress("UNUSED_PARAMETER")
     fun publishMotors(batteryVoltage: Double) {
         // Obsolete: Handled by Unified ARESDataLogger
     }
 
     /**
-     * Gracefully stops file logging threads and closes network streams.
+     * Stops background Driver Station thread and flushes active log files.
      */
     override fun close() {
         isRunning = false
@@ -222,4 +260,5 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         actionLogger.stop()
     }
 }
+
 

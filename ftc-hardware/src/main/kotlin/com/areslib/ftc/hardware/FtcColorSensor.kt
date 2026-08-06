@@ -6,8 +6,25 @@ import com.qualcomm.robotcore.hardware.ColorSensor
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor
 
 /**
- * Wraps a generic FTC Color Sensor.
- * Automatically attempts to use NormalizedColorSensor telemetry for accurate, lighting-invariant detection.
+ * Asynchronous hardware IO wrapper for generic FTC Color Sensors (e.g. REV Color Sensor v2/v3, Adafruit TCS34725).
+ *
+ * Automatically detects whether the hardware implements [NormalizedColorSensor] to provide lighting-invariant,
+ * normalized RGB color channels $[0.0, 1.0]$. Uses a dedicated 50Hz background thread (`ARES-GenericColorSensor-Thread`)
+ * and double-buffered thread-safe memory reads to prevent main control loop blocking on slow I2C sensor reads.
+ *
+ * ### Physical Units & Range Boundaries:
+ * - Raw Channels ($R, G, B, \alpha$): Unscaled 16-bit integer ADC counts $[0, 65535]$.
+ * - Normalized Channels: Double-precision floating point ratios $[0.0, 1.0]$ where:
+ *   $$R_{norm} = \frac{R}{R + G + B + \alpha}$$
+ *
+ * ### Zero-GC Execution Compliance:
+ * Background sampling thread writes into pre-allocated double-buffers (`normalizedBuffers`, `threadBuffer`).
+ * Properties access cached primitive values inside `synchronized` blocks without heap object instantiations.
+ *
+ * @param sensor Underlying FTC SDK [ColorSensor] instance.
+ *
+ * @see ColorSensorIO
+ * @see NormalizedColorSensor
  */
 class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoCloseable {
     
@@ -92,26 +109,32 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
         thread.start()
     }
 
+    /** Cached raw red channel reading $[0, 65535]$. */
     override val red: Int
         get() = synchronized(lock) { cachedRed }
+
+    /** Cached raw green channel reading $[0, 65535]$. */
     override val green: Int
         get() = synchronized(lock) { cachedGreen }
+
+    /** Cached raw blue channel reading $[0, 65535]$. */
     override val blue: Int
         get() = synchronized(lock) { cachedBlue }
+
+    /** Cached raw alpha/luminance channel reading $[0, 65535]$. */
     override val alpha: Int
         get() = synchronized(lock) { cachedAlpha }
 
+    /** Cached double-buffered normalized $[R, G, B, \alpha]$ array $[0.0, 1.0]$. */
     override val normalizedRgb: DoubleArray
         get() = synchronized(lock) { normalizedBuffers[readBufferIndex] }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Terminates background thread execution and releases hardware resources.
      */
     override fun close() {
         running = false
     }
 }
+
 

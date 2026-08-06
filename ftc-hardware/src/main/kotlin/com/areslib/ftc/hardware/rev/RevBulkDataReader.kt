@@ -3,9 +3,16 @@ package com.areslib.ftc.hardware.rev
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Object implementation for Rev Bulk Data Reader.
+ * Asynchronous current sampling manager for REV Expansion Hub motor ports.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Implements a round-robin background thread (`ARES-MotorCurrent-Thread`) polling motor current draw at 20Hz ($50\text{ms}$ interval).
+ * Prevents high-frequency main control loop thread contention and eliminates slow I2C current query stalls.
+ *
+ * ### Performance & Physical Units:
+ * - Current Draw: Amperes ($A$).
+ * - Round-Robin Rate: 1 motor queried per $50\text{ms}$ step to eliminate REV I2C bus saturation.
+ *
+ * @see RevMotorController
  */
 object RevBulkDataReader {
     private val motorsList = CopyOnWriteArrayList<RevMotorController>()
@@ -13,10 +20,9 @@ object RevBulkDataReader {
     private var pollingThread: Thread? = null
 
     /**
-     * registerMotor declaration.
+     * Registers a [RevMotorController] instance to be included in round-robin background current polling.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param motor Motor controller instance.
      */
     fun registerMotor(motor: RevMotorController) {
         synchronized(this) {
@@ -26,10 +32,9 @@ object RevBulkDataReader {
     }
 
     /**
-     * unregisterMotor declaration.
+     * Unregisters a [RevMotorController] instance from background current polling.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param motor Motor controller instance.
      */
     fun unregisterMotor(motor: RevMotorController) {
         synchronized(this) {
@@ -68,10 +73,7 @@ object RevBulkDataReader {
     }
 
     /**
-     * unregisterAll declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Stops the background polling thread and unregisters all motor controller instances.
      */
     fun unregisterAll() {
         synchronized(this) {
@@ -82,3 +84,4 @@ object RevBulkDataReader {
         }
     }
 }
+

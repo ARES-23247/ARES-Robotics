@@ -12,27 +12,39 @@ import kotlinx.coroutines.launch
 import com.areslib.math.wrapAngle
 
 /**
- * Interface to the GoBilda Pinpoint Odometry Computer, providing hardware abstraction for dead-wheel tracking.
- * 
- * COORDINATE SYSTEM:
- * - Position: X = forward (audience wall), Y = left (blue alliance), units in $m$.
- * - Velocity: X = $m/s$, Y = $m/s$.
- * - Heading: 0° = +X (audience wall), CCW-positive (math standard), units in $rad$.
- * - Angular Velocity: CCW-positive, units in $rad/s$.
- * - The raw GoBilda Pinpoint outputs CW-positive heading;
- *   we negate it here at the hardware boundary so all downstream
- *   consumers (EKF, kinematics, path followers) receive CCW-positive.
+ * Hardware IO abstraction layer for the GoBilda Pinpoint Odometry Computer.
  *
- * PERFORMANCE:
- * Guaranteed zero-GC allocations during the high-frequency 50Hz/100Hz hardware update loops.
+ * Provides high-frequency, zero-GC hardware reads for dead-wheel tracking pods and onboard 6-DOF IMU fusion.
  *
- * @param driver The GoBilda Pinpoint driver instance.
- * @param xOffsetMm X offset of the odometry pod in mm.
- * @param yOffsetMm Y offset of the odometry pod in mm.
- * @param encoderResolution Encoder resolution in ticks/mm.
- * @param xDirection Encoder direction for the X pod.
- * @param yDirection Encoder direction for the Y pod.
- * @param isHeadingCcwPositive Whether the sensor heading is already CCW-positive.
+ * ### Hardware Boundary & Coordinate System:
+ * - **Position**: $X$ = Forward ($m$), $Y$ = Left ($m$).
+ * - **Velocity**: $v_x$ ($m/s$), $v_y$ ($m/s$).
+ * - **Heading Convention**: Normalized to **Counter-Clockwise (CCW) Positive** math standard:
+ *   $$\theta \in [-\pi, \pi], \quad 0 \text{ rad} = +X, \quad +\frac{\pi}{2} \text{ rad} = +Y$$
+ * - **Polarity Correction**: The raw GoBilda Pinpoint driver outputs Clockwise (CW) positive heading natively when mounted right-side up.
+ *   This class enforces CCW-positive transformation directly at the hardware boundary via [isHeadingCcwPositive] (`headingMult`),
+ *   ensuring downstream EKF observers, kinematics solvers, and path followers receive CCW+ heading.
+ *
+ * ### Physical Units & Setup:
+ * - Pod offsets: $X, Y$ mounting offsets in millimeters ($mm$).
+ * - Encoder resolution: Ticks per millimeter ($ticks/mm$, defaults to GoBilda 4-bar standard 20.44 ticks/mm).
+ * - Velocities: Linear $m/s$, Angular $rad/s$.
+ * - Time: Milliseconds ($ms$).
+ *
+ * ### Zero-GC Compliance:
+ * The [getPoseUpdate] loop operates without allocating heap objects during 50Hz–100Hz execution.
+ * Pose updates reuse internal primitive accumulators and return immutable state structures.
+ *
+ * @param driver The physical GoBilda Pinpoint driver instance.
+ * @param xOffsetMm X offset of the odometry pod relative to robot center ($mm$).
+ * @param yOffsetMm Y offset of the odometry pod relative to robot center ($mm$).
+ * @param encoderResolution Encoder resolution ($ticks/mm$). Pass `null` for factory default.
+ * @param xDirection Encoder direction for X pod.
+ * @param yDirection Encoder direction for Y pod.
+ * @param isHeadingCcwPositive Physical mounting polarity flag. Set `true` if upside-down mount reverses raw Pinpoint CCW readings.
+ *
+ * @see com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
+ * @see RobotAction.PoseUpdate
  */
 class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private val driver: GoBildaPinpointDriver,
@@ -70,10 +82,12 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Updates the pinpoint driver and returns the current pose as a pure action.
-     * Operates without GC allocations for high-frequency 100Hz loops.
+     * Polls the GoBilda Pinpoint hardware computer and returns the updated pose as an immutable action.
      *
-     * @return The updated pose action with coordinates in $m$ and $rad$ (CCW-positive).
+     * Applies coordinate transformations, pod offsets, and CCW-positive polarity corrections.
+     * Zero-GC compliance: performs zero heap allocations during the 100Hz hardware sampling cycle.
+     *
+     * @return [RobotAction.PoseUpdate] containing positions ($m$), CCW+ heading ($rad$), and velocities ($m/s, rad/s$).
      */
     fun getPoseUpdate(): RobotAction.PoseUpdate {
         try {
@@ -120,9 +134,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Recalibrates the internal IMU while the robot is stationary.
-     * 
-     * @throws Exception if hardware communication fails (caught internally).
+     * Recalibrates the internal Pinpoint IMU while the robot is stationary.
      */
     fun recalibrateIMU() {
         try {
@@ -131,12 +143,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Resets the pinpoint computer and recalibrates the orientation.
-     * Optionally configures starting pose tracking values.
-     * 
-     * @param pose The initial pose to set, with coordinates in $m$ and $rad$ (CCW-positive).
-     * @param resetHardware If true, physically resets the sensor's position and IMU state.
-     * @throws Exception if hardware communication fails (caught internally).
+     * Resets the Pinpoint tracking computer pose and optionally re-zeros physical IMU hardware registers.
+     *
+     * @param pose The field starting pose $(x, y, \theta)$ in meters ($m$) and CCW-positive radians ($rad$).
+     * @param resetHardware If `true`, triggers a physical IMU and encoder reset on the Pinpoint board.
      */
     @kotlin.jvm.JvmOverloads
     fun initialize(pose: com.areslib.math.geometry.Pose2d = com.areslib.math.geometry.Pose2d(), resetHardware: Boolean = false) {
@@ -173,10 +183,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Sets the physical offsets of the tracking pods relative to the robot center.
-     * 
-     * @param xOffsetMm X offset (forward distance) in mm.
-     * @param yOffsetMm Y offset (sideways distance) in mm.
+     * Configures the physical mounting offsets of the dead-wheel pods relative to the robot rotational center.
+     *
+     * @param xOffsetMm X offset (forward/backward distance from tracking center) in millimeters ($mm$).
+     * @param yOffsetMm Y offset (left/right distance from tracking center) in millimeters ($mm$).
      */
     fun setOffsets(xOffsetMm: Double, yOffsetMm: Double) {
         try {
@@ -188,9 +198,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Sets the encoder resolution for the dead wheels.
-     * 
-     * @param resolution Encoder resolution in ticks/mm.
+     * Sets the physical encoder resolution for the dead-wheel tracking pods.
+     *
+     * @param resolution Encoder resolution in ticks per millimeter ($ticks/mm$).
      */
     fun setEncoderResolution(resolution: Double) {
         try {
@@ -201,11 +211,9 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Unregisters hardware resources.
      */
     override fun close() {
     }
 }
+

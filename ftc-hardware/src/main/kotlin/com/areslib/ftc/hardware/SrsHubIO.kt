@@ -22,9 +22,27 @@ import com.areslib.math.geometry.Rotation2d
     description = "SRS Robotics Expansion Hub over I2C"
 )
 /**
- * Class implementation for Srs Hub Driver.
+ * Low-level I2C hardware driver for SRS Robotics Expansion Hub expansion boards.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Implements a 200Hz background polling loop (`ARES-SrsHub-Thread`) executing 256-byte continuous block I2C reads.
+ * Automatically parses analog voltages ($V$), digital states, motor encoder ticks, PWM pulse widths ($\mu s$),
+ * APDS9151 / VL53L0X distance sensors, VL53L5CX multizone arrays, and GoBilda Pinpoint odometry data into pre-allocated cache buffers.
+ *
+ * ### Register Memory Map & Physical Units:
+ * - Registers `0x00..0x07`: Analog input voltages ($V$), scaled from $0.0\text{V} \dots 3.3\text{V}$.
+ * - Register `0x08`: Digital input logic pin bitmask.
+ * - Registers `0x09..0x18`: 32-bit signed motor encoder count registers.
+ * - Registers `0x18..0x1F`: 16-bit PWM pulse width channels ($\mu s$).
+ * - Registers `0x20..0x5F`: I2C sub-device color ($RGB\alpha$) and proximity distance ($m$) channels.
+ * - Registers `0x60..0xBF`: GoBilda Pinpoint odometry $X, Y$ ($mm$), heading ($\mu rad$), velocities ($mm/s, \mu rad/s$).
+ * - Registers `0xC0..0xFF`: VL53L5CX 64-zone distance matrix ($mm$).
+ *
+ * ### Zero-GC Guarantee:
+ * [pollHub] parses 256-byte I2C buffers into primitive array fields in-place without dynamic object instantiations.
+ *
+ * @param deviceClient Underlying Qualcomm FTC SDK [I2cDeviceSynch] bus client.
+ *
+ * @see I2cDeviceSynchDevice
  */
 class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDeviceSynch>(deviceClient, true), AutoCloseable {
     // Structured bulk cache buffers
@@ -106,12 +124,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         name = "ARES-SrsHub-Thread"
     }
 
-    /**
-     * registerPinpoint declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Registers a GoBilda Pinpoint odometry computer on port $[0 \dots 3]$ to trigger active update pings. */
     fun registerPinpoint(port: Int) {
         synchronized(lock) {
             if (port in 0 until 4) {
@@ -125,12 +138,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         thread.start()
     }
 
-    /**
-     * doInitialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Initializes SRS Hub 256-byte repeated read window. */
     override fun doInitialize(): Boolean {
         return try {
             // Set up automatic repeated read window for the entire 256-byte register range
@@ -142,27 +150,13 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * getManufacturer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns hardware manufacturer tag ([Manufacturer.Other]). */
     override fun getManufacturer(): Manufacturer = Manufacturer.Other
 
-    /**
-     * getDeviceName declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns human-readable device identifier string. */
     override fun getDeviceName(): String = "SRS Hub"
 
-    /**
-     * Polls the SRS Hub exactly once, fetching the entire integrated register space
-     * containing analog, digital, encoders, and I2C sub-device telemetry in a single transaction.
-     * Handled by the background thread, so this method is now a no-op wrapper.
-     */
+    /** No-op update hook (handled asynchronously by background thread). */
     fun update() {
         // No-op wrapper to satisfy legacy callers on the main thread
     }
@@ -248,117 +242,56 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                 ((data[offset + 3].toInt() and 0xFF) shl 24)
     }
 
-    // Now, all accessor methods return cached data instantly in 0.0ms!
+    // Accessors
+    /** Reads cached analog input voltage ($V$) for port $[0 \dots 3]$. */
     fun getAnalogVoltage(port: Int): Double = synchronized(lock) { cachedAnalog.getOrElse(port) { 0.0 } }
-    /**
-     * getDigitalState declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached digital pin logic state for port $[0 \dots 3]$. */
     fun getDigitalState(port: Int): Boolean = synchronized(lock) { cachedDigital.getOrElse(port) { false } }
-    /**
-     * readEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached motor encoder count for port $[0 \dots 3]$. */
     fun readEncoder(port: Int): Int = synchronized(lock) { cachedEncoders.getOrElse(port) { 0 } }
-    /**
-     * getPwmPulseWidth declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached PWM pulse width ($\mu s$) for port $[0 \dots 3]$. */
     fun getPwmPulseWidth(port: Int): Int = synchronized(lock) { cachedPwmPulseWidths.getOrElse(port) { 0 } }
-    
-    /**
-     * getVL53L5CXDistances declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached VL53L5CX zone distances ($mm$) for port $[0 \dots 3]$. */
     fun getVL53L5CXDistances(port: Int): IntArray = synchronized(lock) { cachedVL53L5CX.getOrElse(port) { IntArray(64) } }
-    /**
-     * getI2cColorRed declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached red color channel for port $[0 \dots 3]$. */
     fun getI2cColorRed(port: Int): Int = synchronized(lock) { cachedColorsRed.getOrElse(port) { 0 } }
-    /**
-     * getI2cColorGreen declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached green color channel for port $[0 \dots 3]$. */
     fun getI2cColorGreen(port: Int): Int = synchronized(lock) { cachedColorsGreen.getOrElse(port) { 0 } }
-    /**
-     * getI2cColorBlue declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached blue color channel for port $[0 \dots 3]$. */
     fun getI2cColorBlue(port: Int): Int = synchronized(lock) { cachedColorsBlue.getOrElse(port) { 0 } }
-    /**
-     * getI2cColorAlpha declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached alpha color channel for port $[0 \dots 3]$. */
     fun getI2cColorAlpha(port: Int): Int = synchronized(lock) { cachedColorsAlpha.getOrElse(port) { 0 } }
-    /**
-     * getI2cDistanceMeters declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached I2C proximity distance in meters ($m$) for port $[0 \dots 3]$. */
     fun getI2cDistanceMeters(port: Int): Double = synchronized(lock) { cachedI2cDistances.getOrElse(port) { 0.0 } }
 
-    /**
-     * getI2cOdometryX declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reads cached Pinpoint odometry X position ($mm$) for port $[0 \dots 3]$. */
     fun getI2cOdometryX(port: Int): Double = synchronized(lock) { cachedOdoX.getOrElse(port) { 0.0 } }
-    /**
-     * getI2cOdometryY declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached Pinpoint odometry Y position ($mm$) for port $[0 \dots 3]$. */
     fun getI2cOdometryY(port: Int): Double = synchronized(lock) { cachedOdoY.getOrElse(port) { 0.0 } }
-    /**
-     * getI2cOdometryHeading declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached Pinpoint odometry heading ($rad$, CCW+) for port $[0 \dots 3]$. */
     fun getI2cOdometryHeading(port: Int): Double = synchronized(lock) { cachedOdoHeading.getOrElse(port) { 0.0 } }
-    /**
-     * getI2cOdometryVelX declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached Pinpoint odometry X velocity ($mm/s$) for port $[0 \dots 3]$. */
     fun getI2cOdometryVelX(port: Int): Double = synchronized(lock) { cachedOdoVelX.getOrElse(port) { 0.0 } }
-    /**
-     * getI2cOdometryYVel declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached Pinpoint odometry Y velocity ($mm/s$) for port $[0 \dots 3]$. */
     fun getI2cOdometryYVel(port: Int): Double = synchronized(lock) { cachedOdoVelY.getOrElse(port) { 0.0 } }
-    /**
-     * getI2cOdometryHeadingVel declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+
+    /** Reads cached Pinpoint odometry heading velocity ($rad/s$) for port $[0 \dots 3]$. */
     fun getI2cOdometryHeadingVel(port: Int): Double = synchronized(lock) { cachedOdoHeadingVel.getOrElse(port) { 0.0 } }
 
-    // Direct actuator writes (these bypass the read cache and run immediately)
+    /** Enqueues PWM duty cycle write command $[0.0, 1.0]$ for port $[0 \dots 3]$. */
     fun setPwmDutyCycle(port: Int, dutyCycle: Double) {
         synchronized(lock) {
             if (port in 0 until 4) {
@@ -367,12 +300,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * readPwmPulseWidth declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reads single PWM pulse width ($\mu s$) synchronously (legacy fallback). */
     fun readPwmPulseWidth(port: Int): Int {
         return try {
             val data = deviceClient.read(24 + port * 2, 2)
@@ -386,39 +314,25 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /**
-     * resetI2cOdometry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Sends a reset bit command to Pinpoint odometry computer on port $[0 \dots 3]$. */
     fun resetI2cOdometry(port: Int) {
         try {
             deviceClient.write(120 + port, byteArrayOf(1))
         } catch (_: Exception) {}
     }
 
-    /**
-     * updateI2cOdometry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** No-op update hook for odometry (handled asynchronously in background sampling thread). */
     fun updateI2cOdometry() {
         // Handled asynchronously in background thread
     }
 
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Terminates background polling thread and releases device client handle. */
     override fun close() {
         running = false
         thread.interrupt()
     }
 }
+
 
 
 

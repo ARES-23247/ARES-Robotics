@@ -1,24 +1,23 @@
 package com.areslib.control.filters
 
 /**
- * An Exponential Moving Average (EMA) Filter.
- * Smooths out noisy analog sensors (like distance or ultrasonic sensors) 
- * by placing exponential weight on historical data.
- * Zero-allocation filter suitable for 50Hz control loops.
+ * Single-Pole Discrete Exponential Moving Average (EMA) Low-Pass Filter.
  *
- * @param alpha The smoothing factor [0.0, 1.0]. 
- *              1.0 means no smoothing (current value is trusted 100%).
- *              0.0 means completely ignores new values (stuck on first value).
- */
-/**
- * Class implementation for E M A Filter.
+ * Smooths out noisy physical sensor measurements (such as distance, ultrasonic, or analog sensor inputs)
+ * by applying exponential weighting decay to historical data.
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * ### Mathematical Formulation:
+ * Discrete exponential smoothing recurrence relation:
+ * $$y_k = \alpha \cdot x_k + (1 - \alpha) \cdot y_{k-1}$$
+ * For loop timestep $\Delta t$ and target cutoff frequency $f_c$:
+ * $$\alpha = \frac{2\pi f_c \Delta t}{1 + 2\pi f_c \Delta t}$$
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * ### Physical Units & Properties:
+ * - Smoothing Factor ($\alpha$): Dimensionless ratio $\alpha \in [0.0, 1.0]$ ($1.0 = \text{no filtering}, 0.0 = \text{infinite attenuation}$)
+ * - Sensor Signals ($x_k, y_k$): Physical measurement units ($m, V, rad$)
+ * - Zero-GC Footprint: Operates with 100% zero heap allocations during high-frequency update loops.
+ *
+ * @param alpha Smoothing weight factor $\alpha \in [0.0, 1.0]$.
  */
 class EMAFilter(private val alpha: Double) {
     private var previousEstimate: Double = 0.0
@@ -29,9 +28,10 @@ class EMAFilter(private val alpha: Double) {
     }
 
     /**
-     * Calculates the smoothed value based on the new input.
-     * @param input The raw sensor reading.
-     * @return The smoothed sensor reading.
+     * Calculates the filtered estimate value given a new raw sensor input reading $x_k$.
+     *
+     * @param input Raw sensor measurement reading ($x_k$).
+     * @return Filtered, smoothed sensor estimate ($y_k$).
      */
     fun calculate(input: Double): Double {
         if (!hasFirstValue) {
@@ -46,7 +46,7 @@ class EMAFilter(private val alpha: Double) {
     }
 
     /**
-     * Resets the filter's internal state.
+     * Resets internal filter state estimates, allowing the next input reading to re-initialize the filter baseline.
      */
     fun reset() {
         hasFirstValue = false

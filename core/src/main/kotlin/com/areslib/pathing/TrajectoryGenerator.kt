@@ -5,13 +5,32 @@ import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
 
 /**
- * Utility for generating smooth, continuous trajectories on the fly.
- * Uses cubic Bezier splines and simple trapezoidal motion profiling.
+ * On-the-Fly Continuous Trajectory Generation Utility.
+ *
+ * Generates smooth single-segment Cubic Bezier trajectory paths on the fly with trapezoidal velocity profiling.
+ *
+ * ### Mathematical Formulation:
+ * 1. **Cubic Bezier Control Point Scaling**:
+ *    $$\mathbf{P}_1 = \mathbf{P}_0 + \frac{d_{\text{chord}}}{3} \begin{bmatrix} \cos\theta_0 \\ \sin\theta_0 \end{bmatrix}, \quad \mathbf{P}_2 = \mathbf{P}_3 - \frac{d_{\text{chord}}}{3} \begin{bmatrix} \cos\theta_3 \\ \sin\theta_3 \end{bmatrix}$$
+ * 2. **Trapezoidal Backward/Forward Deceleration/Acceleration Sweeps**:
+ *    $$v_{\text{max, reachable}} = \sqrt{v_{\text{neighbor}}^2 + 2 a_{\text{max}} \Delta s}$$
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position $(x, y)$: Field-centric meters ($m$)
+ * - Robot Heading ($\theta$): Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Linear Velocity Bounds ($v_{\text{max}}$): Meters per second ($m/s$)
+ * - Linear Acceleration Bounds ($a_{\text{max}}$): Meters per second squared ($m/s^2$)
+ *
+ * @see BezierSpline
+ * @see Path
  */
 object TrajectoryGenerator {
     
     /**
-     * Constraints for generating the motion profile.
+     * Kinematic velocity and acceleration constraints for trajectory generation.
+     *
+     * @property maxVelocityMps Maximum linear speed in meters per second ($m/s$).
+     * @property maxAccelerationMps2 Maximum linear acceleration in meters per second squared ($m/s^2$).
      */
     data class PathConstraints(
         val maxVelocityMps: Double,
@@ -19,18 +38,19 @@ object TrajectoryGenerator {
     )
 
     /**
-     * Generates a single-segment path from a starting pose to a target pose on the fly.
-     * Uses a Cubic Bezier curve to smoothly interpolate position and heading.
-     * 
-     * @param startPose Current robot pose
-     * @param endPose Desired target pose
-     * @param constraints Velocity and acceleration bounds
+     * Generates an on-the-fly single-segment trajectory [Path] connecting [startPose] to [endPose].
+     *
+     * @param startPose Current robot pose in meters ($m$) and **CCW-positive** radians ($rad$).
+     * @param endPose Destination target pose in meters ($m$) and **CCW-positive** radians ($rad$).
+     * @param constraints Motion velocity and acceleration bounds [PathConstraints].
+     * @return Fully motion-profiled [Path].
      */
     fun generateTrajectory(
         startPose: Pose2d,
         endPose: Pose2d,
         constraints: PathConstraints
     ): Path {
+
         val p0 = Translation2d(startPose.x, startPose.y)
         val p3 = Translation2d(endPose.x, endPose.y)
         

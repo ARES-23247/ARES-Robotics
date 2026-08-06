@@ -1,17 +1,22 @@
 package com.areslib.control.safety
 
 /**
- * A mutable output container to hold the filtered targets of a Control Barrier Function.
+ * Mutable Output Buffer Container for Filtered Control Barrier Function (CBF) State Targets.
  *
- * Utilized in high-frequency control loops to prevent garbage-collector heap allocation
- * and CPU jitter on Android ART or RoboRIO runtime.
+ * Populated in-place by [ControlBarrierFunction.filter] to eliminate heap allocation overhead in 50Hz–1000Hz loops.
+ *
+ * @property x1Filtered Filtered, safety-guaranteed target value for protective state $x_1$.
+ * @property x2Filtered Filtered, safety-guaranteed target value for invading state $x_2$.
  */
 class CBFFilteredOutput {
     @JvmField var x1Filtered: Double = 0.0
     @JvmField var x2Filtered: Double = 0.0
 
     /**
-     * Resets or sets the values of this output buffer.
+     * Updates internal buffer values in-place without heap allocations.
+     *
+     * @param x1 Target value for protective state $x_1$.
+     * @param x2 Target value for invading state $x_2$.
      */
     fun setTo(x1: Double, x2: Double) {
         this.x1Filtered = x1
@@ -20,31 +25,37 @@ class CBFFilteredOutput {
 }
 
 /**
- * A highly optimized, graduate-grade analytical first-order Control Barrier Function (CBF) safety filter.
+ * Graduate-Grade Analytical First-Order Control Barrier Function (CBF) Safety Filter.
  *
- * This filter enforces provable mechanical safety constraints of the form:
- * $$h(x_1, x_2) = x_1 - m \cdot x_2 - c \geq 0$$
- * where:
- * - $x_1$ represents a protective protective state (e.g. intake deployed angle in degrees).
- * - $x_2$ represents an invading state (e.g. climber extension in meters).
- * - $m$ is the scaling gradient (degrees of deployment required per meter of extension).
- * - $c$ is the minimum baseline margin when $x_2 = 0$.
+ * Enforces provable forward-invariant mechanical safety constraints coupling two kinematic degrees of freedom:
+ * $$\mathcal{C} = \left\{(x_1, x_2) \in \mathbb{R}^2 : h(x_1, x_2) = x_1 - m \cdot x_2 - c \ge 0\right\}$$
+ * where $x_1$ is a protective state (e.g. intake deployment angle in degrees), $x_2$ is an invading state (e.g. elevator extension in meters),
+ * $m$ is the coupling gradient slope ($^\circ/m$), and $c$ is the baseline safety margin offset.
  *
- * By continuous-time differential inequality, safety is guaranteed invariant if the derivative satisfies:
- * $$\dot{h}(x_1, x_2) \geq -\alpha \cdot h(x_1, x_2)$$
- * which projects the commanded control inputs minimally onto the half-space of safe velocities.
+ * ### Mathematical Control Barrier Theory & Orthogonal Projection:
+ * Continuous-time differential inequality for forward invariance:
+ * $$\dot{h}(x_1, x_2) \ge -\alpha \cdot h(x_1, x_2)$$
+ * Discrete-time lower bound for next step safety margin:
+ * $$h_{next, min} = \max\left(0, (1 - \alpha \cdot \Delta t) \cdot h(x_{current})\right)$$
+ * If commanded targets $(x_{1,target}, x_{2,target})$ violate $h_{next, min}$, they are orthogonally projected (least-squares distance) onto the safe half-space boundary $x_1 - m x_2 = h_{next,min} + c$:
+ * $$\lambda = \frac{m \cdot x_{2,target} - x_{1,target} + h_{next,min} + c}{1 + m^2}$$
+ * $$x_{1,projected} = x_{1,target} + \lambda, \quad x_{2,projected} = x_{2,target} - m \cdot \lambda$$
  *
- * This class uses pre-allocated memory structures and an analytical closed-form orthogonal projection
- * to guarantee zero heap allocations in hot loop iterations.
+ * ### Physical Units & Properties:
+ * - Protective State ($x_1$): Degrees ($^\circ$) or Radians ($rad$)
+ * - Invading State ($x_2$): Meters ($m$) or Radians ($rad$)
+ * - Coupling Slope ($m$): Units of $x_1$ per unit of $x_2$
+ * - Margin Offset ($c$): Units of $x_1$
+ * - Safety Rate ($\alpha$): Inverse seconds ($s^{-1}$)
+ * - Timestep ($\Delta t$): Seconds ($s$)
  *
- * @property m The scaling gradient representing the coupling slope between states.
- * @property c The safety margin offset representing the absolute limit threshold.
- * @property alpha The safety convergence rate (higher values allow faster approaches, lower values are more conservative).
- */
-/**
- * Class implementation for Control Barrier Function.
+ * ### Zero-GC Compliance:
+ * Operates in-place populating a pre-allocated [CBFFilteredOutput] buffer to guarantee zero heap allocations.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * @property m Scaling gradient coupling slope between $x_1$ and $x_2$.
+ * @property c Absolute baseline safety margin offset threshold.
+ * @property alpha Safety convergence rate parameter $\alpha > 0$ ($s^{-1}$).
+ * @see CBFFilteredOutput
  */
 class ControlBarrierFunction(
     val m: Double,
@@ -52,17 +63,16 @@ class ControlBarrierFunction(
     val alpha: Double = 5.0
 ) {
     /**
-     * Filters commanded target values to mathematically guarantee the safety invariant set $h(x) >= 0$.
+     * Filters commanded target values $(x_{1,target}, x_{2,target})$ to mathematically guarantee the safety invariant $h(x) \ge 0$.
      *
-     * If the desired targets violate or approach the safety boundary, they are minimally projected (least-squares distance)
-     * onto the safe boundary line in velocity space.
+     * Writes results directly into pre-allocated [outBuffer].
      *
-     * @param x1Target Commanded target value for protective state 1.
-     * @param x2Target Commanded target value for invading state 2.
-     * @param x1Current Current physical value of state 1.
-     * @param x2Current Current physical value of state 2.
-     * @param dtSeconds Loop time step interval in seconds.
-     * @param outBuffer Pre-allocated output container where filtered target values are written.
+     * @param x1Target Commanded target value for protective state $x_1$.
+     * @param x2Target Commanded target value for invading state $x_2$.
+     * @param x1Current Current physical measured value of state $x_1$.
+     * @param x2Current Current physical measured value of state $x_2$.
+     * @param dtSeconds Timestep interval in seconds ($\Delta t > 0$).
+     * @param outBuffer Pre-allocated [CBFFilteredOutput] buffer receiving safe target values.
      */
     fun filter(
         x1Target: Double,
@@ -76,7 +86,15 @@ class ControlBarrierFunction(
     }
 
     /**
-     * Filters commanded target values using a dynamic margin offset override.
+     * Filters commanded target values using a dynamic margin offset override [cOverride].
+     *
+     * @param x1Target Commanded target value for protective state $x_1$.
+     * @param x2Target Commanded target value for invading state $x_2$.
+     * @param x1Current Current physical measured value of state $x_1$.
+     * @param x2Current Current physical measured value of state $x_2$.
+     * @param dtSeconds Timestep interval in seconds ($\Delta t > 0$).
+     * @param cOverride Dynamic safety margin offset override.
+     * @param outBuffer Pre-allocated [CBFFilteredOutput] buffer receiving safe target values.
      */
     fun filter(
         x1Target: Double,

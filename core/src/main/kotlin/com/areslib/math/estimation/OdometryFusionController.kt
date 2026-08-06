@@ -6,21 +6,55 @@ import com.areslib.math.geometry.Translation2d
 import com.areslib.math.geometry.Matrix3x3
 
 /**
- * Object implementation for Odometry Fusion Controller.
+ * Drivetrain Wheel Odometry and Gyroscope Fusion Controller.
  *
- * Provides mathematical state estimation, vector filtering, or kinematic matrix operations.
+ * Integrates high-frequency dead-wheel displacement deltas with IMU gyro heading rates, performing tilt hysteresis beaching detection,
+ * dynamic process noise covariance expansion during wheel slip or high-tilt impacts, and online gyro bias estimation.
  *
- * ### Physical Units & Coordinates:
- * - Position: Meters ($m$)
- * - Heading: Radians ($rad$), counter-clockwise positive
- * - Time: Seconds ($s$) or milliseconds ($ms$)
+ * ### Mathematical Formulations:
+ * 1. **Beaching & Tilt Angle Metric**:
+ *    $$\theta_{\text{tilt}} = \sqrt{\theta_{\text{pitch}}^2 + \theta_{\text{roll}}^2}$$
+ *    - Enters beached state if $\theta_{\text{tilt}} > 15^\circ$; exits if $\theta_{\text{tilt}} < 12^\circ$ (hysteresis protection).
+ * 2. **Tilt Covariance Scale ($s_{\text{tilt}}$)**:
+ *    For $\theta_{\text{tilt}} > 5^\circ$, scales process noise quadratic expansion up to $100\times$:
+ *    $$s_{\text{tilt}} = 1.0 + 99.0 \cdot \left[\text{clamp}\left(\frac{\theta_{\text{tilt}} - 5^\circ}{10^\circ}, 0, 1\right)\right]^2$$
+ * 3. **Online Gyro Bias IIR Filter**:
+ *    Estimates gyro zero-rate drift when stationary ($\Delta x = \Delta y = \Delta\theta = 0$):
+ *    $$\beta_k = (1 - \alpha) \cdot \beta_{k-1} + \alpha \cdot \omega_{\text{gyro}}, \quad \alpha = 0.01 \cdot \Delta t$$
+ * 4. **Wheel Slip Mismatch Detection**:
+ *    If $|\frac{\Delta\theta}{\Delta t} - (\omega_{\text{gyro}} - \beta_k)| > 0.5 \text{ rad/s}$, applies $s_{\text{slip}} = 10.0$ covariance multiplier.
+ *
+ * ### Physical Units & Coordinate Conventions:
+ * - Position & Displacements $(\Delta x, \Delta y)$: Meters ($m$)
+ * - Heading & Angular Rates $(\Delta\theta, \omega_{\text{gyro}}, \beta)$: Radians ($rad$), Radians per second ($rad/s$), **CCW-positive**
+ * - IMU Tilt Angles & Velocities: Degrees ($^\circ$), Degrees per second ($^\circ/s$)
+ * - Loop Time ($\Delta t$): Seconds ($s$), Timestamp ($t$): Milliseconds ($ms$)
+ *
+ * ### Zero-GC Guarantee:
+ * Operates entirely via in-place mutation of caller-provided scratchpads (`scratchQ`, `scratchCov`), maintaining zero dynamic heap allocations.
+ *
+ * @see PoseEstimator
+ * @see EKFStatePropagator
  */
 object OdometryFusionController {
+
     /**
-     * processOdometry declaration.
+     * Processes raw odometry translation vector, heading delta, and IMU telemetry to update EKF state.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param state Active pose estimator state snapshot.
+     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param deltaTranslation Robot-centric displacement vector in meters ($m$).
+     * @param deltaHeading Robot-centric heading change in radians ($rad$).
+     * @param pitchDegrees IMU pitch angle in degrees ($^\circ$).
+     * @param rollDegrees IMU roll angle in degrees ($^\circ$).
+     * @param pitchVelocityDegPerSec IMU pitch rate in degrees per second ($^\circ/s$).
+     * @param rollVelocityDegPerSec IMU roll rate in degrees per second ($^\circ/s$).
+     * @param gyroRateRadPerSec Raw IMU yaw rate in radians per second ($rad/s$).
+     * @param dtSeconds Elapsed time since last update cycle in seconds ($\Delta t$).
+     * @param baseQ Baseline process noise covariance matrix $\mathbf{Q}$.
+     * @param scratchQ Pre-allocated scratchpad matrix for scaled process noise $\mathbf{Q}$.
+     * @param scratchCov Pre-allocated scratchpad matrix for updated state covariance $\mathbf{P}$.
+     * @return Updated [PoseEstimatorState].
      */
     fun processOdometry(
         state: PoseEstimatorState,
@@ -44,6 +78,25 @@ object OdometryFusionController {
         )
     }
 
+    /**
+     * Processes primitive scalar odometry deltas and IMU telemetry to update EKF state with zero dynamic allocations.
+     *
+     * @param state Active pose estimator state snapshot.
+     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param deltaX Local X displacement in meters ($m$).
+     * @param deltaY Local Y displacement in meters ($m$).
+     * @param deltaHeadingRad Local heading change in radians ($rad$).
+     * @param pitchDegrees IMU pitch in degrees ($^\circ$).
+     * @param rollDegrees IMU roll in degrees ($^\circ$).
+     * @param pitchVelocityDegPerSec IMU pitch rate in degrees per second ($^\circ/s$).
+     * @param rollVelocityDegPerSec IMU roll rate in degrees per second ($^\circ/s$).
+     * @param gyroRateRadPerSec Raw IMU yaw rate in radians per second ($rad/s$).
+     * @param dtSeconds Elapsed time in seconds ($\Delta t$).
+     * @param baseQ Baseline process noise matrix $\mathbf{Q}$.
+     * @param scratchQ Pre-allocated scratchpad matrix for scaled $\mathbf{Q}$.
+     * @param scratchCov Pre-allocated scratchpad matrix for updated $\mathbf{P}$.
+     * @return Updated [PoseEstimatorState].
+     */
     fun processOdometryDirect(
         state: PoseEstimatorState,
         timestampMs: Long,
@@ -60,6 +113,7 @@ object OdometryFusionController {
         scratchQ: Matrix3x3,
         scratchCov: Matrix3x3
     ): PoseEstimatorState {
+
         if (deltaX.isNaN() || deltaX.isInfinite() ||
             deltaY.isNaN() || deltaY.isInfinite() ||
             deltaHeadingRad.isNaN() || deltaHeadingRad.isInfinite() ||

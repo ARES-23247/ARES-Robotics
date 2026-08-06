@@ -12,9 +12,24 @@ import com.areslib.subsystem.VisionTracker
 import com.areslib.math.wrapAngle
 
 /**
- * Manages the robot's AprilTag vision tracking system.
- * Handles outlier rejection (using yaw, field boundary, distance, and EKF Mahalanobis checks),
- * and triggers EKF snap updates during initialization or recovery states.
+ * AprilTag vision tracking and field localization manager for FTC platforms.
+ *
+ * Implements a 4-tier outlier rejection cascade (ambiguity filter, 3D field boundary check, distance cutoff, and EKF Mahalanobis distance validation).
+ * Coordinates vision-based pose initialization and active-play kidnapped robot recovery (`RESEED_SNAP`).
+ *
+ * ### Recovery States & Thresholds:
+ * - **Initialization Snap**: Re-seeds EKF and Pinpoint odometry pose when stationary if `hasInitializedPoseWithVision` is `false`.
+ * - **Kidnapped Robot Recovery**: Accumulates vision target poses over consecutive EKF rejections (`consecutiveVisionRejections >= stolenRobotRejectionThreshold`).
+ *   Re-seeds EKF pose when robot velocity $< \text{stolenRobotVelocityThreshold}$ ($0.1\text{m/s}$) and angular velocity $< \text{stolenRobotAngularVelocityThreshold}$ ($0.2\text{rad/s}$).
+ *
+ * @param store Redux store instance holding [RobotState].
+ * @param limelightIO Underlying vision hardware IO instance ([VisionIO]).
+ * @param pinpointIO Hardware odometry IO instance ([PinpointIO]) for pose re-seeding.
+ * @param stdDevs Vision measurement standard deviation matrix ($m, m, rad$).
+ *
+ * @see VisionTracker
+ * @see FtcLimelightIO
+ * @see PinpointIO
  */
 class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private val store: Store,
@@ -22,11 +37,15 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private val pinpointIO: PinpointIO?,
     var stdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1)
 ) : VisionTracker {
+    /** Vision inputs container polled each loop frame. */
     val visionInputs = VisionIOInputs()
+    /** Most recent valid AprilTag estimated robot field pose ([Pose2d]). */
     var lastLimelightPose: Pose2d? = null
         private set
+    /** Timestamp ($ms$) of last valid AprilTag pose measurement. */
     var lastLimelightTimeMs = 0L
         private set
+    /** Status message string describing active vision filter state (`"ACCEPTED"`, `"REJ_AMBIG"`, `"REJ_BOUNDS"`, `"REJ_DIST"`, `"REJ_YAW"`, `"REJ_MAHALANOBIS"`, `"INIT_ALIGN_SNAP"`, `"RESEED_SNAP"`). */
     override var lastVisionStatus = "OFFLINE"
         private set
 
@@ -38,16 +57,16 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private var accumY = 0.0
     private var accumSin = 0.0
     private var accumCos = 0.0
+    /** Flag tracking whether initial vision pose alignment has executed. */
     var hasInitializedPoseWithVision = false
 
-    // Pre-allocated structure to guarantee Zero-GC compliance inside EKF verification loops
-
-
     /**
-     * Polls the vision sensors, performs outlier rejection, and updates the EKF store.
-     * Triggers mathematical snaps if initial pose or kidnapped robot conditions are met.
+     * Executes 50Hz vision update loop: polls hardware, filters outliers, triggers pose snaps, and dispatches [RobotAction.VisionMeasurementsReceived].
+     *
+     * @param timestampMs Current system time in milliseconds ($ms$).
      */
     override fun update(timestampMs: Long) {
+
         val io = limelightIO ?: run {
             com.areslib.telemetry.RobotStatusTracker.visionConnected = false
             com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"

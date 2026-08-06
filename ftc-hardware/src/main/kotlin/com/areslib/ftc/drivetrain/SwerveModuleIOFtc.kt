@@ -6,31 +6,36 @@ import com.areslib.hardware.drive.SwerveModuleIO
 import com.areslib.hardware.drive.SwerveModuleInputs
 
 /**
- * FTC Physical Swerve Module IO Hardware Adapter.
+ * Physical Swerve Module IO Hardware Adapter for FTC target platforms.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
- * Wraps a drive `DcMotorEx`, steer `DcMotorEx`, and absolute `AnalogInput` encoder for an FTC Swerve Pod (e.g. Axon, GoBilda Swerve).
- * Features a dedicated 200Hz background thread (`ARES-SwerveModuleIOFtc-Analog-Thread`) for non-blocking analog voltage sampling.
+ * Wraps a drive `DcMotorEx`, steer `DcMotorEx`, and an absolute `AnalogInput` encoder for an FTC Swerve Pod (e.g., Axon, GoBilda Swerve).
+ * Utilizes a dedicated 200Hz background thread (`ARES-SwerveModuleIOFtc-Analog-Thread`) for non-blocking analog voltage sampling.
  *
- * PHYSICAL UNITS & CONVENTIONS:
- * - Drive Motor Encoder: Radians ($rad$) using 2048 CPR tick scaling.
+ * ### Hardware Boundary & Physical Units:
+ * - Drive Motor Position: Radians ($rad$) using 2048 CPR tick conversion ($2\pi / 2048$).
  * - Drive Motor Velocity: Radians per second ($rad/s$).
- * - Steer Encoder: Radians ($rad$) scaled from 0.0V–3.3V analog absolute angle range.
- * - Angle convention: **CCW-positive**.
- * - Drive / Steer Power: Normalized duty-cycle percent ($-1.0$ to $+1.0$).
+ * - Steer Absolute Encoder: Radians ($rad$) scaled from $0.0\text{V} \dots 3.3\text{V}$ analog absolute voltage:
+ *   $$\theta_{steer} = \frac{V_{analog}}{3.3} \cdot 2\pi \text{ rad}$$
+ * - Angle Convention: **Counter-Clockwise (CCW) Positive** standard.
+ * - Motor Duty Cycle Effort: Normalized ratio $[-1.0, 1.0]$.
  *
- * PERFORMANCE:
- * Guaranteed zero-GC allocations during high-frequency hardware update loops.
+ * ### Zero-GC Execution Compliance:
+ * High-frequency update functions ([updateInputs], [setDesiredPower]) mutate primitive properties on pre-allocated [SwerveModuleInputs] instances,
+ * guaranteeing zero dynamic heap allocations during 50Hz–100Hz execution.
  *
- * @param driveMotor REV Expansion Hub `DcMotorEx` driving the module wheel.
- * @param steerMotor REV Expansion Hub `DcMotorEx` rotating the module steering pod.
+ * @param driveMotor REV Expansion Hub `DcMotorEx` driving wheel rotation.
+ * @param steerMotor REV Expansion Hub `DcMotorEx` steering module pod rotation.
  * @param analogEncoder Absolute analog position sensor (e.g. MA3, Lamprey, Axon encoder).
+ *
+ * @see SwerveModuleIO
+ * @see SwerveModuleInputs
  */
 class SwerveModuleIOFtc(
     private val driveMotor: DcMotorEx,
     private val steerMotor: DcMotorEx,
     private val analogEncoder: AnalogInput
 ) : SwerveModuleIO, AutoCloseable {
+
 
     private var lastDrivePosition = 0.0
     private var lastDriveVelocity = 0.0

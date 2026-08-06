@@ -11,9 +11,33 @@ import kotlin.math.sign
 import kotlin.math.sin
 
 /**
- * Closed-loop controller for aligning to an AprilTag (typically the scoring target).
- * Handles low-pass filtering of vision noise, deadbands, translation/heading P-D control, 
- * and search behaviors when the tag is temporarily lost.
+ * Closed-Loop Autonomous Alignment Controller for AprilTag Scoring Targets.
+ *
+ * Transforms target-space camera measurements into robot-centric translational and rotational control demands.
+ * Includes low-pass exponential filtering for vision noise mitigation, rate-of-change jump filtering for PnP pose flips,
+ * deadband bounds to prevent limit-cycle jitter, P-D + $k_S$ friction compensation for heading control, and automated sweep search behaviors when tag tracking is temporarily lost.
+ *
+ * ### Target-Space & Coordinate Transformation Mathematics:
+ * In Limelight target space ($Z$ forward depth, $X$ right offset):
+ * $$e_{forward} = |Z| - d_{target}, \quad e_{left} = X$$
+ * $$\phi = -\text{rotation.y} \quad \text{(Robot heading yaw in target space, CCW-positive)}$$
+ * Robot-centric coordinate frame error rotation:
+ * $$\begin{bmatrix} e_X \\ e_Y \end{bmatrix} = \begin{bmatrix} \cos\phi & \sin\phi \\ -\sin\phi & \cos\phi \end{bmatrix} \begin{bmatrix} e_{forward} \\ e_{left} \end{bmatrix}$$
+ * Target-pointing heading error for camera FOV centering:
+ * $$e_{\theta} = \text{wrap}\left(\text{atan2}(e_{left}, Z) - \phi\right)$$
+ * Rotational Control Law (P-D + $k_S$ static friction feedforward):
+ * $$u_{\omega} = \text{coerce}\left(K_p \cdot e_{\theta} + K_d \frac{\Delta e_{\theta}}{\Delta t} + \text{sign}(e_{\theta}) \cdot k_S, -\omega_{max}, \omega_{max}\right)$$
+ *
+ * ### Physical Units & Coordinate System:
+ * - Target Distance ($d_{target}, Z$): Meters ($m$)
+ * - Lateral Target Offset ($X$): Meters ($m$)
+ * - Robot Yaw ($\phi, e_{\theta}$): Radians ($rad$), counter-clockwise positive
+ * - Linear Velocity Commands ($u_X, u_Y$): Meters per second ($m/s$) or normalized duty cycle
+ * - Angular Velocity Command ($u_{\omega}$): Radians per second ($rad/s$)
+ * - Data Freshness Threshold: $\le 250$ milliseconds ($ms$)
+ *
+ * @see RobotState
+ * @see RobotAction.JoystickDriveIntent
  */
 class VisionAlignController {
     private var hasPrevFiltered = false
@@ -30,12 +54,12 @@ class VisionAlignController {
     private var wasTrackingTag = false
 
     /**
-     * Calculates the required drive intent to align the robot to the specified AprilTag.
-     * 
-     * @param state The current immutable Redux RobotState (for vision measurements).
-     * @param targetTagId The ID of the AprilTag to align with.
-     * @param isAlignmentRequested Whether the driver is currently holding the align button.
-     * @return A JoystickDriveIntent (or null if not requested).
+     * Calculates the required driver intent to align the robot with the specified target AprilTag.
+     *
+     * @param state Immutable Redux [RobotState] containing latest vision measurements and tuning constants.
+     * @param targetTagId Numerical ID of the target AprilTag (e.g. 1 to 24).
+     * @param isAlignmentRequested `true` if the driver alignment trigger button is actively held down; `false` otherwise.
+     * @return Commanded [RobotAction.JoystickDriveIntent] containing closed-loop alignment velocities, or `null` if alignment is disabled.
      */
     fun calculate(state: RobotState, targetTagId: Int, isAlignmentRequested: Boolean): RobotAction.JoystickDriveIntent? {
         if (!isAlignmentRequested) {

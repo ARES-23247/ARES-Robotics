@@ -6,23 +6,23 @@ import kotlin.math.hypot
 import com.areslib.math.wrapAngle
 
 /**
- * Represents a single point along a trajectory path.
+ * Trajectory Discrete Point State Representation.
  *
- * @param pose The desired robot pose (position + robot orientation heading).
- * @param velocityMps The target linear velocity at this point in meters per second.
- * @param distanceMeters Accumulated arc-length distance from the path start.
- * @param curvature Signed curvature of the path at this point (1/radius, radians/meter).
- * @param tangentRadians The direction the path is traveling at this point (spline tangent angle).
- *        This is distinct from [pose.heading], which represents the robot's desired orientation
- *        (which can differ for holonomic drivetrains that strafe while facing a different direction).
- */
-/**
- * Class implementation for Path Point.
+ * Stores the target pose, linear velocity, accumulated distance, curvature, and path tangent direction at a single point along a path.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
+ * ### Physical Units & Coordinate Conventions:
+ * - Pose $[x, y]$: Field-centric position in meters ($m$)
+ * - Robot Heading ($\theta$): Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - Tangent Direction ($\theta_{\text{tangent}}$): Tangent heading of the path curve in radians ($rad$), CCW-positive
+ * - Linear Velocity ($v$): Target linear speed in meters per second ($m/s$)
+ * - Accumulated Distance ($s$): Arc-length distance along trajectory from start in meters ($m$)
+ * - Curvature ($\kappa$): Inverse radius of curvature in radians per meter ($rad/m$ or $m^{-1}$)
  *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * @property pose Desired robot 2D pose [Pose2d].
+ * @property velocityMps Target linear velocity in meters per second ($m/s$).
+ * @property distanceMeters Accumulated arc-length distance from path origin in meters ($m$).
+ * @property curvature Path curvature $\kappa = \frac{d\theta}{ds}$ in $m^{-1}$.
+ * @property tangentRadians Tangent direction angle of the spline path curve in radians ($rad$).
  */
 data class PathPoint(
     var pose: Pose2d,
@@ -33,12 +33,7 @@ data class PathPoint(
 )
 
 /**
- * Class implementation for Mutable Path Point.
- *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
- *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * Mutable Primitive-Field Path Point Container for Zero-GC Operations.
  */
 class MutablePathPoint {
     var x: Double = 0.0
@@ -49,12 +44,7 @@ class MutablePathPoint {
     var curvature: Double = 0.0
     var tangentRadians: Double = 0.0
 
-    /**
-     * toPathPoint declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Converts this mutable container into an immutable [PathPoint]. */
     fun toPathPoint(): PathPoint = PathPoint(
         Pose2d(x, y, Rotation2d(headingRad)),
         velocityMps,
@@ -64,10 +54,9 @@ class MutablePathPoint {
     )
 
     /**
-     * copyInto declaration.
+     * Copies values from this container into pre-allocated [out] [PathPoint] without heap allocation.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * @param out Destination pre-allocated [PathPoint] instance.
      */
     fun copyInto(out: PathPoint) {
         out.pose = Pose2d(x, y, Rotation2d(headingRad))
@@ -79,12 +68,27 @@ class MutablePathPoint {
 }
 
 /**
- * An immutable data structure representing a parsed trajectory.
+ * Parameterized Trajectory Path Representation.
+ *
+ * Stores ordered sequences of trajectory points [PathPoint] and markers [PathEvent].
+ * Supports distance-parameterized sampling via linear interpolation.
+ *
+ * ### Mathematical Formulations:
+ * Interpolation parameter $t \in [0.0, 1.0]$ between segment points $\mathbf{P}_k$ and $\mathbf{P}_{k+1}$:
+ * $$t = \frac{s_{\text{query}} - s_k}{s_{k+1} - s_k}$$
+ * Interp Position:
+ * $$\mathbf{x}(t) = (1-t) \mathbf{x}_k + t \mathbf{x}_{k+1}$$
+ * Interp Heading:
+ * $$\theta(t) = \theta_k + t \cdot \text{wrapAngle}(\theta_{k+1} - \theta_k)$$
+ *
+ * @property points Ordered list of discrete trajectory points [PathPoint].
+ * @property events Ordered list of distance-triggered marker events [PathEvent].
  */
 data class Path(
     val points: List<PathPoint>,
     val events: List<PathEvent> = emptyList()
 ) {
+
     /**
      * Interpolates to find the target PathPoint at a given distance along the path.
      */

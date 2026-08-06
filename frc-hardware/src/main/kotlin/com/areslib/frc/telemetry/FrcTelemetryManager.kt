@@ -9,11 +9,23 @@ import com.areslib.logging.DataLoggingTelemetry
 import com.ctre.phoenix6.CANBus
 
 /**
- * FRC implementation of the [RobotTelemetryManager] interface.
+ * FRC telemetry orchestrator managing AdvantageScope 3D field topics, CANbus diagnostics, and `.wpilog` file output via [DataLoggingTelemetry].
  *
- * Composes the unified telemetry pipeline: NT4 live streaming via [ARESNetworkStatePublisher],
- * CSV/WPILOG file-based data logging via [DataLoggingTelemetry], and extensible custom
- * publishers for season-specific subsystem dashboards.
+ * Implements pre-allocated zero-GC array buffers (`covarianceDiagonals`, `swerveStates`, `swerveFaults`) to log 4-pod swerve drive states,
+ * CAN2 bus utilization %, TX/RX error counts, bus-off events, and signal latency ($ms$).
+ *
+ * ### Telemetry Network Topics & Physical Units:
+ * - `Robot/SwerveStates`: 8-element array $[heading_0, speed_0, \dots, heading_3, speed_3]$ ($rad, m/s$).
+ * - `Diagnostics/CAN2/BusUtilization`: CANbus utilization percentage ($\%$).
+ * - `Diagnostics/Motor/Swerve_{i}/Faults`: Motor fault code bitmask.
+ *
+ * @param baseTelemetry Platform telemetry backend ([ITelemetry]).
+ * @param store Redux store instance holding [RobotState].
+ * @param swerveIO Optional CTRE swerve hardware IO instance ([SwerveHardwareIO]).
+ *
+ * @see RobotTelemetryManager
+ * @see DataLoggingTelemetry
+ * @see ARESNetworkStatePublisher
  */
 class FrcTelemetryManager(
     baseTelemetry: ITelemetry,
@@ -57,10 +69,10 @@ class FrcTelemetryManager(
      * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization topics.
      *
      * @param state The current immutable robot state snapshot.
-     * @param gamepad1 Optional driver gamepad state.
-     * @param gamepad2 Optional operator gamepad state.
-     * @param dtSeconds Loop cycle delta time in seconds.
-     * @param batteryVoltage Current battery voltage for display.
+     * @param gamepad1 Driver 1 gamepad input state (or `null`).
+     * @param gamepad2 Operator gamepad input state (or `null`).
+     * @param dtSeconds Loop cycle delta time in seconds ($s$).
+     * @param batteryVoltage Current main battery voltage in Volts ($V$).
      */
     override fun publish(
         state: RobotState,
@@ -120,7 +132,10 @@ class FrcTelemetryManager(
     }
 
     /**
-     * Publishes brownout telemetry.
+     * Updates internal reference to active [BrownoutGuard] for brownout logging.
+     *
+     * @param brownoutGuard Active brownout guard instance.
+     * @param batteryVoltage Measured battery voltage in Volts ($V$).
      */
     @Suppress("UNUSED_PARAMETER")
     fun logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
@@ -128,14 +143,12 @@ class FrcTelemetryManager(
     }
 
     /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Gracefully closes telemetry log files and output streams.
      */
     override fun close() {
         dataLoggingTelemetry.close()
     }
+
 
     companion object {
         private val SWERVE_OFFSETS = arrayOf(

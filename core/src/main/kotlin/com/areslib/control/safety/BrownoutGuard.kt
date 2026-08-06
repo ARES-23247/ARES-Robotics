@@ -1,73 +1,67 @@
 package com.areslib.control.safety
 
 /**
- * Platform-agnostic brownout protection guard.
+ * Platform-Agnostic Battery Brownout Protection Guard.
  *
- * Monitors battery voltage and applies graduated power scaling to prevent
- * sudden brownout-induced shutdowns. Works identically for FTC and FRC —
- * the platform layer just supplies the voltage reading.
+ * Monitors battery voltage in real-time and applies graduated power scaling to motor outputs to prevent
+ * sudden brownout-induced Control Hub or RoboRIO micro-controller reboots.
  *
- * ## How it works
- * The guard defines three voltage zones:
- * 1. **Healthy** (above `warningVoltage`): `powerScale = 1.0` — full power
- * 2. **Warning** (between `criticalVoltage` and `warningVoltage`): Linear ramp from 1.0 down to `minPowerScale`
- * 3. **Critical** (below `criticalVoltage`): `powerScale = 0.0` — all motors disabled
+ * ### Voltage Protection Zones & Power Scaling Mathematics:
+ * 1. **Healthy Zone** ($V \ge V_{warning}$): $\text{powerScale} = 1.0$ (Full power output)
+ * 2. **Warning Zone** ($V_{critical} < V < V_{warning}$): Linear ramp from $1.0$ down to $\alpha_{min}$:
+ *    $$\text{powerScale} = \alpha_{min} + \frac{V - V_{critical}}{V_{warning} - V_{critical}} \cdot \left(1.0 - \alpha_{min}\right)$$
+ * 3. **Critical Zone** ($V \le V_{critical}$): $\text{powerScale} = 0.0$ (All motor outputs disabled)
  *
- * A hysteresis band prevents oscillation at zone boundaries. Once the voltage
- * recovers above the threshold + hysteresis, the guard releases.
+ * ### Hysteresis Recovery Logic:
+ * Prevents rapid zone oscillations under transient voltage sags. Transition from `CRITICAL` or `WARNING` back to a healthier state requires battery recovery exceeding threshold $+ V_{hysteresis}$.
  *
- * ## Usage
- * ```kotlin
- * val guard = BrownoutGuard() // FTC defaults
- * // In your loop:
- * guard.update(batteryVoltage)
- * motor.powerScale = guard.powerScale
- * ```
+ * ### Physical Units & Properties:
+ * - Battery Voltages ($V_{warning}, V_{critical}, V_{nominal}$): Volts ($V$)
+ * - Power Scale Factor: Dimensionless scaling factor ($0.0 \dots 1.0$)
+ * - Battery Percentage: Percent ($0.0\% \dots 100.0\%$)
+ * - Memory Footprint: 100% Zero-GC allocation compliance during update cycles.
  *
- * Zero allocations in the hot path.
- */
-/**
- * Class implementation for Brownout Guard.
+ * @property warningVoltage Voltage threshold below which graduated power scaling begins ($V$).
+ * @property criticalVoltage Voltage threshold below which all motor outputs are shut off ($V$).
+ * @property minPowerScale Minimum allowable power scaling factor at the warning-critical boundary before cutoff.
+ * @property hysteresisVoltage Hysteresis band in volts ($V$) to prevent boundary oscillation.
+ * @property nominalVoltage Fully charged nominal battery voltage rating ($V$).
  *
- * Robotics framework control component.
+ * @see BrownoutState
  */
 class BrownoutGuard(
-    /** Voltage below which graduated power reduction begins (FTC: 10.0V, FRC: 8.5V) */
     val warningVoltage: Double = 10.0,
-    /** Voltage below which ALL motor output is disabled (FTC: 7.5V, FRC: 6.8V) */
     val criticalVoltage: Double = 7.5,
-    /** Minimum power scale at the warning→critical boundary before full cutoff */
     val minPowerScale: Double = 0.3,
-    /** Hysteresis band in volts to prevent oscillation at zone boundaries */
     val hysteresisVoltage: Double = 0.3,
-    /** Nominal battery voltage for percentage calculations (FTC: 13.0V, FRC: 12.6V) */
     val nominalVoltage: Double = 13.0
 ) {
-    /** Current computed power scale factor (0.0 to 1.0) */
+    /** Current computed power scale factor ($0.0 \dots 1.0$). Multiply motor commands by this factor. */
     var powerScale: Double = 1.0
         private set
 
-    /** Current brownout protection state */
+    /** Current brownout state ([BrownoutState.HEALTHY], [BrownoutState.WARNING], [BrownoutState.CRITICAL]). */
     var state: BrownoutState = BrownoutState.HEALTHY
         private set
 
-    /** Last voltage reading */
+    /** Last processed battery voltage reading in volts ($V$). */
     var lastVoltage: Double = nominalVoltage
         private set
 
-    /** Estimated battery percentage (0.0 to 100.0) based on linear discharge curve */
+    /** Estimated remaining battery percentage ($0.0\% \dots 100.0\%$). */
     var batteryPercent: Double = 100.0
         private set
 
-    /** Number of times the guard has entered WARNING or CRITICAL since last reset */
+    /** Cumulative count of state transitions into `WARNING` or `CRITICAL` since last reset. */
     var tripCount: Int = 0
         private set
 
     /**
-     * Update the brownout guard with the latest battery voltage reading.
-     * Call this once per loop iteration. Zero allocations.
+     * Updates the brownout guard state machine given the latest battery voltage reading.
      *
-     * @param voltage Current battery voltage in volts
+     * Call once per main robot loop iteration. Zero heap allocations.
+     *
+     * @param voltage Current battery voltage reading in volts ($V$).
      */
     fun update(voltage: Double) {
         // Reject garbage readings
@@ -120,7 +114,9 @@ class BrownoutGuard(
         }
     }
 
-    /** Resets trip counter and state (e.g., at match start) */
+    /**
+     * Resets trip counter and restores initial healthy state baseline (e.g. at match start).
+     */
     fun reset() {
         tripCount = 0
         state = BrownoutState.HEALTHY
@@ -130,7 +126,11 @@ class BrownoutGuard(
     }
 
     companion object {
-        /** Pre-configured for FTC (12V system, 20A fuse, REV hubs brownout ~7V) */
+        /**
+         * Factory constructor pre-configured with standard FTC defaults (12V system, REV Hub brownout ~7.5V).
+         *
+         * @return Pre-configured FTC [BrownoutGuard] instance.
+         */
         fun ftcDefaults(): BrownoutGuard = BrownoutGuard(
             warningVoltage = 10.0,
             criticalVoltage = 7.5,
@@ -139,7 +139,11 @@ class BrownoutGuard(
             nominalVoltage = 13.0
         )
 
-        /** Pre-configured for FRC (12V system, PDP/PDH, roboRIO brownout at 6.3V) */
+        /**
+         * Factory constructor pre-configured with standard FRC defaults (12V system, roboRIO brownout ~6.8V).
+         *
+         * @return Pre-configured FRC [BrownoutGuard] instance.
+         */
         fun frcDefaults(): BrownoutGuard = BrownoutGuard(
             warningVoltage = 8.5,
             criticalVoltage = 6.8,
@@ -150,12 +154,12 @@ class BrownoutGuard(
     }
 }
 
-/** Brownout protection state machine states */
+/** Brownout protection state machine states. */
 enum class BrownoutState {
-    /** Battery voltage is healthy — full power allowed */
+    /** Battery voltage is healthy ($V \ge V_{warning}$) — full power allowed (1.0). */
     HEALTHY,
-    /** Battery voltage is sagging — graduated power reduction active */
+    /** Battery voltage is sagging ($V_{critical} < V < V_{warning}$) — graduated power reduction active. */
     WARNING,
-    /** Battery voltage is critically low — all motors disabled */
+    /** Battery voltage is critically low ($V \le V_{critical}$) — all motor outputs disabled (0.0). */
     CRITICAL
 }
