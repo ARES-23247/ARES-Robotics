@@ -3,8 +3,46 @@ package com.areslib.state
 import com.areslib.control.tuning.PIDFCoefficients
 import com.areslib.control.tuning.SimpleFeedforwardCoeffs
 
+// ── FTC-Specific Hardware Tuning Sub-States ──
+
 /**
- * Domain sub-state holding Drivetrain closed-loop gains and acceleration limits.
+ * FTC-specific odometry hardware tuning (GoBilda Pinpoint Computer).
+ */
+data class FtcPinpointTuningState(
+    val xOffsetMm: Double = 0.0,
+    val yOffsetMm: Double = 0.0,
+    val encoderResolution: Double = 20.44 // 20.44 ticks/mm baseline
+)
+
+/**
+ * FTC-specific motor encoder resolution and SDK DcMotorEx gains.
+ */
+data class FtcDriveTuningState(
+    val ticksPerMeter: Double = 2000.0,
+    val motorGains: PIDFCoefficients? = null
+)
+
+/**
+ * FTC mechanism presets (intake nominal voltage, flywheel target RPM presets).
+ */
+data class FtcSubsystemTuningState(
+    val intakeNominalVoltage: Double = 12.0,
+    val flywheelTargetRpmPreset: Double = 2000.0
+)
+
+// ── Cross-Platform / Shared Tuning Sub-States ──
+
+/**
+ * Platform-independent EKF state-space estimation process noise.
+ */
+data class EkfProcessNoiseTuningState(
+    val qX: Double = 0.01,
+    val qY: Double = 0.01,
+    val qTheta: Double = 0.01
+)
+
+/**
+ * Shared Drivetrain closed-loop gains, feedforwards, and acceleration limits.
  */
 data class DriveTuningState(
     val trackWidthMeters: Double = 0.45,
@@ -18,14 +56,16 @@ data class DriveTuningState(
     val teleOpTurnScale: Double = 0.60,
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.05, kV = 0.638, kA = 0.02),
     val driveSlewRateLimit: Double? = null,
-    val motorGains: PIDFCoefficients? = null,
-    val ticksPerMeter: Double = 2000.0,
     val pathVelocityScale: Double = 0.85,
-    val pathAccelerationLimit: Double = 3.0
-)
+    val pathAccelerationLimit: Double = 3.0,
+    val ftc: FtcDriveTuningState = FtcDriveTuningState()
+) {
+    val ticksPerMeter: Double get() = ftc.ticksPerMeter
+    val motorGains: PIDFCoefficients? get() = ftc.motorGains
+}
 
 /**
- * Domain sub-state holding Vision measurement noise standard deviations and outlier rejection thresholds.
+ * Shared Vision measurement noise standard deviations and outlier rejection thresholds.
  */
 data class VisionTuningState(
     val stdDevsX: Double = 0.35,
@@ -37,7 +77,7 @@ data class VisionTuningState(
 )
 
 /**
- * Domain sub-state holding Vision-based AprilTag closed-loop alignment gains and sweep timing.
+ * Shared Vision-based AprilTag closed-loop alignment gains and sweep timing.
  */
 data class VisionAlignTuningState(
     val targetDistanceMeters: Double = 2.4384, // 8 feet
@@ -59,19 +99,22 @@ data class VisionAlignTuningState(
 )
 
 /**
- * Domain sub-state holding EKF noise parameters and Pinpoint odometry offsets.
+ * Master Localization Tuning State grouping shared EKF noise and FTC Pinpoint tuning.
  */
 data class LocalizationTuningState(
-    val odomQx: Double = 0.01,
-    val odomQy: Double = 0.01,
-    val odomQtheta: Double = 0.01,
-    val pinpointXOffsetMm: Double = 0.0,
-    val pinpointYOffsetMm: Double = 0.0,
-    val pinpointEncoderResolution: Double = 20.44 // 20.44 ticks/mm
-)
+    val ekfNoise: EkfProcessNoiseTuningState = EkfProcessNoiseTuningState(),
+    val ftcPinpoint: FtcPinpointTuningState = FtcPinpointTuningState()
+) {
+    val odomQx: Double get() = ekfNoise.qX
+    val odomQy: Double get() = ekfNoise.qY
+    val odomQtheta: Double get() = ekfNoise.qTheta
+    val pinpointXOffsetMm: Double get() = ftcPinpoint.xOffsetMm
+    val pinpointYOffsetMm: Double get() = ftcPinpoint.yOffsetMm
+    val pinpointEncoderResolution: Double get() = ftcPinpoint.encoderResolution
+}
 
 /**
- * Domain sub-state holding driver profile exponential curves and rate limits.
+ * Shared Driver profile exponential curves and rate limits.
  */
 data class DriverTuningState(
     val deadbandExponent: Double = 1.0,
@@ -80,7 +123,7 @@ data class DriverTuningState(
 )
 
 /**
- * Domain sub-state holding Kidnapped / Stolen Robot Recovery thresholds.
+ * Shared Kidnapped / Stolen Robot Recovery thresholds.
  */
 data class RecoveryTuningState(
     val stolenRobotRejectionThreshold: Double = 45.0,
@@ -89,7 +132,7 @@ data class RecoveryTuningState(
 )
 
 /**
- * Domain sub-state holding Telemetry and CAN / I2C polling intervals.
+ * Shared Telemetry and CAN / I2C polling intervals.
  */
 data class TelemetryTuningState(
     val telemetryRateDivisor: Int = 3,
@@ -97,16 +140,18 @@ data class TelemetryTuningState(
 )
 
 /**
- * Domain sub-state holding Subsystem presets (voltage limits, RPM presets).
+ * Master Subsystem Tuning State holding FTC mechanism presets.
  */
 data class SubsystemTuningState(
-    val intakeNominalVoltage: Double = 12.0,
-    val flywheelTargetRpmPreset: Double = 2000.0
-)
+    val ftc: FtcSubsystemTuningState = FtcSubsystemTuningState()
+) {
+    val intakeNominalVoltage: Double get() = ftc.intakeNominalVoltage
+    val flywheelTargetRpmPreset: Double get() = ftc.flywheelTargetRpmPreset
+}
 
 /**
  * Immutable Redux state holding all dynamically tunable constants for the robot,
- * organized into domain-specific sub-states for clean modularity and dashboard streaming.
+ * clearly compartmentalized into FTC-specific, FRC-specific, and shared cross-platform sub-states.
  */
 data class TuningState(
     val drive: DriveTuningState = DriveTuningState(),
@@ -161,7 +206,7 @@ data class TuningState(
     val visionAlignClampTranslationY: Double get() = visionAlign.clampTranslationY
     val visionAlignClampRotation: Double get() = visionAlign.clampRotation
     val visionAlignSearchFirstSweepMs: Long get() = visionAlign.searchFirstSweepMs
-    val visionAlignSearchSecondSweepMs: Long = visionAlign.searchSecondSweepMs
+    val visionAlignSearchSecondSweepMs: Long get() = visionAlign.searchSecondSweepMs
     val visionAlignSearchSpeed: Double get() = visionAlign.searchSpeed
 
     // Localization

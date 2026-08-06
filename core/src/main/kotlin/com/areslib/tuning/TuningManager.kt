@@ -116,7 +116,10 @@ class TuningManager(
         val result = JsonObject()
         var changed = false
 
-        val domainPrefixes = listOf("drive/", "vision/", "visionAlign/", "localization/", "driver/", "recovery/", "telemetry/", "subsystem/")
+        val domainPrefixes = listOf(
+            "drive/ftc/", "localization/ftcPinpoint/", "localization/ekfNoise/", "subsystem/ftc/",
+            "drive/", "vision/", "visionAlign/", "localization/", "driver/", "recovery/", "telemetry/", "subsystem/"
+        )
 
         for ((key, element) in obj.entrySet()) {
             val currentPrefix = if (prefix.isEmpty()) key else "$prefix/$key"
