@@ -1,14 +1,13 @@
 package com.areslib.tuning
 
 import com.areslib.action.RobotAction
-import com.areslib.state.RobotState
 import com.areslib.Store
 import com.areslib.state.TuningState
 import com.areslib.telemetry.ITelemetry
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 
 /**
@@ -29,17 +28,19 @@ class TuningManager(
             try {
                 val jsonStr = saveFile.readText()
                 val loadedJson = gson.fromJson(jsonStr, JsonObject::class.java)
-                
-                // Merge into the default state to preserve Kotlin defaults for missing fields
+
+                // Merge into default state to preserve Kotlin defaults for missing fields
                 val defaultJson = gson.toJsonTree(store.state.tuning).asJsonObject
-                for ((key, element) in loadedJson.entrySet()) {
-                    defaultJson.add(key, element)
-                }
+                mergeJsonObjects(defaultJson, loadedJson)
 
                 var loadedState = gson.fromJson(defaultJson, TuningState::class.java)
                 if (loadedState != null) {
                     if (loadedState.driveFeedforward.kS == 0.0 && loadedState.driveFeedforward.kV == 0.0 && loadedState.driveFeedforward.kA == 0.0) {
-                        loadedState = loadedState.copy(driveFeedforward = com.areslib.control.tuning.SimpleFeedforwardCoeffs(0.05, 0.638, 0.02))
+                        loadedState = loadedState.copy(
+                            drive = loadedState.drive.copy(
+                                driveFeedforward = com.areslib.control.tuning.SimpleFeedforwardCoeffs(0.05, 0.638, 0.02)
+                            )
+                        )
                     }
                     store.dispatch(RobotAction.UpdateTuningState(loadedState))
                 }
@@ -47,25 +48,41 @@ class TuningManager(
                 System.err.println("TuningManager: Failed to load tuning config from ${saveFile.absolutePath}: ${e.message}")
             }
         }
-        
+
         // Publish current constants once on startup so dashboard populates immediately
         publishInitialState()
     }
 
     /**
-     * Publishes all tuning constants once over NT4 without running continuous polling.
+     * Deeply merges incoming JSON properties into the default target JSON object.
+     */
+    private fun mergeJsonObjects(target: JsonObject, source: JsonObject) {
+        for ((key, element) in source.entrySet()) {
+            if (element.isJsonObject && target.has(key) && target.get(key).isJsonObject) {
+                mergeJsonObjects(target.getAsJsonObject(key), element.asJsonObject)
+            } else {
+                target.add(key, element)
+            }
+        }
+    }
+
+    /**
+     * Publishes all tuning constants recursively over NT4.
      */
     fun publishInitialState() {
         val stateJson = gson.toJsonTree(store.state.tuning).asJsonObject
-        for ((key, element) in stateJson.entrySet()) {
-            if (element.isJsonPrimitive && element.asJsonPrimitive.isNumber) {
-                telemetry.putNumber("Tuning/$key", element.asDouble)
-            } else if (element.isJsonObject) {
-                val nestedObj = element.asJsonObject
-                for ((nestedKey, nestedElement) in nestedObj.entrySet()) {
-                    if (nestedElement.isJsonPrimitive && nestedElement.asJsonPrimitive.isNumber) {
-                        telemetry.putNumber("Tuning/$key/$nestedKey", nestedElement.asDouble)
-                    }
+        publishJsonObject("", stateJson)
+    }
+
+    private fun publishJsonObject(prefix: String, obj: JsonObject) {
+        for ((key, element) in obj.entrySet()) {
+            val currentPrefix = if (prefix.isEmpty()) key else "$prefix/$key"
+            when {
+                element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
+                    telemetry.putNumber("Tuning/$currentPrefix", element.asDouble)
+                }
+                element.isJsonObject -> {
+                    publishJsonObject(currentPrefix, element.asJsonObject)
                 }
             }
         }
@@ -82,64 +99,64 @@ class TuningManager(
         lastUpdateTimestamp = timestampMs
 
         val currentState = store.state.tuning
-        
-        // Flatten state to JsonObject to push NT4 schema and poll for changes
         val stateJson = gson.toJsonTree(currentState).asJsonObject
-        
-        var changed = false
-        val updatedJson = JsonObject()
 
-        // We iterate through the root properties. 
-        // For simplicity in NT4, we only support 1 level of nesting (e.g. Tuning/pathTranslationGains/kP).
-        for ((key, element) in stateJson.entrySet()) {
-            if (element.isJsonPrimitive && element.asJsonPrimitive.isNumber) {
-                val ntKey = "Tuning/$key"
-                val currentValue = element.asDouble
-                
-                // Read from NT4 (if dashboard changed it, this will be different)
-                val ntValue = telemetry.getNumber(ntKey, currentValue)
-                
-                if (ntValue != currentValue) {
-                    changed = true
-                }
-                updatedJson.addProperty(key, ntValue)
-                
-                // Publish back to keep NT4 server schema populated
-                telemetry.putNumber(ntKey, ntValue)
-                
-            } else if (element.isJsonObject) {
-                val nestedObj = element.asJsonObject
-                val newNestedObj = JsonObject()
-                
-                for ((nestedKey, nestedElement) in nestedObj.entrySet()) {
-                    if (nestedElement.isJsonPrimitive && nestedElement.asJsonPrimitive.isNumber) {
-                        val ntKey = "Tuning/$key/$nestedKey"
-                        val currentValue = nestedElement.asDouble
-                        
-                        val ntValue = telemetry.getNumber(ntKey, currentValue)
-                        
-                        if (ntValue != currentValue) {
-                            changed = true
-                        }
-                        newNestedObj.addProperty(nestedKey, ntValue)
-                        telemetry.putNumber(ntKey, ntValue)
-                    } else {
-                        newNestedObj.add(nestedKey, nestedElement)
-                    }
-                }
-                updatedJson.add(key, newNestedObj)
-            } else {
-                // Not a number or object (e.g. boolean/string), just copy it over
-                updatedJson.add(key, element)
-            }
-        }
+        val (updatedJson, changed) = pollJsonObject("", stateJson)
 
-        // If a change occurred on NT4, write to disk and dispatch to Redux
         if (changed) {
             val newState = gson.fromJson(updatedJson, TuningState::class.java)
-            store.dispatch(RobotAction.UpdateTuningState(newState))
-            saveToDisk(newState)
+            if (newState != null) {
+                store.dispatch(RobotAction.UpdateTuningState(newState))
+                saveToDisk(newState)
+            }
         }
+    }
+
+    private fun pollJsonObject(prefix: String, obj: JsonObject): Pair<JsonObject, Boolean> {
+        val result = JsonObject()
+        var changed = false
+
+        val domainPrefixes = listOf("drive/", "vision/", "visionAlign/", "localization/", "driver/", "recovery/", "telemetry/", "subsystem/")
+
+        for ((key, element) in obj.entrySet()) {
+            val currentPrefix = if (prefix.isEmpty()) key else "$prefix/$key"
+            when {
+                element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
+                    val ntKey = "Tuning/$currentPrefix"
+                    val currentValue = element.asDouble
+
+                    // Check primary domain-scoped key (e.g. Tuning/drive/pathTranslationGains/kP)
+                    // and fall back to legacy flat key (e.g. Tuning/pathTranslationGains/kP)
+                    val pathWithoutDomain = domainPrefixes.fold(currentPrefix) { acc, p ->
+                        if (acc.startsWith(p)) acc.substring(p.length) else acc
+                    }
+                    val legacyKey = "Tuning/$pathWithoutDomain"
+
+                    var ntValue = telemetry.getNumber(ntKey, currentValue)
+                    if (ntValue == currentValue && legacyKey != ntKey) {
+                        val legacyValue = telemetry.getNumber(legacyKey, currentValue)
+                        if (legacyValue != currentValue) {
+                            ntValue = legacyValue
+                        }
+                    }
+
+                    if (ntValue != currentValue) {
+                        changed = true
+                    }
+                    result.addProperty(key, ntValue)
+                    telemetry.putNumber(ntKey, ntValue)
+                }
+                element.isJsonObject -> {
+                    val (nestedResult, nestedChanged) = pollJsonObject(currentPrefix, element.asJsonObject)
+                    if (nestedChanged) changed = true
+                    result.add(key, nestedResult)
+                }
+                else -> {
+                    result.add(key, element)
+                }
+            }
+        }
+        return Pair(result, changed)
     }
 
     private fun saveToDisk(state: TuningState) {

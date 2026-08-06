@@ -56,9 +56,11 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             filterConfig = visionFilterConfig
         ),
         tuning = com.areslib.state.TuningState(
-            pinpointXOffsetMm = pinpointXOffsetMm,
-            pinpointYOffsetMm = pinpointYOffsetMm,
-            pinpointEncoderResolution = pinpointEncoderResolution ?: 20.44
+            localization = com.areslib.state.LocalizationTuningState(
+                pinpointXOffsetMm = pinpointXOffsetMm,
+                pinpointYOffsetMm = pinpointYOffsetMm,
+                pinpointEncoderResolution = pinpointEncoderResolution ?: 20.44
+            )
         )
     ),
     reducer = reducer
