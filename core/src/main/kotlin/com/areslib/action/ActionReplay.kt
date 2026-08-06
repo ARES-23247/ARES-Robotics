@@ -56,12 +56,9 @@ object ActionReplay {
         BufferedReader(FileReader(logFile)).use { reader ->
             var line: String? = reader.readLine()
             while (line != null) {
-                if (line.trim().isNotEmpty()) {
-                    val action = deserializeAction(line)
-                    if (action != null) {
-                        actions.add(action)
-                    }
-                }
+                line.takeIf { it.trim().isNotEmpty() }
+                    ?.let { deserializeAction(it) }
+                    ?.also { actions.add(it) }
                 line = reader.readLine()
             }
         }

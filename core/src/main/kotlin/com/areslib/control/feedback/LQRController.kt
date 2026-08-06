@@ -139,16 +139,18 @@ class LQRController(
         try {
             require(y.size == numOutputs) { "Measurement dimensions mismatch" }
             require(xRef.size == numStates) { "Reference state dimensions mismatch" }
-            var inputsValid = true
-            for (idx in y.indices) { if (!y[idx].isFinite()) { inputsValid = false; break } }
-            if (inputsValid) { for (idx in xRef.indices) { if (!xRef[idx].isFinite()) { inputsValid = false; break } } }
-            if (!inputsValid || dtSeconds <= 0.0) {
-                val now = RobotClock.currentTimeMillis()
-                if (now - lastWarningTime > 2000L) {
-                    System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
-                    lastWarningTime = now
+            var inputsValid = y.all { it.isFinite() } && xRef.all { it.isFinite() }
+            when {
+                !inputsValid || dtSeconds <= 0.0 -> {
+                    val now = RobotClock.currentTimeMillis()
+                    when {
+                        now - lastWarningTime > 2000L -> {
+                            System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
+                            lastWarningTime = now
+                        }
+                    }
+                    return outU
                 }
-                return outU
             }
 
             yMat.copyFrom(y)
