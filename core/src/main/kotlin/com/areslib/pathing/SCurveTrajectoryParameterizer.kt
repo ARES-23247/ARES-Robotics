@@ -14,19 +14,18 @@ import kotlin.math.sin
  *
  * Translates static spatial waypoints into a dynamically optimized [Path]. It designs a smooth velocity
  * profile along the trajectory path by executing sequential forward and backward integration passes to enforce:
- * - Maximum velocity limits ($V_{\text{max}}$).
- * - Maximum forward/backward acceleration limits ($A_{\text{max}}$).
- * - Maximum jerk limits ($J_{\text{max}}$) to prevent sharp torque transitions, wheel slippage, and chassis rocking.
+ * - Maximum velocity limits ($V_{\text{max}}$ in $m/s$).
+ * - Maximum forward/backward acceleration limits ($A_{\text{max}}$ in $m/s^2$).
+ * - Maximum jerk limits ($J_{\text{max}}$ in $m/s^3$) to prevent sharp torque transitions, wheel slippage, and chassis rocking.
  * - Local centripetal lateral acceleration boundaries ($V_{\text{limit}} = \sqrt{a_{\text{centripetal}} / |\kappa|}$)
  *   along curved path segments to prevent tipping or sliding.
- */
-/**
- * Object implementation for S Curve Trajectory Parameterizer.
  *
- * Autonomous path planning, trajectory generation, and obstacle avoidance module.
- *
- * ### Coordinate System:
- * Field-centric coordinates in meters ($m$) relative to field origin.
+ * ### Coordinate System & Physical Units:
+ * - **Position:** Field-centric meters ($m$) relative to origin.
+ * - **Heading:** Radians ($rad$), counter-clockwise positive (CCW+).
+ * - **Velocity:** Meters per second ($m/s$).
+ * - **Acceleration:** Meters per second squared ($m/s^2$).
+ * - **Jerk:** Meters per second cubed ($m/s^3$).
  */
 object SCurveTrajectoryParameterizer {
 

@@ -13,6 +13,11 @@ import com.areslib.pathing.planner.PlannerState
  * the path skips the candidate, linking the neighbor directly to the parent.
  *
  * This results in mathematically optimal, straight, grid-snap-free global paths around costmap obstacles.
+ *
+ * ### Physical Units & Guarantees:
+ * - **Coordinates:** Field-relative meters ($m$)
+ * - **Resolution:** Grid cell spacing ($m/cell$)
+ * - **GC Footprint:** Zero heap allocations during path expansion (uses pre-allocated `PlannerState` pools).
  */
 object ThetaStarPlanner {
 
@@ -20,7 +25,11 @@ object ThetaStarPlanner {
 
     /**
      * Plans a globally safe path from start to end coordinates.
-     * @return List of field-relative Translation2d coordinates.
+     *
+     * @param costmap The grid costmap containing obstacle inflation data.
+     * @param start The starting field position in meters ($m$).
+     * @param end The target goal position in meters ($m$).
+     * @return List of field-relative [Translation2d] waypoint coordinates in meters ($m$).
      */
     fun plan(
         costmap: Costmap,
