@@ -169,8 +169,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 headingPID.d = tuning.headingGains.kD
                 headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
 
-                // Clamp heading hold correction effort to max 40% power to prevent oscillation and snapping
-                val maxEffort = maxAngularSpeedRps * 0.4
+                // Clamp heading hold correction effort to max power to prevent oscillation and snapping
+                val maxEffort = maxAngularSpeedRps * tuning.headingMaxOutputLimit
                 headingPID.setOutputLimits(-maxEffort, maxEffort)
 
                 // Compute PID correction using real loop dtSeconds
@@ -218,8 +218,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 positionPidY.d = tuning.positionHoldGains.kD
                 positionPidY.deadzone = tuning.positionHoldDeadzoneMeters
 
-                // Clamp correction to 50% max speed
-                val maxCorrection = maxSpeedMps * 0.5
+                // Clamp correction to max position hold speed limit
+                val maxCorrection = maxSpeedMps * tuning.positionHoldMaxOutputLimit
                 positionPidX.setOutputLimits(-maxCorrection, maxCorrection)
                 positionPidY.setOutputLimits(-maxCorrection, maxCorrection)
 

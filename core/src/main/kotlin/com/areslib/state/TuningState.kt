@@ -51,8 +51,10 @@ data class DriveTuningState(
     val pathRotationGains: PIDFCoefficients = PIDFCoefficients(2.5, 0.0, 0.05),
     val headingGains: PIDFCoefficients = PIDFCoefficients(1.8, 0.0, 0.08),
     val headingDeadzoneDeg: Double = 2.5,
+    val headingMaxOutputLimit: Double = 0.40,
     val positionHoldGains: PIDFCoefficients = PIDFCoefficients(1.5, 0.0, 0.1),
     val positionHoldDeadzoneMeters: Double = 0.02,
+    val positionHoldMaxOutputLimit: Double = 0.50,
     val teleOpTurnScale: Double = 0.60,
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.05, kV = 0.638, kA = 0.02),
     val driveSlewRateLimit: Double? = null,
@@ -173,8 +175,10 @@ data class TuningState(
     val pathRotationGains: PIDFCoefficients get() = drive.pathRotationGains
     val headingGains: PIDFCoefficients get() = drive.headingGains
     val headingDeadzoneDeg: Double get() = drive.headingDeadzoneDeg
+    val headingMaxOutputLimit: Double get() = drive.headingMaxOutputLimit
     val positionHoldGains: PIDFCoefficients get() = drive.positionHoldGains
     val positionHoldDeadzoneMeters: Double get() = drive.positionHoldDeadzoneMeters
+    val positionHoldMaxOutputLimit: Double get() = drive.positionHoldMaxOutputLimit
     val teleOpTurnScale: Double get() = drive.teleOpTurnScale
     val driveFeedforward: SimpleFeedforwardCoeffs get() = drive.driveFeedforward
     val driveSlewRateLimit: Double? get() = drive.driveSlewRateLimit
