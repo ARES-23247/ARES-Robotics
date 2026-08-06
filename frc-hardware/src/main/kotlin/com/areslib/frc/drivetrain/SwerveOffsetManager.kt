@@ -38,56 +38,48 @@ object SwerveOffsetManager {
 
     /**
      * Resolves and loads the active swerve offsets according to the 4-tier fallback hierarchy.
+     * Uses flat functional chains to eliminate nested control flow.
      *
      * @param defaultOffsets Baseline offsets from code constants (`TunerConstants`).
      * @return Resolved [SwerveOffsetData] object.
      */
     fun loadOffsets(defaultOffsets: SwerveOffsetData = SwerveOffsetData()): SwerveOffsetData {
-        // Tier 1: Runtime Pit Calibration File
-        if (runtimeFile.exists() && runtimeFile.length() > 0) {
-            try {
-                val json = runtimeFile.readText()
-                val parsed = SwerveOffsetData.fromJsonString(json)
-                println("ARES SwerveOffsetManager: Loaded Tier 1 runtime offsets from ${runtimeFile.absolutePath}")
-                return parsed
-            } catch (e: Exception) {
-                System.err.println("ARES SwerveOffsetManager: Tier 1 runtime read failed: ${e.message}")
+        return readOffsetFile(runtimeFile, "Tier 1 runtime")
+            ?: readOffsetFile(deployFile, "Tier 2 deployed")
+            ?: readLatestBackupFile()
+            ?: run {
+                println("ARES SwerveOffsetManager: Falling back to Tier 4 hardcoded defaults.")
+                defaultOffsets
             }
-        }
+    }
 
-        // Tier 2: Deployed Base Config File (Version-controlled in Git)
-        if (deployFile.exists() && deployFile.length() > 0) {
-            try {
-                val json = deployFile.readText()
-                val parsed = SwerveOffsetData.fromJsonString(json)
-                println("ARES SwerveOffsetManager: Loaded Tier 2 deployed offsets from ${deployFile.absolutePath}")
-                return parsed
-            } catch (e: Exception) {
-                System.err.println("ARES SwerveOffsetManager: Tier 2 deploy read failed: ${e.message}")
-            }
+    /**
+     * Reads and parses a specified offset JSON file safely without nested conditional branches.
+     */
+    private fun readOffsetFile(file: File, tag: String): SwerveOffsetData? {
+        val validFile = file.takeIf { it.exists() && it.length() > 0 } ?: return null
+        return runCatching {
+            val json = validFile.readText()
+            val parsed = SwerveOffsetData.fromJsonString(json)
+            println("ARES SwerveOffsetManager: Loaded $tag offsets from ${validFile.absolutePath}")
+            parsed
+        }.getOrElse { e ->
+            System.err.println("ARES SwerveOffsetManager: $tag read failed: ${e.message}")
+            null
         }
+    }
 
-        // Tier 3: Most Recent Local Backup File
-        if (backupsDir.exists()) {
-            val backupFiles = backupsDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
-            if (backupFiles != null && backupFiles.isNotEmpty()) {
-                val latestBackup = backupFiles.maxByOrNull { it.lastModified() }
-                if (latestBackup != null && latestBackup.length() > 0) {
-                    try {
-                        val json = latestBackup.readText()
-                        val parsed = SwerveOffsetData.fromJsonString(json)
-                        println("ARES SwerveOffsetManager: Loaded Tier 3 backup offsets from ${latestBackup.absolutePath}")
-                        return parsed
-                    } catch (e: Exception) {
-                        System.err.println("ARES SwerveOffsetManager: Tier 3 backup read failed: ${e.message}")
-                    }
-                }
-            }
-        }
+    /**
+     * Locates and loads the most recent timestamped backup file in the backups directory.
+     */
+    private fun readLatestBackupFile(): SwerveOffsetData? {
+        val backupDir = backupsDir.takeIf { it.exists() } ?: return null
+        val latestFile = backupDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
+            ?.filter { it.length() > 0 }
+            ?.maxByOrNull { it.lastModified() }
+            ?: return null
 
-        // Tier 4: Code Defaults
-        println("ARES SwerveOffsetManager: Falling back to Tier 4 hardcoded defaults.")
-        return defaultOffsets
+        return readOffsetFile(latestFile, "Tier 3 backup")
     }
 
     /**
@@ -101,39 +93,50 @@ object SwerveOffsetManager {
         val json = offsets.toJsonString()
 
         // 1. Write runtime file
-        try {
-            if (!rootDir.exists()) rootDir.mkdirs()
+        runCatching {
+            rootDir.takeIf { !it.exists() }?.mkdirs()
             runtimeFile.writeText(json)
             println("ARES SwerveOffsetManager: Successfully saved runtime offsets to ${runtimeFile.absolutePath}")
-        } catch (e: Exception) {
+        }.onFailure { e ->
             System.err.println("ARES SwerveOffsetManager: Failed to write runtime file: ${e.message}")
         }
 
         // 2. Write timestamped backup file
-        try {
-            if (!backupsDir.exists()) backupsDir.mkdirs()
+        runCatching {
+            backupsDir.takeIf { !it.exists() }?.mkdirs()
             val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
             val backupFile = File(backupsDir, "swerve_offsets_$timestamp.json")
             backupFile.writeText(json)
             println("ARES SwerveOffsetManager: Saved backup to ${backupFile.absolutePath}")
 
-            // Clean up old backups if count exceeds 10
-            val backupFiles = backupsDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
-            if (backupFiles != null && backupFiles.size > 10) {
-                val sorted = backupFiles.sortedBy { it.lastModified() }
-                for (i in 0 until (sorted.size - 10)) {
-                    sorted[i].delete()
-                }
-            }
-        } catch (e: Exception) {
+            pruneOldBackups()
+        }.onFailure { e ->
             System.err.println("ARES SwerveOffsetManager: Failed to create backup file: ${e.message}")
         }
 
         // 3. Broadcast to Telemetry / NetworkTables
-        telemetry?.putString("ARES/Swerve/OffsetsJSON", json)
-        telemetry?.putNumber("ARES/Swerve/Offsets/FrontLeft", offsets.frontLeft)
-        telemetry?.putNumber("ARES/Swerve/Offsets/FrontRight", offsets.frontRight)
-        telemetry?.putNumber("ARES/Swerve/Offsets/BackLeft", offsets.backLeft)
-        telemetry?.putNumber("ARES/Swerve/Offsets/BackRight", offsets.backRight)
+        telemetry?.let { t ->
+            t.putString("ARES/Swerve/OffsetsJSON", json)
+            t.putNumber("ARES/Swerve/Offsets/FrontLeft", offsets.frontLeft)
+            t.putNumber("ARES/Swerve/Offsets/FrontRight", offsets.frontRight)
+            t.putNumber("ARES/Swerve/Offsets/BackLeft", offsets.backLeft)
+            t.putNumber("ARES/Swerve/Offsets/BackRight", offsets.backRight)
+        }
+    }
+
+    /**
+     * Keeps only the 10 most recent backup files to prevent storage congestion.
+     */
+    private fun pruneOldBackups() {
+        val backupFiles = backupsDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
+            ?.sortedBy { it.lastModified() }
+            ?: return
+
+        val excess = backupFiles.size - 10
+        if (excess > 0) {
+            for (i in 0 until excess) {
+                backupFiles[i].delete()
+            }
+        }
     }
 }
