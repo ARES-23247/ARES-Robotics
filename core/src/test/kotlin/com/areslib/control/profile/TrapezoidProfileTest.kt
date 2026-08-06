@@ -56,7 +56,7 @@ class TrapezoidProfileTest {
         
         for (i in 0..150) {
             val controlEffort = controller.calculate(currentPos, dt)
-            // Simulated mechanical response: position tracks profiled setpoint
+            assertTrue(controlEffort.isFinite())
             currentPos += (controller.currentState.velocity * dt)
         }
         

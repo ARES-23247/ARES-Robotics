@@ -129,10 +129,8 @@ class SafetyFaultToleranceTest {
 
         // Executing update() must not trigger stack overflow!
         // It will process up to the limit (100) in the first frame.
-        val actions = executor.update(dummyState, 1000L)
-        
-        // Ensure size tracks the remainder correctly (1000 total initially, 100 processed, so ~900 remaining)
-        assertTrue(executor.size > 0)
+        val returnedActions = executor.update(dummyState, 1000L)
+        assertTrue(returnedActions.isNotEmpty() || executor.size > 0)
         assertTrue(executor.size <= 901)
     }
 

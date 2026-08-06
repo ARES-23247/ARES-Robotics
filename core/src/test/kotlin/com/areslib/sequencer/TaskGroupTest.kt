@@ -184,6 +184,7 @@ class TaskGroupTest {
 
         assertTrue(speedsVx > 0.0, "vx should be positive towards target")
         assertTrue(speedsVy > 0.0, "vy should be positive towards target")
+        assertTrue(speedsOmega >= 0.0, "omega should be positive towards target")
 
         task.end(state, interrupted = false)
         assertEquals(0.0, speedsVx)

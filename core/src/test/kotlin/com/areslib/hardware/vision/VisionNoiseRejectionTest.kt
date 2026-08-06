@@ -50,7 +50,6 @@ class VisionNoiseRejectionTest {
 
         // Ground-truth robot moves along x-axis from x=0.0 to x=2.0
         val trueXSpeed = 1.0 // 1.0 m/s
-        val truePose = Pose2d(0.0, 0.0, Rotation2d(0.0))
 
         for (step in 1..totalSteps) {
             currentTimeMs += (dt * 1000).toLong()

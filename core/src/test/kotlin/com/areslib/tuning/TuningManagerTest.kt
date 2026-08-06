@@ -69,6 +69,7 @@ class TuningManagerTest {
         val newStore = Store(RobotState()) // Back to default 2.0
         val newTelemetry = MockTelemetry()
         val newManager = TuningManager(newStore, newTelemetry, saveFile)
+        assertNotNull(newManager)
         
         // The init block should have loaded the JSON
         val loadedState = newStore.state.tuning
