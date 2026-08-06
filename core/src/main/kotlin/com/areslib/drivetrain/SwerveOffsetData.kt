@@ -1,7 +1,7 @@
-package com.areslib.frc.drivetrain
+package com.areslib.drivetrain
 
 /**
- * Immutable data representation of Swerve Module CANcoder offset angles.
+ * Immutable data representation of Swerve Module CANcoder / absolute encoder offset angles.
  *
  * All offset values are represented in **rotations** (where 1.0 rotation = 360 degrees).
  *

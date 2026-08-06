@@ -1,4 +1,4 @@
-package com.areslib.frc.drivetrain
+package com.areslib.drivetrain
 
 import com.areslib.telemetry.ITelemetry
 import java.io.File
@@ -8,24 +8,35 @@ import java.util.Locale
 
 /**
  * Manages the persistence, multi-tier fallback loading hierarchy, timestamped flash backups,
- * and live NetworkTables sync of Swerve Module zero offsets on FRC robots.
+ * and live NetworkTables sync of Swerve Module zero offsets on FRC and FTC robots.
  *
  * ### 4-Tier Fallback Loading Hierarchy:
- * 1. **Tier 1 (Runtime Zero):** `/home/lvuser/swerve_offsets_runtime.json` (Latest pit calibration)
- * 2. **Tier 2 (Git Deployed Base):** `/home/lvuser/deploy/swerve_offsets.json` (Checked into Git, deployed via `./gradlew deploy`)
- * 3. **Tier 3 (Local Backup):** Most recent `/home/lvuser/backups/swerve_offsets_*.json` file
- * 4. **Tier 4 (Hardcoded Code Fallback):** Code defaults supplied from `TunerConstants.java`
+ * 1. **Tier 1 (Runtime Zero):** `swerve_offsets_runtime.json` in root directory (Latest pit calibration)
+ * 2. **Tier 2 (Git Deployed Base):** `deploy/swerve_offsets.json` or `assets/swerve_offsets.json`
+ * 3. **Tier 3 (Local Backup):** Most recent `backups/swerve_offsets_*.json` file
+ * 4. **Tier 4 (Hardcoded Code Fallback):** Code defaults supplied from [SwerveConstants]
  */
 object SwerveOffsetManager {
 
     private val isRoboRio: Boolean
         get() = File("/home/lvuser").exists()
 
+    private val isFtcControlHub: Boolean
+        get() = File("/sdcard/FIRST").exists()
+
     val rootDir: File
-        get() = if (isRoboRio) File("/home/lvuser") else File(".")
+        get() = when {
+            isRoboRio -> File("/home/lvuser")
+            isFtcControlHub -> File("/sdcard/FIRST")
+            else -> File(".")
+        }
 
     val deployDir: File
-        get() = if (isRoboRio) File("/home/lvuser/deploy") else File("./src/main/deploy")
+        get() = when {
+            isRoboRio -> File("/home/lvuser/deploy")
+            isFtcControlHub -> File("/sdcard/FIRST/deploy")
+            else -> File("./src/main/deploy")
+        }
 
     val backupsDir: File
         get() = File(rootDir, "backups")
@@ -40,7 +51,7 @@ object SwerveOffsetManager {
      * Resolves and loads the active swerve offsets according to the 4-tier fallback hierarchy.
      * Uses flat functional chains to eliminate nested control flow.
      *
-     * @param defaultOffsets Baseline offsets from code constants (`TunerConstants`).
+     * @param defaultOffsets Baseline offsets from code constants ([SwerveOffsetData]).
      * @return Resolved [SwerveOffsetData] object.
      */
     fun loadOffsets(defaultOffsets: SwerveOffsetData = SwerveOffsetData()): SwerveOffsetData {

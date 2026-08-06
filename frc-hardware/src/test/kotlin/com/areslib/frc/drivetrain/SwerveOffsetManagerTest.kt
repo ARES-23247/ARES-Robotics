@@ -1,5 +1,7 @@
 package com.areslib.frc.drivetrain
 
+import com.areslib.drivetrain.SwerveOffsetData
+import com.areslib.drivetrain.SwerveOffsetManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
