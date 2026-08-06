@@ -1,0 +1,42 @@
+{
+  "ARES FTC Mecanum DSL": {
+    "prefix": "aresMecanum",
+    "body": [
+      "val robot = ftcMecanumRobot(hardwareMap) {",
+      "    setHeadingDeadzone(1.0)",
+      "    enablePositionHold(true)",
+      "}",
+      "robot.driveFieldCentric(${1:gamepad1.left_stick_x.toDouble()}, ${2:gamepad1.left_stick_y.toDouble()}, ${3:gamepad1.right_stick_x.toDouble()})"
+    ],
+    "description": "Scaffold FTC Mecanum Robot DSL block"
+  },
+  "ARES Position Hold Static Friction Feedforward": {
+    "prefix": "aresHold",
+    "body": [
+      "// Apply static friction feedforward (kS = 0.06) to overcome Mecanum wheel breakout friction",
+      "val kS = 0.06",
+      "val normX = errX / distError",
+      "val normY = errY / distError",
+      "val fieldVx = (rawCorrVx / maxSpeedMps) + normX * kS",
+      "val fieldVy = (rawCorrVy / maxSpeedMps) + normY * kS"
+    ],
+    "description": "Position hold static friction feedforward computation"
+  },
+  "ARES Zero-Nested When Expression": {
+    "prefix": "aresWhen",
+    "body": [
+      "when {",
+      "    ${1:condition1} -> {",
+      "        $0",
+      "    }",
+      "    ${2:condition2} -> {",
+      "        ",
+      "    }",
+      "    else -> {",
+      "        ",
+      "    }",
+      "}"
+    ],
+    "description": "Clean zero-nested argument-less when expression"
+  }
+}
