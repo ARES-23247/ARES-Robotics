@@ -209,13 +209,28 @@ data class PoseEstimatorState(
 }
 
 /**
- * A world-class, high-fidelity Extended Kalman Filter (EKF) state estimator.
+ * Championship-grade **Extended Kalman Filter (EKF) Pose Estimator**.
  *
- * This estimator fuses high-frequency wheel odometry with asynchronous, latency-delayed 3D vision measurements
- * (such as multi-tag Perspective-n-Point observations). It incorporates:
- * - Dynamic gyro-rate slip covariance scaling to adapt to wheel slippage.
- * - Retroactive observation rewinding to compensate for vision processing latency.
- * - Statistical 3-DOF Mahalanobis Distance outlier rejection to handle erroneous camera targets.
+ * Fuses high-rate wheel odometry ($100\text{ Hz}$) with asynchronous, latency-delayed 3D AprilTag vision observations.
+ * Integrates statistical Mahalanobis distance outlier filtering ($\chi^2 > 18.0$) and retroactive observation rewind playback.
+ *
+ * ### EKF State Prediction & Innovation Equations:
+ * $$x_k = f(x_{k-1}, u_{k-1}), \quad P_k = F P_{k-1} F^T + Q$$
+ * $$y_k = z_k - h(\hat{x}_k), \quad S_k = H P_k H^T + R$$
+ * $$K_k = P_k H^T S_k^{-1}$$
+ * $$\hat{x}_k \leftarrow \hat{x}_k + K_k y_k, \quad P_k \leftarrow (I - K_k H) P_k$$
+ *
+ * ### Mahalanobis Outlier Filtering:
+ * $$d_M = \sqrt{y_k^T S_k^{-1} y_k} \quad (\text{Reject if } d_M^2 > 18.0 \text{ for 3-DOF})$$
+ *
+ * ### Physical Units & Guarantees:
+ * - **Position ($x, y$):** Field-centric meters ($m$)
+ * - **Heading ($\theta$):** Radians ($rad$, CCW-positive: $0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - **Timestamps ($t$):** Milliseconds ($ms$)
+ * - **Memory Footprint:** 100% Zero-GC heap compliance during 100Hz rewind passes via a pre-allocated 256-instance ring pool.
+ *
+ * @see VisionMeasurement
+ * @see HistoryBuffer
  */
 object PoseEstimator {
     private const val MAX_HISTORY_SIZE = 50

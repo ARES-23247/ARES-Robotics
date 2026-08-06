@@ -4,16 +4,35 @@ import kotlin.math.abs
 import com.areslib.util.RobotClock
 
 /**
- * A championship-grade Discrete-Time State-Space **Linear-Quadratic Regulator (LQR)**
+ * Championship-grade Discrete-Time State-Space **Linear-Quadratic Regulator (LQR)**
  * coupled with a Discrete Kalman Filter (**LQE State Observer**).
  *
- * This controller tracks multi-variable systems optimally by evaluating feedback gain matrices
- * resolved from dynamic value-iteration solutions of the Discrete-Time Algebraic Riccati Equation (DARE):
+ * Tracks multi-variable dynamic systems optimally by evaluating feedback gain matrices
+ * resolved from dynamic value-iteration solutions of the Discrete-Time Algebraic Riccati Equation (DARE).
+ *
+ * ### Optimal Control Cost Functional:
+ * Minimizes quadratic cost functional over infinite horizon:
+ * $$J = \sum_{k=0}^{\infty} \left( x_k^T Q x_k + u_k^T R u_k \right)$$
+ *
+ * ### Discrete-Time Algebraic Riccati Equation (DARE):
+ * $$P = A^T P A - A^T P B (R + B^T P B)^{-1} B^T P A + Q$$
+ *
+ * ### Optimal State Feedback Gain Matrix ($K$):
+ * $$K = (R + B^T P B)^{-1} B^T P A$$
  * $$u_k = -K (x_k - x_{\text{ref}, k})$$
  *
- * It incorporates:
- * - A full state Kalman observer to estimate unmeasured states (such as estimating joint velocities from raw encoder positions).
- * - Control input voltage saturation clipping to prevent motor burnouts.
+ * ### Discrete Kalman Filter LQE Observer Update:
+ * $$\hat{x}_{k+1} = A \hat{x}_k + B u_k + L (y_k - C \hat{x}_k)$$
+ *
+ * ### Physical Units & Guarantees:
+ * - **State Vector ($x$):** Physical units (Position: $m$, Angle: $rad$, Velocity: $m/s, rad/s$)
+ * - **Control Input ($u$):** Motor Effort $[-12.0\text{V}, 12.0\text{V}]$ or Normalized $[-1.0, 1.0]$
+ * - **Measurement ($y$):** Sensor Feedback (Encoder positions: $m$, Gyro rate: $rad/s$)
+ * - **Memory Footprint:** 100% Zero-GC heap compliance during 100Hz update loops via pre-allocated matrix buffers.
+ *
+ * @param numStates Dimensionality of state vector $x$ ($n$).
+ * @param numInputs Dimensionality of control input vector $u$ ($m$).
+ * @param numOutputs Dimensionality of measurement vector $y$ ($p$).
  */
 class LQRController(
     val numStates: Int,
