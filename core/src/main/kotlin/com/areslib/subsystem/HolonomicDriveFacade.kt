@@ -200,14 +200,11 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 }
             }
             usePositionHold && !hasLinearInput && posLockX == null -> {
-                // Driver released joystick — check if robot is stationary enough to latch
-                val linearVelocity = kotlin.math.sqrt(xVelocity * xVelocity + yVelocity * yVelocity)
-                if (linearVelocity < 0.05) {
-                    store.dispatch(RobotAction.SetPositionLockTarget(pose.x, pose.y))
-                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.POSITION_HOLD))
-                    positionPidX.reset()
-                    positionPidY.reset()
-                }
+                // Driver released joystick — latch target pose immediately
+                store.dispatch(RobotAction.SetPositionLockTarget(pose.x, pose.y))
+                store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.POSITION_HOLD))
+                positionPidX.reset()
+                positionPidY.reset()
             }
             usePositionHold && !hasLinearInput && posLockX != null -> {
                 // Actively correct back to locked position
@@ -221,18 +218,34 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 positionPidY.d = tuning.positionHoldGains.kD
                 positionPidY.deadzone = tuning.positionHoldDeadzoneMeters
 
-                // Clamp correction to 40% max speed
-                val maxCorrection = maxSpeedMps * 0.4
+                // Clamp correction to 50% max speed
+                val maxCorrection = maxSpeedMps * 0.5
                 positionPidX.setOutputLimits(-maxCorrection, maxCorrection)
                 positionPidY.setOutputLimits(-maxCorrection, maxCorrection)
 
-                // Compute field-relative correction velocities, then rotate to robot-relative
-                val corrVx = positionPidX.calculate(pose.x, posLockX, dtSeconds) / maxSpeedMps
-                val corrVy = positionPidY.calculate(pose.y, posLockY!!, dtSeconds) / maxSpeedMps
-                val cos = kotlin.math.cos(headingRad)
-                val sin = kotlin.math.sin(headingRad)
-                finalRobotVx = corrVx * cos + corrVy * sin
-                finalRobotVy = -corrVx * sin + corrVy * cos
+                val errX = posLockX - pose.x
+                val errY = posLockY!! - pose.y
+                val distError = kotlin.math.hypot(errX, errY)
+
+                if (distError > tuning.positionHoldDeadzoneMeters) {
+                    val rawCorrVx = positionPidX.calculate(pose.x, posLockX, dtSeconds)
+                    val rawCorrVy = positionPidY.calculate(pose.y, posLockY, dtSeconds)
+
+                    // Apply minimum static friction feedforward (kS = 0.06) so small position errors
+                    // overcome Mecanum wheel breakout friction and drive the robot back to the target pose
+                    val kS = 0.06
+                    val normX = errX / distError
+                    val normY = errY / distError
+
+                    val fieldVx = (rawCorrVx / maxSpeedMps) + (normX * kS)
+                    val fieldVy = (rawCorrVy / maxSpeedMps) + (normY * kS)
+
+                    finalRobotVx = fieldVx * cos + fieldVy * sin
+                    finalRobotVy = -fieldVx * sin + fieldVy * cos
+                } else {
+                    finalRobotVx = 0.0
+                    finalRobotVy = 0.0
+                }
             }
         }
 
