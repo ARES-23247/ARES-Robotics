@@ -148,13 +148,21 @@ class VisionAlignController {
             val headingErrorDeadband = tuning.visionAlignHeadingErrorDeadband
             
             // Speed-limit translation commands to keep the tag in the camera's FOV
-            val ctrlX = if (abs(errXFiltered) > translationDeadband) {
-                (errXFiltered * kP_translation).coerceIn(-tuning.visionAlignClampTranslationX, tuning.visionAlignClampTranslationX)
+            var ctrlX = if (abs(errXFiltered) > translationDeadband) {
+                errXFiltered * kP_translation
             } else 0.0
             
-            val ctrlY = if (abs(errYFiltered) > translationDeadband) {
-                (errYFiltered * kP_translation).coerceIn(-tuning.visionAlignClampTranslationY, tuning.visionAlignClampTranslationY)
+            var ctrlY = if (abs(errYFiltered) > translationDeadband) {
+                errYFiltered * kP_translation
             } else 0.0
+
+            val maxClamp = tuning.visionAlignClampTranslationX
+            val magnitude = kotlin.math.hypot(ctrlX, ctrlY)
+            if (magnitude > maxClamp) {
+                val scale = maxClamp / magnitude
+                ctrlX *= scale
+                ctrlY *= scale
+            }
             
             val kS_rotational = tuning.visionAlignKsRotational
             

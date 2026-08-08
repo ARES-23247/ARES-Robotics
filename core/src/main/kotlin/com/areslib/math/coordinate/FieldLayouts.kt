@@ -35,19 +35,19 @@ object FieldLayouts {
     /** Standard Square field AprilTag coordinates mapped to EKF/WPILib 3D world frame. */
     val SQUARE_STANDARD_TAGS = mapOf(
         // Blue tags on +Y wall, facing -Y (-90 degrees)
-        1 to Pose3d(Translation3d(1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, -Math.PI / 2)),
-        2 to Pose3d(Translation3d(-1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, -Math.PI / 2)),
+        1 to Pose3d(Translation3d(1.5, 1.8, 0.5), Rotation3d(0.0, 0.0, -Math.PI / 2)),
+        2 to Pose3d(Translation3d(-1.5, 1.8, 0.5), Rotation3d(0.0, 0.0, -Math.PI / 2)),
         // Red tags on -Y wall, facing +Y (+90 degrees)
-        3 to Pose3d(Translation3d(1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI / 2)),
-        4 to Pose3d(Translation3d(-1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI / 2))
+        3 to Pose3d(Translation3d(1.5, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI / 2)),
+        4 to Pose3d(Translation3d(-1.5, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI / 2))
     )
 
     /** Diamond field AprilTag coordinates mapped to EKF/WPILib 3D world frame. */
     val DIAMOND_TAGS = mapOf(
-        1 to Pose3d(Translation3d(1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
-        2 to Pose3d(Translation3d(1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
-        3 to Pose3d(Translation3d(-1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, 0.0)),
-        4 to Pose3d(Translation3d(-1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, 0.0))
+        1 to Pose3d(Translation3d(1.5, 1.5, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
+        2 to Pose3d(Translation3d(1.5, -1.5, 0.5), Rotation3d(0.0, 0.0, Math.PI)),
+        3 to Pose3d(Translation3d(-1.5, 1.5, 0.5), Rotation3d(0.0, 0.0, 0.0)),
+        4 to Pose3d(Translation3d(-1.5, -1.5, 0.5), Rotation3d(0.0, 0.0, 0.0))
     )
 
     /**

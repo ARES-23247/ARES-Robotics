@@ -36,10 +36,11 @@ class NT4Server(
     private val clientSubscriptions = ConcurrentHashMap<String, CopyOnWriteArraySet<WebSocket>>()
     private val dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
 
-    private var packer: MessageBufferPacker = try {
-        MessagePack.newDefaultBufferPacker()
+    private val encodeBuffer = java.io.ByteArrayOutputStream(4096)
+    private var packer: org.msgpack.core.MessagePacker = try {
+        MessagePack.newDefaultPacker(encodeBuffer)
     } catch (_: Throwable) {
-        MessagePack.PackerConfig().newBufferPacker()
+        MessagePack.PackerConfig().newPacker(encodeBuffer)
     }
 
     override fun onOpen(conn: WebSocket, handshake: org.java_websocket.handshake.ClientHandshake) {
@@ -55,6 +56,7 @@ class NT4Server(
         for (subscribers in clientSubscriptions.values) {
             subscribers.remove(conn)
         }
+        clientSubscriptions.entries.removeIf { it.value.isEmpty() }
     }
 
     override fun stop() {
@@ -119,7 +121,7 @@ class NT4Server(
         try {
             val decoded = decodeNT4Message(message)
             if (decoded.id == -1L) {
-                heartbeat(conn, (decoded.dataValue as? Number)?.toLong() ?: System.currentTimeMillis())
+                heartbeat(conn, (decoded.dataValue as? Number)?.toLong() ?: com.areslib.util.RobotClock.currentTimeMillis())
             } else {
                 val entry = getEntryForId(decoded.id)
                 if (entry != null && decoded.dataValue != null) {
@@ -226,13 +228,13 @@ class NT4Server(
     }
 
     private fun heartbeat(conn: WebSocket, clientTime: Long) {
-        val binMsg = encodeNT4Message(System.currentTimeMillis() * 1000L, -1L, -1L, 2, clientTime)
+        val binMsg = encodeNT4Message(com.areslib.util.RobotClock.currentTimeMillis() * 1000L, -1L, -1L, 2, clientTime)
         sendBinaryBuffer(conn, binMsg)
     }
 
     private fun sendBinaryUpdate(conn: WebSocket, entry: NT4Entry) {
         try {
-            val binMsg = encodeNT4Messages(System.currentTimeMillis() * 1000L, listOf(entry))
+            val binMsg = encodeNT4Messages(com.areslib.util.RobotClock.currentTimeMillis() * 1000L, listOf(entry))
             sendBinaryBuffer(conn, binMsg)
         } catch (e: IOException) {
             e.printStackTrace()
@@ -249,7 +251,7 @@ class NT4Server(
 
     @Synchronized
     fun encodeNT4Messages(timestamp: Long, entries: List<NT4Entry>): ByteArray {
-        packer.clear()
+        encodeBuffer.reset()
         packer.packArrayHeader(entries.size)
         for (entry in entries) {
             val dataType = getTypeIdFromValue(entry.value)
@@ -260,19 +262,21 @@ class NT4Server(
             packer.packInt(dataType)
             packDataValue(dataType, dataValue)
         }
-        return packer.toByteArray()
+        packer.flush()
+        return encodeBuffer.toByteArray()
     }
 
     @Synchronized
     fun encodeNT4Message(timestamp: Long, topicId: Long, pubUID: Long, dataType: Int, dataValue: Any): ByteArray {
-        packer.clear()
+        encodeBuffer.reset()
         packer.packArrayHeader(1)
         packer.packArrayHeader(4)
         packer.packLong(topicId)
         packer.packLong(timestamp)
         packer.packInt(dataType)
         packDataValue(dataType, dataValue)
-        return packer.toByteArray()
+        packer.flush()
+        return encodeBuffer.toByteArray()
     }
 
     private fun packDataValue(dataType: Int, dataValue: Any) {
@@ -313,17 +317,17 @@ class NT4Server(
     }
 
     fun decodeNT4Message(message: ByteBuffer): NT4Message {
-        val bytes: ByteArray = if (message.hasArray()) {
+        val unpacker: MessageUnpacker = if (message.hasArray()) {
             val offset = message.arrayOffset() + message.position()
             val length = message.remaining()
-            message.array().copyOfRange(offset, offset + length)
+            val byteBuffer = java.nio.ByteBuffer.wrap(message.array(), offset, length)
+            MessagePack.newDefaultUnpacker(byteBuffer)
         } else {
             val arr = ByteArray(message.remaining())
             message.duplicate().get(arr)
-            arr
+            MessagePack.newDefaultUnpacker(arr)
         }
 
-        val unpacker: MessageUnpacker = MessagePack.newDefaultUnpacker(bytes)
         unpacker.unpackArrayHeader()
         val id = unpacker.unpackLong()
         val timestamp = unpacker.unpackLong()
@@ -402,9 +406,10 @@ class NT4Server(
 
     fun flush() {
         if (dirtyEntries.isEmpty() || clientSubscriptions.isEmpty()) return
-        val timestamp = System.currentTimeMillis() * 1000L
+        val timestamp = com.areslib.util.RobotClock.currentTimeMillis() * 1000L
 
         for (conn in connections) {
+            if (conn.hasBufferedData()) continue  // Skip congested clients
             val entriesToSend = ArrayList<NT4Entry>(dirtyEntries.size)
             for (entry in dirtyEntries) {
                 var subscribed = false

@@ -88,6 +88,7 @@ object PathSafetyEvaluator {
             val absDx = kotlin.math.abs(dx)
             val absDy = kotlin.math.abs(dy)
             
+            if (absDx > searchRadiusMeters || absDy > searchRadiusMeters) continue
             if (absDx >= pointMinDist || absDy >= pointMinDist) continue
             
             val dist = hypot(dx, dy)

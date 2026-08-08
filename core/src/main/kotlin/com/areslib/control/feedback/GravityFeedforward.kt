@@ -57,8 +57,8 @@ object GravityFeedforward {
      * @param kG Maximum gravity compensation constant when arm is perfectly horizontal ($V$).
      * @return Angular gravity feedforward compensation value ($V$).
      */
-    fun calculateArm(angleRadians: Double, kG: Double): Double {
+    fun calculateArm(angleRadians: Double, kG: Double, zeroAngleOffsetRad: Double = 0.0): Double {
         if (!angleRadians.isFinite() || !kG.isFinite()) return 0.0
-        return kG * cos(angleRadians)
+        return kG * cos(angleRadians - zeroAngleOffsetRad)
     }
 }

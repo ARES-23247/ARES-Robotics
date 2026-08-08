@@ -18,7 +18,10 @@ class ThreadedColorSensor(
     @Volatile private var cachedGreen: Int = 0
     @Volatile private var cachedBlue: Int = 0
     @Volatile private var cachedAlpha: Int = 0
-    @Volatile private var cachedNormalized: DoubleArray = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    
+    private val bufferA = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    private val bufferB = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+    @Volatile private var activeBuffer: DoubleArray = bufferA
 
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { thread ->
         Thread(thread, "ARES-Color-Polling-Thread").apply { isDaemon = true }
@@ -32,7 +35,10 @@ class ThreadedColorSensor(
                 cachedGreen = physicalSensor.green
                 cachedBlue = physicalSensor.blue
                 cachedAlpha = physicalSensor.alpha
-                cachedNormalized = physicalSensor.normalizedRgb
+                val newNorm = physicalSensor.normalizedRgb
+                val writeBuffer = if (activeBuffer === bufferA) bufferB else bufferA
+                newNorm.copyInto(writeBuffer)
+                activeBuffer = writeBuffer
             } catch (e: Exception) {
                 // Keep last cached values
             }
@@ -44,8 +50,7 @@ class ThreadedColorSensor(
     override val blue: Int get() = cachedBlue
     override val alpha: Int get() = cachedAlpha
 
-    /** Returns a defensive copy so consumers cannot mutate the cached array */
-    override val normalizedRgb: DoubleArray get() = cachedNormalized.copyOf()
+    override val normalizedRgb: DoubleArray get() = activeBuffer
 
     /**
      * Safely shuts down the polling background thread and waits for termination.

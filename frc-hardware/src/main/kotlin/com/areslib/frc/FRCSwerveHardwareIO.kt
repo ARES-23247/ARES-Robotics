@@ -30,7 +30,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  * @see SwerveCtreDrivetrainReader
  * @see SwerveCtreSpeedRequestWriter
  */
-class FRCSwerveHardwareIO(drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
+class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
 
 
     private val reader = SwerveCtreDrivetrainReader(drivetrain)
@@ -81,4 +81,8 @@ class FRCSwerveHardwareIO(drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwar
      * @param state Immutable [DriveState] containing target velocities and field-centric flags.
      */
     override fun write(state: DriveState) = writer.write(state)
+    
+    override fun seedPose(pose: com.areslib.math.geometry.Pose2d) {
+        // drivetrain.seedFieldRelative(edu.wpi.first.math.geometry.Pose2d(pose.x, pose.y, edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)))
+    }
 }

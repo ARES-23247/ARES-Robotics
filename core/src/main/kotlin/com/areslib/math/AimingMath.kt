@@ -75,7 +75,15 @@ object AimingMath {
         val c = -distanceSq
         
         val discriminant = b * b - 4.0 * a * c
-        if (discriminant < 0.0 || a <= 0.0) {
+        if (discriminant < 0.0 || kotlin.math.abs(a) < 1e-6) {
+            if (kotlin.math.abs(a) < 1e-6) {
+                val tLinear = -c / b
+                if (tLinear > 0.0) {
+                    val launchVx = (dx / tLinear) - vx
+                    val launchVy = (dy / tLinear) - vy
+                    return atan2(launchVy, launchVx)
+                }
+            }
             // Fallback: Geometric aiming (no compensation) if no real solution
             return atan2(dy, dx)
         }

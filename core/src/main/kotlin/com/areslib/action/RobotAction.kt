@@ -93,19 +93,19 @@ interface RobotAction {
      * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
      */
     data class PoseUpdate(
-        val xMeters: Double,
-        val yMeters: Double,
-        val headingRadians: Double,
-        override val timestampMs: Long,
-        val pitchDegrees: Double = 0.0,
-        val rollDegrees: Double = 0.0,
-        val xAccelerationG: Double = 0.0,
-        val yAccelerationG: Double = 0.0,
-        val zAccelerationG: Double = 0.0,
-        val isReset: Boolean = false,
-        val angularVelocityRadiansPerSecond: Double = 0.0,
-        val xVelocityMetersPerSecond: Double = 0.0,
-        val yVelocityMetersPerSecond: Double = 0.0
+        var xMeters: Double,
+        var yMeters: Double,
+        var headingRadians: Double,
+        override var timestampMs: Long,
+        var pitchDegrees: Double = 0.0,
+        var rollDegrees: Double = 0.0,
+        var xAccelerationG: Double = 0.0,
+        var yAccelerationG: Double = 0.0,
+        var zAccelerationG: Double = 0.0,
+        var isReset: Boolean = false,
+        var angularVelocityRadiansPerSecond: Double = 0.0,
+        var xVelocityMetersPerSecond: Double = 0.0,
+        var yVelocityMetersPerSecond: Double = 0.0
     ) : RobotAction
 
     /** Sets the active alliance color for field-centric driving and EKF initialization. */
@@ -165,13 +165,13 @@ interface RobotAction {
      * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
      */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
-        val targetXVelocity: Double,
-        val targetYVelocity: Double,
-        val targetAngularVelocity: Double,
-        override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
-        val isFieldCentric: Boolean = true,
-        val fromHeadingHold: Boolean = false,
-        val isXLock: Boolean = false
+        var targetXVelocity: Double,
+        var targetYVelocity: Double,
+        var targetAngularVelocity: Double,
+        override var timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
+        var isFieldCentric: Boolean = true,
+        var fromHeadingHold: Boolean = false,
+        var isXLock: Boolean = false
     ) : RobotAction
 
     // Autonomous Events

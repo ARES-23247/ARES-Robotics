@@ -74,7 +74,7 @@ class PlannerState(capacity: Int) {
     var parents = IntArray(capacity)
     var generations = IntArray(capacity)
     var generation = 0
-    var openQueue = LongHeap(capacity)
+    var openQueue = LongHeap(capacity * 8)
     var pathPool = DoubleArray(capacity * 2)
 
     /**

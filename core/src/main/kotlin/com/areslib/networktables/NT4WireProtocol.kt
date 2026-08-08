@@ -105,7 +105,8 @@ object NT4WireProtocol {
         return messages
     }
 
-    private fun unpackValue(unpacker: org.msgpack.core.MessageUnpacker): Any? {
+    private fun unpackValue(unpacker: org.msgpack.core.MessageUnpacker, depth: Int = 0): Any? {
+        if (depth > 4) return null  // Max recursion depth
         val format = unpacker.getNextFormat()
         return when (format.valueType) {
             ValueType.NIL -> { unpacker.unpackNil(); null }
@@ -114,10 +115,10 @@ object NT4WireProtocol {
             ValueType.FLOAT -> unpacker.unpackDouble()
             ValueType.STRING -> unpacker.unpackString()
             ValueType.ARRAY -> {
-                val size = unpacker.unpackArrayHeader()
+                val size = unpacker.unpackArrayHeader().coerceAtMost(256)
                 val list = mutableListOf<Any?>()
                 for (i in 0 until size) {
-                    list.add(unpackValue(unpacker))
+                    list.add(unpackValue(unpacker, depth + 1))
                 }
                 list
             }

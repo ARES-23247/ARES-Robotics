@@ -4,11 +4,6 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import com.areslib.action.RobotAction
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import com.areslib.math.wrapAngle
 
 /**
@@ -76,6 +71,8 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private var lastVelX = 0.0
     private var lastVelY = 0.0
     private var lastTimestampMs = 0L
+    
+    private val reusablePoseUpdate = RobotAction.PoseUpdate(0.0, 0.0, 0.0, 0L)
 
     init {
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
@@ -108,8 +105,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             lastY = y
             lastHeading = nextHeading
             lastHeadingVelocity = rawHeadingVelocity
-            lastVelX = driver.getVelX(DistanceUnit.METER)
-            lastVelY = driver.getVelY(DistanceUnit.METER)
+            val rawVelX = driver.getVelX(DistanceUnit.METER)
+            val rawVelY = driver.getVelY(DistanceUnit.METER)
+            lastVelX = rawVelX * cosH - rawVelY * sinH
+            lastVelY = rawVelX * sinH + rawVelY * cosH
             lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         } catch (e: Exception) {
             val now = com.areslib.util.RobotClock.currentTimeMillis()
@@ -122,15 +121,16 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         var ts = lastTimestampMs
         if (ts == 0L) ts = com.areslib.util.RobotClock.currentTimeMillis()
 
-        return RobotAction.PoseUpdate(
-            xMeters = lastX,
-            yMeters = lastY,
-            headingRadians = lastHeading,
-            angularVelocityRadiansPerSecond = lastHeadingVelocity,
-            timestampMs = ts,
-            xVelocityMetersPerSecond = lastVelX,
-            yVelocityMetersPerSecond = lastVelY
-        )
+        reusablePoseUpdate.xMeters = lastX
+        reusablePoseUpdate.yMeters = lastY
+        reusablePoseUpdate.headingRadians = lastHeading
+        reusablePoseUpdate.angularVelocityRadiansPerSecond = lastHeadingVelocity
+        reusablePoseUpdate.timestampMs = ts
+        reusablePoseUpdate.xVelocityMetersPerSecond = lastVelX
+        reusablePoseUpdate.yVelocityMetersPerSecond = lastVelY
+        reusablePoseUpdate.isReset = false
+
+        return reusablePoseUpdate
     }
 
     /**

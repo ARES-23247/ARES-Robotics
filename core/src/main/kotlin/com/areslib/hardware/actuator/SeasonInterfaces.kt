@@ -100,6 +100,16 @@ interface IntakeIO : SubsystemIO {
     /** Gets the measured current of the roller motor in Amperes */
     val rollerCurrentAmps: Double
         get() = 0.0
+
+    /**
+     * Gets the roller motor encoder velocity in ticks per second.
+     *
+     * On FTC hardware with REV bulk caching enabled, this value is read
+     * from the bulk response at zero additional I2C bus cost — making it
+     * ideal for jam detection in 50Hz hot paths.
+     */
+    val rollerVelocityTicksPerSec: Double
+        get() = 0.0
 }
 
 /**

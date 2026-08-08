@@ -28,6 +28,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *, *>) {
 
     private val fieldCentricRequest = SwerveRequest.FieldCentric()
+        .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity)
+        .withSteerRequestType(com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType.Position)
+        .withDeadband(0.02)
+        .withRotationalDeadband(0.02)
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
     private val scratchSpeeds = ChassisSpeeds()
 

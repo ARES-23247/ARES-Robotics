@@ -104,10 +104,12 @@ class SwerveKinematics(
             val vy = chassisSpeeds.vyMetersPerSecond + chassisSpeeds.omegaRadiansPerSecond * module.x
             
             val speed = hypot(vx, vy)
-            val angle = atan2(vy, vx)
-            
+            if (speed > 1e-4) {
+                targetStatesBuffer[i].angle = Rotation2d(atan2(vy, vx))
+            } else {
+                targetStatesBuffer[i].angle = previousStates[i].angle
+            }
             targetStatesBuffer[i].speedMetersPerSecond = speed
-            targetStatesBuffer[i].angle = Rotation2d(angle)
         }
 
         for (i in 0 until numModules) {

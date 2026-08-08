@@ -39,7 +39,22 @@ enum class Distance {
  * @return Corresponding output value or Unit.
  */
 enum class DistanceUnit {
-    METER, CM, MM, INCH
+    METER, CM, MM, INCH;
+
+    fun fromUnit(unit: DistanceUnit, distance: Double): Double {
+        val inMeters = when (unit) {
+            METER -> distance
+            CM -> distance / 100.0
+            MM -> distance / 1000.0
+            INCH -> distance * 0.0254
+        }
+        return when (this) {
+            METER -> inMeters
+            CM -> inMeters * 100.0
+            MM -> inMeters * 1000.0
+            INCH -> inMeters / 0.0254
+        }
+    }
 }
 
 /**

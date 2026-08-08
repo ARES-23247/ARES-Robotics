@@ -249,7 +249,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val symmetry: com.areslib.math.coordinate.FieldSymmetry = com.areslib.math.coordinate.FieldSymmetry.MIRRORED,
     private val fieldLength: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
     private val fieldWidth: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
-    private val mirrorForAlliance: Boolean = true
+    private val mirrorForAlliance: Boolean = true,
+    private val holdVelocity: Boolean = false
 ) : Task {
     override val name = "FollowPath(${path.points.size} points)"
     private var lastTimeMs = 0L
@@ -405,7 +406,9 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
      */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         super.end(state, interrupted)
-        follower.stop()
+        if (!holdVelocity) {
+            follower.stop()
+        }
         val actions = mutableListOf<RobotAction>()
         for (cmdTask in activeEventTasks) {
             actions.addAll(cmdTask.end(state, interrupted = true))

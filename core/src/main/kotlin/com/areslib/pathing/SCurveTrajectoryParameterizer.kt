@@ -162,7 +162,11 @@ object SCurveTrajectoryParameterizer {
         accelerations[0] = 0.0
         for (i in 0 until numPoints - 1) {
             val ds = distances[i + 1] - distances[i]
-            if (ds <= 1e-6) continue
+            if (ds <= 1e-6) {
+                velocities[i + 1] = velocities[i]
+                accelerations[i + 1] = accelerations[i]
+                continue
+            }
 
             val vCurr = velocities[i]
             val aCurr = accelerations[i]
@@ -187,7 +191,10 @@ object SCurveTrajectoryParameterizer {
         var decel = 0.0
         for (i in numPoints - 1 downTo 1) {
             val ds = distances[i] - distances[i - 1]
-            if (ds <= 1e-6) continue
+            if (ds <= 1e-6) {
+                velocities[i - 1] = velocities[i]
+                continue
+            }
 
             val vCurr = velocities[i]
 

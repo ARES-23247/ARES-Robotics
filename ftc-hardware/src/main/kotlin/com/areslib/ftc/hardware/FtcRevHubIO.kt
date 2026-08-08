@@ -122,7 +122,7 @@ class FtcEncoder(motor: DcMotorEx, name: String? = null) : MotorIO {
  *
  * @see RevCompositeMotorController
  */
-class CompositeMotorIO(actuator: MotorIO, sensor: MotorIO) : MotorIO {
+class CompositeMotorIO(private val actuator: MotorIO, private val sensor: MotorIO) : MotorIO, AutoCloseable {
     private val delegate = RevCompositeMotorController(actuator, sensor)
     override var power: Double
         get() = delegate.power
@@ -133,6 +133,11 @@ class CompositeMotorIO(actuator: MotorIO, sensor: MotorIO) : MotorIO {
 
     /** Resets feedback sensor encoder position. */
     override fun resetEncoder() = delegate.resetEncoder()
+
+    override fun close() {
+        if (actuator is AutoCloseable) actuator.close()
+        if (sensor is AutoCloseable) sensor.close()
+    }
 }
 
 /**

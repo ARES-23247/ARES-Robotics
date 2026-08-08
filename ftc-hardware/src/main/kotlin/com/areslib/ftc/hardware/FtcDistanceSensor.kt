@@ -28,10 +28,11 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, 
     private val lock = Any()
     private var running = true
     private var cachedDistance = Double.NaN
+    private var pollingThread: Thread? = null
 
     init {
         HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
+        pollingThread = Thread {
             while (running) {
                 val d = try {
                     sensor.getDistance(Distance.METER)
@@ -44,9 +45,9 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, 
                 try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
             }
         }
-        thread.isDaemon = true
-        thread.name = "ARES-DistanceSensor-Thread"
-        thread.start()
+        pollingThread?.isDaemon = true
+        pollingThread?.name = "ARES-DistanceSensor-Thread"
+        pollingThread?.start()
     }
 
     /** Measured distance reading in meters ($m$). Returns [Double.NaN] if out of range or uninitialized. */
@@ -58,6 +59,7 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, 
      */
     override fun close() {
         running = false
+        pollingThread?.interrupt()
     }
 }
 

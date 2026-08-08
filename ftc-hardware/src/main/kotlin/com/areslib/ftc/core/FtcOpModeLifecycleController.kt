@@ -55,7 +55,7 @@ class FtcOpModeLifecycleController {
      */
     fun sleepForTargetDt(lastUpdateTime: Long, isAndroid: Boolean) {
         if (!isAndroid && lastUpdateTime != 0L) {
-            val now = System.currentTimeMillis()
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
             val elapsed = now - lastUpdateTime
             if (elapsed < 20) {
                 try {
@@ -75,7 +75,7 @@ class FtcOpModeLifecycleController {
      */
     fun sleepRemaining(timestamp: Long, isAndroid: Boolean) {
         if (!isAndroid) {
-            val elapsed = System.currentTimeMillis() - timestamp
+            val elapsed = com.areslib.util.RobotClock.currentTimeMillis() - timestamp
             val sleepTime = 20L - elapsed
             if (sleepTime > 0) {
                 try {

@@ -212,12 +212,17 @@ object OdometryFusionController {
         val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + correctedDeltaHeading)
         
         val thetaMid = state.estimatedPoseHeading + correctedDeltaHeading * 0.5
+        val cosEst = kotlin.math.cos(state.estimatedPoseHeading)
+        val sinEst = kotlin.math.sin(state.estimatedPoseHeading)
+        val robotLocalDx =  deltaX * cosEst + deltaY * sinEst
+        val robotLocalDy = -deltaX * sinEst + deltaY * cosEst
+        
         val newCovariance = scratchCov
 
         EKFStatePropagator.propagate(
             state.covarianceArray,
-            deltaX,
-            deltaY,
+            robotLocalDx,
+            robotLocalDy,
             thetaMid,
             scratchQ,
             newCovariance

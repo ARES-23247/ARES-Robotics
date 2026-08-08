@@ -90,7 +90,10 @@ object DetourGenerator {
         for (step in 1..numSamples) {
             val t = step.toDouble() / numSamples
             val point = BezierSpline.evaluate(p0, p1, p2, p3, t)
-            val heading = BezierSpline.evaluateHeading(p0, p1, p2, p3, t)
+            val startRad = startPose.heading.radians
+            val endRad = interceptPoint.pose.heading.radians
+            val deltaRad = com.areslib.math.wrapAngle(endRad - startRad)
+            val heading = Rotation2d(startRad + deltaRad * t)
 
             val prevPt = transitionPoints.last()
             val dx = point.x - prevPt.pose.x

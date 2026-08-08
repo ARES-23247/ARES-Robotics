@@ -92,6 +92,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         deadzone = 0.02
     }
 
+    private val reusableDriveIntent = com.areslib.action.RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0)
+
     /**
      * Executes robot-relative drivetrain movement effort.
      *
@@ -102,14 +104,14 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
      */
     fun robotRelativeDrive(vx: Double, vy: Double, omega: Double, fromHeadingHold: Boolean = false) {
-        store.dispatch(RobotAction.JoystickDriveIntent(
-            targetXVelocity = vx,
-            targetYVelocity = vy,
-            targetAngularVelocity = omega,
-            isFieldCentric = false,
-            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-            fromHeadingHold = fromHeadingHold
-        ))
+        reusableDriveIntent.targetXVelocity = vx
+        reusableDriveIntent.targetYVelocity = vy
+        reusableDriveIntent.targetAngularVelocity = omega
+        reusableDriveIntent.isFieldCentric = false
+        reusableDriveIntent.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        reusableDriveIntent.fromHeadingHold = fromHeadingHold
+        reusableDriveIntent.isXLock = false
+        store.dispatch(reusableDriveIntent)
     }
 
     /**

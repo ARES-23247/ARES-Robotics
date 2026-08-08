@@ -136,7 +136,13 @@ class FrcSwerveRobot(
      */
     override fun writeHardwareOutputs(powerScale: Double, batteryVoltage: Double) {
         if (!isSimulation && swerveIO != null) {
-            swerveIO.write(store.state.drive)
+            val state = store.state.drive
+            val scaledState = state.copy(
+                xVelocityMetersPerSecond = state.xVelocityMetersPerSecond * powerScale,
+                yVelocityMetersPerSecond = state.yVelocityMetersPerSecond * powerScale,
+                angularVelocityRadiansPerSecond = state.angularVelocityRadiansPerSecond * powerScale
+            )
+            swerveIO.write(scaledState)
         }
     }
 

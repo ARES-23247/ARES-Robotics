@@ -234,7 +234,8 @@ object SplineMotionProfiler {
             val normDTheta = wrapAngle(dTheta)
 
             val kappa = if (ds > 1e-4) normDTheta / ds else 0.0
-            pathPoints[idx] = pathPoints[idx].copy(curvature = kappa)
+            val clampedKappa = kappa.coerceIn(-100.0, 100.0)
+            pathPoints[idx] = pathPoints[idx].copy(curvature = clampedKappa)
         }
     }
 

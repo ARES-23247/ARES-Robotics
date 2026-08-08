@@ -137,6 +137,13 @@ class LQRController(
             }
 
             P = PNext
+            for (r in 0 until P.rows) {
+                for (c in r + 1 until P.cols) {
+                    val sym = (P.get(r, c) + P.get(c, r)) / 2.0
+                    P.set(r, c, sym)
+                    P.set(c, r, sym)
+                }
+            }
             if (maxDiff < tolerance) break
         }
 
@@ -300,6 +307,25 @@ class LQRController(
             for (i in data.indices) {
                 result.data[i] = this.data[i] + other.data[i]
             }
+            var normA = 0.0
+            var normInv = 0.0
+            for (c in 0 until cols) {
+                var colSumA = 0.0
+                var colSumInv = 0.0
+                for (r in 0 until rows) {
+                    colSumA += kotlin.math.abs(get(r, c))
+                    colSumInv += kotlin.math.abs(result.get(r, c))
+                }
+                normA = kotlin.math.max(normA, colSumA)
+                normInv = kotlin.math.max(normInv, colSumInv)
+            }
+            if (normA * normInv > 1e6) {
+                for (r in 0 until rows) {
+                    for (c in 0 until cols) {
+                        result.set(r, c, if (r == c) 1.0 else 0.0)
+                    }
+                }
+            }
             return result
         }
 
@@ -309,6 +335,25 @@ class LQRController(
             for (i in data.indices) {
                 result.data[i] = this.data[i] - other.data[i]
             }
+            var normA = 0.0
+            var normInv = 0.0
+            for (c in 0 until cols) {
+                var colSumA = 0.0
+                var colSumInv = 0.0
+                for (r in 0 until rows) {
+                    colSumA += kotlin.math.abs(get(r, c))
+                    colSumInv += kotlin.math.abs(result.get(r, c))
+                }
+                normA = kotlin.math.max(normA, colSumA)
+                normInv = kotlin.math.max(normInv, colSumInv)
+            }
+            if (normA * normInv > 1e6) {
+                for (r in 0 until rows) {
+                    for (c in 0 until cols) {
+                        result.set(r, c, if (r == c) 1.0 else 0.0)
+                    }
+                }
+            }
             return result
         }
 
@@ -316,6 +361,25 @@ class LQRController(
             val result = Matrix(rows, cols)
             for (i in data.indices) {
                 result.data[i] = this.data[i] * s
+            }
+            var normA = 0.0
+            var normInv = 0.0
+            for (c in 0 until cols) {
+                var colSumA = 0.0
+                var colSumInv = 0.0
+                for (r in 0 until rows) {
+                    colSumA += kotlin.math.abs(get(r, c))
+                    colSumInv += kotlin.math.abs(result.get(r, c))
+                }
+                normA = kotlin.math.max(normA, colSumA)
+                normInv = kotlin.math.max(normInv, colSumInv)
+            }
+            if (normA * normInv > 1e6) {
+                for (r in 0 until rows) {
+                    for (c in 0 until cols) {
+                        result.set(r, c, if (r == c) 1.0 else 0.0)
+                    }
+                }
             }
             return result
         }
@@ -332,6 +396,25 @@ class LQRController(
                     result.set(r, c, sum)
                 }
             }
+            var normA = 0.0
+            var normInv = 0.0
+            for (c in 0 until cols) {
+                var colSumA = 0.0
+                var colSumInv = 0.0
+                for (r in 0 until rows) {
+                    colSumA += kotlin.math.abs(get(r, c))
+                    colSumInv += kotlin.math.abs(result.get(r, c))
+                }
+                normA = kotlin.math.max(normA, colSumA)
+                normInv = kotlin.math.max(normInv, colSumInv)
+            }
+            if (normA * normInv > 1e6) {
+                for (r in 0 until rows) {
+                    for (c in 0 until cols) {
+                        result.set(r, c, if (r == c) 1.0 else 0.0)
+                    }
+                }
+            }
             return result
         }
 
@@ -340,6 +423,25 @@ class LQRController(
             for (r in 0 until rows) {
                 for (c in 0 until cols) {
                     result.set(c, r, this.get(r, c))
+                }
+            }
+            var normA = 0.0
+            var normInv = 0.0
+            for (c in 0 until cols) {
+                var colSumA = 0.0
+                var colSumInv = 0.0
+                for (r in 0 until rows) {
+                    colSumA += kotlin.math.abs(get(r, c))
+                    colSumInv += kotlin.math.abs(result.get(r, c))
+                }
+                normA = kotlin.math.max(normA, colSumA)
+                normInv = kotlin.math.max(normInv, colSumInv)
+            }
+            if (normA * normInv > 1e6) {
+                for (r in 0 until rows) {
+                    for (c in 0 until cols) {
+                        result.set(r, c, if (r == c) 1.0 else 0.0)
+                    }
                 }
             }
             return result
@@ -461,6 +563,25 @@ class LQRController(
                         for (j in 0 until n) {
                             result.set(i, j, temp[i][n + j])
                         }
+                    }
+                }
+            }
+            var normA = 0.0
+            var normInv = 0.0
+            for (c in 0 until cols) {
+                var colSumA = 0.0
+                var colSumInv = 0.0
+                for (r in 0 until rows) {
+                    colSumA += kotlin.math.abs(get(r, c))
+                    colSumInv += kotlin.math.abs(result.get(r, c))
+                }
+                normA = kotlin.math.max(normA, colSumA)
+                normInv = kotlin.math.max(normInv, colSumInv)
+            }
+            if (normA * normInv > 1e6) {
+                for (r in 0 until rows) {
+                    for (c in 0 until cols) {
+                        result.set(r, c, if (r == c) 1.0 else 0.0)
                     }
                 }
             }

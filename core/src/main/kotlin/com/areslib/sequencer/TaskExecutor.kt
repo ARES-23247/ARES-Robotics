@@ -127,10 +127,12 @@ class TaskExecutor {
                     break
                 }
                 
-                if (isCompleted) {
+                val isFailed = TaskStateMachine.getStatus(task) == TaskStatus.FAILED
+                
+                if (isCompleted || isFailed) {
                     // Finalize active task
                     try {
-                        actions = addActions(actions, task.end(state, interrupted = false))
+                        actions = addActions(actions, task.end(state, interrupted = isFailed))
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
                         e.printStackTrace()
@@ -167,7 +169,7 @@ class TaskExecutor {
     }
 
     private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
-        System.err.println("TaskExecutor: Task ${task.name} failed. Halting FSM queue.")
+        System.err.println("TaskExecutor: Task ${task.name} failed. Removing task, preserving remaining queue.")
         val cleanupActions = try {
             task.end(state, interrupted = true)
         } catch (e: Exception) {
@@ -175,7 +177,7 @@ class TaskExecutor {
             e.printStackTrace()
             emptyList()
         }
-        clear()
+        activeTask = null
         return cleanupActions
     }
 

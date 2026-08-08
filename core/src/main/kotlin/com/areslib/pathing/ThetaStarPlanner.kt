@@ -21,7 +21,7 @@ import com.areslib.pathing.planner.PlannerState
  */
 object ThetaStarPlanner {
 
-    private val threadLocalState = ThreadLocal.withInitial { PlannerState(10000) }
+    private val statePool = java.util.concurrent.ConcurrentLinkedQueue<PlannerState>()
 
     /**
      * Plans a globally safe path from start to end coordinates.
@@ -58,57 +58,62 @@ object ThetaStarPlanner {
         if (!costmap.isCellTraversable(endX, endY)) return emptyList()
 
         val capacity = costmap.widthCells * costmap.heightCells
-        val state = threadLocalState.get()
-        state.ensureCapacity(capacity)
-
-        val openQueue = state.openQueue
-
-        val startKey = startY * costmap.widthCells + startX
-
-        state.setGCost(startKey, 0.0)
-        state.setParent(startKey, startKey)
+        val state = statePool.poll() ?: PlannerState(10000)
         
-        val startH = heuristic(startX, startY, endX, endY)
-        val startFloatBits = startH.toFloat().toBits().toLong() and 0xFFFFFFFFL
-        val startHeapVal = (startFloatBits shl 32) or (startKey.toLong() and 0xFFFFFFFFL)
-        openQueue.add(startHeapVal)
-
-        while (openQueue.isNotEmpty()) {
-            val heapVal = openQueue.poll()
-            val currKey = (heapVal and 0xFFFFFFFFL).toInt()
-
-            if (state.isClosed(currKey)) continue
-
-            val currX = currKey % costmap.widthCells
-            val currY = currKey / costmap.widthCells
-
-            if (currX == endX && currY == endY) {
-                // Path found! Reconstruct waypoints
-                return reconstructPath(currKey, costmap, start, end, state)
-            }
-
-            state.setClosed(currKey)
-
-            // Explore 8-way neighbors
-            for (dy in -1..1) {
-                for (dx in -1..1) {
-                    if (dx == 0 && dy == 0) continue
-
-                    val nx = currX + dx
-                    val ny = currY + dy
-
-                    // Ensure cell is bounds and traversable
-                    if (!costmap.isCellTraversable(nx, ny)) continue
-
-                    val nKey = ny * costmap.widthCells + nx
-                    if (state.isClosed(nKey)) continue
-
-                    updateVertex(currKey, currX, currY, nKey, nx, ny, costmap, endX, endY, state)
+        try {
+            state.ensureCapacity(capacity)
+    
+            val openQueue = state.openQueue
+    
+            val startKey = startY * costmap.widthCells + startX
+    
+            state.setGCost(startKey, 0.0)
+            state.setParent(startKey, startKey)
+            
+            val startH = heuristic(startX, startY, endX, endY)
+            val startFloatBits = startH.toFloat().toBits().toLong() and 0xFFFFFFFFL
+            val startHeapVal = (startFloatBits shl 32) or (startKey.toLong() and 0xFFFFFFFFL)
+            openQueue.add(startHeapVal)
+    
+            while (openQueue.isNotEmpty()) {
+                val heapVal = openQueue.poll()
+                val currKey = (heapVal and 0xFFFFFFFFL).toInt()
+    
+                if (state.isClosed(currKey)) continue
+    
+                val currX = currKey % costmap.widthCells
+                val currY = currKey / costmap.widthCells
+    
+                if (currX == endX && currY == endY) {
+                    // Path found! Reconstruct waypoints
+                    return reconstructPath(currKey, costmap, start, end, state)
+                }
+    
+                state.setClosed(currKey)
+    
+                // Explore 8-way neighbors
+                for (dy in -1..1) {
+                    for (dx in -1..1) {
+                        if (dx == 0 && dy == 0) continue
+    
+                        val nx = currX + dx
+                        val ny = currY + dy
+    
+                        // Ensure cell is bounds and traversable
+                        if (!costmap.isCellTraversable(nx, ny)) continue
+    
+                        val nKey = ny * costmap.widthCells + nx
+                        if (state.isClosed(nKey)) continue
+    
+                        updateVertex(currKey, currX, currY, nKey, nx, ny, costmap, endX, endY, state)
+                    }
                 }
             }
+    
+            return emptyList() // Return empty if no path found
+        } finally {
+            statePool.offer(state)
         }
-
-        return emptyList() // Return empty if no path found
     }
 
     private fun updateVertex(

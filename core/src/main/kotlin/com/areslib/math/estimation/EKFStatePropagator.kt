@@ -77,6 +77,16 @@ object EKFStatePropagator {
         outCovariance.m20 = fp20 + f02 * fp22 + qMatrix.m20
         outCovariance.m21 = fp21 + f12 * fp22 + qMatrix.m21
         outCovariance.m22 = fp22 + qMatrix.m22
+
+        val sym01 = (outCovariance.m01 + outCovariance.m10) * 0.5
+        outCovariance.m01 = sym01
+        outCovariance.m10 = sym01
+        val sym02 = (outCovariance.m02 + outCovariance.m20) * 0.5
+        outCovariance.m02 = sym02
+        outCovariance.m20 = sym02
+        val sym12 = (outCovariance.m12 + outCovariance.m21) * 0.5
+        outCovariance.m12 = sym12
+        outCovariance.m21 = sym12
     }
 
     /**

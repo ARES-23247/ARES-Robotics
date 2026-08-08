@@ -35,6 +35,9 @@ class PIDController(
     private var totalError: Double = 0.0
     private var setpoint: Double = 0.0
     
+    private var filteredDerivative: Double = 0.0
+    private val derivativeAlpha: Double = 0.2
+    
     private var isContinuous: Boolean = false
     private var continuousMin: Double = 0.0
     private var continuousMax: Double = 0.0
@@ -146,16 +149,23 @@ class PIDController(
             return 0.0
         }
 
-        totalError += error * dtSeconds
-        // Anti-windup
-        if (!minIntegral.isNaN()) { totalError = kotlin.math.max(totalError, minIntegral) }
-        if (!maxIntegral.isNaN()) { totalError = kotlin.math.min(totalError, maxIntegral) }
+        val rawDerivative = if (isFirstStep) 0.0 else (error - prevError) / dtSeconds
+        filteredDerivative = derivativeAlpha * rawDerivative + (1.0 - derivativeAlpha) * filteredDerivative
         
-        val velocityError = if (isFirstStep) 0.0 else (error - prevError) / dtSeconds
         isFirstStep = false
         prevError = error
 
-        var output = p * error + i * totalError + d * velocityError
+        val preSatOutput = p * error + i * totalError + d * filteredDerivative
+        val isSaturated = (!maxOutput.isNaN() && preSatOutput > maxOutput && error > 0) || 
+                          (!minOutput.isNaN() && preSatOutput < minOutput && error < 0)
+                          
+        if (!isSaturated) {
+            totalError += error * dtSeconds
+            if (!minIntegral.isNaN()) { totalError = kotlin.math.max(totalError, minIntegral) }
+            if (!maxIntegral.isNaN()) { totalError = kotlin.math.min(totalError, maxIntegral) }
+        }
+
+        var output = p * error + i * totalError + d * filteredDerivative
         
         if (!minOutput.isNaN()) { output = kotlin.math.max(output, minOutput) }
         if (!maxOutput.isNaN()) { output = kotlin.math.min(output, maxOutput) }

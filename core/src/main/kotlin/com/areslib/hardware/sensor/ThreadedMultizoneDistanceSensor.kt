@@ -17,8 +17,11 @@ class ThreadedMultizoneDistanceSensor(
     override val rows: Int get() = physicalSensor.rows
     override val columns: Int get() = physicalSensor.columns
 
+    private val bufferA = DoubleArray(rows * columns)
+    private val bufferB = DoubleArray(rows * columns)
+
     @Volatile
-    private var cachedDistances: DoubleArray = DoubleArray(rows * columns)
+    private var activeBuffer: DoubleArray = bufferA
 
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { thread ->
         Thread(thread, "ARES-Multizone-ToF-Polling-Thread").apply { isDaemon = true }
@@ -28,7 +31,10 @@ class ThreadedMultizoneDistanceSensor(
         HardwareRegistry.registerCloseable(this)
         scheduler.scheduleAtFixedRate({
             try {
-                cachedDistances = physicalSensor.distancesMeters
+                val newDistances = physicalSensor.distancesMeters
+                val writeBuffer = if (activeBuffer === bufferA) bufferB else bufferA
+                newDistances.copyInto(writeBuffer)
+                activeBuffer = writeBuffer
             } catch (e: Exception) {
                 // Keep last cached values
             }
@@ -39,7 +45,7 @@ class ThreadedMultizoneDistanceSensor(
      * Instantly returns a defensive copy of the latest cached zone readings from memory (0.0 ms execution time).
      */
     override val distancesMeters: DoubleArray
-        get() = cachedDistances.copyOf()
+        get() = activeBuffer
 
     /**
      * Safely shuts down the polling background thread and waits for termination.

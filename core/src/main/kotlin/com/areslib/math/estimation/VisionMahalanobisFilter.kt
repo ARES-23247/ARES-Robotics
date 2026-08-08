@@ -146,10 +146,7 @@ object VisionMahalanobisFilter {
             incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 10.0)
             kotlin.math.sqrt(dx * dx + dy * dy)
         } else {
-            val measurementPose = measurement.targetPose.toPose2d()
-            val dx = measurementPose.x - baseEntry.x
-            val dy = measurementPose.y - baseEntry.y
-            kotlin.math.sqrt(dx * dx + dy * dy)
+            kotlin.math.abs(measurement.robotPoseTargetSpace.z)
         }
 
         val ambiguityScale = 1.0 + 10.0 * (measurement.ambiguity * measurement.ambiguity)
@@ -179,7 +176,7 @@ object VisionMahalanobisFilter {
                   scratchS.m01 * (scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) +
                   scratchS.m02 * (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20)
 
-        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-9) {
+        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-24) {
             scratchSInv.m00 = 0.0; scratchSInv.m01 = 0.0; scratchSInv.m02 = 0.0
             scratchSInv.m10 = 0.0; scratchSInv.m11 = 0.0; scratchSInv.m12 = 0.0
             scratchSInv.m20 = 0.0; scratchSInv.m21 = 0.0; scratchSInv.m22 = 0.0

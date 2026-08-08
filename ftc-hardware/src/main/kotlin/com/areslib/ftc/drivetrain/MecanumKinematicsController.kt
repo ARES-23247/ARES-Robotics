@@ -94,10 +94,6 @@ class MecanumKinematicsController(
         )
 
         if (!isCalibrationHandlingDrive) {
-            val yVel = store.state.drive.yVelocityMetersPerSecond
-            if (kotlin.math.abs(yVel) > 0.01) {
-                println("[KinematicsController] yVel=%.2f, isFC=%b".format(yVel, store.state.drive.isFieldCentric))
-            }
             mecanumIO.drive(store.state.drive, kinematics, batteryVoltage, dtSeconds)
         }
     }

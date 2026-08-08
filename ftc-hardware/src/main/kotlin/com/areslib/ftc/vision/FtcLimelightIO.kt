@@ -84,12 +84,11 @@ class FtcLimelightIO(
                 val botposeRaw = result.getBotpose()
 
                 if (botposeRaw != null) {
-                    val posMeters = botposeRaw.position.toUnit(org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER)
                     translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
                     val fieldTrans = translationPool[translationPoolIndex]
-                    fieldTrans.x = posMeters.x
-                    fieldTrans.y = posMeters.y
-                    fieldTrans.z = posMeters.z
+                    fieldTrans.x = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(botposeRaw.position.unit, botposeRaw.position.x)
+                    fieldTrans.y = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(botposeRaw.position.unit, botposeRaw.position.y)
+                    fieldTrans.z = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(botposeRaw.position.unit, botposeRaw.position.z)
 
                     rotationPoolIndex = (rotationPoolIndex + 1) % rotationPool.size
                     val fieldRot = rotationPool[rotationPoolIndex]
@@ -108,13 +107,11 @@ class FtcLimelightIO(
                     if (numTags > 0) {
                         val fiducial = fiducials[0]
                         val targetPoseRaw = fiducial.getRobotPoseTargetSpace()
-                        val targetPosMeters = targetPoseRaw.position.toUnit(org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER)
-
                         translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
                         val targetTrans = translationPool[translationPoolIndex]
-                        targetTrans.x = targetPosMeters.x
-                        targetTrans.y = targetPosMeters.y
-                        targetTrans.z = targetPosMeters.z
+                        targetTrans.x = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(targetPoseRaw.position.unit, targetPoseRaw.position.x)
+                        targetTrans.y = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(targetPoseRaw.position.unit, targetPoseRaw.position.y)
+                        targetTrans.z = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(targetPoseRaw.position.unit, targetPoseRaw.position.z)
 
                         rotationPoolIndex = (rotationPoolIndex + 1) % rotationPool.size
                         val targetRot = rotationPool[rotationPoolIndex]
@@ -134,11 +131,11 @@ class FtcLimelightIO(
                     visionMeasurementPoolIndex = (visionMeasurementPoolIndex + 1) % visionMeasurementPool.size
                     val measurement = visionMeasurementPool[visionMeasurementPoolIndex]
 
-                    measurement.timestampMs = now
+                    measurement.timestampMs = now - 11L
                     measurement.targetPose = fieldPose
                     measurement.robotPoseTargetSpace = relTargetPose ?: emptyTargetPose
                     measurement.tagId = tagId
-                    measurement.ambiguity = if (numTags > 1) 0.0 else 0.1
+                    measurement.ambiguity = 0.1
 
                     currentMeasurementList.add(measurement)
                 }

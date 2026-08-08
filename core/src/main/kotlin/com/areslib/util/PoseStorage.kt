@@ -13,6 +13,9 @@ object PoseStorage {
     var hasValidPose: Boolean = false
 
     @JvmStatic
+    var alliance: com.areslib.state.Alliance = com.areslib.state.Alliance.RED
+
+    @JvmStatic
     fun clear() {
         currentPose = Pose2d()
         hasValidPose = false

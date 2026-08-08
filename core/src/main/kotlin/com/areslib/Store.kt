@@ -24,10 +24,14 @@ class Store(
     var actionListener: ((RobotAction) -> Unit)? = null
 
     /**
-     * dispatch declaration.
+     * Dispatches an action to the store, executing the root reducer synchronously
+     * on the caller's thread. All registered listeners are notified with the
+     * updated state after reduction completes.
      *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Thread Safety: This method is NOT thread-safe. It must be called from
+     * the main robot loop thread only.
+     *
+     * @param action The [RobotAction] describing the state transition.
      */
     fun dispatch(action: RobotAction) {
         val currentState: RobotState
@@ -36,14 +40,7 @@ class Store(
             state = reducer(state, action)
             currentState = state
         }
-        val size = listeners.size
-        for (i in 0 until size) {
-            try {
-                listeners[i](currentState)
-            } catch (_: IndexOutOfBoundsException) {
-                break
-            }
-        }
+        listeners.forEach { it(currentState) }
     }
 
     /**
@@ -62,14 +59,7 @@ class Store(
             }
             currentState = state
         }
-        val size = listeners.size
-        for (i in 0 until size) {
-            try {
-                listeners[i](currentState)
-            } catch (_: IndexOutOfBoundsException) {
-                break
-            }
-        }
+        listeners.forEach { it(currentState) }
     }
 
     /**

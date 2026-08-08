@@ -167,7 +167,8 @@ class Costmap(
      */
     fun inflate(robotRadiusMeters: Double) {
         inflatedGrid.fill(false)
-        val cellRadius = (robotRadiusMeters / resolutionMeters).toInt().coerceAtLeast(1)
+        val cellRadius = kotlin.math.ceil(robotRadiusMeters / resolutionMeters).toInt().coerceAtLeast(1)
+        val r2 = cellRadius.toDouble() * cellRadius.toDouble()
 
         for (cy in 0 until heightCells) {
             for (cx in 0 until widthCells) {
@@ -175,7 +176,7 @@ class Costmap(
                     // Inflate outward in a circular radius
                     for (dy in -cellRadius..cellRadius) {
                         for (dx in -cellRadius..cellRadius) {
-                            if (dx * dx + dy * dy <= cellRadius * cellRadius) {
+                            if (dx.toDouble() * dx.toDouble() + dy.toDouble() * dy.toDouble() <= r2) {
                                 val nx = cx + dx
                                 val ny = cy + dy
                                 if (nx in 0 until widthCells && ny in 0 until heightCells) {
@@ -225,10 +226,10 @@ class Costmap(
             val halfW = if (type.shape.lowercase() == "box") type.width / 2.0 else (type.diameter ?: 0.15) / 2.0
             val halfH = if (type.shape.lowercase() == "box") type.height / 2.0 else (type.diameter ?: 0.15) / 2.0
 
-            val minX = el.x - halfH
-            val maxX = el.x + halfH
-            val minY = el.y - halfW
-            val maxY = el.y + halfW
+            val minX = el.x - halfW
+            val maxX = el.x + halfW
+            val minY = el.y - halfH
+            val maxY = el.y + halfH
 
             val startCellX = (((minX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
             val endCellX = (((maxX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)

@@ -270,7 +270,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
         lifecycleController.sleepForTargetDt(lastWallTime, isAndroid)
-        lastWallTime = System.currentTimeMillis()
+        lastWallTime = com.areslib.util.RobotClock.currentTimeMillis()
         lifecycleController.update()
 
         try {

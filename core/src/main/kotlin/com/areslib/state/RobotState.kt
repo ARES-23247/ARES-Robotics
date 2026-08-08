@@ -101,8 +101,8 @@ data class DriveState(
         return this.copy(
             poseEstimator = updatedEstimator,
             covarianceMatrix = cov,
-            ekfDriftX = odomX - updatedEstimator.estimatedPose.x,
-            ekfDriftY = odomY - updatedEstimator.estimatedPose.y,
+            ekfDriftX = odomX - updatedEstimator.estimatedPoseX,
+            ekfDriftY = odomY - updatedEstimator.estimatedPoseY,
             rawOdometryX = odomX,
             rawOdometryY = odomY,
             rawOdometryHeading = odomHeading,
