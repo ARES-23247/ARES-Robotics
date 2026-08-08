@@ -23,7 +23,8 @@ open class LLResultTypes {
         private val tx: Double,
         private val ty: Double,
         private val pose3d: Pose3D,
-        private val robotPoseTargetSpace: Pose3D = Pose3D()
+        private val robotPoseTargetSpace: Pose3D = Pose3D(),
+        val poseAmbiguity: Double = 0.0
     ) {
         open fun getFiducialId(): Int = fiducialId
         open fun getTx(): Double = tx
@@ -42,6 +43,8 @@ open class LLResult {
     val ta: Double = 0.0
     val tx: Double = 0.0
     val ty: Double = 0.0
+    val targetingLatency: Double = 0.0
+    val captureLatency: Double = 0.0
     
     open fun isValid(): Boolean = false
     open fun getBotpose(): Pose3D? = null

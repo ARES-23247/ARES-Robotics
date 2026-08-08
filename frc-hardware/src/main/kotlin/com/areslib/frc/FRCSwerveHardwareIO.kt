@@ -83,6 +83,6 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     override fun write(state: DriveState) = writer.write(state)
     
     override fun seedPose(pose: com.areslib.math.geometry.Pose2d) {
-        // drivetrain.seedFieldRelative(edu.wpi.first.math.geometry.Pose2d(pose.x, pose.y, edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)))
+        drivetrain.resetPose(edu.wpi.first.math.geometry.Pose2d(pose.x, pose.y, edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)))
     }
 }
