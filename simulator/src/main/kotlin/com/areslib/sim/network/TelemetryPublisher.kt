@@ -114,7 +114,7 @@ object TelemetryPublisher {
     fun publish(state: RobotState, dtSeconds: Double? = null) {
         statePublisher.set(state)
         networkStatePublisher?.publish(state, dtSeconds = dtSeconds)
-        com.areslib.hardware.HardwareRegistry.publishAll(nt4Telemetry ?: return)
+        nt4Telemetry?.let { com.areslib.hardware.HardwareRegistry.publishAll(it) }
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
 
