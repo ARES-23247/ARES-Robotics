@@ -21,3 +21,4 @@ Thumbs.db
 # Logs and generated reports
 *.csv
 **/logs/
+ares_run_summary.json
