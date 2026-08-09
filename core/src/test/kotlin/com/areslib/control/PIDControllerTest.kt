@@ -36,16 +36,16 @@ class PIDControllerTest {
     fun testDerivativeFilter() {
         val pid = PIDController(0.0, 0.0, 0.5)
         
-        // First step, velocity error is 0
+        // First step, no previous measurement so derivative is 0
         val out1 = pid.calculate(0.0, 10.0, 0.1)
         assertEquals(0.0, out1, 0.001)
         
-        // Second step, measurement moved to 2.0. Error went from 10.0 to 8.0
-        // error_diff = 8.0 - 10.0 = -2.0
-        // vel_error = -2.0 / 0.1 = -20.0
-        // output = D * vel_error = 0.5 * -20.0 = -10.0
+        // Second step, measurement moved from 0.0 to 2.0
+        // derivative-on-measurement: -(2.0 - 0.0) / 0.1 = -20.0
+        // EMA filter with alpha=0.2: filtered = 0.2 * -20.0 + 0.8 * 0.0 = -4.0
+        // output = D * filtered_derivative = 0.5 * -4.0 = -2.0
         val out2 = pid.calculate(2.0, 10.0, 0.1)
-        assertEquals(-10.0, out2, 0.001)
+        assertEquals(-2.0, out2, 0.001)
     }
 
     @Test
