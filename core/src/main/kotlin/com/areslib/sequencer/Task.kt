@@ -93,8 +93,10 @@ interface Task {
      */
     fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         if (TaskTimeoutManager.isTimedOut(this, elapsedMs)) {
-            TaskStateMachine.transitionTo(this, TaskStatus.FAILED)
-            TaskCallbacks.invokeFail(this)
+            if (TaskStateMachine.getStatus(this) != TaskStatus.FAILED) {
+                TaskStateMachine.transitionTo(this, TaskStatus.FAILED)
+                TaskCallbacks.invokeFail(this)
+            }
         }
         return emptyList()
     }
