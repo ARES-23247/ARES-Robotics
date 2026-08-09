@@ -65,15 +65,22 @@ object RobotWebServer {
         if (isAndroid) File("/sdcard/FIRST/telemetry_logs/") else File("./logs/")
     }
 
-    private val endpointHandler by lazy { LogEndpointHandler(logDir, authToken) }
+    @Volatile
+    private var endpointHandler: LogEndpointHandler? = null
 
     /**
      * Starts the web server in a background thread.
      */
     @Synchronized
     fun start(port: Int = 8082, authToken: String? = null) {
+        // If the auth token changed (or the handler has not been built yet), rebuild the
+        // endpoint handler so it picks up the new token. The previous `by lazy` captured
+        // authToken once and silently ignored later start() calls with a different token.
+        if (this.authToken != authToken || endpointHandler == null) {
+            this.authToken = authToken
+            endpointHandler = LogEndpointHandler(logDir, authToken)
+        }
         if (serverSocket != null) return
-        this.authToken = authToken
         if (authToken == null) {
             System.err.println(
                 "ARES Robot WebServer: WARNING - no auth token configured. /api/* endpoints are " +
@@ -95,7 +102,7 @@ object RobotWebServer {
                     try {
                         val client = socket.accept()
                         executor?.submit {
-                            endpointHandler.handleClient(client)
+                            endpointHandler?.handleClient(client)
                         }
                     } catch (e: Exception) {
                         break

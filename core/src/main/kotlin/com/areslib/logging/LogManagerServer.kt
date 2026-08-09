@@ -18,6 +18,10 @@ object LogManagerServer : NanoHTTPD(5002) {
     private val gson = Gson()
     private val logDir = CloudExporter.logDir
     private val syncedDir = File(logDir, "synced")
+    // Canonical (symlink-resolved) base paths, resolved once at construction to avoid a
+    // filesystem syscall on every request.
+    private val logDirCanonical: String = logDir.canonicalPath
+    private val syncedDirCanonical: String = syncedDir.canonicalPath
 
     init {
         // Ensure directories exist
@@ -120,10 +124,11 @@ object LogManagerServer : NanoHTTPD(5002) {
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Missing file parameter")
 
         val file = File(logDir, fileName)
-        if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDir.canonicalPath))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
         if (!file.exists() || !file.isFile) {
             val syncedFile = File(syncedDir, fileName)
-            if (syncedFile.exists() && syncedFile.isFile) {
+            if (java.nio.file.Path.of(syncedFile.canonicalPath).startsWith(java.nio.file.Path.of(syncedDirCanonical)) &&
+                syncedFile.exists() && syncedFile.isFile) {
                 return serveFile(syncedFile)
             }
             return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "File not found")
@@ -147,9 +152,9 @@ object LogManagerServer : NanoHTTPD(5002) {
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error": "Missing file parameter"}""")
 
         val file = File(logDir, fileName)
-        if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDir.canonicalPath))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
         val syncedFile = File(syncedDir, fileName)
-        if (!java.nio.file.Path.of(syncedFile.canonicalPath).startsWith(java.nio.file.Path.of(syncedDir.canonicalPath))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        if (!java.nio.file.Path.of(syncedFile.canonicalPath).startsWith(java.nio.file.Path.of(syncedDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
 
         var deleted = false
         if (file.exists() && file.isFile) deleted = file.delete() || deleted
