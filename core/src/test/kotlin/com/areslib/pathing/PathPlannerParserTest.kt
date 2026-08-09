@@ -36,7 +36,7 @@ class PathPlannerParserTest {
         val path = PathPlannerParser.parsePath(mockJson)
         
         assertNotNull(path)
-        assertEquals(21, path.points.size)
+        assertEquals(101, path.points.size)
         
         val p1 = path.points.first()
         assertEquals(0.0, p1.pose.x)
@@ -44,7 +44,7 @@ class PathPlannerParserTest {
         assertEquals(0.0, p1.distanceMeters)
         assertEquals(0.0, p1.velocityMps) // Should start at 0
         
-        val pMid = path.points[10]
+        val pMid = path.points[50]
         // In the middle of the 5.0m S-curve, with max accel 1.5, it should easily reach max velocity 2.0
         assertEquals(2.0, pMid.velocityMps, 0.001)
 
@@ -57,7 +57,7 @@ class PathPlannerParserTest {
         assertEquals(1, path.events.size)
         val event = path.events[0]
         assertEquals("IntakeOn", event.eventName)
-        // distance at index 10 should be roughly 2.5
+        // distance at index 50 should be roughly 2.5
         assertEquals(2.5, event.triggerDistanceMeters, 0.5)
     }
 

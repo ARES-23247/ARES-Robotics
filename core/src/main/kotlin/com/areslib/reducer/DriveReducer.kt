@@ -53,7 +53,7 @@ object DriveReducer {
             is RobotAction.PoseUpdate -> {
                 val updatedEstimator = if (action.isReset) {
                     val newPose = Pose2d(action.xMeters, action.yMeters, Rotation2d(action.headingRadians))
-                    val newHistory = HistoryBuffer(50)
+                    val newHistory = HistoryBuffer(150)
                     newHistory.addEntry(action.timestampMs, newPose, Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01), 1.0)
                     
                     state.poseEstimator.copy(

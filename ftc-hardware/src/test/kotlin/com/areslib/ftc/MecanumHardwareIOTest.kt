@@ -77,6 +77,7 @@ class MecanumHardwareIOTest {
         assertEquals(DcMotorSimple.Direction.REVERSE, br.direction)
         
         val speeds = MecanumWheelSpeeds(1.0, 0.5, -0.5, -1.0)
+        io.kV = 1.0
         io.apply(speeds)
         
         assertEquals(1.0, fl.currentPower, 0.001)
@@ -114,6 +115,7 @@ class MecanumHardwareIOTest {
         // Enable voltage-compensated slew rate limit
         io.slewRateLimit = 2.0
         io.enableVoltageCompensatedSlew = true
+        io.kV = 1.0
         
         // 1. First call initializes the last value of slew rate limiters
         io.apply(MecanumWheelSpeeds(0.0, 0.0, 0.0, 0.0), batteryVolts = 12.0, dtSeconds = 0.02)

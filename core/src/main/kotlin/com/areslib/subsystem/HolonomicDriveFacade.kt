@@ -299,13 +299,8 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         val joystickRight = driver.leftStickX.value.toDouble() * speedMult
         val rotate = -driver.rightStickX.value.toDouble() * turnScale
         
-        var fieldVx = joystickRight
-        var fieldVy = joystickForward
-        
-        if (store.state.drive.alliance == com.areslib.state.Alliance.BLUE) {
-            fieldVx = -fieldVx
-            fieldVy = -fieldVy
-        }
+        val fieldVx = joystickRight
+        val fieldVy = joystickForward
         
         fieldRelativeDrive(
             vx = fieldVx, 

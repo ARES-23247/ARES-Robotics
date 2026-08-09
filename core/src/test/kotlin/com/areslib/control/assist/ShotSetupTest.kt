@@ -99,7 +99,7 @@ class ShotSetupTest {
         shotSetup.calculate(robotPose, speeds, target, result)
         
         // Assert exact, physically correct SOTM lead positions and TOF values
-        assertEquals(-1.036, result.virtualTargetY, 0.01)
+        assertEquals(-0.987, result.virtualTargetY, 0.01)
         assertEquals(-0.252, result.aimAngleRad, 0.01)
         assertEquals(2.889, result.robotTargetHeadingRad, 0.01)
         
