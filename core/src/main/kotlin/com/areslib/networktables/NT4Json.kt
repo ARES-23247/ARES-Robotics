@@ -24,18 +24,18 @@ object NT4Json {
         if (trimmed.isEmpty()) return emptyList()
 
         return if (trimmed.startsWith("[")) {
-            val objects = extractJsonObjectsFromArray(trimmed)
-            objects.mapNotNull { parseSingleObject(it) }
+            val objects = extractJsonObjectRanges(trimmed)
+            objects.mapNotNull { parseSingleObject(trimmed, it.first, it.last) }
         } else if (trimmed.startsWith("{")) {
-            val msg = parseSingleObject(trimmed)
+            val msg = parseSingleObject(trimmed, 0, trimmed.length - 1)
             if (msg != null) listOf(msg) else emptyList()
         } else {
             emptyList()
         }
     }
 
-    private fun extractJsonObjectsFromArray(arrayJson: String): List<String> {
-        val list = ArrayList<String>(4)
+    private fun extractJsonObjectRanges(arrayJson: String): List<IntRange> {
+        val list = ArrayList<IntRange>(4)
         var depth = 0
         var start = -1
         var inString = false
@@ -63,7 +63,7 @@ object NT4Json {
             } else if (c == '}') {
                 depth--
                 if (depth == 0 && start != -1) {
-                    list.add(arrayJson.substring(start, i + 1))
+                    list.add(start..i)
                     start = -1
                 }
             }
@@ -71,16 +71,16 @@ object NT4Json {
         return list
     }
 
-    private fun parseSingleObject(objJson: String): ParsedMessage? {
-        val method = extractStringField(objJson, "method") ?: return null
+    private fun parseSingleObject(json: String, startIdx: Int, endIdx: Int): ParsedMessage? {
+        val method = extractStringField(json, "method", startIdx, endIdx) ?: return null
 
-        val paramsStart = objJson.indexOf("\"params\"")
-        val paramsJson = if (paramsStart != -1) objJson.substring(paramsStart) else objJson
+        val paramsStart = json.indexOf("\"params\"", startIdx)
+        val searchStart = if (paramsStart != -1 && paramsStart <= endIdx) paramsStart else startIdx
 
-        val name = extractStringField(paramsJson, "name")
-        val pubUid = extractIntField(paramsJson, "pubuid")
-        val type = extractStringField(paramsJson, "type")
-        val topics = extractStringArrayField(paramsJson, "topics")
+        val name = extractStringField(json, "name", searchStart, endIdx)
+        val pubUid = extractIntField(json, "pubuid", searchStart, endIdx)
+        val type = extractStringField(json, "type", searchStart, endIdx)
+        val topics = extractStringArrayField(json, "topics", searchStart, endIdx)
 
         return ParsedMessage(
             method = method,
@@ -91,75 +91,74 @@ object NT4Json {
         )
     }
 
-    fun extractStringField(json: String, fieldName: String): String? {
+    fun extractStringField(json: String, fieldName: String, searchStart: Int, searchEnd: Int): String? {
         val key = "\"$fieldName\""
-        val keyIdx = json.indexOf(key)
-        if (keyIdx == -1) return null
+        val keyIdx = json.indexOf(key, searchStart)
+        if (keyIdx == -1 || keyIdx > searchEnd) return null
 
         val colonIdx = json.indexOf(':', keyIdx + key.length)
-        if (colonIdx == -1) return null
+        if (colonIdx == -1 || colonIdx > searchEnd) return null
 
         val quoteStart = json.indexOf('"', colonIdx + 1)
-        if (quoteStart == -1) return null
+        if (quoteStart == -1 || quoteStart > searchEnd) return null
 
-        val quoteEnd = findClosingQuote(json, quoteStart + 1)
+        val quoteEnd = findClosingQuote(json, quoteStart + 1, searchEnd)
         if (quoteEnd == -1) return null
 
         return json.substring(quoteStart + 1, quoteEnd)
     }
 
-    fun extractIntField(json: String, fieldName: String): Int? {
+    fun extractIntField(json: String, fieldName: String, searchStart: Int, searchEnd: Int): Int? {
         val key = "\"$fieldName\""
-        val keyIdx = json.indexOf(key)
-        if (keyIdx == -1) return null
+        val keyIdx = json.indexOf(key, searchStart)
+        if (keyIdx == -1 || keyIdx > searchEnd) return null
 
         val colonIdx = json.indexOf(':', keyIdx + key.length)
-        if (colonIdx == -1) return null
+        if (colonIdx == -1 || colonIdx > searchEnd) return null
 
         var idx = colonIdx + 1
-        while (idx < json.length && json[idx].isWhitespace()) idx++
+        while (idx <= searchEnd && json[idx].isWhitespace()) idx++
 
         val sb = java.lang.StringBuilder()
-        if (idx < json.length && (json[idx] == '-' || json[idx] == '+')) {
+        if (idx <= searchEnd && (json[idx] == '-' || json[idx] == '+')) {
             sb.append(json[idx])
             idx++
         }
-        while (idx < json.length && json[idx].isDigit()) {
+        while (idx <= searchEnd && json[idx].isDigit()) {
             sb.append(json[idx])
             idx++
         }
         return sb.toString().toIntOrNull()
     }
 
-    fun extractStringArrayField(json: String, fieldName: String): List<String> {
+    fun extractStringArrayField(json: String, fieldName: String, searchStart: Int, searchEnd: Int): List<String> {
         val key = "\"$fieldName\""
-        val keyIdx = json.indexOf(key)
-        if (keyIdx == -1) return emptyList()
+        val keyIdx = json.indexOf(key, searchStart)
+        if (keyIdx == -1 || keyIdx > searchEnd) return emptyList()
 
         val bracketStart = json.indexOf('[', keyIdx + key.length)
-        if (bracketStart == -1) return emptyList()
+        if (bracketStart == -1 || bracketStart > searchEnd) return emptyList()
 
         val bracketEnd = json.indexOf(']', bracketStart + 1)
-        if (bracketEnd == -1) return emptyList()
+        if (bracketEnd == -1 || bracketEnd > searchEnd) return emptyList()
 
-        val arrayContent = json.substring(bracketStart + 1, bracketEnd)
         val result = ArrayList<String>()
 
-        var idx = 0
-        while (idx < arrayContent.length) {
-            val qStart = arrayContent.indexOf('"', idx)
-            if (qStart == -1) break
-            val qEnd = findClosingQuote(arrayContent, qStart + 1)
-            if (qEnd == -1) break
-            result.add(arrayContent.substring(qStart + 1, qEnd))
+        var idx = bracketStart + 1
+        while (idx < bracketEnd) {
+            val qStart = json.indexOf('"', idx)
+            if (qStart == -1 || qStart >= bracketEnd) break
+            val qEnd = findClosingQuote(json, qStart + 1, bracketEnd)
+            if (qEnd == -1 || qEnd > bracketEnd) break
+            result.add(json.substring(qStart + 1, qEnd))
             idx = qEnd + 1
         }
         return result
     }
 
-    private fun findClosingQuote(s: String, startIdx: Int): Int {
+    private fun findClosingQuote(s: String, startIdx: Int, endIdx: Int = s.length - 1): Int {
         var isEscaped = false
-        for (i in startIdx until s.length) {
+        for (i in startIdx..endIdx) {
             val c = s[i]
             if (isEscaped) {
                 isEscaped = false
