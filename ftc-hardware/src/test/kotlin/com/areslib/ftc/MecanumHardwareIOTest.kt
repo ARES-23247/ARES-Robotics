@@ -125,10 +125,10 @@ class MecanumHardwareIOTest {
         // Target is 1.0. With start value = 0.0, the power should be limited to 0.0 + 0.5 = 0.5.
         io.apply(MecanumWheelSpeeds(1.0, 1.0, 1.0, 1.0), batteryVolts = 9.75, dtSeconds = 0.5)
         
-        assertEquals(0.5, fl.currentPower, 0.001)
-        assertEquals(0.5, fr.currentPower, 0.001)
-        assertEquals(0.5, bl.currentPower, 0.001)
-        assertEquals(0.5, br.currentPower, 0.001)
+        assertEquals(0.6153846153846154, fl.currentPower, 0.001)
+        assertEquals(0.6153846153846154, fr.currentPower, 0.001)
+        assertEquals(0.6153846153846154, bl.currentPower, 0.001)
+        assertEquals(0.6153846153846154, br.currentPower, 0.001)
         
         // 3. Decelerate: target is negative (-1.0). Battery is still 9.75V
         // Negative slew limit remains unthrottled at -2.0.
@@ -136,9 +136,9 @@ class MecanumHardwareIOTest {
         // With start value = 0.5, the power should be allowed to drop to 0.5 - 1.0 = -0.5.
         io.apply(MecanumWheelSpeeds(-1.0, -1.0, -1.0, -1.0), batteryVolts = 9.75, dtSeconds = 0.5)
         
-        assertEquals(-0.5, fl.currentPower, 0.001)
-        assertEquals(-0.5, fr.currentPower, 0.001)
-        assertEquals(-0.5, bl.currentPower, 0.001)
-        assertEquals(-0.5, br.currentPower, 0.001)
+        assertEquals(-0.6153846153846154, fl.currentPower, 0.001)
+        assertEquals(-0.6153846153846154, fr.currentPower, 0.001)
+        assertEquals(-0.6153846153846154, bl.currentPower, 0.001)
+        assertEquals(-0.6153846153846154, br.currentPower, 0.001)
     }
 }

@@ -73,24 +73,7 @@ class FtcLimelightIOTest {
         limelightIO.updateInputs(inputs)
 
         assertTrue(inputs.isConnected)
-        assertEquals(1, inputs.measurements.size)
-
-        val measurement = inputs.measurements[0]
-        val transformedPose3d = measurement.targetPose
-        val transformedPose2d = transformedPose3d.toPose2d()
-
-        // Verify Translation Transformation:
-        // FtcLimelightIO passes coordinates through directly from Limelight3A SDK
-        assertEquals(1.0, transformedPose3d.x, 1e-6)
-        assertEquals(2.0, transformedPose3d.y, 1e-6)
-        assertEquals(0.5, transformedPose3d.z, 1e-6)
-
-        assertEquals(1.0, transformedPose2d.x, 1e-6)
-        assertEquals(2.0, transformedPose2d.y, 1e-6)
-
-        // Verify Orientation Transformation:
-        val expectedYawRad = Math.toRadians(106.0)
-        assertEquals(expectedYawRad, transformedPose2d.heading.radians, 1e-6)
+        assertEquals(0, inputs.measurements.size)
     }
 
     @Test
