@@ -1,0 +1,14 @@
+# Each subproject is its own independent repository with its own GitHub remote.
+# They are intentionally NOT tracked here; this parent repo only holds
+# cross-cutting, workspace-level files (e.g. AGENTS.md).
+/ARESLib-Kotlin/
+/ARES-FTC/
+/ARES-FRC/
+/ARES-Analytics/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
