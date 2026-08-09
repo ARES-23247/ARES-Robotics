@@ -71,8 +71,11 @@ class FrcVisionTracker(
             io.updateInputs(visionInputs)
             if (visionInputs.measurements.isNotEmpty()) {
                 val measurement = visionInputs.measurements[0]
-                // Distance-based outlier rejection: skip fusion for far/ambiguous tags
-                val distance = kotlin.math.abs(measurement.robotPoseTargetSpace.z)
+                // Distance-based outlier rejection: skip fusion for far/ambiguous tags.
+                // Use full euclidean target-space distance; tag-normal depth (z) alone would
+                // let an off-axis robot at (x=5, z=1) pass the 6 m filter.
+                val ts = measurement.robotPoseTargetSpace
+                val distance = kotlin.math.hypot(kotlin.math.hypot(ts.x, ts.y), ts.z)
                 val ambiguity = measurement.ambiguity
                 if (!isSimulation && swerveIO != null && distance < 6.0 && ambiguity < 0.3) {
                     try {
