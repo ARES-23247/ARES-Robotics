@@ -1,5 +1,6 @@
 package com.areslib.action
 
+import com.areslib.util.RobotClock
 import com.google.gson.Gson
 import java.io.BufferedWriter
 import java.io.File
@@ -56,7 +57,7 @@ class ActionLogger(
     private val gson = Gson()
     private val queue = LinkedBlockingQueue<RobotAction>(1000)
     private var writer: BufferedWriter? = null
-    private var isRunning = false
+    @Volatile private var isRunning = false
 
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -79,7 +80,7 @@ class ActionLogger(
                 logDir.mkdirs()
             }
 
-            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date(RobotClock.currentTimeMillis()))
             val logFile = File(logDir, "action_log_${timestamp}_$mode.jsonl")
 
             writer = BufferedWriter(FileWriter(logFile))
