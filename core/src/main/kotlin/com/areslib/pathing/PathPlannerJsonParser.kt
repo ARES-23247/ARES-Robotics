@@ -121,6 +121,57 @@ object PathPlannerJsonParser {
      * @return Corresponding output value or Unit.
      */
     fun parse(jsonString: String, fallbackMaxVel: Double, fallbackMaxAccel: Double): ParsedPathData {
+        return try {
+            parseInternal(jsonString, fallbackMaxVel, fallbackMaxAccel)
+        } catch (e: Exception) {
+            System.err.println("[PathPlannerJsonParser] Failed to parse PathPlanner JSON: ${e.message}; returning empty result")
+            emptyParsedData(fallbackMaxVel, fallbackMaxAccel)
+        }
+    }
+
+    private fun emptyParsedData(fallbackMaxVel: Double, fallbackMaxAccel: Double): ParsedPathData =
+        ParsedPathData(
+            waypoints = emptyList(),
+            defaultMaxVel = fallbackMaxVel,
+            defaultMaxAccel = fallbackMaxAccel,
+            startVel = 0.0,
+            startRotDeg = null,
+            endVel = 0.0,
+            endRotDeg = null,
+            rotationTargets = emptyList(),
+            constraintZones = emptyList(),
+            pointTowardsZones = emptyList(),
+            eventMarkers = emptyList()
+        )
+
+    /**
+     * Sanitizes a `waypointRelativePos` value.
+     *
+     * PathPlanner encodes marker/target position as `segmentIndex + fraction` (fraction in
+     * [0,1]), so the valid global range is [0, numWaypoints-1]. Non-finite or out-of-range
+     * values otherwise slip through and (via a silent binarySearch clamp in SplineMotionProfiler)
+     * fire markers at the wrong trajectory point.
+     */
+    private fun sanitizeRelativePos(pos: Double, maxRelativePos: Double, context: String): Double {
+        val max = if (maxRelativePos.isFinite() && maxRelativePos >= 0.0) maxRelativePos else 1.0
+        return when {
+            pos.isNaN() || pos.isInfinite() -> {
+                System.err.println("[PathPlannerJsonParser] $context has non-finite waypointRelativePos ($pos); clamping to 0.0")
+                0.0
+            }
+            pos < 0.0 -> {
+                System.err.println("[PathPlannerJsonParser] $context has waypointRelativePos $pos < 0; clamping to 0.0")
+                0.0
+            }
+            pos > max -> {
+                System.err.println("[PathPlannerJsonParser] $context has waypointRelativePos $pos beyond path extent ($max); clamping to $max")
+                max
+            }
+            else -> pos
+        }
+    }
+
+    private fun parseInternal(jsonString: String, fallbackMaxVel: Double, fallbackMaxAccel: Double): ParsedPathData {
         val root = gson.fromJson(jsonString, JsonObject::class.java)
 
         val waypointsArray = root.getAsJsonArray("waypoints")
@@ -138,6 +189,12 @@ object PathPlannerJsonParser {
 
             parsedWaypoints.add(WaypointData(anchor, prevControl, nextControl))
         }
+
+        // waypointRelativePos uses index.fraction semantics (segmentIndex + fraction), so a
+        // marker on segment i has value in [i, i+1] and the valid global range is
+        // [0, numWaypoints-1]. Out-of-range / non-finite values would make the marker fire at
+        // the wrong trajectory point (SplineMotionProfiler binarySearch clamps silently).
+        val maxRelativePos = (parsedWaypoints.size - 1).coerceAtLeast(0).toDouble()
 
         val globalConstraints = if (root.has("globalConstraints") && !root.get("globalConstraints").isJsonNull) {
             root.getAsJsonObject("globalConstraints")
@@ -166,7 +223,7 @@ object PathPlannerJsonParser {
                 val obj = arr.get(i).asJsonObject
                 parsedRotationTargets.add(
                     ParsedRotationTarget(
-                        waypointRelativePos = obj.get("waypointRelativePos").asDouble,
+                        waypointRelativePos = sanitizeRelativePos(obj.get("waypointRelativePos").asDouble, maxRelativePos, "rotation target $i"),
                         rotationDegrees = obj.get("rotationDegrees").asDouble
                     )
                 )
@@ -208,7 +265,7 @@ object PathPlannerJsonParser {
             for (i in 0 until markersArray.size()) {
                 val marker = markersArray.get(i).asJsonObject
                 if (!marker.has("waypointRelativePos") || marker.get("waypointRelativePos").isJsonNull) continue
-                val pos = marker.get("waypointRelativePos").asDouble
+                val pos = sanitizeRelativePos(marker.get("waypointRelativePos").asDouble, maxRelativePos, "event marker")
 
                 var commandName = "Unknown"
                 if (marker.has("command") && !marker.get("command").isJsonNull) {
