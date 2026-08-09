@@ -130,16 +130,34 @@ object EKFStatePropagator {
             val deltaY = currRaw.y - prevRaw.y
             val deltaHeading = wrapAngle(currRaw.headingRad - prevRaw.headingRad)
 
+            // Pre-update heading for this step = heading at index i-1 (currentHeadingRad
+            // before this step's mutation). This mirrors the forward pass, which uses the
+            // pre-update heading (state.estimatedPoseHeading) for both the world->robot
+            // delta rotation and the midpoint heading in OdometryFusionController.processOdometryDirect.
+            val preUpdateHeading = currentHeadingRad
+
             currentX += deltaX
             currentY += deltaY
             currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
 
             val scale = currRaw.qScale
-            val reThetaMid = currentHeadingRad + deltaHeading * 0.5
+            val reThetaMid = preUpdateHeading + deltaHeading * 0.5
+
+            // The forward pass rotates world-frame deltas into robot frame using the
+            // pre-update heading before evaluating the motion Jacobian (see
+            // OdometryFusionController.processOdometryDirect). The deltas recovered here
+            // from stored history poses are world-frame position differences, so the same
+            // rotation must be applied before computing reF02/reF12 to keep the rewind pass
+            // consistent with the forward pass.
+            val reCosEst = kotlin.math.cos(preUpdateHeading)
+            val reSinEst = kotlin.math.sin(preUpdateHeading)
+            val robotLocalDx =  deltaX * reCosEst + deltaY * reSinEst
+            val robotLocalDy = -deltaX * reSinEst + deltaY * reCosEst
+
             val reSinMid = kotlin.math.sin(reThetaMid)
             val reCosMid = kotlin.math.cos(reThetaMid)
-            val reF02 = -deltaX * reSinMid - deltaY * reCosMid
-            val reF12 =  deltaX * reCosMid - deltaY * reSinMid
+            val reF02 = -robotLocalDx * reSinMid - robotLocalDy * reCosMid
+            val reF12 =  robotLocalDx * reCosMid - robotLocalDy * reSinMid
 
             val reFp00 = scratchCov2.m00 + reF02 * scratchCov2.m20
             val reFp01 = scratchCov2.m01 + reF02 * scratchCov2.m21
