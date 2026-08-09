@@ -120,21 +120,26 @@ class LinearADRC(
         val observerError = actualMeasurement - xHat1
 
         xHat1 += (xHat2 + b0 * uPrev + l1 * observerError) * dtSeconds
-        xHat2 += (l2 * observerError) * dtSeconds
-
+        
         val kp = omegaC
         val u0 = kp * (actualTarget - xHat1)
 
-        var u = if (abs(b0) > 1e-9) {
+        val uUnsat = if (abs(b0) > 1e-9) {
             (u0 - xHat2) / b0
         } else {
             0.0
         }
 
-        u = when {
-            !minOutput.isNaN() && u < minOutput -> minOutput
-            !maxOutput.isNaN() && u > maxOutput -> maxOutput
-            else -> u
+        val u = when {
+            !minOutput.isNaN() && uUnsat < minOutput -> minOutput
+            !maxOutput.isNaN() && uUnsat > maxOutput -> maxOutput
+            else -> uUnsat
+        }
+
+        val isSaturated = u != uUnsat
+        val sameSign = kotlin.math.sign(observerError) == kotlin.math.sign(u - uUnsat)
+        if (!(isSaturated && sameSign)) {
+            xHat2 += (l2 * observerError) * dtSeconds
         }
 
         uPrev = u

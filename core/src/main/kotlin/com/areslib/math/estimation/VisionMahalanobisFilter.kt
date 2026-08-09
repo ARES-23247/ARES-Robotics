@@ -234,31 +234,93 @@ object VisionMahalanobisFilter {
         val dxY = scratchK.m10 * yX + scratchK.m11 * yY + scratchK.m12 * yZ
         val dxZ = scratchK.m20 * yX + scratchK.m21 * yY + scratchK.m22 * yZ
 
-        scratchCov.m00 = scratchK.m00 * baseEntry.covariance.m00 + scratchK.m01 * baseEntry.covariance.m10 + scratchK.m02 * baseEntry.covariance.m20
-        scratchCov.m01 = scratchK.m00 * baseEntry.covariance.m01 + scratchK.m01 * baseEntry.covariance.m11 + scratchK.m02 * baseEntry.covariance.m21
-        scratchCov.m02 = scratchK.m00 * baseEntry.covariance.m02 + scratchK.m01 * baseEntry.covariance.m12 + scratchK.m02 * baseEntry.covariance.m22
+        val imk00 = 1.0 - scratchK.m00
+        val imk01 = -scratchK.m01
+        val imk02 = -scratchK.m02
+        val imk10 = -scratchK.m10
+        val imk11 = 1.0 - scratchK.m11
+        val imk12 = -scratchK.m12
+        val imk20 = -scratchK.m20
+        val imk21 = -scratchK.m21
+        val imk22 = 1.0 - scratchK.m22
 
-        scratchCov.m10 = scratchK.m10 * baseEntry.covariance.m00 + scratchK.m11 * baseEntry.covariance.m10 + scratchK.m12 * baseEntry.covariance.m20
-        scratchCov.m11 = scratchK.m10 * baseEntry.covariance.m01 + scratchK.m11 * baseEntry.covariance.m11 + scratchK.m12 * baseEntry.covariance.m21
-        scratchCov.m12 = scratchK.m10 * baseEntry.covariance.m02 + scratchK.m11 * baseEntry.covariance.m12 + scratchK.m12 * baseEntry.covariance.m22
+        val P = baseEntry.covariance
+        val t00 = imk00 * P.m00 + imk01 * P.m10 + imk02 * P.m20
+        val t01 = imk00 * P.m01 + imk01 * P.m11 + imk02 * P.m21
+        val t02 = imk00 * P.m02 + imk01 * P.m12 + imk02 * P.m22
 
-        scratchCov.m20 = scratchK.m20 * baseEntry.covariance.m00 + scratchK.m21 * baseEntry.covariance.m10 + scratchK.m22 * baseEntry.covariance.m20
-        scratchCov.m21 = scratchK.m20 * baseEntry.covariance.m01 + scratchK.m21 * baseEntry.covariance.m11 + scratchK.m22 * baseEntry.covariance.m21
-        scratchCov.m22 = scratchK.m20 * baseEntry.covariance.m02 + scratchK.m21 * baseEntry.covariance.m12 + scratchK.m22 * baseEntry.covariance.m22
+        val t10 = imk10 * P.m00 + imk11 * P.m10 + imk12 * P.m20
+        val t11 = imk10 * P.m01 + imk11 * P.m11 + imk12 * P.m21
+        val t12 = imk10 * P.m02 + imk11 * P.m12 + imk12 * P.m22
 
-        val cov00 = baseEntry.covariance.m00 - scratchCov.m00
-        val cov01 = baseEntry.covariance.m01 - scratchCov.m01
-        val cov02 = baseEntry.covariance.m02 - scratchCov.m02
-        val cov10 = baseEntry.covariance.m10 - scratchCov.m10
-        val cov11 = baseEntry.covariance.m11 - scratchCov.m11
-        val cov12 = baseEntry.covariance.m12 - scratchCov.m12
-        val cov20 = baseEntry.covariance.m20 - scratchCov.m20
-        val cov21 = baseEntry.covariance.m21 - scratchCov.m21
-        val cov22 = baseEntry.covariance.m22 - scratchCov.m22
+        val t20 = imk20 * P.m00 + imk21 * P.m10 + imk22 * P.m20
+        val t21 = imk20 * P.m01 + imk21 * P.m11 + imk22 * P.m21
+        val t22 = imk20 * P.m02 + imk21 * P.m12 + imk22 * P.m22
 
-        scratchCov.m00 = cov00; scratchCov.m01 = cov01; scratchCov.m02 = cov02
-        scratchCov.m10 = cov10; scratchCov.m11 = cov11; scratchCov.m12 = cov12
-        scratchCov.m20 = cov20; scratchCov.m21 = cov21; scratchCov.m22 = cov22
+        val p1_00 = t00 * imk00 + t01 * imk01 + t02 * imk02
+        val p1_01 = t00 * imk10 + t01 * imk11 + t02 * imk12
+        val p1_02 = t00 * imk20 + t01 * imk21 + t02 * imk22
+
+        val p1_10 = t10 * imk00 + t11 * imk01 + t12 * imk02
+        val p1_11 = t10 * imk10 + t11 * imk11 + t12 * imk12
+        val p1_12 = t10 * imk20 + t11 * imk21 + t12 * imk22
+
+        val p1_20 = t20 * imk00 + t21 * imk01 + t22 * imk02
+        val p1_21 = t20 * imk10 + t21 * imk11 + t22 * imk12
+        val p1_22 = t20 * imk20 + t21 * imk21 + t22 * imk22
+
+        val r00 = scratchR.m00
+        val r11 = scratchR.m11
+        val r22 = scratchR.m22
+
+        val kr00 = scratchK.m00 * r00
+        val kr01 = scratchK.m01 * r11
+        val kr02 = scratchK.m02 * r22
+
+        val kr10 = scratchK.m10 * r00
+        val kr11 = scratchK.m11 * r11
+        val kr12 = scratchK.m12 * r22
+
+        val kr20 = scratchK.m20 * r00
+        val kr21 = scratchK.m21 * r11
+        val kr22 = scratchK.m22 * r22
+
+        val p2_00 = kr00 * scratchK.m00 + kr01 * scratchK.m01 + kr02 * scratchK.m02
+        val p2_01 = kr00 * scratchK.m10 + kr01 * scratchK.m11 + kr02 * scratchK.m12
+        val p2_02 = kr00 * scratchK.m20 + kr01 * scratchK.m21 + kr02 * scratchK.m22
+
+        val p2_10 = kr10 * scratchK.m00 + kr11 * scratchK.m01 + kr12 * scratchK.m02
+        val p2_11 = kr10 * scratchK.m10 + kr11 * scratchK.m11 + kr12 * scratchK.m12
+        val p2_12 = kr10 * scratchK.m20 + kr11 * scratchK.m21 + kr12 * scratchK.m22
+
+        val p2_20 = kr20 * scratchK.m00 + kr21 * scratchK.m01 + kr22 * scratchK.m02
+        val p2_21 = kr20 * scratchK.m10 + kr21 * scratchK.m11 + kr22 * scratchK.m12
+        val p2_22 = kr20 * scratchK.m20 + kr21 * scratchK.m21 + kr22 * scratchK.m22
+
+        val pn00 = p1_00 + p2_00
+        val pn01 = p1_01 + p2_01
+        val pn02 = p1_02 + p2_02
+
+        val pn10 = p1_10 + p2_10
+        val pn11 = p1_11 + p2_11
+        val pn12 = p1_12 + p2_12
+
+        val pn20 = p1_20 + p2_20
+        val pn21 = p1_21 + p2_21
+        val pn22 = p1_22 + p2_22
+
+        val sym00 = pn00.coerceAtLeast(1e-9)
+        val sym01 = (pn01 + pn10) / 2.0
+        val sym02 = (pn02 + pn20) / 2.0
+
+        val sym11 = pn11.coerceAtLeast(1e-9)
+        val sym12 = (pn12 + pn21) / 2.0
+
+        val sym22 = pn22.coerceAtLeast(1e-9)
+
+        scratchCov.m00 = sym00; scratchCov.m01 = sym01; scratchCov.m02 = sym02
+        scratchCov.m10 = sym01; scratchCov.m11 = sym11; scratchCov.m12 = sym12
+        scratchCov.m20 = sym02; scratchCov.m21 = sym12; scratchCov.m22 = sym22
 
         state.history.copyInto(scratchHistory)
 

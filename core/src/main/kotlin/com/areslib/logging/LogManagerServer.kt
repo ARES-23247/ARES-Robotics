@@ -119,6 +119,7 @@ object LogManagerServer : NanoHTTPD(5002) {
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Missing file parameter")
 
         val file = File(logDir, fileName)
+        if (!file.canonicalPath.startsWith(logDir.canonicalPath)) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
         if (!file.exists() || !file.isFile) {
             val syncedFile = File(syncedDir, fileName)
             if (syncedFile.exists() && syncedFile.isFile) {
@@ -145,7 +146,9 @@ object LogManagerServer : NanoHTTPD(5002) {
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error": "Missing file parameter"}""")
 
         val file = File(logDir, fileName)
+        if (!file.canonicalPath.startsWith(logDir.canonicalPath)) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
         val syncedFile = File(syncedDir, fileName)
+        if (!syncedFile.canonicalPath.startsWith(syncedDir.canonicalPath)) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
 
         var deleted = false
         if (file.exists() && file.isFile) deleted = file.delete() || deleted

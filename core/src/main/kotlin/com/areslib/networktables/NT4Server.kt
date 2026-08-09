@@ -37,7 +37,12 @@ class NT4Server(
     private val clientPublishers = ConcurrentHashMap<WebSocket, CopyOnWriteArraySet<Long>>()
     private var dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
 
-    private val encodeBuffer = java.io.ByteArrayOutputStream(4096)
+    private class FastByteArrayOutputStream(size: Int) : java.io.ByteArrayOutputStream(size) {
+        fun buffer(): ByteArray = buf
+        fun count(): Int = count
+    }
+
+    private val encodeBuffer = FastByteArrayOutputStream(4096)
     private val entriesToSendBuffer = ArrayList<NT4Entry>(128)
     private var packer: org.msgpack.core.MessagePacker = try {
         MessagePack.newDefaultPacker(encodeBuffer)
@@ -256,16 +261,16 @@ class NT4Server(
         }
     }
 
-    private fun sendBinaryBuffer(conn: WebSocket, bytes: ByteArray) {
+    private fun sendBinaryBuffer(conn: WebSocket, buffer: ByteBuffer) {
         try {
-            conn.send(ByteBuffer.wrap(bytes))
+            conn.send(buffer)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     @Synchronized
-    fun encodeNT4Messages(timestamp: Long, entries: List<NT4Entry>): ByteArray {
+    fun encodeNT4Messages(timestamp: Long, entries: List<NT4Entry>): ByteBuffer {
         encodeBuffer.reset()
         packer.packArrayHeader(entries.size)
         for (entry in entries) {
@@ -278,11 +283,11 @@ class NT4Server(
             packDataValue(dataType, dataValue)
         }
         packer.flush()
-        return encodeBuffer.toByteArray()
+        return ByteBuffer.wrap(encodeBuffer.buffer(), 0, encodeBuffer.count())
     }
 
     @Synchronized
-    fun encodeNT4Message(timestamp: Long, topicId: Long, _pubUID: Long, dataType: Int, dataValue: Any): ByteArray {
+    fun encodeNT4Message(timestamp: Long, topicId: Long, _pubUID: Long, dataType: Int, dataValue: Any): ByteBuffer {
         encodeBuffer.reset()
         packer.packArrayHeader(1)
         packer.packArrayHeader(4)
@@ -291,7 +296,7 @@ class NT4Server(
         packer.packInt(dataType)
         packDataValue(dataType, dataValue)
         packer.flush()
-        return encodeBuffer.toByteArray()
+        return ByteBuffer.wrap(encodeBuffer.buffer(), 0, encodeBuffer.count())
     }
 
     private fun packDataValue(dataType: Int, dataValue: Any) {

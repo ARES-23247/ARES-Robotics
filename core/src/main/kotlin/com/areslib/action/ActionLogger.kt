@@ -119,9 +119,15 @@ class ActionLogger(
         }
     }
 
+    private val adapterCache = java.util.concurrent.ConcurrentHashMap<Class<*>, com.google.gson.TypeAdapter<RobotAction>>()
+
     private fun writeAction(action: RobotAction) {
         val w = writer ?: return
-        val typeName = action.javaClass.simpleName
+        val clazz = action.javaClass
+        val typeName = clazz.simpleName
+        
+        @Suppress("UNCHECKED_CAST")
+        val adapter = adapterCache.getOrPut(clazz) { gson.getAdapter(clazz) as com.google.gson.TypeAdapter<RobotAction> }
 
         try {
             w.write("{\"run_id\":\"")
@@ -137,7 +143,7 @@ class ActionLogger(
             w.write("\",\"type\":\"")
             w.write(typeName)
             w.write("\",\"payload\":")
-            gson.toJson(action, w)
+            adapter.toJson(w, action)
             w.write("}")
             w.newLine()
         } catch (e: IOException) {
