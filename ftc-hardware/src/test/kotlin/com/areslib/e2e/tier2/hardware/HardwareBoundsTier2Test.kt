@@ -98,6 +98,7 @@ class HardwareBoundsTier2Test {
 
         // Let's sleep/spin briefly to simulate passage of time or let's verify warning thresholds
         analog.mockVoltage = 1.65 // 40A
+        sensor.update() // Refresh cached analog voltage
         assertTrue(sensor.instantaneousCurrent > 20.0)
         
         // Instantaneous warning at high current

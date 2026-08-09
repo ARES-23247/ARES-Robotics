@@ -80,6 +80,7 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private var filteredCurrentAmps = 0.0
     private var totalAmpSeconds = 0.0
     private var isInitialized = false
+    private var cachedAnalogVoltage = 0.0
 
     // Thermal accumulation model to simulate a slow-blow thermal fuse behavior (I^2 * t)
     private var accumulatedThermalLoad = 0.0
@@ -99,6 +100,8 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
         }
         lastUpdateTime = currentTime
 
+        // Cache raw analog voltage read during update phase
+        cachedAnalogVoltage = analogInput.voltage
         val rawCurrent = instantaneousCurrent
         
         // 1. Apply Exponential Moving Average filter to smooth out spiky motor startup draws
@@ -122,7 +125,7 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
      */
     val instantaneousCurrent: Double
         get() {
-            val voltage = analogInput.voltage
+            val voltage = cachedAnalogVoltage
             // Floodgate analog telemetry scales linearly from 0V to 3.3V
             return (voltage / 3.3).coerceIn(0.0, 1.0) * maxCurrentAmps
         }
