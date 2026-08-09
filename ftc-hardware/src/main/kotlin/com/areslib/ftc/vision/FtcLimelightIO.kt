@@ -48,6 +48,7 @@ class FtcLimelightIO(
     private val measurementListPool = Array(10) { ArrayList<VisionMeasurement>(10) }
     private var measurementListPoolIndex = 0
 
+
     init {
         try {
             limelight.start()
@@ -71,6 +72,8 @@ class FtcLimelightIO(
             val result = limelight.getLatestResult()
 
             if (result != null && result.isValid()) {
+
+
                 inputs.isConnected = true
                 measurementListPoolIndex = (measurementListPoolIndex + 1) % measurementListPool.size
                 val currentMeasurementList = measurementListPool[measurementListPoolIndex]
@@ -78,9 +81,7 @@ class FtcLimelightIO(
 
                 val now = com.areslib.util.RobotClock.currentTimeMillis()
                 val fiducials = result.getFiducialResults()
-                val numTags = fiducials.size
-                val tagId = if (numTags > 0) fiducials[0].getFiducialId() else -1
-
+                
                 val botposeRaw = result.getBotpose()
 
                 if (botposeRaw != null) {
@@ -103,9 +104,7 @@ class FtcLimelightIO(
                     fieldPose.translation = fieldTrans
                     fieldPose.rotation = fieldRot
 
-                    var relTargetPose: Pose3d? = null
-                    if (numTags > 0) {
-                        val fiducial = fiducials[0]
+                    for (fiducial in fiducials) {
                         val targetPoseRaw = fiducial.getRobotPoseTargetSpace()
                         translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
                         val targetTrans = translationPool[translationPoolIndex]
@@ -125,19 +124,18 @@ class FtcLimelightIO(
                         val tPose = posePool[posePoolIndex]
                         tPose.translation = targetTrans
                         tPose.rotation = targetRot
-                        relTargetPose = tPose
+
+                        visionMeasurementPoolIndex = (visionMeasurementPoolIndex + 1) % visionMeasurementPool.size
+                        val measurement = visionMeasurementPool[visionMeasurementPoolIndex]
+
+                        measurement.timestampMs = now - 11L
+                        measurement.targetPose = fieldPose
+                        measurement.robotPoseTargetSpace = tPose
+                        measurement.tagId = fiducial.getFiducialId()
+                        measurement.ambiguity = 0.1
+
+                        currentMeasurementList.add(measurement)
                     }
-
-                    visionMeasurementPoolIndex = (visionMeasurementPoolIndex + 1) % visionMeasurementPool.size
-                    val measurement = visionMeasurementPool[visionMeasurementPoolIndex]
-
-                    measurement.timestampMs = now - 11L
-                    measurement.targetPose = fieldPose
-                    measurement.robotPoseTargetSpace = relTargetPose ?: emptyTargetPose
-                    measurement.tagId = tagId
-                    measurement.ambiguity = 0.1
-
-                    currentMeasurementList.add(measurement)
                 }
 
                 inputs.measurements = currentMeasurementList

@@ -32,6 +32,7 @@ class PIDController(
     var d: Double
 ) {
     private var prevError: Double = 0.0
+    private var prevMeasurement: Double = 0.0
     private var totalError: Double = 0.0
     private var setpoint: Double = 0.0
     
@@ -94,6 +95,7 @@ class PIDController(
      */
     fun reset() {
         prevError = 0.0
+        prevMeasurement = 0.0
         totalError = 0.0
         isFirstStep = true
     }
@@ -149,13 +151,14 @@ class PIDController(
             return 0.0
         }
 
-        val rawDerivative = if (isFirstStep) 0.0 else (error - prevError) / dtSeconds
-        filteredDerivative = derivativeAlpha * rawDerivative + (1.0 - derivativeAlpha) * filteredDerivative
+        val measurementDerivative = if (isFirstStep) 0.0 else (measurement - prevMeasurement) / dtSeconds
+        filteredDerivative = derivativeAlpha * measurementDerivative + (1.0 - derivativeAlpha) * filteredDerivative
         
         isFirstStep = false
+        prevMeasurement = measurement
         prevError = error
 
-        val preSatOutput = p * error + i * totalError + d * filteredDerivative
+        val preSatOutput = p * error + i * totalError - d * filteredDerivative
         val isSaturated = (!maxOutput.isNaN() && preSatOutput > maxOutput && error > 0) || 
                           (!minOutput.isNaN() && preSatOutput < minOutput && error < 0)
                           
@@ -165,7 +168,7 @@ class PIDController(
             if (!maxIntegral.isNaN()) { totalError = kotlin.math.min(totalError, maxIntegral) }
         }
 
-        var output = p * error + i * totalError + d * filteredDerivative
+        var output = p * error + i * totalError - d * filteredDerivative
         
         if (!minOutput.isNaN()) { output = kotlin.math.max(output, minOutput) }
         if (!maxOutput.isNaN()) { output = kotlin.math.min(output, maxOutput) }

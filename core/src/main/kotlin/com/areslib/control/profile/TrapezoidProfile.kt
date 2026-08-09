@@ -98,14 +98,16 @@ class TrapezoidProfile {
         val maxA = constraints.maxAcceleration
 
         // Calculate time needed to reach goal
-        val accelTime = maxV / maxA
-        val accelDist = 0.5 * maxA * accelTime * accelTime
+        val deltaV = maxV - abs(currentLocal.velocity)
+        val accelTime = if (deltaV > 0) deltaV / maxA else 0.0
+        val accelDist = abs(currentLocal.velocity) * accelTime + 0.5 * maxA * accelTime * accelTime
+        val decelDist = 0.5 * (maxV * maxV) / maxA
 
         val cruiseDist: Double
         val actualMaxV: Double
         val actualAccelTime: Double
 
-        if (2 * accelDist > dist) {
+        if (accelDist + decelDist > dist) {
             // Triangular profile
             actualAccelTime = sqrt(dist / maxA)
             actualMaxV = maxA * actualAccelTime

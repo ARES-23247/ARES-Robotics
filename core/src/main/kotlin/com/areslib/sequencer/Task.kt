@@ -188,6 +188,22 @@ class TimeWaitTask(
 }
 
 /**
+ * Task to wait until a specified condition is true.
+ */
+class WaitUntilTask(
+    private val predicate: (RobotState) -> Boolean
+) : Task {
+    override val name = "WaitUntil"
+
+    /**
+     * isCompleted declaration.
+     */
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        return predicate(state)
+    }
+}
+
+/**
  * Task to block execution until path progress reaches a certain distance.
  */
 class PathProgressWaitTask(
@@ -298,6 +314,9 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         val targetDistance = activePath.points.last().distanceMeters
         
         val isVirtualComplete = state.pathState.currentDistanceMeters >= targetDistance
+        if (holdVelocity && isVirtualComplete) {
+            return true
+        }
         if (!isVirtualComplete && elapsedMs < 15000L) {
             return false
         }

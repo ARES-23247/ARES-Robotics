@@ -176,7 +176,8 @@ class VisionAlignController {
             
             val ctrlOmega = if (abs(errHeadingFiltered) > headingErrorDeadband) {
                 val currentSign = sign(errHeadingFiltered)
-                val pTerm = errHeadingFiltered * kP_rotation
+                val activeErr = errHeadingFiltered - currentSign * headingErrorDeadband
+                val pTerm = activeErr * kP_rotation
                 val dTerm = headingErrorRate * kD_rotation
                 (pTerm + dTerm + currentSign * kS_rotational).coerceIn(-tuning.visionAlignClampRotation, tuning.visionAlignClampRotation)
             } else 0.0
@@ -184,7 +185,7 @@ class VisionAlignController {
             // Update search direction
             when {
                 abs(ctrlOmega) > 0.02 -> lastKnownSearchDirection = sign(ctrlOmega)
-                abs(ctrlX) > 0.02 -> lastKnownSearchDirection = -sign(ctrlX)
+                abs(ctrlY) > 0.02 -> lastKnownSearchDirection = sign(ctrlY)
             }
             wasTrackingTag = true
             

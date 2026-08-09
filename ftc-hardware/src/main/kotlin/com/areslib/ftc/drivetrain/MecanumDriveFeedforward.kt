@@ -146,7 +146,7 @@ class MecanumDriveFeedforward(
             val sign = sign(speedMetersPerSecond)
             val velocityFF = speedMetersPerSecond / maxWheelSpeedMps
             val staticFF = sign * kS
-            return (velocityFF + staticFF) * voltageCompensationFactor
+            return (velocityFF + staticFF)
         }
 
         if (abs(speeds[0]) < 1e-4) flController?.reset()
@@ -164,10 +164,10 @@ class MecanumDriveFeedforward(
         val rlFeedback = if (!useClosedLoopVelocity && rl != null) rl.calculate(rlVel / ticksPerMeter, speeds[2], dtSeconds) else 0.0
         val rrFeedback = if (!useClosedLoopVelocity && rr != null) rr.calculate(rrVel / ticksPerMeter, speeds[3], dtSeconds) else 0.0
 
-        var flPower = ((applyFeedforward(speeds[0]) + flFeedback) * powerScale).coerceIn(-1.0, 1.0)
-        var frPower = ((applyFeedforward(speeds[1]) + frFeedback) * powerScale).coerceIn(-1.0, 1.0)
-        var rlPower = ((applyFeedforward(speeds[2]) + rlFeedback) * powerScale).coerceIn(-1.0, 1.0)
-        var rrPower = ((applyFeedforward(speeds[3]) + rrFeedback) * powerScale).coerceIn(-1.0, 1.0)
+        var flPower = ((applyFeedforward(speeds[0]) + flFeedback) * powerScale)
+        var frPower = ((applyFeedforward(speeds[1]) + frFeedback) * powerScale)
+        var rlPower = ((applyFeedforward(speeds[2]) + rlFeedback) * powerScale)
+        var rrPower = ((applyFeedforward(speeds[3]) + rrFeedback) * powerScale)
 
         val baseLimit = slewRateLimit
         if (baseLimit != null) {
@@ -188,9 +188,9 @@ class MecanumDriveFeedforward(
         rlLimiter?.let { rlPower = it.calculate(rlPower, dtSeconds) }
         rrLimiter?.let { rrPower = it.calculate(rrPower, dtSeconds) }
 
-        outputPowers[0] = flPower
-        outputPowers[1] = frPower
-        outputPowers[2] = rlPower
-        outputPowers[3] = rrPower
+        outputPowers[0] = (flPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        outputPowers[1] = (frPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        outputPowers[2] = (rlPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        outputPowers[3] = (rrPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
     }
 }

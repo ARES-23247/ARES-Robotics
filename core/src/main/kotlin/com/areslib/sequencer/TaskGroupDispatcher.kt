@@ -38,6 +38,11 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
         while (currentIndex < tasks.size) {
             val currentTask = tasks[currentIndex]
             val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
+            val status = TaskStateMachine.getStatus(currentTask)
+            if (status == TaskStatus.FAILED || status == TaskStatus.CANCELLED) {
+                TaskStateMachine.transitionTo(this, TaskStatus.FAILED)
+                return false
+            }
             if (currentTask.isCompleted(state, currentTaskElapsed)) {
                 pendingActions.addAll(currentTask.end(state, interrupted = false))
                 currentIndex++
@@ -59,7 +64,7 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
      * @return Corresponding output value or Unit.
      */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-
+        super.execute(state, elapsedMs)
         actionsList.clear()
         if (pendingActions.isNotEmpty()) {
             actionsList.addAll(pendingActions)
@@ -141,7 +146,7 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
      * @return Corresponding output value or Unit.
      */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-
+        super.execute(state, elapsedMs)
         actionsList.clear()
         if (pendingActions.isNotEmpty()) {
             actionsList.addAll(pendingActions)
@@ -214,14 +219,17 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
      */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (isCompleted) return true
+        var anyCompleted = false
         for (i in 0 until tasks.size) {
             val task = tasks[i]
             if (task.isCompleted(state, elapsedMs)) {
                 completedTasks.add(task)
                 pendingActions.addAll(task.end(state, interrupted = false))
-                isCompleted = true
-                break
+                anyCompleted = true
             }
+        }
+        if (anyCompleted) {
+            isCompleted = true
         }
         return isCompleted
     }
@@ -233,7 +241,7 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
      * @return Corresponding output value or Unit.
      */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-
+        super.execute(state, elapsedMs)
         actionsList.clear()
         if (pendingActions.isNotEmpty()) {
             actionsList.addAll(pendingActions)

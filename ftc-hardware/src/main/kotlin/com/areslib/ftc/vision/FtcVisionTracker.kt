@@ -81,7 +81,21 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             return
         }
 
-        val measurement = visionInputs.measurements[0]
+        val robotPoseForSelection = store.state.drive.poseEstimator.estimatedPose
+        var bestMeasurement = visionInputs.measurements[0]
+        var bestAmbiguity = bestMeasurement.ambiguity
+        var bestDistance = kotlin.math.sqrt((bestMeasurement.targetPose.x - robotPoseForSelection.x) * (bestMeasurement.targetPose.x - robotPoseForSelection.x) + (bestMeasurement.targetPose.y - robotPoseForSelection.y) * (bestMeasurement.targetPose.y - robotPoseForSelection.y))
+        
+        for (i in 1 until visionInputs.measurements.size) {
+            val m = visionInputs.measurements[i]
+            val mDist = kotlin.math.sqrt((m.targetPose.x - robotPoseForSelection.x) * (m.targetPose.x - robotPoseForSelection.x) + (m.targetPose.y - robotPoseForSelection.y) * (m.targetPose.y - robotPoseForSelection.y))
+            if (m.ambiguity < bestAmbiguity || (m.ambiguity == bestAmbiguity && mDist < bestDistance)) {
+                bestMeasurement = m
+                bestAmbiguity = m.ambiguity
+                bestDistance = mDist
+            }
+        }
+        val measurement = bestMeasurement
         lastLimelightPose = measurement.targetPose.toPose2d()
         lastLimelightTimeMs = timestampMs
 

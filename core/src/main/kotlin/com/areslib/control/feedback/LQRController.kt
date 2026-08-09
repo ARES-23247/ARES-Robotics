@@ -145,6 +145,9 @@ class LQRController(
                 }
             }
             if (maxDiff < tolerance) break
+            if (iter == maxIterations - 1) {
+                System.err.println("LQRController: DARE solver failed to converge. Final maxDiff: $maxDiff")
+            }
         }
 
         // K = (R + B^T P B)^-1 * B^T P A
@@ -194,12 +197,20 @@ class LQRController(
             yMat.copyFrom(y)
             xRefMat.copyFrom(xRef)
 
-            // 1. Calculate control input: u = -K * (xHat - xRef)
+            // 1. Correct Discrete Kalman Filter Observer with latest measurement:
+            // xHat_corrected = xHat + L * (y - C * xHat)
+            C.multiplyInto(xHat, cTimesXHat)
+            yMat.subtractInto(cTimesXHat, measuredDiff)
+            L.multiplyInto(measuredDiff, correction)
+            xHat.addInto(correction, nextXHat)
+            xHat.copyFrom(nextXHat)
+
+            // 2. Calculate control input: u = -K * (xHat - xRef)
             xHat.subtractInto(xRefMat, stateError)
             K.multiplyInto(stateError, kTimesError)
             kTimesError.multiplyScalarInto(-1.0, rawU)
 
-            // 2. Apply motor saturation constraints
+            // 3. Apply motor saturation constraints
             for (i in 0 until numInputs) {
                 var inputVal = rawU.get(i, 0)
                 
@@ -221,17 +232,10 @@ class LQRController(
                 outU[i] = inputVal
             }
 
-            // 3. Update Discrete Kalman Filter Observer:
-            // xHat_next = A * xHat + B * u + L * (y - C * xHat)
+            // 4. Predict next state: xHat_next = A * xHat + B * u
             A.multiplyInto(xHat, aTimesXHat)
             B.multiplyInto(saturatedU, bTimesU)
-            aTimesXHat.addInto(bTimesU, prediction)
-            
-            C.multiplyInto(xHat, cTimesXHat)
-            yMat.subtractInto(cTimesXHat, measuredDiff)
-            L.multiplyInto(measuredDiff, correction)
-            
-            prediction.addInto(correction, nextXHat)
+            aTimesXHat.addInto(bTimesU, nextXHat)
             xHat.copyFrom(nextXHat)
 
             u.copyFrom(saturatedU)

@@ -60,6 +60,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             driver.setEncoderResolution(encoderResolution, DistanceUnit.MM)
         }
         driver.setEncoderDirections(xDirection, yDirection)
+        driver.resetPosAndIMU()
     }
 
     private var lastWarningTime = 0L

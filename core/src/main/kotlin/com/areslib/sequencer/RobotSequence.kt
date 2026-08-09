@@ -43,6 +43,14 @@ class RobotSequence {
     }
 
     /**
+     * Blocks execution until a dynamic condition is met.
+     */
+    fun waitUntil(predicate: (com.areslib.state.RobotState) -> Boolean): RobotSequence {
+        tasks.add(WaitUntilTask(predicate))
+        return this
+    }
+
+    /**
      * Dispatches a single Redux [RobotAction] instantly.
      */
     fun dispatch(action: RobotAction): RobotSequence {

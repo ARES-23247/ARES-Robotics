@@ -204,14 +204,18 @@ object OdometryFusionController {
         }
 
         scratchQ.setTo(baseQ)
-        val movementScale = if (isStationary) 0.001 else 1.0
+        val speed = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY) / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
+        val movementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
         scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale)
 
         val newX = state.estimatedPoseX + deltaX
         val newY = state.estimatedPoseY + deltaY
-        val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + correctedDeltaHeading)
         
-        val thetaMid = state.estimatedPoseHeading + correctedDeltaHeading * 0.5
+        val slipWeight = if (slipScale >= 10.0) 0.8 else 0.0
+        val blendedDeltaHeading = (1.0 - slipWeight) * correctedDeltaHeading + slipWeight * (correctedGyroRate * dtSeconds)
+        val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + blendedDeltaHeading)
+        
+        val thetaMid = state.estimatedPoseHeading + blendedDeltaHeading * 0.5
         val cosEst = kotlin.math.cos(state.estimatedPoseHeading)
         val sinEst = kotlin.math.sin(state.estimatedPoseHeading)
         val robotLocalDx =  deltaX * cosEst + deltaY * sinEst
