@@ -92,6 +92,7 @@ class SwerveKinematics(
             
             for (i in 0 until numModules) {
                 outStates[i].speedMetersPerSecond = 0.0
+                outStates[i].angle = previousStates[i].angle
                 previousStates[i].speedMetersPerSecond = 0.0
             }
             hasPreviousState = true
@@ -148,6 +149,21 @@ class SwerveKinematics(
         }
 
         hasPreviousState = true
+    }
+
+    /**
+     * Resets internal steer-state memory so a shared [SwerveKinematics] instance does not
+     * bleed teleop steering state into a subsequent autonomous run.
+     *
+     * Clears [hasPreviousState] (so the next update seeds angles from chassis velocity rather
+     * than stale previous angles) and zeros [previousSteerVels] (so the steering-velocity
+     * second-order limits restart from rest).
+     */
+    fun reset() {
+        hasPreviousState = false
+        for (i in 0 until numModules) {
+            previousSteerVels[i] = 0.0
+        }
     }
 
     /**

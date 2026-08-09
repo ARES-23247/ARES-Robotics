@@ -33,6 +33,12 @@ class MecanumKinematics(
     private val trackWidthMeters: Double,
     private val wheelBaseMeters: Double
 ) {
+    init {
+        require(trackWidthMeters > 0.0 && wheelBaseMeters > 0.0) {
+            "trackWidthMeters and wheelBaseMeters must both be positive (got trackWidth=$trackWidthMeters, wheelBase=$wheelBaseMeters)"
+        }
+    }
+
     /** The effective rotational moment arm constant $k = \frac{W}{2} + \frac{L}{2}$ in meters ($m$). */
     val k: Double = (trackWidthMeters / 2.0) + (wheelBaseMeters / 2.0)
 
@@ -68,7 +74,8 @@ class MecanumKinematics(
     fun toChassisSpeeds(fl: Double, fr: Double, bl: Double, br: Double): ChassisSpeeds {
         val vx = (fl + fr + bl + br) / 4.0
         val vy = (-fl + fr + bl - br) / 4.0
-        val omega = (-fl + fr - bl + br) / (4.0 * k)
+        val denom = 4.0 * k
+        val omega = if (k > 0.0 && denom > 0.0) (-fl + fr - bl + br) / denom else 0.0
         return ChassisSpeeds(vx, vy, omega)
     }
 
