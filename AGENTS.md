@@ -69,6 +69,24 @@ The dashboard is a **passive NT4 WebSocket client**. Robots/simulator publish; d
 | `Topology/HardwareMap` | robot (once at init) | Serialized `HardwareTopology` JSON |
 | `Superstructure/PackedState` | robot | Packed double-array subsystem state |
 
+**Dashboard variable mapping (NT4 → Compose):**
+| NT4 Topic | Dashboard Variable | Component |
+|---|---|---|
+| `ARES/EstimatedPose/0` | `robotX` | PoseViewerCard, FieldViewerViewModel |
+| `ARES/EstimatedPose/1` | `robotY` | PoseViewerCard, FieldViewerViewModel |
+| `ARES/EstimatedPose/2` | `robotHeading` | PoseViewerCard, FieldViewerViewModel |
+| `Drive/Pose_X` | `robotX` | PoseViewerCard, FieldViewerViewModel |
+| `Drive/Pose_Y` | `robotY` | PoseViewerCard, FieldViewerViewModel |
+| `Drive/Drive_Heading` | `robotHeading` | PoseViewerCard, FieldViewerViewModel |
+| `Drive/Odom_X` | `pinpointX` / `ekfX` | PoseViewerCard, FieldViewerViewModel |
+| `Drive/Odom_Y` | `pinpointY` / `ekfY` | PoseViewerCard, FieldViewerViewModel |
+| `Drive/Odom_Heading` | `pinpointHeading` / `ekfHeading` | PoseViewerCard, FieldViewerViewModel |
+| `Hardware/Motors/{name}/Power` | `velocities[i]` | MecanumVisualizer |
+| `Hardware/Motors/{name}/Velocity` | `velocities[i]` | MecanumVisualizer |
+| `Hardware/Motors/{name}/CurrentAmps` | `currents[i]` | MecanumVisualizer |
+
+> **Warning:** Both `ARES/EstimatedPose/2` and `Drive/Drive_Heading` map to `robotHeading`. The last-arriving value wins per render frame. Ensure both sources publish consistent data.
+
 **Offline-first rule (CRITICAL):** Robots never push to the cloud. The `LogManagerServer` (NanoHTTPD, **port 5002**, in ARESLib core) exposes `/api/logs`, `/api/download?file=`, `POST /api/delete`. The desktop app *pulls* `.jsonl` logs over local Wi-Fi, parses to DuckDB, then the laptop handles GCS/Firestore sync via the gateway. Never add cloud calls inside robot code.
 
 ## 5. Cross-Cutting Conventions (apply to ALL projects)
@@ -79,7 +97,27 @@ These have caused real bugs. The canonical reference is **`ARESLib-Kotlin/GEMINI
 - **CCW-positive, math standard** everywhere: 0 rad = +X, π/2 = +Y (toward blue FTC wall). Radians internally; degrees for display only.
 - **Pinpoint boundary:** `PinpointIO.kt` forces CCW-positive via `headingMult = if(isHeadingCcwPositive) 1.0 else -1.0`. **Do NOT add negations elsewhere** in the pipeline (EKF, store, telemetry, dashboard are all CCW+).
 - **Dashboard field→canvas transform** (`ARES-Analytics/.../FieldCanvasUtils.kt`): `canvasX = -fieldY`, `canvasY = -fieldX`. Robot icon points RIGHT at rotation 0, so `PathRenderer.kt` applies a **mandatory `-90°` offset**. If you change the transform or icon, re-verify the offset — they are coupled.
-- **Limelight target-space** (vision alignment): Y is UP (not Z). Robot heading/yaw = `-robotPoseTargetSpace.rotation.y`, NOT `.z`. See `ARESLib-Kotlin/.agents/AGENTS.md`.
+
+### Limelight Target-Space Coordinate System
+When working with `VisionMeasurement.robotPoseTargetSpace` (AprilTag alignment), the axes are **non-obvious**:
+- **X+**: Right of the tag (when facing it). **Y+**: Upward (VERTICAL — different from FTC field Z-up!). **Z+**: Outward from tag face.
+- **Robot heading = `-robotPoseTargetSpace.rotation.y`**, NOT `.rotation.z` (which is tilt, not heading).
+- Negate `rotation.y` because the Limelight's Y-axis rotation convention is opposite to CCW-positive.
+
+```kotlin
+// ✅ CORRECT
+val robotYaw = -robotPoseTargetSpace.rotation.y
+// ❌ WRONG — this is roll/tilt
+val robotYaw = robotPoseTargetSpace.rotation.z
+```
+
+### Simulator State Sync Pitfall
+The sim's `DesktopSimLauncher` maintains a local `var state = RobotState()`. This is **NOT synced** with the OpMode's Redux store for drive data (only superstructure is synced). `TelemetryPublisher.publishEstimatedPose()` must use `currentPose` (Dyn4j ground truth), NOT `state.drive.poseEstimator.estimatedPose` (always default/zeroed).
+
+### Vision & Kidnapped Robot Recovery
+- **FtcVisionTracker.kt**: Do NOT use `isInInit` flag. The snap triggers ONCE when `hasInitializedPoseWithVision` is false, then relies on `consecutiveVisionRejections >= 10` for further snaps during active play.
+- **Alliance & Field-Centric Drive**: Field-centric drive requires BOTH `joystickForward` and `joystickLeft` to be inverted if the alliance is BLUE. Handle in the OpMode before passing to `fieldRelativeDrive`.
+- **Simulator Alliance State**: The sim teleport ONLY happens on INIT. If you switch alliance in the dashboard, the simulator MUST dispatch `SetAlliance` to the OpMode's store. The dashboard's `ARES/Input/isRedAlliance` NT4 topic MUST default to `true` so the simulator matches the OpMode's default Red alliance on startup.
 
 ### Motor names
 FTC hardware-map names are `fl`, `fr`, `rl`, `rr` (**rear**, not `bl`/`br`). Dashboard visualizers must handle BOTH naming conventions.
@@ -89,6 +127,9 @@ All topic names are **stripped of leading `/`** (e.g. `ARES/Input/vx`, not `/ARE
 
 ### Zero-GC hot paths
 No allocations (no `DoubleArray`, `Rotation2d`, iterators, reflection) inside 50–100 Hz `update()`/sampling/steering loops. Use pre-allocated buffers and object pools (`kalmanGainPool`, `pathPool`). Prefer `when` over nested `if/else` (zero-allocation, idiomatic).
+
+### Hardware read caching
+All hardware reads (voltage sensors, encoders, servo positions, analog inputs) must happen **once per loop** in `readSensors()`/`refresh()`/`update()` and be stored in cached fields. Getters and `writeOutputs()` must **never** trigger direct hardware reads — always reference the cached value.
 
 ### Unified clock
 **Never** call `System.currentTimeMillis()`/`nanoTime()` in library code. Use `com.areslib.util.RobotClock` so simulation/replay stay deterministic.
@@ -114,7 +155,7 @@ The foundation. **5 Gradle modules** (`settings.gradle.kts`): `core` → (`ftc-m
 - **`frc-hardware/`** — `FrcBaseRobot`, `FrcSwerveRobot`, `SwerveModuleIOPhoenix6`, `FRCSwerveHardwareIO`, `FrcLimelightIO`, `FrcPowerManager`, `FrcTelemetryManager`, `XboxControllerExt`
 - **`ftc-mocks/`** — reimplements `com.qualcomm.*`, `org.firstinspires.ftc.*`, `android.*`, `com.acmerobotics.dashboard.*` so FTC code runs on desktop without Android.
 - **`simulator/`** — dyn4j 2D physics, headless mode, OpMode runner, `DesktopSimLauncher` (main class), `VerificationApp`, NT4 bridge, LWJGL gamepad.
-- **Docs:** `GEMINI.md` (canonical source of truth), `PROJECT.md`, `docs/onboarding/` (4 guides), `TEST_INFRA.md`, `.planning/`, `.agents/AGENTS.md` (Limelight/heading gotchas).
+- **Docs:** `GEMINI.md` (canonical source of truth), `.planning/PROJECT.md` (roadmap), `docs/onboarding/` (4 guides), `TEST_INFRA.md`.
 - **Build/test:** `.\gradlew.bat compileKotlin compileTestKotlin`, `test`, `:core:test`, `:ftc-hardware:test`, `publishToMavenLocal`. Tests are JUnit 5 with tiered E2E suites (`e2e/tier1`, `e2e/tier2`, `ZeroGcRegressionTest`).
 
 ### ARES-FTC (`C:\Users\david\dev\robotics\ares\ARES-FTC`)
@@ -154,16 +195,16 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
   - `ui/` — `theme/` (`AresTheme`, Colors, Type), `screens/` (16 screens), `components/dashboard/` (~40 widgets incl. FieldViewerCard, PoseViewerCard, TelemetryChartPanel, MecanumVisualizer, SwerveVisualizer, ControlLoopProfilerCard), `components/pathplanner/`, `components/core/`, `components/terminal/`, etc.
 - **`gateway/src/main/kotlin/com/ares/analytics/gateway/`** — Ktor Netty on Cloud Run (:8080). `Application.kt`; `auth/FirebaseAuth.kt` (FirebasePrincipal, supports `MOCK_AUTH=true` dev); routes: `authRoutes` (`POST /api/auth/github`), `archiveRoutes` (upload-url/sync/delete/download-url, team robots CRUD), `diagnosticsRoutes` (`POST /api/diagnostics/forensics`, rate-limited).
 - **`shared/`** — shared JSON (`AppJson`), `Models.kt` (field geometry, Obstacle, GamePiece, AprilTagPlacement), `PathPlannerModels.kt` (full PathPlanner v2025.0 schema), `models/` (Session, SessionSummary, TelemetryFrame, AlertRecord, WorkspaceConfig, TopologyNode, HardwareTopology, ForensicsRequest, DriverProfile).
-- **Docs:** `ARCHITECTURE.md` (very detailed, 9 sections — data tiers, FrameBatcher, replay engine, SysId OLS, vision calibration, hardware topology), `AUDIT.md` (security findings), `reports/`, `.agents/AGENTS.md` (NT4 key map, canvas transform, `-90°` offset).
+- **Docs:** `ARCHITECTURE.md` (very detailed, 9 sections — data tiers, FrameBatcher, replay engine, SysId OLS, vision calibration, hardware topology), `AUDIT.md` (security findings), `reports/`.
 - **Build/run:** `.\gradlew.bat :app:run` (mainClass `com.ares.analytics.MainKt`); `.\gradlew.bat run` (root) orchestrates gateway (bg) + app (fg). Native dist: `:app:packageReleaseMsi`.
-- **Known audit issues** (see `AUDIT.md`): hardcoded OAuth secret (reversed string), tenant-isolation gaps in rules, LLM→raw SQL via `Statement.execute()`, concurrency leaks in ReplayEngine. Be aware when touching auth/gateway/cloud code.
+- **Known audit issues** (see `AUDIT.md`): hardcoded OAuth secret (reversed string), tenant-isolation gaps in rules. ~~LLM→raw SQL~~ (fixed: SELECT-only whitelist), ~~ReplayEngine concurrency~~ (fixed: ConcurrentHashMap + socket close).
 
 ## 7. Working in This Workspace — Checklist
 
 - **Fresh checkout?** Run `.\setup.ps1` (Windows) or `./setup.sh` (macOS/Linux) to clone all four subprojects as siblings of this file. Idempotent — existing dirs are skipped.
 - **Changing ARESLib?** Run `publishToMavenLocal` in `ARESLib-Kotlin/` first, then rebuild consumers. For ARES-FRC/FTC the composite build will substitute automatically if the sibling repo exists.
-- **Telemetry mismatch in the dashboard?** Check the NT4 topic map (§4 + `ARES-Analytics/.agents/AGENTS.md`), confirm leading-`/` stripping, and verify CCW+ heading consistency.
-- **Heading/rotation looks wrong?** Re-read `GEMINI.md §5` and the negation rules. The usual culprits: extra negation added after `PinpointIO`, the `-90°` canvas offset, or Limelight `rotation.y` vs `.z`.
+- **Telemetry mismatch in the dashboard?** Check the NT4 topic map and dashboard variable mapping (§4), confirm leading-`/` stripping, and verify CCW+ heading consistency.
+- **Heading/rotation looks wrong?** Re-read `GEMINI.md §5` and the negation rules in §5 above. Usual culprits: extra negation after `PinpointIO`, the `-90°` canvas offset, or Limelight `rotation.y` vs `.z`.
 - **Writing a hot-path (robot or sim)?** Zero allocations. Use buffers/pools, `RobotClock`, `when` over nested `if`.
 - **Adding a subsystem?** Follow the 6-file Redux pattern (State/Action/Reducer/IO interface/Ftc-or-Frc IO/Mock IO/Controller). See `ARES-FTC/TeamCode/.../test/tools/SubsystemGenerator.kt`.
 - **Cloud/sync code?** Remember offline-first: robot serves `LogManagerServer:5002`; the laptop pulls then syncs. Never push from robot.
@@ -175,7 +216,7 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 |---|---|
 | Canonical conventions | `ARESLib-Kotlin/GEMINI.md` |
 | NT4 topic definitions | `ARESLib-Kotlin/core/.../telemetry/TelemetryTopicConstants.kt`, `ARESNetworkStatePublisher.kt`, sim `TelemetryPublisher.kt` |
-| Dashboard↔topic map | `ARES-Analytics/.agents/AGENTS.md` |
+| Dashboard↔topic map | This file §4 (Dashboard variable mapping table) |
 | Field→canvas transform | `ARES-Analytics/app/.../ui/components/pathplanner/FieldCanvasUtils.kt`, `PathRenderer.kt` |
 | Redux state shape | `ARESLib-Kotlin/core/.../state/RobotState.kt` |
 | Root reducer | `ARESLib-Kotlin/core/.../reducer/RootReducer.kt` |
