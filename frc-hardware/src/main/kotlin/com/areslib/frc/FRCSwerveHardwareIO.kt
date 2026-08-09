@@ -11,7 +11,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  *
  * Integrates CTRE [SwerveDrivetrain] (operating natively on 250Hz CANivore CAN-FD loops) into the pure mathematical
  * ARESLib Redux architecture. Handles CANcoder absolute position signals, TalonFX motor current draws, Pigeon2 IMU readings,
- * and AdvantageScope signal logging via [SwerveCtreDrivetrainReader] and [SwerveCtreSpeedRequestWriter].
+ * and periodic signal reads via [SwerveCtreDrivetrainReader] and [SwerveCtreSpeedRequestWriter].
  *
  * ### Physical Units & Coordinates:
  * - Position: Meters ($m$)

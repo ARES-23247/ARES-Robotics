@@ -64,8 +64,6 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
         }
         pitchSignal.setUpdateFrequency(20.0, 0.0)
         rollSignal.setUpdateFrequency(20.0, 0.0)
-
-        drivetrain.registerTelemetry { _ -> }
     }
 
     /**
