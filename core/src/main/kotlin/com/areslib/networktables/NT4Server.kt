@@ -34,7 +34,8 @@ class NT4Server(
 
     private val connections = CopyOnWriteArraySet<WebSocket>()
     private val clientSubscriptions = ConcurrentHashMap<String, CopyOnWriteArraySet<WebSocket>>()
-    private val dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
+    private val clientPublishers = ConcurrentHashMap<WebSocket, CopyOnWriteArraySet<Long>>()
+    private var dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
 
     private val encodeBuffer = java.io.ByteArrayOutputStream(4096)
     private var packer: org.msgpack.core.MessagePacker = try {
@@ -57,6 +58,16 @@ class NT4Server(
             subscribers.remove(conn)
         }
         clientSubscriptions.entries.removeIf { it.value.isEmpty() }
+        
+        val publishers = clientPublishers.remove(conn)
+        if (publishers != null) {
+            for (pubUID in publishers) {
+                val entry = publisherUIDSMap.remove(pubUID)
+                if (entry != null) {
+                    entry.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, entry.value)
+                }
+            }
+        }
     }
 
     override fun stop() {
@@ -119,16 +130,18 @@ class NT4Server(
 
     override fun onMessage(conn: WebSocket, message: ByteBuffer) {
         try {
-            val decoded = decodeNT4Message(message)
-            if (decoded.id == -1L) {
-                heartbeat(conn, (decoded.dataValue as? Number)?.toLong() ?: com.areslib.util.RobotClock.currentTimeMillis())
-            } else {
-                val entry = getEntryForId(decoded.id)
-                if (entry != null && decoded.dataValue != null) {
-                    val newValue = NT4Value.fromObject(decoded.dataValue)
-                    if (entry.update(newValue)) {
-                        publisherUIDSMap[decoded.id] = entry
-                        dirtyEntries.add(entry)
+            val decodedList = decodeNT4Messages(message)
+            for (decoded in decodedList) {
+                if (decoded.id == -1L) {
+                    heartbeat(conn, (decoded.dataValue as? Number)?.toLong() ?: com.areslib.util.RobotClock.currentTimeMillis())
+                } else {
+                    val entry = getEntryForId(decoded.id)
+                    if (entry != null && decoded.dataValue != null) {
+                        val newValue = NT4Value.fromObject(decoded.dataValue)
+                        if (entry.update(newValue)) {
+                            publisherUIDSMap[decoded.id] = entry
+                            dirtyEntries.add(entry)
+                        }
                     }
                 }
             }
@@ -147,13 +160,13 @@ class NT4Server(
 
     private fun processParsedMessage(conn: WebSocket, msg: NT4Json.ParsedMessage) {
         when (msg.method) {
-            "publish" -> handlePublish(msg)
+            "publish" -> handlePublish(conn, msg)
             "unpublish" -> handleUnpublish(msg)
             "subscribe" -> handleSubscribe(conn, msg)
         }
     }
 
-    private fun handlePublish(msg: NT4Json.ParsedMessage) {
+    private fun handlePublish(conn: WebSocket, msg: NT4Json.ParsedMessage) {
         var topic = msg.topicName ?: return
         if (topic.startsWith("/")) topic = topic.substring(1)
         val pubUID = msg.pubUid ?: return
@@ -181,6 +194,7 @@ class NT4Server(
         }
 
         publisherUIDSMap[pubUID.toLong()] = entry
+        clientPublishers.computeIfAbsent(conn) { CopyOnWriteArraySet() }.add(pubUID.toLong())
         if (isNew) {
             announceEntry(entry)
         }
@@ -312,11 +326,19 @@ class NT4Server(
                 packer.packArrayHeader(arr.size)
                 for (s in arr) packer.packString(s)
             }
-            else -> packer.packNil()
+            else -> {
+                if (dataType == 5 || dataType == 7 || dataType == 8) {
+                    val bytes = dataValue as? ByteArray ?: ByteArray(0)
+                    packer.packBinaryHeader(bytes.size)
+                    packer.writePayload(bytes)
+                } else {
+                    packer.packNil()
+                }
+            }
         }
     }
 
-    fun decodeNT4Message(message: ByteBuffer): NT4Message {
+    fun decodeNT4Messages(message: ByteBuffer): List<NT4Message> {
         val unpacker: MessageUnpacker = if (message.hasArray()) {
             val offset = message.arrayOffset() + message.position()
             val length = message.remaining()
@@ -328,7 +350,22 @@ class NT4Server(
             MessagePack.newDefaultUnpacker(arr)
         }
 
-        unpacker.unpackArrayHeader()
+        val list = ArrayList<NT4Message>()
+        val numElements = unpacker.unpackArrayHeader()
+        if (numElements > 0 && unpacker.hasNext() && unpacker.nextFormat.valueType.name == "ARRAY") {
+            for (i in 0 until numElements) {
+                list.add(decodeSingleNT4Message(unpacker))
+            }
+        } else {
+            list.add(decodeSingleNT4Message(unpacker, numElements))
+        }
+        
+        unpacker.close()
+        return list
+    }
+
+    private fun decodeSingleNT4Message(unpacker: MessageUnpacker, preReadArraySize: Int = -1): NT4Message {
+        if (preReadArraySize == -1) unpacker.unpackArrayHeader()
         val id = unpacker.unpackLong()
         val timestamp = unpacker.unpackLong()
         val dataType = unpacker.unpackInt()
@@ -370,9 +407,17 @@ class NT4Server(
                 for (i in 0 until len) arr[i] = unpacker.unpackString()
                 value = arr
             }
-            else -> {}
+            else -> {
+                if (dataType == 5 || dataType == 7 || dataType == 8) {
+                    val len = unpacker.unpackBinaryHeader()
+                    val bytes = ByteArray(len)
+                    unpacker.readPayload(bytes)
+                    value = bytes
+                } else {
+                    unpacker.unpackNil()
+                }
+            }
         }
-        unpacker.close()
         return NT4Message(id, timestamp, dataType, value)
     }
 
@@ -408,10 +453,13 @@ class NT4Server(
         if (dirtyEntries.isEmpty() || clientSubscriptions.isEmpty()) return
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis() * 1000L
 
+        val currentDirty = dirtyEntries
+        dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
+
         for (conn in connections) {
             if (conn.hasBufferedData()) continue  // Skip congested clients
-            val entriesToSend = ArrayList<NT4Entry>(dirtyEntries.size)
-            for (entry in dirtyEntries) {
+            val entriesToSend = ArrayList<NT4Entry>(currentDirty.size)
+            for (entry in currentDirty) {
                 var subscribed = false
                 for ((prefix, subscribers) in clientSubscriptions) {
                     if (subscribers.contains(conn) && (prefix.isEmpty() || entry.topic.startsWith(prefix))) {
@@ -433,7 +481,6 @@ class NT4Server(
                 }
             }
         }
-        dirtyEntries.clear()
     }
 
     private fun getTypeIdFromValue(value: NT4Value): Int = when (value) {
