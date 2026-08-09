@@ -130,6 +130,8 @@ object SplineMotionProfiler {
 
     /**
      * generateHermitePath declaration.
+     * Note: Current implementation provides C1 (tangent) continuity only.
+     * TODO: Upgrade to support C2 (curvature) continuity.
      *
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.

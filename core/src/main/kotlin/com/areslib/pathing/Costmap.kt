@@ -67,6 +67,13 @@ class Costmap(
     // 1D backed array for cash-locality and zero-allocation updates
     private val grid = BooleanArray(widthCells * heightCells)
     private val inflatedGrid = BooleanArray(widthCells * heightCells)
+    
+    private val maxDynamicObstacles = 100
+    private val dynObsX = IntArray(maxDynamicObstacles)
+    private val dynObsY = IntArray(maxDynamicObstacles)
+    private val dynObsRadius = IntArray(maxDynamicObstacles)
+    private val dynObsTimeMs = LongArray(maxDynamicObstacles)
+    private var dynObsCount = 0
 
     /**
      * Resets the costmap grid state.
@@ -193,10 +200,18 @@ class Costmap(
     /**
      * Dynamic insert of a dynamic obstacle (e.g. an opponent robot).
      */
-    fun insertDynamicObstacle(x: Double, y: Double, radiusMeters: Double) {
+    fun insertDynamicObstacle(x: Double, y: Double, radiusMeters: Double, timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()) {
         val cellX = ((x - origin.x) / resolutionMeters).roundToInt()
         val cellY = ((y - origin.y) / resolutionMeters).roundToInt()
         val cellRadius = (radiusMeters / resolutionMeters).roundToInt().coerceAtLeast(1)
+
+        if (dynObsCount < maxDynamicObstacles) {
+            dynObsX[dynObsCount] = cellX
+            dynObsY[dynObsCount] = cellY
+            dynObsRadius[dynObsCount] = cellRadius
+            dynObsTimeMs[dynObsCount] = timestampMs
+            dynObsCount++
+        }
 
         for (dy in -cellRadius..cellRadius) {
             for (dx in -cellRadius..cellRadius) {
@@ -207,6 +222,39 @@ class Costmap(
                         inflatedGrid[ny * widthCells + nx] = true
                     }
                 }
+            }
+        }
+    }
+
+    fun expireDynamicObstacles(currentTimeMs: Long, maxAgeMs: Long) {
+        var i = 0
+        while (i < dynObsCount) {
+            if (currentTimeMs - dynObsTimeMs[i] > maxAgeMs) {
+                val cellX = dynObsX[i]
+                val cellY = dynObsY[i]
+                val cellRadius = dynObsRadius[i]
+                
+                for (dy in -cellRadius..cellRadius) {
+                    for (dx in -cellRadius..cellRadius) {
+                        if (dx * dx + dy * dy <= cellRadius * cellRadius) {
+                            val nx = cellX + dx
+                            val ny = cellY + dy
+                            if (nx in 0 until widthCells && ny in 0 until heightCells) {
+                                inflatedGrid[ny * widthCells + nx] = false
+                            }
+                        }
+                    }
+                }
+                
+                dynObsCount--
+                if (i < dynObsCount) {
+                    dynObsX[i] = dynObsX[dynObsCount]
+                    dynObsY[i] = dynObsY[dynObsCount]
+                    dynObsRadius[i] = dynObsRadius[dynObsCount]
+                    dynObsTimeMs[i] = dynObsTimeMs[dynObsCount]
+                }
+            } else {
+                i++
             }
         }
     }

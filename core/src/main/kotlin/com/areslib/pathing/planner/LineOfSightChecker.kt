@@ -46,13 +46,23 @@ object LineOfSightChecker {
             if (cx == x1 && cy == y1) break
 
             val e2 = 2 * err
+            var steppedX = false
+            var steppedY = false
             if (e2 > -dy) {
                 err -= dy
                 cx += sx
+                steppedX = true
             }
             if (e2 < dx) {
                 err += dx
                 cy += sy
+                steppedY = true
+            }
+            
+            if (steppedX && steppedY) {
+                if (!costmap.isCellTraversable(cx, cy - sy) || !costmap.isCellTraversable(cx - sx, cy)) {
+                    return false
+                }
             }
         }
 
