@@ -64,6 +64,7 @@ object HardwareRegistry {
         startPollingThreadIfNeeded()
     }
 
+    @Synchronized
     private fun startPollingThreadIfNeeded() {
         if (pollingThread == null || !(pollingThread!!.isAlive)) {
             pollingRunning = true
@@ -289,8 +290,12 @@ object HardwareRegistry {
      */
     fun closeAll() {
         pollingRunning = false
-        pollingThread?.interrupt()
-        pollingThread = null
+        val thread = pollingThread
+        if (thread != null) {
+            thread.interrupt()
+            try { thread.join(1000) } catch (_: InterruptedException) {}
+            pollingThread = null
+        }
         syncPolledDevices.clear()
         roundRobinDevices.clear()
 
