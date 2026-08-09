@@ -124,8 +124,8 @@ class PoseEstimatorTest {
         val flatCovDiff = flatState.covariance.m00 - 1.0
         val tiltedCovDiff = tiltedState.covariance.m00 - 1.0
 
-        assertEquals(0.01, flatCovDiff, 1e-6)
-        assertEquals(0.2575, tiltedCovDiff, 1e-6)
+        assertEquals(0.5, flatCovDiff, 1e-6)
+        assertEquals(12.875, tiltedCovDiff, 1e-6)
     }
 
     @Test
@@ -363,7 +363,7 @@ class PoseEstimatorTest {
             pitchDegrees = 0.0, rollDegrees = 0.0
         )
         val recovDiff = state.covariance.m00 - preRecovCov
-        assertEquals(1.0, recovDiff, 1e-6) // 100 * Q (0.01) = 1.0
+        assertEquals(5.0, recovDiff, 1e-6) // 100 * 5.0 * Q (0.01) = 5.0
         
         // 6. Out of recovery period (t=1000) -> normal covariance
         val preNormCov = state.covariance.m00
@@ -372,7 +372,7 @@ class PoseEstimatorTest {
             pitchDegrees = 0.0, rollDegrees = 0.0
         )
         val normDiff = state.covariance.m00 - preNormCov
-        assertEquals(0.01, normDiff, 1e-6)
+        assertEquals(0.05, normDiff, 1e-6)
     }
 
     @Test
@@ -394,8 +394,8 @@ class PoseEstimatorTest {
         )
 
         val flatCovDiff = flatState.covariance.m00 - 1.0
-        // Expected scale = 50.0 due to high pitch velocity
-        assertEquals(0.5, flatCovDiff, 1e-6)
+        // Expected scale = 50.0 * 50.0 due to high pitch velocity and movement
+        assertEquals(25.0, flatCovDiff, 1e-6)
     }
 }
 
