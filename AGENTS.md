@@ -160,6 +160,7 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 
 ## 7. Working in This Workspace — Checklist
 
+- **Fresh checkout?** Run `.\setup.ps1` (Windows) or `./setup.sh` (macOS/Linux) to clone all four subprojects as siblings of this file. Idempotent — existing dirs are skipped.
 - **Changing ARESLib?** Run `publishToMavenLocal` in `ARESLib-Kotlin/` first, then rebuild consumers. For ARES-FRC/FTC the composite build will substitute automatically if the sibling repo exists.
 - **Telemetry mismatch in the dashboard?** Check the NT4 topic map (§4 + `ARES-Analytics/.agents/AGENTS.md`), confirm leading-`/` stripping, and verify CCW+ heading consistency.
 - **Heading/rotation looks wrong?** Re-read `GEMINI.md §5` and the negation rules. The usual culprits: extra negation added after `PinpointIO`, the `-90°` canvas offset, or Limelight `rotation.y` vs `.z`.
