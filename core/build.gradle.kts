@@ -25,6 +25,7 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    include("**/*Test.class", "**/*Tests.class")
 }
 
 kotlin {

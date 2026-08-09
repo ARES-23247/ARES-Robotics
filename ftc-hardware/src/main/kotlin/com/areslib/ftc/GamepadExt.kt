@@ -26,6 +26,13 @@ fun Gamepad.toState() = GamepadState().apply { update(this@toState) }
  * @receiver Target [GamepadState] snapshot object to update in-place.
  * @param gamepad Source FTC SDK [Gamepad] instance read from Driver Station hardware.
  */
+private val cField = runCatching { Gamepad::class.java.getField("c") }.getOrNull()
+private val zField = runCatching { Gamepad::class.java.getField("z") }.getOrNull()
+private val m1Field = runCatching { Gamepad::class.java.getField("m1") }.getOrNull()
+private val m2Field = runCatching { Gamepad::class.java.getField("m2") }.getOrNull()
+private val m3Field = runCatching { Gamepad::class.java.getField("m3") }.getOrNull()
+private val m4Field = runCatching { Gamepad::class.java.getField("m4") }.getOrNull()
+
 fun GamepadState.update(gamepad: Gamepad) {
     leftStickX = gamepad.left_stick_x
     leftStickY = gamepad.left_stick_y
@@ -50,11 +57,17 @@ fun GamepadState.update(gamepad: Gamepad) {
     touchpad = gamepad.touchpad
     share = gamepad.share
     options = gamepad.options
-    c = gamepad.c || gamepad.options
-    z = gamepad.z || gamepad.guide
-    m1 = gamepad.m1 || gamepad.touchpad
-    m2 = gamepad.m2 || gamepad.share
-    m3 = gamepad.m3
-    m4 = gamepad.m4
+    val valC = cField?.getBoolean(gamepad) ?: false
+    val valZ = zField?.getBoolean(gamepad) ?: false
+    val valM1 = m1Field?.getBoolean(gamepad) ?: false
+    val valM2 = m2Field?.getBoolean(gamepad) ?: false
+    val valM3 = m3Field?.getBoolean(gamepad) ?: false
+    val valM4 = m4Field?.getBoolean(gamepad) ?: false
+    c = valC || gamepad.options
+    z = valZ || gamepad.guide
+    m1 = valM1 || gamepad.touchpad
+    m2 = valM2 || gamepad.share
+    m3 = valM3
+    m4 = valM4
 }
 

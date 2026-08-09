@@ -80,4 +80,9 @@ open class Gamepad {
         this.m3 = other.m3
         this.m4 = other.m4
     }
+
+    open fun rumble(durationMs: Int) {}
+    open fun rumble(leftPower: Double, rightPower: Double, durationMs: Int) {}
+    open fun rumbleBlips(count: Int) {}
+    open fun stopRumble() {}
 }

@@ -3,10 +3,12 @@ package com.qualcomm.robotcore.hardware
 /**
  * Mock representation of an FTC [I2cAddr].
  */
-interface I2cAddr {
+open class I2cAddr {
     companion object {
-        fun create7bit(address: Int): I2cAddr = object : I2cAddr {}
-        fun create8bit(address: Int): I2cAddr = object : I2cAddr {}
+        @JvmStatic
+        fun create7bit(address: Int): I2cAddr = I2cAddr()
+        @JvmStatic
+        fun create8bit(address: Int): I2cAddr = I2cAddr()
     }
 }
 

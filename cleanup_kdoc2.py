@@ -1,7 +1,7 @@
 import os
 import re
 
-directory = r"c:\Users\david\dev\robotics\ftc\ARESLib-Kotlin"
+directory = os.path.dirname(os.path.abspath(__file__))
 lines_to_remove = [
     " * Provides high-performance, Zero-GC operations.",
     " * CCW-positive heading standard applied.",

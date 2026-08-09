@@ -60,10 +60,29 @@ interface HardwareDevice {
     }
 }
 
+open class DeviceMapping<T : HardwareDevice>(val deviceType: Class<T>) : Iterable<T> {
+    private val map = mutableMapOf<String, T>()
+    open fun get(deviceName: String): T? = map[deviceName]
+    open fun put(deviceName: String, device: T) { map[deviceName] = device }
+    open fun entrySet(): Set<Map.Entry<String, T>> = map.entries
+    @Suppress("UNCHECKED_CAST")
+    override fun iterator(): Iterator<T> = if (map.isEmpty() && VoltageSensor::class.java.isAssignableFrom(deviceType)) {
+        listOf(object : VoltageSensor { override val voltage: Double get() = 12.0 }).map { it as T }.iterator()
+    } else {
+        map.values.iterator()
+    }
+    open val size: Int get() = map.size
+}
+
 /**
  * Mock representation of an FTC [HardwareMap].
  */
 open class HardwareMap {
+    @JvmField val voltageSensor: DeviceMapping<VoltageSensor> = DeviceMapping(VoltageSensor::class.java)
+    @JvmField val servo: DeviceMapping<Servo> = DeviceMapping(Servo::class.java)
+    @JvmField val dcMotor: DeviceMapping<DcMotor> = DeviceMapping(DcMotor::class.java)
+    @JvmField val dcMotorEx: DeviceMapping<DcMotorEx> = DeviceMapping(DcMotorEx::class.java)
+
     open fun <T> get(classOrType: Class<out T>, deviceName: String): T {
         throw NotImplementedError("Mock HardwareMap.get() not overridden")
     }

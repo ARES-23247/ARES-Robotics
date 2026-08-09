@@ -162,7 +162,7 @@ class MecanumRobotDouble {
                             SimDcMotorEx() as T
                         }
                         VoltageSensor::class.java.isAssignableFrom(classOrType) -> {
-                            voltageSensor as T
+                            this@MecanumRobotDouble.voltageSensor as T
                         }
                         else -> {
                             if (classOrType.isInterface) {
@@ -199,7 +199,7 @@ class MecanumRobotDouble {
         @Suppress("UNCHECKED_CAST")
         override fun <T> getAll(classOrType: Class<out T>): List<T> {
             if (classOrType == VoltageSensor::class.java) {
-                return listOf(voltageSensor as T)
+                return listOf(this@MecanumRobotDouble.voltageSensor as T)
             }
             return emptyList()
         }

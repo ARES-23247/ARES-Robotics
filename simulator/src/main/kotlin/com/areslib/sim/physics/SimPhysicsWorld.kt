@@ -76,7 +76,7 @@ class SimPhysicsWorld {
         } else {
             var obstaclesFile: File? = null
             val obsPaths = listOf(
-                "c:/Users/david/dev/robotics/ftc/ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json",
+                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json").path,
                 "../ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json",
                 "src/main/assets/paths/obstacles.json",
                 "TeamCode/src/main/assets/paths/obstacles.json",
@@ -107,7 +107,7 @@ class SimPhysicsWorld {
 
             var gamePiecesFile: File? = null
             val gpPaths = listOf(
-                "c:/Users/david/dev/robotics/ftc/ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json",
+                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json").path,
                 "../ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json",
                 "src/main/assets/paths/game_pieces.json",
                 "TeamCode/src/main/assets/paths/game_pieces.json",
