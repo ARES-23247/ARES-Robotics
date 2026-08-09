@@ -455,12 +455,24 @@ class NT4Server(
         return entry
     }
 
+    /**
+     * Atomically drains the dirty-entry set: returns the current set and replaces the live
+     * field with a fresh empty one under the monitor. Without this an [add] resolving the
+     * volatile field between a plain read and a plain reassign could be stranded in the
+     * discarded set. Matches the `@Synchronized` discipline of [encodeNT4Messages].
+     */
+    @Synchronized
+    private fun swapDirtyEntries(): CopyOnWriteArraySet<NT4Entry> {
+        val currentDirty = dirtyEntries
+        dirtyEntries = CopyOnWriteArraySet()
+        return currentDirty
+    }
+
     fun flush() {
         if (dirtyEntries.isEmpty() || clientSubscriptions.isEmpty()) return
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis() * 1000L
 
-        val currentDirty = dirtyEntries
-        dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
+        val currentDirty = swapDirtyEntries()
 
         for (conn in connections) {
             if (conn.hasBufferedData()) continue  // Skip congested clients
@@ -514,6 +526,10 @@ class NT4Server(
                     existing.stop()
                 } catch (_: Exception) {}
             }
+            // The topic/entry maps and topic-id counter live in the companion object and
+            // would otherwise bleed across server instances. Reset them so a freshly created
+            // server starts from a clean slate.
+            resetSharedState()
             val protocols: MutableList<IProtocol> = ArrayList()
             protocols.add(Protocol("v4.1.networktables.first.wpi.edu"))
             protocols.add(Protocol("rtt.networktables.first.wpi.edu"))
@@ -542,6 +558,22 @@ class NT4Server(
 
         @JvmStatic
         fun getInstance(): NT4Server? = serverInstance
+
+        /**
+         * Clears the companion-level topic registry, publisher map, and topic-id counter.
+         *
+         * These structures are intentionally kept in the companion object (moving them risks
+         * breaking the many `@JvmStatic` accessors) but, because they are not tied to a single
+         * instance, they must be reset when a server is (re)created so stale topics do not
+         * bleed across instances.
+         */
+        @Synchronized
+        @JvmStatic
+        fun resetSharedState() {
+            entries.clear()
+            publisherUIDSMap.clear()
+            nextTopicId.set(1)
+        }
 
         @JvmStatic
         fun publishTopic(topic: String, value: Any) {
