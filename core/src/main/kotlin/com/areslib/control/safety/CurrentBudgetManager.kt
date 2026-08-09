@@ -185,7 +185,7 @@ class CurrentBudgetManager(
                 if (range <= 0.0) {
                     minPowerScale
                 } else {
-                    val ratio = 1.0 - ((totalAmps - warningCurrentAmps) / range)
+                    val ratio = (1.0 - ((totalAmps - warningCurrentAmps) / range)).coerceIn(0.0, 1.0)
                     minPowerScale + ratio * (1.0 - minPowerScale)
                 }
             }

@@ -107,7 +107,7 @@ class BrownoutGuard(
                 if (range <= 0.0) {
                     minPowerScale
                 } else {
-                    val ratio = (voltage - criticalVoltage) / range
+                    val ratio = ((voltage - criticalVoltage) / range).coerceIn(0.0, 1.0)
                     minPowerScale + ratio * (1.0 - minPowerScale)
                 }
             }
