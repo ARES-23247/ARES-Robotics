@@ -221,18 +221,12 @@ class ShotSetup(private val config: ShotConfig) {
          * @return The interpolated output value.
          */
         fun interpolate(keys: DoubleArray, values: DoubleArray, x: Double): Double {
-            if (x <= keys[0]) {
-                val diff = keys[1] - keys[0]
-                if (diff <= 1e-9) return values[0]
-                val t = (x - keys[0]) / diff
-                return values[0] + t * (values[1] - values[0])
-            }
-            if (x >= keys[keys.size - 1]) {
-                val diff = keys[keys.size - 1] - keys[keys.size - 2]
-                if (diff <= 1e-9) return values[values.size - 1]
-                val t = (x - keys[keys.size - 2]) / diff
-                return values[values.size - 2] + t * (values[values.size - 1] - values[values.size - 2])
-            }
+            // NaN falls through every comparison below (all evaluate false), so handle it
+            // explicitly with a safe default rather than silently returning values[last].
+            if (x.isNaN()) return values[0]
+            // Clamp at the LUT endpoints instead of extrapolating beyond them.
+            if (x <= keys[0]) return values[0]
+            if (x >= keys[keys.size - 1]) return values[values.size - 1]
             for (i in 0 until keys.size - 1) {
                 if (x >= keys[i] && x <= keys[i + 1]) {
                     val diff = keys[i + 1] - keys[i]
