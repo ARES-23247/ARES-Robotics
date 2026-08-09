@@ -1,5 +1,6 @@
 package com.areslib.logging
 
+import com.areslib.util.RobotClock
 import com.google.gson.Gson
 import fi.iki.elonen.NanoHTTPD
 import java.io.File
@@ -48,11 +49,11 @@ object LogManagerServer : NanoHTTPD(5002) {
      */
     private class TokenBucket(val capacity: Int, val refillRatePerSecond: Double) {
         var tokens: Double = capacity.toDouble()
-        var lastRefillTime: Long = System.nanoTime()
+        var lastRefillTime: Long = RobotClock.nanoTime()
 
         @Synchronized
         fun tryConsume(): Boolean {
-            val now = System.nanoTime()
+            val now = RobotClock.nanoTime()
             val elapsedSeconds = (now - lastRefillTime) / 1_000_000_000.0
             tokens = kotlin.math.min(capacity.toDouble(), tokens + elapsedSeconds * refillRatePerSecond)
             lastRefillTime = now
@@ -119,7 +120,7 @@ object LogManagerServer : NanoHTTPD(5002) {
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Missing file parameter")
 
         val file = File(logDir, fileName)
-        if (!file.canonicalPath.startsWith(logDir.canonicalPath)) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDir.canonicalPath))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
         if (!file.exists() || !file.isFile) {
             val syncedFile = File(syncedDir, fileName)
             if (syncedFile.exists() && syncedFile.isFile) {
@@ -146,9 +147,9 @@ object LogManagerServer : NanoHTTPD(5002) {
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error": "Missing file parameter"}""")
 
         val file = File(logDir, fileName)
-        if (!file.canonicalPath.startsWith(logDir.canonicalPath)) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDir.canonicalPath))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
         val syncedFile = File(syncedDir, fileName)
-        if (!syncedFile.canonicalPath.startsWith(syncedDir.canonicalPath)) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        if (!java.nio.file.Path.of(syncedFile.canonicalPath).startsWith(java.nio.file.Path.of(syncedDir.canonicalPath))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
 
         var deleted = false
         if (file.exists() && file.isFile) deleted = file.delete() || deleted
@@ -163,7 +164,7 @@ object LogManagerServer : NanoHTTPD(5002) {
 
     private fun createLogFileInfo(file: File, synced: Boolean): LogFileInfo {
         val lastMod = file.lastModified()
-        val diff = System.currentTimeMillis() - lastMod
+        val diff = RobotClock.currentTimeMillis() - lastMod
         val isActive = diff in 0L..5000L
         val fmt = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(lastMod))
         return LogFileInfo(
@@ -370,34 +371,12 @@ object LogManagerServer : NanoHTTPD(5002) {
                                         '</div>' +
                                     '</div>' +
                                     '<div class="actions">' +
-                                        (!log.synced ? '<button class="btn-upload" onclick="uploadLog(\'' + log.name + '\')">Upload</button>' : '') +
                                         '<button class="btn-delete" onclick="deleteLog(\'' + log.name + '\')">Delete</button>' +
                                     '</div>' +
                                 '</div>';
                             }).join('');
                         } catch (e) {
                             container.innerHTML = '<div class="empty-state" style="color: var(--accent-red)">Error loading logs.</div>';
-                        }
-                    }
-
-                    async function uploadLog(fileName) {
-                        const btn = document.querySelector('#card-' + fileName + ' .btn-upload');
-                        btn.disabled = true;
-                        btn.innerText = 'Uploading...';
-                        
-                        try {
-                            const res = await fetch('/api/upload?file=' + fileName, { method: 'POST' });
-                            if (res.ok) {
-                                await fetchLogs();
-                            } else {
-                                alert('Upload failed. See robot console.');
-                                btn.disabled = false;
-                                btn.innerText = 'Upload';
-                            }
-                        } catch (e) {
-                            alert('Network error.');
-                            btn.disabled = false;
-                            btn.innerText = 'Upload';
                         }
                     }
 
