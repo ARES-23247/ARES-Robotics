@@ -126,6 +126,7 @@ object OdometryFusionController {
         ) {
             return state
         }
+        if (dtSeconds <= 0.0) return state
 
         val tiltDegrees = kotlin.math.sqrt(pitchDegrees * pitchDegrees + rollDegrees * rollDegrees)
         val tiltVelocity = kotlin.math.sqrt(pitchVelocityDegPerSec * pitchVelocityDegPerSec + rollVelocityDegPerSec * rollVelocityDegPerSec)
@@ -197,7 +198,8 @@ object OdometryFusionController {
 
         // Gyro rate mismatch check for wheel slippage detection
         val expectedHeadingVel = deltaHeadingRad / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
-        val slipScale = if (correctedGyroRate != 0.0 && kotlin.math.abs(expectedHeadingVel - correctedGyroRate) > 0.5) {
+        val slipThreshold = kotlin.math.max(0.5, kotlin.math.abs(correctedGyroRate) * 0.15)
+        val slipScale = if (correctedGyroRate != 0.0 && kotlin.math.abs(expectedHeadingVel - correctedGyroRate) > slipThreshold) {
             10.0 // Dynamic wheel slippage covariance expansion
         } else {
             1.0
@@ -206,7 +208,7 @@ object OdometryFusionController {
         scratchQ.setTo(baseQ)
         val speed = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY) / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
         val movementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
-        scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale)
+        scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale * dtSeconds)
 
         val newX = state.estimatedPoseX + deltaX
         val newY = state.estimatedPoseY + deltaY

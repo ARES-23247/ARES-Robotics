@@ -128,7 +128,7 @@ object EKFStatePropagator {
 
             val deltaX = currRaw.x - prevRaw.x
             val deltaY = currRaw.y - prevRaw.y
-            val deltaHeading = currRaw.headingRad - prevRaw.headingRad
+            val deltaHeading = wrapAngle(currRaw.headingRad - prevRaw.headingRad)
 
             currentX += deltaX
             currentY += deltaY
@@ -161,14 +161,18 @@ object EKFStatePropagator {
             val newM21 = reFp21 + reF12 * reFp22 + baseQ.m21 * scale
             val newM22 = reFp22 + baseQ.m22 * scale
 
+            val sym01 = (newM01 + newM10) * 0.5
+            val sym02 = (newM02 + newM20) * 0.5
+            val sym12 = (newM12 + newM21) * 0.5
+
             scratchCov2.m00 = newM00
-            scratchCov2.m01 = newM01
-            scratchCov2.m02 = newM02
-            scratchCov2.m10 = newM10
+            scratchCov2.m01 = sym01
+            scratchCov2.m02 = sym02
+            scratchCov2.m10 = sym01
             scratchCov2.m11 = newM11
-            scratchCov2.m12 = newM12
-            scratchCov2.m20 = newM20
-            scratchCov2.m21 = newM21
+            scratchCov2.m12 = sym12
+            scratchCov2.m20 = sym02
+            scratchCov2.m21 = sym12
             scratchCov2.m22 = newM22
 
             scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, currRaw.qScale)

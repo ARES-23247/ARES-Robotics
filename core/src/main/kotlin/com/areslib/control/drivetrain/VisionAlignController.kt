@@ -47,6 +47,7 @@ class VisionAlignController {
     private var prevErrHeading = 0.0
     private var prevErrHeadingForD = 0.0
     private var prevLoopTimeMs = RobotClock.currentTimeMillis()
+    private var integralAccum = 0.0
 
     // Tag search state
     private var lastKnownSearchDirection = 0.0 // +1.0 = rotate CCW, -1.0 = rotate CW
@@ -61,12 +62,13 @@ class VisionAlignController {
      * @param isAlignmentRequested `true` if the driver alignment trigger button is actively held down; `false` otherwise.
      * @return Commanded [RobotAction.JoystickDriveIntent] containing closed-loop alignment velocities, or `null` if alignment is disabled.
      */
-    fun calculate(state: RobotState, targetTagId: Int, isAlignmentRequested: Boolean): RobotAction.JoystickDriveIntent? {
+    fun calculate(state: RobotState, targetTagId: Int, isAlignmentRequested: Boolean, imuPitch: Double = 0.0): RobotAction.JoystickDriveIntent? {
         if (!isAlignmentRequested) {
             // Reset state when button is released
             wasTrackingTag = false
             tagLostTimestampMs = 0L
             hasPrevFiltered = false
+            integralAccum = 0.0
             return null
         }
 
@@ -90,7 +92,10 @@ class VisionAlignController {
             
             // target-space coordinates (Limelight: Z forward, X right)
             val tuning = state.tuning
-            val distanceZ = abs(robotPoseTargetSpace.z)
+            val rawZ = robotPoseTargetSpace.z
+            val rawY = robotPoseTargetSpace.y
+            val correctedZ = rawZ * cos(imuPitch) - rawY * sin(imuPitch)
+            val distanceZ = abs(correctedZ)
             val targetDistanceMeters = tuning.visionAlignTargetDistance
             val errorForwardT = distanceZ - targetDistanceMeters
             val errorLeftT = robotPoseTargetSpace.x
@@ -177,10 +182,18 @@ class VisionAlignController {
             val ctrlOmega = if (abs(errHeadingFiltered) > headingErrorDeadband) {
                 val currentSign = sign(errHeadingFiltered)
                 val activeErr = errHeadingFiltered - currentSign * headingErrorDeadband
+                
+                integralAccum += activeErr * dtSec
+                integralAccum = integralAccum.coerceIn(-0.3, 0.3)
+                
                 val pTerm = activeErr * kP_rotation
+                val iTerm = (tuning.visionAlignKpRotation * 0.1) * integralAccum
                 val dTerm = headingErrorRate * kD_rotation
-                (pTerm + dTerm + currentSign * kS_rotational).coerceIn(-tuning.visionAlignClampRotation, tuning.visionAlignClampRotation)
-            } else 0.0
+                (pTerm + iTerm + dTerm + currentSign * kS_rotational).coerceIn(-tuning.visionAlignClampRotation, tuning.visionAlignClampRotation)
+            } else {
+                integralAccum = 0.0
+                0.0
+            }
 
             // Update search direction
             when {

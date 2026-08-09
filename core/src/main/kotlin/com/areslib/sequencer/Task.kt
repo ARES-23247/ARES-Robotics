@@ -350,6 +350,10 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         val currentDistance = state.pathState.currentDistanceMeters
         activePath.sampleAtDistance(currentDistance, scratchMutablePoint)
         scratchMutablePoint.copyInto(scratchPathPoint)
+        
+        val distanceToEnd = activePath.points.last().distanceMeters - currentDistance
+        scratchPathPoint.velocityMps = kotlin.math.max(scratchPathPoint.velocityMps, if (distanceToEnd > 0.1) 0.3 else 0.0)
+        
         follower.update(scratchPathPoint, dt)
 
         val progressSpeed = kotlin.math.max(scratchPathPoint.velocityMps, 0.1)
@@ -400,14 +404,13 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             }
         }
         
-        val it = activeEventTasks.iterator()
-        while (it.hasNext()) {
-            val cmdTask = it.next()
+        for (i in activeEventTasks.indices.reversed()) {
+            val cmdTask = activeEventTasks[i]
             val startTime = taskStartTimes[cmdTask] ?: currentTimestamp
             val cmdElapsed = currentTimestamp - startTime
             if (cmdTask.isCompleted(state, cmdElapsed)) {
                 actionsList.addAll(cmdTask.end(state, false))
-                it.remove()
+                activeEventTasks.removeAt(i)
                 taskStartTimes.remove(cmdTask)
             } else {
                 actionsList.addAll(cmdTask.execute(state, cmdElapsed))

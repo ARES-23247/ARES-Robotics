@@ -170,8 +170,10 @@ class ShotSetup(private val config: ShotConfig) {
             val dy = virtualTargetY - shooterY
             aimDistance = hypot(dx, dy)
             val tof = interpolateTof(aimDistance)
-            virtualTargetX = target.x - shooterVx * tof
-            virtualTargetY = target.y - shooterVy * tof
+            val newVirtualX = target.x - shooterVx * tof
+            val newVirtualY = target.y - shooterVy * tof
+            virtualTargetX = 0.5 * virtualTargetX + 0.5 * newVirtualX
+            virtualTargetY = 0.5 * virtualTargetY + 0.5 * newVirtualY
         }
 
         // 5. Final coordinates and aiming target heading calculations
@@ -219,8 +221,18 @@ class ShotSetup(private val config: ShotConfig) {
          * @return The interpolated output value.
          */
         fun interpolate(keys: DoubleArray, values: DoubleArray, x: Double): Double {
-            if (x <= keys[0]) return values[0]
-            if (x >= keys[keys.size - 1]) return values[values.size - 1]
+            if (x <= keys[0]) {
+                val diff = keys[1] - keys[0]
+                if (diff <= 1e-9) return values[0]
+                val t = (x - keys[0]) / diff
+                return values[0] + t * (values[1] - values[0])
+            }
+            if (x >= keys[keys.size - 1]) {
+                val diff = keys[keys.size - 1] - keys[keys.size - 2]
+                if (diff <= 1e-9) return values[values.size - 1]
+                val t = (x - keys[keys.size - 2]) / diff
+                return values[values.size - 2] + t * (values[values.size - 1] - values[values.size - 2])
+            }
             for (i in 0 until keys.size - 1) {
                 if (x >= keys[i] && x <= keys[i + 1]) {
                     val diff = keys[i + 1] - keys[i]

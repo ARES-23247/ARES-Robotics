@@ -185,7 +185,22 @@ class TaskExecutor {
      * Clear all tasks in queue and stack.
      */
     @Synchronized
-    fun clear() {
+    fun clear(state: RobotState) {
+        try {
+            activeTask?.end(state, interrupted = true)
+        } catch (e: Exception) {}
+        
+        for (task in queue) {
+            try {
+                task.end(state, interrupted = true)
+            } catch (e: Exception) {}
+        }
+        for ((task, _) in preemptedStack) {
+            try {
+                task.end(state, interrupted = true)
+            } catch (e: Exception) {}
+        }
+        
         queue.clear()
         preemptedStack.clear()
         activeTask = null

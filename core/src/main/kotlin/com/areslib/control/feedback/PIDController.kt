@@ -147,8 +147,7 @@ class PIDController(
         }
 
         if (kotlin.math.abs(error) < deadzone) {
-            prevError = error
-            return 0.0
+            error = 0.0
         }
 
         val measurementDerivative = if (isFirstStep) 0.0 else (measurement - prevMeasurement) / dtSeconds
@@ -158,14 +157,17 @@ class PIDController(
         prevMeasurement = measurement
         prevError = error
 
-        val preSatOutput = p * error + i * totalError - d * filteredDerivative
+        val proposedError = totalError + error * dtSeconds
+        var clampedIntegral = proposedError
+        if (!minIntegral.isNaN()) { clampedIntegral = kotlin.math.max(clampedIntegral, minIntegral) }
+        if (!maxIntegral.isNaN()) { clampedIntegral = kotlin.math.min(clampedIntegral, maxIntegral) }
+
+        val preSatOutput = p * error + i * clampedIntegral - d * filteredDerivative
         val isSaturated = (!maxOutput.isNaN() && preSatOutput > maxOutput && error > 0) || 
                           (!minOutput.isNaN() && preSatOutput < minOutput && error < 0)
                           
         if (!isSaturated) {
-            totalError += error * dtSeconds
-            if (!minIntegral.isNaN()) { totalError = kotlin.math.max(totalError, minIntegral) }
-            if (!maxIntegral.isNaN()) { totalError = kotlin.math.min(totalError, maxIntegral) }
+            totalError = clampedIntegral
         }
 
         var output = p * error + i * totalError - d * filteredDerivative

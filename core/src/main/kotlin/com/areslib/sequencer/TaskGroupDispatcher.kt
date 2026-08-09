@@ -178,7 +178,11 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
             for (i in 0 until tasks.size) {
                 val task = tasks[i]
                 if (!completedTasks.contains(task)) {
-                    actions.addAll(task.end(state, interrupted = true))
+                    try {
+                        actions.addAll(task.end(state, interrupted = true))
+                    } catch (e: Exception) {
+                        System.err.println("TaskGroup: Exception ending task ${task.name}: ${e.message}")
+                    }
                 }
             }
         }

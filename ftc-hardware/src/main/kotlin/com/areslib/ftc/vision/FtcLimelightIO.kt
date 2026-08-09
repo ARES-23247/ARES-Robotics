@@ -128,7 +128,7 @@ class FtcLimelightIO(
                         visionMeasurementPoolIndex = (visionMeasurementPoolIndex + 1) % visionMeasurementPool.size
                         val measurement = visionMeasurementPool[visionMeasurementPoolIndex]
 
-                        measurement.timestampMs = now - 11L
+                        measurement.timestampMs = now - (result.captureLatency + result.targetingLatency).toLong()
                         measurement.targetPose = fieldPose
                         measurement.robotPoseTargetSpace = tPose
                         measurement.tagId = fiducial.getFiducialId()

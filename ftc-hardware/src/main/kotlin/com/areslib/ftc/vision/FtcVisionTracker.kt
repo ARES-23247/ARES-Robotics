@@ -75,6 +75,9 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         io.updateInputs(visionInputs)
         if (visionInputs.measurements.isEmpty()) {
+            if (lastLimelightPose != null && timestampMs - lastLimelightTimeMs > 500L) {
+                lastLimelightPose = null
+            }
             lastVisionStatus = "NO TARGET"
             com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
             com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
@@ -101,8 +104,17 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         val robotPose = store.state.drive.poseEstimator.estimatedPose
         val robotHeading = robotPose.heading.radians
-        val fieldPose3d = measurement.targetPose
-        val fieldPose2d = fieldPose3d.toPose2d()
+        var fieldPose3d = measurement.targetPose
+        var fieldPose2d = fieldPose3d.toPose2d()
+
+        if (store.state.drive.alliance == com.areslib.state.Alliance.RED) {
+            fieldPose2d = Pose2d(-fieldPose2d.x, -fieldPose2d.y, Rotation2d(fieldPose2d.heading.radians + Math.PI))
+            fieldPose3d = com.areslib.math.geometry.Pose3d(
+                com.areslib.math.geometry.Translation3d(fieldPose2d.x, fieldPose2d.y, fieldPose3d.z),
+                com.areslib.math.geometry.Rotation3d(fieldPose3d.rotation.x, fieldPose3d.rotation.y, fieldPose2d.heading.radians)
+            )
+        }
+
         val dx = fieldPose2d.x - robotPose.x
         val dy = fieldPose2d.y - robotPose.y
         val distance = kotlin.math.sqrt(dx * dx + dy * dy)

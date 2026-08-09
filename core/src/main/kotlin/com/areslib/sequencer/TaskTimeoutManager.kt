@@ -2,6 +2,9 @@ package com.areslib.sequencer
 
 import com.areslib.util.RobotClock
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.ScheduledExecutorService
 
 /**
  * Object implementation for Task Timeout Manager.
@@ -11,6 +14,21 @@ import java.util.concurrent.ConcurrentHashMap
 object TaskTimeoutManager {
     private val timeouts = ConcurrentHashMap<Task, Long>()
     private val startTimes = ConcurrentHashMap<Task, Long>()
+    private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "TaskTimeoutManager-Watchdog").apply { isDaemon = true }
+    }
+
+    init {
+        executor.scheduleAtFixedRate({
+            val now = RobotClock.currentTimeMillis()
+            for ((task, timeout) in timeouts) {
+                val start = startTimes[task] ?: continue
+                if (now - start > timeout) {
+                    TaskStateMachine.transitionTo(task, TaskStatus.FAILED)
+                }
+            }
+        }, 50, 50, TimeUnit.MILLISECONDS)
+    }
 
     /**
      * setTimeout declaration.

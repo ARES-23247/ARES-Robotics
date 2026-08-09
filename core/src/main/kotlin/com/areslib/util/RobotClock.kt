@@ -7,13 +7,15 @@ package com.areslib.util
 object RobotClock {
     private var mocked = false
     private var mockTimeMs = 0L
+    private val startWallMs = System.currentTimeMillis()
+    private val startNanos = System.nanoTime()
 
     /**
      * Get the current epoch time in milliseconds.
      * Returns the mocked timestamp if mocked, otherwise falls back to System.currentTimeMillis().
      */
     fun currentTimeMillis(): Long {
-        return if (mocked) mockTimeMs else System.currentTimeMillis()
+        return if (mocked) mockTimeMs else startWallMs + (System.nanoTime() - startNanos) / 1_000_000L
     }
 
     /**

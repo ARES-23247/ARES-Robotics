@@ -134,10 +134,17 @@ class Costmap(
             val maxY = obs.y + obs.width / 2.0
 
             // Map boundaries to grid cell ranges
-            val startCellX = (((minX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
-            val endCellX = (((maxX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
-            val startCellY = (((minY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
-            val endCellY = (((maxY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
+            val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
+            val rawEndX = ((maxX - origin.x) / resolutionMeters).roundToInt()
+            val rawStartY = ((minY - origin.y) / resolutionMeters).roundToInt()
+            val rawEndY = ((maxY - origin.y) / resolutionMeters).roundToInt()
+
+            if (rawStartX >= widthCells || rawEndX < 0 || rawStartY >= heightCells || rawEndY < 0) continue
+
+            val startCellX = rawStartX.coerceIn(0, widthCells - 1)
+            val endCellX = rawEndX.coerceIn(0, widthCells - 1)
+            val startCellY = rawStartY.coerceIn(0, heightCells - 1)
+            val endCellY = rawEndY.coerceIn(0, heightCells - 1)
 
             // Mark cells as occupied
             for (cx in startCellX..endCellX) {
@@ -279,10 +286,17 @@ class Costmap(
             val minY = el.y - halfH
             val maxY = el.y + halfH
 
-            val startCellX = (((minX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
-            val endCellX = (((maxX - origin.x) / resolutionMeters).roundToInt()).coerceIn(0, widthCells - 1)
-            val startCellY = (((minY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
-            val endCellY = (((maxY - origin.y) / resolutionMeters).roundToInt()).coerceIn(0, heightCells - 1)
+            val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
+            val rawEndX = ((maxX - origin.x) / resolutionMeters).roundToInt()
+            val rawStartY = ((minY - origin.y) / resolutionMeters).roundToInt()
+            val rawEndY = ((maxY - origin.y) / resolutionMeters).roundToInt()
+
+            if (rawStartX >= widthCells || rawEndX < 0 || rawStartY >= heightCells || rawEndY < 0) continue
+
+            val startCellX = rawStartX.coerceIn(0, widthCells - 1)
+            val endCellX = rawEndX.coerceIn(0, widthCells - 1)
+            val startCellY = rawStartY.coerceIn(0, heightCells - 1)
+            val endCellY = rawEndY.coerceIn(0, heightCells - 1)
 
             for (cx in startCellX..endCellX) {
                 for (cy in startCellY..endCellY) {

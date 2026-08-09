@@ -172,7 +172,9 @@ object SCurveTrajectoryParameterizer {
             val aCurr = accelerations[i]
 
             // jerk limit constraint: da <= J * dt = J * ds / v
-            val maxJerkAcc = aCurr + constraints.maxJerkMps3 * ds / maxOf(vCurr, 0.01)
+            val estimatedNextV = velocities[i + 1]
+            val avgV = (vCurr + estimatedNextV) / 2.0
+            val maxJerkAcc = aCurr + constraints.maxJerkMps3 * ds / maxOf(avgV, 0.01)
             val maxAllowedAcc = minOf(constraints.maxAccelerationMps2, maxJerkAcc)
 
             val maxV2 = vCurr * vCurr + 2.0 * maxAllowedAcc * ds
@@ -198,7 +200,9 @@ object SCurveTrajectoryParameterizer {
 
             val vCurr = velocities[i]
 
-            val maxJerkDec = decel + constraints.maxJerkMps3 * ds / maxOf(vCurr, 0.01)
+            val estimatedNextV = velocities[i - 1]
+            val avgV = (vCurr + estimatedNextV) / 2.0
+            val maxJerkDec = decel + constraints.maxJerkMps3 * ds / maxOf(avgV, 0.01)
             val maxAllowedDec = minOf(constraints.maxAccelerationMps2, maxJerkDec)
 
             val maxV2 = vCurr * vCurr + 2.0 * maxAllowedDec * ds

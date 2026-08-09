@@ -79,10 +79,11 @@ object SplineMotionProfiler {
             )
         )
 
-        val numSamples = 20
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
+            val dist = hypot(wp2.anchor.x - wp1.anchor.x, wp2.anchor.y - wp1.anchor.y)
+            val numSamples = maxOf(10, (dist / 0.05).toInt())
 
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
@@ -179,10 +180,11 @@ object SplineMotionProfiler {
             )
         )
 
-        val numSamples = 20
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
+            val dist = hypot(wp2.anchor.x - wp1.anchor.x, wp2.anchor.y - wp1.anchor.y)
+            val numSamples = maxOf(10, (dist / 0.05).toInt())
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
@@ -321,7 +323,8 @@ object SplineMotionProfiler {
         endVel: Double,
         defaultMaxVel: Double,
         defaultMaxAccel: Double,
-        constraintZones: List<PathPlannerJsonParser.ParsedConstraintsZone>
+        constraintZones: List<PathPlannerJsonParser.ParsedConstraintsZone>,
+        maxCentripetalAccel: Double = 2.0
     ) {
         // Pass 1: Forward Sweep
         pathPoints[0] = pathPoints[0].copy(velocityMps = startVel)
@@ -344,7 +347,7 @@ object SplineMotionProfiler {
             val kappa = curr.curvature
             val pointMaxVel = if (Math.abs(kappa) > 1e-4) {
                 val radius = 1.0 / Math.abs(kappa)
-                minOf(activeMaxVel, Math.sqrt(activeMaxAccel * radius))
+                minOf(activeMaxVel, Math.sqrt(maxCentripetalAccel * radius))
             } else {
                 activeMaxVel
             }
@@ -375,7 +378,7 @@ object SplineMotionProfiler {
             val kappa = curr.curvature
             val pointMaxVel = if (Math.abs(kappa) > 1e-4) {
                 val radius = 1.0 / Math.abs(kappa)
-                minOf(activeMaxVel, Math.sqrt(activeMaxAccel * radius))
+                minOf(activeMaxVel, Math.sqrt(maxCentripetalAccel * radius))
             } else {
                 activeMaxVel
             }

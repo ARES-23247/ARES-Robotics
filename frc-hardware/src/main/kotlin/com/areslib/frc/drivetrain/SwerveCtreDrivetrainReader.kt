@@ -52,10 +52,15 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
     init {
         for (i in 0..3) {
             drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0, 0.0)
+            drivetrain.getModule(i).steerMotor.supplyCurrent.setUpdateFrequency(20.0, 0.0)
             (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0, 0.0)
             faultHardware[i].setUpdateFrequency(4.0, 0.0)
             faultBrownout[i].setUpdateFrequency(4.0, 0.0)
             faultTemp[i].setUpdateFrequency(4.0, 0.0)
+            
+            drivetrain.getModule(i).steerMotor.getFault_Hardware().setUpdateFrequency(4.0, 0.0)
+            drivetrain.getModule(i).steerMotor.getFault_BridgeBrownout().setUpdateFrequency(4.0, 0.0)
+            drivetrain.getModule(i).steerMotor.getFault_DeviceTemp().setUpdateFrequency(4.0, 0.0)
         }
         pitchSignal.setUpdateFrequency(20.0, 0.0)
         rollSignal.setUpdateFrequency(20.0, 0.0)

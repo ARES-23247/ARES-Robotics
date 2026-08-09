@@ -48,7 +48,7 @@ data class PoseHistoryEntry(
  *
  * @param capacity Maximum number of historical frames to retain (default $50$, corresponding to $0.5$-$1.0\,\text{s}$ of history).
  */
-class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEntry>() {
+class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryEntry>() {
     private val entries = Array(capacity) { PoseHistoryEntry() }
     private var head = 0
     private var count = 0
@@ -189,7 +189,7 @@ class HistoryBuffer(private val capacity: Int = 50) : AbstractList<PoseHistoryEn
     }
 
     companion object {
-        private val pool = Array(256) { HistoryBuffer(50) }
+        private val pool = Array(256) { HistoryBuffer(150) }
         private val poolIndex = java.util.concurrent.atomic.AtomicInteger(0)
 
         /**
@@ -223,7 +223,7 @@ data class PoseEstimatorState(
     var estimatedPoseY: Double = 0.0,
     var estimatedPoseHeading: Double = 0.0,
     val covarianceArray: DoubleArray = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
-    val history: HistoryBuffer = HistoryBuffer(50), // Max size typically ~50
+    val history: HistoryBuffer = HistoryBuffer(150), // Max size typically ~150
     var isBeached: Boolean = false,
     var lastUnbeachedTimeMs: Long = 0L,
     var gyroBiasRadPerSec: Double = 0.0,
@@ -270,7 +270,7 @@ data class PoseEstimatorState(
  * @see HistoryBuffer
  */
 object PoseEstimator {
-    private const val MAX_HISTORY_SIZE = 50
+    private const val MAX_HISTORY_SIZE = 150
 
     // Standard deviation of odometry (tune these for actual robot)
     private val Q = Matrix3x3(

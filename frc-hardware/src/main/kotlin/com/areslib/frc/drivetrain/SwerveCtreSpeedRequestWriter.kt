@@ -32,7 +32,9 @@ class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *
         .withSteerRequestType(com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType.Position)
         .withDeadband(0.02)
         .withRotationalDeadband(0.02)
+        .withDesaturateWheelSpeeds(true)
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
+        .withDesaturateWheelSpeeds(true)
     private val scratchSpeeds = ChassisSpeeds()
 
     /**

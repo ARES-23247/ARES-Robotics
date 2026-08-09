@@ -38,6 +38,7 @@ class NT4Server(
     private var dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
 
     private val encodeBuffer = java.io.ByteArrayOutputStream(4096)
+    private val entriesToSendBuffer = ArrayList<NT4Entry>(128)
     private var packer: org.msgpack.core.MessagePacker = try {
         MessagePack.newDefaultPacker(encodeBuffer)
     } catch (_: Throwable) {
@@ -458,7 +459,7 @@ class NT4Server(
 
         for (conn in connections) {
             if (conn.hasBufferedData()) continue  // Skip congested clients
-            val entriesToSend = ArrayList<NT4Entry>(currentDirty.size)
+            entriesToSendBuffer.clear()
             for (entry in currentDirty) {
                 var subscribed = false
                 for ((prefix, subscribers) in clientSubscriptions) {
@@ -468,13 +469,13 @@ class NT4Server(
                     }
                 }
                 if (subscribed) {
-                    entriesToSend.add(entry)
+                    entriesToSendBuffer.add(entry)
                 }
             }
 
-            if (entriesToSend.isNotEmpty()) {
+            if (entriesToSendBuffer.isNotEmpty()) {
                 try {
-                    val binMsg = encodeNT4Messages(timestamp, entriesToSend)
+                    val binMsg = encodeNT4Messages(timestamp, entriesToSendBuffer)
                     sendBinaryBuffer(conn, binMsg)
                 } catch (e: IOException) {
                     e.printStackTrace()

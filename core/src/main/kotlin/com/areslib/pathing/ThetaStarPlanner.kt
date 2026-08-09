@@ -139,17 +139,15 @@ object ThetaStarPlanner {
         // Theta* Line of Sight Check:
         // If there is line of sight from the parent to the neighbor, 
         // bypass the current node to allow any-angle straight pathing.
-        if (com.areslib.pathing.planner.LineOfSightChecker.lineOfSight(costmap, parentX, parentY, nx, ny)) {
-            val newG = state.getGCost(parentKey) + distance(parentX, parentY, nx, ny)
-            if (newG < state.getGCost(nKey)) {
-                state.setGCost(nKey, newG)
-                state.setParent(nKey, parentKey)
-                
-                val f = newG + heuristic(nx, ny, endX, endY)
-                val floatBits = f.toFloat().toBits().toLong() and 0xFFFFFFFFL
-                val heapVal = (floatBits shl 32) or (nKey.toLong() and 0xFFFFFFFFL)
-                openQueue.add(heapVal)
-            }
+        val thetaGCost = state.getGCost(parentKey) + distance(parentX, parentY, nx, ny)
+        if (thetaGCost < state.getGCost(nKey) && com.areslib.pathing.planner.LineOfSightChecker.lineOfSight(costmap, parentX, parentY, nx, ny)) {
+            state.setGCost(nKey, thetaGCost)
+            state.setParent(nKey, parentKey)
+            
+            val f = thetaGCost + heuristic(nx, ny, endX, endY)
+            val floatBits = f.toFloat().toBits().toLong() and 0xFFFFFFFFL
+            val heapVal = (floatBits shl 32) or (nKey.toLong() and 0xFFFFFFFFL)
+            openQueue.add(heapVal)
         } else {
             // Fall back to standard A* update
             val newG = state.getGCost(currKey) + distance(currX, currY, nx, ny)

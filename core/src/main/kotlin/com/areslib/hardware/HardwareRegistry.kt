@@ -23,6 +23,12 @@ object HardwareRegistry {
     
     @Volatile private var pollingRunning = false
     private var pollingThread: Thread? = null
+    private var reflectionInitialized = false
+    private var getActiveInstanceMethod: java.lang.reflect.Method? = null
+    private var getStoreMethod: java.lang.reflect.Method? = null
+    private var getStateMethod: java.lang.reflect.Method? = null
+    private var getTuningMethod: java.lang.reflect.Method? = null
+    private var getIntervalMethod: java.lang.reflect.Method? = null
 
     /**
      * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
@@ -79,14 +85,31 @@ object HardwareRegistry {
                         
                         // Default 50ms sleep, can be overridden by tuning if FtcBaseRobot is active
                         var sleepInterval = 50L
+                        if (!reflectionInitialized) {
+                            reflectionInitialized = true
+                            try {
+                                val clazz = Class.forName("com.areslib.ftc.FtcBaseRobot")
+                                getActiveInstanceMethod = clazz.getMethod("getActiveInstance")
+                            } catch (_: Exception) {}
+                        }
                         try {
-                            val activeInstance = Class.forName("com.areslib.ftc.FtcBaseRobot").getMethod("getActiveInstance").invoke(null)
+                            val activeInstance = getActiveInstanceMethod?.invoke(null)
                             if (activeInstance != null) {
-                                val store = activeInstance.javaClass.getMethod("getStore").invoke(activeInstance)
-                                val state = store.javaClass.getMethod("getState").invoke(store)
-                                val tuning = state.javaClass.getMethod("getTuning").invoke(state)
-                                val interval = tuning.javaClass.getMethod("getMotorCurrentPollingIntervalMs").invoke(tuning) as? Long
-                                if (interval != null) sleepInterval = interval
+                                if (getStoreMethod == null) getStoreMethod = activeInstance.javaClass.getMethod("getStore")
+                                val store = getStoreMethod?.invoke(activeInstance)
+                                if (store != null) {
+                                    if (getStateMethod == null) getStateMethod = store.javaClass.getMethod("getState")
+                                    val state = getStateMethod?.invoke(store)
+                                    if (state != null) {
+                                        if (getTuningMethod == null) getTuningMethod = state.javaClass.getMethod("getTuning")
+                                        val tuning = getTuningMethod?.invoke(state)
+                                        if (tuning != null) {
+                                            if (getIntervalMethod == null) getIntervalMethod = tuning.javaClass.getMethod("getMotorCurrentPollingIntervalMs")
+                                            val interval = getIntervalMethod?.invoke(tuning) as? Long
+                                            if (interval != null) sleepInterval = interval
+                                        }
+                                    }
+                                }
                             }
                         } catch (_: Exception) {}
                         
@@ -335,13 +358,13 @@ object HardwareRegistry {
      */
     fun publishAll(telemetry: ITelemetry) {
         try {
-            val devSnapshot = devicesList.toArray()
-            val prefSnapshot = devicesPrefixList.toArray()
-            val count = kotlin.math.min(devSnapshot.size, prefSnapshot.size)
+            val count = kotlin.math.min(devicesList.size, devicesPrefixList.size)
             for (i in 0 until count) {
-                val device = devSnapshot[i] as? LoggableDevice ?: continue
-                val prefix = prefSnapshot[i] as? String ?: ""
-                device.logTelemetry(telemetry, prefix)
+                try {
+                    val device = devicesList[i] as? LoggableDevice ?: continue
+                    val prefix = devicesPrefixList[i] ?: ""
+                    device.logTelemetry(telemetry, prefix)
+                } catch (_: IndexOutOfBoundsException) { break }
             }
         } catch (_: Throwable) {}
     }
