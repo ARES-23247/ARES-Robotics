@@ -11,6 +11,7 @@ import com.areslib.hardware.actuator.*
  */
 object HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
+    private val gson = Gson()
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
     private val devicesNamesList = CopyOnWriteArrayList<String>()
     private val devicesPrefixList = CopyOnWriteArrayList<String>()
@@ -23,12 +24,14 @@ object HardwareRegistry {
     
     @Volatile private var pollingRunning = false
     private var pollingThread: Thread? = null
-    private var reflectionInitialized = false
-    private var getActiveInstanceMethod: java.lang.reflect.Method? = null
-    private var getStoreMethod: java.lang.reflect.Method? = null
-    private var getStateMethod: java.lang.reflect.Method? = null
-    private var getTuningMethod: java.lang.reflect.Method? = null
-    private var getIntervalMethod: java.lang.reflect.Method? = null
+    @Volatile private var pollingIntervalMs: Long = 50L
+
+    /**
+     * Sets the background polling interval in milliseconds.
+     */
+    fun setPollingIntervalMs(intervalMs: Long) {
+        pollingIntervalMs = intervalMs
+    }
 
     /**
      * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
@@ -82,38 +85,7 @@ object HardwareRegistry {
                         polledAny = true
                     }
                     if (polledAny) {
-                        
-                        // Default 50ms sleep, can be overridden by tuning if FtcBaseRobot is active
-                        var sleepInterval = 50L
-                        if (!reflectionInitialized) {
-                            reflectionInitialized = true
-                            try {
-                                val clazz = Class.forName("com.areslib.ftc.FtcBaseRobot")
-                                getActiveInstanceMethod = clazz.getMethod("getActiveInstance")
-                            } catch (_: Exception) {}
-                        }
-                        try {
-                            val activeInstance = getActiveInstanceMethod?.invoke(null)
-                            if (activeInstance != null) {
-                                if (getStoreMethod == null) getStoreMethod = activeInstance.javaClass.getMethod("getStore")
-                                val store = getStoreMethod?.invoke(activeInstance)
-                                if (store != null) {
-                                    if (getStateMethod == null) getStateMethod = store.javaClass.getMethod("getState")
-                                    val state = getStateMethod?.invoke(store)
-                                    if (state != null) {
-                                        if (getTuningMethod == null) getTuningMethod = state.javaClass.getMethod("getTuning")
-                                        val tuning = getTuningMethod?.invoke(state)
-                                        if (tuning != null) {
-                                            if (getIntervalMethod == null) getIntervalMethod = tuning.javaClass.getMethod("getMotorCurrentPollingIntervalMs")
-                                            val interval = getIntervalMethod?.invoke(tuning) as? Long
-                                            if (interval != null) sleepInterval = interval
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (_: Exception) {}
-                        
-                        try { Thread.sleep(kotlin.math.max(10L, sleepInterval)) } catch (_: InterruptedException) { break }
+                        try { Thread.sleep(kotlin.math.max(10L, pollingIntervalMs)) } catch (_: InterruptedException) { break }
                     } else {
                         try { Thread.sleep(50L) } catch (_: InterruptedException) { break }
                     }
@@ -252,7 +224,7 @@ object HardwareRegistry {
      * @return Corresponding output value or Unit.
      */
     fun getTopologyJson(robotId: String): String {
-        return Gson().toJson(buildTopology(robotId))
+        return gson.toJson(buildTopology(robotId))
     }
 
     private fun getDeviceNodeType(name: String): TopologyNodeType {

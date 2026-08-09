@@ -237,12 +237,22 @@ data class PoseEstimatorState(
     val estimatedPose: Pose2d
         get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))
 
+    // WARNING: This is a shared mutable reference. Do not mutate the returned instance or store it across frames.
+    private val _covarianceMatrix = Matrix3x3()
+
     val covariance: Matrix3x3
-        get() = Matrix3x3(
-            covarianceArray[0], covarianceArray[1], covarianceArray[2],
-            covarianceArray[3], covarianceArray[4], covarianceArray[5],
-            covarianceArray[6], covarianceArray[7], covarianceArray[8]
-        )
+        get() {
+            _covarianceMatrix.m00 = covarianceArray[0]
+            _covarianceMatrix.m01 = covarianceArray[1]
+            _covarianceMatrix.m02 = covarianceArray[2]
+            _covarianceMatrix.m10 = covarianceArray[3]
+            _covarianceMatrix.m11 = covarianceArray[4]
+            _covarianceMatrix.m12 = covarianceArray[5]
+            _covarianceMatrix.m20 = covarianceArray[6]
+            _covarianceMatrix.m21 = covarianceArray[7]
+            _covarianceMatrix.m22 = covarianceArray[8]
+            return _covarianceMatrix
+        }
 }
 
 /**

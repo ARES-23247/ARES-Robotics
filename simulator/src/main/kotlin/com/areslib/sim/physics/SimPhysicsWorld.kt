@@ -65,6 +65,16 @@ class SimPhysicsWorld {
      * @return Corresponding output value or Unit.
      */
     fun loadFieldElements(activeConfig: RobotFieldConfig?) {
+        for (body in activeObstacles) {
+            world.removeBody(body)
+        }
+        activeObstacles.clear()
+
+        for (body in gamePieces) {
+            world.removeBody(body)
+        }
+        gamePieces.clear()
+
         if (activeConfig != null) {
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
             activeObstacles.addAll(obstacles)

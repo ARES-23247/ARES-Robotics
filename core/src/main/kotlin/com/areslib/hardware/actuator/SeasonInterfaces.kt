@@ -89,6 +89,11 @@ interface IntakeIO : SubsystemIO {
     /** Sets the applied voltage of the intake rollers directly (-12.0 to 12.0 volts) */
     fun setRollerVoltage(volts: Double)
 
+    /** Sets the target velocity of the intake rollers in RPS */
+    fun setRollerVelocityRps(rps: Double) {
+        setRollerVoltage((rps / 10.0) * 12.0)
+    }
+
     /** Gets the current absolute angle of the pivot arm in degrees */
     val pivotAngleDegrees: Double
         get() = 0.0

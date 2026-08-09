@@ -46,7 +46,40 @@ object LogManagerServer : NanoHTTPD(5002) {
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
+    private class TokenBucket(val capacity: Int, val refillRatePerSecond: Double) {
+        var tokens: Double = capacity.toDouble()
+        var lastRefillTime: Long = System.nanoTime()
+
+        @Synchronized
+        fun tryConsume(): Boolean {
+            val now = System.nanoTime()
+            val elapsedSeconds = (now - lastRefillTime) / 1_000_000_000.0
+            tokens = kotlin.math.min(capacity.toDouble(), tokens + elapsedSeconds * refillRatePerSecond)
+            lastRefillTime = now
+
+            return if (tokens >= 1.0) {
+                tokens -= 1.0
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    private val rateLimiters = java.util.concurrent.ConcurrentHashMap<String, TokenBucket>()
+
     override fun serve(session: IHTTPSession): Response {
+        val ip = session.remoteIpAddress ?: "unknown"
+        val bucket = rateLimiters.getOrPut(ip) { TokenBucket(10, 10.0) }
+        
+        if (!bucket.tryConsume()) {
+            val status429 = object : Response.IStatus {
+                override fun getDescription() = "429 Too Many Requests"
+                override fun getRequestStatus() = 429
+            }
+            return newFixedLengthResponse(status429, MIME_PLAINTEXT, "429 Too Many Requests")
+        }
+
         val uri = session.uri
         val method = session.method
 
