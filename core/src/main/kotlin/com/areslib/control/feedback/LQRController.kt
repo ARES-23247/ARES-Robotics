@@ -488,11 +488,7 @@ class LQRController(
                 normInv = kotlin.math.max(normInv, colSumInv)
             }
             if (normA * normInv > 1e6) {
-                for (r in 0 until rows) {
-                    for (c in 0 until cols) {
-                        result.set(r, c, if (r == c) 1.0 else 0.0)
-                    }
-                }
+                println("WARNING: Matrix condition number exceeds 1e6: ${normA * normInv}")
             }
             return result
         }

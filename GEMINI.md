@@ -30,7 +30,7 @@ graph TD
 3. **Android/RoboRIO GC Allocation Budget**:
    * Drivetrain update cycles, state-space controller loops, and pathfinders execute at high frequencies (50Hz - 100Hz).
    * **CRITICAL**: Object allocations are prohibited inside hot paths (e.g. `update()`, trajectory sampling, VFH steering loops). 
-   * Always use pre-allocated buffers, primitive types, and object pools (like `Valley` pools in `VFHPlanner`) to maintain a zero-allocation footprint.
+   * Always use pre-allocated buffers, primitive types, and object pools (like the `kalmanGainPool` in `PoseEstimator` and the `pathPool` in `ThetaStarPlanner`) to maintain a zero-allocation footprint.
 4. **Decoupled Hardware IO Layer**:
    * All hardware interactions are abstracted through thin IO interfaces (e.g. `MecanumHardwareIO`, `PinpointIO`).
    * The actual implementation is split between physical SDK implementations (`ftc-hardware/`) and robust mock components (`ftc-mocks/`), enabling 100% offline desktop-level simulation.

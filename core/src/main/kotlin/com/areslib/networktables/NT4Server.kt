@@ -282,7 +282,7 @@ class NT4Server(
     }
 
     @Synchronized
-    fun encodeNT4Message(timestamp: Long, topicId: Long, pubUID: Long, dataType: Int, dataValue: Any): ByteArray {
+    fun encodeNT4Message(timestamp: Long, topicId: Long, _pubUID: Long, dataType: Int, dataValue: Any): ByteArray {
         encodeBuffer.reset()
         packer.packArrayHeader(1)
         packer.packArrayHeader(4)

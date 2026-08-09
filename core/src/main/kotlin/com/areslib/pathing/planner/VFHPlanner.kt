@@ -5,41 +5,49 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
 
 /**
- * Vector Field Histogram Plus (VFH+) Local Obstacle Avoidance Planner.
+ * **STUB** — Vector Field Histogram Plus (VFH+) Local Obstacle Avoidance Planner.
  *
- * Implements a dynamic real-time obstacle avoidance algorithm that generates a 1D polar
- * histogram of obstacle densities around the robot, identifying traversable sectors
- * and selecting the optimal steering direction that minimizes cost functions (e.g., target heading,
- * current heading, and past steering).
+ * ⚠️ **NOT IMPLEMENTED.** The dynamic obstacle-avoidance subsystem (range-sensor costmap
+ * + VFH+ steering) was intentionally removed in commit `cd3ea41` ("delete dynamic range
+ * sensor costmap and VFH+ obstacle avoidance logic, preserving static field obstacle
+ * pathfinder"). This class is retained as a placeholder for future re-implementation and
+ * currently performs **no avoidance** — [update] returns [goalHeading] unchanged.
  *
- * Zero-GC compliant: Utilizes pre-allocated arrays for histogram generation.
+ * Pre-allocated histogram arrays are kept as scaffolding for the future implementation.
+ *
+ * To restore: implement polar-histogram binning, binary-threshold masking, and the
+ * candidate-sector cost function, writing results into [polarHistogram]/[binaryHistogram]
+ * to preserve Zero-GC compliance.
  */
 class VFHPlanner {
 
-    // Pre-allocated histogram array for 5-degree resolution (360 / 5 = 72 bins)
+    // Pre-allocated histogram array for 5-degree resolution (360 / 5 = 72 bins).
+    // Reserved scaffolding for the future VFH+ implementation; currently unused.
     private val polarHistogram = DoubleArray(72)
     private val binaryHistogram = BooleanArray(72)
 
+    private var stubWarningEmitted = false
+
     /**
-     * Updates the VFH+ planner with the current robot state and obstacles, returning
-     * the optimal obstacle-free heading to steer towards.
+     * **STUB** — returns [goalHeading] unchanged. Performs NO obstacle avoidance.
      *
-     * @param pose The current robot pose.
-     * @param dynamicObstacles List of dynamic obstacle translations to avoid.
+     * @param _pose The current robot pose (unused in stub).
+     * @param _dynamicObstacles List of dynamic obstacle translations to avoid (unused in stub).
      * @param goalHeading The desired global target heading.
-     * @return The computed safe steering heading.
+     * @return [goalHeading], unmodified.
      */
     fun update(
-        pose: Pose2d,
-        dynamicObstacles: List<Translation2d>,
+        _pose: Pose2d,
+        _dynamicObstacles: List<Translation2d>,
         goalHeading: Rotation2d
     ): Rotation2d {
-        // TODO: Implement obstacle mapping to polar histogram
-        // TODO: Implement thresholding to generate binary histogram
-        // TODO: Implement masked polar histogram cost function evaluation
-        // TODO: Select and return optimal heading
-
-        // For now, just return the goal heading
+        if (!stubWarningEmitted) {
+            stubWarningEmitted = true
+            System.err.println(
+                "VFHPlanner: WARNING - dynamic obstacle avoidance is NOT active (stub implementation). " +
+                "update() returns the goal heading unmodified. See class KDoc for restoration steps."
+            )
+        }
         return goalHeading
     }
 }

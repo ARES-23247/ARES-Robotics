@@ -52,20 +52,34 @@ object RobotWebServer {
     private val activeForwarders = CopyOnWriteArrayList<PortForwarder>()
     private var executor: ExecutorService? = null
 
+    /**
+     * Shared-secret bearer token required on `/api/` routes when non-null.
+     * `null` (default) leaves the server open — set one in production to prevent
+     * other devices on the field network from reading or mutating logs.
+     */
+    private var authToken: String? = null
+
     private val logDir: File by lazy {
         val javaVendor = System.getProperty("java.vendor") ?: ""
         val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
         if (isAndroid) File("/sdcard/FIRST/telemetry_logs/") else File("./logs/")
     }
 
-    private val endpointHandler by lazy { LogEndpointHandler(logDir) }
+    private val endpointHandler by lazy { LogEndpointHandler(logDir, authToken) }
 
     /**
      * Starts the web server in a background thread.
      */
     @Synchronized
-    fun start(port: Int = 8082) {
+    fun start(port: Int = 8082, authToken: String? = null) {
         if (serverSocket != null) return
+        this.authToken = authToken
+        if (authToken == null) {
+            System.err.println(
+                "ARES Robot WebServer: WARNING - no auth token configured. /api/* endpoints are " +
+                "unauthenticated and reachable by any device on this network. Pass an authToken to start()."
+            )
+        }
         try {
             if (executor == null || executor!!.isShutdown) {
                 executor = Executors.newCachedThreadPool { thread ->

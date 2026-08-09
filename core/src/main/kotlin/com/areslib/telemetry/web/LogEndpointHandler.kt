@@ -10,7 +10,7 @@ import java.net.Socket
  *
  * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
  */
-class LogEndpointHandler(private val logDir: File) {
+class LogEndpointHandler(private val logDir: File, private val authToken: String? = null) {
 
     /**
      * handleClient declaration.
@@ -51,6 +51,13 @@ class LogEndpointHandler(private val logDir: File) {
             val questionIdx = fullPath.indexOf('?')
             val path = if (questionIdx != -1) fullPath.substring(0, questionIdx) else fullPath
             val query = if (questionIdx != -1) fullPath.substring(questionIdx + 1) else ""
+
+            // When a bearer token is configured, require it on every /api/* route
+            // (CORS preflight OPTIONS above is exempt so browser preflights still succeed).
+            if (authToken != null && !isAuthorized(headers)) {
+                sendErrorResponse(client, 401, "Unauthorized")
+                return
+            }
 
             when (path) {
                 "/api/status" -> handleStatus(client, method, headers)
@@ -96,6 +103,15 @@ class LogEndpointHandler(private val logDir: File) {
 
     private fun sendErrorResponse(client: Socket, code: Int, message: String) {
         sendJsonResponse(client, code, message, "{\"error\": \"$message\"}")
+    }
+
+    /**
+     * Validates the `Authorization: Bearer <token>` header against the configured [authToken].
+     * Returns `true` if no token is configured (open mode) or the header matches.
+     */
+    private fun isAuthorized(headers: Map<String, String>): Boolean {
+        if (authToken == null) return true
+        return headers["authorization"] == "Bearer $authToken"
     }
 
     private fun handleStatus(client: Socket, method: String, headers: Map<String, String>) {

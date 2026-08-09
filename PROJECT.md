@@ -26,5 +26,5 @@
 ## Code Layout
 - Core Math & Control: `core/src/main/kotlin/com/areslib/math`, `core/src/main/kotlin/com/areslib/control`, `core/src/main/kotlin/com/areslib/pathing`
 - State Management: `core/src/main/kotlin/com/areslib/state`, `core/src/main/kotlin/com/areslib/reducer`
-- Hardware I/O: `ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware` and `frc-app/src/main/kotlin/com/areslib/frc/`
-- Application: `ftc-hardware/src/main/kotlin/com/areslib/ftc/`, `frc-app/src/main/kotlin/com/areslib/frc/`
+- Hardware I/O: `ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware` and `frc-hardware/src/main/kotlin/com/areslib/frc/`
+- Application: `ftc-hardware/src/main/kotlin/com/areslib/ftc/`, `frc-hardware/src/main/kotlin/com/areslib/frc/`

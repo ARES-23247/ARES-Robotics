@@ -9,7 +9,7 @@ A high-performance, functional, cross-platform (FTC and FRC) robotics library de
 ### 1. Zero-GC Hot Paths
 Drivetrain update cycles, state-space controllers, and pathfinders run at high frequencies (50Hz - 100Hz).
 - **Rule**: Object allocations are completely prohibited inside hot paths (e.g., `update()` loops, trajectory sampling).
-- **Enforcement**: We use pre-allocated buffers, primitive types, array loops (instead of iterators), and object pools (like `Valley` pools in `VFHPlanner`) to maintain a strict zero-allocation footprint during active matches.
+- **Enforcement**: We use pre-allocated buffers, primitive types, array loops (instead of iterators), and object pools (like the `kalmanGainPool` in `PoseEstimator` and the `pathPool` in `ThetaStarPlanner`) to maintain a strict zero-allocation footprint during active matches.
 
 ### 2. Redux Store Architecture
 - **State**: The `RobotState` and its sub-states (`DriveState`, `SuperstructureState`) are 100% immutable Kotlin data classes.

@@ -51,6 +51,8 @@ class MecanumKinematicsController(
     fun updateTuning(currentTuning: TuningState) {
         kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
         mecanumIO.kS = currentTuning.driveFeedforward.kS
+        mecanumIO.kV = currentTuning.driveFeedforward.kV
+        mecanumIO.kA = currentTuning.driveFeedforward.kA
         mecanumIO.slewRateLimit = currentTuning.driveSlewRateLimit
         mecanumIO.ticksPerMeter = currentTuning.ticksPerMeter
         if (currentTuning.driveFeedforward.kV > 1e-4) {

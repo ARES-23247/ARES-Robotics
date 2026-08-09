@@ -119,7 +119,8 @@ object SplineMotionProfiler {
         // Parse path events
         val pathEvents = mutableListOf<PathEvent>()
         for (marker in data.eventMarkers) {
-            var targetIndex = (marker.waypointRelativePos * numSamples).toInt()
+            var targetIndex = relativePositions.binarySearch(marker.waypointRelativePos)
+            if (targetIndex < 0) targetIndex = -targetIndex - 1
             if (targetIndex >= pathPoints.size) targetIndex = pathPoints.size - 1
             if (targetIndex < 0) targetIndex = 0
             val triggerDist = pathPoints[targetIndex].distanceMeters

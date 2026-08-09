@@ -42,6 +42,10 @@ class MecanumDriveFeedforward(
 
     /** Static friction feedforward coefficient $k_S$. */
     var kS: Double = initialKs
+    var kV: Double = 0.0
+    var kA: Double = 0.0
+
+    private val previousSpeeds = DoubleArray(4)
 
     private var flController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
     private var frController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
@@ -141,12 +145,14 @@ class MecanumDriveFeedforward(
         val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
         val voltageCompensationFactor = maxVolts / actualVolts
 
-        fun applyFeedforward(speedMetersPerSecond: Double): Double {
+        fun applyFeedforward(speedMetersPerSecond: Double, prevSpeed: Double): Double {
             if (abs(speedMetersPerSecond) < 1e-4) return 0.0
             val sign = sign(speedMetersPerSecond)
-            val velocityFF = speedMetersPerSecond / maxWheelSpeedMps
+            val acceleration = if (dtSeconds > 1e-4) (speedMetersPerSecond - prevSpeed) / dtSeconds else 0.0
+            val velocityFF = speedMetersPerSecond * kV
+            val accelFF = acceleration * kA
             val staticFF = sign * kS
-            return (velocityFF + staticFF)
+            return (velocityFF + accelFF + staticFF)
         }
 
         if (abs(speeds[0]) < 1e-4) flController?.reset()
@@ -164,10 +170,15 @@ class MecanumDriveFeedforward(
         val rlFeedback = if (!useClosedLoopVelocity && rl != null) rl.calculate(rlVel / ticksPerMeter, speeds[2], dtSeconds) else 0.0
         val rrFeedback = if (!useClosedLoopVelocity && rr != null) rr.calculate(rrVel / ticksPerMeter, speeds[3], dtSeconds) else 0.0
 
-        var flPower = ((applyFeedforward(speeds[0]) + flFeedback) * powerScale)
-        var frPower = ((applyFeedforward(speeds[1]) + frFeedback) * powerScale)
-        var rlPower = ((applyFeedforward(speeds[2]) + rlFeedback) * powerScale)
-        var rrPower = ((applyFeedforward(speeds[3]) + rrFeedback) * powerScale)
+        var flPower = ((applyFeedforward(speeds[0], previousSpeeds[0]) + flFeedback) * powerScale)
+        var frPower = ((applyFeedforward(speeds[1], previousSpeeds[1]) + frFeedback) * powerScale)
+        var rlPower = ((applyFeedforward(speeds[2], previousSpeeds[2]) + rlFeedback) * powerScale)
+        var rrPower = ((applyFeedforward(speeds[3], previousSpeeds[3]) + rrFeedback) * powerScale)
+        
+        previousSpeeds[0] = speeds[0]
+        previousSpeeds[1] = speeds[1]
+        previousSpeeds[2] = speeds[2]
+        previousSpeeds[3] = speeds[3]
 
         val baseLimit = slewRateLimit
         if (baseLimit != null) {

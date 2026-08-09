@@ -64,7 +64,7 @@ class DslBuilderTest {
             override fun readSensors(store: Store, timestampMs: Long) {
                 readSensorsCalled = true
             }
-            override fun writeOutputs(state: RobotState, powerScale: Double) {
+            override fun writeOutputs(state: RobotState, scale: Double) {
                 writeOutputsCalled = true
             }
             override fun close() {

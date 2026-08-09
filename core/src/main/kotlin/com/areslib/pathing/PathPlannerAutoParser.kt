@@ -71,6 +71,7 @@ object PathPlannerAutoParser {
     /**
      * Parses a PathPlanner .auto JSON string and compiles it into a Task.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun parseAuto(
         jsonString: String,
         follower: HolonomicPathFollower,

@@ -113,6 +113,16 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     var kS: Double
         get() = feedforward.kS
         set(value) { feedforward.kS = value }
+        
+    /** Velocity feedforward coefficient $k_V$. */
+    var kV: Double
+        get() = feedforward.kV
+        set(value) { feedforward.kV = value }
+        
+    /** Acceleration feedforward coefficient $k_A$. */
+    var kA: Double
+        get() = feedforward.kA
+        set(value) { feedforward.kA = value }
 
     /** Maximum acceleration slew rate limit. */
     var slewRateLimit: Double?
