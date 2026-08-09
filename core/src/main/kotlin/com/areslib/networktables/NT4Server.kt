@@ -35,7 +35,7 @@ class NT4Server(
     private val connections = CopyOnWriteArraySet<WebSocket>()
     private val clientSubscriptions = ConcurrentHashMap<String, CopyOnWriteArraySet<WebSocket>>()
     private val clientPublishers = ConcurrentHashMap<WebSocket, CopyOnWriteArraySet<Long>>()
-    private var dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
+    @Volatile private var dirtyEntries = CopyOnWriteArraySet<NT4Entry>()
 
     private class FastByteArrayOutputStream(size: Int) : java.io.ByteArrayOutputStream(size) {
         fun buffer(): ByteArray = buf
@@ -193,7 +193,7 @@ class NT4Server(
                 "string[]" -> emptyArray<String>()
                 else -> ""
             }
-            val id = entries.size + 1
+            val id = nextTopicId.getAndIncrement()
             entry = NT4Entry(id, topic, NT4Value.fromObject(defaultValue))
             entries[topic] = entry
             dirtyEntries.add(entry)
@@ -442,7 +442,7 @@ class NT4Server(
             isNew = false
         } else {
             isNew = true
-            val id = entries.size + 1
+            val id = nextTopicId.getAndIncrement()
             entry = NT4Entry(id, topic, value)
             entries[topic] = entry
             publisherUIDSMap[id.toLong()] = entry
@@ -505,6 +505,7 @@ class NT4Server(
         private var shutdownHookAdded = false
         private val entries = ConcurrentHashMap<String, NT4Entry>()
         private val publisherUIDSMap = ConcurrentHashMap<Long, NT4Entry>()
+        private val nextTopicId = java.util.concurrent.atomic.AtomicInteger(1)
 
         @JvmStatic
         fun createInstance(address: String, port: Int): NT4Server {
