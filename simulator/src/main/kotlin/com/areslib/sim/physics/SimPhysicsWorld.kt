@@ -140,7 +140,7 @@ class SimPhysicsWorld {
      */
     fun replaceObstaclesFromAnalyticsJson(json: String): Boolean {
         return try {
-            if (!com.google.gson.JsonParser.parseString(json).isJsonArray) return false
+            if (!com.google.gson.JsonParser().parse(json).isJsonArray) return false
             val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(json)
             for (body in activeObstacles) world.removeBody(body)
             activeObstacles.clear()

@@ -437,7 +437,9 @@ object AresAutoCodec {
 
     fun decode(json: String): AutoRoutine {
         val routine = try {
-            parseRoutine(JsonParser.parseString(json).asJsonObject)
+            // FTC SDK currently supplies Gson 2.8.x at runtime. The instance API is available
+            // there and in newer desktop Gson versions; the static parseString API is not.
+            parseRoutine(JsonParser().parse(json).asJsonObject)
         } catch (error: Exception) {
             throw IllegalArgumentException("Auto document is not valid JSON: ${error.message}", error)
         }
@@ -529,7 +531,8 @@ object AresAutoCodec {
     }
 
     private fun JsonObject.requireOnly(vararg allowed: String) {
-        val unexpected = keySet() - allowed.toSet()
+        // JsonObject.keySet() is absent from the Gson version bundled by the FTC SDK.
+        val unexpected = entrySet().mapTo(mutableSetOf()) { it.key } - allowed.toSet()
         require(unexpected.isEmpty()) { "Unexpected field(s): ${unexpected.joinToString()}" }
     }
 
