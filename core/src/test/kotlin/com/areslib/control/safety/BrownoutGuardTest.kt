@@ -4,23 +4,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 
-/**
- * BrownoutGuardTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class BrownoutGuardTest {
 
     private lateinit var guard: BrownoutGuard
 
     @BeforeEach
-    /**
-     * setUp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setUp() {
         guard = BrownoutGuard.ftcDefaults()
     }

@@ -379,16 +379,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @return Formatted pose update structure derived from wheel encoder ticks.
      */
     override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
-        val heading = imuIO?.let {
-            val inputs = com.areslib.hardware.sensor.ImuInputs()
-            it.updateInputs(inputs)
-            inputs.headingRadians
-        } ?: 0.0
-
         return fallbackOdometry.getFallbackPoseUpdate(
             timestampMs, mecanumIO.flIO.position, mecanumIO.frIO.position, mecanumIO.rlIO.position, mecanumIO.rrIO.position,
-            store.state.tuning.ticksPerMeter, ticksPerMeter, heading
+            store.state.tuning.ticksPerMeter, ticksPerMeter,
+            cachedImuInputs.headingRadians,
+            cachedImuInputs.yawVelocityRadPerSec
         )
+    }
+
+    override fun prepareFallbackOdometry(pose: Pose2d, rawImuHeadingRadians: Double) {
+        fallbackOdometry.reset(pose, rawImuHeadingRadians)
     }
 
     /**
@@ -399,4 +399,3 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         if (isAndroid) LimelightProxyAutoStart.start()
     }
 }
-

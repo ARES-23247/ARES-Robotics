@@ -9,12 +9,6 @@ import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * MockDcMotorEx declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockDcMotorEx : DcMotorEx {
     override val currentPosition: Int = 0
     override var velocity: Double = 0.0
@@ -28,23 +22,11 @@ class MockDcMotorEx : DcMotorEx {
             currentPower = value
         }
 
-    /**
-     * getCurrent declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double {
         return 0.0
     }
 }
 
-/**
- * MecanumHardwareIOTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MecanumHardwareIOTest {
     @Test
     fun `apply sets power correctly on all four motors`() {

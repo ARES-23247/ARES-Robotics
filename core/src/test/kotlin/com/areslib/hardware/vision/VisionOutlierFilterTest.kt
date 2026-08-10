@@ -75,6 +75,30 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    fun `nonfinite measurements and motion inputs fail closed`() {
+        val nanPose = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(
+                Translation3d(Double.NaN, 0.0, 0.0),
+                Rotation3d()
+            ),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+        val validPose = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.0, 0.0, 0.0), Rotation3d()),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+
+        assertFalse(filter.isValid(nanPose, robotHeadingRad, robotPose))
+        assertFalse(filter.isValid(validPose.copy(ambiguity = Double.NaN), robotHeadingRad, robotPose))
+        assertFalse(filter.isValid(validPose, Double.NaN, robotPose))
+        assertFalse(filter.isValid(validPose, robotHeadingRad, robotPose, angularVelocityRadPerSec = Double.POSITIVE_INFINITY))
+    }
+
+    @Test
     /**
      * testHeadingRejection declaration.
      *
@@ -232,4 +256,3 @@ class VisionOutlierFilterTest {
         ))
     }
 }
-

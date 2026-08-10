@@ -8,21 +8,9 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * ControlChampionshipTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ControlChampionshipTest {
 
     @Test
-    /**
-     * testLQRControllerConvergence declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testLQRControllerConvergence() {
         // Define simple 2-state elevator system: [position, velocity]
         val controller = LQRController(numStates = 2, numInputs = 1, numOutputs = 1)
@@ -78,12 +66,6 @@ class ControlChampionshipTest {
     }
 
     @Test
-    /**
-     * testGravityFeedforward declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testGravityFeedforward() {
         // Elevator feedforward
         val elevatorFF = GravityFeedforward.calculateElevator(kG = 0.15)
@@ -98,12 +80,6 @@ class ControlChampionshipTest {
     }
 
     @Test
-    /**
-     * testCoordinatedActionExecutor declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testCoordinatedActionExecutor() {
         var action1Called = 0
         var action2Called = 0
@@ -145,12 +121,6 @@ class ControlChampionshipTest {
     }
 
     @Test
-    /**
-     * testIntakeTargetAssist declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testIntakeTargetAssist() {
         val assist = IntakeTargetAssist()
 
@@ -182,5 +152,4 @@ class ControlChampionshipTest {
         assertTrue(assistedSpeeds.vyMetersPerSecond > 0.0, "Lateral correction should center onto target")
     }
 }
-
 

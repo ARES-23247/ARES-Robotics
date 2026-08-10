@@ -7,39 +7,15 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * MockVoltageSensor declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockVoltageSensor(override var voltage: Double = 12.0) : VoltageSensor
 
-/**
- * MockMotorCurrentIO declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockMotorCurrentIO(override var currentAmps: Double = 0.0) : MotorIO {
     override var power: Double = 0.0
     override val velocity: Double = 0.0
     override val position: Double = 0.0
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun resetEncoder() {}
 }
 
-/**
- * FtcPowerManagerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class FtcPowerManagerTest {
     @Test
     fun `test voltage filter sag compensation and rate limiting`() {
@@ -107,4 +83,3 @@ class FtcPowerManagerTest {
         }
     }
 }
-

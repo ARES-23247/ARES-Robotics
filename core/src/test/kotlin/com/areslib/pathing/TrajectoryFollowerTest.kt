@@ -9,21 +9,9 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * TrajectoryFollowerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class TrajectoryFollowerTest {
 
     @Test
-    /**
-     * testClosedLoopTrajectoryTracking declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testClosedLoopTrajectoryTracking() {
         // 1. Create a mock PathPlanner path (Start at 2.0, 2.0, end at 8.0, 6.0)
         val mockJson = """

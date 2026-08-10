@@ -5,40 +5,27 @@ import java.io.FileInputStream
 import java.io.OutputStream
 
 /**
- * Object implementation for Log Archive Packager.
+ * Filesystem helpers used by the robot web server's offline log workflow.
  *
- * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ * This low-level API accepts a file name relative to [logDir] and recognizes `.csv` and `.jsonl`
+ * suffixes. Callers at a network boundary must canonicalize and contain the resolved path before
+ * invoking these helpers; these methods do not perform path-traversal validation themselves.
  */
 object LogArchivePackager {
-    /**
-     * listLogFiles declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Lists recognized regular entries in deterministic name order, or returns empty if absent. */
     fun listLogFiles(logDir: File): List<String> {
         if (!logDir.exists()) return emptyList()
         val files = logDir.listFiles { _, name -> name.endsWith(".csv") || name.endsWith(".jsonl") } ?: emptyArray()
         return files.sortedBy { it.name }.map { it.name }
     }
 
-    /**
-     * isValidLogFile declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Checks existence and suffix only; it does not prove that [fileName] stays beneath [logDir]. */
     fun isValidLogFile(logDir: File, fileName: String): Boolean {
         val file = File(logDir, fileName)
         return file.exists() && (file.name.endsWith(".csv") || file.name.endsWith(".jsonl"))
     }
 
-    /**
-     * streamLogFile declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Copies a trusted relative log file to [out] without closing the caller-owned output stream. */
     fun streamLogFile(logDir: File, fileName: String, out: OutputStream) {
         val file = File(logDir, fileName)
         FileInputStream(file).use { fis ->
@@ -50,21 +37,14 @@ object LogArchivePackager {
         }
     }
 
-    /**
-     * getFileLength declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns the trusted relative file's length, or zero under normal [File.length] failure rules. */
     fun getFileLength(logDir: File, fileName: String): Long {
         return File(logDir, fileName).length()
     }
 
     /**
-     * markSynced declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Moves a trusted relative log into `logDir/synced` using [File.renameTo].
+     * Returns `false` when directory creation or the platform rename fails; no copy fallback occurs.
      */
     fun markSynced(logDir: File, fileName: String): Boolean {
         val file = File(logDir, fileName)

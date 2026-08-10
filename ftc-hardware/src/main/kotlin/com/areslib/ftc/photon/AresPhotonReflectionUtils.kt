@@ -3,17 +3,12 @@ package com.areslib.ftc.photon
 import java.lang.reflect.Field
 
 /**
- * Object implementation for Ares Photon Reflection Utils.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Reflection helpers isolated for the experimental Photon Lynx-module replacement path.
+ * These operations bypass normal visibility and are initialization-only; never call them from a
+ * robot hot loop. SDK layout changes are represented as a missing field rather than a hard failure.
  */
 object AresPhotonReflectionUtils {
-    /**
-     * getField declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Finds a field named [fieldName] on [clazz] or its superclass chain. */
     fun getField(clazz: Class<*>, fieldName: String): Field? {
         try {
             val f = clazz.getDeclaredField(fieldName)
@@ -28,12 +23,7 @@ object AresPhotonReflectionUtils {
         return null
     }
 
-    /**
-     * getField declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Finds the first field whose declared type is exactly [target], including superclasses. */
     fun getField(clazz: Class<*>, target: Class<*>): Field? {
         for (f in clazz.declaredFields) {
             if (f.type == target) {
@@ -49,10 +39,8 @@ object AresPhotonReflectionUtils {
     }
 
     /**
-     * deepCopy declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Shallow-copies fields declared directly by [org]'s runtime class into same-named fields on
+     * [target]. Referenced objects are shared; source superclass fields are not traversed.
      */
     fun deepCopy(org: Any, target: Any) {
         val fields = org.javaClass.declaredFields

@@ -9,9 +9,15 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Object implementation for Log Manager Server.
+ * Robot-local HTTP server for discovering, downloading, and deleting offline log files.
  *
- * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ * The singleton binds port `5002` and exposes `GET /api/logs`, `GET /api/download?file=...`, and
+ * `POST /api/delete?file=...`, plus a small browser dashboard at `/`. It serves only files beneath
+ * [CloudExporter.logDir] or its `synced` child after canonical-path validation. Responses are
+ * unauthenticated and intended for the trusted robot/laptop LAN; do not expose this port publicly.
+ *
+ * Requests are limited per remote IP by a ten-token bucket refilled at ten requests per second.
+ * Startup failure is logged and leaves the singleton inactive rather than aborting robot startup.
  */
 object LogManagerServer : NanoHTTPD(5002) {
 
@@ -29,12 +35,7 @@ object LogManagerServer : NanoHTTPD(5002) {
         if (!syncedDir.exists()) syncedDir.mkdirs()
     }
     
-    /**
-     * startServer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Starts the NanoHTTPD listener if it is not already alive; failures are reported to stderr. */
     fun startServer() {
         if (!this.isAlive) {
             try {
@@ -45,12 +46,7 @@ object LogManagerServer : NanoHTTPD(5002) {
         }
     }
 
-    /**
-     * serve declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Per-client monotonic token bucket. Access is synchronized because requests are concurrent. */
     private class TokenBucket(val capacity: Int, val refillRatePerSecond: Double) {
         var tokens: Double = capacity.toDouble()
         var lastRefillTime: Long = RobotClock.nanoTime()
@@ -73,6 +69,7 @@ object LogManagerServer : NanoHTTPD(5002) {
 
     private val rateLimiters = java.util.concurrent.ConcurrentHashMap<String, TokenBucket>()
 
+    /** Routes one request, applying rate limiting before endpoint validation. */
     override fun serve(session: IHTTPSession): Response {
         val ip = session.remoteIpAddress ?: "unknown"
         val bucket = rateLimiters.getOrPut(ip) { TokenBucket(10, 10.0) }

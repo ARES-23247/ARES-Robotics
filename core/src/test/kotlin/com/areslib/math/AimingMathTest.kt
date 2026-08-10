@@ -5,12 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.math.atan2
 
-/**
- * AimingMathTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class AimingMathTest {
 
     @Test

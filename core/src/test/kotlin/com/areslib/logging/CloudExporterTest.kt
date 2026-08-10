@@ -4,21 +4,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * CloudExporterTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class CloudExporterTest {
 
     @Test
-    /**
-     * testUrlAndRouteMapping declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testUrlAndRouteMapping() {
         // Reset base URL and check default
         CloudExporter.areswebServerUrl = "http://localhost:5001/aresfirst-portal/us-central1/api"
@@ -38,12 +26,6 @@ class CloudExporterTest {
     }
 
     @Test
-    /**
-     * testCleanShutdown declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testCleanShutdown() {
         assertTrue(true, "CloudExporter should shutdown cleanly")
     }

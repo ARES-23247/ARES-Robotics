@@ -6,12 +6,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * PathChainerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PathChainerTest {
 
     @Test
@@ -64,4 +58,3 @@ class PathChainerTest {
             "Heading should be blended smoothly at joint: $degrees")
     }
 }
-

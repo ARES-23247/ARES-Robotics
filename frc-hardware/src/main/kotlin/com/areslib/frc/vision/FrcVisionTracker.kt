@@ -3,6 +3,7 @@ package com.areslib.frc.vision
 import com.areslib.action.RobotAction
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
+import com.areslib.hardware.vision.VisionOutlierFilter
 import com.areslib.Store
 import com.areslib.subsystem.VisionTracker
 import com.areslib.telemetry.RobotStatusTracker
@@ -11,11 +12,13 @@ import com.areslib.telemetry.RobotStatusTracker
  * AprilTag vision tracking and field pose estimation manager for FRC platforms.
  *
  * Feeds robot orientation (yaw, yaw rate, pitch, roll, linear speed) to Limelight vision hardware for MegaTag2 gyro-assisted localization.
- * Filters AprilTag vision measurements based on distance cutoff ($<6.0\text{m}$) and ambiguity thresholds ($<0.3$) before passing pose observations to CTRE swerve EKF via `swerveIO.addVisionMeasurement`.
+ * Filters AprilTag vision measurements using the configured FRC physical-validity
+ * gates plus a target-space distance cutoff ($<6.0\text{m}$) before passing pose
+ * observations to CTRE swerve EKF via `swerveIO.addVisionMeasurement`.
  *
  * ### Filtering Thresholds & Physical Units:
  * - Maximum Tag Distance: $6.0$ meters ($m$).
- * - Maximum Tag Ambiguity: $0.3$.
+ * - Maximum Tag Ambiguity: [com.areslib.hardware.vision.VisionFilterConfig.maxAmbiguity].
  * - Orientation Parameters: Radians ($rad$), Degrees ($^\circ$), and Meters per Second ($m/s$).
  *
  * @param store Redux store instance holding [RobotState].
@@ -77,7 +80,18 @@ class FrcVisionTracker(
                 val ts = measurement.robotPoseTargetSpace
                 val distance = kotlin.math.hypot(kotlin.math.hypot(ts.x, ts.y), ts.z)
                 val ambiguity = measurement.ambiguity
-                if (!isSimulation && swerveIO != null && distance < 6.0 && ambiguity < 0.3) {
+                val filterConfig = store.state.vision.filterConfig
+                val passesCommonFilter = VisionOutlierFilter.isValid(
+                    config = filterConfig,
+                    measurement = measurement,
+                    robotHeadingRad = drive.poseEstimator.estimatedPoseHeading,
+                    robotPose = drive.poseEstimator.estimatedPose,
+                    angularVelocityRadPerSec = drive.measuredAngularVelocityRadiansPerSecond,
+                    linearAccelXG = drive.xAccelerationG,
+                    linearAccelYG = drive.yAccelerationG,
+                    linearAccelZG = drive.zAccelerationG
+                )
+                if (!isSimulation && swerveIO != null && distance < 6.0 && passesCommonFilter) {
                     try {
                         val pose = com.areslib.math.geometry.Pose2d(
                             measurement.targetPose.translation.x,
@@ -94,11 +108,16 @@ class FrcVisionTracker(
                 store.dispatch(RobotAction.VisionMeasurementsReceived(
                     visionInputs.measurements,
                     timestampMs,
-                    null
+                    null,
+                    // The accepted measurement above is already consumed by CTRE's
+                    // estimator. Preserve it in Redux for diagnostics without fusing the
+                    // same correlated observation into the ARES EKF again.
+                    fuseIntoPoseEstimator = false
                 ))
                 _lastVisionStatus = when {
                     distance >= 6.0 -> "REJECTED_FAR"
-                    ambiguity >= 0.3 -> "REJECTED_AMBIGUOUS"
+                    ambiguity > filterConfig.maxAmbiguity -> "REJECTED_AMBIGUOUS"
+                    !passesCommonFilter -> "REJECTED_FILTERED"
                     else -> "ACCEPTED"
                 }
             } else {

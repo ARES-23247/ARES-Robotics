@@ -67,11 +67,15 @@ interface RobotAction {
      * @property measurements List of individual tag detections with pose estimates.
      * @property customVisionStdDevs Optional override for EKF vision measurement standard deviations
      *   as a [Vector3] of (x meters, y meters, heading radians). If null, defaults are used.
+     * @property fuseIntoPoseEstimator False when an upstream estimator has already consumed
+     *   these observations. The vision slice is still updated for diagnostics and dashboards,
+     *   but the ARES EKF is left unchanged.
      */
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
-        val customVisionStdDevs: Vector3? = null
+        val customVisionStdDevs: Vector3? = null,
+        val fuseIntoPoseEstimator: Boolean = true
     ) : RobotAction
 
     /**
@@ -86,6 +90,10 @@ interface RobotAction {
      * @property yAccelerationG Y-axis acceleration in G-forces.
      * @property zAccelerationG Z-axis acceleration in G-forces.
      * @property isReset If true, forces the EKF to hard-reset to this pose (e.g., re-initialization at match start).
+     * @property isExternalEstimate If true, [xMeters], [yMeters], and [headingRadians]
+     * are the output of an upstream pose estimator and must be mirrored directly rather
+     * than treated as another odometry observation. This prevents estimator-on-estimator
+     * feedback and correlated sensor measurements from being fused twice.
      */
     /**
      * Class implementation for Pose Update.
@@ -105,7 +113,8 @@ interface RobotAction {
         var isReset: Boolean = false,
         var angularVelocityRadiansPerSecond: Double = 0.0,
         var xVelocityMetersPerSecond: Double = 0.0,
-        var yVelocityMetersPerSecond: Double = 0.0
+        var yVelocityMetersPerSecond: Double = 0.0,
+        var isExternalEstimate: Boolean = false
     ) : RobotAction
 
     /** Sets the active alliance color for field-centric driving and EKF initialization. */

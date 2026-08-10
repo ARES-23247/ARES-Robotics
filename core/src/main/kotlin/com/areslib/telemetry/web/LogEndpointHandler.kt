@@ -142,6 +142,10 @@ class LogEndpointHandler(private val logDir: File, private val authToken: String
                 "status": "${RobotStatusTracker.visionStatus}",
                 "cameras": [$camerasJson]
             },
+            "odometry": {
+                "source": "${RobotStatusTracker.odometrySource}",
+                "status": "${RobotStatusTracker.odometryStatus}"
+            },
             "upload": {
                 "activeFile": $activeFileJson,
                 "progress": ${RobotStatusTracker.uploadProgress}

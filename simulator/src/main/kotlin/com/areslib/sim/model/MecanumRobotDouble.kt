@@ -36,12 +36,6 @@ class SimDcMotorEx : DcMotorEx {
     @Volatile override var currentPosition: Int = 0
     @Volatile override var velocity: Double = 0.0
 
-    /**
-     * getCurrent declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getCurrent(unit: CurrentUnit): Double {
         // Return simulated current draw: 0.15A idle, scaling up to 4.2A under load
         return abs(power) * 4.05 + 0.15
@@ -78,26 +72,8 @@ class SimLLResult(
     private val fiducials: List<LLResultTypes.FiducialResult>,
     private val botpose: Pose3D? = null
 ) : LLResult() {
-    /**
-     * isValid declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun isValid(): Boolean = valid
-    /**
-     * getFiducialResults declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getFiducialResults(): List<LLResultTypes.FiducialResult> = fiducials
-    /**
-     * getBotpose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getBotpose(): Pose3D? = botpose
 }
 
@@ -208,12 +184,6 @@ class MecanumRobotDouble {
     // Encoder properties
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
 
-    /**
-     * updateSensors declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2

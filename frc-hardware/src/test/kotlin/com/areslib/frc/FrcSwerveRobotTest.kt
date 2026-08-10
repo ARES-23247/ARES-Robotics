@@ -130,6 +130,7 @@ class FrcSwerveRobotTest {
         assertEquals(1.0, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
         assertEquals(2.0, robot.store.state.drive.poseEstimator.estimatedPose.y, 1e-6)
         assertEquals(Math.toRadians(45.0), robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
+        assertTrue(robot.store.state.drive.poseEstimateIsExternal)
         assertFalse(robot.isBeached)
 
         // 1. Move to a new pose under normal (unbeached) conditions
@@ -174,4 +175,3 @@ class FrcSwerveRobotTest {
         robot.close()
     }
 }
-

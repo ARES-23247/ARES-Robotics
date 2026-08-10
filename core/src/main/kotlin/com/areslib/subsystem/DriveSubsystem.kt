@@ -34,12 +34,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
     val angularVelocity: Double
         get() = store.state.drive.angularVelocityRadiansPerSecond
 
-    /**
-     * joystickDrive declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun joystickDrive(x: Double, y: Double, rot: Double, isFieldCentric: Boolean = true, isXLock: Boolean = false) {
         store.dispatch(RobotAction.JoystickDriveIntent(
             targetXVelocity = x,
@@ -51,12 +45,6 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
         ))
     }
 
-    /**
-     * setChassisSpeeds declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {
         joystickDrive(
             x = vx / maxSpeedMps,
@@ -66,28 +54,10 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
         )
     }
 
-    /**
-     * getEstimatedPose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getEstimatedPose(): Pose2d {
         return odometryPose
     }
 
-    /**
-     * readSensors declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun readSensors(store: Store, timestampMs: Long) {}
-    /**
-     * writeOutputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun writeOutputs(state: RobotState, scale: Double) {}
 }

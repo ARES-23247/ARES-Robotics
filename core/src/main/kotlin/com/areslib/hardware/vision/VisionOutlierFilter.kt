@@ -85,13 +85,23 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             linearAccelYG: Double = 0.0,
             linearAccelZG: Double = 1.0
         ): Boolean {
+            val pose = measurement.targetPose
+            if (!measurement.ambiguity.isFinite() ||
+                !pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() ||
+                !pose.rotation.x.isFinite() || !pose.rotation.y.isFinite() || !pose.rotation.z.isFinite() ||
+                !robotPose.x.isFinite() || !robotPose.y.isFinite() || !robotHeadingRad.isFinite() ||
+                !angularVelocityRadPerSec.isFinite() || !linearAccelXG.isFinite() ||
+                !linearAccelYG.isFinite() || !linearAccelZG.isFinite()) {
+                return false
+            }
+
             // 1. Check Ambiguity (if >= 0.0)
             if (measurement.ambiguity > config.maxAmbiguity) {
                 return false
             }
 
             // 2. Check 3D Spatial Boundaries
-            val tagPose3d = measurement.targetPose
+            val tagPose3d = pose
             if (tagPose3d.x < config.minFieldX || tagPose3d.x > config.maxFieldX ||
                 tagPose3d.y < config.minFieldY || tagPose3d.y > config.maxFieldY ||
                 tagPose3d.z < config.minFieldZ || tagPose3d.z > config.maxFieldZ) {

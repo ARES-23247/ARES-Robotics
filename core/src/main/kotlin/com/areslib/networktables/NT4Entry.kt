@@ -2,19 +2,25 @@ package com.areslib.networktables
 
 import java.util.concurrent.CopyOnWriteArrayList
 
+/** Lifecycle event emitted for a topic entry. */
 enum class NT4EventType {
     TOPIC_PUBLISHED,
     TOPIC_UNPUBLISHED,
     TOPIC_UPDATED
 }
 
+/** Synchronous entry listener invoked on the thread performing the server mutation. */
 fun interface NT4EventListener {
     fun onEvent(entry: NT4Entry, eventType: NT4EventType, value: NT4Value)
 }
 
 /**
- * Represents an active NetworkTables entry in ARESLib-Kotlin.
- * Thread-safe with listener dispatch support.
+ * Mutable value and listener set for one normalized NT4 topic.
+ *
+ * [value] is volatile for cross-thread visibility, and listener registration is safe during
+ * dispatch. [update] is a compare-then-set operation rather than an atomic transaction, so topic
+ * mutations should remain serialized through [NT4Server]. Listener failures are isolated and do
+ * not prevent subsequent listeners from running.
  */
 class NT4Entry(
     var id: Int,
@@ -23,6 +29,7 @@ class NT4Entry(
 ) {
     private val listeners = CopyOnWriteArrayList<NT4EventListener>()
 
+    /** Replaces the value and emits [NT4EventType.TOPIC_UPDATED] only when equality changes. */
     fun update(newValue: NT4Value): Boolean {
         if (this.value == newValue) return false
         this.value = newValue
@@ -30,14 +37,17 @@ class NT4Entry(
         return true
     }
 
+    /** Adds [listener]; duplicate registrations receive duplicate callbacks. */
     fun addListener(listener: NT4EventListener) {
         listeners.add(listener)
     }
 
+    /** Removes one matching listener registration, if present. */
     fun removeListener(listener: NT4EventListener) {
         listeners.remove(listener)
     }
 
+    /** Dispatches an event synchronously using the copy-on-write listener snapshot. */
     fun notifyListeners(eventType: NT4EventType, value: NT4Value) {
         for (listener in listeners) {
             try {

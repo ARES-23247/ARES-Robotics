@@ -4,12 +4,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 
-/**
- * FrcPowerManagerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class FrcPowerManagerTest {
     @Test
     fun `test battery voltage monitoring and brownout scaling`() {

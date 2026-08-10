@@ -196,6 +196,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
 
         // Vision telemetry status
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
+        dataLoggingTelemetry.putString("Drive/Odometry_Source", com.areslib.telemetry.RobotStatusTracker.odometrySource)
+        dataLoggingTelemetry.putString("Drive/Pinpoint_Status", com.areslib.telemetry.RobotStatusTracker.odometryStatus)
 
         // Global custom hardware telemetry (also governed by ntEnabled flag)
         HardwareRegistry.publishAll(dataLoggingTelemetry)
@@ -218,6 +220,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
                     state.drive.odometryY,
                     com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
                 ).toFormattedString(),
+                "Odometry Source" to com.areslib.telemetry.RobotStatusTracker.odometrySource,
+                "Pinpoint Status" to com.areslib.telemetry.RobotStatusTracker.odometryStatus,
                 "Limelight Pose (X, Y, Deg)" to (visionTracker.lastLimelightPose?.let { pose ->
                     val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
                     "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"

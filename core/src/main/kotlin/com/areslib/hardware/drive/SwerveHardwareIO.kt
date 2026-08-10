@@ -21,12 +21,6 @@ interface SwerveHardwareIO : SubsystemIO {
         }
     }
 
-    /**
-     * logTelemetry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         val curr = scratchCurrents.get()!!
         val enc = scratchEncoderPositions.get()!!

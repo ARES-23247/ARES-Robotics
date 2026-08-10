@@ -10,10 +10,15 @@ import com.areslib.hardware.actuator.MotorIO
 import com.areslib.subsystem.PowerManager
 
 /**
- * Manages the robot's electrical power budgeting.
- * Filters battery voltage to compensate for sag, updates brownout protection,
- * and throttles motors dynamically using either a physical current sensor (Floodgate)
- * or a software current budget estimator.
+ * FTC electrical safety coordinator with a hardware-current-sensor fallback policy.
+ *
+ * Voltage is sampled from the first configured FTC [VoltageSensor] at most every 100 ms and cached
+ * between samples. Each [update] advances [BrownoutGuard], then uses a Floodgate sensor when present
+ * or lazily creates a [CurrentBudgetManager] otherwise. The minimum resulting scale is copied to all
+ * motors currently registered in the global hardware registry.
+ *
+ * Hardware reads occur only from [update]; [batteryVoltage], [powerScale], and [currentAmps] expose
+ * cached/registered state. This class is single-loop-owned and is not thread-safe.
  */
 class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
     private var lastVoltageReadTime = 0L
@@ -40,7 +45,8 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
 
     /**
      * Total current draw of the robot in amperes.
-     * Returns the physical sensor reading if available, or the sum of registered motor current estimations.
+     * Returns the Floodgate's cached reading when installed, otherwise the sum of registered motors'
+     * cached current estimates.
      */
     override val currentAmps: Double
         get() = floodgate?.current ?: com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf { it.currentAmps }
@@ -49,7 +55,7 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
      * Updates the battery voltage reading (rate-limited to 10Hz) and recalculates power scaling.
      *
      * @param dtSeconds Loop cycle delta time in seconds.
-     * @param timestamp System time in milliseconds.
+     * @param timestampMs Monotonic robot timestamp in milliseconds, normally from `RobotClock`.
      * @return The calculated power scale factor (0.0 to 1.0).
      */
     override fun update(dtSeconds: Double, timestampMs: Long): Double {

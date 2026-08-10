@@ -14,6 +14,7 @@ import com.areslib.reducer.rootReducer
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * MockVisionIO declaration.
@@ -42,6 +43,31 @@ class MockVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList()) 
  * @return Corresponding output value or Unit.
  */
 class FtcVisionTrackerTest {
+    @Test
+    fun `vision snap rebases every odometry source through callback`() {
+        val store = Store(RobotState(), ::rootReducer)
+        val measurement = VisionMeasurement(
+            tagId = 2,
+            targetPose = Pose3d(Translation3d(0.75, -0.25, 0.0), Rotation3d(0.0, 0.0, 0.3)),
+            ambiguity = 0.01,
+            timestampMs = 100L
+        )
+        var reseededPose: com.areslib.math.geometry.Pose2d? = null
+        val tracker = FtcVisionTracker(
+            store,
+            MockVisionIO(listOf(measurement)),
+            pinpointIO = null,
+            onOdometryReseed = { reseededPose = it }
+        )
+
+        tracker.update(100L)
+
+        val pose = assertNotNull(reseededPose)
+        assertEquals(0.75, pose.x, 1e-9)
+        assertEquals(-0.25, pose.y, 1e-9)
+        assertEquals(0.3, pose.heading.radians, 1e-9)
+    }
+
     @Test
     fun `test initial alignment snap`() {
         val store = Store(RobotState(), ::rootReducer)

@@ -4,9 +4,13 @@ import com.areslib.drivetrain.SwerveOffsetData
 import com.areslib.drivetrain.SwerveOffsetManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.io.File
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 class SwerveOffsetManagerTest {
+
+    @TempDir
+    lateinit var tempDir: Path
 
     @Test
     fun testJsonSerializationAndDeserialization() {
@@ -35,17 +39,17 @@ class SwerveOffsetManagerTest {
             backRight = -0.8765
         )
 
-        SwerveOffsetManager.saveRuntimeOffsets(testData)
-        val loaded = SwerveOffsetManager.loadOffsets()
+        System.setProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY, tempDir.toString())
+        try {
+            SwerveOffsetManager.saveRuntimeOffsets(testData)
+            val loaded = SwerveOffsetManager.loadOffsets()
 
-        assertEquals(testData.frontLeft, loaded.frontLeft, 1e-4)
-        assertEquals(testData.frontRight, loaded.frontRight, 1e-4)
-        assertEquals(testData.backLeft, loaded.backLeft, 1e-4)
-        assertEquals(testData.backRight, loaded.backRight, 1e-4)
-
-        // Clean up test file
-        if (SwerveOffsetManager.runtimeFile.exists()) {
-            SwerveOffsetManager.runtimeFile.delete()
+            assertEquals(testData.frontLeft, loaded.frontLeft, 1e-4)
+            assertEquals(testData.frontRight, loaded.frontRight, 1e-4)
+            assertEquals(testData.backLeft, loaded.backLeft, 1e-4)
+            assertEquals(testData.backRight, loaded.backRight, 1e-4)
+        } finally {
+            System.clearProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY)
         }
     }
 }

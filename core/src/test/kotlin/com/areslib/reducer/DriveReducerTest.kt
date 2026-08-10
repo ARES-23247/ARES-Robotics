@@ -52,10 +52,97 @@ class DriveReducerTest {
         
         val newState = rootReducer(initialState, action)
         
-        assertEquals(0.4691813248, newState.drive.poseEstimator.estimatedPose.x, 1e-6)
-        assertEquals(2.1625370306, newState.drive.poseEstimator.estimatedPose.y, 1e-6)
+        assertEquals(1.0, newState.drive.poseEstimator.estimatedPose.x, 1e-6)
+        assertEquals(2.0, newState.drive.poseEstimator.estimatedPose.y, 1e-6)
         assertEquals(0.5, newState.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
         assertEquals(2050L, newState.timestampMs)
+    }
+
+    @Test
+    fun `absolute field odometry is not rotated twice at nonzero heading`() {
+        val initialized = rootReducer(
+            RobotState(),
+            RobotAction.PoseUpdate(
+                xMeters = 0.0,
+                yMeters = 0.0,
+                headingRadians = kotlin.math.PI / 2.0,
+                timestampMs = 0L,
+                isReset = true
+            )
+        )
+
+        val updated = rootReducer(
+            initialized,
+            RobotAction.PoseUpdate(
+                xMeters = 0.0,
+                yMeters = 1.0,
+                headingRadians = kotlin.math.PI / 2.0,
+                timestampMs = 20L
+            )
+        )
+
+        assertEquals(0.0, updated.drive.poseEstimator.estimatedPoseX, 1e-9)
+        assertEquals(1.0, updated.drive.poseEstimator.estimatedPoseY, 1e-9)
+    }
+
+    @Test
+    fun `absolute field pose recovers the matching finite turn twist`() {
+        val quarterTurnArc = 2.0 / kotlin.math.PI
+        val updated = rootReducer(
+            RobotState(),
+            RobotAction.PoseUpdate(
+                xMeters = quarterTurnArc,
+                yMeters = quarterTurnArc,
+                headingRadians = kotlin.math.PI / 2.0,
+                timestampMs = 20L
+            )
+        )
+
+        assertEquals(quarterTurnArc, updated.drive.poseEstimator.estimatedPoseX, 1e-9)
+        assertEquals(quarterTurnArc, updated.drive.poseEstimator.estimatedPoseY, 1e-9)
+        assertEquals(kotlin.math.PI / 2.0, updated.drive.poseEstimator.estimatedPoseHeading, 1e-9)
+    }
+
+    @Test
+    fun `external pose estimate is mirrored without a second filter pass`() {
+        val initialized = rootReducer(
+            RobotState(),
+            RobotAction.PoseUpdate(1.0, -2.0, 0.4, timestampMs = 0L, isReset = true)
+        )
+
+        val updated = rootReducer(
+            initialized,
+            RobotAction.PoseUpdate(
+                xMeters = 4.25,
+                yMeters = 3.5,
+                headingRadians = -1.2,
+                timestampMs = 20L,
+                isExternalEstimate = true
+            )
+        )
+
+        assertEquals(4.25, updated.drive.poseEstimator.estimatedPoseX, 0.0)
+        assertEquals(3.5, updated.drive.poseEstimator.estimatedPoseY, 0.0)
+        assertEquals(-1.2, updated.drive.poseEstimator.estimatedPoseHeading, 1e-12)
+        assertEquals(true, updated.drive.poseEstimateIsExternal)
+        assertEquals(0.0, updated.drive.ekfDriftX, 0.0)
+        assertEquals(0.0, updated.drive.ekfDriftY, 0.0)
+        assertEquals(0.0, updated.drive.poseEstimator.history.last().qScale, 0.0)
+    }
+
+    @Test
+    fun `nonfinite absolute pose update fails closed`() {
+        val initial = rootReducer(
+            RobotState(),
+            RobotAction.PoseUpdate(1.0, 2.0, 0.3, timestampMs = 0L, isReset = true)
+        )
+
+        val updated = rootReducer(
+            initial,
+            RobotAction.PoseUpdate(Double.NaN, 9.0, 0.5, timestampMs = 20L)
+        )
+
+        assertEquals(initial.drive, updated.drive)
     }
 
     @Test

@@ -5,12 +5,6 @@ import com.areslib.math.geometry.Translation2d
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * SwerveKinematicsTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class SwerveKinematicsTest {
 
     @Test
@@ -70,4 +64,3 @@ class SwerveKinematicsTest {
         }
     }
 }
-

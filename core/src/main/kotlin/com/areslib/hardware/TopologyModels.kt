@@ -1,11 +1,5 @@
 package com.areslib.hardware
 
-/**
- * TopologyNodeType declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 enum class TopologyNodeType {
     CONTROL_HUB, EXPANSION_HUB, SRS_HUB,
     ROBORIO, CANIVORE,

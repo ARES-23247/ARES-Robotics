@@ -6,12 +6,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 
-/**
- * JoystickDriveReducerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class JoystickDriveReducerTest {
 
     @Test

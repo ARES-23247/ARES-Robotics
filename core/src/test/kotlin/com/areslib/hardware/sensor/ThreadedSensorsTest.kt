@@ -3,21 +3,9 @@ package com.areslib.hardware.sensor
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * ThreadedSensorsTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ThreadedSensorsTest {
 
     @Test
-    /**
-     * testThreadedColorSensor declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testThreadedColorSensor() {
         val mockPhysical = object : ColorSensorIO {
             override val red: Int = 10
@@ -43,12 +31,6 @@ class ThreadedSensorsTest {
     }
 
     @Test
-    /**
-     * testThreadedDistanceSensor declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testThreadedDistanceSensor() {
         val mockPhysical = object : DistanceSensorIO {
             override val distanceMeters: Double = 1.25
@@ -66,12 +48,6 @@ class ThreadedSensorsTest {
     }
 
     @Test
-    /**
-     * testThreadedMultizoneDistanceSensor declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testThreadedMultizoneDistanceSensor() {
         val mockPhysical = object : MultizoneDistanceSensorIO {
             override val rows: Int = 2

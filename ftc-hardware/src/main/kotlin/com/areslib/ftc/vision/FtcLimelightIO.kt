@@ -104,8 +104,27 @@ class FtcLimelightIO(
                     fieldPose.translation = fieldTrans
                     fieldPose.rotation = fieldRot
 
-                    for (fiducial in fiducials) {
-                        val targetPoseRaw = fiducial.getRobotPoseTargetSpace()
+                    if (fiducials.isNotEmpty()) {
+                        // getBotpose() is one camera-frame field-pose solve. Emitting that
+                        // same pose once per fiducial would apply correlated information N
+                        // times and make EKF covariance artificially small. Keep one field
+                        // observation and retain the number of contributing tags as metadata.
+                        var representative = fiducials[0]
+                        var representativeDistanceSquared = Double.POSITIVE_INFINITY
+                        for (i in fiducials.indices) {
+                            val candidate = fiducials[i]
+                            val candidatePose = candidate.getRobotPoseTargetSpace()
+                            val cx = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(candidatePose.position.unit, candidatePose.position.x)
+                            val cy = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(candidatePose.position.unit, candidatePose.position.y)
+                            val cz = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(candidatePose.position.unit, candidatePose.position.z)
+                            val distanceSquared = cx * cx + cy * cy + cz * cz
+                            if (distanceSquared < representativeDistanceSquared) {
+                                representative = candidate
+                                representativeDistanceSquared = distanceSquared
+                            }
+                        }
+
+                        val targetPoseRaw = representative.getRobotPoseTargetSpace()
                         translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
                         val targetTrans = translationPool[translationPoolIndex]
                         targetTrans.x = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(targetPoseRaw.position.unit, targetPoseRaw.position.x)
@@ -131,7 +150,12 @@ class FtcLimelightIO(
                         measurement.timestampMs = now - (result.captureLatency + result.targetingLatency).toLong()
                         measurement.targetPose = fieldPose
                         measurement.robotPoseTargetSpace = tPose
-                        measurement.tagId = fiducial.getFiducialId()
+                        measurement.tagId = representative.getFiducialId()
+                        measurement.tagCount = fiducials.size
+                        // FTC's LLResult fiducial API does not expose solve ambiguity.
+                        // Retain a conservative synthetic value rather than claiming a
+                        // perfect 0.0 solve; distance/incidence/tag-count scaling still
+                        // adjusts the final covariance.
                         measurement.ambiguity = 0.1
 
                         currentMeasurementList.add(measurement)

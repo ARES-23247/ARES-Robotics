@@ -122,6 +122,7 @@ class FtcLimelightIOTest {
         
         val measurement = inputs.measurements[0]
         assertEquals(1, measurement.tagId)
+        assertEquals(1, measurement.tagCount)
         
         // Verify relative target space pose fields
         assertEquals(0.5, measurement.robotPoseTargetSpace.x, 1e-6)
@@ -137,5 +138,36 @@ class FtcLimelightIOTest {
             robotHeadingRad = 0.0,
             robotPose = com.areslib.math.geometry.Pose2d(1.0, 2.0, com.areslib.math.geometry.Rotation2d())
         ))
+    }
+
+    @Test
+    fun `multi tag botpose is emitted once with contributing tag count`() {
+        val fieldPose = Pose3D(
+            Position(DistanceUnit.METER, 0.5, 0.25, 0.0, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+        )
+        fun fiducial(id: Int, distanceMeters: Double) =
+            com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult(
+                fiducialId = id,
+                tx = 0.0,
+                ty = 0.0,
+                pose3d = Pose3D(),
+                robotPoseTargetSpace = Pose3D(
+                    Position(DistanceUnit.METER, 0.0, 0.0, distanceMeters, 0),
+                    YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+                )
+            )
+
+        val result = object : LLResult() {
+            override fun isValid() = true
+            override fun getBotpose() = fieldPose
+            override fun getFiducialResults() = listOf(fiducial(4, 2.0), fiducial(7, 1.0))
+        }
+        val inputs = VisionIOInputs()
+        FtcLimelightIO(MockLimelight3A(result)).updateInputs(inputs)
+
+        assertEquals(1, inputs.measurements.size, "One camera pose must not be fused once per tag")
+        assertEquals(2, inputs.measurements.single().tagCount)
+        assertEquals(7, inputs.measurements.single().tagId, "Closest tag should represent target-space alignment")
     }
 }

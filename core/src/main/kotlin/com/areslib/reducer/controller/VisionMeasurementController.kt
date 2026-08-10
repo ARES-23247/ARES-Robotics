@@ -53,53 +53,65 @@ object VisionMeasurementController {
         val sb = scratchBefore.get()!!
         val sa = scratchAfter.get()!!
 
-        for (i in 0 until validMeasurements.size) {
-            val measurement = validMeasurements[i]
-            sb[0] = currentEstimator.covariance.m00
-            sb[1] = currentEstimator.covariance.m01
-            sb[2] = currentEstimator.covariance.m02
-            sb[3] = currentEstimator.covariance.m10
-            sb[4] = currentEstimator.covariance.m11
-            sb[5] = currentEstimator.covariance.m12
-            sb[6] = currentEstimator.covariance.m20
-            sb[7] = currentEstimator.covariance.m21
-            sb[8] = currentEstimator.covariance.m22
+        if (action.fuseIntoPoseEstimator) {
+            for (i in 0 until validMeasurements.size) {
+                val measurement = validMeasurements[i]
+                sb[0] = currentEstimator.covariance.m00
+                sb[1] = currentEstimator.covariance.m01
+                sb[2] = currentEstimator.covariance.m02
+                sb[3] = currentEstimator.covariance.m10
+                sb[4] = currentEstimator.covariance.m11
+                sb[5] = currentEstimator.covariance.m12
+                sb[6] = currentEstimator.covariance.m20
+                sb[7] = currentEstimator.covariance.m21
+                sb[8] = currentEstimator.covariance.m22
 
-            currentEstimator = PoseEstimator.addVisionMeasurement(
-                state = currentEstimator,
-                measurement = measurement,
-                visionStdDevs = stdDevs,
-                numTags = validMeasurements.size,
-                useMahalanobisRejection = true,
-                mahalanobisThreshold = state.vision.filterConfig.mahalanobisThreshold
-            )
-            lastAccepted = currentEstimator.lastMeasurementAccepted
-            lastReason = currentEstimator.lastRejectionReason
-            if (lastAccepted) {
-                acceptedCountDelta++
-                if (lastCovBefore == null) {
-                    lastCovBefore = state.vision.covarianceBeforeUpdate ?: DoubleArray(9)
+                currentEstimator = PoseEstimator.addVisionMeasurement(
+                    state = currentEstimator,
+                    measurement = measurement,
+                    visionStdDevs = stdDevs,
+                    // A multi-tag camera solve is one correlated pose observation, not
+                    // N independent observations. Its tag count scales covariance once.
+                    numTags = measurement.tagCount.coerceAtLeast(1),
+                    useMahalanobisRejection = true,
+                    mahalanobisThreshold = state.vision.filterConfig.mahalanobisThreshold
+                )
+                lastAccepted = currentEstimator.lastMeasurementAccepted
+                lastReason = currentEstimator.lastRejectionReason
+                if (lastAccepted) {
+                    acceptedCountDelta++
+                    if (lastCovBefore == null) {
+                        lastCovBefore = state.vision.covarianceBeforeUpdate ?: DoubleArray(9)
+                    }
+                    if (lastCovAfter == null) {
+                        lastCovAfter = state.vision.covarianceAfterUpdate ?: DoubleArray(9)
+                    }
+
+                    System.arraycopy(sb, 0, lastCovBefore, 0, 9)
+
+                    sa[0] = currentEstimator.covariance.m00
+                    sa[1] = currentEstimator.covariance.m01
+                    sa[2] = currentEstimator.covariance.m02
+                    sa[3] = currentEstimator.covariance.m10
+                    sa[4] = currentEstimator.covariance.m11
+                    sa[5] = currentEstimator.covariance.m12
+                    sa[6] = currentEstimator.covariance.m20
+                    sa[7] = currentEstimator.covariance.m21
+                    sa[8] = currentEstimator.covariance.m22
+
+                    System.arraycopy(sa, 0, lastCovAfter, 0, 9)
+                } else {
+                    rejectedCountDelta++
                 }
-                if (lastCovAfter == null) {
-                    lastCovAfter = state.vision.covarianceAfterUpdate ?: DoubleArray(9)
-                }
-                
-                System.arraycopy(sb, 0, lastCovBefore, 0, 9)
-                
-                sa[0] = currentEstimator.covariance.m00
-                sa[1] = currentEstimator.covariance.m01
-                sa[2] = currentEstimator.covariance.m02
-                sa[3] = currentEstimator.covariance.m10
-                sa[4] = currentEstimator.covariance.m11
-                sa[5] = currentEstimator.covariance.m12
-                sa[6] = currentEstimator.covariance.m20
-                sa[7] = currentEstimator.covariance.m21
-                sa[8] = currentEstimator.covariance.m22
-                
-                System.arraycopy(sa, 0, lastCovAfter, 0, 9)
-            } else {
-                rejectedCountDelta++
             }
+        } else {
+            // The platform estimator has already fused these observations. Keep the
+            // measurements available to diagnostics without feeding correlated data into
+            // the ARES EKF a second time.
+            acceptedCountDelta = validMeasurements.size
+            rejectedCountDelta = measurements.size - validMeasurements.size
+            lastAccepted = validMeasurements.isNotEmpty()
+            lastReason = if (!lastAccepted && measurements.isNotEmpty()) "external_filter_rejected" else null
         }
 
         val filteredAction = action.copy(measurements = validMeasurements)
@@ -113,12 +125,16 @@ object VisionMeasurementController {
             rejectionCount = reducedVision.rejectionCount + rejectedCountDelta
         )
 
-        val updatedDrive = state.drive.updateDiagnostics(
-            state.drive.odometryX,
-            state.drive.odometryY,
-            state.drive.odometryHeading,
-            currentEstimator
-        )
+        val updatedDrive = if (action.fuseIntoPoseEstimator) {
+            state.drive.updateDiagnostics(
+                state.drive.odometryX,
+                state.drive.odometryY,
+                state.drive.odometryHeading,
+                currentEstimator
+            )
+        } else {
+            state.drive
+        }
 
         return state.copy(
             vision = updatedVision,

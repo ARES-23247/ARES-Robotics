@@ -9,9 +9,11 @@ import com.qualcomm.hardware.lynx.commands.LynxRespondable
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Class implementation for Ares Photon Lynx Module.
+ * [LynxModule] wrapper that routes selected writes through [AresPhotonCore].
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * When interception is disabled or unavailable, every operation delegates to the SDK implementation.
+ * For intercepted commands the wrapper skips the matching SDK network-transmission lock and tracks
+ * that decision by message identity until release. Lifecycle ownership remains with the FTC SDK.
  */
 class AresPhotonLynxModule(
     lynxUsbDevice: LynxUsbDevice?,
@@ -22,34 +24,19 @@ class AresPhotonLynxModule(
 
     private val skippedAcquire = ArrayList<LynxMessage>()
 
-    /**
-     * getUnfinishedCommandsMap declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Exposes the SDK unfinished-command map required by the interception path. */
     fun getUnfinishedCommandsMap(): ConcurrentHashMap<Int, LynxRespondable<LynxMessage>> {
         @Suppress("UNCHECKED_CAST")
         return this.unfinishedCommands as ConcurrentHashMap<Int, LynxRespondable<LynxMessage>>
     }
 
-    /**
-     * getNewMessageNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Delegates message-number allocation to [LynxModule]. */
     override fun getNewMessageNumber(): Byte {
         return super.getNewMessageNumber()
     }
 
     @Throws(InterruptedException::class, LynxUnsupportedCommandException::class)
-    /**
-     * sendCommand declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Routes cached/eligible commands through [AresPhotonCore], otherwise delegates to the SDK. */
     override fun sendCommand(command: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.sendCommand(command)
@@ -73,12 +60,7 @@ class AresPhotonLynxModule(
     }
 
     @Throws(InterruptedException::class)
-    /**
-     * acquireNetworkTransmissionLock declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Skips and records the SDK lock acquisition only for cached/eligible commands. */
     override fun acquireNetworkTransmissionLock(message: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.acquireNetworkTransmissionLock(message)
@@ -98,12 +80,7 @@ class AresPhotonLynxModule(
     }
 
     @Throws(InterruptedException::class)
-    /**
-     * releaseNetworkTransmissionLock declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Balances a skipped acquisition locally, or delegates a real lock release to the SDK. */
     override fun releaseNetworkTransmissionLock(message: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.releaseNetworkTransmissionLock(message)

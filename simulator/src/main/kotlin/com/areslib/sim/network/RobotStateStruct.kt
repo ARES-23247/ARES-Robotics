@@ -9,44 +9,14 @@ import java.nio.ByteBuffer
  * Serializes the immutable RobotState without reflection or KAPT.
  */
 class RobotStateStruct : Struct<RobotState> {
-    /**
-     * getTypeClass declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getTypeClass(): Class<RobotState> = RobotState::class.java
-    /**
-     * getTypeString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getTypeString(): String = "struct:RobotState"
-    /**
-     * getSize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getSize(): Int = java.lang.Double.BYTES * 8 + java.lang.Long.BYTES * 2 + 1 // 8 doubles, 2 longs, 1 bool
 
-    /**
-     * getSchema declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getSchema(): String {
         return "double drive_xVel; double drive_yVel; double drive_omega; double odometry_x; double odometry_y; double odometry_heading; int64 vision_time; double vision_x; double vision_y; bool vision_hasTarget; int64 timestamp;"
     }
 
-    /**
-     * pack declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun pack(bb: ByteBuffer, value: RobotState) {
         bb.putDouble(value.drive.xVelocityMetersPerSecond)
         bb.putDouble(value.drive.yVelocityMetersPerSecond)
@@ -61,12 +31,6 @@ class RobotStateStruct : Struct<RobotState> {
         bb.putLong(value.timestampMs)
     }
 
-    /**
-     * unpack declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun unpack(bb: ByteBuffer): RobotState {
         throw UnsupportedOperationException("RobotState is immutable and should only be packed for logging.")
     }

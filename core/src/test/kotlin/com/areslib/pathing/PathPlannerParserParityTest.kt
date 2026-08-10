@@ -8,21 +8,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
-/**
- * PathPlannerParserParityTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PathPlannerParserParityTest {
 
     @Test
-    /**
-     * testKinematicStatesAndGlobalLimits declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testKinematicStatesAndGlobalLimits() {
         val json = """
             {
@@ -62,12 +50,6 @@ class PathPlannerParserParityTest {
     }
 
     @Test
-    /**
-     * testRotationTargets declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRotationTargets() {
         val json = """
             {
@@ -102,12 +84,6 @@ class PathPlannerParserParityTest {
     }
 
     @Test
-    /**
-     * testConstraintZones declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testConstraintZones() {
         val json = """
             {
@@ -144,12 +120,6 @@ class PathPlannerParserParityTest {
     }
 
     @Test
-    /**
-     * testPointTowardsZones declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testPointTowardsZones() {
         val json = """
             {
@@ -183,4 +153,3 @@ class PathPlannerParserParityTest {
         assertEquals(expectedRad, midpoint.pose.heading.radians, 1e-4)
     }
 }
-

@@ -4,21 +4,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * KalmanFilterTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class KalmanFilterTest {
 
     @Test
-    /**
-     * testInitialization declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testInitialization() {
         val filter = KalmanFilter(processNoise = 0.01, measurementNoise = 0.1)
 
@@ -47,12 +35,6 @@ class KalmanFilterTest {
     }
 
     @Test
-    /**
-     * testNoiseReductionConvergence declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testNoiseReductionConvergence() {
         // High measurement noise (R = 1.0), low process noise (Q = 0.01)
         // Means the filter will heavily smooth out random variations and trust its state prediction.
@@ -79,12 +61,6 @@ class KalmanFilterTest {
     }
 
     @Test
-    /**
-     * testNoiseParametersDynamicallyChange declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testNoiseParametersDynamicallyChange() {
         val filter = KalmanFilter(processNoise = 0.01, measurementNoise = 1.0, initialState = 10.0)
         filter.calculate(10.0)
@@ -95,12 +71,6 @@ class KalmanFilterTest {
     }
 
     @Test
-    /**
-     * testReset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testReset() {
         val filter = KalmanFilter(0.1, 0.5)
         filter.calculate(10.0)
@@ -111,12 +81,6 @@ class KalmanFilterTest {
     }
 
     @Test
-    /**
-     * testClear declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testClear() {
         val filter = KalmanFilter(0.1, 0.5)
         filter.calculate(10.0)

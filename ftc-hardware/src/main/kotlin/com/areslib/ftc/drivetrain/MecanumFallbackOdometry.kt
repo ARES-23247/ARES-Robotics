@@ -1,6 +1,8 @@
 package com.areslib.ftc.drivetrain
 
 import com.areslib.action.RobotAction
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.wrapAngle
 
 /**
  * Fallback dead-reckoning pose estimator using Mecanum wheel encoder forward kinematics.
@@ -33,6 +35,9 @@ class MecanumFallbackOdometry {
     private var lastRlPos = 0.0
     private var lastRrPos = 0.0
     private var isFallbackInitialized = false
+    private var headingOffsetRadians = 0.0
+    private var lastAlignedHeadingRadians = 0.0
+    private var lastTimestampMs = 0L
 
     /**
      * Computes field-centric pose updates from drive wheel encoder tick counts.
@@ -55,9 +60,11 @@ class MecanumFallbackOdometry {
         rrPosTicks: Double,
         ticksPerMeterSetting: Double,
         defaultTicksPerMeter: Double,
-        headingRadians: Double
+        headingRadians: Double,
+        angularVelocityRadiansPerSecond: Double = 0.0
     ): RobotAction.PoseUpdate {
         val ticks = if (ticksPerMeterSetting > 0.0) ticksPerMeterSetting else defaultTicksPerMeter
+        val alignedHeading = wrapAngle(headingRadians + headingOffsetRadians)
 
         val flMeters = flPosTicks / ticks
         val frMeters = frPosTicks / ticks
@@ -70,12 +77,15 @@ class MecanumFallbackOdometry {
             lastRlPos = rlMeters
             lastRrPos = rrMeters
             isFallbackInitialized = true
+            lastAlignedHeadingRadians = alignedHeading
+            lastTimestampMs = timestampMs
 
             return RobotAction.PoseUpdate(
-                xMeters = 0.0,
-                yMeters = 0.0,
-                headingRadians = headingRadians,
-                timestampMs = timestampMs
+                xMeters = fallbackX,
+                yMeters = fallbackY,
+                headingRadians = alignedHeading,
+                timestampMs = timestampMs,
+                angularVelocityRadiansPerSecond = angularVelocityRadiansPerSecond
             )
         }
 
@@ -93,30 +103,47 @@ class MecanumFallbackOdometry {
         val dx = (dFl + dFr + dRl + dRr) / 4.0
         val dy = (-dFl + dFr + dRl - dRr) / 4.0
 
-        // Field-centric rotation transform
-        val cos = kotlin.math.cos(headingRadians)
-        val sin = kotlin.math.sin(headingRadians)
+        // Rotate the interval displacement at its midpoint heading. This is materially
+        // more accurate than using only the end heading during simultaneous translation
+        // and rotation, while remaining allocation-free.
+        val deltaHeading = wrapAngle(alignedHeading - lastAlignedHeadingRadians)
+        val midpointHeading = wrapAngle(lastAlignedHeadingRadians + deltaHeading * 0.5)
+        val cos = kotlin.math.cos(midpointHeading)
+        val sin = kotlin.math.sin(midpointHeading)
 
         val deltaFieldX = dx * cos - dy * sin
         val deltaFieldY = dx * sin + dy * cos
 
         fallbackX += deltaFieldX
         fallbackY += deltaFieldY
+        val dtSeconds = if (timestampMs > lastTimestampMs) (timestampMs - lastTimestampMs) / 1000.0 else 0.0
+        val fieldVelocityX = if (dtSeconds > 0.0) deltaFieldX / dtSeconds else 0.0
+        val fieldVelocityY = if (dtSeconds > 0.0) deltaFieldY / dtSeconds else 0.0
+        lastAlignedHeadingRadians = alignedHeading
+        lastTimestampMs = timestampMs
 
         return RobotAction.PoseUpdate(
             xMeters = fallbackX,
             yMeters = fallbackY,
-            headingRadians = headingRadians,
-            timestampMs = timestampMs
+            headingRadians = alignedHeading,
+            timestampMs = timestampMs,
+            angularVelocityRadiansPerSecond = angularVelocityRadiansPerSecond,
+            xVelocityMetersPerSecond = fieldVelocityX,
+            yVelocityMetersPerSecond = fieldVelocityY
         )
     }
 
     /**
-     * Resets fallback pose accumulators to field origin $(0.0, 0.0)$.
+     * Re-bases drivetrain odometry at the current fused field pose. The raw IMU heading
+     * is retained through a software offset so switching away from Pinpoint is continuous.
      */
-    fun reset() {
-        fallbackX = 0.0
-        fallbackY = 0.0
+    @JvmOverloads
+    fun reset(pose: Pose2d = Pose2d(), rawHeadingRadians: Double = pose.heading.radians) {
+        fallbackX = pose.x
+        fallbackY = pose.y
+        headingOffsetRadians = wrapAngle(pose.heading.radians - rawHeadingRadians)
+        lastAlignedHeadingRadians = pose.heading.radians
+        lastTimestampMs = 0L
         lastFlPos = 0.0
         lastFrPos = 0.0
         lastRlPos = 0.0

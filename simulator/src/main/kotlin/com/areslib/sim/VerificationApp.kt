@@ -6,12 +6,6 @@ import kotlin.math.abs
 
 import com.areslib.math.wrapAngle
 
-/**
- * main declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 fun main(args: Array<String>) {
     println("=================================================================")
     println("STARTING PROGRAMMATIC INTEGRATION VERIFICATION")
@@ -102,12 +96,6 @@ fun main(args: Array<String>) {
     }
     println("EKF starting pose synced successfully.")
 
-    /**
-     * rotateToTarget declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun rotateToTarget(targetRad: Double, toleranceRad: Double = 0.08, timeoutMs: Long = 8000): Boolean {
         println("Rotating to target: %.3f rad...".format(targetRad))
         val startTime = System.currentTimeMillis()

@@ -4,12 +4,6 @@ package com.qualcomm.robotcore.hardware
  * Mock representation of an FTC [DcMotorSimple].
  */
 interface DcMotorSimple : HardwareDevice {
-    /**
-     * Direction declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     enum class Direction { FORWARD, REVERSE }
     var direction: Direction
     var power: Double
@@ -19,12 +13,6 @@ interface DcMotorSimple : HardwareDevice {
  * Mock representation of an FTC [DcMotor].
  */
 interface DcMotor : DcMotorSimple {
-    /**
-     * RunMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     enum class RunMode {
         RUN_WITHOUT_ENCODER,
         RUN_USING_ENCODER,
@@ -40,19 +28,7 @@ interface DcMotor : DcMotorSimple {
 interface DcMotorEx : DcMotor {
     val currentPosition: Int
     var velocity: Double
-    /**
-     * getCurrent declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double
-    /**
-     * setPIDFCoefficients declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setPIDFCoefficients(mode: DcMotor.RunMode, pidfCoefficients: PIDFCoefficients) {}
 }
 

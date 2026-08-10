@@ -5,12 +5,6 @@ import com.areslib.control.feedback.ProfiledPIDController
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * TrapezoidProfileTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class TrapezoidProfileTest {
 
     @Test

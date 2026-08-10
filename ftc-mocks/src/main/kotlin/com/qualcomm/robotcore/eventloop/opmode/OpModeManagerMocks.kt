@@ -19,19 +19,7 @@ interface OpModeManager {
  * Robotics framework control component.
  */
 interface OpModeManagerNotifier {
-    /**
-     * registerListener declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun registerListener(listener: Notifications)
-    /**
-     * unregisterListener declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun unregisterListener(listener: Notifications)
 
     /**
@@ -53,18 +41,6 @@ interface OpModeManagerNotifier {
  */
 open class OpModeManagerImpl : OpModeManager, OpModeManagerNotifier {
     override val activeOpModeName: String = ""
-    /**
-     * registerListener declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun registerListener(listener: OpModeManagerNotifier.Notifications) {}
-    /**
-     * unregisterListener declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun unregisterListener(listener: OpModeManagerNotifier.Notifications) {}
 }

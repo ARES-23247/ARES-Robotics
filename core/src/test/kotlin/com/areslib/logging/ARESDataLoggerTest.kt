@@ -6,12 +6,6 @@ import kotlin.test.assertTrue
 import kotlin.test.assertSame
 import kotlin.test.assertEquals
 
-/**
- * ARESDataLoggerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ARESDataLoggerTest {
 
     @Test
@@ -98,12 +92,6 @@ class ARESDataLoggerTest {
     }
 
     @Test
-    /**
-     * testAsyncCSVLogging declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testAsyncCSVLogging() {
         val telemetry = DataLoggingTelemetry()
         
@@ -142,12 +130,6 @@ class ARESDataLoggerTest {
     }
 
     @Test
-    /**
-     * testMapPoolingAndZeroAllocations declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testMapPoolingAndZeroAllocations() {
         val logger = ARESDataLogger()
         
@@ -178,12 +160,6 @@ class ARESDataLoggerTest {
     }
 
     @Test
-    /**
-     * testDataLoggingThrottle declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testDataLoggingThrottle() {
         com.areslib.util.RobotClock.useMockTime(1000L)
         try {

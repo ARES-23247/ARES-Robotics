@@ -7,15 +7,17 @@ import com.areslib.telemetry.ReplayPublisher
 import com.areslib.sim.network.TelemetryPublisher
 
 /**
- * Handles cloud log fetching and step-by-step NetworkTables streaming for replay.
+ * Blocking simulator entry point for fetching a cloud run and streaming it over local NT4.
+ *
+ * Network fetch, decoding, and publication run on the caller's thread. Any failure is reported to
+ * stderr and swallowed so an optional replay cannot terminate simulator startup. Robot code remains
+ * offline-first; this desktop-only component is the cloud boundary.
  */
 object SimReplayEngine {
 
     /**
-     * replayCloudRun declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Loads [replayCloudId], optionally recomputes vision fusion with [customVisionStdDevs], and
+     * publishes the complete replay sequentially before returning.
      */
     fun replayCloudRun(replayCloudId: String, customVisionStdDevs: Vector3?) {
         println("[Simulator] Replaying cloud run $replayCloudId...")

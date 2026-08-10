@@ -35,7 +35,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private val store: Store,
     val limelightIO: VisionIO?,
     private val pinpointIO: PinpointIO?,
-    var stdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1)
+    var stdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
+    private val onOdometryReseed: ((Pose2d) -> Unit)? = null
 ) : VisionTracker {
     /** Vision inputs container polled each loop frame. */
     val visionInputs = VisionIOInputs()
@@ -133,7 +134,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity && isStationary) {
             val snapPose = measurement.targetPose.toPose2d()
-            pinpointIO?.initialize(snapPose, resetHardware = false)
+            reseedOdometry(snapPose)
             hasInitializedPoseWithVision = true
             lastVisionStatus = "INIT_ALIGN_SNAP"
             store.dispatch(RobotAction.PoseUpdate(
@@ -164,7 +165,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                     val avgHeading = kotlin.math.atan2(accumSin, accumCos)
                     val snapPose = Pose2d(avgX, avgY, Rotation2d(avgHeading))
 
-                    pinpointIO?.initialize(snapPose, resetHardware = false)
+                    reseedOdometry(snapPose)
 
                     consecutiveVisionRejections = 0
                     accumX = 0.0
@@ -198,6 +199,15 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
         com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
+    }
+
+    private fun reseedOdometry(pose: Pose2d) {
+        val reseed = onOdometryReseed
+        if (reseed != null) {
+            reseed(pose)
+        } else {
+            pinpointIO?.initialize(pose, resetHardware = false)
+        }
     }
 
     private fun checkVisionOutlierRejection(
@@ -238,7 +248,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                     }
                     if (closestIndex != -1) {
                         val baseEntry = currentEstimator.history[closestIndex]
-                        val numTags = visionInputs.measurements.size
+                        val numTags = measurement.tagCount.coerceAtLeast(1)
                         val tagFactor = if (numTags <= 1) 2.5 else (1.0 / kotlin.math.sqrt(numTags.toDouble()))
                         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
                         

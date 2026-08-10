@@ -253,12 +253,6 @@ class SimGamepadManager {
         }
     }
 
-    /**
-     * handleKeyPressed declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun handleKeyPressed(keyCode: Int, onRepaint: () -> Unit) {
         pressedKeys.add(keyCode)
         when (keyCode) {
@@ -276,12 +270,6 @@ class SimGamepadManager {
         onRepaint()
     }
 
-    /**
-     * handleKeyReleased declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun handleKeyReleased(keyCode: Int, onRepaint: () -> Unit) {
         pressedKeys.remove(keyCode)
         when (keyCode) {
@@ -294,12 +282,6 @@ class SimGamepadManager {
         onRepaint()
     }
 
-    /**
-     * getChassisSpeeds declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getChassisSpeeds(): ChassisSpeeds {
         var vx = 0.0
         var vy = 0.0

@@ -3,21 +3,9 @@ package com.areslib.math
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * MathUtilsTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MathUtilsTest {
 
     @Test
-    /**
-     * testWrapAngle declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testWrapAngle() {
         // Zero cases
         assertEquals(0.0, wrapAngle(0.0), 1e-6)

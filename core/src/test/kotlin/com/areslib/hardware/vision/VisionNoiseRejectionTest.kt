@@ -10,12 +10,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * VisionNoiseRejectionTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class VisionNoiseRejectionTest {
 
     @Test
@@ -97,4 +91,3 @@ class VisionNoiseRejectionTest {
         assertEquals(finalTruePose.heading.radians, estimatedPose.heading.radians, 0.05, "EKF Heading should converge to true pose")
     }
 }
-

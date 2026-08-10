@@ -40,23 +40,11 @@ class BlinkIndicatorTask(
     override val name = "BlinkIndicator($lightName, ${colorA.name}↔${colorB.name}, ${durationMs}ms)"
     private var lastPhase = -1L
 
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun initialize(state: RobotState): List<RobotAction> {
         lastPhase = 0L
         return listOf(RobotAction.SetIndicatorLight(lightName, colorA.position))
     }
 
-    /**
-     * execute declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         val halfPeriod = periodMs / 2
         val phase = if (halfPeriod > 0) (elapsedMs / halfPeriod) % 2 else 0L
@@ -69,20 +57,8 @@ class BlinkIndicatorTask(
         return emptyList()
     }
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = elapsedMs >= durationMs
 
-    /**
-     * end declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         // Return to colorA when done
         return listOf(RobotAction.SetIndicatorLight(lightName, colorA.position))

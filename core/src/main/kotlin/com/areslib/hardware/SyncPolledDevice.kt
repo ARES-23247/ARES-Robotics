@@ -1,17 +1,20 @@
 package com.areslib.hardware
 
 /**
- * Interface for hardware components that require periodic synchronous I2C polling
- * on a dedicated background thread (e.g. reading motor current).
+ * Hardware component whose blocking read is scheduled on the registry polling thread.
  *
  * Devices implementing this interface can be registered with [HardwareRegistry.registerSyncPolledDevice]
- * to be included in the centralized hardware polling loop.
+ * to be included in the centralized hardware polling loop. The registry polls at most one device
+ * from each polling list per interval; the interval is therefore not a per-device sampling period.
+ * Implementations must publish results through their own thread-safe cached fields so robot-loop
+ * getters never touch hardware directly.
  */
 interface SyncPolledDevice {
     /**
-     * Executes the synchronous hardware read.
-     * This method is called repeatedly on a dedicated background thread by the HardwareRegistry.
-     * Implementations should catch any hardware exceptions to avoid killing the polling thread.
+     * Performs one synchronous hardware transaction and updates cached state.
+     *
+     * Called serially by the registry-owned daemon thread. Implementations must not retain caller
+     * state, block indefinitely, or throw; an uncaught exception terminates the shared polling loop.
      */
     fun pollSync()
 }

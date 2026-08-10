@@ -6,8 +6,10 @@ import com.areslib.subsystem.PowerManager
 /**
  * FRC battery voltage manager and power scaling controller.
  *
- * Polls active battery voltage in Volts ($V$) via [batteryVoltageSupplier] (typically wired to RoboRIO `RobotController.getBatteryVoltage()`).
- * Computes battery sag filtering and brownout protection limits using [BrownoutGuard.frcDefaults] and dynamically distributes output power scaling $[0.0, 1.0]$ across all registered motors.
+ * Polls active battery voltage in volts through [batteryVoltageSupplier] (normally
+ * `RobotController.getBatteryVoltage()`), advances [BrownoutGuard], and distributes its normalized
+ * scale to every currently registered motor. Voltage is read exactly once per [update]; properties
+ * expose cached values and perform no hardware IO.
  *
  * ### Physical Units & Limits:
  * - Battery Voltage: Volts ($V$), nominal $12.6\text{V}$.
@@ -38,8 +40,10 @@ class FrcPowerManager : PowerManager {
     /**
      * Updates battery voltage reading, evaluates brownout protection status, and applies power scale limits to registered motors.
      *
-     * @param dtSeconds Cycle delta time in seconds ($s$).
-     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param dtSeconds Cycle delta time in seconds. Present for [PowerManager] compatibility; the
+     * current implementation does not use it.
+     * @param timestampMs Robot timestamp in milliseconds. Present for interface compatibility; the
+     * current implementation does not use it.
      * @return Calculated global power scale factor $[0.0, 1.0]$.
      */
     override fun update(dtSeconds: Double, timestampMs: Long): Double {

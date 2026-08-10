@@ -82,6 +82,10 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      */
     override fun write(state: DriveState) = writer.write(state)
     
+    /**
+     * Resets CTRE's authoritative field pose in meters and CCW-positive radians.
+     * This is a hard estimator seed and should be used only at lifecycle/relocalization boundaries.
+     */
     override fun seedPose(pose: com.areslib.math.geometry.Pose2d) {
         drivetrain.resetPose(edu.wpi.first.math.geometry.Pose2d(pose.x, pose.y, edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)))
     }

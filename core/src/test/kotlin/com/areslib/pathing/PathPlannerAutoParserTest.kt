@@ -9,12 +9,6 @@ import com.areslib.Store
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * PathPlannerAutoParserTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PathPlannerAutoParserTest {
 
     private fun createMockFollower(): HolonomicPathFollower {
@@ -52,12 +46,6 @@ class PathPlannerAutoParserTest {
     }
 
     @Test
-    /**
-     * testNamedCommandsRegistry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testNamedCommandsRegistry() {
         NamedCommands.clear()
         val mockTask = MockConditionTask("MockTask", 1)
@@ -69,12 +57,6 @@ class PathPlannerAutoParserTest {
     }
 
     @Test
-    /**
-     * testParallelRaceGroup declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testParallelRaceGroup() {
         val t1 = MockConditionTask("Task1", 3)
         val t2 = MockConditionTask("Task2", 2) // Completes first
@@ -98,12 +80,6 @@ class PathPlannerAutoParserTest {
     }
 
     @Test
-    /**
-     * testParallelDeadlineGroup declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testParallelDeadlineGroup() {
         val deadline = MockConditionTask("DeadlineTask", 2)
         val other = MockConditionTask("OtherTask", 5) // Takes longer than deadline
@@ -124,12 +100,6 @@ class PathPlannerAutoParserTest {
     }
 
     @Test
-    /**
-     * testParseAutoJson declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testParseAutoJson() {
         NamedCommands.clear()
         val mockTask = MockConditionTask("MockAction", 1)
@@ -169,4 +139,3 @@ class PathPlannerAutoParserTest {
         assertEquals("Sequential(TimeWait(500 ms), MockAction)", compiledTask.name)
     }
 }
-

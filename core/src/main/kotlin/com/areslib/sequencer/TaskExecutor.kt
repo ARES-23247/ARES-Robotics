@@ -5,8 +5,16 @@ import com.areslib.state.RobotState
 import java.util.ArrayDeque
 
 /**
- * Thread-safe state-machine execution sequencer coordinating queued, conditional tasks.
- * Supports task preemption to temporarily pause and resume running tasks dynamically.
+ * Synchronized task queue with nested last-in/first-out preemption.
+ *
+ * Task lifecycle methods execute while holding the executor monitor. They must return quickly and
+ * must not call back from another thread while waiting for this executor. Returned Redux actions are
+ * caller-owned and are not dispatched internally. An update may finish/start several immediately
+ * complete tasks, capped at 100 transitions to prevent a malformed queue from locking the loop.
+ *
+ * Preemption calls `end(interrupted = true)` on the paused task, then later resumes it without a
+ * second initialization while preserving elapsed time. [clear] performs best-effort interrupted
+ * cleanup and suppresses task exceptions.
  */
 class TaskExecutor {
     private val queue = ArrayDeque<Task>()

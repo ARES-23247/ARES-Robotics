@@ -138,7 +138,11 @@ class FrcSwerveRobot(
                 rollDegrees = swerveIO.rollDegrees,
                 angularVelocityRadiansPerSecond = driveState.angularVelocityRadiansPerSecond,
                 xVelocityMetersPerSecond = measuredFieldVx,
-                yVelocityMetersPerSecond = measuredFieldVy
+                yVelocityMetersPerSecond = measuredFieldVy,
+                // CTRE has already fused module, gyro, and accepted vision data.
+                // Mirror that authoritative estimate; do not run it through ARES as
+                // another odometry observation.
+                isExternalEstimate = true
             ))
         }
     }

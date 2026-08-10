@@ -313,6 +313,27 @@ class NT4NetworkingHardeningTest {
         assertTrue(NT4WireProtocol.unpackMessageFrames(output.toByteArray()).isEmpty())
     }
 
+    @Test
+    fun flatLegacyUpdateTupleIsRejectedByBothDecoders() {
+        val output = ByteArrayOutputStream()
+        MessagePack.newDefaultPacker(output).use { packer ->
+            packer.packArrayHeader(4)
+            packer.packLong(7L)
+            packer.packLong(123_000L)
+            packer.packInt(1)
+            packer.packDouble(4.5)
+        }
+        val bytes = output.toByteArray()
+
+        assertTrue(
+            NT4WireProtocol.unpackMessageFrames(bytes).isEmpty(),
+            "NT4 requires an outer update batch even when it contains one tuple"
+        )
+        assertThrows(java.io.IOException::class.java) {
+            newServer().decodeNT4Messages(ByteBuffer.wrap(bytes))
+        }
+    }
+
     private fun newServer(): NT4Server = NT4Server(
         InetSocketAddress("127.0.0.1", 0),
         Draft_6455(

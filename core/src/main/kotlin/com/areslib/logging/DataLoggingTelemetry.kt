@@ -5,9 +5,17 @@ import com.areslib.telemetry.RobotStatusTracker
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Composite telemetry wrapper that automatically saves all published data
- * to an offline file-based CSV log on update() while forwarding data
- * to the NT4 server if alive.
+ * Single-owner telemetry accumulator that mirrors values to a live backend and asynchronous CSV.
+ *
+ * `put*` calls update the in-progress frame and, while [ntEnabled] is true, immediately forward the
+ * value to [ntTelemetry]. [update] optionally snapshots the accumulated frame into [ARESDataLogger],
+ * then flushes the live backend. When logging is throttled, values remain in the accumulator and the
+ * most recent value for each key wins. Booleans are stored in CSV as `1.0`/`0.0`; double arrays are
+ * stored as pipe-delimited strings.
+ *
+ * This class is designed for one robot-loop owner and is not thread-safe. Mode transitions close the
+ * previous logger synchronously before creating the next mode-specific file. [close] drains disk
+ * logging before closing the live backend.
  */
 class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelemetry {
     
@@ -35,45 +43,25 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     
     private var lastLogTimeMs = 0L
 
-    /**
-     * putNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Stores [value] in the current frame and forwards it when network output is enabled. */
     override fun putNumber(key: String, value: Double) {
         currentFrame[key] = value
         if (ntEnabled) ntTelemetry?.putNumber(key, value)
     }
 
-    /**
-     * putBoolean declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Stores [value] numerically in CSV while preserving boolean type on the live backend. */
     override fun putBoolean(key: String, value: Boolean) {
         currentFrame[key] = if (value) 1.0 else 0.0
         if (ntEnabled) ntTelemetry?.putBoolean(key, value)
     }
 
-    /**
-     * putString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Stores and optionally forwards a string value. */
     override fun putString(key: String, value: String) {
         currentFrame[key] = value
         if (ntEnabled) ntTelemetry?.putString(key, value)
     }
 
-    /**
-     * putDoubleArray declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Serializes [value] for CSV and forwards the original array synchronously when enabled. */
     override fun putDoubleArray(key: String, value: DoubleArray) {
         arrayBuilder.setLength(0)
         for (i in value.indices) {
@@ -84,42 +72,22 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         if (ntEnabled) ntTelemetry?.putDoubleArray(key, value)
     }
 
-    /**
-     * getNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Delegates to live telemetry, or returns [defaultValue] when no backend exists. */
     override fun getNumber(key: String, defaultValue: Double): Double {
         return ntTelemetry?.getNumber(key, defaultValue) ?: defaultValue
     }
 
-    /**
-     * getBoolean declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Delegates to live telemetry, or returns [defaultValue] when no backend exists. */
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         return ntTelemetry?.getBoolean(key, defaultValue) ?: defaultValue
     }
 
-    /**
-     * getString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Delegates to live telemetry, or returns [defaultValue] when no backend exists. */
     override fun getString(key: String, defaultValue: String): String {
         return ntTelemetry?.getString(key, defaultValue) ?: defaultValue
     }
 
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Commits a due disk frame, handles mode rollover, and flushes enabled live telemetry. */
     override fun update() {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
 
@@ -149,7 +117,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     }
 
     /**
-     * Shuts down background logging workers and standard telemetry server gracefully.
+     * Drains and closes disk logging, then closes the optional live backend.
      */
     override fun close() {
         logger.stop()

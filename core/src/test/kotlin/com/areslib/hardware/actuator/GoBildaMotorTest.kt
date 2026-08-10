@@ -4,21 +4,9 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.PI
 
-/**
- * GoBildaMotorTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class GoBildaMotorTest {
 
     @Test
-    /**
-     * testGoBildaMotorConversions declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testGoBildaMotorConversions() {
         val motor = GoBildaMotor.RPM_312
 
@@ -42,12 +30,6 @@ class GoBildaMotorTest {
     }
 
     @Test
-    /**
-     * testAllGearRatiosExist declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testAllGearRatiosExist() {
         assertEquals("3.7:1", GoBildaMotor.RPM_1150.ratioName)
         assertEquals("5.2:1", GoBildaMotor.RPM_712.ratioName)

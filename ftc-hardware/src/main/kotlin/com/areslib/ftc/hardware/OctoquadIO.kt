@@ -303,12 +303,7 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
             // Encoders are read-only, cannot set power
         }
 
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility update hook; the shared OctoQuad cache is populated by its sampling thread. */
     fun updateInputs() {
         octoQuad.update()
     }
@@ -319,12 +314,7 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
     override val position: Double
         get() = octoQuad.getCachedPosition(channel).toDouble()
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Sends a hardware reset for this encoder channel. */
     override fun resetEncoder() {
         octoQuad.resetEncoder(channel)
     }
@@ -345,12 +335,7 @@ class OctoQuadAbsolutePWMEncoder(
         get() = 0.0
         set(@Suppress("UNUSED_PARAMETER") value) {}
 
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility update hook; pulse-width data already comes from the shared cache. */
     fun updateInputs() {
         octoQuad.update()
     }
@@ -367,12 +352,7 @@ class OctoQuadAbsolutePWMEncoder(
             return (clampedNormalized * ticksPerRev) - offset
         }
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Captures the current normalized pulse position as this wrapper's software zero. */
     override fun resetEncoder() {
         octoQuad.update()
         val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
@@ -388,22 +368,16 @@ class OctoQuadAbsolutePWMEncoder(
  */
 class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
     /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Resets encoder channel zero as a legacy localizer reset.
+     * The current FWv3 adapter cannot seed [startPose]; callers must treat the next sample as the
+     * device's native origin rather than assuming the requested field pose was applied.
      */
     override fun initialize(startPose: Pose2d) {
         // Reset command
         octoQuad.resetEncoder(0) // Dummy implementation for now
     }
 
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Copies the latest cached localizer block into meter/radian odometry fields. */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
         octoQuad.update()
         val lastData = octoQuad.readLocalizerData()
@@ -416,5 +390,4 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 }
-
 

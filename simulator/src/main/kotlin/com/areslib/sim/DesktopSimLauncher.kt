@@ -34,12 +34,6 @@ object DesktopSimLauncher {
     @Volatile private var sampleCount = 0L
 
     @JvmStatic
-    /**
-     * main declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun main(args: Array<String>) {
         try {
             launch(args, NoOpInteractionModel())
@@ -51,12 +45,6 @@ object DesktopSimLauncher {
         }
     }
 
-    /**
-     * launch declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     @Volatile
     var isSimRunning = true
 

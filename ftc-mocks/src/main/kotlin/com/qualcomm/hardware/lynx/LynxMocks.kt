@@ -16,99 +16,21 @@ open class LynxModule(
     val isParent: Boolean,
     val isUserModule: Boolean
 ) : com.qualcomm.robotcore.hardware.HardwareDevice {
-    /**
-     * getManufacturer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getManufacturer(): com.qualcomm.robotcore.hardware.HardwareDevice.Manufacturer = com.qualcomm.robotcore.hardware.HardwareDevice.Manufacturer.Unknown
-    /**
-     * getDeviceName declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getDeviceName(): String = ""
-    /**
-     * getConnectionInfo declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getConnectionInfo(): String = ""
-    /**
-     * getVersion declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getVersion(): Int = 1
-    /**
-     * resetDeviceConfigurationForOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun resetDeviceConfigurationForOpMode() {}
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun close() {}
 
-    /**
-     * BulkCachingMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     enum class BulkCachingMode { OFF, AUTO, MANUAL }
     var bulkCachingMode = BulkCachingMode.OFF
     val serialNumber = com.qualcomm.robotcore.util.SerialNumber("")
-    /**
-     * clearBulkCache declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun clearBulkCache() {}
-    /**
-     * getNewMessageNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun getNewMessageNumber(): Byte = 0
-    /**
-     * sendCommand declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun sendCommand(command: LynxMessage) {}
-    /**
-     * acquireNetworkTransmissionLock declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun acquireNetworkTransmissionLock(message: LynxMessage) {}
-    /**
-     * releaseNetworkTransmissionLock declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun releaseNetworkTransmissionLock(message: LynxMessage) {}
-    /**
-     * removeConfiguredModule declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun removeConfiguredModule(module: com.qualcomm.robotcore.hardware.HardwareDevice) {}
     var unfinishedCommands = ConcurrentHashMap<Int, LynxRespondable<LynxMessage>>()
 }
@@ -131,12 +53,6 @@ class LynxUnsupportedCommandException : Exception()
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 open class LynxUsbDevice {
-    /**
-     * removeConfiguredModule declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun removeConfiguredModule(module: LynxModule) {}
 }
 /**

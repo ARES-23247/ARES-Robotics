@@ -9,9 +9,12 @@ import edu.wpi.first.networktables.StructPublisher
 import edu.wpi.first.wpilibj.DataLogManager
 
 /**
- * World-class Telemetry Publisher for the ARES simulation environment.
- * Coordinates real-time NetworkTables (NT4) state publishing, client-side input polling,
- * and AdvantageScope-compatible swerve/pose visualizations.
+ * Simulator bridge for ARES custom NT4 topics and WPILib/AdvantageScope topics.
+ *
+ * Canonical custom-server keys omit a leading slash. Pose translations are field-relative meters;
+ * headings and module angles are CCW-positive radians. Reusable pose arrays are shared by the
+ * simulation thread and must be consumed synchronously by each backend. [init] attaches the shared
+ * robot-state publisher; pose/driver-station compatibility topics work independently.
  */
 object TelemetryPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
@@ -123,7 +126,11 @@ object TelemetryPublisher {
     }
 
     /**
-     * Publishes the estimated pose from the Kalman Filter (EKF) for AdvantageScope rendering.
+     * Publishes the simulator's dashboard pose under estimated-pose compatibility topics.
+     *
+     * [com.areslib.sim.DesktopSimLauncher] deliberately supplies Dyn4j ground truth because its local Redux state is
+     * not the OpMode estimator. The same pose is mirrored to `Drive/Pose_X`, `Drive/Pose_Y`, and
+     * `Drive/Drive_Heading` for dashboard compatibility.
      *
      * @param pose The field-relative estimated pose.
      */
@@ -213,10 +220,13 @@ object TelemetryPublisher {
     }
 
     /**
-     * Polls `/ARES/Input` topics from NT4. If fresh updates are found,
-     * pushes them directly into the VirtualDriverStation instance.
+     * Polls canonical topics under `ARES/Input/` from the custom NT4 server and copies them into
+     * [driverStation]. Alliance changes are also dispatched to the active FTC robot store.
      *
-     * @param driverStation Target VirtualDriverStation instance to synchronize inputs with.
+     * @return A changed, non-blank obstacle JSON payload, otherwise `null`. Other input values are
+     * applied on every call rather than freshness-gated.
+     *
+     * @param driverStation Target virtual driver station to synchronize.
      */
     fun pollWebInputs(driverStation: VirtualDriverStation): String? {
         val vx = getWebVx()
@@ -260,16 +270,14 @@ object TelemetryPublisher {
         }
     }
 
-    /**
-     * Publishes superstructure state (flywheel RPM, mode, active flags).
-     *
-     * @param state The current immutable robot state.
-     */
+    /** Caches one publisher per indicator name so repeated frames avoid NT topic lookups. */
     private val indicatorLightPublishers = mutableMapOf<String, edu.wpi.first.networktables.DoublePublisher>()
 
     /**
      * Publishes indicator light positions from [SuperstructureState] over NT4.
      * Uses cached publishers to avoid per-frame topic lookups.
+     *
+     * @param state Current immutable robot state containing the indicator positions.
      */
     fun publishSuperstructure(state: RobotState) {
         val lights = state.superstructure.indicatorLights

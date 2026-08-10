@@ -13,12 +13,6 @@ import java.util.Scanner
  */
 object FakeControllerClient {
     @JvmStatic
-    /**
-     * main declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun main(args: Array<String>) {
         val serverIp = args.firstOrNull() ?: "127.0.0.1"
         println("Starting Remote Controller Client (Server IP: $serverIp)...")

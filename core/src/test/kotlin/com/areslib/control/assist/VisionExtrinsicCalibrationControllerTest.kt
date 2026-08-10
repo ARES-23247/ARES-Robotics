@@ -21,21 +21,9 @@ import com.areslib.state.RobotFieldAprilTag
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldManager
 
-/**
- * VisionExtrinsicCalibrationControllerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class VisionExtrinsicCalibrationControllerTest {
 
     @Test
-    /**
-     * testCalibrationSweepAndTargetLogging declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testCalibrationSweepAndTargetLogging() {
         val actions = mutableListOf<RobotAction>()
         val store = Store(RobotState()) { state, action ->

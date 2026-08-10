@@ -4,21 +4,9 @@ import com.areslib.control.feedback.PIDController
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * PidClampingTier1Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PidClampingTier1Test {
 
     @Test
-    /**
-     * testOutputClamping_shouldClampToLimits declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testOutputClamping_shouldClampToLimits() {
         val pid = PIDController(10.0, 0.0, 0.0)
         pid.setOutputLimits(-5.0, 5.0)
@@ -36,12 +24,6 @@ class PidClampingTier1Test {
     }
 
     @Test
-    /**
-     * testIntegratorAntiWindup_shouldClampAccumulator declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testIntegratorAntiWindup_shouldClampAccumulator() {
         val pid = PIDController(0.0, 1.0, 0.0)
         pid.setIntegratorRange(-10.0, 10.0)
@@ -58,12 +40,6 @@ class PidClampingTier1Test {
     }
 
     @Test
-    /**
-     * testContinuousInput_shouldWrapAnglesCorrectly declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testContinuousInput_shouldWrapAnglesCorrectly() {
         val pid = PIDController(1.0, 0.0, 0.0)
         pid.enableContinuousInput(-180.0, 180.0)
@@ -78,12 +54,6 @@ class PidClampingTier1Test {
     }
 
     @Test
-    /**
-     * testNonAllocatingPrimitiveCalculation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testNonAllocatingPrimitiveCalculation() {
         val pid = PIDController(1.0, 0.0, 0.0)
         
@@ -93,12 +63,6 @@ class PidClampingTier1Test {
     }
 
     @Test
-    /**
-     * testSetpointValidation_isFinite declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSetpointValidation_isFinite() {
         val pid = PIDController(1.0, 0.0, 0.0)
         

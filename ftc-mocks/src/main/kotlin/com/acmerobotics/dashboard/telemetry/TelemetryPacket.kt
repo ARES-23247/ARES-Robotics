@@ -7,11 +7,5 @@ import com.acmerobotics.dashboard.canvas.Canvas
  */
 open class TelemetryPacket {
     val fieldOverlay = Canvas()
-    /**
-     * put declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun put(key: String, value: Any) {}
 }

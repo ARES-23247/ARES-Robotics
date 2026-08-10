@@ -58,12 +58,6 @@ object GridCostmapInflator {
         }
     }
     
-    /**
-     * insertDynamicObstacle declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun insertDynamicObstacle(
         inflatedGrid: BooleanArray,
         widthCells: Int,

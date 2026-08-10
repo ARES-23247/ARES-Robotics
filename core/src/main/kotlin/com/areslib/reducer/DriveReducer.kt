@@ -4,7 +4,6 @@ import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
 import com.areslib.state.DriveMode
 import com.areslib.math.wrapAngle
-import com.areslib.math.kinematics.OdometryMath
 import com.areslib.math.estimation.HistoryBuffer
 import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.geometry.Pose2d
@@ -51,6 +50,11 @@ object DriveReducer {
                 ).updateDiagnostics(nextOdomX, nextOdomY, nextOdomHeading, updatedEstimator)
             }
             is RobotAction.PoseUpdate -> {
+                if (!action.xMeters.isFinite() || !action.yMeters.isFinite() ||
+                    !action.headingRadians.isFinite()) {
+                    return state
+                }
+
                 val updatedEstimator = if (action.isReset) {
                     val newPose = Pose2d(action.xMeters, action.yMeters, Rotation2d(action.headingRadians))
                     val newHistory = HistoryBuffer(150)
@@ -65,19 +69,45 @@ object DriveReducer {
                         isBeached = false,
                         lastUnbeachedTimeMs = action.timestampMs
                     )
+                } else if (action.isExternalEstimate) {
+                    PoseEstimator.acceptExternalEstimate(
+                        state = state.poseEstimator,
+                        timestampMs = action.timestampMs,
+                        xMeters = action.xMeters,
+                        yMeters = action.yMeters,
+                        headingRadians = action.headingRadians
+                    )
                 } else {
-                    val deltaX = action.xMeters - state.odometryX
-                    val deltaY = action.yMeters - state.odometryY
+                    val fieldDeltaX = action.xMeters - state.odometryX
+                    val fieldDeltaY = action.yMeters - state.odometryY
                     val deltaHeading = wrapAngle(action.headingRadians - state.odometryHeading)
 
-                    val headingDiff = state.poseEstimator.estimatedPoseHeading - state.odometryHeading
-                    val deltaFieldX = OdometryMath.calculateDeltaX(headingDiff, deltaX, deltaY)
-                    val deltaFieldY = OdometryMath.calculateDeltaY(headingDiff, deltaX, deltaY)
+                    // PoseUpdate contains absolute field-frame odometry. Convert the
+                    // relative field transform back into the robot-frame SE(2) twist
+                    // consumed by PoseEstimator. Passing the field delta through directly
+                    // rotates it a second time whenever the robot heading is non-zero.
+                    val cosStart = kotlin.math.cos(state.odometryHeading)
+                    val sinStart = kotlin.math.sin(state.odometryHeading)
+                    val bodyArcX = cosStart * fieldDeltaX + sinStart * fieldDeltaY
+                    val bodyArcY = -sinStart * fieldDeltaX + cosStart * fieldDeltaY
+
+                    val twistX: Double
+                    val twistY: Double
+                    if (kotlin.math.abs(deltaHeading) < 1e-6) {
+                        twistX = bodyArcX
+                        twistY = bodyArcY
+                    } else {
+                        val s = kotlin.math.sin(deltaHeading) / deltaHeading
+                        val c = (1.0 - kotlin.math.cos(deltaHeading)) / deltaHeading
+                        val determinant = s * s + c * c
+                        twistX = (s * bodyArcX + c * bodyArcY) / determinant
+                        twistY = (-c * bodyArcX + s * bodyArcY) / determinant
+                    }
                     PoseEstimator.addOdometryObservationDirect(
                         state = state.poseEstimator,
                         timestampMs = action.timestampMs,
-                        deltaX = deltaFieldX,
-                        deltaY = deltaFieldY,
+                        deltaX = twistX,
+                        deltaY = twistY,
                         deltaHeadingRad = deltaHeading,
                         pitchDegrees = action.pitchDegrees,
                         rollDegrees = action.rollDegrees,
@@ -89,6 +119,7 @@ object DriveReducer {
                     odometryX = action.xMeters,
                     odometryY = action.yMeters,
                     odometryHeading = action.headingRadians,
+                    poseEstimateIsExternal = action.isExternalEstimate && !action.isReset,
                     measuredFieldXVelocityMetersPerSecond = action.xVelocityMetersPerSecond,
                     measuredFieldYVelocityMetersPerSecond = action.yVelocityMetersPerSecond,
                     measuredAngularVelocityRadiansPerSecond = action.angularVelocityRadiansPerSecond,

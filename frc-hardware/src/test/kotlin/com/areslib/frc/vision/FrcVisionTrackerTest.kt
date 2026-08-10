@@ -12,6 +12,7 @@ import com.areslib.telemetry.RobotStatusTracker
 import com.areslib.hardware.vision.VisionFilterConfig
 import com.areslib.state.VisionState
 import com.areslib.reducer.rootReducer
+import com.areslib.action.RobotAction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -51,6 +52,7 @@ class FrcVisionTrackerTest {
             )
         )
         val store = Store(initialState, ::rootReducer)
+        store.dispatch(RobotAction.PoseUpdate(1.0, 1.0, 0.0, timestampMs = 100L, isReset = true))
         val mockMeasurement = VisionMeasurement(
             tagId = 2,
             targetPose = Pose3d(Translation3d(2.0, 3.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
@@ -70,6 +72,8 @@ class FrcVisionTrackerTest {
         assertEquals(2, received[0].tagId)
         assertEquals(0.02, received[0].ambiguity, 1e-6)
         assertTrue(RobotStatusTracker.visionConnected, "RobotStatusTracker vision connection state should be true")
+        assertEquals(1.0, store.state.drive.poseEstimator.estimatedPoseX, 0.0,
+            "FRC vision is already owned by the platform estimator and must not be fused twice")
+        assertEquals(1.0, store.state.drive.poseEstimator.estimatedPoseY, 0.0)
     }
 }
-

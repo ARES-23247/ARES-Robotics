@@ -33,14 +33,18 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * SolversLib Photon reflective integration engine for FTC Control Hub and Expansion Hub platforms.
+ * Experimental reflective fast path for FTC Control Hub and Expansion Hub Lynx commands.
  *
- * Intercepts low-level REV Expansion Hub [LynxCommand] transactions and parallelizes motor power ([LynxSetMotorConstantPowerCommand])
- * and servo pulse width ([LynxSetServoPulseWidthCommand]) I2C/USB writes across dedicated async background threads.
+ * Replaces SDK [LynxModule] instances during OpMode initialization so selected motor-power
+ * ([LynxSetMotorConstantPowerCommand]) and servo-pulse ([LynxSetServoPulseWidthCommand]) commands
+ * bypass the normal per-message transmission lock/response wait. USB writes remain synchronous and
+ * are serialized by this object; “parallel” here refers to allowing multiple unfinished commands,
+ * not to concurrent USB writes.
  *
  * ### Performance Acceleration & Memory Rules:
- * - **Write Parallelization**: Bypasses synchronous FTDI USB serial serialization blocks for motor and servo output channels.
- * - **Concurrency Limits**: Bounds maximum parallel pending commands per REV Hub module via [ExperimentalParameters.maximumParallelCommands] (default 8).
+ * - **Fast writes**: selected commands receive a synthetic immediate acknowledgement after the USB write.
+ * - **Outstanding-command limit**: [ExperimentalParameters.maximumParallelCommands] bounds the
+ *   unfinished map best-effort; stalled entries are cleared after the bounded wait.
  * - **Lifecycle Management**: Automatically Hooks into FTC [FtcEventLoop] via `@OnCreateEventLoop` annotations and registers [OpModeManagerNotifier.Notifications].
  *
  * @see LynxModule
@@ -99,12 +103,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     val experimental = ExperimentalParameters()
 
-    /**
-     * enable declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Enables interception without changing the REV bulk-cache mode. */
     fun enable() {
         isEnabled.set(true)
         // NOTE: Do NOT change bulkCachingMode here.
@@ -114,24 +113,14 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     }
 
 
-    /**
-     * disable declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Disables interception; wrapped modules delegate new commands to the SDK path. */
     fun disable() {
         isEnabled.set(false)
     }
 
     @OnCreateEventLoop
     @JvmStatic
-    /**
-     * attachEventLoop declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Best-effort FTC lifecycle-hook registration. Reflection/API failures are logged or ignored. */
     fun attachEventLoop(@Suppress("UNUSED_PARAMETER") context: Context, eventLoop: FtcEventLoop) {
         try {
             val manager = eventLoop.opModeManager
@@ -150,10 +139,9 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     @Throws(LynxUnsupportedCommandException::class, InterruptedException::class)
     /**
-     * registerSend declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Sends one selected command through the module's mapped USB device.
+     * Returns `false` when no USB mapping exists so the caller can use the SDK path. USB and unsupported
+     * command failures are printed but currently still return `true` after interception.
      */
     fun registerSend(command: LynxCommand<*>): Boolean {
         val photonModule = command.module as AresPhotonLynxModule
@@ -220,22 +208,12 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         return true
     }
 
-    /**
-     * shouldParallelize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Whether [command] is eligible for the transmission-lock bypass. */
     fun shouldParallelize(command: LynxCommand<*>): Boolean {
         return command is LynxSetMotorConstantPowerCommand || (PARALLELIZE_SERVOS && command is LynxSetServoPulseWidthCommand)
     }
 
-    /**
-     * shouldAckImmediately declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Whether [command] receives a synthetic acknowledgement immediately after its USB write. */
     fun shouldAckImmediately(command: LynxCommand<*>): Boolean {
         return command is LynxSetMotorConstantPowerCommand || command is LynxSetServoPulseWidthCommand
     }
@@ -245,22 +223,12 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
                 respondable1.commandNumber == respondable2.commandNumber
     }
 
-    /**
-     * getCacheResponse declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reserved response-cache hook. The current implementation always returns `null`. */
     fun getCacheResponse(@Suppress("UNUSED_PARAMETER") command: LynxCommand<*>): LynxMessage? {
         return null
     }
 
-    /**
-     * run declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Keeps the optional daemon lifecycle thread alive; command IO does not run on this thread. */
     override fun run() {
         while (threadEnabled.get()) {
             try {
@@ -271,12 +239,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         }
     }
 
-    /**
-     * onOpModePreInit declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reflectively replaces Lynx modules/device references before an enabled OpMode initializes. */
     override fun onOpModePreInit(opMode: OpMode) {
         if (!isEnabled.get()) return
         if (opModeManager?.activeOpModeName == OpModeManager.DEFAULT_OP_MODE_NAME) {
@@ -464,20 +427,10 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         }
     }
 
-    /**
-     * onOpModePreStart declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Lifecycle no-op; all replacement work occurs during pre-init. */
     override fun onOpModePreStart(@Suppress("UNUSED_PARAMETER") opMode: OpMode) {}
 
-    /**
-     * onOpModePostStop declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Disables interception, restores original modules where possible, and clears retained hardware references. */
     override fun onOpModePostStop(opMode: OpMode) {
         isEnabled.set(false)
         threadEnabled.set(false)

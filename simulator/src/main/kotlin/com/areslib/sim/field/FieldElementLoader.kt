@@ -19,12 +19,6 @@ import com.areslib.state.RobotFieldElementInstance
 object FieldElementLoader {
     private val gson = Gson()
 
-    /**
-     * loadElements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadElements(world: World<Body>, jsonString: String): List<Body> {
         try {
             val config = gson.fromJson(jsonString, RobotFieldConfig::class.java)
@@ -38,12 +32,6 @@ object FieldElementLoader {
         return emptyList()
     }
 
-    /**
-     * loadElements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadElements(
         world: World<Body>,
         elementTypes: List<RobotFieldElementType>,
@@ -69,12 +57,6 @@ object FieldElementLoader {
         val type: String = "Custom"
     )
 
-    /**
-     * loadGamePiecesFromAnalyticsJson declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadGamePiecesFromAnalyticsJson(world: World<Body>, jsonString: String): List<Body> {
         val spawnedBodies = mutableListOf<Body>()
         try {

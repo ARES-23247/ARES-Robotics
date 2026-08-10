@@ -3,21 +3,9 @@ package com.areslib.input
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * ARESControllerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ARESControllerTest {
 
     @Test
-    /**
-     * testOnPressedEdgeDetection declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testOnPressedEdgeDetection() {
         val controller = ARESController()
         
@@ -42,12 +30,6 @@ class ARESControllerTest {
     }
 
     @Test
-    /**
-     * testAnalogTriggerThresholds declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testAnalogTriggerThresholds() {
         val controller = ARESController()
         

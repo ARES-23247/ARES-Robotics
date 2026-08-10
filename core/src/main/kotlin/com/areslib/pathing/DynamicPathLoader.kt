@@ -98,12 +98,6 @@ object DynamicPathLoader {
         return PathPlannerParser.parsePath(jsonString)
     }
 
-    /**
-     * loadAutoJsonString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadAutoJsonString(autoName: String): String {
         var jsonString: String? = null
         val fileName = "$autoName.auto"

@@ -77,12 +77,6 @@ class PlannerState(capacity: Int) {
     var openQueue = LongHeap(capacity * 8)
     var pathPool = DoubleArray(capacity * 2)
 
-    /**
-     * ensureCapacity declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun ensureCapacity(capacity: Int) {
         if (gCosts.size < capacity) {
             gCosts = DoubleArray(capacity)

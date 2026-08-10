@@ -355,19 +355,13 @@ class NT4Server(
 
         try {
             val numElements = unpacker.unpackArrayHeader()
-            val list: ArrayList<NT4Message>
-            if (numElements > 0 && unpacker.hasNext() && unpacker.nextFormat.valueType.name == "ARRAY") {
-                requireDecodedLength("message count", numElements, MAX_MESSAGES_PER_FRAME)
-                list = ArrayList(numElements)
-                for (i in 0 until numElements) {
-                    list.add(decodeSingleNT4Message(unpacker))
+            requireDecodedLength("message count", numElements, MAX_MESSAGES_PER_FRAME)
+            val list = ArrayList<NT4Message>(numElements)
+            for (i in 0 until numElements) {
+                if (!unpacker.hasNext() || unpacker.nextFormat.valueType.name != "ARRAY") {
+                    throw IOException("NT4 update batch contains a non-array tuple")
                 }
-            } else if (numElements == 0) {
-                list = ArrayList(0)
-            } else {
-                if (numElements != 4) throw IOException("NT4 update tuple must have 4 elements, got $numElements")
-                list = ArrayList(1)
-                list.add(decodeSingleNT4Message(unpacker, numElements))
+                list.add(decodeSingleNT4Message(unpacker))
             }
             if (unpacker.hasNext()) throw IOException("Trailing data after NT4 update frame")
             return list
@@ -376,8 +370,8 @@ class NT4Server(
         }
     }
 
-    private fun decodeSingleNT4Message(unpacker: MessageUnpacker, preReadArraySize: Int = -1): NT4Message {
-        val tupleSize = if (preReadArraySize == -1) unpacker.unpackArrayHeader() else preReadArraySize
+    private fun decodeSingleNT4Message(unpacker: MessageUnpacker): NT4Message {
+        val tupleSize = unpacker.unpackArrayHeader()
         if (tupleSize != 4) throw IOException("NT4 update tuple must have 4 elements, got $tupleSize")
         val id = unpacker.unpackLong()
         val timestamp = unpacker.unpackLong()

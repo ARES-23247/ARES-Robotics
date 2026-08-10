@@ -7,7 +7,15 @@ import java.util.concurrent.CopyOnWriteArrayList
 import com.areslib.hardware.actuator.*
 
 /**
- * Global registry for automatic hardware device logging, diagnostics, power scaling, and lifecycle batch reads.
+ * Process-wide owner registry for hardware refresh, safety, telemetry, topology, and shutdown.
+ *
+ * Registration is normally performed once during robot construction. Device collections are
+ * copy-on-write/concurrent so telemetry and background polling can inspect them safely, but repeated
+ * registration of the same logical name still appends lifecycle entries and should be avoided.
+ * Hardware exceptions are isolated during best-effort safety, telemetry, and close passes.
+ *
+ * The polling daemon services at most one regular and one round-robin device per interval. Polled
+ * devices must cache results for robot-loop getters and must not throw from [SyncPolledDevice.pollSync].
  */
 object HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
@@ -27,22 +35,22 @@ object HardwareRegistry {
     @Volatile private var pollingIntervalMs: Long = 50L
 
     /**
-     * Sets the background polling interval in milliseconds.
+     * Sets the delay between polling passes. Runtime values below 10 ms are clamped by the worker.
      */
     fun setPollingIntervalMs(intervalMs: Long) {
         pollingIntervalMs = intervalMs
     }
 
     /**
-     * Registers a closeable hardware wrapper to ensure background threads are terminated on close.
+     * Registers a lifecycle resource for best-effort closure by [closeAll].
      */
     fun registerCloseable(closeable: AutoCloseable) {
         closeables.add(closeable)
     }
 
     /**
-     * Registers a device that requires periodic synchronous polling (like motor current).
-     * Automatically starts the background polling daemon if not already running.
+     * Adds [device] to the primary polling list and starts the daemon on first registration.
+     * Duplicate object registrations in this list are ignored.
      */
     fun registerSyncPolledDevice(device: SyncPolledDevice) {
         if (!syncPolledDevices.contains(device)) {
@@ -52,10 +60,8 @@ object HardwareRegistry {
     }
 
     /**
-     * registerRoundRobinDevice declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Adds [device] to the secondary round-robin list and starts the daemon if needed.
+     * One entry from this list is serviced per pass independently of the primary list.
      */
     fun registerRoundRobinDevice(device: SyncPolledDevice) {
         if (!roundRobinDevices.contains(device)) {
@@ -100,7 +106,9 @@ object HardwareRegistry {
     }
 
     /**
-     * Registers a generic loggable device with a unique system name.
+     * Registers [device] under [name] for telemetry and lifecycle operations.
+     * Names should be unique; reusing a name replaces map lookup data but does not remove the prior
+     * device from ordered refresh/publish lists.
      */
     fun registerDevice(name: String, device: LoggableDevice) {
         devices[name] = device
@@ -146,12 +154,7 @@ object HardwareRegistry {
         )
     }
 
-    /**
-     * registerServo declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Registers an FTC servo and records its parent hub and zero-based port for topology export. */
     fun registerServo(name: String, servo: ServoIO, parentHub: String, port: Int) {
         val cleanName = "Servos/$name"
         registerServo(name, servo)
@@ -181,12 +184,7 @@ object HardwareRegistry {
         )
     }
 
-    /**
-     * registerDevice declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Registers a CAN device and derives its topology type from its logical [name]. */
     fun registerDevice(name: String, device: LoggableDevice, canBus: String, canId: Int, busPosition: Int? = null) {
         registerDevice(name, device)
         topologyNodes[name] = TopologyNode(
@@ -208,22 +206,12 @@ object HardwareRegistry {
         topologyNodes[name] = topology
     }
 
-    /**
-     * buildTopology declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Builds a point-in-time topology snapshot. Concurrent-map node order is unspecified. */
     fun buildTopology(robotId: String): HardwareTopology {
         return HardwareTopology(robotId, topologyNodes.values.toList())
     }
 
-    /**
-     * getTopologyJson declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Serializes the current topology snapshot as JSON for dashboard discovery. */
     fun getTopologyJson(robotId: String): String {
         return gson.toJson(buildTopology(robotId))
     }
@@ -246,21 +234,24 @@ object HardwareRegistry {
     // ────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Retrieves all registered motor wrappers for power budget calculations and voltage compensation.
+     * Returns the live, read-only-by-contract motor list used by power managers.
+     * Callers must not cast and mutate the returned collection.
      */
     fun getRegisteredMotors(): List<MotorIO> {
         return cachedMotorsList
     }
 
     /**
-     * Retrieves all registered motor wrappers mapped by their registered names.
+     * Returns the live motor lookup keyed by the short name after an optional `Motors/` prefix.
+     * Callers must treat the returned map as read-only.
      */
     fun getRegisteredMotorsWithNames(): Map<String, MotorIO> {
         return cachedMotorsWithNames
     }
 
     /**
-     * Batches status updates and read transactions across all registered SubsystemIO components.
+     * Calls [SubsystemIO.refresh] once for every registered subsystem in registration order.
+     * Unlike safety and close passes, refresh exceptions propagate to the caller.
      */
     fun refreshAll() {
         for (i in 0 until devicesList.size) {
@@ -272,7 +263,8 @@ object HardwareRegistry {
     }
 
     /**
-     * Triggers safety failsafes across all registered subsystems.
+     * Invokes every registered subsystem's fail-safe output and suppresses individual failures so
+     * one broken device cannot prevent the remaining devices from being stopped.
      */
     fun safeAll() {
         for (i in 0 until devicesList.size) {
@@ -286,7 +278,9 @@ object HardwareRegistry {
     }
 
     /**
-     * Clears all registered devices and terminates background threads.
+     * Stops polling, waits up to one second for its daemon, closes registered resources on a
+     * best-effort basis, and clears all registry state. Safe to call during repeated test/OpMode
+     * teardown; a resource registered in both ownership lists may receive more than one close call.
      */
     fun closeAll() {
         pollingRunning = false
@@ -331,7 +325,8 @@ object HardwareRegistry {
     }
 
     /**
-     * Publishes the current state of all registered hardware devices to the telemetry provider.
+     * Publishes registered devices in registration order. Concurrent registration skew and device
+     * telemetry failures are suppressed because diagnostics must not stop the robot loop.
      */
     fun publishAll(telemetry: ITelemetry) {
         try {

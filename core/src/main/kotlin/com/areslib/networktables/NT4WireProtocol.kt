@@ -50,8 +50,8 @@ object NT4WireProtocol {
 
     /**
      * Unpacks incoming binary MsgPack payload into a list of [NT4ValueMessage] objects.
-     * Supports both spec-compliant array-of-arrays `[[id, time, type, val], ...]`
-     * and single flat array `[id, time, type, val]` legacy messages.
+     * NT4 binary updates are always a batch of tuples:
+     * `[[id, time, type, value], ...]`.
      */
     fun unpackMessageFrames(bytes: ByteArray): List<NT4ValueMessage> {
         if (bytes.isEmpty()) return emptyList()
@@ -67,20 +67,14 @@ object NT4WireProtocol {
 
                     val arrayLen = unpacker.unpackArrayHeader()
                     if (arrayLen == 0) continue
-                    val firstFormat = if (unpacker.hasNext()) unpacker.getNextFormat() else null
-
-                    if (arrayLen == 4 && firstFormat?.valueType == ValueType.INTEGER) {
-                        messages.add(unpackTuple(unpacker))
-                    } else {
-                        requireLength("message count", arrayLen, MAX_MESSAGES_PER_FRAME)
-                        for (i in 0 until arrayLen) {
-                            if (!unpacker.hasNext() || unpacker.getNextFormat().valueType != ValueType.ARRAY) {
-                                throw IOException("NT4 update batch contains a non-array tuple")
-                            }
-                            val innerLen = unpacker.unpackArrayHeader()
-                            if (innerLen != 4) throw IOException("NT4 update tuple must have 4 elements, got $innerLen")
-                            messages.add(unpackTuple(unpacker))
+                    requireLength("message count", arrayLen, MAX_MESSAGES_PER_FRAME)
+                    for (i in 0 until arrayLen) {
+                        if (!unpacker.hasNext() || unpacker.getNextFormat().valueType != ValueType.ARRAY) {
+                            throw IOException("NT4 update batch contains a non-array tuple")
                         }
+                        val innerLen = unpacker.unpackArrayHeader()
+                        if (innerLen != 4) throw IOException("NT4 update tuple must have 4 elements, got $innerLen")
+                        messages.add(unpackTuple(unpacker))
                     }
                 }
             }

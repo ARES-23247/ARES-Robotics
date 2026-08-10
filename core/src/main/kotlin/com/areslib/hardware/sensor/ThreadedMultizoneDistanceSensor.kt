@@ -62,12 +62,6 @@ class ThreadedMultizoneDistanceSensor(
         }
     }
 
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun close() {
         shutdown()
     }

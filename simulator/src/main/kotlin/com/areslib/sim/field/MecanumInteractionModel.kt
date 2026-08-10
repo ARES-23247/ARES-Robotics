@@ -21,12 +21,6 @@ class MecanumInteractionModel(private val robotDouble: MecanumRobotDouble) : Sim
     private val intakeRange = 0.35 // Meters from robot center
     private val shootForce = 8.0 // Linear impulse
 
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun update(
         world: World<Body>,
         robotBody: Body,

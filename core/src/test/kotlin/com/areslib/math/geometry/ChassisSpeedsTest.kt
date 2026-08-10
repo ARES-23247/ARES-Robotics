@@ -3,12 +3,6 @@ package com.areslib.math.geometry
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * ChassisSpeedsTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ChassisSpeedsTest {
 
     @Test

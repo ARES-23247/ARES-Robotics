@@ -5,21 +5,9 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Modifier
 
-/**
- * StateImmutabilityTier1Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class StateImmutabilityTier1Test {
 
     @Test
-    /**
-     * testStatePropertiesAreImmutableAndVal declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testStatePropertiesAreImmutableAndVal() {
         val stateClasses = listOf(
             RobotState::class.java,
@@ -48,12 +36,6 @@ class StateImmutabilityTier1Test {
     }
 
     @Test
-    /**
-     * testCollectionStatePropertiesAreReadOnly declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testCollectionStatePropertiesAreReadOnly() {
         
         // VisionState contains measurements: List<VisionMeasurement>
@@ -62,12 +44,6 @@ class StateImmutabilityTier1Test {
     }
 
     @Test
-    /**
-     * testStateModificationCreatesNewInstance declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testStateModificationCreatesNewInstance() {
         val s1 = RobotState()
         val s2 = s1.copy(timestampMs = 12345L)

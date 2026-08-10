@@ -8,12 +8,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.*
 
-/**
- * ShotSetupTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ShotSetupTest {
 
     @Test
@@ -97,12 +91,6 @@ class ShotSetupTest {
     }
 
     @Test
-    /**
-     * testStaticShot declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testStaticShot() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         val speeds = ChassisSpeeds(0.0, 0.0, 0.0)
@@ -139,12 +127,6 @@ class ShotSetupTest {
     }
 
     @Test
-    /**
-     * testTranslatingShotCompensation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testTranslatingShotCompensation() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         // Robot translating at 2.0 m/s in +Y (field-centric)
@@ -168,12 +150,6 @@ class ShotSetupTest {
     }
 
     @Test
-    /**
-     * testRotatingShotCompensation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRotatingShotCompensation() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         // Robot rotating at 1.0 rad/s

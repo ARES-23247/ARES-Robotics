@@ -5,12 +5,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 
-/**
- * MockMotor declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockMotor(
     override var power: Double = 0.0,
     override var powerScale: Double = 1.0,
@@ -18,23 +12,11 @@ class MockMotor(
     override var position: Double = 0.0,
     override var currentAmps: Double = 0.0
 ) : MotorIO {
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun resetEncoder() {
         position = 0.0
     }
 }
 
-/**
- * CurrentBudgetManagerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class CurrentBudgetManagerTest {
 
     private lateinit var manager: CurrentBudgetManager
@@ -42,12 +24,6 @@ class CurrentBudgetManagerTest {
     private lateinit var motor2: MockMotor
 
     @BeforeEach
-    /**
-     * setUp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setUp() {
         manager = CurrentBudgetManager(
             warningCurrentAmps = 15.0,

@@ -7,12 +7,6 @@ import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * HolonomicDriveControllerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class HolonomicDriveControllerTest {
 
     @Test

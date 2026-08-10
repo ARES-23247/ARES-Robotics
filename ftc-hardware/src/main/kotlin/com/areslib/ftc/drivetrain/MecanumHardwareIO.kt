@@ -19,9 +19,9 @@ import com.areslib.hardware.HardwareRegistry
  * - Electrical: Volts ($V$), Amperes ($A$).
  * - Encoders: Ticks per meter ($ticks/m$).
  *
- * ### Zero-GC Execution Compliance:
- * High-frequency update functions ([drive], [apply], [updateInputs]) operate using pre-allocated primitive buffers ([speedBuffer], [powerBuffer])
- * to guarantee zero dynamic heap allocations during 50Hz–100Hz execution.
+ * ### Hot-path behavior:
+ * Wheel-speed and motor-power arrays are preallocated and reused by [drive], [apply], and
+ * [updateInputs]. Keep future changes allocation-conscious and do not retain either internal buffer.
  *
  * @param hardwareMap Qualcomm FTC SDK hardware map reference.
  * @param flName Front-left motor hardware map name. Defaults to `"fl"`.
@@ -31,7 +31,7 @@ import com.areslib.hardware.HardwareRegistry
  * @param maxWheelSpeedMetersPerSecond Maximum expected wheel surface speed ($m/s$).
  * @param flDirection Front-left motor direction polarity.
  * @param frDirection Front-right motor direction polarity.
- * @param rlDirection Rear-right motor direction polarity.
+ * @param rlDirection Rear-left motor direction polarity.
  * @param rrDirection Rear-right motor direction polarity.
  * @param initialKs Static friction feedforward constant ($k_S$).
  * @param useClosedLoopVelocity Enables FTC SDK velocity closed-loop control mode on motor encoders.
@@ -178,7 +178,8 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * Solves inverse kinematics for chassis speeds and updates physical motor outputs.
      * Zero-GC execution loop.
      * 
-     * @param driveState State object containing target linear $(v_x, v_y)$ ($m/s$) and angular $\omega$ ($rad/s$) velocities.
+     * @param driveState State containing normalized drive efforts; this FTC boundary scales them by
+     * [maxWheelSpeedMetersPerSecond] and the kinematic radius.
      * @param kinematics Mecanum kinematics model solver.
      * @param batteryVolts Current measured battery bus voltage in Volts ($V$).
      * @param dtSeconds Loop time step interval in seconds ($s$).
@@ -194,9 +195,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val rawForward = driveState.xVelocityMetersPerSecond * maxSpeed
         val rawLeft = driveState.yVelocityMetersPerSecond * maxSpeed
 
-        val (forward, left) = Pair(rawForward, rawLeft)
-
-        kinematics.toWheelSpeeds(forward, left, omega, speedBuffer)
+        kinematics.toWheelSpeeds(rawForward, rawLeft, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
 
         apply(
@@ -282,4 +281,3 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         motorCluster.updateInputs()
     }
 }
-

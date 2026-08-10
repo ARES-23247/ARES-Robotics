@@ -7,9 +7,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.ScheduledExecutorService
 
 /**
- * Object implementation for Task Timeout Manager.
+ * Process-wide timeout registry with both executor-driven and watchdog detection.
  *
- * Asynchronous superstructure task sequence execution unit.
+ * [isTimedOut] compares executor-supplied elapsed time. A single daemon watchdog also checks
+ * configured tasks every 50 ms against [RobotClock] and marks them failed. Timeout comparison is
+ * strict (`elapsed > timeout`). [reset] is required to release task keys and their start times.
  */
 object TaskTimeoutManager {
     private val timeouts = ConcurrentHashMap<Task, Long>()
@@ -30,43 +32,23 @@ object TaskTimeoutManager {
         }, 50, 50, TimeUnit.MILLISECONDS)
     }
 
-    /**
-     * setTimeout declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Sets/replaces [task]'s timeout duration in milliseconds. */
     fun setTimeout(task: Task, ms: Long) {
         timeouts[task] = ms
     }
 
-    /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Records [RobotClock.currentTimeMillis] as [task]'s watchdog origin. */
     fun start(task: Task) {
         startTimes[task] = RobotClock.currentTimeMillis()
     }
     
-    /**
-     * reset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Removes both timeout configuration and watchdog start time for [task]. */
     fun reset(task: Task) {
         timeouts.remove(task)
         startTimes.remove(task)
     }
 
-    /**
-     * isTimedOut declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Tests caller-supplied [elapsedMs] against [task]'s configured strict timeout. */
     fun isTimedOut(task: Task, elapsedMs: Long): Boolean {
         val timeoutMs = timeouts[task] ?: return false
         return elapsedMs > timeoutMs

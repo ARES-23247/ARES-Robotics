@@ -16,8 +16,15 @@ import org.dyn4j.geometry.Vector2
 import java.io.File
 
 /**
- * Manages the Dyn4j 2D top-down physics world, robot body creation, perimeter walls,
- * static field obstacles, and dynamic game piece elements.
+ * Owns the center-origin Dyn4j top-down world and its robot/field bodies.
+ *
+ * Distances are meters and body rotations are CCW-positive radians. The FTC field is bounded at
+ * approximately ±1.825 m on each axis. [loadFieldElements] removes prior dynamic field content
+ * before loading a supplied configuration; when no configuration is supplied it searches known
+ * development checkout locations and leaves a missing/invalid asset category empty.
+ *
+ * Dyn4j world mutation is single-thread-owned by the simulation loop. Public body collections are
+ * exposed for visualization but callers must not mutate them concurrently with physics stepping.
  */
 class SimPhysicsWorld {
     val world = World<Body>()
@@ -42,10 +49,8 @@ class SimPhysicsWorld {
     }
 
     /**
-     * setupSpawnPose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Hard-sets the alliance spawn transform and returns the applied pose.
+     * Red starts at `(0, -1.2, +π/2)` and Blue at `(0, +1.2, -π/2)` in the center-origin frame.
      */
     fun setupSpawnPose(isRedAlliance: Boolean): Pose2d {
         val startPose = if (isRedAlliance) {
@@ -59,10 +64,8 @@ class SimPhysicsWorld {
     }
 
     /**
-     * loadFieldElements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Replaces obstacles and game pieces from [activeConfig], or performs best-effort asset discovery
+     * when it is `null`. The active dashboard field topics are updated for successfully loaded data.
      */
     fun loadFieldElements(activeConfig: RobotFieldConfig?) {
         for (body in activeObstacles) {
@@ -165,7 +168,11 @@ class SimPhysicsWorld {
         }
     }
 
-    /** Replaces only the static obstacles from an ARES-Analytics field-editor payload. */
+    /**
+     * Replaces only static obstacles from an ARES-Analytics JSON-array payload.
+     * Returns `false` without changing existing obstacles when parsing fails; once parsing succeeds,
+     * replacement and NT4 publication occur synchronously on the caller's thread.
+     */
     fun replaceObstaclesFromAnalyticsJson(json: String): Boolean {
         return try {
             if (!com.google.gson.JsonParser.parseString(json).isJsonArray) return false

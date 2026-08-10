@@ -398,6 +398,50 @@ object PoseEstimator {
     }
 
     /**
+     * Mirrors the output of an upstream authoritative pose estimator into the shared
+     * robot state without applying a second prediction or correction step.
+     *
+     * This is used by platforms such as CTRE swerve where wheel, gyro, and vision
+     * observations have already been fused. Treating that pose as raw odometry would
+     * rotate field-frame corrections again and give the local covariance a false
+     * statistical meaning.
+     */
+    fun acceptExternalEstimate(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        xMeters: Double,
+        yMeters: Double,
+        headingRadians: Double
+    ): PoseEstimatorState {
+        if (!xMeters.isFinite() || !yMeters.isFinite() || !headingRadians.isFinite()) {
+            return state
+        }
+
+        val normalizedHeading = wrapAngle(headingRadians)
+        state.estimatedPoseX = xMeters
+        state.estimatedPoseY = yMeters
+        state.estimatedPoseHeading = normalizedHeading
+        state.lastInnovationX = 0.0
+        state.lastInnovationY = 0.0
+        state.lastInnovationTheta = 0.0
+        state.lastKalmanGain.fill(0.0)
+        state.lastMeasurementAccepted = false
+        state.lastRejectionReason = null
+
+        // Preserve the upstream estimator's pose history for replay/telemetry consumers.
+        // qScale=0 records that ARES did not apply local process noise to this sample.
+        state.history.addEntryDirect(
+            timestampMs,
+            xMeters,
+            yMeters,
+            normalizedHeading,
+            state.covariance,
+            0.0
+        )
+        return state
+    }
+
+    /**
      * Fuses an asynchronous 3D AprilTag vision observation with statistical Mahalanobis distance outlier rejection and trajectory rewind.
      *
      * @param state Active EKF state snapshot.

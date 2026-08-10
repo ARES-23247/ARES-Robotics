@@ -1,58 +1,24 @@
 package com.qualcomm.robotcore.hardware
 
 /**
- * Mock representation of an FTC [HardwareDevice].
+ * Minimal source-compatible subset of the FTC SDK hardware-device contract.
+ * Default methods expose deterministic metadata and own no native resources.
  */
 interface HardwareDevice {
-    /**
-     * getManufacturer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns [Manufacturer.Unknown] unless a concrete mock overrides it. */
     fun getManufacturer(): Manufacturer = Manufacturer.Unknown
-    /**
-     * getDeviceName declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns a deterministic desktop device label. */
     fun getDeviceName(): String = "MockDevice"
-    /**
-     * getConnectionInfo declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns a deterministic desktop connection label. */
     fun getConnectionInfo(): String = "MockConnection"
-    /**
-     * getVersion declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Returns mock API version `1`. */
     fun getVersion(): Int = 1
-    /**
-     * resetDeviceConfigurationForOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Default no-op because the base mock has no configuration state. */
     fun resetDeviceConfigurationForOpMode() {}
-    /**
-     * close declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Default no-op because the base mock owns no external resource. */
     fun close() {}
 
-    /**
-     * Manufacturer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** FTC SDK-compatible manufacturer values used by first-party hardware wrappers. */
     enum class Manufacturer {
         Unknown, Other, Lego, HiTechnic, ModernRobotics, Adafruit, Matrix,
         Lynx, AMS, STMicroelectronics, StepperMotor, I2cDeviceSynchImplSimple,
@@ -60,6 +26,10 @@ interface HardwareDevice {
     }
 }
 
+/**
+ * In-memory named device mapping. Iteration over an empty voltage-sensor mapping yields a synthetic
+ * 12 V source so desktop robot code has a deterministic nominal supply.
+ */
 open class DeviceMapping<T : HardwareDevice>(val deviceType: Class<T>) : Iterable<T> {
     private val map = mutableMapOf<String, T>()
     open fun get(deviceName: String): T? = map[deviceName]
@@ -75,7 +45,10 @@ open class DeviceMapping<T : HardwareDevice>(val deviceType: Class<T>) : Iterabl
 }
 
 /**
- * Mock representation of an FTC [HardwareMap].
+ * Base FTC hardware-map double.
+ *
+ * Named mappings can be populated directly. Generic [get] and [getAll] deliberately throw until a
+ * test/simulator subclass supplies lookup behavior, preventing silent use of missing hardware.
  */
 open class HardwareMap {
     @JvmField val voltageSensor: DeviceMapping<VoltageSensor> = DeviceMapping(VoltageSensor::class.java)
@@ -92,62 +65,27 @@ open class HardwareMap {
     open fun <T> getNamesOf(device: T): Set<String> {
         return emptySet()
     }
-    /**
-     * remove declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility stub that reports success without mutating a backing serial-number registry. */
     open fun remove(serialNumber: String, deviceName: String): Boolean {
         return true
     }
-    /**
-     * remove declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility stub that reports success without mutating a backing serial-number registry. */
     open fun remove(serialNumber: com.qualcomm.robotcore.util.SerialNumber, deviceName: String): Boolean {
         return true
     }
-    /**
-     * remove declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility stub that reports success without mutating a backing serial-number registry. */
     open fun remove(serialNumber: String, device: HardwareDevice): Boolean {
         return true
     }
-    /**
-     * remove declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility stub that reports success without mutating a backing serial-number registry. */
     open fun remove(serialNumber: com.qualcomm.robotcore.util.SerialNumber, device: HardwareDevice): Boolean {
         return true
     }
-    /**
-     * put declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; populate the typed [DeviceMapping] fields or override this method. */
     open fun put(serialNumber: String, deviceName: String, device: HardwareDevice) {}
-    /**
-     * put declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; populate the typed [DeviceMapping] fields or override this method. */
     open fun put(serialNumber: com.qualcomm.robotcore.util.SerialNumber, deviceName: String, device: HardwareDevice) {}
-    /**
-     * put declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; populate the typed [DeviceMapping] fields or override this method. */
     open fun put(deviceName: String, device: HardwareDevice) {}
 }
 

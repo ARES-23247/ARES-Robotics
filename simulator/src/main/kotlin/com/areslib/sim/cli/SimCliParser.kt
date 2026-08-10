@@ -26,12 +26,6 @@ data class SimCliArgs(
  */
 object SimCliParser {
 
-    /**
-     * parseArgs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun parseArgs(args: Array<String>): SimCliArgs {
         var fieldConfigArg: String? = null
         var watchFieldConfig = false
@@ -79,12 +73,6 @@ object SimCliParser {
         )
     }
 
-    /**
-     * loadFieldConfig declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadFieldConfig(fieldConfigArg: String?): RobotFieldConfig? {
         if (fieldConfigArg == null) return null
         val content = loadConfigContent(fieldConfigArg) ?: return null
@@ -102,12 +90,6 @@ object SimCliParser {
         }
     }
 
-    /**
-     * loadEkfOverrides declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadEkfOverrides(): Vector3? {
         var configFile = File("config_override.json")
         if (!configFile.exists()) {

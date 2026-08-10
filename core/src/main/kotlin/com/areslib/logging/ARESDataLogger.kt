@@ -14,9 +14,20 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Asynchronous, thread-safe file-based CSV data logger.
- * Offloads all file writing operations to a background thread to guarantee
- * zero impact on the robot controller's primary control loop.
+ * Asynchronous CSV logger with a bounded producer queue and a single writer thread.
+ *
+ * [logFrame] never performs file IO, but it briefly takes the queue-state lock and may reject a
+ * frame when the 1,000-entry queue is full or shutdown has begun. Rejections are observable through
+ * [droppedFrameCount]. The first accepted frame fixes the stable CSV columns; keys first seen later
+ * are preserved as JSON in the `_ExtraFieldsJson` column ([EXTRA_FIELDS_COLUMN]).
+ *
+ * A submitted map is owned by the logger until it is written or rejected and must not be mutated by
+ * the caller. Any [HashMap] passed to [logFrame] is cleared and returned to the logger's pool, so use
+ * [obtainMap] for pooled producer frames and do not retain that reference. [stop] blocks until every
+ * accepted frame is drained and the writer is closed.
+ *
+ * This class is thread-safe for producers and shutdown. It reduces control-loop IO latency; it does
+ * not promise allocation-free logging when the pool is exhausted or when rows are serialized.
  */
 class ARESDataLogger(val mode: String = "Init") {
 
@@ -34,10 +45,10 @@ class ARESDataLogger(val mode: String = "Init") {
     val droppedFrameCount: Long
         get() = droppedFrames.get()
 
-    // GC-Free Map Pool to eliminate allocations during telemetry updates
+    // Reuse producer maps when available; obtainMap falls back to allocation under burst load.
     private val mapPool = LinkedBlockingQueue<HashMap<String, Any>>()
 
-    // Executor that processes the queue sequentially using daemon threads to prevent JVM hanging
+    // Single daemon worker preserves accepted-frame order without keeping the JVM alive by itself.
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(),
@@ -78,14 +89,15 @@ class ARESDataLogger(val mode: String = "Init") {
     }
 
     /**
-     * Obtains a cleared HashMap from the reusable pool, or instantiates a new one if pool is depleted.
+     * Returns a cleared producer map. Ownership transfers back to the logger when passed to
+     * [logFrame]; callers must not reuse or inspect it afterward.
      */
     fun obtainMap(): HashMap<String, Any> {
         return mapPool.poll() ?: HashMap()
     }
 
     /**
-     * Clears and returns a HashMap to the pool for future reuse.
+     * Clears and returns [map] to the pool. Do not recycle a map that is queued for writing.
      */
     fun recycleMap(map: HashMap<String, Any>) {
         map.clear()
@@ -93,7 +105,10 @@ class ARESDataLogger(val mode: String = "Init") {
     }
 
     /**
-     * Queues a frame of key-value telemetry data to be logged.
+     * Attempts to enqueue [data] without waiting for queue capacity.
+     *
+     * Ownership transfers immediately, including on rejection. The frame is counted as dropped when
+     * shutdown has started or the queue is full.
      */
     fun logFrame(data: Map<String, Any>) {
         synchronized(queueStateLock) {
@@ -138,7 +153,7 @@ class ARESDataLogger(val mode: String = "Init") {
         }
     }
 
-    // Pre-allocated StringBuilder for zero-allocation CSV row writing
+    // Reused builders reduce steady-state row formatting churn.
     private val csvBuilder = StringBuilder(512)
     private val extraFieldsBuilder = StringBuilder(256)
 
@@ -316,7 +331,7 @@ class ARESDataLogger(val mode: String = "Init") {
                 System.err.println("ARESDataLogger: Failed to write CSV row: ${e.message}")
             }
         } finally {
-            // Recycle the map if it was obtained from the map pool to eliminate GC pressure
+            // HashMap inputs follow the ownership contract and return to this logger's pool.
             if (frame is HashMap<String, Any>) {
                 recycleMap(frame)
             }
@@ -335,7 +350,9 @@ class ARESDataLogger(val mode: String = "Init") {
     }
 
     /**
-     * Gracefully stops the background logging worker after flushing all remaining queued items.
+     * Stops accepting frames, waits for the queue to drain, flushes, and closes the writer.
+     * Safe to call repeatedly. If interrupted while waiting, shutdown still completes and the
+     * interrupt status is restored before return.
      */
     fun stop() {
         synchronized(queueStateLock) {

@@ -5,13 +5,18 @@ import java.io.File
 import java.util.jar.JarFile
 
 /**
- * Handles fast, zero-dependency OpMode discovery (scanning classpath for @TeleOp and @Autonomous annotations),
- * publishing lists to NetworkTables, and executing OpModes on background threads.
+ * Discovers FTC OpModes by scanning classpath directories/JARs and publishes selectable names to
+ * both the custom and WPILib NT4 servers.
+ *
+ * Discovery is an initialization-time, reflective operation and is intentionally not a hot path.
+ * Unloadable classes and optional SDK annotations are skipped. If no enabled OpMode is found, the
+ * ARES hardware test OpMode is advertised as a fallback.
  */
 object SimOpModeRunner {
 
     /**
-     * Scans classpath for OpModes and publishes JSON lists to NT4 for the Driver Station UI.
+     * Scans the current classpath and publishes enabled TeleOp/Autonomous class-name JSON arrays.
+     * Failures are logged and do not escape to simulator startup.
      */
     fun scanAndPublishOpModes() {
         try {
@@ -143,7 +148,9 @@ object SimOpModeRunner {
     }
 
     /**
-     * Dynamically instantiates an OpMode class by name, with robust package name resolution fallback.
+     * Resolves [opModeClassName] as a fully qualified class, a known team package name, a discovered
+     * simple/annotation name, or finally [com.areslib.ftc.hardware.AresHardwareTestOpMode].
+     * Returns `null` only when no name/instance is supplied or the final fallback cannot be created.
      */
     fun createOpModeInstance(
         opModeArg: LinearOpMode?,
