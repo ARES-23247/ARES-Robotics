@@ -43,8 +43,7 @@ else
     --tests org.firstinspires.ftc.teamcode.AutoAssetContractTest \
     --no-daemon --console=plain
   run_gradle ARES-FRC test -Pares.usePublishedLib=true \
-    --tests com.areslib.frc.robot.FRCAutoOrchestratorTest \
-    --tests com.areslib.frc.robot.FRCAutoWaitStateRegressionTest \
+    --tests com.areslib.frc.robot.FrcNativeAutoContractTest \
     --tests com.areslib.frc.robot.FRCAutoAllianceMirroringContractTest \
     --console=plain
 fi

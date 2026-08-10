@@ -23,7 +23,9 @@ the four Gradle builds from overwriting ARESLib outputs while another build read
    reloads, versions, and deploy-loads an `.aresauto` document.
 4. FTC checks every deployed native auto against the checked-in action manifest and the commands
    registered by the season robot, then compiles each document with the robot-side compiler.
-5. FRC runs its current autonomous progression, wait-state, and alliance-mirroring regressions.
+5. FRC checks every deployed native auto against its offline/runtime action catalogs, compiles each
+   document for both alliances, verifies alliance pose seeding and field-footprint rejection, and
+   executes a command timeline through the production task runner.
 
 Run the complete test suites instead of the focused contract with:
 
@@ -35,9 +37,9 @@ Run the complete test suites instead of the focused contract with:
 ./verify-autos.sh --full
 ```
 
-The native GUI-to-robot `.aresauto` pipeline is currently enabled for FTC. FRC remains protected by
-its existing orchestrator tests until it is migrated to the shared native compiler; adding that
-adapter and the corresponding asset contract is the next cross-league integration step.
+The native GUI-to-robot `.aresauto` pipeline is enabled for both FTC and FRC. Each league keeps its
+season action catalog and deploy assets in its conventional project asset directory, while both use
+the same shared schema, compiler, trajectory providers, named-command registry, and task executor.
 
 ## GitHub Actions
 

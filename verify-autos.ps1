@@ -67,8 +67,7 @@ if ($Full) {
     Invoke-AresGradle "ARES-FRC" @(
         "test",
         "-Pares.usePublishedLib=true",
-        "--tests", "com.areslib.frc.robot.FRCAutoOrchestratorTest",
-        "--tests", "com.areslib.frc.robot.FRCAutoWaitStateRegressionTest",
+        "--tests", "com.areslib.frc.robot.FrcNativeAutoContractTest",
         "--tests", "com.areslib.frc.robot.FRCAutoAllianceMirroringContractTest",
         "--console=plain"
     )
