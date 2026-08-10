@@ -7,7 +7,6 @@ import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.ftc.telemetry.FtcTelemetryManager
 import com.areslib.ftc.vision.FtcVisionTracker
-import com.areslib.hardware.sensor.ImuIO
 import com.areslib.hardware.sensor.ImuInputs
 import com.areslib.Store
 import com.areslib.util.RobotClock
@@ -245,7 +244,6 @@ class FtcMecanumCalibrationController {
      * @param store Redux state store reference.
      * @param telemetryManager Telemetry manager for NT4 logging.
      * @param mecanumIO Drivetrain hardware IO cluster.
-     * @param imuIO Control Hub IMU IO interface (or `null`).
      * @param visionTracker Vision tracking engine reference.
      * @param ticksPerMeterSetting Configured encoder ticks per meter setting ($ticks/m$).
      * @param defaultTicksPerMeter Default fallback encoder ticks per meter ($ticks/m$).
@@ -255,7 +253,6 @@ class FtcMecanumCalibrationController {
         store: Store,
         telemetryManager: FtcTelemetryManager,
         mecanumIO: MecanumHardwareIO,
-        imuIO: ImuIO?,
         visionTracker: FtcVisionTracker,
         ticksPerMeterSetting: Double,
         defaultTicksPerMeter: Double

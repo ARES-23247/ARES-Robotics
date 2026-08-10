@@ -297,7 +297,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         telemetryManager.dataLoggingTelemetry.logDriveMotor("rr", mecanumIO.rrIO)
 
         calibrationController.publishRobotTelemetry(
-            timestamp, store, telemetryManager, mecanumIO, imuIO, visionTracker, ticksPerMeter, 2000.0
+            timestamp, store, telemetryManager, mecanumIO, visionTracker, ticksPerMeter, 2000.0
         )
     }
 
