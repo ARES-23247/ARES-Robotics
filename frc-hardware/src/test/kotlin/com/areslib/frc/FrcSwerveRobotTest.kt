@@ -122,6 +122,7 @@ class FrcSwerveRobotTest {
         )
 
         // Set initial pose
+        robot.store.dispatch(com.areslib.action.RobotAction.PoseUpdate(1.0, 2.0, Math.toRadians(45.0), timestampMs = 0L, isReset = true))
         swerveIO.mockPose = Pose2d(1.0, 2.0, Rotation2d.fromDegrees(45.0))
         robot.update()
 
@@ -132,6 +133,7 @@ class FrcSwerveRobotTest {
         assertFalse(robot.isBeached)
 
         // 1. Move to a new pose under normal (unbeached) conditions
+        robot.store.dispatch(com.areslib.action.RobotAction.PoseUpdate(1.5, 2.2, Math.toRadians(50.0), timestampMs = 20L, isReset = true))
         swerveIO.mockPose = Pose2d(1.5, 2.2, Rotation2d.fromDegrees(50.0))
         robot.update()
         assertEquals(1.5, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-6)

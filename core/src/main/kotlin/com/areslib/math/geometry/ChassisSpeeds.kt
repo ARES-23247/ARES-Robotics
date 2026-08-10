@@ -47,11 +47,33 @@ data class ChassisSpeeds(
         ): ChassisSpeeds {
             val cos = robotHeading.cos
             val sin = robotHeading.sin
-            // Inverse rotation
             val robotX = vxMetersPerSecond * cos + vyMetersPerSecond * sin
             val robotY = -vxMetersPerSecond * sin + vyMetersPerSecond * cos
-            
             return ChassisSpeeds(robotX, robotY, omegaRadiansPerSecond)
+        }
+
+        /**
+         * Discretizes continuous-time chassis speeds over timestep [dtSeconds] using second-order kinematic skew correction.
+         * Counter-rotates the velocity vector by $-\Delta\theta / 2$ to prevent lateral drift during high-speed rotation.
+         *
+         * @param vxMetersPerSecond Continuous X velocity in meters per second ($m/s$).
+         * @param vyMetersPerSecond Continuous Y velocity in meters per second ($m/s$).
+         * @param omegaRadiansPerSecond Rotational velocity in radians per second ($rad/s$).
+         * @param dtSeconds Loop period duration in seconds ($s$).
+         * @return Discretized [ChassisSpeeds].
+         */
+        fun discretize(
+            vxMetersPerSecond: Double,
+            vyMetersPerSecond: Double,
+            omegaRadiansPerSecond: Double,
+            dtSeconds: Double
+        ): ChassisSpeeds {
+            val dTheta = omegaRadiansPerSecond * dtSeconds
+            val cos = kotlin.math.cos(-dTheta * 0.5)
+            val sin = kotlin.math.sin(-dTheta * 0.5)
+            val discVx = vxMetersPerSecond * cos - vyMetersPerSecond * sin
+            val discVy = vxMetersPerSecond * sin + vyMetersPerSecond * cos
+            return ChassisSpeeds(discVx, discVy, omegaRadiansPerSecond)
         }
     }
 }

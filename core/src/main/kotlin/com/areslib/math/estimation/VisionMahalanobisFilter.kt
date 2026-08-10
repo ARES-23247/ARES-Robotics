@@ -138,12 +138,16 @@ object VisionMahalanobisFilter {
         val tagPose = activeTags[measurement.tagId]
         var incidenceScale = 1.0
         val distance = if (tagPose != null) {
-            val dx = tagPose.x - baseEntry.x
-            val dy = tagPose.y - baseEntry.y
-            val losHeading = kotlin.math.atan2(dy, dx)
-            val phi = wrapAngle(losHeading - tagPose.rotation.z)
-            val cosPhi = kotlin.math.cos(phi)
-            incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 10.0)
+            val dx = baseEntry.x - tagPose.x
+            val dy = baseEntry.y - tagPose.y
+            val dz = 0.0 - tagPose.z
+            val dist3d = kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+            if (dist3d > 1e-4) {
+                val losAngle = kotlin.math.atan2(-dy, -dx)
+                val tagYaw = tagPose.rotation.z
+                val cosPhi = kotlin.math.abs(kotlin.math.cos(losAngle - tagYaw))
+                incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 1.0)
+            }
             kotlin.math.sqrt(dx * dx + dy * dy)
         } else {
             kotlin.math.abs(measurement.robotPoseTargetSpace.z)

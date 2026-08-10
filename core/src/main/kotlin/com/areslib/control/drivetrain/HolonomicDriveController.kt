@@ -189,6 +189,6 @@ class HolonomicDriveController(
             vyRobot *= scale
         }
 
-        return ChassisSpeeds(vxRobot, vyRobot, thetaFeedback)
+        return ChassisSpeeds.discretize(vxRobot, vyRobot, thetaFeedback, dtSeconds)
     }
 }

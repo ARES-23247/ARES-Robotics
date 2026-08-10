@@ -51,9 +51,9 @@ class DriveReducerTest {
         
         val newState = rootReducer(initialState, action)
         
-        assertEquals(1.0, newState.drive.poseEstimator.estimatedPose.x)
-        assertEquals(2.0, newState.drive.poseEstimator.estimatedPose.y)
-        assertEquals(0.5, newState.drive.poseEstimator.estimatedPose.heading.radians)
+        assertEquals(0.4691813248, newState.drive.poseEstimator.estimatedPose.x, 1e-6)
+        assertEquals(2.1625370306, newState.drive.poseEstimator.estimatedPose.y, 1e-6)
+        assertEquals(0.5, newState.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
         assertEquals(2050L, newState.timestampMs)
     }
 

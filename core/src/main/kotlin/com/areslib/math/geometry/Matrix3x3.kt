@@ -131,7 +131,7 @@ data class Matrix3x3(
                   m01 * (m10 * m22 - m12 * m20) +
                   m02 * (m10 * m21 - m11 * m20)
 
-        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-9) return Matrix3x3() // Return zero matrix if non-invertible
+        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-24) return Matrix3x3() // Return zero matrix if non-invertible
 
         val invDet = 1.0 / det
 

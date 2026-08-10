@@ -210,18 +210,40 @@ object OdometryFusionController {
         val movementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
         scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale * dtSeconds)
 
-        val newX = state.estimatedPoseX + deltaX
-        val newY = state.estimatedPoseY + deltaY
-        
         val slipWeight = if (slipScale >= 10.0) 0.8 else 0.0
         val blendedDeltaHeading = (1.0 - slipWeight) * correctedDeltaHeading + slipWeight * (correctedGyroRate * dtSeconds)
         val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + blendedDeltaHeading)
-        
-        val thetaMid = state.estimatedPoseHeading + blendedDeltaHeading * 0.5
+
+        // 1. Convert input field-frame deltas to robot-local displacement
         val cosEst = kotlin.math.cos(state.estimatedPoseHeading)
         val sinEst = kotlin.math.sin(state.estimatedPoseHeading)
         val robotLocalDx =  deltaX * cosEst + deltaY * sinEst
         val robotLocalDy = -deltaX * sinEst + deltaY * cosEst
+
+        // 2. SE(2) Lie Group Pose Exponential Integration (Twist2d -> Pose2d exact constant-curvature arc integration)
+        val dTheta = blendedDeltaHeading
+        val s: Double
+        val c: Double
+        if (kotlin.math.abs(dTheta) < 1e-6) {
+            s = 1.0 - (dTheta * dTheta) / 6.0
+            c = dTheta * 0.5
+        } else {
+            s = kotlin.math.sin(dTheta) / dTheta
+            c = (1.0 - kotlin.math.cos(dTheta)) / dTheta
+        }
+
+        // Arc displacement in robot frame
+        val dxArc = s * robotLocalDx - c * robotLocalDy
+        val dyArc = c * robotLocalDx + s * robotLocalDy
+
+        // 3. Transform arc displacement back to field frame
+        val fieldDx = dxArc * cosEst - dyArc * sinEst
+        val fieldDy = dxArc * sinEst + dyArc * cosEst
+
+        val newX = state.estimatedPoseX + fieldDx
+        val newY = state.estimatedPoseY + fieldDy
+        
+        val thetaMid = state.estimatedPoseHeading + blendedDeltaHeading * 0.5
         
         val newCovariance = scratchCov
 
