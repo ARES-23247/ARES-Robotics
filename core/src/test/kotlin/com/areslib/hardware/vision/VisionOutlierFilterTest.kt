@@ -31,7 +31,7 @@ class VisionOutlierFilterTest {
     fun testValidMeasurement() {
         val measurement = VisionMeasurement(
             timestampMs = 100L,
-            targetPose = Pose3d(Translation3d(2.0, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.05)),
+            targetPose = Pose3d(Translation3d(1.0, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.05)),
             tagId = 1,
             ambiguity = 0.05
         )
@@ -129,7 +129,7 @@ class VisionOutlierFilterTest {
         val deviationRad = Math.toRadians(35.0)
         val measurement = VisionMeasurement(
             timestampMs = 100L,
-            targetPose = Pose3d(Translation3d(2.0, 0.0, 0.0), Rotation3d(0.0, 0.0, deviationRad)),
+            targetPose = Pose3d(Translation3d(1.0, 0.0, 0.0), Rotation3d(0.0, 0.0, deviationRad)),
             tagId = 1,
             ambiguity = 0.05
         )
@@ -144,19 +144,19 @@ class VisionOutlierFilterTest {
      * @return Corresponding output value or Unit.
      */
     fun test3DFieldBoundaryRejections() {
-        // X out of bounds (> 2.5)
+        // X out of bounds beyond the 12-foot FTC field.
         val outOfBoundsX = VisionMeasurement(
             timestampMs = 100L,
-            targetPose = Pose3d(Translation3d(2.6, 0.0, 0.2), Rotation3d(0.0, 0.0, 0.0)),
+            targetPose = Pose3d(Translation3d(1.9, 0.0, 0.2), Rotation3d(0.0, 0.0, 0.0)),
             tagId = 1,
             ambiguity = 0.05
         )
         assertFalse(filter.isValid(outOfBoundsX, robotHeadingRad, robotPose))
 
-        // Y out of bounds (< -2.5)
+        // Y out of bounds beyond the 12-foot FTC field.
         val outOfBoundsY = VisionMeasurement(
             timestampMs = 100L,
-            targetPose = Pose3d(Translation3d(0.0, -2.6, 0.2), Rotation3d(0.0, 0.0, 0.0)),
+            targetPose = Pose3d(Translation3d(0.0, -1.9, 0.2), Rotation3d(0.0, 0.0, 0.0)),
             tagId = 1,
             ambiguity = 0.05
         )
@@ -229,6 +229,78 @@ class VisionOutlierFilterTest {
 
         // Under 2.5G limit (e.g. 2.0G dynamic shock) should pass
         assertTrue(filter.isValid(measurement, robotHeadingRad, robotPose, linearAccelXG = 2.0, linearAccelYG = 0.0, linearAccelZG = 1.0))
+    }
+
+    @Test
+    fun `rotated robot footprint rejects center-inside poses outside field edges and corner`() {
+        val config = VisionFilterConfig(
+            maxDistanceMeters = 10.0,
+            maxRotationDeviationRad = Math.PI,
+            minFieldX = -1.0,
+            maxFieldX = 1.0,
+            minFieldY = -1.0,
+            maxFieldY = 1.0,
+            robotLengthMeters = 0.6,
+            robotWidthMeters = 0.4,
+            fieldBoundsToleranceMeters = 0.02
+        )
+        val footprintFilter = VisionOutlierFilter(config)
+        val cases = listOf(
+            Triple(0.75, 0.0, 0.0),
+            Triple(0.0, 0.75, Math.PI / 2.0),
+            Triple(0.67, 0.67, Math.PI / 4.0)
+        )
+
+        for ((x, y, heading) in cases) {
+            val pose = Pose2d(x, y, com.areslib.math.geometry.Rotation2d(heading))
+            val measurement = VisionMeasurement(
+                timestampMs = 100L,
+                targetPose = Pose3d(Translation3d(x, y, 0.0), Rotation3d(0.0, 0.0, heading)),
+                tagId = 1,
+                ambiguity = 0.01
+            )
+
+            assertFalse(
+                footprintFilter.isValid(measurement, heading, pose),
+                "center-inside pose at ($x, $y, $heading) must fail when a footprint corner crosses the field"
+            )
+        }
+    }
+
+    @Test
+    fun `rotated robot footprint accepts valid poses at tolerated boundary`() {
+        val config = VisionFilterConfig(
+            maxDistanceMeters = 10.0,
+            maxRotationDeviationRad = Math.PI,
+            minFieldX = -1.0,
+            maxFieldX = 1.0,
+            minFieldY = -1.0,
+            maxFieldY = 1.0,
+            robotLengthMeters = 0.6,
+            robotWidthMeters = 0.4,
+            fieldBoundsToleranceMeters = 0.02
+        )
+        val footprintFilter = VisionOutlierFilter(config)
+        val cases = listOf(
+            Triple(0.72, 0.80, 0.0),
+            Triple(0.666, 0.666, Math.PI / 4.0),
+            Triple(0.80, 0.72, Math.PI / 2.0)
+        )
+
+        for ((x, y, heading) in cases) {
+            val pose = Pose2d(x, y, com.areslib.math.geometry.Rotation2d(heading))
+            val measurement = VisionMeasurement(
+                timestampMs = 100L,
+                targetPose = Pose3d(Translation3d(x, y, 0.0), Rotation3d(0.0, 0.0, heading)),
+                tagId = 1,
+                ambiguity = 0.01
+            )
+
+            assertTrue(
+                footprintFilter.isValid(measurement, heading, pose),
+                "pose at ($x, $y, $heading) should fit within the configured boundary tolerance"
+            )
+        }
     }
 
     @Test

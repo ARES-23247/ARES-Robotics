@@ -85,7 +85,7 @@ class FtcLimelightIOTest {
      */
     fun testFiducialParsing() {
         val ftcPose = Pose3D(
-            Position(DistanceUnit.METER, 1.0, 2.0, 0.5, 0),
+            Position(DistanceUnit.METER, 1.0, 1.0, 0.5, 0),
             YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
         )
         val relativePose = Pose3D(
@@ -136,7 +136,7 @@ class FtcLimelightIOTest {
             config = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
             measurement = measurement,
             robotHeadingRad = 0.0,
-            robotPose = com.areslib.math.geometry.Pose2d(1.0, 2.0, com.areslib.math.geometry.Rotation2d())
+            robotPose = com.areslib.math.geometry.Pose2d(1.0, 1.0, com.areslib.math.geometry.Rotation2d())
         ))
     }
 

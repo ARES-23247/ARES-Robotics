@@ -224,6 +224,9 @@ object DesktopSimLauncher {
             TelemetryPublisher.pollWebInputs(driverStation)?.let { obstaclesJson ->
                 physicsWorld.replaceObstaclesFromAnalyticsJson(obstaclesJson)
             }
+            TelemetryPublisher.pollWebFieldConfig()?.let { fieldConfigJson ->
+                physicsWorld.replaceFieldDocumentJson(fieldConfigJson)
+            }
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
             val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()

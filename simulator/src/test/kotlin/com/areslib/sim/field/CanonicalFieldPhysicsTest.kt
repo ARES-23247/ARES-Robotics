@@ -3,10 +3,15 @@ package com.areslib.sim.field
 import com.areslib.state.RobotFieldElementInstance
 import com.areslib.state.RobotFieldElementType
 import com.areslib.state.RobotFieldObstacle
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldDocument
+import com.areslib.sim.physics.SimPhysicsWorld
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class CanonicalFieldPhysicsTest {
     @Test
@@ -53,5 +58,24 @@ class CanonicalFieldPhysicsTest {
 
         assertEquals(0.42, body.fixtures.single().friction, 1e-9)
         assertEquals(0.81, body.fixtures.single().restitution, 1e-9)
+    }
+
+    @Test
+    fun liveCanonicalDocumentReplacesObstaclesAndGamePiecesTogether() {
+        val physics = SimPhysicsWorld()
+        val config = RobotFieldConfig(
+            revision = 42,
+            obstacles = listOf(RobotFieldObstacle(id = "wall", x = 0.4, y = 0.2, width = 0.5, height = 0.1)),
+            elementTypes = listOf(RobotFieldElementType(id = "note", shape = "sphere", diameter = 0.35)),
+            elements = listOf(RobotFieldElementInstance(id = "note-1", elementTypeId = "note", x = 0.1, y = -0.2))
+        )
+
+        assertTrue(physics.replaceFieldDocumentJson(RobotFieldDocument.encode(config)))
+        assertEquals(1, physics.activeObstacles.size)
+        assertEquals(1, physics.gamePieces.size)
+
+        assertFalse(physics.replaceFieldDocumentJson("not-json"))
+        assertEquals(1, physics.activeObstacles.size)
+        assertEquals(1, physics.gamePieces.size)
     }
 }

@@ -140,7 +140,7 @@ class SimPhysicsWorld {
      */
     fun replaceObstaclesFromAnalyticsJson(json: String): Boolean {
         return try {
-            if (!com.google.gson.JsonParser().parse(json).isJsonArray) return false
+            if (!com.google.gson.JsonParser.parseString(json).isJsonArray) return false
             val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(json)
             for (body in activeObstacles) world.removeBody(body)
             activeObstacles.clear()
@@ -150,6 +150,19 @@ class SimPhysicsWorld {
             true
         } catch (e: Exception) {
             System.err.println("Failed to apply dashboard obstacles: ${e.message}")
+            false
+        }
+    }
+
+    /** Atomically replaces all authored field content from the canonical editor document. */
+    fun replaceFieldDocumentJson(json: String): Boolean {
+        return try {
+            val config = RobotFieldDocument.decode(json)
+            RobotFieldManager.setActiveConfig(config)
+            loadFieldElements(config)
+            true
+        } catch (e: Exception) {
+            System.err.println("Failed to apply dashboard field document: ${e.message}")
             false
         }
     }

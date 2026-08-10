@@ -1,11 +1,10 @@
 package com.areslib.hardware.vision
 
+import com.areslib.math.coordinate.CoordinateTransformers
 import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Translation2d
-import com.areslib.state.VisionMeasurement
-import kotlin.math.abs
-import kotlin.math.sqrt
+import com.areslib.math.geometry.Pose3d
 import com.areslib.math.wrapAngle
+import com.areslib.state.VisionMeasurement
 
 /**
  * Filter configuration thresholds for AprilTag measurements.
@@ -14,15 +13,21 @@ data class VisionFilterConfig(
     val maxDistanceMeters: Double = 6.0,
     val maxAmbiguity: Double = 0.2,
     val maxRotationDeviationRad: Double = Math.toRadians(30.0),
-    val minFieldX: Double = -2.5,
-    val maxFieldX: Double = 2.5,
-    val minFieldY: Double = -2.5,
-    val maxFieldY: Double = 2.5,
+    val minFieldX: Double = -CoordinateTransformers.FTC_FIELD_SIZE / 2.0,
+    val maxFieldX: Double = CoordinateTransformers.FTC_FIELD_SIZE / 2.0,
+    val minFieldY: Double = -CoordinateTransformers.FTC_FIELD_SIZE / 2.0,
+    val maxFieldY: Double = CoordinateTransformers.FTC_FIELD_SIZE / 2.0,
     val minFieldZ: Double = -0.2,
     val maxFieldZ: Double = 1.0,
     val maxAngularVelocityRadPerSec: Double = 2.0,
     val maxAccelerationG: Double = 2.5,
-    val mahalanobisThreshold: Double = 18.0
+    val mahalanobisThreshold: Double = 18.0,
+    /** Full robot length along its local X axis. Zero preserves center-point-only filtering. */
+    val robotLengthMeters: Double = 0.45,
+    /** Full robot width along its local Y axis. Zero preserves center-point-only filtering. */
+    val robotWidthMeters: Double = 0.45,
+    /** Maximum distance a footprint corner may cross a field boundary to absorb vision noise. */
+    val fieldBoundsToleranceMeters: Double = 0.0254
 ) {
     companion object {
         @JvmStatic
@@ -39,6 +44,9 @@ data class VisionFilterConfig(
             maxFieldY = 9.0,
             minFieldZ = -0.2,
             maxFieldZ = 3.0,
+            robotLengthMeters = 0.0,
+            robotWidthMeters = 0.0,
+            fieldBoundsToleranceMeters = 0.0,
             maxAngularVelocityRadPerSec = 6.0,
             maxAccelerationG = 5.0
         )
@@ -101,11 +109,9 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
                 return false
             }
 
-            // 2. Check 3D Spatial Boundaries
+            // 2. Check 3D spatial boundaries using the rotated robot footprint.
             val tagPose3d = pose
-            if (tagPose3d.x < config.minFieldX || tagPose3d.x > config.maxFieldX ||
-                tagPose3d.y < config.minFieldY || tagPose3d.y > config.maxFieldY ||
-                tagPose3d.z < config.minFieldZ || tagPose3d.z > config.maxFieldZ) {
+            if (!isPoseWithinFieldBounds(config, tagPose3d)) {
                 return false
             }
 
@@ -146,6 +152,36 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             return true
         }
 
+        /**
+         * Checks an axis-aligned field against all four corners of a rotated rectangular robot.
+         * The trigonometric extents are algebraically equivalent to transforming each corner,
+         * while avoiding geometry allocations in the robot loop.
+         */
+        fun isPoseWithinFieldBounds(config: VisionFilterConfig, pose: Pose3d): Boolean {
+            if (!config.isValid() ||
+                !pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() ||
+                !pose.rotation.x.isFinite() || !pose.rotation.y.isFinite() ||
+                !pose.rotation.z.isFinite()) {
+                return false
+            }
+
+            if (pose.z < config.minFieldZ || pose.z > config.maxFieldZ) return false
+
+            val heading = pose.rotation.z
+            val absCos = kotlin.math.abs(kotlin.math.cos(heading))
+            val absSin = kotlin.math.abs(kotlin.math.sin(heading))
+            val halfLength = config.robotLengthMeters / 2.0
+            val halfWidth = config.robotWidthMeters / 2.0
+            val xExtent = absCos * halfLength + absSin * halfWidth
+            val yExtent = absSin * halfLength + absCos * halfWidth
+            val tolerance = config.fieldBoundsToleranceMeters
+
+            return pose.x - xExtent >= config.minFieldX - tolerance &&
+                pose.x + xExtent <= config.maxFieldX + tolerance &&
+                pose.y - yExtent >= config.minFieldY - tolerance &&
+                pose.y + yExtent <= config.maxFieldY + tolerance
+        }
+
         private fun VisionFilterConfig.isValid(): Boolean =
             maxDistanceMeters.isFinite() && maxDistanceMeters >= 0.0 &&
                 maxAmbiguity.isFinite() && maxAmbiguity >= 0.0 &&
@@ -153,6 +189,9 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
                 minFieldX.isFinite() && maxFieldX.isFinite() && minFieldX <= maxFieldX &&
                 minFieldY.isFinite() && maxFieldY.isFinite() && minFieldY <= maxFieldY &&
                 minFieldZ.isFinite() && maxFieldZ.isFinite() && minFieldZ <= maxFieldZ &&
+                robotLengthMeters.isFinite() && robotLengthMeters >= 0.0 &&
+                robotWidthMeters.isFinite() && robotWidthMeters >= 0.0 &&
+                fieldBoundsToleranceMeters.isFinite() && fieldBoundsToleranceMeters >= 0.0 &&
                 maxAngularVelocityRadPerSec.isFinite() && maxAngularVelocityRadPerSec >= 0.0 &&
                 maxAccelerationG.isFinite() && maxAccelerationG >= 0.0 &&
                 mahalanobisThreshold.isFinite() && mahalanobisThreshold > 0.0

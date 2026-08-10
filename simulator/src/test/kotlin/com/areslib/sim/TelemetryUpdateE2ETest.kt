@@ -107,16 +107,23 @@ class TelemetryUpdateE2ETest {
         assertEquals(rrPower, brPower, 1e-9)
 
         // 5. Verify Motor Velocities (ticks/sec)
-        val flVel = NT4Server.getDouble("Hardware/Motors/fl/Velocity", 0.0)
-        val frVel = NT4Server.getDouble("Hardware/Motors/fr/Velocity", 0.0)
-        val rlVel = NT4Server.getDouble("Hardware/Motors/rl/Velocity", 0.0)
-        val rrVel = NT4Server.getDouble("Hardware/Motors/rr/Velocity", 0.0)
+        val flVel = NT4Server.getDouble("Hardware/Motors/fl/Velocity", Double.NaN)
+        val frVel = NT4Server.getDouble("Hardware/Motors/fr/Velocity", Double.NaN)
+        val rlVel = NT4Server.getDouble("Hardware/Motors/rl/Velocity", Double.NaN)
+        val rrVel = NT4Server.getDouble("Hardware/Motors/rr/Velocity", Double.NaN)
 
         println("[Telemetry E2E Test] Motor Velocities -> FL: $flVel, FR: $frVel, RL: $rlVel, RR: $rrVel")
-        assertTrue("FL motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(flVel) > 10.0)
-        assertTrue("FR motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(frVel) > 10.0)
-        assertTrue("RL motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(rlVel) > 10.0)
-        assertTrue("RR motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(rrVel) > 10.0)
+        val velocityTopics = listOf("fl" to flVel, "fr" to frVel, "rl" to rlVel, "rr" to rrVel)
+        velocityTopics.forEach { (name, velocity) ->
+            assertTrue("$name motor velocity topic should contain a finite value", velocity.isFinite())
+        }
+        // Wheel velocity is reconstructed from the simulated body's actual twist. A valid wheel can
+        // momentarily cross zero when translation and rotation cancel, so assert aggregate motion
+        // instead of requiring every wheel to exceed an arbitrary instantaneous threshold.
+        assertTrue(
+            "Simulated drivetrain should report meaningful aggregate wheel motion",
+            velocityTopics.sumOf { kotlin.math.abs(it.second) } > 100.0
+        )
 
         // 6. Verify Motor Current Draw (Amperes)
         val flCurrent = NT4Server.getDouble("Hardware/Motors/fl/CurrentAmps", 0.0)

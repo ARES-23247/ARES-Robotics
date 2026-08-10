@@ -50,6 +50,7 @@ object TelemetryPublisher {
     private val truePoseBuf = DoubleArray(3)
 
     private var lastObstaclesJson = ""
+    private var lastFieldConfigJson = ""
 
     fun getWebVx(): Double {
         val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
@@ -78,6 +79,18 @@ object TelemetryPublisher {
     fun getWebIsButtonXPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonXPressed", false)
     fun getWebIsPoseReset(): Boolean = NT4Server.getBoolean("ARES/Input/isPoseReset", false)
     fun getWebObstacles(): String = NT4Server.getString("ARES/Input/obstacles", "")
+    fun getWebFieldConfig(): String = NT4Server.getString("ARES/Input/fieldConfig", "")
+
+    /** Returns a canonical field document only when the dashboard publishes a new revision. */
+    fun pollWebFieldConfig(): String? {
+        val fieldConfigJson = getWebFieldConfig()
+        return if (fieldConfigJson.isNotBlank() && fieldConfigJson != lastFieldConfigJson) {
+            lastFieldConfigJson = fieldConfigJson
+            fieldConfigJson
+        } else {
+            null
+        }
+    }
 
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
