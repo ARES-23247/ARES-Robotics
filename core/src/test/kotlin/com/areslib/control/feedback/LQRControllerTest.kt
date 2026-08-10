@@ -284,6 +284,32 @@ class LQRControllerTest {
         assertTrue(result[0].isFinite(), "Should return finite value when xRef contains -Infinity")
     }
 
+    @Test
+    fun `invalid input zeros a previously nonzero command`() {
+        val validOutput = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(100.0, 0.0),
+            dtSeconds = 0.02
+        )[0]
+        assertTrue(kotlin.math.abs(validOutput) > 1e-6)
+
+        val invalidMeasurementOutput = controller.calculate(
+            y = doubleArrayOf(Double.NaN),
+            xRef = doubleArrayOf(100.0, 0.0),
+            dtSeconds = 0.02
+        )
+        assertEquals(0.0, invalidMeasurementOutput[0], 1e-12)
+        assertEquals(0.0, controller.u.get(0, 0), 1e-12)
+
+        controller.calculate(doubleArrayOf(0.0), doubleArrayOf(100.0, 0.0), 0.02)
+        val invalidDtOutput = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(100.0, 0.0),
+            dtSeconds = Double.NaN
+        )
+        assertEquals(0.0, invalidDtOutput[0], 1e-12)
+    }
+
     // ─── Zero dt Rejection ──────────────────────────────────────────────
 
     @Test

@@ -31,7 +31,7 @@ enum class FieldSymmetry {
  *    $$\begin{bmatrix} x' \\ y' \end{bmatrix} = \begin{bmatrix} x \\ -y \end{bmatrix}, \quad \theta' = \text{wrapAngle}(-\theta), \quad \kappa' = -\kappa$$
  * 3. **Corner-Origin Field Extensions** ($L_{\text{field}}, W_{\text{field}}$):
  *    - Rotational: $x' = L_{\text{field}} - x, \; y' = W_{\text{field}} - y, \; \theta' = \text{wrapAngle}(\theta + \pi)$
- *    - Reflectional: $x' = x, \; y' = W_{\text{field}} - y, \; \theta' = \text{wrapAngle}(-\theta)$
+ *    - Reflectional: $x' = L_{\text{field}} - x, \; y' = y, \; \theta' = \text{wrapAngle}(\pi - \theta)$
  *
  * ### Physical Units & Coordinate Conventions:
  * - Position $(x, y)$: Field-centric meters ($m$)
@@ -83,9 +83,9 @@ object AllianceMirroring {
                     heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
                 )
                 FieldSymmetry.MIRRORED -> Pose2d(
-                    x = pose.x,
-                    y = fieldWidth - pose.y,
-                    heading = Rotation2d(wrapAngle(-pose.heading.radians))
+                    x = fieldLength - pose.x,
+                    y = pose.y,
+                    heading = Rotation2d(wrapAngle(Math.PI - pose.heading.radians))
                 )
             }
         }
@@ -122,8 +122,8 @@ object AllianceMirroring {
                     y = fieldWidth - translation.y
                 )
                 FieldSymmetry.MIRRORED -> Translation2d(
-                    x = translation.x,
-                    y = fieldWidth - translation.y
+                    x = fieldLength - translation.x,
+                    y = translation.y
                 )
             }
         }
@@ -159,7 +159,13 @@ object AllianceMirroring {
             }
             val mirroredTangent = when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> wrapAngle(point.tangentRadians + Math.PI)
-                FieldSymmetry.MIRRORED -> wrapAngle(-point.tangentRadians)
+                FieldSymmetry.MIRRORED -> if (
+                    kotlin.math.abs(fieldLength - CoordinateTransformers.FTC_FIELD_SIZE) < 1e-3
+                ) {
+                    wrapAngle(-point.tangentRadians)
+                } else {
+                    wrapAngle(Math.PI - point.tangentRadians)
+                }
             }
             mirroredPoints.add(
                 point.copy(
@@ -172,4 +178,3 @@ object AllianceMirroring {
         return path.copy(points = mirroredPoints)
     }
 }
-

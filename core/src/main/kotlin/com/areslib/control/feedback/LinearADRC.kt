@@ -93,24 +93,24 @@ class LinearADRC(
      * @return Commanded control effort $u(k)$ (e.g. Volts or duty cycle).
      */
     fun calculate(target: Double, measurement: Double, dtSeconds: Double): Double {
-        if (dtSeconds <= 0.0) return 0.0
+        if (!target.isFinite() || !measurement.isFinite() ||
+            !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !b0.isFinite() || !omegaC.isFinite() || !omegaO.isFinite()
+        ) {
+            uPrev = 0.0
+            return 0.0
+        }
 
         var actualTarget = target
         var actualMeasurement = measurement
 
         if (isContinuous) {
             val range = continuousMax - continuousMin
-            if (range > 1e-9) {
-                var errorBound = (actualTarget - actualMeasurement) % range
-    
-                if (abs(errorBound) > (range / 2.0)) {
-                    if (errorBound > 0.0) {
-                        errorBound -= range
-                    } else {
-                        errorBound += range
-                    }
-                }
-                actualTarget = actualMeasurement + errorBound
+            if (range.isFinite() && range > 1e-9) {
+                // Unwrap the measurement onto the observer's local branch before the ESO
+                // update, then place the target on the shortest branch from that sample.
+                actualMeasurement = xHat1 + wrapToHalfRange(actualMeasurement - xHat1, range)
+                actualTarget = actualMeasurement + wrapToHalfRange(actualTarget - actualMeasurement, range)
             }
         }
 
@@ -144,5 +144,13 @@ class LinearADRC(
 
         uPrev = u
         return u
+    }
+
+    private fun wrapToHalfRange(value: Double, range: Double): Double {
+        var wrapped = value % range
+        val halfRange = range * 0.5
+        if (wrapped > halfRange) wrapped -= range
+        if (wrapped < -halfRange) wrapped += range
+        return wrapped
     }
 }

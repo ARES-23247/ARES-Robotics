@@ -68,6 +68,8 @@ class VisionAlignController {
             wasTrackingTag = false
             tagLostTimestampMs = 0L
             hasPrevFiltered = false
+            prevErrHeadingForD = 0.0
+            prevLoopTimeMs = RobotClock.currentTimeMillis()
             integralAccum = 0.0
             return null
         }
@@ -129,10 +131,11 @@ class VisionAlignController {
             val alphaTranslation = tuning.visionAlignAlphaTranslation
             val alphaHeading = tuning.visionAlignAlphaHeading
             
-            val errXFiltered = if (hasPrevFiltered) alphaTranslation * errX + (1.0 - alphaTranslation) * prevErrX else errX
-            val errYFiltered = if (hasPrevFiltered) alphaTranslation * errY + (1.0 - alphaTranslation) * prevErrY else errY
+            val hadPreviousMeasurement = hasPrevFiltered
+            val errXFiltered = if (hadPreviousMeasurement) alphaTranslation * errX + (1.0 - alphaTranslation) * prevErrX else errX
+            val errYFiltered = if (hadPreviousMeasurement) alphaTranslation * errY + (1.0 - alphaTranslation) * prevErrY else errY
             
-            val errHeadingFiltered = if (hasPrevFiltered) {
+            val errHeadingFiltered = if (hadPreviousMeasurement) {
                 val diff = wrapAngle(errHeading - prevErrHeading)
                 wrapAngle(prevErrHeading + alphaHeading * diff)
             } else {
@@ -142,7 +145,6 @@ class VisionAlignController {
             prevErrX = errXFiltered
             prevErrY = errYFiltered
             prevErrHeading = errHeadingFiltered
-            hasPrevFiltered = true
             
             val kP_translation = tuning.visionAlignKpTranslation
             val kP_rotation = tuning.visionAlignKpRotation
@@ -174,10 +176,11 @@ class VisionAlignController {
             // Compute derivative term: rate of heading error change
             val dtSec = ((now - prevLoopTimeMs).coerceIn(1, 200)) / 1000.0
             prevLoopTimeMs = now
-            val headingErrorRate = if (hasPrevFiltered) {
+            val headingErrorRate = if (hadPreviousMeasurement) {
                 wrapAngle(errHeadingFiltered - prevErrHeadingForD) / dtSec
             } else 0.0
             prevErrHeadingForD = errHeadingFiltered
+            hasPrevFiltered = true
             
             val ctrlOmega = if (abs(errHeadingFiltered) > headingErrorDeadband) {
                 val currentSign = sign(errHeadingFiltered)
@@ -211,6 +214,8 @@ class VisionAlignController {
         } else {
             val tuning = state.tuning
             hasPrevFiltered = false
+            prevErrHeadingForD = 0.0
+            prevLoopTimeMs = RobotClock.currentTimeMillis()
             
             // Tag is not visible while requested — initiate search rotation
             if (tagLostTimestampMs == 0L) {

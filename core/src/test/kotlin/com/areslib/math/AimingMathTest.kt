@@ -47,4 +47,34 @@ class AimingMathTest {
         // Ensure it resolves to a valid physical angle
         assertTrue(heading > -Math.PI / 2, "Aiming offset should be reasonable")
     }
+
+    @Test
+    fun `degenerate intercept with no finite solution uses geometric fallback`() {
+        val heading = AimingMath.calculateCompensatedHeading(
+            robotX = 0.0,
+            robotY = 0.0,
+            vx = 0.0,
+            vy = 1.0,
+            targetX = 1.0,
+            targetY = 0.0,
+            shotSpeed = 1.0
+        )
+
+        assertEquals(0.0, heading, 1e-9)
+    }
+
+    @Test
+    fun `nonfinite velocity uses finite geometric fallback`() {
+        val heading = AimingMath.calculateCompensatedHeading(
+            robotX = 0.0,
+            robotY = 0.0,
+            vx = Double.NaN,
+            vy = 0.0,
+            targetX = 0.0,
+            targetY = 1.0,
+            shotSpeed = 10.0
+        )
+
+        assertEquals(Math.PI / 2.0, heading, 1e-9)
+    }
 }

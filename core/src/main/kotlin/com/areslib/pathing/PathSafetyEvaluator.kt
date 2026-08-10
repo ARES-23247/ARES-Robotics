@@ -54,12 +54,14 @@ object PathSafetyEvaluator {
         var minDistanceToObstacle = Double.MAX_VALUE
         var sumObstacleDensity = 0.0
         var peakObstacleDensity = 0.0
+        var hasOutOfBoundsSample = false
 
         fun reset() {
             totalPoints = 0
             minDistanceToObstacle = Double.MAX_VALUE
             sumObstacleDensity = 0.0
             peakObstacleDensity = 0.0
+            hasOutOfBoundsSample = false
         }
     }
 
@@ -77,8 +79,25 @@ object PathSafetyEvaluator {
     ) {
         state.totalPoints++
 
-        // 1. Calculate minimum distance to any raw occupied cell
+        if (!px.isFinite() || !py.isFinite()) {
+            state.hasOutOfBoundsSample = true
+            state.minDistanceToObstacle = 0.0
+            return
+        }
+
+        val sampleCellX = ((px - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
+        val sampleCellY = ((py - costmap.origin.y) / costmap.resolutionMeters).roundToInt()
+        if (sampleCellX !in 0 until costmap.widthCells || sampleCellY !in 0 until costmap.heightCells
+        ) {
+            state.hasOutOfBoundsSample = true
+            state.minDistanceToObstacle = 0.0
+            return
+        }
+
+        // 1. Calculate minimum distance to the occupied cell rectangles. Measuring only
+        // to cell centers overstates clearance by up to half the cell diagonal.
         var pointMinDist = Double.MAX_VALUE
+        val halfCell = costmap.resolutionMeters * 0.5
         for (i in 0 until occupiedCount) {
             val cellX = occupiedX[i]
             val cellY = occupiedY[i]
@@ -88,10 +107,11 @@ object PathSafetyEvaluator {
             val absDx = kotlin.math.abs(dx)
             val absDy = kotlin.math.abs(dy)
             
-            if (absDx > searchRadiusMeters || absDy > searchRadiusMeters) continue
-            if (absDx >= pointMinDist || absDy >= pointMinDist) continue
-            
-            val dist = hypot(dx, dy)
+            if (absDx > searchRadiusMeters + halfCell || absDy > searchRadiusMeters + halfCell) continue
+            val edgeDx = (absDx - halfCell).coerceAtLeast(0.0)
+            val edgeDy = (absDy - halfCell).coerceAtLeast(0.0)
+            if (edgeDx >= pointMinDist || edgeDy >= pointMinDist) continue
+            val dist = hypot(edgeDx, edgeDy)
             if (dist < pointMinDist) {
                 pointMinDist = dist
             }
@@ -154,6 +174,11 @@ object PathSafetyEvaluator {
                 recommendedSpeedMultiplier = 0.0
             )
         }
+        if (!searchRadiusMeters.isFinite() || searchRadiusMeters <= 0.0 ||
+            !robotRadiusMeters.isFinite() || robotRadiusMeters < 0.0
+        ) {
+            return SafetyReport(false, 0.0, 0.0, 0.0, 0.0)
+        }
 
         val maxCells = costmap.heightCells * costmap.widthCells
         ensureCapacity(maxCells)
@@ -199,7 +224,7 @@ object PathSafetyEvaluator {
             evaluatePoint(path.last().x, path.last().y, occupiedX, occupiedY, occupiedCount, searchRadiusMeters, costmap, evalState)
         }
 
-        if (occupiedCount == 0) {
+        if (occupiedCount == 0 && !evalState.hasOutOfBoundsSample) {
             evalState.minDistanceToObstacle = 10.0 // Set to a large default if field is completely clear
         }
 
@@ -207,9 +232,11 @@ object PathSafetyEvaluator {
 
         // Determine safety status
         // A path is safe if minimum distance is at least robotRadius + 5cm clearance
-        val isSafe = evalState.minDistanceToObstacle >= (robotRadiusMeters + 0.05)
+        val isSafe = !evalState.hasOutOfBoundsSample &&
+            evalState.minDistanceToObstacle >= (robotRadiusMeters + 0.05)
 
         val recommendedSpeedMultiplier = when {
+            evalState.hasOutOfBoundsSample -> 0.0
             evalState.minDistanceToObstacle < (robotRadiusMeters + 0.05) -> 0.3
             evalState.minDistanceToObstacle < (robotRadiusMeters + 0.15) || evalState.peakObstacleDensity > 0.5 -> 0.3
             evalState.minDistanceToObstacle < (robotRadiusMeters + 0.35) || evalState.peakObstacleDensity > 0.2 -> 0.6

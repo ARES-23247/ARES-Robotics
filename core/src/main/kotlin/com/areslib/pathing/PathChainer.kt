@@ -33,45 +33,48 @@ object PathChainer {
         maxVelocityMps: Double = 2.0,
         maxAccelerationMps2: Double = 1.5
     ): Path {
-        if (paths.isEmpty()) return Path(emptyList())
-        if (paths.size == 1) return paths[0]
+        require(maxVelocityMps.isFinite() && maxVelocityMps >= 0.0)
+        require(maxAccelerationMps2.isFinite() && maxAccelerationMps2 > 0.0)
+        val nonEmptyPaths = paths.filter { it.points.isNotEmpty() }
+        if (nonEmptyPaths.isEmpty()) return Path(emptyList())
+        if (nonEmptyPaths.size == 1) return nonEmptyPaths[0]
 
         val stitchedPoints = mutableListOf<PathPoint>()
         val stitchedEvents = mutableListOf<PathEvent>()
 
         // Initialize with first path
-        stitchedPoints.addAll(paths[0].points)
-        stitchedEvents.addAll(paths[0].events)
+        stitchedPoints.addAll(nonEmptyPaths[0].points)
+        stitchedEvents.addAll(nonEmptyPaths[0].events)
 
-        for (pathIdx in 1 until paths.size) {
-            val nextPath = paths[pathIdx]
-            if (nextPath.points.isEmpty()) continue
+        for (pathIdx in 1 until nonEmptyPaths.size) {
+            val nextPath = nonEmptyPaths[pathIdx]
 
             val distanceOffset = stitchedPoints.last().distanceMeters
             val jointDistance = distanceOffset
+            val firstNextPoint = nextPath.points.first()
+            val joinGap = hypot(
+                firstNextPoint.pose.x - stitchedPoints.last().pose.x,
+                firstNextPoint.pose.y - stitchedPoints.last().pose.y
+            )
+            require(joinGap < 0.05) {
+                "Cannot chain discontinuous paths: segment $pathIdx starts ${"%.3f".format(joinGap)} m from the previous endpoint"
+            }
+            val localDistanceOrigin = firstNextPoint.distanceMeters
+            val localToStitchedOffset = distanceOffset - localDistanceOrigin
 
             // Add events with offset
             for (event in nextPath.events) {
                 stitchedEvents.add(
                     PathEvent(
                         event.eventName,
-                        event.triggerDistanceMeters + distanceOffset
+                        event.triggerDistanceMeters + localToStitchedOffset
                     )
                 )
             }
 
             // Offset and add next points
-            val firstNextPoint = nextPath.points.first()
-            val startIdx = if (hypot(
-                    firstNextPoint.pose.x - stitchedPoints.last().pose.x,
-                    firstNextPoint.pose.y - stitchedPoints.last().pose.y
-                ) < 0.05
-            ) {
-                // If coordinates align extremely closely, drop the duplicate start point
-                1
-            } else {
-                0
-            }
+            // Endpoints were verified to align, so drop the duplicate start point.
+            val startIdx = 1
 
             for (i in startIdx until nextPath.points.size) {
                 val pt = nextPath.points[i]
@@ -79,8 +82,9 @@ object PathChainer {
                     PathPoint(
                         pose = pt.pose,
                         velocityMps = pt.velocityMps,
-                        distanceMeters = pt.distanceMeters + distanceOffset,
-                        curvature = pt.curvature
+                        distanceMeters = pt.distanceMeters + localToStitchedOffset,
+                        curvature = pt.curvature,
+                        tangentRadians = pt.tangentRadians
                     )
                 )
             }

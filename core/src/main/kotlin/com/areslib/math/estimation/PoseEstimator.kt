@@ -16,7 +16,8 @@ import com.areslib.math.geometry.*
  * @property y Robot field-centric Y position in meters ($m$).
  * @property headingRad Robot field-centric heading in radians ($rad$), **CCW-positive**.
  * @property covariance 3x3 error covariance matrix $\mathbf{P}$ at [timestampMs].
- * @property qScale Dynamic process noise scaling factor $s_q$ active during this update frame.
+ * @property qScale Full process noise multiplier applied during this frame, including
+ * tilt, slip, translation-rate, and elapsed-time scaling.
  */
 data class PoseHistoryEntry(
     var timestampMs: Long = 0L,

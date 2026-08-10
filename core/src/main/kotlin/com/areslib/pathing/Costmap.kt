@@ -66,7 +66,10 @@ class Costmap(
 
     // 1D backed array for cash-locality and zero-allocation updates
     private val grid = BooleanArray(widthCells * heightCells)
+    // Static inflation and dynamic occupancy are separate layers. This prevents expiry of
+    // one dynamic obstacle from erasing a static obstacle or another overlapping obstacle.
     private val inflatedGrid = BooleanArray(widthCells * heightCells)
+    private val dynamicOccupancyCounts = IntArray(widthCells * heightCells)
     
     private val maxDynamicObstacles = 100
     private val dynObsX = IntArray(maxDynamicObstacles)
@@ -81,6 +84,8 @@ class Costmap(
     fun clear() {
         grid.fill(false)
         inflatedGrid.fill(false)
+        dynamicOccupancyCounts.fill(0)
+        dynObsCount = 0
     }
 
     /**
@@ -108,7 +113,8 @@ class Costmap(
         if (cellX !in 0 until widthCells || cellY !in 0 until heightCells) {
             return false // Out-of-bounds is non-traversable
         }
-        return !inflatedGrid[cellY * widthCells + cellX]
+        val index = cellY * widthCells + cellX
+        return !inflatedGrid[index] && dynamicOccupancyCounts[index] == 0
     }
 
     /**
@@ -128,10 +134,10 @@ class Costmap(
             if (!obs.isBlocking) continue // Skip non-blocking elements like ramps
 
             // Obstacle boundaries in meters (from centering)
-            val minX = obs.x - obs.height / 2.0
-            val maxX = obs.x + obs.height / 2.0
-            val minY = obs.y - obs.width / 2.0
-            val maxY = obs.y + obs.width / 2.0
+            val minX = obs.x - obs.width / 2.0
+            val maxX = obs.x + obs.width / 2.0
+            val minY = obs.y - obs.height / 2.0
+            val maxY = obs.y + obs.height / 2.0
 
             // Map boundaries to grid cell ranges
             val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
@@ -162,7 +168,8 @@ class Costmap(
         if (cellX !in 0 until widthCells || cellY !in 0 until heightCells) {
             return true // Out-of-bounds is considered occupied
         }
-        return grid[cellY * widthCells + cellX]
+        val index = cellY * widthCells + cellX
+        return grid[index] || dynamicOccupancyCounts[index] > 0
     }
 
     /**
@@ -208,17 +215,18 @@ class Costmap(
      * Dynamic insert of a dynamic obstacle (e.g. an opponent robot).
      */
     fun insertDynamicObstacle(x: Double, y: Double, radiusMeters: Double, timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()) {
+        if (!x.isFinite() || !y.isFinite() || !radiusMeters.isFinite() || radiusMeters <= 0.0) return
+        // Never rasterize an obstacle that cannot be tracked and expired later.
+        if (dynObsCount >= maxDynamicObstacles) return
         val cellX = ((x - origin.x) / resolutionMeters).roundToInt()
         val cellY = ((y - origin.y) / resolutionMeters).roundToInt()
-        val cellRadius = (radiusMeters / resolutionMeters).roundToInt().coerceAtLeast(1)
+        val cellRadius = kotlin.math.ceil(radiusMeters / resolutionMeters).toInt().coerceAtLeast(1)
 
-        if (dynObsCount < maxDynamicObstacles) {
-            dynObsX[dynObsCount] = cellX
-            dynObsY[dynObsCount] = cellY
-            dynObsRadius[dynObsCount] = cellRadius
-            dynObsTimeMs[dynObsCount] = timestampMs
-            dynObsCount++
-        }
+        dynObsX[dynObsCount] = cellX
+        dynObsY[dynObsCount] = cellY
+        dynObsRadius[dynObsCount] = cellRadius
+        dynObsTimeMs[dynObsCount] = timestampMs
+        dynObsCount++
 
         for (dy in -cellRadius..cellRadius) {
             for (dx in -cellRadius..cellRadius) {
@@ -226,7 +234,7 @@ class Costmap(
                     val nx = cellX + dx
                     val ny = cellY + dy
                     if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                        inflatedGrid[ny * widthCells + nx] = true
+                        dynamicOccupancyCounts[ny * widthCells + nx]++
                     }
                 }
             }
@@ -234,6 +242,7 @@ class Costmap(
     }
 
     fun expireDynamicObstacles(currentTimeMs: Long, maxAgeMs: Long) {
+        require(maxAgeMs >= 0L) { "maxAgeMs must be non-negative" }
         var i = 0
         while (i < dynObsCount) {
             if (currentTimeMs - dynObsTimeMs[i] > maxAgeMs) {
@@ -247,7 +256,10 @@ class Costmap(
                             val nx = cellX + dx
                             val ny = cellY + dy
                             if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                                inflatedGrid[ny * widthCells + nx] = false
+                                val index = ny * widthCells + nx
+                                if (dynamicOccupancyCounts[index] > 0) {
+                                    dynamicOccupancyCounts[index]--
+                                }
                             }
                         }
                     }

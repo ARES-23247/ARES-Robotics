@@ -237,6 +237,9 @@ object DesktopSimLauncher {
 
         while (isSimRunning) {
           try {
+            TelemetryPublisher.pollWebInputs(driverStation)?.let { obstaclesJson ->
+                physicsWorld.replaceObstaclesFromAnalyticsJson(obstaclesJson)
+            }
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
             val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
@@ -366,9 +369,6 @@ object DesktopSimLauncher {
             }
 
             TelemetryPublisher.publishTruePose(currentPhysPose)
-            TelemetryPublisher.getWebVx()
-            TelemetryPublisher.getWebVy()
-            TelemetryPublisher.getWebOmega()
 
             // Extract OpMode display lines from MockTelemetry and publish to NT4 for ARES-Analytics
             val mockTelemetry = activeOpMode?.telemetry as? org.firstinspires.ftc.robotcore.external.MockTelemetry

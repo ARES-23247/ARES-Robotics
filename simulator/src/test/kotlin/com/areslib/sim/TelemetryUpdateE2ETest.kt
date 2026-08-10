@@ -63,6 +63,26 @@ class TelemetryUpdateE2ETest {
         NT4Server.publishTopic("ARES/Input/vy", 0.0)
         NT4Server.publishTopic("ARES/Input/omega", 0.0)
 
+        // Boolean and mode inputs must come from the same custom NT4 registry as velocity.
+        NT4Server.publishTopic("ARES/Input/isIntaking", true)
+        NT4Server.publishTopic("ARES/Input/isFieldCentric", true)
+        NT4Server.publishTopic("ARES/Input/isTeleopMode", false)
+        assertTrue(com.areslib.sim.network.TelemetryPublisher.getWebIsIntaking())
+        assertTrue(com.areslib.sim.network.TelemetryPublisher.getWebIsFieldCentric())
+        assertFalse(com.areslib.sim.network.TelemetryPublisher.getWebIsTeleopMode())
+        NT4Server.publishTopic("ARES/Input/isIntaking", false)
+        NT4Server.publishTopic("ARES/Input/isFieldCentric", false)
+        NT4Server.publishTopic("ARES/Input/isTeleopMode", true)
+
+        val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":0.5,"centerY":0.25,"width":0.4,"height":0.2,"rotation":0.0}]"""
+        NT4Server.publishTopic("ARES/Input/obstacles", obstacleJson)
+        assertEquals(obstacleJson, com.areslib.sim.network.TelemetryPublisher.getWebObstacles())
+        Thread.sleep(100)
+        assertTrue(
+            "Dashboard obstacle should be applied to the active simulator field",
+            com.areslib.state.RobotFieldManager.activeConfig.obstacles.any { it.id == "dashboard-wall" }
+        )
+
         // Wait for sim loop to step, publish motor state, and build up velocity
         Thread.sleep(1500)
 

@@ -77,6 +77,19 @@ class PIDControllerTest {
     }
 
     @Test
+    fun `deadzone suppresses stored integral and derivative output`() {
+        val integralPid = PIDController(0.0, 1.0, 0.0)
+        integralPid.calculate(measurement = 0.0, setpoint = 1.0, dtSeconds = 1.0)
+        integralPid.deadzone = 1.0
+        assertEquals(0.0, integralPid.calculate(1.0, 1.0, 0.1), 1e-12)
+
+        val derivativePid = PIDController(0.0, 0.0, 1.0)
+        derivativePid.calculate(measurement = 0.0, setpoint = 10.0, dtSeconds = 0.1)
+        derivativePid.deadzone = 1.0
+        assertEquals(0.0, derivativePid.calculate(9.5, 10.0, 0.1), 1e-12)
+    }
+
+    @Test
     fun testResetClearsIntegral() {
         val pid = PIDController(0.0, 1.0, 0.0)
         

@@ -89,6 +89,8 @@ object DriveReducer {
                     odometryX = action.xMeters,
                     odometryY = action.yMeters,
                     odometryHeading = action.headingRadians,
+                    measuredFieldXVelocityMetersPerSecond = action.xVelocityMetersPerSecond,
+                    measuredFieldYVelocityMetersPerSecond = action.yVelocityMetersPerSecond,
                     measuredAngularVelocityRadiansPerSecond = action.angularVelocityRadiansPerSecond,
                     pitchDegrees = action.pitchDegrees,
                     rollDegrees = action.rollDegrees,

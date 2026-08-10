@@ -164,4 +164,21 @@ class SimPhysicsWorld {
             world.addBody(wallBody)
         }
     }
+
+    /** Replaces only the static obstacles from an ARES-Analytics field-editor payload. */
+    fun replaceObstaclesFromAnalyticsJson(json: String): Boolean {
+        return try {
+            if (!com.google.gson.JsonParser.parseString(json).isJsonArray) return false
+            val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(json)
+            for (body in activeObstacles) world.removeBody(body)
+            activeObstacles.clear()
+            activeObstacles.addAll(FieldObstacleLoader.loadObstacles(world, obstacles))
+            RobotFieldManager.setActiveConfig(RobotFieldManager.activeConfig.copy(obstacles = obstacles))
+            NT4FieldPublisher.publishObstacles(obstacles)
+            true
+        } catch (e: Exception) {
+            System.err.println("Failed to apply dashboard obstacles: ${e.message}")
+            false
+        }
+    }
 }

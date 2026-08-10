@@ -11,9 +11,9 @@ import com.areslib.math.wrapAngle
  *
  * ### Mathematical Formulation:
  * 1. **Kinematic Motion Model**:
- *    $$\mathbf{f}(x, y, \theta) = \begin{bmatrix} x + \Delta x \cos\theta_{\text{mid}} - \Delta y \sin\theta_{\text{mid}} \\ y + \Delta x \sin\theta_{\text{mid}} + \Delta y \cos\theta_{\text{mid}} \\ \text{wrapAngle}(\theta + \Delta\theta) \end{bmatrix}$$
+ *    $$\mathbf{f}(x, y, \theta) = \begin{bmatrix} x + \Delta x_{arc} \cos\theta - \Delta y_{arc} \sin\theta \\ y + \Delta x_{arc} \sin\theta + \Delta y_{arc} \cos\theta \\ \text{wrapAngle}(\theta + \Delta\theta) \end{bmatrix}$$
  * 2. **Motion Model Jacobian ($\mathbf{F}_k$)**:
- *    $$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -\Delta x \sin\theta_{\text{mid}} - \Delta y \cos\theta_{\text{mid}} \\ 0 & 1 & \Delta x \cos\theta_{\text{mid}} - \Delta y \sin\theta_{\text{mid}} \\ 0 & 0 & 1 \end{bmatrix}$$
+ *    $$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -\Delta x_{arc} \sin\theta - \Delta y_{arc} \cos\theta \\ 0 & 1 & \Delta x_{arc} \cos\theta - \Delta y_{arc} \sin\theta \\ 0 & 0 & 1 \end{bmatrix}$$
  * 3. **Covariance Propagation ($\mathbf{P}_k$)**:
  *    $$\mathbf{P}_k = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^T + \mathbf{Q}$$
  * 4. **Historical Trajectory Re-propagation**:
@@ -39,9 +39,9 @@ object EKFStatePropagator {
      * Propagates a 3x3 state error covariance matrix forward one step using linearized local displacement deltas.
      *
      * @param covarianceArray Flattened 9-element 3x3 covariance matrix array $[P_{00}, P_{01}, \dots, P_{22}]$.
-     * @param deltaX Local robot-frame displacement along X axis in meters ($m$).
-     * @param deltaY Local robot-frame displacement along Y axis in meters ($m$).
-     * @param thetaMid Midpoint heading $\theta_{\text{prev}} + \frac{\Delta\theta}{2}$ for trapezoidal integration in radians ($rad$).
+     * @param deltaX Exact local robot-frame arc displacement along X in meters ($m$).
+     * @param deltaY Exact local robot-frame arc displacement along Y in meters ($m$).
+     * @param theta Heading at the start of the displacement in radians ($rad$).
      * @param qMatrix Process noise covariance matrix $\mathbf{Q}$.
      * @param outCovariance Output [Matrix3x3] scratchpad storing the updated covariance matrix $\mathbf{P}_k$.
      */
@@ -49,14 +49,14 @@ object EKFStatePropagator {
         covarianceArray: DoubleArray,
         deltaX: Double,
         deltaY: Double,
-        thetaMid: Double,
+        theta: Double,
         qMatrix: Matrix3x3,
         outCovariance: Matrix3x3
     ) {
-        val sinMid = kotlin.math.sin(thetaMid)
-        val cosMid = kotlin.math.cos(thetaMid)
-        val f02 = -deltaX * sinMid - deltaY * cosMid
-        val f12 =  deltaX * cosMid - deltaY * sinMid
+        val sinTheta = kotlin.math.sin(theta)
+        val cosTheta = kotlin.math.cos(theta)
+        val f02 = -deltaX * sinTheta - deltaY * cosTheta
+        val f12 =  deltaX * cosTheta - deltaY * sinTheta
 
         val fp00 = covarianceArray[0] + f02 * covarianceArray[6]
         val fp01 = covarianceArray[1] + f02 * covarianceArray[7]
@@ -126,38 +126,31 @@ object EKFStatePropagator {
             val prevRaw = state.history[i - 1]
             val currRaw = state.history[i]
 
-            val deltaX = currRaw.x - prevRaw.x
-            val deltaY = currRaw.y - prevRaw.y
+            val originalFieldDx = currRaw.x - prevRaw.x
+            val originalFieldDy = currRaw.y - prevRaw.y
             val deltaHeading = wrapAngle(currRaw.headingRad - prevRaw.headingRad)
 
-            // Pre-update heading for this step = heading at index i-1 (currentHeadingRad
-            // before this step's mutation). This mirrors the forward pass, which uses the
-            // pre-update heading (state.estimatedPoseHeading) for both the world->robot
-            // delta rotation and the midpoint heading in OdometryFusionController.processOdometryDirect.
-            val preUpdateHeading = currentHeadingRad
+            // Recover the robot-frame arc displacement that produced the original
+            // historical transition. Replaying the old field delta directly would leave
+            // all later positions unchanged when vision corrects the historical heading.
+            val originalCos = kotlin.math.cos(prevRaw.headingRad)
+            val originalSin = kotlin.math.sin(prevRaw.headingRad)
+            val robotArcDx = originalFieldDx * originalCos + originalFieldDy * originalSin
+            val robotArcDy = -originalFieldDx * originalSin + originalFieldDy * originalCos
 
-            currentX += deltaX
-            currentY += deltaY
+            // Rotate that same local motion through the corrected pre-update heading.
+            val correctedCos = kotlin.math.cos(currentHeadingRad)
+            val correctedSin = kotlin.math.sin(currentHeadingRad)
+            val correctedFieldDx = robotArcDx * correctedCos - robotArcDy * correctedSin
+            val correctedFieldDy = robotArcDx * correctedSin + robotArcDy * correctedCos
+
+            currentX += correctedFieldDx
+            currentY += correctedFieldDy
             currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
 
             val scale = currRaw.qScale
-            val reThetaMid = preUpdateHeading + deltaHeading * 0.5
-
-            // The forward pass rotates world-frame deltas into robot frame using the
-            // pre-update heading before evaluating the motion Jacobian (see
-            // OdometryFusionController.processOdometryDirect). The deltas recovered here
-            // from stored history poses are world-frame position differences, so the same
-            // rotation must be applied before computing reF02/reF12 to keep the rewind pass
-            // consistent with the forward pass.
-            val reCosEst = kotlin.math.cos(preUpdateHeading)
-            val reSinEst = kotlin.math.sin(preUpdateHeading)
-            val robotLocalDx =  deltaX * reCosEst + deltaY * reSinEst
-            val robotLocalDy = -deltaX * reSinEst + deltaY * reCosEst
-
-            val reSinMid = kotlin.math.sin(reThetaMid)
-            val reCosMid = kotlin.math.cos(reThetaMid)
-            val reF02 = -robotLocalDx * reSinMid - robotLocalDy * reCosMid
-            val reF12 =  robotLocalDx * reCosMid - robotLocalDy * reSinMid
+            val reF02 = -correctedFieldDy
+            val reF12 = correctedFieldDx
 
             val reFp00 = scratchCov2.m00 + reF02 * scratchCov2.m20
             val reFp01 = scratchCov2.m01 + reF02 * scratchCov2.m21

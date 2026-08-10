@@ -46,26 +46,7 @@ object TelemetryPublisher {
     private val estimatedPoseBuf = DoubleArray(3)
     private val truePoseBuf = DoubleArray(3)
 
-    // --- Web Dashboard Inputs Subscribers ---
-    private val webVxSub = ntInst.getDoubleTopic("ARES/Input/vx").subscribe(0.0)
-    private val webVySub = ntInst.getDoubleTopic("ARES/Input/vy").subscribe(0.0)
-    private val webOmegaSub = ntInst.getDoubleTopic("ARES/Input/omega").subscribe(0.0)
-    private val webIntakeSub = ntInst.getBooleanTopic("ARES/Input/isIntaking").subscribe(false)
-    private val webFlywheelSub = ntInst.getBooleanTopic("ARES/Input/isFlywheelOn").subscribe(false)
-    private val webTransferSub = ntInst.getBooleanTopic("ARES/Input/isTransferring").subscribe(false)
-    private val webTeleopSub = ntInst.getBooleanTopic("ARES/Input/isTeleopMode").subscribe(true)
-    private val webFieldCentricSub = ntInst.getBooleanTopic("ARES/Input/isFieldCentric").subscribe(false)
-    private val webRedAllianceSub = ntInst.getBooleanTopic("ARES/Input/isRedAlliance").subscribe(true)
-    private val webHeartbeatSub = ntInst.getIntegerTopic("ARES/Input/heartbeat").subscribe(0L)
-    private val webButtonASub = ntInst.getBooleanTopic("ARES/Input/isButtonAPressed").subscribe(false)
-    private val webButtonBSub = ntInst.getBooleanTopic("ARES/Input/isButtonBPressed").subscribe(false)
-    private val webButtonXSub = ntInst.getBooleanTopic("ARES/Input/isButtonXPressed").subscribe(false)
-    private val webPoseResetSub = ntInst.getBooleanTopic("ARES/Input/isPoseReset").subscribe(false)
-    
-    /**
-     * Obstacles input subscriber path. Receives costmap bounding boxes and obstacles from the dashboard editor.
-     */
-    val obstaclesSub = ntInst.getStringTopic("ARES/Input/obstacles").subscribe("")
+    private var lastObstaclesJson = ""
 
     fun getWebVx(): Double {
         val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
@@ -83,8 +64,17 @@ object TelemetryPublisher {
         return v
     }
 
-    private var lastWebHeartbeatTimestamp = 0L
-    private var lastWebInputReceiveTime = 0L
+    fun getWebIsIntaking(): Boolean = NT4Server.getBoolean("ARES/Input/isIntaking", false)
+    fun getWebIsFlywheelOn(): Boolean = NT4Server.getBoolean("ARES/Input/isFlywheelOn", false)
+    fun getWebIsTransferring(): Boolean = NT4Server.getBoolean("ARES/Input/isTransferring", false)
+    fun getWebIsTeleopMode(): Boolean = NT4Server.getBoolean("ARES/Input/isTeleopMode", true)
+    fun getWebIsFieldCentric(): Boolean = NT4Server.getBoolean("ARES/Input/isFieldCentric", false)
+    fun getWebIsRedAlliance(): Boolean = NT4Server.getBoolean("ARES/Input/isRedAlliance", true)
+    fun getWebIsButtonAPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonAPressed", false)
+    fun getWebIsButtonBPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonBPressed", false)
+    fun getWebIsButtonXPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonXPressed", false)
+    fun getWebIsPoseReset(): Boolean = NT4Server.getBoolean("ARES/Input/isPoseReset", false)
+    fun getWebObstacles(): String = NT4Server.getString("ARES/Input/obstacles", "")
 
     // Session log file path publisher
     private val logFilePathPub = ntInst.getStringTopic("ARES/Session/LogFilePath").publish()
@@ -228,7 +218,7 @@ object TelemetryPublisher {
      *
      * @param driverStation Target VirtualDriverStation instance to synchronize inputs with.
      */
-    fun pollWebInputs(driverStation: VirtualDriverStation) {
+    fun pollWebInputs(driverStation: VirtualDriverStation): String? {
         val vx = getWebVx()
         val vy = getWebVy()
         val omega = getWebOmega()
@@ -241,12 +231,15 @@ object TelemetryPublisher {
         com.areslib.telemetry.SimInputBridge.rawWebVy = vy
         com.areslib.telemetry.SimInputBridge.rawWebOmega = omega
 
-        driverStation.isIntaking = webIntakeSub.get()
-        driverStation.isFlywheelOn = webFlywheelSub.get()
-        driverStation.isTransferring = webTransferSub.get()
-        driverStation.isTeleopMode = webTeleopSub.get()
-        driverStation.isFieldCentric = webFieldCentricSub.get()
-        val newRedAlliance = webRedAllianceSub.get()
+        // Dashboard clients connect to ARESLib's custom NT4 server. Read every web input from
+        // that same registry; WPILib's process-local instance is a separate server and otherwise
+        // leaves boolean/mode values stuck at their subscriber defaults.
+        driverStation.isIntaking = getWebIsIntaking()
+        driverStation.isFlywheelOn = getWebIsFlywheelOn()
+        driverStation.isTransferring = getWebIsTransferring()
+        driverStation.isTeleopMode = getWebIsTeleopMode()
+        driverStation.isFieldCentric = getWebIsFieldCentric()
+        val newRedAlliance = getWebIsRedAlliance()
         if (driverStation.isRedAlliance != newRedAlliance) {
             driverStation.isRedAlliance = newRedAlliance
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
@@ -254,10 +247,17 @@ object TelemetryPublisher {
                 robot.store.dispatch(com.areslib.action.RobotAction.SetAlliance(allianceEnum))
             }
         }
-        driverStation.isButtonAPressed = webButtonASub.get()
-        driverStation.isButtonBPressed = webButtonBSub.get()
-        driverStation.isButtonXPressed = webButtonXSub.get()
-        driverStation.isPoseReset = webPoseResetSub.get()
+        driverStation.isButtonAPressed = getWebIsButtonAPressed()
+        driverStation.isButtonBPressed = getWebIsButtonBPressed()
+        driverStation.isButtonXPressed = getWebIsButtonXPressed()
+        driverStation.isPoseReset = getWebIsPoseReset()
+        val obstaclesJson = getWebObstacles()
+        return if (obstaclesJson.isNotBlank() && obstaclesJson != lastObstaclesJson) {
+            lastObstaclesJson = obstaclesJson
+            obstaclesJson
+        } else {
+            null
+        }
     }
 
     /**

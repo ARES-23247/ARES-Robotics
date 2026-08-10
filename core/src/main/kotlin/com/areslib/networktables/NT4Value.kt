@@ -23,6 +23,11 @@ sealed interface NT4Value {
         override fun getAsObject(): Any = value
     }
 
+    data class FloatVal(val value: Float) : NT4Value {
+        override val typeString: String = "float"
+        override fun getAsObject(): Any = value
+    }
+
     data class StringVal(val value: String) : NT4Value {
         override val typeString: String = "string"
         override fun getAsObject(): Any = value
@@ -61,6 +66,17 @@ sealed interface NT4Value {
         override fun hashCode(): Int = value.contentHashCode()
     }
 
+    data class FloatArrayVal(val value: FloatArray) : NT4Value {
+        override val typeString: String = "float[]"
+        override fun getAsObject(): Any = value
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is FloatArrayVal) return false
+            return value.contentEquals(other.value)
+        }
+        override fun hashCode(): Int = value.contentHashCode()
+    }
+
     data class StringArrayVal(val value: Array<String>) : NT4Value {
         override val typeString: String = "string[]"
         override fun getAsObject(): Any = value
@@ -90,12 +106,12 @@ sealed interface NT4Value {
         fun fromObject(obj: Any?): NT4Value = when (obj) {
             is Boolean -> BooleanVal(obj)
             is Double -> DoubleVal(obj)
-            is Float -> DoubleVal(obj.toDouble())
+            is Float -> FloatVal(obj)
             is Number -> LongVal(obj.toLong())
             is String -> StringVal(obj)
             is BooleanArray -> BooleanArrayVal(obj)
             is DoubleArray -> DoubleArrayVal(obj)
-            is FloatArray -> DoubleArrayVal(obj.map { it.toDouble() }.toDoubleArray())
+            is FloatArray -> FloatArrayVal(obj)
             is IntArray -> LongArrayVal(obj.map { it.toLong() }.toLongArray())
             is LongArray -> LongArrayVal(obj)
             is Array<*> -> {

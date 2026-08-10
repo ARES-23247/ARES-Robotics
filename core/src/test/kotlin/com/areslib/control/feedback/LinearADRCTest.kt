@@ -75,4 +75,30 @@ class LinearADRCTest {
         // Output should be positive because -179 is clockwise/positive from +179
         assertTrue(output > 0.0)
     }
+
+    @Test
+    fun `continuous observer unwraps measurement across pi boundary`() {
+        val adrc = LinearADRC(b0 = 1.0, omegaC = 1.0, omegaO = 10.0)
+        adrc.enableContinuousInput(-Math.PI, Math.PI)
+        adrc.reset(Math.PI - 0.01)
+
+        adrc.calculate(
+            target = -Math.PI + 0.01,
+            measurement = -Math.PI + 0.01,
+            dtSeconds = 0.01
+        )
+
+        assertTrue(adrc.xHat1 > 3.0, "Observer must remain on the local +pi branch: ${adrc.xHat1}")
+        assertTrue(kotlin.math.abs(adrc.xHat1 - Math.PI) < 0.1)
+    }
+
+    @Test
+    fun `nonfinite input returns zero without poisoning observer`() {
+        val adrc = LinearADRC(b0 = 1.0, omegaC = 1.0, omegaO = 10.0)
+        adrc.reset(2.0)
+
+        assertEquals(0.0, adrc.calculate(Double.NaN, 2.0, 0.02))
+        assertEquals(2.0, adrc.xHat1, 1e-12)
+        assertEquals(0.0, adrc.xHat2, 1e-12)
+    }
 }

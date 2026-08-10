@@ -161,5 +161,26 @@ class CurrentBudgetManagerTest {
         manager.update(12.0, enableCalibration = true)
         assertEquals(17.9, manager.totalEstimatedAmps, 0.001)
     }
-}
 
+    @Test
+    fun `backdriven motor uses signed back emf in current estimate`() {
+        manager.register(motor1, stallCurrentAmps = 12.0, freeSpeedTps = 1200.0, nominalVoltage = 12.0)
+        motor1.power = 0.5
+        motor1.velocity = -600.0
+
+        manager.update(12.0)
+
+        assertEquals(12.0, manager.getMotorAmps(0), 1e-9)
+    }
+
+    @Test
+    fun `powered zero velocity motor is estimated at stall current`() {
+        manager.register(motor1, stallCurrentAmps = 12.0, freeSpeedTps = 1200.0, nominalVoltage = 12.0)
+        motor1.power = 1.0
+        motor1.velocity = 0.0
+
+        manager.update(12.0)
+
+        assertEquals(12.0, manager.getMotorAmps(0), 1e-9)
+    }
+}

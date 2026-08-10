@@ -20,7 +20,7 @@ import com.areslib.control.drivetrain.HolonomicDriveController
  * Heading target trajectory over time:
  * $$\theta_{target}(t) = \theta_{start} + \omega_{sweep} \cdot t$$
  * Transform logging payload vector:
- * $$\mathbf{T}_{cam \to tag} = \begin{bmatrix} t_x & t_y & t_z & q_w & q_x & q_y & q_z \end{bmatrix}^T$$
+ * $$\mathbf{T}_{cam \to tag} = \begin{bmatrix} t_x & t_y & t_z & roll & pitch & yaw \end{bmatrix}^T$$
  *
  * ### Physical Units & Coordinates:
  * - Rotational Sweep Speed (`sweepSpeedRadPerSec`): Radians per second ($rad/s$), CCW positive
@@ -64,7 +64,7 @@ class VisionExtrinsicCalibrationController(
         this.accumulatedRotation = 0.0
         this.currentTargetHeading = currentHeading
         store.dispatch(StartCalibrationSweep(currentHeading, cameraIndex))
-        publishState(true, currentHeading, -1, cameraIndex, doubleArrayOf(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0))
+        publishState(true, currentHeading, -1, cameraIndex, DoubleArray(6), unknownFieldPosition())
     }
 
     /**
@@ -84,7 +84,7 @@ class VisionExtrinsicCalibrationController(
         dtSeconds: Double
     ): ChassisSpeeds {
         if (!isActive) {
-            publishState(false, currentPose.heading.radians, -1, cameraIndex, doubleArrayOf(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0))
+            publishState(false, currentPose.heading.radians, -1, cameraIndex, DoubleArray(6), unknownFieldPosition())
             return ChassisSpeeds(0.0, 0.0, 0.0)
         }
 
@@ -95,7 +95,7 @@ class VisionExtrinsicCalibrationController(
 
         if (accumulatedRotation >= 2.0 * Math.PI) {
             isActive = false
-            publishState(false, currentPose.heading.radians, -1, cameraIndex, doubleArrayOf(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0))
+            publishState(false, currentPose.heading.radians, -1, cameraIndex, DoubleArray(6), unknownFieldPosition())
             return ChassisSpeeds(0.0, 0.0, 0.0)
         }
 
@@ -111,9 +111,15 @@ class VisionExtrinsicCalibrationController(
         // Process any detected vision targets for calibration
         for (m in measurements) {
             if (m.tagId != -1) {
-                val q = m.robotPoseTargetSpace.rotation.q
                 val t = m.robotPoseTargetSpace.translation
-                val transformArray = doubleArrayOf(t.x, t.y, t.z, q.w, q.x, q.y, q.z)
+                val rotation = m.robotPoseTargetSpace.rotation
+                val transformArray = doubleArrayOf(t.x, t.y, t.z, rotation.x, rotation.y, rotation.z)
+                val fieldTag = com.areslib.state.RobotFieldManager.activeConfig.apriltags.firstOrNull { it.id == m.tagId }
+                val tagFieldPosition = if (fieldTag != null) {
+                    doubleArrayOf(fieldTag.x, fieldTag.y, fieldTag.z)
+                } else {
+                    unknownFieldPosition()
+                }
 
                 // Dispatch calibration frame logged
                 store.dispatch(
@@ -131,7 +137,8 @@ class VisionExtrinsicCalibrationController(
                     gyroHeading = currentPose.heading.radians,
                     tagIndex = m.tagId,
                     cameraIndex = cameraIndex,
-                    cameraToTag = transformArray
+                    cameraToTag = transformArray,
+                    tagFieldPosition = tagFieldPosition
                 )
             }
         }
@@ -144,14 +151,18 @@ class VisionExtrinsicCalibrationController(
         gyroHeading: Double,
         tagIndex: Int,
         cameraIndex: Int,
-        cameraToTag: DoubleArray
+        cameraToTag: DoubleArray,
+        tagFieldPosition: DoubleArray
     ) {
         publisher.publishCalibration(
             isActive = isActive,
             gyroHeading = gyroHeading,
             tagIndex = tagIndex,
             cameraIndex = cameraIndex,
-            cameraToTag = cameraToTag
+            cameraToTag = cameraToTag,
+            tagFieldPosition = tagFieldPosition
         )
     }
+
+    private fun unknownFieldPosition() = doubleArrayOf(Double.NaN, Double.NaN, Double.NaN)
 }

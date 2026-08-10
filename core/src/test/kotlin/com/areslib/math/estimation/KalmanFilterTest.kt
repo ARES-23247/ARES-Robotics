@@ -28,6 +28,25 @@ class KalmanFilterTest {
     }
 
     @Test
+    fun `first observation preserves the configured initial error covariance`() {
+        val filter = KalmanFilter(
+            processNoise = 0.0,
+            measurementNoise = 1.0,
+            initialError = 9.0
+        )
+
+        assertEquals(10.0, filter.calculate(10.0), 1e-12)
+
+        // The second observation's gain is 9 / (9 + 1) = 0.9. Resetting the
+        // covariance to the old hard-coded 1.0 would instead produce 5.0.
+        assertEquals(1.0, filter.calculate(0.0), 1e-12)
+
+        filter.clear()
+        assertEquals(10.0, filter.calculate(10.0), 1e-12)
+        assertEquals(1.0, filter.calculate(0.0), 1e-12)
+    }
+
+    @Test
     /**
      * testNoiseReductionConvergence declaration.
      *

@@ -2,6 +2,7 @@ package com.areslib.reducer
 
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
+import com.areslib.state.DriveState
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
@@ -55,6 +56,33 @@ class DriveReducerTest {
         assertEquals(2.1625370306, newState.drive.poseEstimator.estimatedPose.y, 1e-6)
         assertEquals(0.5, newState.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
         assertEquals(2050L, newState.timestampMs)
+    }
+
+    @Test
+    fun `pose update keeps measured field velocity separate from drive commands`() {
+        val initialState = RobotState(
+            drive = DriveState(
+                xVelocityMetersPerSecond = 4.0,
+                yVelocityMetersPerSecond = -3.0
+            )
+        )
+        val updated = rootReducer(
+            initialState,
+            RobotAction.PoseUpdate(
+                xMeters = 0.0,
+                yMeters = 0.0,
+                headingRadians = 0.0,
+                timestampMs = 1000L,
+                isReset = true,
+                xVelocityMetersPerSecond = 1.25,
+                yVelocityMetersPerSecond = -0.75
+            )
+        )
+
+        assertEquals(4.0, updated.drive.xVelocityMetersPerSecond)
+        assertEquals(-3.0, updated.drive.yVelocityMetersPerSecond)
+        assertEquals(1.25, updated.drive.measuredFieldXVelocityMetersPerSecond)
+        assertEquals(-0.75, updated.drive.measuredFieldYVelocityMetersPerSecond)
     }
 
     @Test

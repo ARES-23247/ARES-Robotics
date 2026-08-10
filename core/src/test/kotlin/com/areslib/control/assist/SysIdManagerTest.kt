@@ -135,4 +135,35 @@ class SysIdManagerTest {
         assertFalse(manager.isActive())
         assertEquals(0.0, manager.currentVoltage)
     }
+
+    @Test
+    fun `nonfinite pose aborts active safety check`() {
+        val manager = SysIdManager()
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
+
+        assertFalse(manager.checkSafety(Double.NaN, 0.0, 0.0, 1100L))
+        assertFalse(manager.isActive())
+        assertEquals(0.0, manager.currentVoltage)
+    }
+
+    @Test
+    fun `nonfinite initial pose refuses to start routine`() {
+        val manager = SysIdManager()
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, Double.NaN, 0.0, 0.0)
+        assertFalse(manager.isActive())
+        assertEquals(0.0, manager.currentVoltage)
+    }
+
+    @Test
+    fun `nonfinite velocity or decreasing timestamp aborts update`() {
+        val manager = SysIdManager()
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
+        assertEquals(0.0, manager.update(1100L, Double.NaN))
+        assertFalse(manager.isActive())
+
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 2000L, 0.0, 0.0, 0.0)
+        manager.update(2100L, 1.0)
+        assertEquals(0.0, manager.update(2050L, 1.0))
+        assertFalse(manager.isActive())
+    }
 }

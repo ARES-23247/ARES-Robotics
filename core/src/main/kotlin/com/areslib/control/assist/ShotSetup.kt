@@ -17,7 +17,7 @@ import com.areslib.math.wrapAngle
  * @property robotTargetHeadingRad Required robot chassis heading angle in radians ($rad$, CCW positive).
  * @property aimDistanceMeters Distance from shooter offset to virtual target in meters ($m$).
  * @property targetFlywheelRpm Target interpolated flywheel velocity in Revolutions Per Minute ($RPM$).
- * @property targetCowlAngleDegrees Target interpolated cowl/hood angle in degrees ($^\circ$).
+ * @property targetCowlAngleRotations Target interpolated cowl/hood position in mechanism rotations.
  * @property angularVelocityFeedforwardRadPerSec Direct derivative feedforward rate for heading rotation in radians per second ($rad/s$).
  */
 class ShotResult {
@@ -27,7 +27,18 @@ class ShotResult {
     var robotTargetHeadingRad: Double = 0.0
     var aimDistanceMeters: Double = 0.0
     var targetFlywheelRpm: Double = 0.0
-    var targetCowlAngleDegrees: Double = 0.0
+    var targetCowlAngleRotations: Double = 0.0
+
+    /**
+     * Compatibility alias retained for callers compiled against the old, incorrectly
+     * labeled property. Values have always been mechanism rotations, never degrees.
+     */
+    @Deprecated("Cowl lookup values are rotations, not degrees", ReplaceWith("targetCowlAngleRotations"))
+    var targetCowlAngleDegrees: Double
+        get() = targetCowlAngleRotations
+        set(value) {
+            targetCowlAngleRotations = value
+        }
     var angularVelocityFeedforwardRadPerSec: Double = 0.0
 }
 
@@ -43,7 +54,9 @@ class ShotResult {
  * @property tofValues Projectile time-of-flight corresponding to each distance breakpoint ($s$).
  * @property shotKeys Sorted distance breakpoints for RPM and cowl angle interpolation ($m$).
  * @property shotRpm Target flywheel rotational speeds corresponding to distance breakpoints ($RPM$).
- * @property shotCowl Target cowl hood angles corresponding to distance breakpoints ($^\circ$).
+ * @property shotCowl Cowl mechanism rotations corresponding to each distance breakpoint.
+ * This compatibility name is retained for source compatibility; use [shotCowlRotations]
+ * when reading the configured table.
  * @property delayCompensationSeconds Phase delay compensation for system latency ($s$).
  * @property shooterFacesRearward `true` if shooter points out the rear of the robot (180° offset from front).
  */
@@ -58,10 +71,39 @@ data class ShotConfig(
     val delayCompensationSeconds: Double = 0.05,
     val shooterFacesRearward: Boolean = true
 ) {
+    /** Explicitly unit-labeled view of [shotCowl]. */
+    val shotCowlRotations: DoubleArray get() = shotCowl
+
     init {
+        require(tofKeys.isNotEmpty()) { "tofKeys and tofValues must not be empty" }
+        require(shotKeys.isNotEmpty()) { "shot lookup tables must not be empty" }
         require(tofKeys.size == tofValues.size) { "tofKeys and tofValues must have the same length" }
         require(shotKeys.size == shotRpm.size) { "shotKeys and shotRpm must have the same length" }
         require(shotKeys.size == shotCowl.size) { "shotKeys and shotCowl must have the same length" }
+        require(shooterOffsetX.isFinite() && shooterOffsetY.isFinite()) { "Shooter offsets must be finite" }
+        require(delayCompensationSeconds.isFinite() && delayCompensationSeconds >= 0.0) {
+            "Delay compensation must be finite and non-negative"
+        }
+        requireStrictlyIncreasingFinite(tofKeys, "tofKeys")
+        requireStrictlyIncreasingFinite(shotKeys, "shotKeys")
+        requireFinite(tofValues, "tofValues")
+        requireFinite(shotRpm, "shotRpm")
+        requireFinite(shotCowl, "shotCowl")
+    }
+
+    private fun requireStrictlyIncreasingFinite(values: DoubleArray, name: String) {
+        for (index in values.indices) {
+            require(values[index].isFinite()) { "$name must contain only finite values" }
+            if (index > 0) {
+                require(values[index] > values[index - 1]) { "$name must be strictly increasing" }
+            }
+        }
+    }
+
+    private fun requireFinite(values: DoubleArray, name: String) {
+        for (index in values.indices) {
+            require(values[index].isFinite()) { "$name must contain only finite values" }
+        }
     }
 }
 
@@ -114,13 +156,19 @@ class ShotSetup(private val config: ShotConfig) {
     }
 
     /**
-     * Linearly interpolates target cowl/hood angle in degrees ($^\circ$) for a given aim distance in meters ($m$).
+     * Linearly interpolates target cowl/hood position in mechanism rotations for a given aim distance in meters ($m$).
      *
      * @param distance Straight-line aim distance to virtual target in meters ($m$).
-     * @return Interpolated cowl hood angle in degrees ($^\circ$).
+     * @return Interpolated cowl mechanism position in rotations.
      */
+    fun interpolateCowlRotations(distance: Double): Double {
+        return interpolate(config.shotKeys, config.shotCowlRotations, distance)
+    }
+
+    /** Compatibility alias for the formerly unit-ambiguous method name. */
+    @Deprecated("Use the rotation-labeled API", ReplaceWith("interpolateCowlRotations(distance)"))
     fun interpolateCowl(distance: Double): Double {
-        return interpolate(config.shotKeys, config.shotCowl, distance)
+        return interpolateCowlRotations(distance)
     }
 
     /**
@@ -197,7 +245,7 @@ class ShotSetup(private val config: ShotConfig) {
 
         // 7. Map lookahead aimDistance to flywheel and cowl parameters
         val targetRpm = interpolateRpm(aimDistance)
-        val targetCowl = interpolateCowl(aimDistance)
+        val targetCowlRotations = interpolateCowlRotations(aimDistance)
 
         // Write outputs
         result.virtualTargetX = virtualTargetX
@@ -206,7 +254,7 @@ class ShotSetup(private val config: ShotConfig) {
         result.robotTargetHeadingRad = wrappedRobotHeading
         result.aimDistanceMeters = aimDistance
         result.targetFlywheelRpm = targetRpm
-        result.targetCowlAngleDegrees = targetCowl
+        result.targetCowlAngleRotations = targetCowlRotations
         result.angularVelocityFeedforwardRadPerSec = angularVelFF
     }
 

@@ -113,6 +113,10 @@ class SysIdManager {
      * @param heading Initial robot heading in radians ($rad$).
      */
     fun start(mechanism: SysIdMechanism, routine: SysIdRoutine, timestampMs: Long, x: Double, y: Double, heading: Double) {
+        if (!x.isFinite() || !y.isFinite() || !heading.isFinite()) {
+            stop()
+            return
+        }
         activeMechanism = mechanism
         activeRoutine = routine
         startTimeMs = timestampMs
@@ -154,9 +158,15 @@ class SysIdManager {
      */
     fun checkSafety(x: Double, y: Double, heading: Double, timestampMs: Long): Boolean {
         if (!isActive()) return true
-        
+
+        if (!x.isFinite() || !y.isFinite() || !heading.isFinite() || timestampMs < startTimeMs) {
+            stop()
+            return false
+        }
+
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
         if (elapsedSec > 5.0) {
+            stop()
             return false // Time safety limit
         }
 
@@ -168,14 +178,16 @@ class SysIdManager {
             val dx = x - startX
             val dy = y - startY
             val dist = sqrt(dx * dx + dy * dy)
-            if (dist > 1.5) {
+            if (!dist.isFinite() || dist > 1.5) {
+                stop()
                 return false // Distance safety limit
             }
         } else {
             val diff = wrapAngle(heading - lastHeading)
             accumulatedHeadingChange += kotlin.math.abs(diff)
             lastHeading = heading
-            if (accumulatedHeadingChange > 4.0 * kotlin.math.PI) {
+            if (!accumulatedHeadingChange.isFinite() || accumulatedHeadingChange > 4.0 * kotlin.math.PI) {
+                stop()
                 return false // Rotation safety limit (2 full rotations)
             }
         }
@@ -191,8 +203,17 @@ class SysIdManager {
      */
     fun update(timestampMs: Long, velocity: Double): Double {
         if (!isActive()) return 0.0
-        
+
+        if (!velocity.isFinite() || timestampMs < startTimeMs || timestampMs < lastTimeMs) {
+            stop()
+            return 0.0
+        }
+
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
+        if (elapsedSec > 5.0) {
+            stop()
+            return 0.0
+        }
         val dt = (timestampMs - lastTimeMs) / 1000.0
         
         // Calculate acceleration and integrate position

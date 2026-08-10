@@ -114,6 +114,15 @@ class FrcSwerveRobot(
             val lastPose = store.state.drive.poseEstimator.estimatedPose
             val x = if (currentlyBeached) lastPose.x else driveState.odometryX
             val y = if (currentlyBeached) lastPose.y else driveState.odometryY
+            val cosHeading = kotlin.math.cos(driveState.odometryHeading)
+            val sinHeading = kotlin.math.sin(driveState.odometryHeading)
+            // CTRE reports chassis speeds in the robot frame. Store measured speeds
+            // separately from commanded Redux drive intent and convert them to the
+            // field frame consumed by shoot-on-the-move prediction.
+            val measuredFieldVx = driveState.xVelocityMetersPerSecond * cosHeading -
+                driveState.yVelocityMetersPerSecond * sinHeading
+            val measuredFieldVy = driveState.xVelocityMetersPerSecond * sinHeading +
+                driveState.yVelocityMetersPerSecond * cosHeading
 
             if (wasBeached && !currentlyBeached) {
                 swerveIO.seedPose(lastPose)
@@ -126,7 +135,10 @@ class FrcSwerveRobot(
                 headingRadians = driveState.odometryHeading,
                 timestampMs = timestampMs,
                 pitchDegrees = swerveIO.pitchDegrees,
-                rollDegrees = swerveIO.rollDegrees
+                rollDegrees = swerveIO.rollDegrees,
+                angularVelocityRadiansPerSecond = driveState.angularVelocityRadiansPerSecond,
+                xVelocityMetersPerSecond = measuredFieldVx,
+                yVelocityMetersPerSecond = measuredFieldVy
             ))
         }
     }

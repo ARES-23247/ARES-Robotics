@@ -183,14 +183,15 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         gyroHeading: Double,
         tagIndex: Int,
         cameraIndex: Int,
-        cameraToTag: DoubleArray
+        cameraToTag: DoubleArray,
+        tagFieldPosition: DoubleArray = doubleArrayOf(Double.NaN, Double.NaN, Double.NaN)
     ) {
         telemetry.putBoolean("Calibration/IsActive", isActive)
         telemetry.putNumber("Calibration/GyroHeading", gyroHeading)
         telemetry.putNumber("Calibration/TagIndex", tagIndex.toDouble())
         telemetry.putNumber("Calibration/CameraIndex", cameraIndex.toDouble())
         telemetry.putDoubleArray("Calibration/CameraToTag", cameraToTag)
+        telemetry.putDoubleArray("Calibration/TagField", tagFieldPosition)
         telemetry.update()
     }
 }
-

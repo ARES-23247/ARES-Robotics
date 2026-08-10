@@ -130,7 +130,9 @@ class PIDController(
      * @return Computed control effort output $u(k)$.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
-        if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0) {
+        if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !p.isFinite() || !i.isFinite() || !d.isFinite()
+        ) {
             val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("PIDController: Invalid inputs detected (measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds). Returning safe fallback 0.0.")
@@ -146,8 +148,15 @@ class PIDController(
             error = inputModulus(error, -errorBound, errorBound)
         }
 
-        if (kotlin.math.abs(error) < deadzone) {
-            error = 0.0
+        if (deadzone.isFinite() && deadzone > 0.0 && kotlin.math.abs(error) < deadzone) {
+            // The deadzone is an output deadzone, not merely a proportional-error
+            // deadzone. Refresh the derivative baseline without integrating or allowing
+            // stored I/D state to command the mechanism while it is within tolerance.
+            prevMeasurement = measurement
+            prevError = 0.0
+            filteredDerivative = 0.0
+            isFirstStep = false
+            return 0.0
         }
 
         val measurementDerivative = if (isFirstStep) 0.0 else (measurement - prevMeasurement) / dtSeconds

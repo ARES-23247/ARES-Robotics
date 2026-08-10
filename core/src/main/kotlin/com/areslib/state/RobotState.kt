@@ -45,6 +45,10 @@ data class DriveState(
     val xVelocityMetersPerSecond: Double = 0.0,
     val yVelocityMetersPerSecond: Double = 0.0,
     val angularVelocityRadiansPerSecond: Double = 0.0,
+    /** Measured field-relative X velocity, distinct from the commanded drive intent above. */
+    val measuredFieldXVelocityMetersPerSecond: Double = 0.0,
+    /** Measured field-relative Y velocity, distinct from the commanded drive intent above. */
+    val measuredFieldYVelocityMetersPerSecond: Double = 0.0,
     val measuredAngularVelocityRadiansPerSecond: Double = 0.0,
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
@@ -223,4 +227,3 @@ data class VisionState(
 enum class Alliance {
     RED, BLUE
 }
-

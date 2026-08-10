@@ -11,8 +11,10 @@ object NT4Json {
         val method: String,
         val topicName: String? = null,
         val pubUid: Int? = null,
+        val subUid: Int? = null,
         val type: String? = null,
-        val topics: List<String> = emptyList()
+        val topics: List<String> = emptyList(),
+        val prefix: Boolean = false
     )
 
     /**
@@ -79,15 +81,19 @@ object NT4Json {
 
         val name = extractStringField(json, "name", searchStart, endIdx)
         val pubUid = extractIntField(json, "pubuid", searchStart, endIdx)
+        val subUid = extractIntField(json, "subuid", searchStart, endIdx)
         val type = extractStringField(json, "type", searchStart, endIdx)
         val topics = extractStringArrayField(json, "topics", searchStart, endIdx)
+        val prefix = extractBooleanField(json, "prefix", searchStart, endIdx) ?: false
 
         return ParsedMessage(
             method = method,
             topicName = name,
             pubUid = pubUid,
+            subUid = subUid,
             type = type,
-            topics = topics
+            topics = topics,
+            prefix = prefix
         )
     }
 
@@ -129,6 +135,23 @@ object NT4Json {
             idx++
         }
         return sb.toString().toIntOrNull()
+    }
+
+    fun extractBooleanField(json: String, fieldName: String, searchStart: Int, searchEnd: Int): Boolean? {
+        val key = "\"$fieldName\""
+        val keyIdx = json.indexOf(key, searchStart)
+        if (keyIdx == -1 || keyIdx > searchEnd) return null
+
+        val colonIdx = json.indexOf(':', keyIdx + key.length)
+        if (colonIdx == -1 || colonIdx > searchEnd) return null
+
+        var idx = colonIdx + 1
+        while (idx <= searchEnd && json[idx].isWhitespace()) idx++
+        return when {
+            json.regionMatches(idx, "true", 0, 4) -> true
+            json.regionMatches(idx, "false", 0, 5) -> false
+            else -> null
+        }
     }
 
     fun extractStringArrayField(json: String, fieldName: String, searchStart: Int, searchEnd: Int): List<String> {

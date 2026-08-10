@@ -28,4 +28,26 @@ class ChassisSpeedsTest {
         assertEquals(0.0, speeds.vxMetersPerSecond, 0.001)
         assertEquals(-1.0, speeds.vyMetersPerSecond, 0.001)
     }
+
+    @Test
+    fun `discretize uses exact inverse SE2 translation Jacobian`() {
+        val speeds = ChassisSpeeds.discretize(
+            vxMetersPerSecond = 1.0,
+            vyMetersPerSecond = 0.0,
+            omegaRadiansPerSecond = Math.PI,
+            dtSeconds = 1.0
+        )
+
+        assertEquals(0.0, speeds.vxMetersPerSecond, 1e-9)
+        assertEquals(-Math.PI / 2.0, speeds.vyMetersPerSecond, 1e-9)
+        assertEquals(Math.PI, speeds.omegaRadiansPerSecond, 1e-9)
+    }
+
+    @Test
+    fun `discretize returns safe zero for invalid timestep`() {
+        val speeds = ChassisSpeeds.discretize(1.0, 2.0, 3.0, Double.NaN)
+        assertEquals(0.0, speeds.vxMetersPerSecond)
+        assertEquals(0.0, speeds.vyMetersPerSecond)
+        assertEquals(0.0, speeds.omegaRadiansPerSecond)
+    }
 }

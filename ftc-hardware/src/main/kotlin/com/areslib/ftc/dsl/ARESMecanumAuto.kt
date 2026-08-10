@@ -78,6 +78,17 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
     abstract fun closeRobot(robot: R)
 
     /**
+     * Stops both shared drivetrain hardware and every registered season subsystem.
+     * Season wrappers may override for additional state resets, but the default is
+     * a complete ARES lifecycle safety stop rather than a drivetrain-only command.
+     */
+    open fun safeRobot(robot: R) {
+        val mecanumRobot = getMecanumRobot(robot)
+        mecanumRobot.safeAll()
+        mecanumRobot.safeHardware()
+    }
+
+    /**
      * Main execution entry point for FTC LinearOpMode lifecycle.
      */
     override fun runOpMode() {
@@ -166,6 +177,9 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
             robot.visionTracker.hasInitializedPoseWithVision = true
 
             if (autoTask == null) {
+                try {
+                    safeRobot(wrapper)
+                } catch (_: Exception) { /* best-effort initialization abort */ }
                 telemetry.addData("CRASH", "Aborting: Path not loaded. Error: $pathLoadError")
                 telemetry.update()
                 sleep(2000L)
@@ -191,14 +205,18 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
                         val actions = executor.update(robot.store.state, loopStartMs)
                         actions.forEach { robot.store.dispatch(it) }
                     } else {
-                        robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                        safeRobot(wrapper)
+                        break
                     }
                 } catch (e: Exception) {
-                    // Per-iteration failsafe: disable outputs if a single iteration fails
+                    // A failed autonomous sequence is latched/aborted. Retrying the
+                    // same stale Redux targets would re-enable season mechanisms.
                     try {
-                        robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                        safeRobot(wrapper)
                     } catch (_: Exception) { /* best-effort */ }
+                    try { executor.clear(robot.store.state) } catch (_: Exception) {}
                     telemetry.addData("LOOP_ERROR", e.message ?: "Unknown error")
+                    break
                 }
 
                 // Loop time watchdog
@@ -217,14 +235,14 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
 
             // Clean stop at target & persist pose for TeleOp
             executor.clear(robot.store.state)
-            robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+            safeRobot(wrapper)
             com.areslib.util.PoseStorage.currentPose = robot.drive.odometryPose
             com.areslib.util.PoseStorage.hasValidPose = true
             
         } catch (e: Exception) {
             // Top-level failsafe: disable all outputs and log
             try {
-                robot.mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                safeRobot(wrapper)
             } catch (_: Exception) { /* best-effort shutoff */ }
             telemetry.addData("CRASH", e.message ?: "Unknown error")
             telemetry.update()
@@ -233,5 +251,3 @@ abstract class FtcMecanumAutoBase<R> : LinearOpMode() {
         }
     }
 }
-
-

@@ -97,6 +97,7 @@ object SCurveTrajectoryParameterizer {
         val numPoints = rawPoints.size
         val distances = DoubleArray(numPoints)
         val curvatures = DoubleArray(numPoints)
+        val tangents = DoubleArray(numPoints)
         val headings = Array(numPoints) { Rotation2d(0.0) }
 
         // Compute cumulative distance along the path
@@ -106,6 +107,21 @@ object SCurveTrajectoryParameterizer {
         }
 
         val totalLength = distances.last()
+
+        // Path tangent is independent of robot heading. The follower uses this direction
+        // for translational feedforward, so leaving it at PathPoint's zero default sends
+        // every trajectory along +X regardless of its actual geometry.
+        var lastValidTangent = 0.0
+        for (i in 0 until numPoints) {
+            val before = if (i == 0) rawPoints[0] else rawPoints[i - 1]
+            val after = if (i == numPoints - 1) rawPoints[numPoints - 1] else rawPoints[i + 1]
+            val dx = after.x - before.x
+            val dy = after.y - before.y
+            if (hypot(dx, dy) > 1e-9) {
+                lastValidTangent = atan2(dy, dx)
+            }
+            tangents[i] = lastValidTangent
+        }
 
         // 2. Compute headings and curvatures
         for (i in 0 until numPoints) {
@@ -225,7 +241,8 @@ object SCurveTrajectoryParameterizer {
                     pose = Pose2d(rawPoints[i].x, rawPoints[i].y, headings[i]),
                     velocityMps = velocities[i],
                     distanceMeters = distances[i],
-                    curvature = curvatures[i]
+                    curvature = curvatures[i],
+                    tangentRadians = tangents[i]
                 )
             )
         }

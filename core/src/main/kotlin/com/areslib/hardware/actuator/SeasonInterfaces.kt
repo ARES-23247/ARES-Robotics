@@ -28,6 +28,10 @@ interface FlywheelIO : SubsystemIO {
     val velocityRpm: Double
         get() = 0.0
 
+    /** True only when [velocityRpm] was refreshed successfully this loop. */
+    val velocityValid: Boolean
+        get() = false
+
     /** Gets the measured stator current of the flywheel motors in Amperes */
     val currentAmps: Double
         get() = 0.0
@@ -52,6 +56,18 @@ interface CowlIO : SubsystemIO {
 
     /** Sets the target absolute position angle in rotations */
     fun setTargetAngle(rotations: Double)
+
+    /**
+     * Sets the target angle without scaling mechanism geometry while limiting the
+     * closed-loop effort available to reach it.
+     *
+     * Implementations with hardware closed-loop control should override this method.
+     * The compatibility fallback can only provide a full-effort command or a zero-effort
+     * safety stop.
+     */
+    fun setTargetAngle(rotations: Double, maxEffortScale: Double) {
+        if (maxEffortScale <= 0.0) setAppliedVoltage(0.0) else setTargetAngle(rotations)
+    }
 
     /** Sets the applied voltage directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
@@ -83,6 +99,11 @@ interface IntakeIO : SubsystemIO {
     /** Sets the target absolute angle of the pivot arm in degrees */
     fun setPivotAngle(degrees: Double)
 
+    /** Sets the pivot target while independently limiting closed-loop effort. */
+    fun setPivotAngle(degrees: Double, maxEffortScale: Double) {
+        if (maxEffortScale <= 0.0) setPivotVoltage(0.0) else setPivotAngle(degrees)
+    }
+
     /** Sets the applied voltage of the pivot motor directly (-12.0 to 12.0 volts) */
     fun setPivotVoltage(volts: Double)
 
@@ -105,6 +126,10 @@ interface IntakeIO : SubsystemIO {
     /** Gets the measured current of the roller motor in Amperes */
     val rollerCurrentAmps: Double
         get() = 0.0
+
+    /** True only when [rollerCurrentAmps] is a fresh, trustworthy observation. */
+    val rollerCurrentValid: Boolean
+        get() = true
 
     /**
      * Gets the roller motor encoder velocity in ticks per second.
@@ -137,6 +162,13 @@ interface FeederIO : SubsystemIO {
     val isBeamBroken: Boolean
         get() = false
 
+    /**
+     * Whether a physical or explicitly configured simulated piece detector exists.
+     * Consumers must not interpret [isBeamBroken] when this is false.
+     */
+    val pieceDetectionValid: Boolean
+        get() = false
+
     /** Gets the stator current draw in Amperes */
     val currentAmps: Double
         get() = 0.0
@@ -147,7 +179,7 @@ interface FeederIO : SubsystemIO {
  */
 interface ClimberIO : SubsystemIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
-        telemetry.putNumber("$prefix/ExtensionMeters", extensionMeters)
+        telemetry.putNumber("$prefix/PositionRotations", positionRotations)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
     }
 
@@ -155,14 +187,19 @@ interface ClimberIO : SubsystemIO {
         setAppliedVoltage(0.0)
     }
 
-    /** Sets the target extension position in meters */
-    fun setTargetExtension(meters: Double)
+    /** Sets the target mechanism position in rotations. */
+    fun setTargetPositionRotations(rotations: Double)
+
+    /** Sets the target mechanism position while independently limiting closed-loop effort. */
+    fun setTargetPositionRotations(rotations: Double, maxEffortScale: Double) {
+        if (maxEffortScale <= 0.0) setAppliedVoltage(0.0) else setTargetPositionRotations(rotations)
+    }
 
     /** Sets the applied voltage of the climber motor directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
 
-    /** Gets the current measured extension in meters */
-    val extensionMeters: Double
+    /** Gets the current measured mechanism position in rotations. */
+    val positionRotations: Double
         get() = 0.0
 
     /** Gets the stator current draw in Amperes */

@@ -7,10 +7,11 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Asynchronous, thread-safe file-based CSV data logger.
@@ -21,9 +22,17 @@ class ARESDataLogger(val mode: String = "Init") {
 
     private val logQueue = LinkedBlockingQueue<Map<String, Any>>(1000)
     private val activeKeys = mutableListOf<String>()
+    private val activeKeySet = HashSet<String>()
     private var writer: BufferedWriter? = null
     private var isHeaderWritten = false
-    private var isRunning = false
+    @Volatile private var isRunning = false
+    private val queueStateLock = Any()
+    private val workerDone = CountDownLatch(1)
+    private val droppedFrames = AtomicLong(0L)
+
+    /** Number of frames rejected because the logger was stopped or its bounded queue was full. */
+    val droppedFrameCount: Long
+        get() = droppedFrames.get()
 
     // GC-Free Map Pool to eliminate allocations during telemetry updates
     private val mapPool = LinkedBlockingQueue<HashMap<String, Any>>()
@@ -64,6 +73,7 @@ class ARESDataLogger(val mode: String = "Init") {
         } catch (e: Exception) {
             System.err.println("ARESDataLogger: Failed to initialize log file! ${e.message}")
             isRunning = false
+            workerDone.countDown()
         }
     }
 
@@ -86,37 +96,135 @@ class ARESDataLogger(val mode: String = "Init") {
      * Queues a frame of key-value telemetry data to be logged.
      */
     fun logFrame(data: Map<String, Any>) {
-        if (!isRunning) {
-            if (data is HashMap<String, Any>) {
-                recycleMap(data)
+        synchronized(queueStateLock) {
+            if (!isRunning) {
+                droppedFrames.incrementAndGet()
+                if (data is HashMap<String, Any>) {
+                    recycleMap(data)
+                }
+                return
             }
-            return
-        }
-        val accepted = logQueue.offer(data)
-        if (!accepted && data is HashMap<String, Any>) {
-            recycleMap(data)
+            val accepted = logQueue.offer(data)
+            if (!accepted) {
+                droppedFrames.incrementAndGet()
+                if (data is HashMap<String, Any>) {
+                    recycleMap(data)
+                }
+            }
         }
     }
 
     private fun startLoggingLoop() {
         executor.submit {
-            while (isRunning || logQueue.isNotEmpty()) {
-                try {
-                    val frame = logQueue.poll(100, TimeUnit.MILLISECONDS) ?: continue
-                    writeFrame(frame)
-                } catch (e: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                } catch (e: Exception) {
-                    System.err.println("ARESDataLogger: Error writing log frame: ${e.message}")
+            var wasInterrupted = false
+            try {
+                while (isRunning || logQueue.isNotEmpty()) {
+                    try {
+                        val frame = logQueue.poll(100, TimeUnit.MILLISECONDS) ?: continue
+                        writeFrame(frame)
+                    } catch (_: InterruptedException) {
+                        // Preserve all accepted frames even if shutdown races an interruption.
+                        // Restore the flag after the queue has been drained and the writer closed.
+                        wasInterrupted = true
+                    } catch (e: Exception) {
+                        System.err.println("ARESDataLogger: Error writing log frame: ${e.message}")
+                    }
                 }
+            } finally {
+                closeWriter()
+                workerDone.countDown()
+                if (wasInterrupted) Thread.currentThread().interrupt()
             }
-            closeWriter()
         }
     }
 
     // Pre-allocated StringBuilder for zero-allocation CSV row writing
     private val csvBuilder = StringBuilder(512)
+    private val extraFieldsBuilder = StringBuilder(256)
+
+    private fun StringBuilder.appendCsvField(value: CharSequence) {
+        var needsQuotes = false
+        for (i in 0 until value.length) {
+            when (value[i]) {
+                ',', '"', '\r', '\n' -> {
+                    needsQuotes = true
+                    break
+                }
+            }
+        }
+        if (!needsQuotes) {
+            append(value)
+            return
+        }
+
+        append('"')
+        for (i in 0 until value.length) {
+            val c = value[i]
+            if (c == '"') append('"')
+            append(c)
+        }
+        append('"')
+    }
+
+    private fun StringBuilder.appendJsonString(value: String) {
+        append('"')
+        for (c in value) {
+            when (c) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\b' -> append("\\b")
+                '\u000C' -> append("\\f")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> {
+                    if (c.code < 0x20) {
+                        append("\\u")
+                        append(c.code.toString(16).padStart(4, '0'))
+                    } else {
+                        append(c)
+                    }
+                }
+            }
+        }
+        append('"')
+    }
+
+    /**
+     * Serializes fields that were not present when the stable CSV header was established.
+     * A reserved JSON column preserves late-appearing data without changing column counts or
+     * emitting a second header in the middle of the file.
+     */
+    private fun buildExtraFields(frame: Map<String, Any>): CharSequence {
+        extraFieldsBuilder.setLength(0)
+        extraFieldsBuilder.append('{')
+        var first = true
+        val lateKeys = frame.keys.filter { it !in activeKeySet }.sorted()
+        for (key in lateKeys) {
+            if (!first) extraFieldsBuilder.append(',')
+            first = false
+            extraFieldsBuilder.appendJsonString(key)
+            extraFieldsBuilder.append(':')
+            val value = frame[key]
+            when (value) {
+                is Double -> if (value.isFinite()) {
+                    extraFieldsBuilder.append(value.toString())
+                } else {
+                    extraFieldsBuilder.appendJsonString(value.toString())
+                }
+                is Float -> if (value.isFinite()) {
+                    extraFieldsBuilder.append(value.toString())
+                } else {
+                    extraFieldsBuilder.appendJsonString(value.toString())
+                }
+                is Number, is Boolean -> extraFieldsBuilder.append(value.toString())
+                null -> extraFieldsBuilder.append("null")
+                else -> extraFieldsBuilder.appendJsonString(value.toString())
+            }
+        }
+        extraFieldsBuilder.append('}')
+        return extraFieldsBuilder
+    }
 
     private fun StringBuilder.appendDouble(d: Double, places: Int = 4) {
         if (d.isNaN()) { append("NaN"); return }
@@ -156,6 +264,7 @@ class ARESDataLogger(val mode: String = "Init") {
             // 1. Write the CSV header on the first frame
             if (!isHeaderWritten) {
                 activeKeys.clear()
+                activeKeySet.clear()
                 // Always place timestamp first for easier plotting
                 activeKeys.add("TimestampMs")
                 
@@ -163,17 +272,20 @@ class ARESDataLogger(val mode: String = "Init") {
                 val sortedKeys = frame.keys.sorted()
                 for (i in 0 until sortedKeys.size) {
                     val key = sortedKeys[i]
-                    if (key != "TimestampMs") {
+                    if (key != "TimestampMs" && key != EXTRA_FIELDS_COLUMN) {
                         activeKeys.add(key)
                     }
                 }
+                activeKeySet.addAll(activeKeys)
 
                 try {
                     csvBuilder.setLength(0)
                     for (i in 0 until activeKeys.size) {
                         if (i > 0) csvBuilder.append(',')
-                        csvBuilder.append(activeKeys[i])
+                        csvBuilder.appendCsvField(activeKeys[i])
                     }
+                    if (activeKeys.isNotEmpty()) csvBuilder.append(',')
+                    csvBuilder.appendCsvField(EXTRA_FIELDS_COLUMN)
                     w.write(csvBuilder.toString())
                     w.newLine()
                     isHeaderWritten = true
@@ -192,10 +304,12 @@ class ARESDataLogger(val mode: String = "Init") {
                         if (value is Double) {
                             csvBuilder.appendDouble(value, 4)
                         } else {
-                            csvBuilder.append(value.toString())
+                            csvBuilder.appendCsvField(value.toString())
                         }
                     }
                 }
+                if (activeKeys.isNotEmpty()) csvBuilder.append(',')
+                csvBuilder.appendCsvField(buildExtraFields(frame))
                 w.write(csvBuilder.toString())
                 w.newLine()
             } catch (e: IOException) {
@@ -224,12 +338,22 @@ class ARESDataLogger(val mode: String = "Init") {
      * Gracefully stops the background logging worker after flushing all remaining queued items.
      */
     fun stop() {
-        isRunning = false
-        executor.shutdown()
-        try {
-            executor.awaitTermination(2, TimeUnit.SECONDS)
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
+        synchronized(queueStateLock) {
+            isRunning = false
         }
+        executor.shutdown()
+        var wasInterrupted = false
+        while (workerDone.count > 0L) {
+            try {
+                workerDone.await()
+            } catch (_: InterruptedException) {
+                wasInterrupted = true
+            }
+        }
+        if (wasInterrupted) Thread.currentThread().interrupt()
+    }
+
+    companion object {
+        const val EXTRA_FIELDS_COLUMN = "_ExtraFieldsJson"
     }
 }

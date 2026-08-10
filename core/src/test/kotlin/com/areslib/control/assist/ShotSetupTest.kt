@@ -16,6 +16,51 @@ import kotlin.math.*
  */
 class ShotSetupTest {
 
+    @Test
+    fun `shot config rejects empty lookup tables`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ShotConfig(
+                shooterOffsetX = 0.0,
+                shooterOffsetY = 0.0,
+                tofKeys = doubleArrayOf(),
+                tofValues = doubleArrayOf(),
+                shotKeys = doubleArrayOf(),
+                shotRpm = doubleArrayOf(),
+                shotCowl = doubleArrayOf()
+            )
+        }
+    }
+
+    @Test
+    fun `shot config rejects unsorted and nonfinite lookup data`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ShotConfig(
+                shooterOffsetX = 0.0,
+                shooterOffsetY = 0.0,
+                tofKeys = doubleArrayOf(2.0, 1.0),
+                tofValues = doubleArrayOf(0.2, 0.1),
+                shotKeys = doubleArrayOf(1.0),
+                shotRpm = doubleArrayOf(Double.NaN),
+                shotCowl = doubleArrayOf(1.0)
+            )
+        }
+    }
+
+    @Test
+    fun `shot config rejects nonfinite lookup values`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ShotConfig(
+                shooterOffsetX = 0.0,
+                shooterOffsetY = 0.0,
+                tofKeys = doubleArrayOf(1.0),
+                tofValues = doubleArrayOf(Double.POSITIVE_INFINITY),
+                shotKeys = doubleArrayOf(1.0),
+                shotRpm = doubleArrayOf(3000.0),
+                shotCowl = doubleArrayOf(1.0)
+            )
+        }
+    }
+
     /**
      * Test config matching the original Marvin 19 hardcoded values.
      * This ensures backward compatibility after parameterization.
@@ -39,6 +84,17 @@ class ShotSetupTest {
     )
 
     private val shotSetup = ShotSetup(testConfig)
+
+    @Test
+    fun `cowl lookup contract is mechanism rotations`() {
+        assertEquals(0.50, shotSetup.interpolateCowlRotations(1.24), 1e-12)
+        assertEquals(1.75, shotSetup.interpolateCowlRotations(5.6), 1e-12)
+
+        val result = ShotResult()
+        result.targetCowlAngleRotations = 1.25
+        @Suppress("DEPRECATION")
+        assertEquals(1.25, result.targetCowlAngleDegrees, 1e-12)
+    }
 
     @Test
     /**
@@ -135,4 +191,3 @@ class ShotSetupTest {
         assertTrue(result.aimAngleRad > 0.0, "Aim angle should be positive to compensate")
     }
 }
-

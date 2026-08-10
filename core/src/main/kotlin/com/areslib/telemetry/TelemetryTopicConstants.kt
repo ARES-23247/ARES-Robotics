@@ -26,7 +26,7 @@ object TelemetryTopicConstants {
  */
 object TelemetryTopicNormalizer {
     fun normalizeTopic(key: String): String {
-        val cleanKey = key.removePrefix("/")
+        val cleanKey = key.trimStart('/')
         return when (cleanKey) {
             "Drive/Drive_Heading" -> TelemetryTopicConstants.DRIVE_POSE_HEADING
             "pinpoint_x", "pinpoint/x" -> TelemetryTopicConstants.DRIVE_ODOM_X

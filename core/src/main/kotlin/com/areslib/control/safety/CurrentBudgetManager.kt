@@ -11,7 +11,7 @@ import com.areslib.hardware.actuator.MotorIO
  * ### DC Motor Electromechanical Model Equations:
  * To avoid blocking I2C reads (~2-3ms per motor), current is estimated from bulk-cached velocity and commanded power:
  * $$R_{motor} = \frac{V_{nominal}}{I_{stall}}, \quad K_v = \frac{V_{nominal}}{\omega_{free}}$$
- * $$I_{estimated} = \max\left(0, \frac{V_{battery} \cdot |\text{power}| \cdot \text{scale} - K_v \cdot |v_{encoder}|}{R_{motor}}\right) + I_{calibrationOffset}$$
+ * $$I_{estimated} = \left|\frac{V_{battery} \cdot \text{power} \cdot \text{scale} - K_v \cdot v_{encoder}}{R_{motor}}\right| + I_{calibrationOffset}$$
  *
  * ### Power Scaling State Machine:
  * 1. **Healthy State** ($I_{total} \le I_{warning}$): $\text{powerScale} = 1.0$
@@ -93,21 +93,13 @@ class CurrentBudgetManager(
     fun update(batteryVoltage: Double, enableCalibration: Boolean = false) {
         if (slots.isEmpty()) return
 
-        val vBat = if (batteryVoltage > 0.1) batteryVoltage else 12.0
+        val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
 
         // 1. Estimate current for each motor from the DC motor model + learned calibrationOffset
         var totalAmps = 0.0
         for (i in slots.indices) {
             val slot = slots[i]
-            val motor = slot.motor
-            val appliedVoltage = vBat * kotlin.math.abs(motor.power * slot.motor.powerScale)
-            val backEmf = slot.kv * kotlin.math.abs(motor.velocity)
-            val rawEstimate = if (kotlin.math.abs(slot.motor.velocity) < 1e-3 && appliedVoltage > 0.1) {
-                // Motor starting from standstill: acceleration transient (~2.0A per motor), not stalled
-                2.0
-            } else {
-                ((appliedVoltage - backEmf) / slot.resistance).coerceAtLeast(0.0)
-            }
+            val rawEstimate = estimateRawCurrent(slot, vBat)
             val estimatedCurrent = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
 
             slot.estimatedAmps = estimatedCurrent
@@ -121,18 +113,18 @@ class CurrentBudgetManager(
             try {
                 val actualAmps = slot.motor.currentAmps
                 if (actualAmps.isFinite() && actualAmps >= 0.0) {
-                    val motor = slot.motor
-                    val appliedVoltage = vBat * kotlin.math.abs(motor.power * slot.motor.powerScale)
+                    val appliedVoltage = effectiveAppliedVoltage(slot, vBat)
                     
                     // Skip calibration if sensor returns exactly 0.0 while voltage is applied, 
                     // indicating missing/un-polled sensor hardware
-                    if (actualAmps == 0.0 && appliedVoltage > 0.5) {
+                    if (actualAmps == 0.0 &&
+                        (!appliedVoltage.isFinite() || kotlin.math.abs(appliedVoltage) > 0.5)
+                    ) {
                         // Skip updating calibrationOffset, keep using rawEstimate or last valid estimate
                         slot.estimatedAmps = slot.estimatedAmps
                     } else {
                         slot.lastCalibratedAmps = actualAmps
-                        val backEmf = slot.kv * kotlin.math.abs(motor.velocity)
-                        val rawEstimate = ((appliedVoltage - backEmf) / slot.resistance).coerceAtLeast(0.0)
+                        val rawEstimate = estimateRawCurrent(slot, vBat)
                         
                         // Blend error offset: difference between actual and raw model estimate
                         val currentError = actualAmps - rawEstimate
@@ -190,6 +182,24 @@ class CurrentBudgetManager(
                 }
             }
         }
+    }
+
+    private fun effectiveAppliedVoltage(slot: MotorSlot, batteryVoltage: Double): Double {
+        val power = slot.motor.power
+        val scale = slot.motor.powerScale
+        if (!power.isFinite() || !scale.isFinite()) return Double.NaN
+        return batteryVoltage * power.coerceIn(-1.0, 1.0) * scale.coerceIn(0.0, 1.0)
+    }
+
+    private fun estimateRawCurrent(slot: MotorSlot, batteryVoltage: Double): Double {
+        val appliedVoltage = effectiveAppliedVoltage(slot, batteryVoltage)
+        if (!appliedVoltage.isFinite()) {
+            // Unknown commanded effort is treated conservatively as a stall condition.
+            return slot.nominalVoltage / slot.resistance
+        }
+        val velocity = if (slot.motor.velocity.isFinite()) slot.motor.velocity else 0.0
+        val backEmf = slot.kv * velocity
+        return kotlin.math.abs(appliedVoltage - backEmf) / slot.resistance
     }
 
     /**
