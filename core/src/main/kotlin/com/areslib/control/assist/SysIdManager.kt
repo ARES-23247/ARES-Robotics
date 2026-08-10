@@ -42,6 +42,8 @@ enum class SysIdRoutine {
  *    $$V(t) = \begin{cases} 1.2 \cdot t & t < 2.5\text{ s} \\ -1.2 \cdot (t - 2.5) & t \ge 2.5\text{ s} \end{cases}$$
  * 2. **Dynamic Step Routine**:
  *    $$V(t) = \begin{cases} +3.0\text{ V} & t < 1.5\text{ s} \\ -3.0\text{ V} & t \ge 1.5\text{ s} \end{cases}$$
+ * 3. **Flywheel Profiles**: a one-direction 0-to-6 V quasistatic ramp, or a 6 V dynamic
+ *    step followed by a zero-voltage coast-down. This avoids reversing high-inertia mechanisms.
  *
  * ### Numerical Differentiation:
  * Calculates real-time acceleration:
@@ -113,6 +115,10 @@ class SysIdManager {
      * @param heading Initial robot heading in radians ($rad$).
      */
     fun start(mechanism: SysIdMechanism, routine: SysIdRoutine, timestampMs: Long, x: Double, y: Double, heading: Double) {
+        if (!x.isFinite() || !y.isFinite() || !heading.isFinite()) {
+            stop()
+            return
+        }
         activeMechanism = mechanism
         activeRoutine = routine
         startTimeMs = timestampMs
@@ -154,9 +160,15 @@ class SysIdManager {
      */
     fun checkSafety(x: Double, y: Double, heading: Double, timestampMs: Long): Boolean {
         if (!isActive()) return true
-        
+
+        if (!x.isFinite() || !y.isFinite() || !heading.isFinite() || timestampMs < startTimeMs) {
+            stop()
+            return false
+        }
+
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
         if (elapsedSec > 5.0) {
+            stop()
             return false // Time safety limit
         }
 
@@ -168,14 +180,16 @@ class SysIdManager {
             val dx = x - startX
             val dy = y - startY
             val dist = sqrt(dx * dx + dy * dy)
-            if (dist > 1.5) {
+            if (!dist.isFinite() || dist > 1.5) {
+                stop()
                 return false // Distance safety limit
             }
         } else {
             val diff = wrapAngle(heading - lastHeading)
             accumulatedHeadingChange += kotlin.math.abs(diff)
             lastHeading = heading
-            if (accumulatedHeadingChange > 4.0 * kotlin.math.PI) {
+            if (!accumulatedHeadingChange.isFinite() || accumulatedHeadingChange > 4.0 * kotlin.math.PI) {
+                stop()
                 return false // Rotation safety limit (2 full rotations)
             }
         }
@@ -191,8 +205,17 @@ class SysIdManager {
      */
     fun update(timestampMs: Long, velocity: Double): Double {
         if (!isActive()) return 0.0
-        
+
+        if (!velocity.isFinite() || timestampMs < startTimeMs || timestampMs < lastTimeMs) {
+            stop()
+            return 0.0
+        }
+
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
+        if (elapsedSec > 5.0) {
+            stop()
+            return 0.0
+        }
         val dt = (timestampMs - lastTimeMs) / 1000.0
         
         // Calculate acceleration and integrate position
@@ -205,14 +228,18 @@ class SysIdManager {
 
         currentVoltage = when (activeRoutine) {
             SysIdRoutine.QUASISTATIC -> {
-                if (elapsedSec < 2.5) {
+                if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+                    1.2 * elapsedSec
+                } else if (elapsedSec < 2.5) {
                     1.2 * elapsedSec
                 } else {
                     -1.2 * (elapsedSec - 2.5)
                 }
             }
             SysIdRoutine.DYNAMIC -> {
-                if (elapsedSec < 1.5) {
+                if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+                    if (elapsedSec < 2.5) 6.0 else 0.0
+                } else if (elapsedSec < 1.5) {
                     3.0
                 } else {
                     -3.0

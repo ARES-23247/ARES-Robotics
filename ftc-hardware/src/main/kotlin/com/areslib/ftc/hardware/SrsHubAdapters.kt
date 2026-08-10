@@ -214,11 +214,6 @@ class SrsHubAbsolutePWMEncoder(
         get() = 0.0
         set(@Suppress("UNUSED_PARAMETER") value) {}
 
-    /** Refreshes SRS Hub telemetry registers. */
-    fun updateInputs() {
-        srsHub.update()
-    }
-
     override val velocity: Double
         get() = 0.0
 
@@ -259,23 +254,32 @@ class SrsHubAbsolutePWMEncoder(
 class SrsHubVL53L5CX(
     private val srsHub: SrsHubDriver,
     private val port: Int,
-    override val rows: Int = 8,
+    override val rows: Int = 4,
     override val columns: Int = 8
 ) : MultizoneDistanceSensorIO {
-    private var lastDistances = DoubleArray(0)
+    private val zoneCount = rows * columns
+    private val rawDistances = IntArray(zoneCount)
 
-    /** Latest zone distances converted to meters ($m$). Access is zero-GC. */
+    init {
+        require(port in 0..3) { "SRS Hub I2C port must be in 0..3" }
+        require(zoneCount in 1..32) { "SRS Hub register window exposes at most 32 VL53L5CX zones" }
+    }
+
+    /** Returns a caller-owned snapshot of the latest zone distances in meters. */
     override val distancesMeters: DoubleArray
-        get() {
-            val raw = srsHub.getVL53L5CXDistances(port)
-            if (raw.size != lastDistances.size) {
-                lastDistances = DoubleArray(raw.size)
-            }
-            for (i in raw.indices) {
-                lastDistances[i] = raw[i] / 1000.0
-            }
-            return lastDistances
+        get() = DoubleArray(zoneCount).also {
+            copyDistancesMetersInto(it)
         }
+
+    override fun copyDistancesMetersInto(destination: DoubleArray): Int {
+        val count = minOf(
+            srsHub.copyVL53L5CXDistances(port, rawDistances),
+            destination.size,
+            zoneCount
+        )
+        for (i in 0 until count) destination[i] = rawDistances[i] / 1000.0
+        return count
+    }
 }
 
 /**
@@ -301,15 +305,27 @@ class SrsHubRevColorSensorV3(
         get() = srsHub.getI2cColorAlpha(port)
 
     override val normalizedRgb: DoubleArray
-        get() {
-            val r = red
-            val g = green
-            val b = blue
-            val a = alpha
-            val sum = (r + g + b + a).toDouble()
-            if (sum < 0.1) return doubleArrayOf(0.0, 0.0, 0.0, 0.0)
-            return doubleArrayOf(r / sum, g / sum, b / sum, a / sum)
+        get() = DoubleArray(4).also(::copyNormalizedRgbInto)
+
+    override fun copyNormalizedRgbInto(destination: DoubleArray) {
+        require(destination.size >= 4) { "Normalized RGBA destination must contain at least four elements" }
+        val r = red
+        val g = green
+        val b = blue
+        val a = alpha
+        val sum = (r + g + b + a).toDouble()
+        if (sum < 0.1) {
+            destination[0] = 0.0
+            destination[1] = 0.0
+            destination[2] = 0.0
+            destination[3] = 0.0
+        } else {
+            destination[0] = r / sum
+            destination[1] = g / sum
+            destination[2] = b / sum
+            destination[3] = a / sum
         }
+    }
 
     override val distanceMeters: Double
         get() = srsHub.getI2cDistanceMeters(port)
@@ -343,22 +359,101 @@ class SrsHubPinpointOdometry(
     private val srsHub: SrsHubDriver,
     private val port: Int
 ) : OdometryIO {
-    /** Resets Pinpoint odometry position counter on SRS Hub port [port]. */
+    private val frameTransform = SrsHubPinpointFrameTransform()
+    private var requestedStartPose = Pose2d()
+    private var frameInitialized = false
+
+    /** Seeds a software field transform without relying on an asynchronous hardware reset. */
     override fun initialize(startPose: Pose2d) {
-        srsHub.resetI2cOdometry(port)
         srsHub.registerPinpoint(port)
+        require(startPose.x.isFinite() && startPose.y.isFinite() && startPose.heading.radians.isFinite()) {
+            "SRS Pinpoint start pose must be finite"
+        }
+        requestedStartPose = startPose
+        frameInitialized = false
+        initializeFrameFromCacheIfFresh()
     }
 
     /** Updates odometry pose inputs into [OdometryInputs] container in meters ($m$) and radians ($rad$, CCW+). */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
-        srsHub.updateI2cOdometry()
-        inputs.posX = srsHub.getI2cOdometryX(port) / 1000.0
-        inputs.posY = srsHub.getI2cOdometryY(port) / 1000.0
-        inputs.heading = srsHub.getI2cOdometryHeading(port)
-        inputs.velX = srsHub.getI2cOdometryVelX(port) / 1000.0
-        inputs.velY = srsHub.getI2cOdometryYVel(port) / 1000.0
-        inputs.headingVelocity = srsHub.getI2cOdometryHeadingVel(port)
-        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        val sampleTimestampMs = srsHub.lastSuccessfulPollTimestampMs
+        if (sampleTimestampMs <= 0L) {
+            inputs.posX = requestedStartPose.x
+            inputs.posY = requestedStartPose.y
+            inputs.heading = requestedStartPose.heading.radians
+            inputs.velX = 0.0
+            inputs.velY = 0.0
+            inputs.headingVelocity = 0.0
+            inputs.timestampMs = 0L
+            return
+        }
+        initializeFrameFromCacheIfFresh()
+        frameTransform.apply(
+            rawXMeters = srsHub.getI2cOdometryX(port) / 1000.0,
+            rawYMeters = srsHub.getI2cOdometryY(port) / 1000.0,
+            rawHeadingRadians = srsHub.getI2cOdometryHeading(port),
+            rawVelocityXMps = srsHub.getI2cOdometryVelX(port) / 1000.0,
+            rawVelocityYMps = srsHub.getI2cOdometryYVel(port) / 1000.0,
+            rawHeadingVelocity = srsHub.getI2cOdometryHeadingVel(port),
+            inputs = inputs
+        )
+        inputs.timestampMs = sampleTimestampMs
+    }
+
+    private fun initializeFrameFromCacheIfFresh() {
+        if (frameInitialized || srsHub.lastSuccessfulPollTimestampMs <= 0L) return
+        frameTransform.initialize(
+            requestedStartPose,
+            srsHub.getI2cOdometryX(port) / 1000.0,
+            srsHub.getI2cOdometryY(port) / 1000.0,
+            srsHub.getI2cOdometryHeading(port)
+        )
+        frameInitialized = true
     }
 }
 
+/** Allocation-free rigid transform from an SRS Pinpoint native frame to the field frame. */
+internal class SrsHubPinpointFrameTransform {
+    private var rawOriginX = 0.0
+    private var rawOriginY = 0.0
+    private var fieldOriginX = 0.0
+    private var fieldOriginY = 0.0
+    private var headingOffset = 0.0
+    private var offsetCos = 1.0
+    private var offsetSin = 0.0
+
+    fun initialize(startPose: Pose2d, rawX: Double, rawY: Double, rawHeading: Double) {
+        require(startPose.x.isFinite() && startPose.y.isFinite() && startPose.heading.radians.isFinite()) {
+            "SRS Pinpoint start pose must be finite"
+        }
+        require(rawX.isFinite() && rawY.isFinite() && rawHeading.isFinite()) {
+            "SRS Pinpoint native pose must be finite"
+        }
+        rawOriginX = rawX
+        rawOriginY = rawY
+        fieldOriginX = startPose.x
+        fieldOriginY = startPose.y
+        headingOffset = com.areslib.math.wrapAngle(startPose.heading.radians - rawHeading)
+        offsetCos = kotlin.math.cos(headingOffset)
+        offsetSin = kotlin.math.sin(headingOffset)
+    }
+
+    fun apply(
+        rawXMeters: Double,
+        rawYMeters: Double,
+        rawHeadingRadians: Double,
+        rawVelocityXMps: Double,
+        rawVelocityYMps: Double,
+        rawHeadingVelocity: Double,
+        inputs: com.areslib.hardware.drive.OdometryInputs
+    ) {
+        val deltaX = rawXMeters - rawOriginX
+        val deltaY = rawYMeters - rawOriginY
+        inputs.posX = fieldOriginX + offsetCos * deltaX - offsetSin * deltaY
+        inputs.posY = fieldOriginY + offsetSin * deltaX + offsetCos * deltaY
+        inputs.heading = com.areslib.math.wrapAngle(rawHeadingRadians + headingOffset)
+        inputs.velX = offsetCos * rawVelocityXMps - offsetSin * rawVelocityYMps
+        inputs.velY = offsetSin * rawVelocityXMps + offsetCos * rawVelocityYMps
+        inputs.headingVelocity = rawHeadingVelocity
+    }
+}

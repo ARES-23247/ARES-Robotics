@@ -148,10 +148,9 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
     /**
      * Configures Layer 0 with a full-spectrum rainbow scrolling animation.
      *
-     * @param speed Scroll animation cycle speed multiplier (default 0.5).
      * @param brightness Animation peak brightness percentage $[0, 100]$ (default 100).
      */
-    fun setRainbowAnimation(speed: Float = 0.5f, brightness: Int = 100) {
+    fun setRainbowAnimation(brightness: Int = 100) {
         val cappedBrightness = ((brightness.coerceIn(0, 100) * (maxBrightnessPercent.coerceIn(0, 100) / 100.0))).toInt()
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x00, ANIM_RAINBOW.toByte()))
         i2cDevice.write(REG_LAYER_0, byteArrayOf(0x01, cappedBrightness.toByte()))
@@ -215,4 +214,3 @@ class FtcPrismDriverI2cIO @JvmOverloads constructor(
         safe()
     }
 }
-

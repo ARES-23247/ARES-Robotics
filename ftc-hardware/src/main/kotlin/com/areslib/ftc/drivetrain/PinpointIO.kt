@@ -50,6 +50,26 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     yDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD,
     private val isHeadingCcwPositive: Boolean = false
 ) : AutoCloseable {
+    enum class HealthStatus {
+        STARTING,
+        HEALTHY,
+        STALE,
+        NONFINITE,
+        IMPLAUSIBLE,
+        COMMUNICATION_FAILURE
+    }
+
+    companion object {
+        private const val DEFAULT_MAX_SAMPLE_AGE_MS = 100L
+        private const val MAX_LINEAR_SPEED_METERS_PER_SECOND = 8.0
+        private const val MAX_ANGULAR_SPEED_RADIANS_PER_SECOND = 4.0 * Math.PI
+        // Allow one delayed loop or a simulation step without false failover. The
+        // velocity-scaled term still grows with dt; multi-metre/large-angle one-frame
+        // discontinuities remain rejected.
+        private const val POSITION_JUMP_TOLERANCE_METERS = 0.75
+        private const val HEADING_JUMP_TOLERANCE_RADIANS = 0.75
+    }
+
     private var offsetX = 0.0
     private var offsetY = 0.0
     private var offsetHeading = 0.0
@@ -72,6 +92,25 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private var lastVelX = 0.0
     private var lastVelY = 0.0
     private var lastTimestampMs = 0L
+    private var hasTrustedSample = false
+
+    private var hasObservationBaseline = false
+    private var observationX = 0.0
+    private var observationY = 0.0
+    private var observationHeading = 0.0
+    private var observationTimestampMs = 0L
+
+    @Volatile
+    var healthStatus: HealthStatus = HealthStatus.STARTING
+        private set
+
+    @Volatile
+    var consecutiveReadFailures: Int = 0
+        private set
+
+    @Volatile
+    var lastInitializeSucceeded: Boolean = true
+        private set
     
     private val reusablePoseUpdate = RobotAction.PoseUpdate(0.0, 0.0, 0.0, 0L)
 
@@ -90,6 +129,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     fun getPoseUpdate(): RobotAction.PoseUpdate {
         try {
             driver.update()
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
             val rawX = driver.getPosX(DistanceUnit.METER)
             val rawY = driver.getPosY(DistanceUnit.METER)
             val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
@@ -101,17 +141,55 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
             val x = rawX * cosH - rawY * sinH + offsetX
             val y = rawX * sinH + rawY * cosH + offsetY
             val nextHeading = wrapAngle(rawHeading + offsetHeading)
-
-            lastX = x
-            lastY = y
-            lastHeading = nextHeading
-            lastHeadingVelocity = rawHeadingVelocity
             val rawVelX = driver.getVelX(DistanceUnit.METER)
             val rawVelY = driver.getVelY(DistanceUnit.METER)
-            lastVelX = rawVelX * cosH - rawVelY * sinH
-            lastVelY = rawVelX * sinH + rawVelY * cosH
-            lastTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+            val velX = rawVelX * cosH - rawVelY * sinH
+            val velY = rawVelX * sinH + rawVelY * cosH
+
+            val finite = x.isFinite() && y.isFinite() && nextHeading.isFinite() &&
+                rawHeadingVelocity.isFinite() && velX.isFinite() && velY.isFinite()
+            val velocityPlausible = finite &&
+                kotlin.math.hypot(velX, velY) <= MAX_LINEAR_SPEED_METERS_PER_SECOND &&
+                kotlin.math.abs(rawHeadingVelocity) <= MAX_ANGULAR_SPEED_RADIANS_PER_SECOND
+
+            var deltaPlausible = true
+            if (finite && hasObservationBaseline && now > observationTimestampMs) {
+                val dtSeconds = (now - observationTimestampMs) / 1000.0
+                val maxDistance = MAX_LINEAR_SPEED_METERS_PER_SECOND * dtSeconds + POSITION_JUMP_TOLERANCE_METERS
+                val maxHeading = MAX_ANGULAR_SPEED_RADIANS_PER_SECOND * dtSeconds + HEADING_JUMP_TOLERANCE_RADIANS
+                deltaPlausible = kotlin.math.hypot(x - observationX, y - observationY) <= maxDistance &&
+                    kotlin.math.abs(wrapAngle(nextHeading - observationHeading)) <= maxHeading
+            }
+
+            // Always advance the observation baseline for finite packets. After a reconnect,
+            // this lets several mutually-consistent samples establish health without ever
+            // publishing the potentially discontinuous first packet.
+            if (finite) {
+                observationX = x
+                observationY = y
+                observationHeading = nextHeading
+                observationTimestampMs = now
+                hasObservationBaseline = true
+            }
+
+            when {
+                !finite -> markReadFailure(HealthStatus.NONFINITE)
+                !velocityPlausible || !deltaPlausible -> markReadFailure(HealthStatus.IMPLAUSIBLE)
+                else -> {
+                    lastX = x
+                    lastY = y
+                    lastHeading = nextHeading
+                    lastHeadingVelocity = rawHeadingVelocity
+                    lastVelX = velX
+                    lastVelY = velY
+                    lastTimestampMs = now
+                    hasTrustedSample = true
+                    consecutiveReadFailures = 0
+                    healthStatus = HealthStatus.HEALTHY
+                }
+            }
         } catch (e: Exception) {
+            markReadFailure(HealthStatus.COMMUNICATION_FAILURE)
             val now = com.areslib.util.RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("PinpointIO: Communication failure with GoBildaPinpointDriver. Using last known coordinates. Error: ${e.message}")
@@ -132,6 +210,26 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
         reusablePoseUpdate.isReset = false
 
         return reusablePoseUpdate
+    }
+
+    /** Returns true only when the latest hardware transaction was valid and recent. */
+    @JvmOverloads
+    fun isHealthy(
+        nowMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
+        maxSampleAgeMs: Long = DEFAULT_MAX_SAMPLE_AGE_MS
+    ): Boolean {
+        if (healthStatus != HealthStatus.HEALTHY || !hasTrustedSample) return false
+        val ageMs = nowMs - lastTimestampMs
+        if (ageMs < 0L || ageMs > maxSampleAgeMs) {
+            healthStatus = HealthStatus.STALE
+            return false
+        }
+        return true
+    }
+
+    private fun markReadFailure(status: HealthStatus) {
+        consecutiveReadFailures++
+        healthStatus = status
     }
 
     /**
@@ -180,7 +278,14 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
                 lastY = pose.y
                 lastHeading = pose.heading.radians
             }
-        } catch (_: Exception) {}
+            hasObservationBaseline = false
+            consecutiveReadFailures = 0
+            healthStatus = HealthStatus.STARTING
+            lastInitializeSucceeded = true
+        } catch (_: Exception) {
+            lastInitializeSucceeded = false
+            markReadFailure(HealthStatus.COMMUNICATION_FAILURE)
+        }
     }
 
     /**

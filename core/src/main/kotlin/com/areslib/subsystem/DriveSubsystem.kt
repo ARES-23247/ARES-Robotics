@@ -12,6 +12,7 @@ import com.areslib.state.RobotState
  */
 class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
     var maxSpeedMps: Double = 3.5
+    var maxAngularSpeedRadiansPerSecond: Double = 9.5
 
     val xVelocity: Double 
         get() = store.state.drive.xVelocityMetersPerSecond
@@ -34,12 +35,7 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
     val angularVelocity: Double
         get() = store.state.drive.angularVelocityRadiansPerSecond
 
-    /**
-     * joystickDrive declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Dispatches physical chassis velocities in m/s and rad/s. */
     fun joystickDrive(x: Double, y: Double, rot: Double, isFieldCentric: Boolean = true, isXLock: Boolean = false) {
         store.dispatch(RobotAction.JoystickDriveIntent(
             targetXVelocity = x,
@@ -51,43 +47,19 @@ class DriveSubsystem(private val store: Store) : DrivetrainSubsystem {
         ))
     }
 
-    /**
-     * setChassisSpeeds declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {
         joystickDrive(
-            x = vx / maxSpeedMps,
-            y = vy / maxSpeedMps,
-            rot = omega / maxSpeedMps,
+            x = vx,
+            y = vy,
+            rot = omega,
             isFieldCentric = false
         )
     }
 
-    /**
-     * getEstimatedPose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getEstimatedPose(): Pose2d {
         return odometryPose
     }
 
-    /**
-     * readSensors declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun readSensors(store: Store, timestampMs: Long) {}
-    /**
-     * writeOutputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun writeOutputs(state: RobotState, scale: Double) {}
 }

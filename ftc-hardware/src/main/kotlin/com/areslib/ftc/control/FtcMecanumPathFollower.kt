@@ -26,7 +26,7 @@ import com.areslib.pathing.PathPoint
  * - Time: Seconds ($s$)
  *
  * ### Zero-GC Guarantee:
- * Pre-allocates internal controller structures and calculates normalized chassis speeds without heap allocations inside 50Hz update loops.
+ * Pre-allocates internal controller structures and calculates physical chassis speeds without heap allocations inside 50Hz update loops.
  *
  * @param robot Reference to active [FtcMecanumRobot] facade.
  * @param xController PID controller governing X-axis translational feedback ($m$).
@@ -50,8 +50,7 @@ class FtcMecanumPathFollower @kotlin.jvm.JvmOverloads constructor(
     /**
      * Updates drivetrain velocity commands to track a target trajectory waypoint sample.
      *
-     * Computes field-relative chassis velocity commands, normalizes them against the robot's physical
-     * maximum wheel speed, and dispatches drive intents into the robot facade.
+     * Computes and dispatches physical robot-relative chassis velocity commands.
      *
      * @param targetState Target position, heading, tangent angle, and linear velocity sample ([PathPoint]).
      * @param dtSeconds Loop time step interval in seconds ($s$).
@@ -70,12 +69,10 @@ class FtcMecanumPathFollower @kotlin.jvm.JvmOverloads constructor(
             pathTangentRadians = targetState.tangentRadians
         )
 
-        // Normalize velocities against the robot's physical maximum speed capability
-        val maxSpeed = robot.mecanumIO.maxWheelSpeedMetersPerSecond
         robot.drive.joystickDrive(
-            x = chassisSpeeds.vxMetersPerSecond / maxSpeed,
-            y = chassisSpeeds.vyMetersPerSecond / maxSpeed,
-            rot = chassisSpeeds.omegaRadiansPerSecond / maxSpeed,
+            x = chassisSpeeds.vxMetersPerSecond,
+            y = chassisSpeeds.vyMetersPerSecond,
+            rot = chassisSpeeds.omegaRadiansPerSecond,
             isFieldCentric = false
         )
     }

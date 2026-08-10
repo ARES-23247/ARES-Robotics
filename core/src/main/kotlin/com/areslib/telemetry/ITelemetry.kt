@@ -5,84 +5,56 @@ import com.areslib.hardware.actuator.MotorIO
 import com.areslib.math.geometry.Pose2d
 
 /**
- * Platform-agnostic telemetry interface used by the functional core to publish
- * variables, tuning parameters, and robot state.
+ * Platform-neutral key/value telemetry boundary used by robot and simulator code.
+ *
+ * Topic keys are canonical without a leading slash. Implementations strip transport-only leading
+ * slashes, but aliases are not supported. Getters return `defaultValue` when a topic is
+ * absent, disconnected, or incompatible. Implementations that retain or asynchronously serialize a
+ * [DoubleArray] must snapshot it before returning from [putDoubleArray], because hot-path callers
+ * intentionally reuse preallocated buffers.
  */
 interface ITelemetry {
-    /**
-     * putNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Publishes a double under canonical topic [key]. */
     fun putNumber(key: String, value: Double)
-    /**
-     * putBoolean declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Publishes a boolean under canonical topic [key]. */
     fun putBoolean(key: String, value: Boolean)
-    /**
-     * putString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Publishes a UTF-8 string under canonical topic [key]. */
     fun putString(key: String, value: String)
-    /**
-     * putDoubleArray declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Publishes the values currently in [value]; implementations must not retain caller ownership. */
     fun putDoubleArray(key: String, value: DoubleArray)
     
-    /**
-     * getNumber declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reads a number, returning `defaultValue` when no compatible value is available. */
     fun getNumber(key: String, defaultValue: Double): Double
-    /**
-     * getBoolean declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reads a boolean, returning `defaultValue` when no compatible value is available. */
     fun getBoolean(key: String, defaultValue: Boolean): Boolean
-    /**
-     * getString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reads a string, returning `defaultValue` when no compatible value is available. */
     fun getString(key: String, defaultValue: String): String
     
     /**
-     * Optional method to process periodic updates.
+     * Flushes or advances the backend when required. The default backend needs no periodic work.
      */
     fun update() {}
     
     /**
-     * Optional method to clean up resources.
+     * Releases backend resources. The default implementation owns nothing.
      */
     fun close() {}
 }
 
 /**
- * Extension to log drive motor telemetry using the exact ARES drive key conventions.
+ * Logs cached motor state beneath the canonical `Hardware/Motors/{name}` topic prefix.
+ * No hardware reads should occur through [MotorIO] getters.
  */
 fun ITelemetry.logDriveMotor(name: String, motor: MotorIO) {
-    putNumber("Drive/MotorPower_$name", motor.power * motor.powerScale)
-    putNumber("Drive/MotorEncoder_$name", motor.position)
-    putNumber("Drive/MotorVelocity_$name", motor.velocity)
-    putNumber("Drive/MotorCurrent_$name", motor.currentAmps)
+    val prefix = "Hardware/Motors/$name"
+    putNumber("$prefix/Power", motor.power * motor.powerScale)
+    putNumber("$prefix/Position", motor.position)
+    putNumber("$prefix/Velocity", motor.velocity)
+    putNumber("$prefix/CurrentAmps", motor.currentAmps)
 }
 
 /**
- * Extension to log a 2D pose with format formatting.
+ * Logs a field pose in meters and CCW-positive radians as three scalar topics.
  */
 fun ITelemetry.logPose2d(prefix: String, pose: Pose2d, useUnderscores: Boolean = false, lowercase: Boolean = false) {
     val sep = if (useUnderscores) "_" else "/"
@@ -95,27 +67,17 @@ fun ITelemetry.logPose2d(prefix: String, pose: Pose2d, useUnderscores: Boolean =
 }
 
 private val scratchPose2dArray = object : ThreadLocal<DoubleArray>() {
-    /**
-     * initialValue declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Allocates one reusable pose buffer per publishing thread. */
     override fun initialValue() = DoubleArray(3)
 }
 
 private val scratchPose3dArray = object : ThreadLocal<DoubleArray>() {
-    /**
-     * initialValue declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Allocates one reusable pose/quaternion buffer per publishing thread. */
     override fun initialValue() = DoubleArray(7)
 }
 
 /**
- * Extension to log a 2D pose as a flat double array of [x, y, headingRad].
+ * Logs a 2D field pose as `[xMeters, yMeters, headingRadians]` using a thread-local buffer.
  */
 fun ITelemetry.logPoseArray2d(key: String, pose: Pose2d) {
     val arr = scratchPose2dArray.get()!!
@@ -126,7 +88,7 @@ fun ITelemetry.logPoseArray2d(key: String, pose: Pose2d) {
 }
 
 /**
- * Extension to log a 3D pose array (for AdvantageScope) from x, y, and heading.
+ * Logs an AdvantageScope pose as `[x, y, z, qw, qx, qy, qz]` with `z = 0` and yaw-only rotation.
  */
 fun ITelemetry.logPose3d(key: String, x: Double, y: Double, headingRad: Double) {
     val halfH = headingRad / 2.0
@@ -151,7 +113,7 @@ fun ITelemetry.logPose3d(key: String, pose: Pose2d) {
 /**
  * Extension to log brownout guard state and diagnostics.
  */
-fun ITelemetry.logBrownout(brownoutGuard: com.areslib.control.safety.BrownoutGuard, batteryVoltage: Double) {
+fun ITelemetry.logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
     putNumber("Robot/BatteryVoltage", batteryVoltage)
     putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
     putString("Robot/BrownoutState", brownoutGuard.state.name)

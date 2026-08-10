@@ -7,12 +7,6 @@ import com.areslib.hardware.SubsystemIO
  * Keeps the :core module decoupled from Qualcomm SDK.
  */
 interface MotorIO : SubsystemIO {
-    /**
-     * logTelemetry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/Power", power * powerScale)
         telemetry.putNumber("$prefix/Position", position)
@@ -20,12 +14,6 @@ interface MotorIO : SubsystemIO {
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
     }
 
-    /**
-     * safe declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun safe() {
         power = 0.0
     }

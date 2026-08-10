@@ -10,20 +10,8 @@ import com.areslib.math.geometry.Rotation3d
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * CompositeVisionIOTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class CompositeVisionIOTest {
 
-    /**
-     * MockVisionIO declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     class MockVisionIO(
         private val connected: Boolean,
         private val measurementsList: List<VisionMeasurement>,
@@ -37,12 +25,6 @@ class CompositeVisionIOTest {
     }
 
     @Test
-    /**
-     * testAggregateMeasurements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testAggregateMeasurements() {
         val measurement1 = VisionMeasurement(timestampMs = 100L, tagId = 1)
         val measurement2 = VisionMeasurement(timestampMs = 200L, tagId = 2)
@@ -68,12 +50,6 @@ class CompositeVisionIOTest {
     }
 
     @Test
-    /**
-     * testNoneConnected declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testNoneConnected() {
         val io1 = MockVisionIO(connected = false, measurementsList = emptyList())
         val io2 = MockVisionIO(connected = false, measurementsList = emptyList())
@@ -87,4 +63,3 @@ class CompositeVisionIOTest {
         assertEquals(2, inputs.cameraPoses.size) // Defaults
     }
 }
-

@@ -14,7 +14,6 @@ import com.qualcomm.hardware.lynx.commands.LynxMessage
 import com.qualcomm.hardware.lynx.commands.LynxRespondable
 import com.qualcomm.hardware.lynx.commands.core.LynxSetMotorConstantPowerCommand
 import com.qualcomm.hardware.lynx.commands.core.LynxSetServoPulseWidthCommand
-import com.qualcomm.hardware.lynx.commands.standard.LynxAck
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManager
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManagerImpl
@@ -33,28 +32,32 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * SolversLib Photon reflective integration engine for FTC Control Hub and Expansion Hub platforms.
+ * Experimental reflective fast path for FTC Control Hub and Expansion Hub Lynx commands.
  *
- * Intercepts low-level REV Expansion Hub [LynxCommand] transactions and parallelizes motor power ([LynxSetMotorConstantPowerCommand])
- * and servo pulse width ([LynxSetServoPulseWidthCommand]) I2C/USB writes across dedicated async background threads.
+ * Replaces SDK [LynxModule] instances during OpMode initialization so selected motor-power
+ * ([LynxSetMotorConstantPowerCommand]) and servo-pulse ([LynxSetServoPulseWidthCommand]) commands
+ * use a lower-overhead direct USB write. The wrapper retains the SDK transmission lock, unfinished
+ * command tracking, and real hub acknowledgements. USB writes remain synchronous and serialized;
+ * “parallel” refers only to allowing multiple real acknowledgements to remain pending.
  *
  * ### Performance Acceleration & Memory Rules:
- * - **Write Parallelization**: Bypasses synchronous FTDI USB serial serialization blocks for motor and servo output channels.
- * - **Concurrency Limits**: Bounds maximum parallel pending commands per REV Hub module via [ExperimentalParameters.maximumParallelCommands] (default 8).
+ * - **Explicit opt-in**: interception is enabled by [enable] before pre-init or by implementing
+ *   [PhotonEnabledOpMode], which is detected during pre-init.
+ * - **Real acknowledgements**: no synthetic success is injected into the SDK lifecycle.
+ * - **Outstanding-command limit**: [ExperimentalParameters.maximumParallelCommands] bounds the
+ *   unfinished map best-effort; stalled entries are cleared after the bounded wait.
  * - **Lifecycle Management**: Automatically Hooks into FTC [FtcEventLoop] via `@OnCreateEventLoop` annotations and registers [OpModeManagerNotifier.Notifications].
  *
  * @see LynxModule
  * @see LynxUsbDevice
  * @see AresPhotonLynxModule
  */
-object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
+object AresPhotonCore : OpModeManagerNotifier.Notifications {
 
     /** Global flag indicating whether Photon parallelized write acceleration is active. */
-    val isEnabled = AtomicBoolean(true)
-    private val threadEnabled = AtomicBoolean(false)
+    val isEnabled = AtomicBoolean(false)
 
     private var modules: List<LynxModule> = emptyList()
-    private var thisThread: Thread? = null
     private var syncLock: Any? = null
 
     private val messageSync = Any()
@@ -70,7 +73,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     var EXPANSION_HUB: LynxModule? = null
 
     /** Toggle controlling whether servo PWM write commands are parallelized alongside motor power commands. */
-    var PARALLELIZE_SERVOS = true
+    var PARALLELIZE_SERVOS = false
 
     private var opModeManager: OpModeManagerImpl? = null
 
@@ -78,7 +81,7 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
      * Configuration parameters controlling single-threaded execution optimizations and maximum parallel command queues.
      */
     class ExperimentalParameters {
-        /** Enforces single-threaded optimization pipeline when `true`. */
+        /** Allows similar commands to overlap when `true`; `false` falls back to the SDK for duplicates. */
         val singlethreadedOptimized = AtomicBoolean(true)
         /** Maximum number of parallel outstanding commands permitted in the REV Hub queue before throttling (default 8). */
         val maximumParallelCommands = AtomicInteger(8)
@@ -100,10 +103,8 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     val experimental = ExperimentalParameters()
 
     /**
-     * enable declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Opts into interception without changing REV bulk caching.
+     * Must run before the FTC pre-init notification so modules can be replaced safely.
      */
     fun enable() {
         isEnabled.set(true)
@@ -114,32 +115,20 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
     }
 
 
-    /**
-     * disable declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Disables interception; wrapped modules delegate new commands to the SDK path. */
     fun disable() {
         isEnabled.set(false)
     }
 
     @OnCreateEventLoop
     @JvmStatic
-    /**
-     * attachEventLoop declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Best-effort FTC lifecycle-hook registration. Reflection/API failures are logged or ignored. */
     fun attachEventLoop(@Suppress("UNUSED_PARAMETER") context: Context, eventLoop: FtcEventLoop) {
         try {
             val manager = eventLoop.opModeManager
-            if (manager is OpModeManagerNotifier) {
-                val methods = manager.javaClass.methods
-                val regMethod = methods.firstOrNull { it.name == "registerListener" && it.parameterCount == 1 }
-                regMethod?.invoke(manager, this)
-            }
+            val methods = manager.javaClass.methods
+            val regMethod = methods.firstOrNull { it.name == "registerListener" && it.parameterCount == 1 }
+            regMethod?.invoke(manager, this)
         } catch (t: Throwable) {
             RobotLog.ww("AresPhotonCore", "Could not attach OpModeManagerNotifier: ${t.message}")
         }
@@ -150,37 +139,24 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
     @Throws(LynxUnsupportedCommandException::class, InterruptedException::class)
     /**
-     * registerSend declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Sends one selected command through the module's mapped USB device.
+     * Returns `false` when mapping, queue capacity, or USB transport prevents a safe direct send; the
+     * caller then uses the normal SDK path while still holding its transmission lock.
      */
     fun registerSend(command: LynxCommand<*>): Boolean {
-        val photonModule = command.module as AresPhotonLynxModule
-
-        if (!usbDeviceMap.containsKey(photonModule)) {
-            return false
-        }
+        val photonModule = command.module as? AresPhotonLynxModule ?: return false
 
         synchronized(messageSync) {
-            var spinCount = 0
-            while (photonModule.getUnfinishedCommandsMap().size > experimental.maximumParallelCommands.get()) {
-                spinCount++
-                if (spinCount > 20) {
-                    photonModule.getUnfinishedCommandsMap().clear()
-                    break
-                }
-                Thread.sleep(1)
+            val mappedUsbDevice = usbDeviceMap[photonModule] ?: return false
+            val unfinishedCommands = photonModule.getUnfinishedCommandsMap()
+            if (unfinishedCommands.size >= experimental.maximumParallelCommands.get()) {
+                return false
             }
 
             if (!experimental.singlethreadedOptimized.get()) {
-                var noSimilar = false
-                while (!noSimilar) {
-                    noSimilar = true
-                    for (respondable in photonModule.getUnfinishedCommandsMap().values) {
-                        if (isSimilar(respondable, command)) {
-                            noSimilar = false
-                        }
+                for (respondable in unfinishedCommands.values) {
+                    if (isSimilar(respondable, command)) {
+                        return false
                     }
                 }
             }
@@ -194,50 +170,43 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
 
                 if (command.isAckable || command.isResponseExpected) {
                     @Suppress("UNCHECKED_CAST")
-                    photonModule.getUnfinishedCommandsMap()[command.messageNumber.toInt()] = command as LynxRespondable<LynxMessage>
+                    unfinishedCommands[command.messageNumber.toInt()] = command as LynxRespondable<LynxMessage>
                 }
 
                 val bytes = datagram.toByteArray()
 
                 if (syncLock != null) {
                     synchronized(syncLock!!) {
-                        usbDeviceMap[photonModule]!!.write(bytes)
+                        mappedUsbDevice.write(bytes)
                     }
                 } else {
-                    usbDeviceMap[photonModule]!!.write(bytes)
+                    mappedUsbDevice.write(bytes)
                 }
 
-                if (shouldAckImmediately(command)) {
-                    @Suppress("UNCHECKED_CAST")
-                    (command as LynxCommand<LynxMessage>).onAckReceived(LynxAck(photonModule, false))
-                }
+            } catch (e: InterruptedException) {
+                unfinishedCommands.remove(command.messageNumber.toInt())
+                Thread.currentThread().interrupt()
+                throw e
             } catch (e: LynxUnsupportedCommandException) {
-                e.printStackTrace()
+                unfinishedCommands.remove(command.messageNumber.toInt())
+                RobotLog.ww("AresPhotonCore", "Direct write unsupported; using SDK path: ${e.message}")
+                return false
             } catch (e: RobotUsbException) {
-                e.printStackTrace()
+                unfinishedCommands.remove(command.messageNumber.toInt())
+                RobotLog.ww("AresPhotonCore", "Direct USB write failed; using SDK path: ${e.message}")
+                return false
+            } catch (e: Exception) {
+                unfinishedCommands.remove(command.messageNumber.toInt())
+                RobotLog.ww("AresPhotonCore", "Direct write failed; using SDK path: ${e.message}")
+                return false
             }
         }
         return true
     }
 
-    /**
-     * shouldParallelize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Whether [command] is eligible for the experimental direct-write path. */
     fun shouldParallelize(command: LynxCommand<*>): Boolean {
         return command is LynxSetMotorConstantPowerCommand || (PARALLELIZE_SERVOS && command is LynxSetServoPulseWidthCommand)
-    }
-
-    /**
-     * shouldAckImmediately declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    fun shouldAckImmediately(command: LynxCommand<*>): Boolean {
-        return command is LynxSetMotorConstantPowerCommand || command is LynxSetServoPulseWidthCommand
     }
 
     private fun isSimilar(respondable1: LynxRespondable<*>, respondable2: LynxRespondable<*>): Boolean {
@@ -245,39 +214,16 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
                 respondable1.commandNumber == respondable2.commandNumber
     }
 
-    /**
-     * getCacheResponse declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reserved response-cache hook. The current implementation always returns `null`. */
     fun getCacheResponse(@Suppress("UNUSED_PARAMETER") command: LynxCommand<*>): LynxMessage? {
         return null
     }
 
-    /**
-     * run declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    override fun run() {
-        while (threadEnabled.get()) {
-            try {
-                Thread.sleep(5)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    /**
-     * onOpModePreInit declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Reflectively replaces Lynx modules/device references before an enabled OpMode initializes. */
     override fun onOpModePreInit(opMode: OpMode) {
+        if (opMode is PhotonEnabledOpMode) {
+            enable()
+        }
         if (!isEnabled.get()) return
         if (opModeManager?.activeOpModeName == OpModeManager.DEFAULT_OP_MODE_NAME) {
             return
@@ -441,11 +387,6 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
             }
         }
 
-        if (thisThread == null || !thisThread!!.isAlive) {
-            thisThread = Thread(this)
-            threadEnabled.set(true)
-            thisThread!!.start()
-        }
         } catch (t: Throwable) {
             RobotLog.ww("AresPhotonCore", "Photon preInit skipped: ${t.message}")
         }
@@ -464,39 +405,34 @@ object AresPhotonCore : Runnable, OpModeManagerNotifier.Notifications {
         }
     }
 
-    /**
-     * onOpModePreStart declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Lifecycle no-op; all replacement work occurs during pre-init. */
     override fun onOpModePreStart(@Suppress("UNUSED_PARAMETER") opMode: OpMode) {}
 
-    /**
-     * onOpModePostStop declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    override fun onOpModePostStop(opMode: OpMode) {
+    /** Disables interception, restores original modules where possible, and clears retained hardware references. */
+    override fun onOpModePostStop(@Suppress("UNUSED_PARAMETER") opMode: OpMode) {
         isEnabled.set(false)
-        threadEnabled.set(false)
-        if (lastUsbDevice != null) {
-            @Suppress("UNCHECKED_CAST")
-            val knownModules = AresPhotonReflectionUtils.getField(lastUsbDevice!!.javaClass, "knownModules")?.get(lastUsbDevice!!) as? ConcurrentHashMap<Int, LynxModule>
-            if (knownModules != null) {
-                synchronized(knownModules) {
-                    for ((photon, original) in originalModules) {
-                        lastUsbDevice!!.removeConfiguredModule(photon)
-                        knownModules[original.moduleAddress] = original
+        synchronized(messageSync) {
+            val usbDevice = lastUsbDevice
+            if (usbDevice != null) {
+                @Suppress("UNCHECKED_CAST")
+                val knownModules = AresPhotonReflectionUtils.getField(usbDevice.javaClass, "knownModules")
+                    ?.get(usbDevice) as? ConcurrentHashMap<Int, LynxModule>
+                if (knownModules != null) {
+                    synchronized(knownModules) {
+                        for ((photon, original) in originalModules) {
+                            usbDevice.removeConfiguredModule(photon)
+                            knownModules[original.moduleAddress] = original
+                        }
                     }
                 }
             }
+            originalModules.clear()
+            lastUsbDevice = null
+            usbDeviceMap.clear()
+            robotUsbDevice = null
+            syncLock = null
+            CONTROL_HUB = null
+            EXPANSION_HUB = null
         }
-        originalModules.clear()
-        lastUsbDevice = null
-        usbDeviceMap.clear()
-        CONTROL_HUB = null
-        EXPANSION_HUB = null
     }
 }

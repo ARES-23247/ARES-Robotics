@@ -1,6 +1,7 @@
 package com.areslib.state
 
 import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.deepCopy
 import com.areslib.math.estimation.PoseEstimatorState
 
 /**
@@ -45,11 +46,17 @@ data class DriveState(
     val xVelocityMetersPerSecond: Double = 0.0,
     val yVelocityMetersPerSecond: Double = 0.0,
     val angularVelocityRadiansPerSecond: Double = 0.0,
+    /** Measured field-relative X velocity, distinct from the commanded drive intent above. */
+    val measuredFieldXVelocityMetersPerSecond: Double = 0.0,
+    /** Measured field-relative Y velocity, distinct from the commanded drive intent above. */
+    val measuredFieldYVelocityMetersPerSecond: Double = 0.0,
     val measuredAngularVelocityRadiansPerSecond: Double = 0.0,
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
     val odometryHeading: Double = 0.0,
     val poseEstimator: PoseEstimatorState = PoseEstimatorState(),
+    /** True when [poseEstimator] mirrors an upstream authoritative estimator (for example CTRE). */
+    val poseEstimateIsExternal: Boolean = false,
     val pitchDegrees: Double = 0.0,
     val rollDegrees: Double = 0.0,
     val xAccelerationG: Double = 0.0,
@@ -141,6 +148,7 @@ data class SuperstructureState(
  * @property targetPose The tag's 3D pose in the robot's coordinate frame (meters, radians).
  * @property tagId The detected AprilTag's numeric fiducial ID.
  * @property ambiguity PnP pose ambiguity score (0.0 = perfect, >0.2 = unreliable).
+ * @property tagCount Number of AprilTags contributing to this single camera pose solve.
  * @property robotPoseTargetSpace The robot's 3D pose expressed in **target-space** coordinates.
  *
  *   ## Target-Space Coordinate Frame
@@ -190,8 +198,20 @@ data class VisionMeasurement(
     var targetPose: Pose3d = Pose3d(),
     var tagId: Int = -1,
     var ambiguity: Double = 0.0,
-    var robotPoseTargetSpace: Pose3d = Pose3d()
-)
+    var robotPoseTargetSpace: Pose3d = Pose3d(),
+    /** Number of tags used to solve this single field-pose observation. */
+    var tagCount: Int = 1
+) {
+    /** Snapshots this pooled/mutable measurement for immutable Redux or replay ownership. */
+    fun ownedCopy(): VisionMeasurement = VisionMeasurement(
+        timestampMs = timestampMs,
+        targetPose = targetPose.deepCopy(),
+        tagId = tagId,
+        ambiguity = ambiguity,
+        robotPoseTargetSpace = robotPoseTargetSpace.deepCopy(),
+        tagCount = tagCount
+    )
+}
 
 /**
  * Class implementation for Vision State.
@@ -223,4 +243,3 @@ data class VisionState(
 enum class Alliance {
     RED, BLUE
 }
-

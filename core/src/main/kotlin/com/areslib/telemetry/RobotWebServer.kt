@@ -27,6 +27,12 @@ object RobotStatusTracker {
     var visionStatus: String = "OFFLINE"
 
     @Volatile
+    var odometrySource: String = "UNINITIALIZED"
+
+    @Volatile
+    var odometryStatus: String = "UNKNOWN"
+
+    @Volatile
     var resolvedLimelightIp: String? = null
 
     @Volatile

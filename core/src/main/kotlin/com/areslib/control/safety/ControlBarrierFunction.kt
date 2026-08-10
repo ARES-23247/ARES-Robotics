@@ -105,37 +105,57 @@ class ControlBarrierFunction(
         cOverride: Double,
         outBuffer: CBFFilteredOutput
     ) {
-        if (x1Target.isNaN() || x1Target.isInfinite() ||
-            x2Target.isNaN() || x2Target.isInfinite() ||
-            x1Current.isNaN() || x1Current.isInfinite() ||
-            x2Current.isNaN() || x2Current.isInfinite() ||
-            dtSeconds.isNaN() || dtSeconds.isInfinite() || dtSeconds <= 0.0
-        ) {
-            outBuffer.setTo(x1Target, x2Target)
+        if (!m.isFinite() || !cOverride.isFinite() || !alpha.isFinite() || alpha < 0.0) {
+            outBuffer.setTo(0.0, 0.0)
             return
         }
 
+        val targetIsFinite = x1Target.isFinite() && x2Target.isFinite()
+        val currentIsFinite = x1Current.isFinite() && x2Current.isFinite()
+        val dtIsValid = dtSeconds.isFinite() && dtSeconds > 0.0
+
+        // If the target itself is invalid, hold the current state when possible. The
+        // static projection below repairs an already-unsafe current state as well.
+        val desiredX1 = if (targetIsFinite) x1Target else if (currentIsFinite) x1Current else cOverride
+        val desiredX2 = if (targetIsFinite) x2Target else if (currentIsFinite) x2Current else 0.0
+
         // 1. Calculate current safety margin h(x_current)
-        val hCurrent = x1Current - m * x2Current - cOverride
+        val hCurrentCandidate = if (currentIsFinite) x1Current - m * x2Current - cOverride else 0.0
+        val hCurrent = if (hCurrentCandidate.isFinite()) hCurrentCandidate else 0.0
 
         // 2. Compute minimum allowed safety margin for next step hNextMin
         // If current state is already violating boundary, aggressively force safety convergence to 0.0 immediately
-        val hNextMin = if (hCurrent < 0.0) 0.0 else kotlin.math.max(0.0, (1.0 - alpha * dtSeconds) * hCurrent)
+        val hNextMin = if (!currentIsFinite || !dtIsValid || hCurrent < 0.0) {
+            0.0
+        } else {
+            val nextMargin = (1.0 - alpha * dtSeconds) * hCurrent
+            if (nextMargin.isFinite()) kotlin.math.max(0.0, nextMargin) else 0.0
+        }
 
         // Check if desired target is already safe and satisfies rate limits
-        val hTarget = x1Target - m * x2Target - cOverride
-        if (hTarget >= hNextMin) {
+        val hTarget = desiredX1 - m * desiredX2 - cOverride
+        if (hTarget.isFinite() && hTarget >= hNextMin) {
             // Target is in the safe set, pass through unchanged
-            outBuffer.setTo(x1Target, x2Target)
+            outBuffer.setTo(desiredX1, desiredX2)
             return
         }
 
         // 3. Target violates safety envelope. Project desired targets orthogonally onto the safe boundary line
         // Line equation: x1 - m * x2 = hNextMin + cOverride
         val lLimit = hNextMin + cOverride
-        val factor = (m * x2Target - x1Target + lLimit) / (1.0 + m * m)
-        var x1Projected = x1Target + factor
-        var x2Projected = x2Target - m * factor
+        val projectionDenominator = 1.0 + m * m
+        if (!projectionDenominator.isFinite()) {
+            outBuffer.setTo(cOverride, 0.0)
+            return
+        }
+        val factor = (m * desiredX2 - desiredX1 + lLimit) / projectionDenominator
+        var x1Projected = desiredX1 + factor
+        var x2Projected = desiredX2 - m * factor
+
+        if (!x1Projected.isFinite() || !x2Projected.isFinite()) {
+            outBuffer.setTo(cOverride, 0.0)
+            return
+        }
 
         // Safety clamp: Ensure the projected invading state does not go negative if physically bounded
         if (x2Projected < 0.0) {

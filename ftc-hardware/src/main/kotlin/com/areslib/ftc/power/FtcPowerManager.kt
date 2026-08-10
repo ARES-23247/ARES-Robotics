@@ -10,10 +10,15 @@ import com.areslib.hardware.actuator.MotorIO
 import com.areslib.subsystem.PowerManager
 
 /**
- * Manages the robot's electrical power budgeting.
- * Filters battery voltage to compensate for sag, updates brownout protection,
- * and throttles motors dynamically using either a physical current sensor (Floodgate)
- * or a software current budget estimator.
+ * FTC electrical safety coordinator with a hardware-current-sensor fallback policy.
+ *
+ * Voltage is sampled from the first configured FTC [VoltageSensor] at most every 100 ms and cached
+ * between samples. Each [update] advances [BrownoutGuard], then uses a Floodgate sensor when present
+ * or lazily creates a [CurrentBudgetManager] otherwise. The minimum resulting scale is copied to all
+ * motors currently registered in the global hardware registry.
+ *
+ * Hardware reads occur only from [update]; [batteryVoltage], [powerScale], and [currentAmps] expose
+ * cached/registered state. This class is single-loop-owned and is not thread-safe.
  */
 class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
     private var lastVoltageReadTime = 0L
@@ -40,16 +45,23 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
 
     /**
      * Total current draw of the robot in amperes.
-     * Returns the physical sensor reading if available, or the sum of registered motor current estimations.
+     * Returns the Floodgate's cached reading when installed, otherwise the sum of registered motors'
+     * cached current estimates.
      */
     override val currentAmps: Double
-        get() = floodgate?.current ?: com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf { it.currentAmps }
+        get() {
+            val sensor = floodgate
+            if (sensor != null && sensor.isReadingValid) return sensor.current
+            return com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf {
+                it.currentAmps.takeIf(Double::isFinite)?.coerceAtLeast(0.0) ?: 0.0
+            }
+        }
 
     /**
      * Updates the battery voltage reading (rate-limited to 10Hz) and recalculates power scaling.
      *
      * @param dtSeconds Loop cycle delta time in seconds.
-     * @param timestamp System time in milliseconds.
+     * @param timestampMs Monotonic robot timestamp in milliseconds, normally from `RobotClock`.
      * @return The calculated power scale factor (0.0 to 1.0).
      */
     override fun update(dtSeconds: Double, timestampMs: Long): Double {
@@ -57,15 +69,16 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         if (timestampMs - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
             lastVoltageReadTime = timestampMs
             val voltageSensors = hardwareMap.getAll(VoltageSensor::class.java)
-            val newVoltage = if (voltageSensors.isNotEmpty()) {
-                voltageSensors[0].voltage
-            } else {
-                12.0
-            }
+            val newVoltage = voltageSensors.firstOrNull()?.voltage ?: 12.0
             
             // Apply a low-pass filter (time constant ~100ms) to prevent positive feedback sag oscillations during rapid acceleration
-            val alpha = dtSeconds / (0.1 + dtSeconds)
-            cachedBatteryVoltage = (cachedBatteryVoltage * (1.0 - alpha)) + (newVoltage * alpha)
+            val validDt = dtSeconds.takeIf { it.isFinite() && it > 0.0 } ?: 0.02
+            val alpha = validDt / (0.1 + validDt)
+            cachedBatteryVoltage = when {
+                !newVoltage.isFinite() || newVoltage <= 0.0 -> 0.0
+                !cachedBatteryVoltage.isFinite() || cachedBatteryVoltage <= 0.0 -> newVoltage
+                else -> (cachedBatteryVoltage * (1.0 - alpha)) + (newVoltage * alpha)
+            }
         }
         batteryVoltage = cachedBatteryVoltage
 
@@ -75,26 +88,19 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
 
         // 2. Floodgate current protection — throttle on overload (or software fallback)
         val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
-        floodgate?.let { fg ->
+        val floodgateSensor = floodgate
+        if (floodgateSensor != null) {
+            val fg = floodgateSensor
             fg.update()
-            if (fg.isOverloadWarning()) {
-                // Graduated: scale inversely with fuse thermal load
-                val fuseScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
-                scale = minOf(scale, fuseScale)
+            if (!fg.isReadingValid) {
+                scale = minOf(scale, updateSoftwareCurrentBudget(motors, batteryVoltage))
+            } else if (fg.isOverloadWarning()) {
+                val thermalScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
+                val instantaneousScale = (18.0 / fg.current).coerceIn(0.2, 1.0)
+                scale = minOf(scale, thermalScale, instantaneousScale)
             }
-        } ?: run {
-            var cbm = currentBudgetManager
-            if (cbm == null) {
-                cbm = CurrentBudgetManager.ftcDefaults()
-                currentBudgetManager = cbm
-            }
-            for (m in motors) {
-                if (!cbm.isRegistered(m)) {
-                    cbm.register(m)
-                }
-            }
-            cbm.update(batteryVoltage, enableCalibration = true)
-            scale = minOf(scale, cbm.powerScale)
+        } else {
+            scale = minOf(scale, updateSoftwareCurrentBudget(motors, batteryVoltage))
         }
 
         powerScale = scale
@@ -105,6 +111,17 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         }
         
         return scale
+    }
+
+    private fun updateSoftwareCurrentBudget(motors: List<MotorIO>, batteryVoltage: Double): Double {
+        val manager = currentBudgetManager ?: CurrentBudgetManager.ftcDefaults().also {
+            currentBudgetManager = it
+        }
+        for (motor in motors) {
+            if (!manager.isRegistered(motor)) manager.register(motor)
+        }
+        manager.update(batteryVoltage, enableCalibration = true)
+        return manager.powerScale
     }
 }
 

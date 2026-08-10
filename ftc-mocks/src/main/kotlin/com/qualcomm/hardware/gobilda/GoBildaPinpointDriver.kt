@@ -7,9 +7,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D
 
 /**
- * Class implementation for Go Bilda Pinpoint Driver.
+ * Thread-visible desktop state double for the FTC goBILDA Pinpoint driver API used by ARESLib.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Simulation writes [posX], [posY], [trueHeading], and velocity fields in meters, radians, and
+ * per-second units. Public readings subtract the origin captured by [resetPosAndIMU] and account for
+ * configured pod offsets. Only the `METER`/`RADIANS` call pattern used by ARESLib is modeled; unit
+ * parameters on getters are accepted for signature compatibility but are not converted. Hardware
+ * configuration and calibration methods that do not affect the simulation are deliberate no-ops.
  */
 open class GoBildaPinpointDriver {
     @Volatile var posX: Double = 0.0
@@ -54,73 +58,33 @@ open class GoBildaPinpointDriver {
         return -fieldDx * sinOffset + fieldDy * cosOffset
     }
 
+    /** Returns reset-relative heading in radians; [unit] is accepted but not converted. */
     @Synchronized
-    /**
-     * getHeading declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getHeading(unit: AngleUnit): Double = heading - rawOffsetHeading
+    /** Returns unwrapped reset-relative heading in radians; [unit] is not converted. */
     @Synchronized
-    /**
-     * getHeading declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getHeading(unit: UnnormalizedAngleUnit): Double = heading - rawOffsetHeading
+    /** Returns angular velocity in radians per second; [unit] is not converted. */
     @Synchronized
-    /**
-     * getHeadingVelocity declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getHeadingVelocity(unit: UnnormalizedAngleUnit): Double = headingVelocity
+    /** Returns X velocity in meters per second; [unit] is not converted. */
     @Synchronized
-    /**
-     * getVelX declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getVelX(unit: DistanceUnit): Double = velX
+    /** Returns Y velocity in meters per second; [unit] is not converted. */
     @Synchronized
-    /**
-     * getVelY declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getVelY(unit: DistanceUnit): Double = velY
     
+    /** Returns a meter/radian pose snapshot after reset and pod-offset compensation. */
     @Synchronized
-    /**
-     * getPosition declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun getPosition(): Pose2D {
         return Pose2D(DistanceUnit.METER, getPosX(DistanceUnit.METER), getPosY(DistanceUnit.METER), AngleUnit.RADIANS, heading - rawOffsetHeading)
     }
     
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op: simulation writes public state fields directly. */
     fun update() {}
     
+    /** Captures the current corrected pose and heading as the new zero without moving simulated truth. */
     @Synchronized
-    /**
-     * resetPosAndIMU declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun resetPosAndIMU() {
         val cosH = kotlin.math.cos(trueHeading)
         val sinH = kotlin.math.sin(trueHeading)
@@ -129,36 +93,19 @@ open class GoBildaPinpointDriver {
         rawOffsetHeading = heading
         trueOffsetHeading = trueHeading
     }
-    /**
-     * recalibrateIMU declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; the mock has no modeled IMU calibration state. */
     fun recalibrateIMU() {}
 
-    /**
-     * EncoderDirection declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** SDK-compatible pod encoder direction values. */
     enum class EncoderDirection { FORWARD, REVERSE }
-    /**
-     * GoBildaOdometryPods declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** SDK-compatible predefined pod models. */
     enum class GoBildaOdometryPods { goBilda_SWERVE_POD, goBilda_4_BAR_POD }
 
-    @Synchronized
     /**
-     * setOffsets declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Stores pod offsets in meters. The SDK's first argument is lateral (robot Y) and its second is
+     * forward (robot X), which is intentionally opposite the local field names.
      */
+    @Synchronized
     fun setOffsets(xOffset: Double, yOffset: Double, unit: DistanceUnit) {
         val mult = if (unit == DistanceUnit.MM) 0.001 else 1.0
         // GoBilda setOffsets 1st argument (xOffset) refers to sideways distance -> robot's Y offset
@@ -167,25 +114,10 @@ open class GoBildaPinpointDriver {
         xOffsetMeters = yOffset * mult
     }
     
-    /**
-     * setEncoderResolution declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; simulated position is already expressed in meters. */
     fun setEncoderResolution(resolution: Double, unit: DistanceUnit) {}
-    /**
-     * setEncoderResolution declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; predefined pod scale is not modeled. */
     fun setEncoderResolution(pod: GoBildaOdometryPods) {}
-    /**
-     * setEncoderDirections declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; simulator truth already uses the configured ARES coordinate convention. */
     fun setEncoderDirections(xDirection: EncoderDirection, yDirection: EncoderDirection) {}
 }

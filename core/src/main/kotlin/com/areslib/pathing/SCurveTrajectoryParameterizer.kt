@@ -69,11 +69,31 @@ object SCurveTrajectoryParameterizer {
         constraints: Constraints,
         startHeading: Rotation2d = Rotation2d(0.0),
         endHeading: Rotation2d = Rotation2d(0.0),
+        startVelocityMps: Double = 0.0,
+        endVelocityMps: Double = 0.0,
         spacingMeters: Double = 0.02
     ): Path {
+        require(constraints.maxVelocityMps.isFinite() && constraints.maxVelocityMps > 0.0) {
+            "Maximum velocity must be finite and positive"
+        }
+        require(constraints.maxAccelerationMps2.isFinite() && constraints.maxAccelerationMps2 > 0.0) {
+            "Maximum acceleration must be finite and positive"
+        }
+        require(constraints.maxJerkMps3.isFinite() && constraints.maxJerkMps3 > 0.0) {
+            "Maximum jerk must be finite and positive"
+        }
+        require(constraints.maxCentripetalAccelMps2.isFinite() && constraints.maxCentripetalAccelMps2 > 0.0) {
+            "Maximum centripetal acceleration must be finite and positive"
+        }
+        require(startVelocityMps.isFinite() && startVelocityMps in 0.0..constraints.maxVelocityMps) {
+            "Start velocity must be finite and within the configured velocity limit"
+        }
+        require(endVelocityMps.isFinite() && endVelocityMps in 0.0..constraints.maxVelocityMps) {
+            "End velocity must be finite and within the configured velocity limit"
+        }
         if (waypoints.isEmpty()) return Path(emptyList())
         if (waypoints.size == 1) {
-            return Path(listOf(PathPoint(Pose2d(waypoints[0].x, waypoints[0].y, startHeading), 0.0)))
+            return Path(listOf(PathPoint(Pose2d(waypoints[0].x, waypoints[0].y, startHeading), endVelocityMps)))
         }
 
         val validSpacing = if (spacingMeters.isNaN() || spacingMeters.isInfinite() || spacingMeters <= 1e-5) 0.02 else spacingMeters
@@ -97,6 +117,7 @@ object SCurveTrajectoryParameterizer {
         val numPoints = rawPoints.size
         val distances = DoubleArray(numPoints)
         val curvatures = DoubleArray(numPoints)
+        val tangents = DoubleArray(numPoints)
         val headings = Array(numPoints) { Rotation2d(0.0) }
 
         // Compute cumulative distance along the path
@@ -106,6 +127,21 @@ object SCurveTrajectoryParameterizer {
         }
 
         val totalLength = distances.last()
+
+        // Path tangent is independent of robot heading. The follower uses this direction
+        // for translational feedforward, so leaving it at PathPoint's zero default sends
+        // every trajectory along +X regardless of its actual geometry.
+        var lastValidTangent = 0.0
+        for (i in 0 until numPoints) {
+            val before = if (i == 0) rawPoints[0] else rawPoints[i - 1]
+            val after = if (i == numPoints - 1) rawPoints[numPoints - 1] else rawPoints[i + 1]
+            val dx = after.x - before.x
+            val dy = after.y - before.y
+            if (hypot(dx, dy) > 1e-9) {
+                lastValidTangent = atan2(dy, dx)
+            }
+            tangents[i] = lastValidTangent
+        }
 
         // 2. Compute headings and curvatures
         for (i in 0 until numPoints) {
@@ -155,8 +191,8 @@ object SCurveTrajectoryParameterizer {
         }
 
         // Enforce boundary velocities
-        velocities[0] = 0.0
-        velocities[numPoints - 1] = 0.0
+        velocities[0] = startVelocityMps
+        velocities[numPoints - 1] = endVelocityMps
 
         // Forward Pass: Enforce forward acceleration & jerk limit
         accelerations[0] = 0.0
@@ -190,6 +226,7 @@ object SCurveTrajectoryParameterizer {
         }
 
         // Backward Pass: Enforce deceleration & jerk limit
+        velocities[numPoints - 1] = endVelocityMps
         var decel = 0.0
         for (i in numPoints - 1 downTo 1) {
             val ds = distances[i] - distances[i - 1]
@@ -225,7 +262,8 @@ object SCurveTrajectoryParameterizer {
                     pose = Pose2d(rawPoints[i].x, rawPoints[i].y, headings[i]),
                     velocityMps = velocities[i],
                     distanceMeters = distances[i],
-                    curvature = curvatures[i]
+                    curvature = curvatures[i],
+                    tangentRadians = tangents[i]
                 )
             )
         }

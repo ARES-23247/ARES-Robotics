@@ -13,7 +13,6 @@ import com.areslib.sim.network.NT4FieldPublisher
 import com.areslib.sim.network.TelemetryPublisher
 import com.areslib.sim.opmode.SimOpModeRunner
 import com.areslib.sim.physics.SimPhysicsWorld
-import com.areslib.sim.replay.SimReplayEngine
 import com.areslib.state.RobotFieldManager
 import com.areslib.util.RobotClock
 import java.io.File
@@ -34,15 +33,9 @@ object DesktopSimLauncher {
     @Volatile private var sampleCount = 0L
 
     @JvmStatic
-    /**
-     * main declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun main(args: Array<String>) {
         try {
-            launch(args, NoOpInteractionModel())
+            launch(args, MecanumInteractionModel())
         } catch (t: Throwable) {
             System.err.println("FATAL CRASH IN SIMULATOR:")
             t.printStackTrace()
@@ -51,12 +44,6 @@ object DesktopSimLauncher {
         }
     }
 
-    /**
-     * launch declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     @Volatile
     var isSimRunning = true
 
@@ -99,13 +86,6 @@ object DesktopSimLauncher {
         // 1. CLI Parsing
         val cliArgs = SimCliParser.parseArgs(args)
         val activeConfig = SimCliParser.loadFieldConfig(cliArgs.fieldConfigArg)
-        val customVisionStdDevs = SimCliParser.loadEkfOverrides()
-
-        if (cliArgs.replayCloudId != null) {
-            SimReplayEngine.replayCloudRun(cliArgs.replayCloudId, customVisionStdDevs)
-            return
-        }
-
         // 2. Telemetry & Web Server Initialization
         println("Initializing Telemetry (NT4 & DataLog)...")
         try {
@@ -137,16 +117,11 @@ object DesktopSimLauncher {
 
         // 3. Dyn4j Physics World Initialization
         val physicsWorld = SimPhysicsWorld()
-        var startPose = physicsWorld.setupSpawnPose(driverStation.isRedAlliance)
+        val startPose = physicsWorld.setupSpawnPose(driverStation.isRedAlliance)
         physicsWorld.loadFieldElements(activeConfig)
 
         // 4. Mecanum Robot Double & OpMode Execution
         val robotDouble = MecanumRobotDouble()
-        var activeInteractionModel = interactionModel
-        if (activeInteractionModel is NoOpInteractionModel) {
-            activeInteractionModel = MecanumInteractionModel(robotDouble)
-        }
-
         val syncRobotPoseToPhysics = {
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
                 val allianceEnum = if (driverStation.isRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
@@ -188,14 +163,8 @@ object DesktopSimLauncher {
         }
 
         var activeOpMode = SimOpModeRunner.createOpModeInstance(opModeArg, cliArgs.opModeClassName)
-        if (activeOpMode == null && serverMode) {
-            val defaultOpModeName = "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp"
-            activeOpMode = SimOpModeRunner.createOpModeInstance(null, defaultOpModeName)
-                ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
-            println("[Simulator] Server mode auto-starting default TeleOp (${activeOpMode.javaClass.simpleName})")
-        }
 
-        val startOpMode = { opModeToRun: com.qualcomm.robotcore.eventloop.opmode.LinearOpMode ->
+        val startOpMode: (com.qualcomm.robotcore.eventloop.opmode.LinearOpMode) -> Thread = { opModeToRun ->
             opModeToRun.hardwareMap = robotDouble.hardwareMap
             Thread {
                 try {
@@ -210,9 +179,23 @@ object DesktopSimLauncher {
                 start()
             }
         }
+        var activeOpModeThread: Thread? = null
+
+        val stopActiveOpMode = {
+            activeOpMode?.isStopRequested = true
+            activeOpModeThread?.let { thread ->
+                thread.join(500)
+                if (thread.isAlive) {
+                    thread.interrupt()
+                    thread.join(500)
+                }
+                check(!thread.isAlive) { "Previous OpMode did not terminate after stop request" }
+            }
+            activeOpModeThread = null
+        }
 
         if (activeOpMode != null) {
-            startOpMode(activeOpMode)
+            activeOpModeThread = startOpMode(activeOpMode)
 
             val initStartTime = RobotClock.currentTimeMillis()
             while (RobotClock.currentTimeMillis() - initStartTime < 500) {
@@ -234,9 +217,16 @@ object DesktopSimLauncher {
         val ntInst = NT4Instance.defaultInstance
         var lastDsCommand = ""
         var lastSelectedOpMode = ""
+        var inventoryCount = 0
 
         while (isSimRunning) {
           try {
+            TelemetryPublisher.pollWebInputs(driverStation)?.let { obstaclesJson ->
+                physicsWorld.replaceObstaclesFromAnalyticsJson(obstaclesJson)
+            }
+            TelemetryPublisher.pollWebFieldConfig()?.let { fieldConfigJson ->
+                physicsWorld.replaceFieldDocumentJson(fieldConfigJson)
+            }
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
             val selectedOpMode = NT4Server.getString("ARES/DriverStation/SelectedOpMode", "").trim()
@@ -252,13 +242,13 @@ object DesktopSimLauncher {
                 when (dsCommand) {
                     "INIT" -> {
                         try {
-                            activeOpMode?.isStopRequested = true
+                            stopActiveOpMode()
                             val targetOpMode = if (selectedOpMode.isNotEmpty()) selectedOpMode else lastSelectedOpMode
                             val newOpMode = SimOpModeRunner.createOpModeInstance(null, targetOpMode)
                                 ?: com.areslib.ftc.hardware.AresHardwareTestOpMode()
                             activeOpMode = newOpMode
-                            startPose = physicsWorld.setupSpawnPose(driverStation.isRedAlliance)
-                            startOpMode(newOpMode)
+                            physicsWorld.setupSpawnPose(driverStation.isRedAlliance)
+                            activeOpModeThread = startOpMode(newOpMode)
                             Thread.sleep(150)
                             syncRobotPoseToPhysics()
                             println("[Simulator] Successfully INITED OpMode: ${newOpMode.javaClass.simpleName} (Alliance=${if (driverStation.isRedAlliance) "RED" else "BLUE"})")
@@ -274,7 +264,7 @@ object DesktopSimLauncher {
                         }
                     }
                     "STOP" -> {
-                        activeOpMode?.isStopRequested = true
+                        stopActiveOpMode()
                         robotDouble.fl.power = 0.0
                         robotDouble.fr.power = 0.0
                         robotDouble.rl.power = 0.0
@@ -347,6 +337,18 @@ object DesktopSimLauncher {
 
             robotDouble.updateSensors(TIMESTEP_SEC, robotVx, robotVy, omega, postStepPose.x, postStepPose.y, postStepPose.heading.radians, ccwPos)
 
+            inventoryCount = interactionModel.update(
+                world = physicsWorld.world,
+                robotBody = physicsWorld.robotBody,
+                gamePieces = physicsWorld.gamePieces,
+                driverStation = driverStation,
+                currentInventoryCount = inventoryCount,
+                robotHeading = postStepPose.heading.radians,
+                robotX = postStepPose.x,
+                robotY = postStepPose.y
+            )
+            NT4Server.publishTopic("Superstructure/SimInventoryCount", inventoryCount.toLong())
+
             // Stream dynamic game piece positions to NT4 for live visual rendering
             val pieces = physicsWorld.gamePieces
             if (pieces.isNotEmpty()) {
@@ -366,9 +368,6 @@ object DesktopSimLauncher {
             }
 
             TelemetryPublisher.publishTruePose(currentPhysPose)
-            TelemetryPublisher.getWebVx()
-            TelemetryPublisher.getWebVy()
-            TelemetryPublisher.getWebOmega()
 
             // Extract OpMode display lines from MockTelemetry and publish to NT4 for ARES-Analytics
             val mockTelemetry = activeOpMode?.telemetry as? org.firstinspires.ftc.robotcore.external.MockTelemetry
@@ -381,7 +380,7 @@ object DesktopSimLauncher {
             if (activeInstance != null) {
                 val state = activeInstance.store.state
                 TelemetryPublisher.publish(state, dtSeconds = TIMESTEP_SEC)
-                activeInstance.profiler?.publishSensorsProfiling(activeInstance.telemetryManager)
+                activeInstance.profiler.publishSensorsProfiling(activeInstance.telemetryManager)
                 
                 val ekfPose = currentPhysPose
                 if (sampleCount % 250L == 0L) {
@@ -441,5 +440,7 @@ object DesktopSimLauncher {
               // Continue running — one bad frame shouldn't kill the sim
           }
         }
+        stopActiveOpMode()
+        RobotClock.useSystemTime()
     }
 }

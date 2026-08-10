@@ -3,12 +3,6 @@ package com.areslib.math
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * InputMathTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class InputMathTest {
 
     @Test

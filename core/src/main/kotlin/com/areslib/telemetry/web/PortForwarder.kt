@@ -1,9 +1,13 @@
 package com.areslib.telemetry.web
 
 /**
- * Class implementation for Port Forwarder.
+ * Daemon TCP proxy from [localPort] to [targetIp]:[remotePort].
  *
- * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
+ * Each accepted connection gets one daemon worker plus a daemon copy thread for the opposite
+ * direction. Either direction completing closes both sockets. Bind, connect, and copy failures are
+ * intentionally suppressed because forwarding is optional robot infrastructure. [stopForwarder]
+ * stops new accepts by closing the server socket; existing connection workers close when their IO
+ * completes or fails.
  */
 class PortForwarder(private val localPort: Int, private val remotePort: Int, private val targetIp: String) : Thread("ARES-PortForwarder-$localPort") {
     private var serverSocket: java.net.ServerSocket? = null
@@ -13,12 +17,7 @@ class PortForwarder(private val localPort: Int, private val remotePort: Int, pri
         isDaemon = true
     }
 
-    /**
-     * run declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Binds the local listener and accepts until stopped or the listener fails. */
     override fun run() {
         try {
             serverSocket = java.net.ServerSocket(localPort)
@@ -49,12 +48,7 @@ class PortForwarder(private val localPort: Int, private val remotePort: Int, pri
         } catch (_: Exception) {}
     }
 
-    /**
-     * stopForwarder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Idempotently prevents new connections and unblocks a pending accept. */
     fun stopForwarder() {
         running = false
         try { serverSocket?.close() } catch (_: Exception) {}

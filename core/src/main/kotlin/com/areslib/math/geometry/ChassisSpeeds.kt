@@ -53,8 +53,9 @@ data class ChassisSpeeds(
         }
 
         /**
-         * Discretizes continuous-time chassis speeds over timestep [dtSeconds] using second-order kinematic skew correction.
-         * Counter-rotates the velocity vector by $-\Delta\theta / 2$ to prevent lateral drift during high-speed rotation.
+         * Discretizes continuous-time chassis speeds over timestep [dtSeconds] using the exact inverse-SE(2)
+         * translation Jacobian. The returned constant robot-frame twist exponentiates to the requested
+         * pose increment $(v_x\Delta t, v_y\Delta t, \omega\Delta t)$.
          *
          * @param vxMetersPerSecond Continuous X velocity in meters per second ($m/s$).
          * @param vyMetersPerSecond Continuous Y velocity in meters per second ($m/s$).
@@ -68,11 +69,25 @@ data class ChassisSpeeds(
             omegaRadiansPerSecond: Double,
             dtSeconds: Double
         ): ChassisSpeeds {
+            if (!vxMetersPerSecond.isFinite() || !vyMetersPerSecond.isFinite() ||
+                !omegaRadiansPerSecond.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0
+            ) {
+                return ChassisSpeeds()
+            }
+
             val dTheta = omegaRadiansPerSecond * dtSeconds
-            val cos = kotlin.math.cos(-dTheta * 0.5)
-            val sin = kotlin.math.sin(-dTheta * 0.5)
-            val discVx = vxMetersPerSecond * cos - vyMetersPerSecond * sin
-            val discVy = vxMetersPerSecond * sin + vyMetersPerSecond * cos
+            val halfTheta = dTheta * 0.5
+            val halfThetaByTanHalfTheta = if (kotlin.math.abs(dTheta) < 1e-6) {
+                1.0 - dTheta * dTheta / 12.0
+            } else {
+                halfTheta / kotlin.math.tan(halfTheta)
+            }
+
+            // Inverse of the SE(2) exponential's translation Jacobian. This produces
+            // the constant robot-frame twist whose exponential exactly reaches the
+            // desired (vx * dt, vy * dt, omega * dt) pose increment.
+            val discVx = halfThetaByTanHalfTheta * vxMetersPerSecond + halfTheta * vyMetersPerSecond
+            val discVy = -halfTheta * vxMetersPerSecond + halfThetaByTanHalfTheta * vyMetersPerSecond
             return ChassisSpeeds(discVx, discVy, omegaRadiansPerSecond)
         }
     }

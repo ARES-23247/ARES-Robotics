@@ -7,12 +7,6 @@ import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * HolonomicDriveControllerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class HolonomicDriveControllerTest {
 
     @Test
@@ -93,5 +87,28 @@ class HolonomicDriveControllerTest {
         // Since feedback is zero, the output speed is strictly the feedforward cap
         assertEquals(1.0, outputWithCurve.vxMetersPerSecond, 0.001)
     }
-}
 
+    @Test
+    fun `invalid timestep returns zero chassis command`() {
+        val controller = HolonomicDriveController(
+            PIDController(1.0, 0.0, 0.0),
+            PIDController(1.0, 0.0, 0.0),
+            PIDController(1.0, 0.0, 0.0)
+        )
+
+        val output = controller.calculateDirect(
+            currentX = 0.0,
+            currentY = 0.0,
+            currentHeadingRad = 0.0,
+            targetX = 1.0,
+            targetY = 1.0,
+            targetHeadingRad = 0.5,
+            targetVelocityMps = 2.0,
+            dtSeconds = Double.NaN
+        )
+
+        assertEquals(0.0, output.vxMetersPerSecond)
+        assertEquals(0.0, output.vyMetersPerSecond)
+        assertEquals(0.0, output.omegaRadiansPerSecond)
+    }
+}

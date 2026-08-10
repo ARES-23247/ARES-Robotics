@@ -134,6 +134,11 @@ class FrcLimelightIO(
             
             // Limelight latency (ms) is typically index 6.
             val latencyMs = if (botpose.size > 6) botpose[6] else 0.0
+            val tagCount = if (botpose.size > 7 && botpose[7].isFinite()) {
+                botpose[7].toInt().coerceAtLeast(1)
+            } else {
+                1
+            }
             val timestampMs = com.areslib.util.RobotClock.currentTimeMillis() - latencyMs.toLong()
             
             // Limelight's botpose_wpiblue array does not contain single-tag ambiguity.
@@ -177,6 +182,7 @@ class FrcLimelightIO(
             cachedMeasurement.timestampMs = timestampMs
             cachedMeasurement.targetPose = targetPose
             cachedMeasurement.tagId = tagId
+            cachedMeasurement.tagCount = tagCount
             cachedMeasurement.ambiguity = ambiguity
             cachedMeasurement.robotPoseTargetSpace = robotPoseTargetSpace
             
@@ -186,4 +192,3 @@ class FrcLimelightIO(
         }
     }
 }
-

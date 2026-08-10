@@ -4,21 +4,22 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * SlewRateLimiterTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class SlewRateLimiterTest {
 
     @Test
-    /**
-     * testSlewRateLimitingSymmetric declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    fun `constructor initial value is rate limited on first update`() {
+        val limiter = SlewRateLimiter(1.0, initialValue = 0.0)
+        assertEquals(1.0, limiter.calculate(10.0, 1.0), 1e-9)
+    }
+
+    @Test
+    fun `invalid first input cannot poison limiter state`() {
+        val limiter = SlewRateLimiter(1.0, initialValue = 2.0)
+        assertEquals(2.0, limiter.calculate(Double.NaN, 1.0), 1e-9)
+        assertEquals(3.0, limiter.calculate(10.0, 1.0), 1e-9)
+    }
+
+    @Test
     fun testSlewRateLimitingSymmetric() {
         // Limit to 2.0 units per second
         val limiter = SlewRateLimiter(2.0)
@@ -41,12 +42,6 @@ class SlewRateLimiterTest {
     }
 
     @Test
-    /**
-     * testSlewRateLimitingAsymmetric declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSlewRateLimitingAsymmetric() {
         // Positive limit = 1.0, Negative limit = -5.0 (decelerates or drops much faster than it accelerates)
         val limiter = SlewRateLimiter(1.0, -5.0)
@@ -63,12 +58,6 @@ class SlewRateLimiterTest {
     }
 
     @Test
-    /**
-     * testSlewRateLimiterReset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSlewRateLimiterReset() {
         val limiter = SlewRateLimiter(2.0, initialValue = 5.0)
         
@@ -82,12 +71,6 @@ class SlewRateLimiterTest {
     }
 
     @Test
-    /**
-     * testSlewRateLimiterClear declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSlewRateLimiterClear() {
         val limiter = SlewRateLimiter(2.0)
         limiter.calculate(5.0, 0.5)

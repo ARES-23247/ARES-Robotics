@@ -64,6 +64,11 @@ object AimingMath {
     ): Double {
         val dx = targetX - robotX
         val dy = targetY - robotY
+        if (!dx.isFinite() || !dy.isFinite()) return 0.0
+        val geometricHeading = atan2(dy, dx)
+        if (!vx.isFinite() || !vy.isFinite() || !shotSpeed.isFinite() || shotSpeed <= 0.0) {
+            return geometricHeading
+        }
         val distanceSq = dx * dx + dy * dy
         val robotSpeedSq = vx * vx + vy * vy
         
@@ -76,22 +81,22 @@ object AimingMath {
         
         val discriminant = b * b - 4.0 * a * c
         if (discriminant < 0.0 || kotlin.math.abs(a) < 1e-6) {
-            if (kotlin.math.abs(a) < 1e-6) {
+            if (kotlin.math.abs(a) < 1e-6 && kotlin.math.abs(b) >= 1e-6) {
                 val tLinear = -c / b
-                if (tLinear > 0.0) {
+                if (tLinear.isFinite() && tLinear > 0.0) {
                     val launchVx = (dx / tLinear) - vx
                     val launchVy = (dy / tLinear) - vy
                     return atan2(launchVy, launchVx)
                 }
             }
             // Fallback: Geometric aiming (no compensation) if no real solution
-            return atan2(dy, dx)
+            return geometricHeading
         }
         
         // Solve for time of flight (positive root)
         val t = (-b + sqrt(discriminant)) / (2.0 * a)
         if (t <= 0.0) {
-            return atan2(dy, dx)
+            return geometricHeading
         }
         
         // Calculate the compensated launch vector in the robot frame

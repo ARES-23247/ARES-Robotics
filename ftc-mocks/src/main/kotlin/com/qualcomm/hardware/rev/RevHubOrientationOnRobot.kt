@@ -10,21 +10,9 @@ class RevHubOrientationOnRobot(
     val logoFacingDirection: LogoFacingDirection,
     val usbFacingDirection: UsbFacingDirection
 ) {
-    /**
-     * LogoFacingDirection declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     enum class LogoFacingDirection {
         UP, DOWN, FORWARD, BACKWARD, LEFT, RIGHT
     }
-    /**
-     * UsbFacingDirection declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     enum class UsbFacingDirection {
         UP, DOWN, FORWARD, BACKWARD, LEFT, RIGHT
     }

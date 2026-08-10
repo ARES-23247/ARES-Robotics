@@ -6,21 +6,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * PoseEstimatorTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PoseEstimatorTest {
 
     @Test
-    /**
-     * testOdometryPropagation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testOdometryPropagation() {
         var state = PoseEstimatorState()
         
@@ -39,12 +27,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testVisionFusionRetroactive declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testVisionFusionRetroactive() {
         var state = PoseEstimatorState()
         
@@ -94,12 +76,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testOdometryCovarianceScalingUnderTilt declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testOdometryCovarianceScalingUnderTilt() {
         val flatState = PoseEstimator.addOdometryObservation(
             PoseEstimatorState(),
@@ -129,12 +105,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testOdometryFreezeUnderBeaching declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testOdometryFreezeUnderBeaching() {
         val initialState = PoseEstimatorState()
 
@@ -160,12 +130,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testVisionDistancePenalization declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testVisionDistancePenalization() {
         // Setup initial history
         var stateClose = PoseEstimatorState()
@@ -218,12 +182,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testVisionMultiTagScaling declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testVisionMultiTagScaling() {
         var stateSingle = PoseEstimatorState()
         stateSingle = PoseEstimator.addOdometryObservation(
@@ -270,12 +228,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testMahalanobisOutlierRejection declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testMahalanobisOutlierRejection() {
         var state = PoseEstimatorState()
         state = PoseEstimator.addOdometryObservation(
@@ -318,12 +270,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testHysteresisAndRecovery declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testHysteresisAndRecovery() {
         var state = PoseEstimatorState()
         
@@ -376,12 +322,6 @@ class PoseEstimatorTest {
     }
 
     @Test
-    /**
-     * testImpactVelocityScaling declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testImpactVelocityScaling() {
         val flatState = PoseEstimator.addOdometryObservation(
             PoseEstimatorState(),
@@ -398,4 +338,3 @@ class PoseEstimatorTest {
         assertEquals(0.5, flatCovDiff, 1e-6)
     }
 }
-

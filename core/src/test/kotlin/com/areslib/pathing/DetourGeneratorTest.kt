@@ -6,12 +6,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * DetourGeneratorTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class DetourGeneratorTest {
 
     @Test
@@ -60,4 +54,3 @@ class DetourGeneratorTest {
         assertTrue(shiftedEvents.first().triggerDistanceMeters > 2.0, "Event distance should be shifted by transition length")
     }
 }
-

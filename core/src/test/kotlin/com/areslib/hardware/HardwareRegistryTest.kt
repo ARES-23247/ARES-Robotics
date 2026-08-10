@@ -6,31 +6,13 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-/**
- * HardwareRegistryTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class HardwareRegistryTest {
 
     @BeforeEach
-    /**
-     * setUp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setUp() {
         HardwareRegistry.clear()
     }
 
-    /**
-     * MockLoggableDevice declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     class MockLoggableDevice : LoggableDevice {
         var logTelemetryCalled = false
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
@@ -38,12 +20,6 @@ class HardwareRegistryTest {
         }
     }
 
-    /**
-     * MockMotorIO declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     class MockMotorIO : MotorIO {
         override val position: Double = 0.0
         override val velocity: Double = 0.0
@@ -54,12 +30,6 @@ class HardwareRegistryTest {
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {}
     }
 
-    /**
-     * MockSubsystemIO declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     class MockSubsystemIO : SubsystemIO {
         var refreshCalled = false
         var safeCalled = false
@@ -72,26 +42,14 @@ class HardwareRegistryTest {
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {}
     }
 
-    /**
-     * MockCloseable declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     class MockCloseable : AutoCloseable {
-        var closed = false
+        var closeCount = 0
         override fun close() {
-            closed = true
+            closeCount++
         }
     }
 
     @Test
-    /**
-     * testRegisterDeviceAndClose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRegisterDeviceAndClose() {
         val device = MockLoggableDevice()
         HardwareRegistry.registerDevice("test_device", device)
@@ -113,12 +71,6 @@ class HardwareRegistryTest {
     }
 
     @Test
-    /**
-     * testRegisterMotorAndLifeCycle declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRegisterMotorAndLifeCycle() {
         val motor = MockMotorIO()
         HardwareRegistry.registerMotor("drive_fl", motor)
@@ -133,27 +85,15 @@ class HardwareRegistryTest {
     }
 
     @Test
-    /**
-     * testRegisterCloseable declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRegisterCloseable() {
         val closeable = MockCloseable()
         HardwareRegistry.registerCloseable(closeable)
 
         HardwareRegistry.closeAll()
-        assertTrue(closeable.closed)
+        assertEquals(1, closeable.closeCount)
     }
 
     @Test
-    /**
-     * testRefreshAndSafeAll declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRefreshAndSafeAll() {
         val subsystem = MockSubsystemIO()
         HardwareRegistry.registerDevice("test_subsystem", subsystem)
@@ -166,12 +106,6 @@ class HardwareRegistryTest {
     }
 
     @Test
-    /**
-     * testBuildTopologyAndJson declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testBuildTopologyAndJson() {
         val motor = MockMotorIO()
         // Register with FRC CAN topology
@@ -195,12 +129,6 @@ class HardwareRegistryTest {
         assertTrue(json.contains("CAN_MOTOR_CONTROLLER"))
     }
 
-    /**
-     * MockSyncPolledDevice declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     class MockSyncPolledDevice : SyncPolledDevice {
         var pollSyncCount = 0
         override fun pollSync() {
@@ -209,12 +137,6 @@ class HardwareRegistryTest {
     }
 
     @Test
-    /**
-     * testRoundRobinDevicePolling declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRoundRobinDevicePolling() {
         val d1 = MockSyncPolledDevice()
         val d2 = MockSyncPolledDevice()
@@ -232,5 +154,50 @@ class HardwareRegistryTest {
         assertTrue(d2.pollSyncCount > 0)
         // Usually should be roughly equal (differ by at most 1)
         assertTrue(kotlin.math.abs(d1.pollSyncCount - d2.pollSyncCount) <= 1)
+    }
+
+    @Test
+    fun `throwing polled device does not stop healthy devices`() {
+        val throwing = object : SyncPolledDevice {
+            override fun pollSync() = error("sensor unavailable")
+        }
+        val healthy = MockSyncPolledDevice()
+        HardwareRegistry.setPollingIntervalMs(10L)
+
+        HardwareRegistry.registerRoundRobinDevice(throwing)
+        HardwareRegistry.registerRoundRobinDevice(healthy)
+        Thread.sleep(100L)
+        HardwareRegistry.closeAll()
+
+        assertTrue(healthy.pollSyncCount > 0)
+    }
+
+    @Test
+    fun `same logical name replaces lifecycle entry instead of duplicating it`() {
+        val first = MockSubsystemIO()
+        val replacement = MockSubsystemIO()
+        HardwareRegistry.registerDevice("arm", first)
+        HardwareRegistry.registerDevice("arm", replacement)
+
+        HardwareRegistry.refreshAll()
+
+        assertFalse(first.refreshCalled)
+        assertTrue(replacement.refreshCalled)
+    }
+
+    @Test
+    fun `resource registered through both ownership paths closes once`() {
+        class CloseableDevice : LoggableDevice, AutoCloseable {
+            var closeCount = 0
+            override fun logTelemetry(telemetry: ITelemetry, prefix: String) = Unit
+            override fun close() { closeCount++ }
+        }
+        val device = CloseableDevice()
+        HardwareRegistry.registerDevice("owned", device)
+        HardwareRegistry.registerCloseable(device)
+
+        HardwareRegistry.closeAll()
+
+        assertEquals(1, device.closeCount)
     }
 }

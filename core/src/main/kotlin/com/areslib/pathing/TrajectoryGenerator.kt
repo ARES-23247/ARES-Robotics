@@ -3,6 +3,7 @@ package com.areslib.pathing
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Translation2d
 import kotlin.math.hypot
+import kotlin.math.pow
 
 /**
  * On-the-Fly Continuous Trajectory Generation Utility.
@@ -50,6 +51,8 @@ object TrajectoryGenerator {
         endPose: Pose2d,
         constraints: PathConstraints
     ): Path {
+        require(constraints.maxVelocityMps.isFinite() && constraints.maxVelocityMps > 0.0)
+        require(constraints.maxAccelerationMps2.isFinite() && constraints.maxAccelerationMps2 > 0.0)
 
         val p0 = Translation2d(startPose.x, startPose.y)
         val p3 = Translation2d(endPose.x, endPose.y)
@@ -83,6 +86,19 @@ object TrajectoryGenerator {
             val t = step.toDouble() / numSamples
             val point = BezierSpline.evaluate(p0, p1, p2, p3, t)
             val heading = BezierSpline.evaluateHeading(p0, p1, p2, p3, t)
+            val derivative = BezierSpline.evaluateDerivative(p0, p1, p2, p3, t)
+            val u = 1.0 - t
+            val secondDerivativeX = 6.0 * u * (p2.x - 2.0 * p1.x + p0.x) +
+                6.0 * t * (p3.x - 2.0 * p2.x + p1.x)
+            val secondDerivativeY = 6.0 * u * (p2.y - 2.0 * p1.y + p0.y) +
+                6.0 * t * (p3.y - 2.0 * p2.y + p1.y)
+            val speedSquared = derivative.x * derivative.x + derivative.y * derivative.y
+            val curvature = if (speedSquared > 1e-12) {
+                (derivative.x * secondDerivativeY - derivative.y * secondDerivativeX) /
+                    speedSquared.pow(1.5)
+            } else {
+                0.0
+            }
             
             val dist = hypot(point.x - prevPoint.x, point.y - prevPoint.y)
             accumulatedDistance += dist
@@ -92,7 +108,7 @@ object TrajectoryGenerator {
                     pose = Pose2d(point.x, point.y, heading),
                     velocityMps = constraints.maxVelocityMps,
                     distanceMeters = accumulatedDistance,
-                    curvature = 0.0,
+                    curvature = curvature,
                     tangentRadians = heading.radians
                 )
             )

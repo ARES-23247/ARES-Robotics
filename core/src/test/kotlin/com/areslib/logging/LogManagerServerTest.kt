@@ -7,43 +7,19 @@ import org.junit.jupiter.api.Assertions.*
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * LogManagerServerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class LogManagerServerTest {
 
     @BeforeEach
-    /**
-     * setUp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setUp() {
         LogManagerServer.startServer()
     }
 
     @AfterEach
-    /**
-     * tearDown declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun tearDown() {
         LogManagerServer.stop()
     }
 
     @Test
-    /**
-     * testServerEndpoints declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testServerEndpoints() {
         if (!LogManagerServer.isAlive) {
             System.err.println("WARNING: LogManagerServer is not alive (port 5002 likely already bound). Skipping endpoint assertions.")

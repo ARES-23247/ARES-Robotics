@@ -9,14 +9,16 @@ import com.areslib.logging.DataLoggingTelemetry
 import com.ctre.phoenix6.CANBus
 
 /**
- * FRC telemetry orchestrator managing AdvantageScope 3D field topics, CANbus diagnostics, and `.wpilog` file output via [DataLoggingTelemetry].
+ * FRC telemetry orchestrator for AdvantageScope topics, CAN-bus diagnostics, and asynchronous CSV
+ * output through [DataLoggingTelemetry].
  *
- * Implements pre-allocated zero-GC array buffers (`covarianceDiagonals`, `swerveStates`, `swerveFaults`) to log 4-pod swerve drive states,
- * CAN2 bus utilization %, TX/RX error counts, bus-off events, and signal latency ($ms$).
+ * Reuses array buffers for four-module state/fault telemetry. Publishing still delegates to general
+ * telemetry and logging backends, so the manager does not promise end-to-end zero allocation.
  *
  * ### Telemetry Network Topics & Physical Units:
  * - `Robot/SwerveStates`: 8-element array $[heading_0, speed_0, \dots, heading_3, speed_3]$ ($rad, m/s$).
- * - `Diagnostics/CAN2/BusUtilization`: CANbus utilization percentage ($\%$).
+ * - `Diagnostics/CANBus/CAN2/Utilization`: CTRE utilization ratio as reported by Phoenix.
+ * - `Diagnostics/CANBus/CAN2/{ErrorCount,TxErrors,RxErrors,BusOffCount,SignalLatencyMs}`: bus diagnostics.
  * - `Diagnostics/Motor/Swerve_{i}/Faults`: Motor fault code bitmask.
  *
  * @param baseTelemetry Platform telemetry backend ([ITelemetry]).
@@ -71,8 +73,9 @@ class FrcTelemetryManager(
      * @param state The current immutable robot state snapshot.
      * @param gamepad1 Driver 1 gamepad input state (or `null`).
      * @param gamepad2 Operator gamepad input state (or `null`).
-     * @param dtSeconds Loop cycle delta time in seconds ($s$).
-     * @param batteryVoltage Current main battery voltage in Volts ($V$).
+     * @param dtSeconds Loop cycle delta time in seconds; forwarded to the shared publisher.
+     * @param batteryVoltage Retained for interface compatibility; brownout telemetry comes from the
+     * guard configured through [logBrownout].
      */
     override fun publish(
         state: RobotState,
@@ -135,7 +138,7 @@ class FrcTelemetryManager(
      * Updates internal reference to active [BrownoutGuard] for brownout logging.
      *
      * @param brownoutGuard Active brownout guard instance.
-     * @param batteryVoltage Measured battery voltage in Volts ($V$).
+     * @param batteryVoltage Retained for API compatibility; publication uses the guard reference.
      */
     @Suppress("UNUSED_PARAMETER")
     fun logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
@@ -157,4 +160,3 @@ class FrcTelemetryManager(
         )
     }
 }
-

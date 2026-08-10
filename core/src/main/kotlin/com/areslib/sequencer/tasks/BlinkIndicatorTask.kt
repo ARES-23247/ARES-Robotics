@@ -12,11 +12,11 @@ import com.areslib.state.RobotState
  * Only dispatches actions on phase transitions (not every tick)
  * to maintain zero-GC compliance in the hot loop.
  *
- * Usage in auto sequences:
+ * Usage in an ARES auto sequence:
  * ```
- * RobotSequence()
- *     .addTask(BlinkIndicatorTask("indicator", GREEN, OFF, durationMs = 2000, periodMs = 400))
- *     .build()
+ * robotSequence {
+ *     blinkIndicator("indicator", GREEN, OFF, duration = 2.seconds, period = 400.milliseconds)
+ * }
  * ```
  *
  * @param lightName Hardware map name of the indicator light.
@@ -24,11 +24,6 @@ import com.areslib.state.RobotState
  * @param colorB Second blink color (alternates with colorA).
  * @param durationMs Total blink duration in milliseconds.
  * @param periodMs Full blink cycle period in milliseconds (default 500ms = 1Hz blink).
- */
-/**
- * Class implementation for Blink Indicator Task.
- *
- * Asynchronous superstructure task sequence execution unit.
  */
 class BlinkIndicatorTask(
     private val lightName: String,
@@ -40,23 +35,11 @@ class BlinkIndicatorTask(
     override val name = "BlinkIndicator($lightName, ${colorA.name}↔${colorB.name}, ${durationMs}ms)"
     private var lastPhase = -1L
 
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun initialize(state: RobotState): List<RobotAction> {
         lastPhase = 0L
         return listOf(RobotAction.SetIndicatorLight(lightName, colorA.position))
     }
 
-    /**
-     * execute declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         val halfPeriod = periodMs / 2
         val phase = if (halfPeriod > 0) (elapsedMs / halfPeriod) % 2 else 0L
@@ -69,20 +52,8 @@ class BlinkIndicatorTask(
         return emptyList()
     }
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = elapsedMs >= durationMs
 
-    /**
-     * end declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         // Return to colorA when done
         return listOf(RobotAction.SetIndicatorLight(lightName, colorA.position))

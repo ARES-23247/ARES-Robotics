@@ -99,20 +99,27 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      *
      * Coordinates are specified relative to the robot's local frame.
      *
-     * @param vx Longitudinal velocity effort scaled between [-1.0, 1.0].
-     * @param vy Lateral strafe velocity effort scaled between [-1.0, 1.0].
-     * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
+     * @param vx Longitudinal driver effort scaled between [-1.0, 1.0].
+     * @param vy Lateral strafe driver effort scaled between [-1.0, 1.0].
+     * @param omega Angular driver effort scaled between [-1.0, 1.0].
      */
-    fun robotRelativeDrive(vx: Double, vy: Double, omega: Double, fromHeadingHold: Boolean = false) {
-        reusableDriveIntent.targetXVelocity = vx
-        reusableDriveIntent.targetYVelocity = vy
-        reusableDriveIntent.targetAngularVelocity = omega
+    fun driveRobotRelativeNormalized(
+        vx: Double,
+        vy: Double,
+        omega: Double,
+        fromHeadingHold: Boolean = false
+    ) {
+        reusableDriveIntent.targetXVelocity = finiteUnitInput(vx) * maxSpeedMps
+        reusableDriveIntent.targetYVelocity = finiteUnitInput(vy) * maxSpeedMps
+        reusableDriveIntent.targetAngularVelocity = finiteUnitInput(omega) * maxAngularSpeedRps
         reusableDriveIntent.isFieldCentric = false
         reusableDriveIntent.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         reusableDriveIntent.fromHeadingHold = fromHeadingHold
         reusableDriveIntent.isXLock = false
         store.dispatch(reusableDriveIntent)
     }
+
+    private fun finiteUnitInput(value: Double): Double = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
 
     /**
      * Executes field-relative drivetrain movement effort.
@@ -127,7 +134,14 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * @param usePositionHold Enables active EKF closed-loop position hold when joystick inputs are released.
      * @param dtSeconds Timestep delta duration in seconds.
      */
-    fun fieldRelativeDrive(vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false, usePositionHold: Boolean = false, dtSeconds: Double = 0.02) {
+    fun driveFieldRelativeNormalized(
+        vx: Double,
+        vy: Double,
+        omega: Double,
+        useHeadingLock: Boolean = false,
+        usePositionHold: Boolean = false,
+        dtSeconds: Double = 0.02
+    ) {
         val headingRad = pose.heading.radians
         val cos = kotlin.math.cos(headingRad)
         val sin = kotlin.math.sin(headingRad)
@@ -251,7 +265,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             }
         }
 
-        robotRelativeDrive(finalRobotVx, finalRobotVy, finalOmega, fromHeadingHold)
+        driveRobotRelativeNormalized(finalRobotVx, finalRobotVy, finalOmega, fromHeadingHold)
     }
 
     /**
@@ -296,14 +310,14 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         }
 
         val joystickForward = -driver.leftStickY.value.toDouble() * speedMult
-        val joystickRight = driver.leftStickX.value.toDouble() * speedMult
+        val joystickLeft = -driver.leftStickX.value.toDouble() * speedMult
         val rotate = -driver.rightStickX.value.toDouble() * turnScale
         
         val isBlueAlliance = store.state.drive.alliance == com.areslib.state.Alliance.BLUE
-        val fieldVx = if (isBlueAlliance) -joystickRight else joystickRight
-        val fieldVy = if (isBlueAlliance) -joystickForward else joystickForward
+        val fieldVx = if (isBlueAlliance) -joystickForward else joystickForward
+        val fieldVy = if (isBlueAlliance) -joystickLeft else joystickLeft
         
-        fieldRelativeDrive(
+        driveFieldRelativeNormalized(
             vx = fieldVx, 
             vy = fieldVy, 
             omega = rotate,

@@ -17,6 +17,15 @@ enum class FieldSymmetry {
     MIRRORED
 }
 
+/** Defines whether field coordinates are measured from the center or a field corner. */
+enum class FieldOrigin {
+    /** The field center is `(0, 0)` and coordinates may be negative. */
+    CENTER,
+
+    /** One field corner is `(0, 0)` and positions normally lie within field length and width. */
+    CORNER
+}
+
 /**
  * Universal Alliance Pose and Path Mirroring Engine.
  *
@@ -31,7 +40,7 @@ enum class FieldSymmetry {
  *    $$\begin{bmatrix} x' \\ y' \end{bmatrix} = \begin{bmatrix} x \\ -y \end{bmatrix}, \quad \theta' = \text{wrapAngle}(-\theta), \quad \kappa' = -\kappa$$
  * 3. **Corner-Origin Field Extensions** ($L_{\text{field}}, W_{\text{field}}$):
  *    - Rotational: $x' = L_{\text{field}} - x, \; y' = W_{\text{field}} - y, \; \theta' = \text{wrapAngle}(\theta + \pi)$
- *    - Reflectional: $x' = x, \; y' = W_{\text{field}} - y, \; \theta' = \text{wrapAngle}(-\theta)$
+ *    - Reflectional: $x' = L_{\text{field}} - x, \; y' = y, \; \theta' = \text{wrapAngle}(\pi - \theta)$
  *
  * ### Physical Units & Coordinate Conventions:
  * - Position $(x, y)$: Field-centric meters ($m$)
@@ -51,6 +60,7 @@ object AllianceMirroring {
      * @param symmetry Field geometry symmetry layout ([FieldSymmetry.ROTATIONAL] or [FieldSymmetry.MIRRORED]).
      * @param fieldLength Total X-axis length of the field in meters ($m$).
      * @param fieldWidth Total Y-axis width of the field in meters ($m$).
+     * @param fieldOrigin Explicit coordinate origin; it is never inferred from field dimensions.
      * @return The alliance-adjusted [Pose2d].
      */
     fun mirror(
@@ -58,11 +68,11 @@ object AllianceMirroring {
         alliance: Alliance,
         symmetry: FieldSymmetry,
         fieldLength: Double = CoordinateTransformers.FTC_FIELD_SIZE,
-        fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE
+        fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE,
+        fieldOrigin: FieldOrigin = FieldOrigin.CENTER
     ): Pose2d {
         if (alliance == Alliance.BLUE) return pose
-        val isCenterOrigin = kotlin.math.abs(fieldLength - CoordinateTransformers.FTC_FIELD_SIZE) < 1e-3
-        return if (isCenterOrigin) {
+        return if (fieldOrigin == FieldOrigin.CENTER) {
             when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> Pose2d(
                     x = -pose.x,
@@ -83,9 +93,9 @@ object AllianceMirroring {
                     heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
                 )
                 FieldSymmetry.MIRRORED -> Pose2d(
-                    x = pose.x,
-                    y = fieldWidth - pose.y,
-                    heading = Rotation2d(wrapAngle(-pose.heading.radians))
+                    x = fieldLength - pose.x,
+                    y = pose.y,
+                    heading = Rotation2d(wrapAngle(Math.PI - pose.heading.radians))
                 )
             }
         }
@@ -99,6 +109,7 @@ object AllianceMirroring {
      * @param symmetry Field geometry symmetry layout.
      * @param fieldLength Total field X length in meters ($m$).
      * @param fieldWidth Total field Y width in meters ($m$).
+     * @param fieldOrigin Explicit coordinate origin; it is never inferred from field dimensions.
      * @return The alliance-adjusted [Translation2d].
      */
     fun mirror(
@@ -106,11 +117,11 @@ object AllianceMirroring {
         alliance: Alliance,
         symmetry: FieldSymmetry,
         fieldLength: Double = CoordinateTransformers.FTC_FIELD_SIZE,
-        fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE
+        fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE,
+        fieldOrigin: FieldOrigin = FieldOrigin.CENTER
     ): Translation2d {
         if (alliance == Alliance.BLUE) return translation
-        val isCenterOrigin = kotlin.math.abs(fieldLength - CoordinateTransformers.FTC_FIELD_SIZE) < 1e-3
-        return if (isCenterOrigin) {
+        return if (fieldOrigin == FieldOrigin.CENTER) {
             when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> Translation2d(-translation.x, -translation.y)
                 FieldSymmetry.MIRRORED -> Translation2d(translation.x, -translation.y)
@@ -122,8 +133,8 @@ object AllianceMirroring {
                     y = fieldWidth - translation.y
                 )
                 FieldSymmetry.MIRRORED -> Translation2d(
-                    x = translation.x,
-                    y = fieldWidth - translation.y
+                    x = fieldLength - translation.x,
+                    y = translation.y
                 )
             }
         }
@@ -138,6 +149,7 @@ object AllianceMirroring {
      * @param symmetry Field geometry symmetry layout.
      * @param fieldLength Total field X length in meters ($m$).
      * @param fieldWidth Total field Y width in meters ($m$).
+     * @param fieldOrigin Explicit coordinate origin; it is never inferred from field dimensions.
      * @return The alliance-adjusted [Path].
      */
     fun mirror(
@@ -145,21 +157,26 @@ object AllianceMirroring {
         alliance: Alliance,
         symmetry: FieldSymmetry,
         fieldLength: Double = CoordinateTransformers.FTC_FIELD_SIZE,
-        fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE
+        fieldWidth: Double = CoordinateTransformers.FTC_FIELD_SIZE,
+        fieldOrigin: FieldOrigin = FieldOrigin.CENTER
     ): Path {
         if (alliance == Alliance.BLUE) return path
         val numPoints = path.points.size
         val mirroredPoints = ArrayList<PathPoint>(numPoints)
         for (i in 0 until numPoints) {
             val point = path.points[i]
-            val mirroredPose = mirror(point.pose, alliance, symmetry, fieldLength, fieldWidth)
+            val mirroredPose = mirror(point.pose, alliance, symmetry, fieldLength, fieldWidth, fieldOrigin)
             val mirroredCurvature = when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> point.curvature
                 FieldSymmetry.MIRRORED -> -point.curvature
             }
             val mirroredTangent = when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> wrapAngle(point.tangentRadians + Math.PI)
-                FieldSymmetry.MIRRORED -> wrapAngle(-point.tangentRadians)
+                FieldSymmetry.MIRRORED -> if (fieldOrigin == FieldOrigin.CENTER) {
+                    wrapAngle(-point.tangentRadians)
+                } else {
+                    wrapAngle(Math.PI - point.tangentRadians)
+                }
             }
             mirroredPoints.add(
                 point.copy(
@@ -172,4 +189,3 @@ object AllianceMirroring {
         return path.copy(points = mirroredPoints)
     }
 }
-

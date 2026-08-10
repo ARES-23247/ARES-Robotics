@@ -26,7 +26,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Distance
  */
 class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, AutoCloseable {
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
     private var cachedDistance = Double.NaN
     private var pollingThread: Thread? = null
 
@@ -60,7 +60,15 @@ class FtcDistanceSensor(private val sensor: DistanceSensor) : DistanceSensorIO, 
     override fun close() {
         running = false
         pollingThread?.interrupt()
+        val thread = pollingThread
+        if (thread != null && Thread.currentThread() !== thread) {
+            try {
+                thread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
+        pollingThread = null
     }
 }
-
 

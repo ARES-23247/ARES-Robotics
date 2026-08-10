@@ -31,7 +31,8 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
     private val normalizedSensor = sensor as? NormalizedColorSensor
 
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
+    private val pollingThread: Thread
 
     private var cachedRed = 0
     private var cachedGreen = 0
@@ -43,7 +44,7 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
 
     init {
         HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
+        pollingThread = Thread {
             while (running) {
                 var r = 0
                 var g = 0
@@ -104,9 +105,9 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
                 try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
             }
         }
-        thread.isDaemon = true
-        thread.name = "ARES-GenericColorSensor-Thread"
-        thread.start()
+        pollingThread.isDaemon = true
+        pollingThread.name = "ARES-GenericColorSensor-Thread"
+        pollingThread.start()
     }
 
     /** Cached raw red channel reading $[0, 65535]$. */
@@ -127,14 +128,28 @@ class FtcColorSensor(private val sensor: ColorSensor) : ColorSensorIO, AutoClose
 
     /** Cached double-buffered normalized $[R, G, B, \alpha]$ array $[0.0, 1.0]$. */
     override val normalizedRgb: DoubleArray
-        get() = synchronized(lock) { normalizedBuffers[readBufferIndex] }
+        get() = DoubleArray(4).also(::copyNormalizedRgbInto)
+
+    override fun copyNormalizedRgbInto(destination: DoubleArray) {
+        require(destination.size >= 4) { "Normalized RGBA destination must contain at least four elements" }
+        synchronized(lock) {
+            normalizedBuffers[readBufferIndex].copyInto(destination, endIndex = 4)
+        }
+    }
 
     /**
      * Terminates background thread execution and releases hardware resources.
      */
     override fun close() {
         running = false
+        pollingThread.interrupt()
+        if (Thread.currentThread() !== pollingThread) {
+            try {
+                pollingThread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
     }
 }
-
 

@@ -30,18 +30,13 @@ class SimDcMotorEx : DcMotorEx {
     override var power: Double
         get() = if (direction == DcMotorSimple.Direction.REVERSE) -_power else _power
         set(value) {
-            _power = if (direction == DcMotorSimple.Direction.REVERSE) -value else value
+            val safeValue = value.takeIf(Double::isFinite)?.coerceIn(-1.0, 1.0) ?: 0.0
+            _power = if (direction == DcMotorSimple.Direction.REVERSE) -safeValue else safeValue
         }
     
     @Volatile override var currentPosition: Int = 0
     @Volatile override var velocity: Double = 0.0
 
-    /**
-     * getCurrent declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getCurrent(unit: CurrentUnit): Double {
         // Return simulated current draw: 0.15A idle, scaling up to 4.2A under load
         return abs(power) * 4.05 + 0.15
@@ -54,7 +49,12 @@ class SimDcMotorEx : DcMotorEx {
  * Robotics framework control component.
  */
 class SimServo : com.qualcomm.robotcore.hardware.Servo {
-    override var position: Double = 0.0
+    private var commandedPosition = 0.0
+    override var position: Double
+        get() = commandedPosition
+        set(value) {
+            commandedPosition = value.takeIf(Double::isFinite)?.coerceIn(0.0, 1.0) ?: 0.0
+        }
 }
 
 /**
@@ -63,8 +63,8 @@ class SimServo : com.qualcomm.robotcore.hardware.Servo {
  * Robotics framework control component.
  */
 class SimLimelight3A : Limelight3A() {
-    override fun setLatestResult(res: LLResult?) {
-        simulatedResult = res
+    override fun setLatestResult(result: LLResult?) {
+        simulatedResult = result
     }
 }
 
@@ -78,26 +78,8 @@ class SimLLResult(
     private val fiducials: List<LLResultTypes.FiducialResult>,
     private val botpose: Pose3D? = null
 ) : LLResult() {
-    /**
-     * isValid declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun isValid(): Boolean = valid
-    /**
-     * getFiducialResults declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getFiducialResults(): List<LLResultTypes.FiducialResult> = fiducials
-    /**
-     * getBotpose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getBotpose(): Pose3D? = botpose
 }
 
@@ -137,6 +119,22 @@ class MecanumRobotDouble {
     }
 
     val hardwareMap = object : HardwareMap() {
+        private val fallbackDevices = java.util.concurrent.ConcurrentHashMap<String, Any>()
+
+        @Suppress("UNCHECKED_CAST")
+        private fun <T> cachedFallback(
+            deviceName: String,
+            requestedType: Class<out T>,
+            factory: () -> Any
+        ): T {
+            val device = fallbackDevices.computeIfAbsent(deviceName) { factory() }
+            require(requestedType.isInstance(device)) {
+                "Simulated device '$deviceName' was first requested as ${device.javaClass.simpleName}, " +
+                    "not ${requestedType.simpleName}"
+            }
+            return device as T
+        }
+
         @Suppress("UNCHECKED_CAST")
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
             return when (deviceName) {
@@ -155,11 +153,11 @@ class MecanumRobotDouble {
                         }
                         com.qualcomm.robotcore.hardware.Servo::class.java.isAssignableFrom(classOrType) -> {
                             println("[SimHardwareMap] Device '$deviceName' requested as Servo. Returning default SimServo.")
-                            SimServo() as T
+                            cachedFallback(deviceName, classOrType, ::SimServo)
                         }
                         com.qualcomm.robotcore.hardware.DcMotor::class.java.isAssignableFrom(classOrType) -> {
                             println("[SimHardwareMap] Device '$deviceName' requested as DcMotor. Returning default SimDcMotorEx.")
-                            SimDcMotorEx() as T
+                            cachedFallback(deviceName, classOrType, ::SimDcMotorEx)
                         }
                         VoltageSensor::class.java.isAssignableFrom(classOrType) -> {
                             this@MecanumRobotDouble.voltageSensor as T
@@ -167,10 +165,11 @@ class MecanumRobotDouble {
                         else -> {
                             if (classOrType.isInterface) {
                                 println("[SimHardwareMap] Unknown device '$deviceName' (${classOrType.simpleName}) requested. Returning dynamic proxy.")
-                                java.lang.reflect.Proxy.newProxyInstance(
-                                    classOrType.classLoader,
-                                    arrayOf(classOrType),
-                                    { _, method, _ ->
+                                cachedFallback(deviceName, classOrType) {
+                                    java.lang.reflect.Proxy.newProxyInstance(
+                                        classOrType.classLoader,
+                                        arrayOf(classOrType)
+                                    ) { _, method, _ ->
                                         when (method.returnType) {
                                             Boolean::class.javaPrimitiveType -> false
                                             Double::class.javaPrimitiveType -> 0.0
@@ -179,16 +178,16 @@ class MecanumRobotDouble {
                                             Long::class.javaPrimitiveType -> 0L
                                             String::class.java -> ""
                                             Void.TYPE -> null
-                                            else -> {
-                                                System.err.println("[SimHardwareMap] WARNING: Unhandled method ${method.name}() -> ${method.returnType.simpleName} on mock ${classOrType.simpleName}. Returning null.")
-                                                null
-                                            }
+                                            else -> throw UnsupportedOperationException(
+                                                "No simulated return value for ${classOrType.simpleName}.${method.name}()"
+                                            )
                                         }
                                     }
-                                ) as T
+                                }
                             } else {
-                                println("[SimHardwareMap] Unknown device '$deviceName' (${classOrType.simpleName}) requested. Returning default SimDcMotorEx.")
-                                SimDcMotorEx() as T
+                                throw IllegalArgumentException(
+                                    "No simulated hardware implementation for '$deviceName' (${classOrType.name})"
+                                )
                             }
                         }
                     }
@@ -208,12 +207,6 @@ class MecanumRobotDouble {
     // Encoder properties
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
 
-    /**
-     * updateSensors declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2

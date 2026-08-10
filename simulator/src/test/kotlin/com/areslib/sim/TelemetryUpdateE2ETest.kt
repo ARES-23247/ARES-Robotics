@@ -29,7 +29,7 @@ class TelemetryUpdateE2ETest {
         // 1. Launch simulator in headless server mode
         println("[Telemetry E2E Test] Launching simulator in headless mode...")
         val simThread = Thread {
-            DesktopSimLauncher.main(arrayOf("--headless", "--opmode=AresHardwareTestOpMode"))
+            DesktopSimLauncher.main(arrayOf("--headless"))
         }
         simThread.isDaemon = true
         simThread.start()
@@ -63,6 +63,26 @@ class TelemetryUpdateE2ETest {
         NT4Server.publishTopic("ARES/Input/vy", 0.0)
         NT4Server.publishTopic("ARES/Input/omega", 0.0)
 
+        // Boolean and mode inputs must come from the same custom NT4 registry as velocity.
+        NT4Server.publishTopic("ARES/Input/isIntaking", true)
+        NT4Server.publishTopic("ARES/Input/isFieldCentric", true)
+        NT4Server.publishTopic("ARES/Input/isTeleopMode", false)
+        assertTrue(com.areslib.sim.network.TelemetryPublisher.getWebIsIntaking())
+        assertTrue(com.areslib.sim.network.TelemetryPublisher.getWebIsFieldCentric())
+        assertFalse(com.areslib.sim.network.TelemetryPublisher.getWebIsTeleopMode())
+        NT4Server.publishTopic("ARES/Input/isIntaking", false)
+        NT4Server.publishTopic("ARES/Input/isFieldCentric", false)
+        NT4Server.publishTopic("ARES/Input/isTeleopMode", true)
+
+        val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":0.5,"centerY":0.25,"width":0.4,"height":0.2,"rotation":0.0}]"""
+        NT4Server.publishTopic("ARES/Input/obstacles", obstacleJson)
+        assertEquals(obstacleJson, com.areslib.sim.network.TelemetryPublisher.getWebObstacles())
+        Thread.sleep(100)
+        assertTrue(
+            "Dashboard obstacle should be applied to the active simulator field",
+            com.areslib.state.RobotFieldManager.activeConfig.obstacles.any { it.id == "dashboard-wall" }
+        )
+
         // Wait for sim loop to step, publish motor state, and build up velocity
         Thread.sleep(1500)
 
@@ -75,24 +95,35 @@ class TelemetryUpdateE2ETest {
         val brPower = NT4Server.getDouble("Hardware/Motors/br/Power", 0.0)
 
         println("[Telemetry E2E Test] Motor Powers -> FL: $flPower, FR: $frPower, RL: $rlPower, RR: $rrPower, BL: $blPower, BR: $brPower")
-        assertTrue("FL motor power should be > 0.1", flPower > 0.1)
-        assertTrue("FR motor power should be > 0.1", frPower > 0.1)
-        assertTrue("RL motor power should be > 0.1", rlPower > 0.1)
-        assertTrue("RR motor power should be > 0.1", rrPower > 0.1)
-        assertTrue("BL alias motor power should be > 0.1", blPower > 0.1)
-        assertTrue("BR alias motor power should be > 0.1", brPower > 0.1)
+        // The red spawn heading is +90 degrees, so a field +X command is robot-right strafe:
+        // wheel magnitudes are non-zero while left/right diagonals have opposite signs.
+        assertTrue("FL motor power magnitude should be > 0.1", kotlin.math.abs(flPower) > 0.1)
+        assertTrue("FR motor power magnitude should be > 0.1", kotlin.math.abs(frPower) > 0.1)
+        assertTrue("RL motor power magnitude should be > 0.1", kotlin.math.abs(rlPower) > 0.1)
+        assertTrue("RR motor power magnitude should be > 0.1", kotlin.math.abs(rrPower) > 0.1)
+        assertTrue("FL and FR should oppose for a strafe", flPower * frPower < 0.0)
+        assertTrue("RL and RR should oppose for a strafe", rlPower * rrPower < 0.0)
+        assertEquals(rlPower, blPower, 1e-9)
+        assertEquals(rrPower, brPower, 1e-9)
 
         // 5. Verify Motor Velocities (ticks/sec)
-        val flVel = NT4Server.getDouble("Hardware/Motors/fl/Velocity", 0.0)
-        val frVel = NT4Server.getDouble("Hardware/Motors/fr/Velocity", 0.0)
-        val rlVel = NT4Server.getDouble("Hardware/Motors/rl/Velocity", 0.0)
-        val rrVel = NT4Server.getDouble("Hardware/Motors/rr/Velocity", 0.0)
+        val flVel = NT4Server.getDouble("Hardware/Motors/fl/Velocity", Double.NaN)
+        val frVel = NT4Server.getDouble("Hardware/Motors/fr/Velocity", Double.NaN)
+        val rlVel = NT4Server.getDouble("Hardware/Motors/rl/Velocity", Double.NaN)
+        val rrVel = NT4Server.getDouble("Hardware/Motors/rr/Velocity", Double.NaN)
 
         println("[Telemetry E2E Test] Motor Velocities -> FL: $flVel, FR: $frVel, RL: $rlVel, RR: $rrVel")
-        assertTrue("FL motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(flVel) > 10.0)
-        assertTrue("FR motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(frVel) > 10.0)
-        assertTrue("RL motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(rlVel) > 10.0)
-        assertTrue("RR motor velocity magnitude should be > 10 ticks/s", kotlin.math.abs(rrVel) > 10.0)
+        val velocityTopics = listOf("fl" to flVel, "fr" to frVel, "rl" to rlVel, "rr" to rrVel)
+        velocityTopics.forEach { (name, velocity) ->
+            assertTrue("$name motor velocity topic should contain a finite value", velocity.isFinite())
+        }
+        // Wheel velocity is reconstructed from the simulated body's actual twist. A valid wheel can
+        // momentarily cross zero when translation and rotation cancel, so assert aggregate motion
+        // instead of requiring every wheel to exceed an arbitrary instantaneous threshold.
+        assertTrue(
+            "Simulated drivetrain should report meaningful aggregate wheel motion",
+            velocityTopics.sumOf { kotlin.math.abs(it.second) } > 100.0
+        )
 
         // 6. Verify Motor Current Draw (Amperes)
         val flCurrent = NT4Server.getDouble("Hardware/Motors/fl/CurrentAmps", 0.0)
@@ -115,7 +146,7 @@ class TelemetryUpdateE2ETest {
         val trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
         val trueY = NT4Server.getDouble("ARES/TruePose/1", 0.0)
         println("[Telemetry E2E Test] True Physics Pose -> X: $trueX, Y: $trueY")
-        assertTrue("Robot X or Y position should advance under positive vx drive input (X=$trueX, Y=$trueY)", trueX > 0.05 || trueY > -1.15)
+        assertTrue("Robot field X should advance under positive field-vx input (X=$trueX, Y=$trueY)", trueX > 0.05)
 
         // 8. Verify Driver Station Match State
         val matchState = NT4Server.getString("ARES/DriverStation/MatchState", "")

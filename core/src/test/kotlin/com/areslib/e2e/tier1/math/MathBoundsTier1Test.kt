@@ -15,21 +15,9 @@ import com.areslib.math.geometry.Rotation3d
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * MathBoundsTier1Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MathBoundsTier1Test {
 
     @Test
-    /**
-     * testLqrVoltageBounds_shouldClamp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testLqrVoltageBounds_shouldClamp() {
         val lqr = LQRController(1, 1, 1)
         lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
@@ -48,12 +36,6 @@ class MathBoundsTier1Test {
     }
 
     @Test
-    /**
-     * testLqrSlewRateBounds_shouldLimitChange declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testLqrSlewRateBounds_shouldLimitChange() {
         val lqr = LQRController(1, 1, 1)
         lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
@@ -70,12 +52,6 @@ class MathBoundsTier1Test {
     }
 
     @Test
-    /**
-     * testEkfOutlierRejection_shouldRejectExceedingMahalanobis declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testEkfOutlierRejection_shouldRejectExceedingMahalanobis() {
         val initialState = PoseEstimatorState()
         // Add one history entry
@@ -104,12 +80,6 @@ class MathBoundsTier1Test {
     }
 
     @Test
-    /**
-     * testEkfBeachingLimit_shouldFreezeOdometry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testEkfBeachingLimit_shouldFreezeOdometry() {
         val initialState = PoseEstimatorState()
         
@@ -125,12 +95,6 @@ class MathBoundsTier1Test {
     }
 
     @Test
-    /**
-     * testEkfRecovery_shouldUnfreezeOdometry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testEkfRecovery_shouldUnfreezeOdometry() {
         val initialState = PoseEstimatorState()
         
@@ -151,4 +115,3 @@ class MathBoundsTier1Test {
         assertEquals(1.0, recoveredState.estimatedPose.x, 1e-6)
     }
 }
-

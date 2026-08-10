@@ -3,16 +3,11 @@ package com.areslib.math.coordinate
 import com.areslib.state.Alliance
 import com.areslib.pathing.Path
 import com.areslib.math.geometry.*
+import com.areslib.math.wrapAngle
 import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-/**
- * AllianceMirroringTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class AllianceMirroringTest {
 
     private val epsilon = 1e-6
@@ -20,12 +15,6 @@ class AllianceMirroringTest {
     private val fieldWidth = 3.6576
 
     @Test
-    /**
-     * testBlueAllianceNoOp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testBlueAllianceNoOp() {
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
         val mirroredPose = AllianceMirroring.mirror(originalPose, Alliance.BLUE, FieldSymmetry.ROTATIONAL)
@@ -41,12 +30,6 @@ class AllianceMirroringTest {
     }
 
     @Test
-    /**
-     * testRotationalMirroring declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRotationalMirroring() {
         // Rotational symmetry: 180° rotation about center of the field
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
@@ -59,12 +42,6 @@ class AllianceMirroringTest {
     }
 
     @Test
-    /**
-     * testReflectionalMirroring declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testReflectionalMirroring() {
         // Reflectional symmetry: mirror reflection across x midline (y remains same, x flipped, yaw mirrored)
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
@@ -77,12 +54,6 @@ class AllianceMirroringTest {
     }
 
     @Test
-    /**
-     * testPathMirroring declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testPathMirroring() {
         val points = listOf(
             PathPoint(Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0)), 1.0, 0.0, 0.5),
@@ -107,5 +78,23 @@ class AllianceMirroringTest {
         assertEquals(0.3, reflectedPath.points[1].curvature, epsilon)
         assertEquals(1.0, reflectedPath.points[0].pose.x, epsilon)
         assertEquals(-1.5, reflectedPath.points[0].pose.y, epsilon)
+    }
+
+    @Test
+    fun `corner origin is explicit even when dimensions equal the FTC field size`() {
+        val original = Pose2d(0.5, 1.0, Rotation2d(0.25))
+
+        val mirrored = AllianceMirroring.mirror(
+            original,
+            Alliance.RED,
+            FieldSymmetry.MIRRORED,
+            fieldLength,
+            fieldWidth,
+            FieldOrigin.CORNER
+        )
+
+        assertEquals(fieldLength - original.x, mirrored.x, epsilon)
+        assertEquals(original.y, mirrored.y, epsilon)
+        assertEquals(wrapAngle(Math.PI - original.heading.radians), mirrored.heading.radians, epsilon)
     }
 }

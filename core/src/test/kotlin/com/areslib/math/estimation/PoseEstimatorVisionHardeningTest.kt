@@ -9,24 +9,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 
-/**
- * PoseEstimatorVisionHardeningTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PoseEstimatorVisionHardeningTest {
 
     private val testCovariance = Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01)
     private val originalTags = PoseEstimator.activeTags
 
     @BeforeEach
-    /**
-     * setUp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun setUp() {
         PoseEstimator.activeTags = mapOf(
             3 to Pose3d(Translation3d(-1.8, 1.8, 0.5), Rotation3d(0.0, 0.0, 0.0))
@@ -34,12 +22,6 @@ class PoseEstimatorVisionHardeningTest {
     }
 
     @AfterEach
-    /**
-     * tearDown declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun tearDown() {
         PoseEstimator.activeTags = originalTags
     }

@@ -5,12 +5,6 @@ import com.areslib.math.geometry.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * PoseEstimatorHardeningTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PoseEstimatorHardeningTest {
 
     @Test

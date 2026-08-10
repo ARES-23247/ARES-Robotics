@@ -38,7 +38,8 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
     private val distanceSensor = device as? DistanceSensor
 
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
+    private val pollingThread: Thread
 
     private var cachedRed = 0
     private var cachedGreen = 0
@@ -50,7 +51,7 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
 
     init {
         HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
+        pollingThread = Thread {
             while (running) {
                 var red = 0
                 var green = 0
@@ -116,9 +117,9 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
                 try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
             }
         }
-        thread.isDaemon = true
-        thread.name = "ARES-ColorSensorV3-Thread"
-        thread.start()
+        pollingThread.isDaemon = true
+        pollingThread.name = "ARES-ColorSensorV3-Thread"
+        pollingThread.start()
     }
 
     /** Cached raw red channel reading $[0, 65535]$. */
@@ -139,7 +140,14 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
 
     /** Cached double-buffered normalized $[R, G, B, \alpha]$ array $[0.0, 1.0]$. */
     override val normalizedRgb: DoubleArray
-        get() = synchronized(lock) { cachedNormalized }
+        get() = DoubleArray(4).also(::copyNormalizedRgbInto)
+
+    override fun copyNormalizedRgbInto(destination: DoubleArray) {
+        require(destination.size >= 4) { "Normalized RGBA destination must contain at least four elements" }
+        synchronized(lock) {
+            cachedNormalized.copyInto(destination, endIndex = 4)
+        }
+    }
 
     /** Cached IR proximity rangefinder reading in meters ($m$). Returns [Double.NaN] if out of range. */
     override val distanceMeters: Double
@@ -150,7 +158,14 @@ class FtcRevColorSensorV3(private val device: ColorSensor) : ColorSensorIO, Dist
      */
     override fun close() {
         running = false
+        pollingThread.interrupt()
+        if (Thread.currentThread() !== pollingThread) {
+            try {
+                pollingThread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
     }
 }
-
 

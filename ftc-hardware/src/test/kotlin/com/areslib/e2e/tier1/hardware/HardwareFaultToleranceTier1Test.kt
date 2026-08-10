@@ -13,12 +13,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * MockFtcMotorEx declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockFtcMotorEx : DcMotorEx {
     override val currentPosition: Int = 0
     var mockVelocity: Double = 0.0
@@ -37,85 +31,37 @@ class MockFtcMotorEx : DcMotorEx {
         get() = mockVelocity
         set(value) { mockVelocity = value }
 
-    /**
-     * getCurrent declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double {
         return mockCurrentAmps
     }
 }
 
-/**
- * MockIMU declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockIMU : IMU {
     var shouldThrow = false
     var mockYaw = 1.0
     var mockPitch = 0.5
     var mockRoll = 0.2
     
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun initialize(parameters: IMU.Parameters): Boolean {
         return true
     }
 
-    /**
-     * resetYaw declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun resetYaw() {}
 
-    /**
-     * getRobotYawPitchRollAngles declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
         if (shouldThrow) throw RuntimeException("I2C Disconnect / Timeout!")
         return YawPitchRollAngles(AngleUnit.RADIANS, mockYaw, mockPitch, mockRoll, 0L)
     }
 
-    /**
-     * getRobotAngularVelocity declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun getRobotAngularVelocity(angleUnit: AngleUnit): AngularVelocity {
         if (shouldThrow) throw RuntimeException("I2C Disconnect / Timeout!")
         return AngularVelocity(AngleUnit.RADIANS, 0.0f, 0.0f, 0.0f, 0L)
     }
 }
 
-/**
- * HardwareFaultToleranceTier1Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class HardwareFaultToleranceTier1Test {
 
     @Test
-    /**
-     * testMotorStallDetection_tripsOnStall declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testMotorStallDetection_tripsOnStall() {
         val mockMotor = MockFtcMotorEx()
         val ftcMotor = FtcMotor(mockMotor)
@@ -144,12 +90,6 @@ class HardwareFaultToleranceTier1Test {
     }
 
     @Test
-    /**
-     * testMotorStallAutoRecovery_resetsOnHealthyVelocity declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testMotorStallAutoRecovery_resetsOnHealthyVelocity() {
         val mockMotor = MockFtcMotorEx()
         val ftcMotor = FtcMotor(mockMotor)
@@ -175,12 +115,6 @@ class HardwareFaultToleranceTier1Test {
     }
 
     @Test
-    /**
-     * testMotorCurrentSpikeLimit_tripsVirtualBreaker declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testMotorCurrentSpikeLimit_tripsVirtualBreaker() {
         val mockMotor = MockFtcMotorEx()
         val ftcMotor = FtcMotor(mockMotor)
@@ -196,12 +130,6 @@ class HardwareFaultToleranceTier1Test {
     }
 
     @Test
-    /**
-     * testImuDisconnect_gracefullySwallowsTimeoutExceptions declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testImuDisconnect_gracefullySwallowsTimeoutExceptions() {
         val mockIMU = MockIMU()
         val ftcImu = FtcImu(mockIMU)
@@ -225,4 +153,3 @@ class HardwareFaultToleranceTier1Test {
         assertEquals(0.5, inputs.pitchRadians, 1e-6)
     }
 }
-

@@ -7,6 +7,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 
 annotation class TeleOp(val name: String = "", val group: String = "")
 annotation class Autonomous(val name: String = "", val group: String = "")
+annotation class Disabled
 
 /**
  * Class implementation for Linear Op Mode.
@@ -14,12 +15,6 @@ annotation class Autonomous(val name: String = "", val group: String = "")
  * Robotics framework control component.
  */
 abstract class LinearOpMode {
-    /**
-     * runOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     abstract fun runOpMode()
     @JvmField var hardwareMap: HardwareMap = object : HardwareMap() {
         override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
@@ -36,39 +31,15 @@ abstract class LinearOpMode {
     @Volatile var isStarted = false
     @Volatile var isStopRequested = false
     
-    /**
-     * opModeIsActive declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun opModeIsActive(): Boolean = isStarted && !isStopRequested && !Thread.currentThread().isInterrupted
-    /**
-     * opModeInInit declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun opModeInInit(): Boolean = !isStarted && !isStopRequested && !Thread.currentThread().isInterrupted
     
-    /**
-     * waitForStart declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun waitForStart() {
         while (!isStarted && !isStopRequested && !Thread.currentThread().isInterrupted) {
             Thread.sleep(10)
         }
     }
     
-    /**
-     * sleep declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun sleep(milliseconds: Long) {
         if (com.areslib.util.RobotClock.isMocked) {
             val targetTime = com.areslib.util.RobotClock.currentTimeMillis() + milliseconds
@@ -78,5 +49,10 @@ abstract class LinearOpMode {
         } else {
             Thread.sleep(milliseconds)
         }
+    }
+
+    /** Mirrors the SDK's cooperative OpMode-thread yield without introducing simulated time. */
+    fun idle() {
+        Thread.yield()
     }
 }

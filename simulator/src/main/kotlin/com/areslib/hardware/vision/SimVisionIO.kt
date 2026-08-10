@@ -6,19 +6,17 @@ import com.areslib.math.geometry.Translation3d
 import com.areslib.state.VisionMeasurement
 
 /**
- * Class implementation for Sim Vision I O.
+ * Always-connected, manually injectable simulator vision source.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * [updateInputs] publishes camera mounts but intentionally leaves the caller's measurement list
+ * unchanged, allowing [injectMeasurement] to persist until the simulation replaces or clears it.
+ * Coordinates are field-relative meters with a CCW-positive yaw in radians. This helper allocates
+ * measurement objects and is not intended to model camera latency, occlusion, or noise.
  */
 class SimVisionIO(
     override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
 ) : VisionIO {
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Marks the source connected and supplies configured camera mount poses. */
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.cameraPoses = cameraPoses
         inputs.isConnected = true
@@ -28,7 +26,8 @@ class SimVisionIO(
     }
 
     /**
-     * Helper for the simulator to inject fake detections.
+     * Replaces [inputs]' detections with one synthetic tag-1 observation timestamped by RobotClock.
+     * [heading] is CCW-positive radians and [ambiguity] is passed through without validation.
      */
     fun injectMeasurement(inputs: VisionIOInputs, x: Double, y: Double, heading: Double, ambiguity: Double = 0.0) {
         val pose = Pose3d(
@@ -44,4 +43,3 @@ class SimVisionIO(
         inputs.measurements = listOf(measurement)
     }
 }
-

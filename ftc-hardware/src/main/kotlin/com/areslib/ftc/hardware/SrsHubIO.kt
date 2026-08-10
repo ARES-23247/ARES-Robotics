@@ -3,17 +3,7 @@ package com.areslib.ftc.hardware
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch
 import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties
-import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.configuration.annotations.I2cDeviceType
-import com.areslib.hardware.actuator.MotorIO
-import com.areslib.hardware.actuator.RevEncoderVersion
-import com.areslib.hardware.actuator.ServoIO
-import com.areslib.hardware.sensor.ColorSensorIO
-import com.areslib.hardware.sensor.DistanceSensorIO
-import com.areslib.hardware.sensor.MultizoneDistanceSensorIO
-import com.areslib.hardware.drive.OdometryIO
-import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Rotation2d
 
 @I2cDeviceType
 @DeviceProperties(
@@ -37,8 +27,8 @@ import com.areslib.math.geometry.Rotation2d
  * - Registers `0x60..0xBF`: GoBilda Pinpoint odometry $X, Y$ ($mm$), heading ($\mu rad$), velocities ($mm/s, \mu rad/s$).
  * - Registers `0xC0..0xFF`: VL53L5CX 64-zone distance matrix ($mm$).
  *
- * ### Zero-GC Guarantee:
- * [pollHub] parses 256-byte I2C buffers into primitive array fields in-place without dynamic object instantiations.
+ * [pollHub] parses each SDK-owned I2C read into fixed-size primitive caches. Consumer accessors read
+ * those caches and never perform hardware I/O, keeping control-loop work bounded and deterministic.
  *
  * @param deviceClient Underlying Qualcomm FTC SDK [I2cDeviceSynch] bus client.
  *
@@ -75,8 +65,11 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val servoWriteBuffers = Array(4) { ByteArray(2) }
 
     private val lock = Any()
-    private var running = true
-    private var isInitialized = false
+    @Volatile private var running = true
+    @Volatile private var isInitialized = false
+    @Volatile
+    var lastSuccessfulPollTimestampMs: Long = 0L
+        private set
 
     private val thread = Thread {
         while (running) {
@@ -156,11 +149,6 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     /** Returns human-readable device identifier string. */
     override fun getDeviceName(): String = "SRS Hub"
 
-    /** No-op update hook (handled asynchronously by background thread). */
-    fun update() {
-        // No-op wrapper to satisfy legacy callers on the main thread
-    }
-
     private fun pollHub() {
         try {
             val data = deviceClient.read(0, 256)
@@ -228,6 +216,7 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                         cachedVL53L5CX[0][i] = mm
                     }
                 }
+                lastSuccessfulPollTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
             }
         } catch (_: Exception) {
             // Swallow I2C read exceptions gracefully
@@ -255,8 +244,19 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     /** Reads cached PWM pulse width ($\mu s$) for port $[0 \dots 3]$. */
     fun getPwmPulseWidth(port: Int): Int = synchronized(lock) { cachedPwmPulseWidths.getOrElse(port) { 0 } }
 
-    /** Reads cached VL53L5CX zone distances ($mm$) for port $[0 \dots 3]$. */
-    fun getVL53L5CXDistances(port: Int): IntArray = synchronized(lock) { cachedVL53L5CX.getOrElse(port) { IntArray(64) } }
+    /** Returns a caller-owned snapshot of cached VL53L5CX zone distances in millimeters. */
+    fun getVL53L5CXDistances(port: Int): IntArray = synchronized(lock) {
+        if (port !in cachedVL53L5CX.indices) IntArray(0) else cachedVL53L5CX[port].copyOf()
+    }
+
+    /** Copies cached VL53L5CX millimeter readings into caller-owned storage. */
+    fun copyVL53L5CXDistances(port: Int, destination: IntArray): Int = synchronized(lock) {
+        if (port !in cachedVL53L5CX.indices) return@synchronized 0
+        val source = cachedVL53L5CX[port]
+        val count = minOf(source.size, destination.size)
+        source.copyInto(destination, endIndex = count)
+        count
+    }
 
     /** Reads cached red color channel for port $[0 \dots 3]$. */
     fun getI2cColorRed(port: Int): Int = synchronized(lock) { cachedColorsRed.getOrElse(port) { 0 } }
@@ -300,20 +300,6 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         }
     }
 
-    /** Reads single PWM pulse width ($\mu s$) synchronously (legacy fallback). */
-    fun readPwmPulseWidth(port: Int): Int {
-        return try {
-            val data = deviceClient.read(24 + port * 2, 2)
-            if (data.size >= 2) {
-                (data[0].toInt() and 0xFF) or ((data[1].toInt() and 0xFF) shl 8)
-            } else {
-                0
-            }
-        } catch (_: Exception) {
-            0
-        }
-    }
-
     /** Sends a reset bit command to Pinpoint odometry computer on port $[0 \dots 3]$. */
     fun resetI2cOdometry(port: Int) {
         try {
@@ -321,18 +307,17 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         } catch (_: Exception) {}
     }
 
-    /** No-op update hook for odometry (handled asynchronously in background sampling thread). */
-    fun updateI2cOdometry() {
-        // Handled asynchronously in background thread
-    }
-
     /** Terminates background polling thread and releases device client handle. */
     override fun close() {
         running = false
         thread.interrupt()
+        if (Thread.currentThread() !== thread) {
+            try {
+                thread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
+        deviceClient.close()
     }
 }
-
-
-
-

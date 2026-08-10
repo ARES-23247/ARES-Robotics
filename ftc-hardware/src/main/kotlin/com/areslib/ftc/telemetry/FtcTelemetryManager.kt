@@ -5,7 +5,6 @@ import com.areslib.telemetry.NT4Telemetry
 import com.areslib.logging.DataLoggingTelemetry
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.action.ActionLogger
-import com.areslib.logging.CloudExporter
 import com.areslib.state.RobotState
 import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry
@@ -28,7 +27,7 @@ import com.areslib.math.geometry.toFormattedString
  * ### Telemetry Network Topics & Physical Units:
  * - `Drive/Pose_X`: EKF X position in meters ($m$).
  * - `Drive/Pose_Y`: EKF Y position in meters ($m$).
- * - `Drive/Drive_Heading`: EKF heading in radians ($rad$), **CCW-positive** standard.
+ * - `Drive/Pose_Heading`: EKF heading in radians ($rad$), **CCW-positive** standard.
  * - `Hardware/Motors/{name}/Power`: Motor duty-cycle output power $[-1.0, 1.0]$.
  * - `Hardware/Motors/{name}/CurrentAmps`: Motor current draw in Amperes ($A$).
  * - `ARES/DriverStation/Telemetry/{i}`: Driver station text console lines.
@@ -146,6 +145,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Finalize frame and flush to loggers/network
+        dataLoggingTelemetry.putNumber("Diagnostics/DroppedActions", actionLogger.droppedActionCount.toDouble())
         dataLoggingTelemetry.update()
     }
 
@@ -196,6 +196,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
 
         // Vision telemetry status
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
+        dataLoggingTelemetry.putString("Drive/Odometry_Source", com.areslib.telemetry.RobotStatusTracker.odometrySource)
+        dataLoggingTelemetry.putString("Drive/Pinpoint_Status", com.areslib.telemetry.RobotStatusTracker.odometryStatus)
 
         // Global custom hardware telemetry (also governed by ntEnabled flag)
         HardwareRegistry.publishAll(dataLoggingTelemetry)
@@ -218,6 +220,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
                     state.drive.odometryY,
                     com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
                 ).toFormattedString(),
+                "Odometry Source" to com.areslib.telemetry.RobotStatusTracker.odometrySource,
+                "Pinpoint Status" to com.areslib.telemetry.RobotStatusTracker.odometryStatus,
                 "Limelight Pose (X, Y, Deg)" to (visionTracker.lastLimelightPose?.let { pose ->
                     val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
                     "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
@@ -238,6 +242,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Finalize frame: disk log always, NT4 flush only on NT frames
+        dataLoggingTelemetry.putNumber("Diagnostics/DroppedActions", actionLogger.droppedActionCount.toDouble())
         dataLoggingTelemetry.update()
 
         // Reset NT4 enabled for any out-of-band puts between frames

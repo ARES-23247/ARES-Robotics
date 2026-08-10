@@ -8,12 +8,6 @@ package com.qualcomm.robotcore.util
  */
 open class SerialNumber(val serialNumber: String = "") {
     val isEmbeddedSerialNumber: Boolean = false
-    /**
-     * toString declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun toString(): String = serialNumber
     
     companion object {

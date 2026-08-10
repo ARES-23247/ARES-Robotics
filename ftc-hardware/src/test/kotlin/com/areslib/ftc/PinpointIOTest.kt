@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
+import com.areslib.util.RobotClock
 
 /**
  * PinpointIOTest declaration.
@@ -175,5 +176,63 @@ class PinpointIOTest {
         }
         assertTrue(valOk)
     }
-}
 
+    @Test
+    fun `nonfinite hardware packet is rejected and marks pinpoint unhealthy`() {
+        RobotClock.useMockTime(1_000L)
+        try {
+            val rawDriver = GoBildaPinpointDriver()
+            val pinpointIO = PinpointIO(rawDriver)
+
+            rawDriver.posX = 0.25
+            val healthy = pinpointIO.getPoseUpdate()
+            assertTrue(pinpointIO.isHealthy(1_000L))
+            assertEquals(0.25, healthy.xMeters, 1e-6)
+
+            RobotClock.setMockTimeMs(1_020L)
+            rawDriver.posX = Double.NaN
+            val rejected = pinpointIO.getPoseUpdate()
+
+            assertFalse(pinpointIO.isHealthy(1_020L))
+            assertEquals(PinpointIO.HealthStatus.NONFINITE, pinpointIO.healthStatus)
+            assertEquals(0.25, rejected.xMeters, 1e-6, "Last trusted pose must be retained")
+        } finally {
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
+    fun `healthy packet becomes stale after the configured age`() {
+        RobotClock.useMockTime(2_000L)
+        try {
+            val pinpointIO = PinpointIO(GoBildaPinpointDriver())
+            pinpointIO.getPoseUpdate()
+            assertTrue(pinpointIO.isHealthy(2_000L))
+
+            assertFalse(pinpointIO.isHealthy(2_101L))
+            assertEquals(PinpointIO.HealthStatus.STALE, pinpointIO.healthStatus)
+        } finally {
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
+    fun `physically impossible pose jump is not published`() {
+        RobotClock.useMockTime(3_000L)
+        try {
+            val rawDriver = GoBildaPinpointDriver()
+            val pinpointIO = PinpointIO(rawDriver)
+            pinpointIO.getPoseUpdate()
+
+            RobotClock.setMockTimeMs(3_020L)
+            rawDriver.posX = 5.0
+            val rejected = pinpointIO.getPoseUpdate()
+
+            assertEquals(PinpointIO.HealthStatus.IMPLAUSIBLE, pinpointIO.healthStatus)
+            assertFalse(pinpointIO.isHealthy(3_020L))
+            assertEquals(0.0, rejected.xMeters, 1e-6)
+        } finally {
+            RobotClock.useSystemTime()
+        }
+    }
+}

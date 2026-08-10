@@ -1,19 +1,27 @@
 package com.areslib.sequencer
 
 import com.areslib.util.RobotClock
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.ScheduledExecutorService
 
 /**
- * Object implementation for Task Timeout Manager.
+ * Process-wide timeout registry with both executor-driven and watchdog detection.
  *
- * Asynchronous superstructure task sequence execution unit.
+ * [isTimedOut] compares executor-supplied elapsed time. A single daemon watchdog also checks
+ * configured tasks every 50 ms against [RobotClock], marks them failed, and invokes their failure
+ * callback. Timeout comparison is strict (`elapsed > timeout`). Weak keys and terminal cleanup keep
+ * completed tasks from being retained for the life of the process.
  */
 object TaskTimeoutManager {
-    private val timeouts = ConcurrentHashMap<Task, Long>()
-    private val startTimes = ConcurrentHashMap<Task, Long>()
+    private data class TimeoutState(
+        val timeoutMs: Long,
+        val startTimeMs: Long? = null,
+        val elapsedBeforePauseMs: Long = 0L
+    )
+
+    private val states = WeakIdentityMap<Task, TimeoutState>()
+    private val timedOutScratch = ArrayList<Task>()
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "TaskTimeoutManager-Watchdog").apply { isDaemon = true }
     }
@@ -21,54 +29,75 @@ object TaskTimeoutManager {
     init {
         executor.scheduleAtFixedRate({
             val now = RobotClock.currentTimeMillis()
-            for ((task, timeout) in timeouts) {
-                val start = startTimes[task] ?: continue
-                if (now - start > timeout) {
-                    TaskStateMachine.transitionTo(task, TaskStatus.FAILED)
+            synchronized(this) {
+                timedOutScratch.clear()
+                for ((task, state) in states.entriesSnapshot()) {
+                    val start = state.startTimeMs ?: continue
+                    if (state.elapsedBeforePauseMs + now - start > state.timeoutMs) {
+                        timedOutScratch.add(task)
+                    }
+                }
+            }
+            for (task in timedOutScratch) {
+                if (TaskStateMachine.markFailed(task)) {
+                    try {
+                        TaskCallbacks.invokeFail(task)
+                    } catch (exception: Exception) {
+                        System.err.println("TaskTimeoutManager: failure callback for ${task.name} threw: ${exception.message}")
+                    }
                 }
             }
         }, 50, 50, TimeUnit.MILLISECONDS)
     }
 
-    /**
-     * setTimeout declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Sets/replaces [task]'s timeout duration in milliseconds. */
+    @Synchronized
     fun setTimeout(task: Task, ms: Long) {
-        timeouts[task] = ms
+        require(ms >= 0L) { "Task timeout must be non-negative" }
+        val current = states[task]
+        states[task] = TimeoutState(
+            timeoutMs = ms,
+            startTimeMs = current?.startTimeMs,
+            elapsedBeforePauseMs = current?.elapsedBeforePauseMs ?: 0L
+        )
     }
 
-    /**
-     * start declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Records [RobotClock.currentTimeMillis] as [task]'s watchdog origin. */
+    @Synchronized
     fun start(task: Task) {
-        startTimes[task] = RobotClock.currentTimeMillis()
+        val current = states[task] ?: return
+        states[task] = current.copy(startTimeMs = RobotClock.currentTimeMillis(), elapsedBeforePauseMs = 0L)
+    }
+
+    /** Stops watchdog time while [task] is preempted without discarding its timeout configuration. */
+    @Synchronized
+    fun pause(task: Task) {
+        val current = states[task] ?: return
+        val start = current.startTimeMs ?: return
+        val elapsed = (RobotClock.currentTimeMillis() - start).coerceAtLeast(0L)
+        states[task] = current.copy(
+            startTimeMs = null,
+            elapsedBeforePauseMs = current.elapsedBeforePauseMs + elapsed
+        )
+    }
+
+    /** Restarts watchdog time for a previously preempted [task]. */
+    @Synchronized
+    fun resume(task: Task) {
+        val current = states[task] ?: return
+        states[task] = current.copy(startTimeMs = RobotClock.currentTimeMillis())
     }
     
-    /**
-     * reset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Removes both timeout configuration and watchdog start time for [task]. */
+    @Synchronized
     fun reset(task: Task) {
-        timeouts.remove(task)
-        startTimes.remove(task)
+        states.remove(task)
     }
 
-    /**
-     * isTimedOut declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Tests caller-supplied [elapsedMs] against [task]'s configured strict timeout. */
+    @Synchronized
     fun isTimedOut(task: Task, elapsedMs: Long): Boolean {
-        val timeoutMs = timeouts[task] ?: return false
-        return elapsedMs > timeoutMs
+        val state = states[task] ?: return false
+        return elapsedMs > state.timeoutMs
     }
 }

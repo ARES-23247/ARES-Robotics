@@ -12,6 +12,8 @@ import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.SwerveDriveFacade
 import com.areslib.telemetry.*
 import kotlin.math.abs
+import com.areslib.tuning.TuningManager
+import java.io.File
 
 /**
  * FRC Swerve Robot — high-level drivebase robot container facade.
@@ -71,7 +73,8 @@ class FrcSwerveRobot(
         } catch (_: Throwable) {
             "Active"
         }
-    }
+    },
+    tuningFile: File = File(if (File("/home/lvuser").isDirectory) "/home/lvuser/ares_tuning.json" else "ares_tuning-frc.json")
 ) : FrcBaseRobot(initialState, reducer, baseTelemetry, isEnabledProvider, robotModeProvider) {
 
     // ── Subsystem Facades ──
@@ -87,6 +90,8 @@ class FrcSwerveRobot(
 
     override val telemetryManager = FrcTelemetryManager(baseTelemetry, store, swerveIO)
     override val powerManager = FrcPowerManager()
+    private val tuningManager = TuningManager(store, baseTelemetry, tuningFile)
+    var isLiveTuningEnabled: Boolean = false
 
     private val _visionTracker = FrcVisionTracker(store, visionIO, swerveIO, isSimulation)
 
@@ -108,12 +113,22 @@ class FrcSwerveRobot(
      * Handles beached-chassis recovery by holding the last known EKF pose when traction is lost.
      */
     override fun updateHardwareInputs(timestampMs: Long) {
+        if (isLiveTuningEnabled) tuningManager.update(timestampMs)
         if (!isSimulation && swerveIO != null) {
             val driveState = swerveIO.read()
             val currentlyBeached = isBeached
             val lastPose = store.state.drive.poseEstimator.estimatedPose
             val x = if (currentlyBeached) lastPose.x else driveState.odometryX
             val y = if (currentlyBeached) lastPose.y else driveState.odometryY
+            val cosHeading = kotlin.math.cos(driveState.odometryHeading)
+            val sinHeading = kotlin.math.sin(driveState.odometryHeading)
+            // CTRE reports chassis speeds in the robot frame. Store measured speeds
+            // separately from commanded Redux drive intent and convert them to the
+            // field frame consumed by shoot-on-the-move prediction.
+            val measuredFieldVx = driveState.xVelocityMetersPerSecond * cosHeading -
+                driveState.yVelocityMetersPerSecond * sinHeading
+            val measuredFieldVy = driveState.xVelocityMetersPerSecond * sinHeading +
+                driveState.yVelocityMetersPerSecond * cosHeading
 
             if (wasBeached && !currentlyBeached) {
                 swerveIO.seedPose(lastPose)
@@ -126,7 +141,14 @@ class FrcSwerveRobot(
                 headingRadians = driveState.odometryHeading,
                 timestampMs = timestampMs,
                 pitchDegrees = swerveIO.pitchDegrees,
-                rollDegrees = swerveIO.rollDegrees
+                rollDegrees = swerveIO.rollDegrees,
+                angularVelocityRadiansPerSecond = driveState.angularVelocityRadiansPerSecond,
+                xVelocityMetersPerSecond = measuredFieldVx,
+                yVelocityMetersPerSecond = measuredFieldVy,
+                // CTRE has already fused module, gyro, and accepted vision data.
+                // Mirror that authoritative estimate; do not run it through ARES as
+                // another odometry observation.
+                isExternalEstimate = true
             ))
         }
     }

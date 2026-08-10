@@ -3,21 +3,9 @@ package com.areslib.control.assist
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * SysIdManagerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class SysIdManagerTest {
 
     @Test
-    /**
-     * testQuasistaticRampAndClamp declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testQuasistaticRampAndClamp() {
         val manager = SysIdManager()
         
@@ -36,12 +24,6 @@ class SysIdManagerTest {
     }
 
     @Test
-    /**
-     * testDynamicStep declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testDynamicStep() {
         val manager = SysIdManager()
         
@@ -56,12 +38,19 @@ class SysIdManagerTest {
     }
 
     @Test
-    /**
-     * testSafetyLinearLimit declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    fun `flywheel profiles never reverse the mechanism`() {
+        val manager = SysIdManager()
+
+        manager.start(SysIdMechanism.FLYWHEEL, SysIdRoutine.QUASISTATIC, 1000L, 0.0, 0.0, 0.0)
+        assertEquals(1.2, manager.update(2000L, 20.0), 1e-6)
+        assertEquals(4.8, manager.update(5000L, 80.0), 1e-6)
+
+        manager.start(SysIdMechanism.FLYWHEEL, SysIdRoutine.DYNAMIC, 7000L, 0.0, 0.0, 0.0)
+        assertEquals(6.0, manager.update(8000L, 100.0), 1e-6)
+        assertEquals(0.0, manager.update(10000L, 60.0), 1e-6)
+    }
+
+    @Test
     fun testSafetyLinearLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
@@ -74,12 +63,6 @@ class SysIdManagerTest {
     }
 
     @Test
-    /**
-     * testSafetyAngularLimit declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSafetyAngularLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.ANGULAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
@@ -97,12 +80,6 @@ class SysIdManagerTest {
     }
 
     @Test
-    /**
-     * testSafetyTimeLimit declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSafetyTimeLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
@@ -115,12 +92,6 @@ class SysIdManagerTest {
     }
 
     @Test
-    /**
-     * testStopAndInactiveState declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testStopAndInactiveState() {
         val manager = SysIdManager()
         // Inactive safety should be true
@@ -134,5 +105,36 @@ class SysIdManagerTest {
         manager.stop()
         assertFalse(manager.isActive())
         assertEquals(0.0, manager.currentVoltage)
+    }
+
+    @Test
+    fun `nonfinite pose aborts active safety check`() {
+        val manager = SysIdManager()
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
+
+        assertFalse(manager.checkSafety(Double.NaN, 0.0, 0.0, 1100L))
+        assertFalse(manager.isActive())
+        assertEquals(0.0, manager.currentVoltage)
+    }
+
+    @Test
+    fun `nonfinite initial pose refuses to start routine`() {
+        val manager = SysIdManager()
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, Double.NaN, 0.0, 0.0)
+        assertFalse(manager.isActive())
+        assertEquals(0.0, manager.currentVoltage)
+    }
+
+    @Test
+    fun `nonfinite velocity or decreasing timestamp aborts update`() {
+        val manager = SysIdManager()
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
+        assertEquals(0.0, manager.update(1100L, Double.NaN))
+        assertFalse(manager.isActive())
+
+        manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 2000L, 0.0, 0.0, 0.0)
+        manager.update(2100L, 1.0)
+        assertEquals(0.0, manager.update(2050L, 1.0))
+        assertFalse(manager.isActive())
     }
 }

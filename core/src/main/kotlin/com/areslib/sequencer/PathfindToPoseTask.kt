@@ -25,12 +25,6 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     override val name = "PathfindToPose($targetPose)"
     private var delegateTask: FollowPathTask? = null
 
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun initialize(state: RobotState): List<RobotAction> {
         val startPose = state.drive.poseEstimator.estimatedPose
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
@@ -65,32 +59,14 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         return task.initialize(state)
     }
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return delegateTask?.isCompleted(state, elapsedMs) ?: true
     }
 
-    /**
-     * execute declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         return delegateTask?.execute(state, elapsedMs) ?: emptyList()
     }
 
-    /**
-     * end declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         return delegateTask?.end(state, interrupted) ?: emptyList()
     }

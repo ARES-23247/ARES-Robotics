@@ -1,7 +1,6 @@
 package com.areslib.sim.field
 
 import com.areslib.sim.SimInteractionModel
-import com.areslib.sim.model.MecanumRobotDouble
 import com.areslib.sim.infra.VirtualDriverStation
 import org.dyn4j.dynamics.Body
 import org.dyn4j.dynamics.BodyFixture
@@ -17,16 +16,10 @@ import kotlin.math.sin
  *
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
-class MecanumInteractionModel(private val robotDouble: MecanumRobotDouble) : SimInteractionModel {
+class MecanumInteractionModel : SimInteractionModel {
     private val intakeRange = 0.35 // Meters from robot center
     private val shootForce = 8.0 // Linear impulse
 
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun update(
         world: World<Body>,
         robotBody: Body,

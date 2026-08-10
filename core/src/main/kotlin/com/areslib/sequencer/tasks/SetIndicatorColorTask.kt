@@ -30,22 +30,10 @@ class SetIndicatorColorTask(
     override val name = "SetIndicator($lightName→${color.name})"
     private var dispatched = false
 
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun initialize(state: RobotState): List<RobotAction> {
         dispatched = true
         return listOf(RobotAction.SetIndicatorLight(lightName, color.position))
     }
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = dispatched
 }

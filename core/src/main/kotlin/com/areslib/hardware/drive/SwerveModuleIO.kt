@@ -10,6 +10,9 @@ data class SwerveModuleInputs(
     @SerializedName("drivePositionRads") var drivePositionRads: Double = 0.0,
     @SerializedName("driveVelocityRadsPerSec") var driveVelocityRadsPerSec: Double = 0.0,
     @SerializedName("steerAbsolutePositionRads") var steerAbsolutePositionRads: Double = 0.0,
+    @SerializedName("drivePositionValid") var drivePositionValid: Boolean = false,
+    @SerializedName("driveVelocityValid") var driveVelocityValid: Boolean = false,
+    @SerializedName("steerAbsoluteValid") var steerAbsoluteValid: Boolean = false,
     @SerializedName("timestampMs") var timestampMs: Long = 0L
 )
 

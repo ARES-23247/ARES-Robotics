@@ -7,21 +7,9 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * PathingChampionshipTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PathingChampionshipTest {
 
     @Test
-    /**
-     * testCostmapInflation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testCostmapInflation() {
         val costmap = Costmap(widthMeters = 6.0, heightMeters = 6.0, resolutionMeters = 0.1)
         costmap.clear()
@@ -45,12 +33,6 @@ class PathingChampionshipTest {
     }
 
     @Test
-    /**
-     * testThetaStarPlanner declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testThetaStarPlanner() {
         val costmap = Costmap(widthMeters = 10.0, heightMeters = 10.0, resolutionMeters = 0.1)
         costmap.clear()
@@ -88,12 +70,6 @@ class PathingChampionshipTest {
     }
 
     @Test
-    /**
-     * testSCurveTrajectoryParameterizer declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testSCurveTrajectoryParameterizer() {
         val waypoints = listOf(
             Translation2d(0.0, 0.0),
@@ -137,4 +113,3 @@ class PathingChampionshipTest {
         }
     }
 }
-

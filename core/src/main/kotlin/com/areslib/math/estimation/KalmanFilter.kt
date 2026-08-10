@@ -35,6 +35,7 @@ class KalmanFilter(
     initialState: Double = 0.0,
     initialError: Double = 1.0
 ) {
+    private val configuredInitialError = initialError
     private var x = initialState // Estimated state
     private var p = initialError // Error covariance
     private var hasFirstValue = false
@@ -52,7 +53,6 @@ class KalmanFilter(
 
         if (!hasFirstValue) {
             x = measurement
-            p = 1.0 // Initialize with unit covariance
             hasFirstValue = true
             return measurement
         }
@@ -102,7 +102,7 @@ class KalmanFilter(
      */
     fun clear() {
         x = 0.0
-        p = 1.0
+        p = configuredInitialError
         hasFirstValue = false
     }
 

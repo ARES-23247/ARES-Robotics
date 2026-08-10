@@ -202,15 +202,25 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         get() = calibrationController.customSysIdVelocityProvider
         set(value) { calibrationController.customSysIdVelocityProvider = value }
 
+    /** Season flywheel used by the shared SysId mechanism adapter. */
+    var sysIdFlywheelIO: com.areslib.hardware.actuator.FlywheelIO?
+        get() = calibrationController.flywheelIO
+        set(value) { calibrationController.flywheelIO = value }
+
     /** Autonomous trajectory builder providing high-level motion path generation. */
     val autoBuilder: AutoBuilder get() = trajectoryFollower.autoBuilder
+
+    /** Shared follower used by native ARES auto compilation and online pathfinding. */
+    val pathFollower get() = trajectoryFollower.pathfindFollower
     private var lastLocalTelemetryUpdateMs = 0L
 
     init {
         val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
+        val maxAngularSpeed = maxSpeed / kinematicsController.kinematics.k
         drive.maxSpeedMps = maxSpeed
+        drive.maxAngularSpeedRadiansPerSecond = maxAngularSpeed
         mecanumDrive.maxSpeedMps = maxSpeed
-        mecanumDrive.maxAngularSpeedRps = maxSpeed / kinematicsController.kinematics.k
+        mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
     }
 
     /**
@@ -287,7 +297,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         telemetryManager.dataLoggingTelemetry.logDriveMotor("rr", mecanumIO.rrIO)
 
         calibrationController.publishRobotTelemetry(
-            timestamp, store, telemetryManager, mecanumIO, imuIO, visionTracker, ticksPerMeter, 2000.0
+            timestamp, store, telemetryManager, mecanumIO, visionTracker, ticksPerMeter, 2000.0
         )
     }
 
@@ -316,7 +326,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param rotation Angular CCW rotation velocity intent $[-1.0, 1.0]$.
      */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
-        mecanumDrive.fieldRelativeDrive(x, y, rotation)
+        mecanumDrive.driveFieldRelativeNormalized(x, y, rotation)
     }
 
     /**
@@ -327,7 +337,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param rotation Angular CCW rotation velocity intent $[-1.0, 1.0]$.
      */
     fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
-        store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = false))
+        mecanumDrive.driveRobotRelativeNormalized(x, y, rotation)
     }
 
     /**
@@ -369,9 +379,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** Alias for [stopAll]. */
     fun stop() = stopAll()
 
-    /** Compatibility trajectory follower stub function. */
-    fun followTrajectory(path: Any? = null) { } // Compatibility alias as requested
-
     /**
      * Computes dead-reckoning fallback odometry when Pinpoint hardware is offline.
      *
@@ -379,16 +386,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @return Formatted pose update structure derived from wheel encoder ticks.
      */
     override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
-        val heading = imuIO?.let {
-            val inputs = com.areslib.hardware.sensor.ImuInputs()
-            it.updateInputs(inputs)
-            inputs.headingRadians
-        } ?: 0.0
-
         return fallbackOdometry.getFallbackPoseUpdate(
             timestampMs, mecanumIO.flIO.position, mecanumIO.frIO.position, mecanumIO.rlIO.position, mecanumIO.rrIO.position,
-            store.state.tuning.ticksPerMeter, ticksPerMeter, heading
+            store.state.tuning.ticksPerMeter, ticksPerMeter,
+            cachedImuInputs.headingRadians,
+            cachedImuInputs.yawVelocityRadPerSec
         )
+    }
+
+    override fun prepareFallbackOdometry(pose: Pose2d, rawImuHeadingRadians: Double) {
+        fallbackOdometry.reset(pose, rawImuHeadingRadians)
     }
 
     /**
@@ -399,4 +406,3 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         if (isAndroid) LimelightProxyAutoStart.start()
     }
 }
-

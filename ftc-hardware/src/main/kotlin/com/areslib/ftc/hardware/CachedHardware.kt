@@ -7,13 +7,15 @@ import kotlin.math.abs
 /**
  * Non-blocking caching decorator for [DcMotorEx] hardware objects to eliminate redundant REV I2C writes.
  *
- * Tracks the last commanded power setting and only delegates calls to the underlying hardware driver if:
- * 1. The target power is zero ($0.0$, forcing a hard stop).
- * 2. The absolute power delta exceeds tolerance threshold [epsilon] ($|u - u_{last}| \ge \epsilon$).
+ * Tracks the last commanded power and writes only when:
+ * 1. The target changes to zero, guaranteeing one hard-stop command.
+ * 2. The absolute command delta is at least [epsilon] ($|u-u_{last}| \ge \epsilon$).
  *
  * ### Performance & Bus Optimization:
- * Reduces Control Hub REV Lynx I2C bus congestion by up to 60%, maintaining 50Hz–100Hz loop execution stability.
- * Zero dynamic heap allocations during power mutations.
+ * This reduces REV Lynx command traffic and allocates no objects in the setter. Before the first
+ * command, the getter delegates to hardware; after the first command it returns only the cached
+ * value and never performs a hardware read. The decorator does not clamp power or validate
+ * [epsilon], so callers retain the FTC SDK's normal range/validation responsibilities.
  *
  * @param delegate Underlying FTC SDK [DcMotorEx] hardware instance.
  * @param epsilon Power change threshold tolerance $[0.0, 1.0]$ (default 0.02).
@@ -47,8 +49,9 @@ class CachedDcMotorEx(
  * position delta exceeds tolerance threshold [epsilon] ($|p - p_{last}| \ge \epsilon$).
  *
  * ### Performance & Bus Optimization:
- * Prevents redundant servo PWM update commands over REV Expansion Hub I2C/PWM buses.
- * Zero dynamic heap allocations during position updates.
+ * Prevents redundant servo PWM updates and allocates no objects in the setter. Before the first
+ * command, the getter delegates to hardware; afterward it returns only the cached command. The
+ * decorator does not clamp position or validate [epsilon].
  *
  * @param delegate Underlying FTC SDK [Servo] hardware instance.
  * @param epsilon Servo position threshold tolerance $[0.0, 1.0]$ (default 0.005).

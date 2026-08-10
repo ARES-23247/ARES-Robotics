@@ -19,12 +19,6 @@ data class ImuInputs(
  * Pure abstraction for reading a gyroscope / IMU.
  */
 interface ImuIO : SubsystemIO {
-    /**
-     * logTelemetry declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
         val inputs = ImuInputs()
         updateInputs(inputs)

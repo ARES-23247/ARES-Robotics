@@ -8,8 +8,12 @@ import javax.swing.JFrame
 import javax.swing.JPanel
 
 /**
- * A Swing-based virtual driver station that provides keyboard and physical gamepad input
- * for teleop driving and visualizes the active inputs on a gamepad overlay.
+ * Swing virtual driver station combining keyboard, physical-gamepad, and dashboard input.
+ *
+ * Swing callbacks own painting and keyboard state; the gamepad manager owns its polling thread.
+ * Losing window focus clears held keys to prevent a stale drive command. Mode and web-input
+ * properties delegate directly to [SimGamepadManager]. Construct only in graphical simulation; the
+ * headless launcher does not require this window.
  */
 class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener {
 
@@ -196,30 +200,15 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         gamepadManager.startPolling { repaint() }
     }
 
-    /**
-     * keyTyped declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Unused: controls respond to press/release transitions rather than typed characters. */
     override fun keyTyped(e: KeyEvent?) {}
 
-    /**
-     * keyPressed declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Forwards a non-null key press to the gamepad model and schedules repaint. */
     override fun keyPressed(e: KeyEvent?) {
         e?.let { gamepadManager.handleKeyPressed(it.keyCode) { repaint() } }
     }
 
-    /**
-     * keyReleased declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Forwards a non-null key release to the gamepad model and schedules repaint. */
     override fun keyReleased(e: KeyEvent?) {
         e?.let { gamepadManager.handleKeyReleased(it.keyCode) { repaint() } }
     }
@@ -231,38 +220,19 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         return gamepadManager.getChassisSpeeds()
     }
 
-    // Requested public methods preserving full API compatibility per instructions
+    // Lifecycle facade retained for callers that previously addressed the driver station directly.
+    /** Delegates OpMode initialization to the lifecycle controller. */
     fun initOpMode() = opModeController.initOpMode()
-    /**
-     * startOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Delegates OpMode start to the lifecycle controller. */
     fun startOpMode() = opModeController.startOpMode()
-    /**
-     * stopOpMode declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Delegates OpMode stop to the lifecycle controller. */
     fun stopOpMode() = opModeController.stopOpMode()
-    /**
-     * update declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Advances lifecycle state and publishes the current virtual station snapshot. */
     fun update() {
         opModeController.update()
         networkPublisher.publishState()
     }
-    /**
-     * setGamepad declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Compatibility no-op; gamepad state is already owned and polled by [SimGamepadManager]. */
     fun setGamepad() {
         // Encapsulate setGamepad behavior
     }

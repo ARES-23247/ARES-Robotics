@@ -8,13 +8,52 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.*
 
-/**
- * ShotSetupTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ShotSetupTest {
+
+    @Test
+    fun `shot config rejects empty lookup tables`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ShotConfig(
+                shooterOffsetX = 0.0,
+                shooterOffsetY = 0.0,
+                tofKeys = doubleArrayOf(),
+                tofValues = doubleArrayOf(),
+                shotKeys = doubleArrayOf(),
+                shotRpm = doubleArrayOf(),
+                shotCowlRotations = doubleArrayOf()
+            )
+        }
+    }
+
+    @Test
+    fun `shot config rejects unsorted and nonfinite lookup data`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ShotConfig(
+                shooterOffsetX = 0.0,
+                shooterOffsetY = 0.0,
+                tofKeys = doubleArrayOf(2.0, 1.0),
+                tofValues = doubleArrayOf(0.2, 0.1),
+                shotKeys = doubleArrayOf(1.0),
+                shotRpm = doubleArrayOf(Double.NaN),
+                shotCowlRotations = doubleArrayOf(1.0)
+            )
+        }
+    }
+
+    @Test
+    fun `shot config rejects nonfinite lookup values`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ShotConfig(
+                shooterOffsetX = 0.0,
+                shooterOffsetY = 0.0,
+                tofKeys = doubleArrayOf(1.0),
+                tofValues = doubleArrayOf(Double.POSITIVE_INFINITY),
+                shotKeys = doubleArrayOf(1.0),
+                shotRpm = doubleArrayOf(3000.0),
+                shotCowlRotations = doubleArrayOf(1.0)
+            )
+        }
+    }
 
     /**
      * Test config matching the original Marvin 19 hardcoded values.
@@ -31,7 +70,7 @@ class ShotSetupTest {
         shotRpm = doubleArrayOf(
             3350.0, 3400.0, 3450.0, 3500.0, 3550.0, 3600.0, 3650.0, 3700.0, 3750.0, 3800.0, 3850.0, 3900.0, 3950.0, 4000.0, 4050.0, 4100.0, 4150.0, 4200.0
         ),
-        shotCowl = doubleArrayOf(
+        shotCowlRotations = doubleArrayOf(
             0.50, 0.70, 0.80, 0.95, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.40, 1.45, 1.50, 1.55, 1.60, 1.65, 1.70, 1.75
         ),
         delayCompensationSeconds = 0.05,
@@ -41,12 +80,17 @@ class ShotSetupTest {
     private val shotSetup = ShotSetup(testConfig)
 
     @Test
-    /**
-     * testStaticShot declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    fun `cowl lookup contract is mechanism rotations`() {
+        assertEquals(0.50, shotSetup.interpolateCowlRotations(1.24), 1e-12)
+        assertEquals(1.75, shotSetup.interpolateCowlRotations(5.6), 1e-12)
+
+        val result = ShotResult()
+        result.targetCowlAngleRotations = 1.25
+        @Suppress("DEPRECATION")
+        assertEquals(1.25, result.targetCowlAngleRotations, 1e-12)
+    }
+
+    @Test
     fun testStaticShot() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         val speeds = ChassisSpeeds(0.0, 0.0, 0.0)
@@ -83,12 +127,6 @@ class ShotSetupTest {
     }
 
     @Test
-    /**
-     * testTranslatingShotCompensation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testTranslatingShotCompensation() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         // Robot translating at 2.0 m/s in +Y (field-centric)
@@ -112,12 +150,6 @@ class ShotSetupTest {
     }
 
     @Test
-    /**
-     * testRotatingShotCompensation declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRotatingShotCompensation() {
         val robotPose = Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0))
         // Robot rotating at 1.0 rad/s
@@ -135,4 +167,3 @@ class ShotSetupTest {
         assertTrue(result.aimAngleRad > 0.0, "Aim angle should be positive to compensate")
     }
 }
-

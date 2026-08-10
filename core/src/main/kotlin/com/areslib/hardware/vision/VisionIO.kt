@@ -8,9 +8,11 @@ import com.areslib.math.geometry.Rotation3d
 import com.areslib.hardware.LoggableDevice
 
 /**
- * Class implementation for Vision I O Inputs.
+ * Mutable, caller-owned snapshot filled by [VisionIO.updateInputs].
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Poses use meters and radians. Field-pose headings are CCW-positive. Camera mount poses are
+ * robot-relative; each translation is from robot center to camera in the robot frame. Implementors
+ * should replace snapshot collections rather than mutate lists retained from a previous cycle.
  */
 data class VisionIOInputs(
     var isConnected: Boolean = false,
@@ -19,23 +21,30 @@ data class VisionIOInputs(
 )
 
 /**
- * Hardware abstraction interface for Vision Subsystems.
- * Can be implemented by Limelight (FTC/FRC) or PhotonVision.
+ * Hardware boundary for one vision source.
+ *
+ * [updateInputs] owns all device reads for a loop. Consumers read only the supplied snapshot. A
+ * disconnected or invalid source reports `isConnected = false` and an empty measurement list; it
+ * must not replay stale detections. Implementations may allocate outside strict robot hot paths,
+ * but should cache SDK handles and avoid hidden device reads from properties.
  */
 interface VisionIO : LoggableDevice {
     /**
-     * The physical mounting offset(s) of the camera(s) relative to the robot center.
+     * Camera-to-robot mounting transforms, in meters and radians, expressed in robot coordinates.
+     * The default is a single forward-facing camera 0.18 m ahead of robot center.
      */
     val cameraPoses: List<Pose3d>
         get() = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
 
     /**
-     * Updates the inputs with the latest data from the hardware.
+     * Replaces [inputs] with the latest cached/device snapshot for this loop.
      */
     fun updateInputs(inputs: VisionIOInputs)
 
     /**
-     * Updates the camera with orientation and motion data (used by MegaTag2).
+     * Supplies robot orientation and motion hints used by gyro-assisted estimators such as MegaTag2.
+     * Angles are degrees, angular rates are degrees per second, and linear speed is meters per second.
+     * The default implementation is a no-op for cameras that do not require orientation hints.
      */
     fun setOrientation(
         yawDegrees: Double, yawRateDegPerSec: Double,

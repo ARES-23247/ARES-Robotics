@@ -4,12 +4,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-/**
- * PathPlannerParserTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class PathPlannerParserTest {
 
     @Test
@@ -71,4 +65,3 @@ class PathPlannerParserTest {
         assertEquals(1.0, path.points.last().pose.y, 0.001)
     }
 }
-

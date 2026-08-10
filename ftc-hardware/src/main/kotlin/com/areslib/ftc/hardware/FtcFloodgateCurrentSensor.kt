@@ -82,9 +82,17 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private var isInitialized = false
     private var cachedAnalogVoltage = 0.0
 
+    /** Whether the most recent analog sample was finite and inside the ADC's physical range. */
+    var isReadingValid: Boolean = false
+        private set
+
+    private val safeMaxCurrentAmps = maxCurrentAmps.takeIf { it.isFinite() && it > 0.0 } ?: 80.0
+    private val safeFilterAlpha = filterAlpha.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.15
+    private val safeFuseRatingAmps = fuseRatingAmps.takeIf { it.isFinite() && it > 0.0 } ?: 20.0
+
     // Thermal accumulation model to simulate a slow-blow thermal fuse behavior (I^2 * t)
     private var accumulatedThermalLoad = 0.0
-    private val fuseThermalCapacity = fuseRatingAmps * fuseRatingAmps * 5.0 // Reference limit for max fuse rating running for 5 seconds
+    private val fuseThermalCapacity = safeFuseRatingAmps * safeFuseRatingAmps * 5.0
 
     /**
      * Periodically updates the current measurements, applies the smoothing filter, 
@@ -100,12 +108,19 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
         }
         lastUpdateTime = currentTime
 
-        // Cache raw analog voltage read during update phase
-        cachedAnalogVoltage = analogInput.voltage
+        val sampledVoltage = try {
+            analogInput.voltage
+        } catch (_: Exception) {
+            Double.NaN
+        }
+        isReadingValid = sampledVoltage.isFinite() && sampledVoltage in 0.0..3.3
+        if (!isReadingValid) return
+
+        cachedAnalogVoltage = sampledVoltage
         val rawCurrent = instantaneousCurrent
         
         // 1. Apply Exponential Moving Average filter to smooth out spiky motor startup draws
-        filteredCurrentAmps = (filterAlpha * rawCurrent) + ((1.0 - filterAlpha) * filteredCurrentAmps)
+        filteredCurrentAmps = (safeFilterAlpha * rawCurrent) + ((1.0 - safeFilterAlpha) * filteredCurrentAmps)
 
         if (dtSeconds > 0.0) {
             // 2. Integrate current over time to compute charge usage (Ampere-Seconds)
@@ -127,7 +142,7 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
         get() {
             val voltage = cachedAnalogVoltage
             // Floodgate analog telemetry scales linearly from 0V to 3.3V
-            return (voltage / 3.3).coerceIn(0.0, 1.0) * maxCurrentAmps
+            return if (isReadingValid) (voltage / 3.3).coerceIn(0.0, 1.0) * safeMaxCurrentAmps else 0.0
         }
 
     /**
@@ -135,7 +150,7 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
      * Prevents false-alarms from instantaneous high-frequency motor noise.
      */
     val current: Double
-        get() = filteredCurrentAmps
+        get() = if (isReadingValid) filteredCurrentAmps else 0.0
 
     /**
      * Returns the accumulated electrical charge consumed by the robot in Ampere-Hours (Ah).

@@ -10,9 +10,13 @@ import com.areslib.math.geometry.transformBy
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 
 /**
- * Class implementation for Ftc Vision Portal I O.
+ * FTC VisionPortal AprilTag adapter using the active field configuration for absolute robot poses.
  *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * FTC poses arrive in inches/degrees and are converted to meters/radians. A non-null detection list,
+ * including an empty one, means the processor is connected; exceptions mark it disconnected and are
+ * rate-limited on stderr. The adapter uses finite ring pools for lists and mutable geometry objects.
+ * Returned measurements are therefore ephemeral and must be snapshotted before retention beyond the
+ * pool horizon. [updateInputs] is single-loop-owned and performs the only processor read.
  */
 class FtcVisionPortalIO(
     private val aprilTagProcessor: AprilTagProcessor,
@@ -35,12 +39,7 @@ class FtcVisionPortalIO(
     private var posePoolIndex = 0
     private var measurementListPoolIndex = 0
 
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Replaces connection/measurement fields from one `freshDetections` read. */
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.cameraPoses = cameraPoses
         try {
@@ -114,8 +113,8 @@ class FtcVisionPortalIO(
                     }
                 }
                 
-                // Return a lightweight copy so the Redux action owns the state.
-                // We allocate an ArrayList sized perfectly to avoid resizing and map iterator allocations.
+                // Rotate through pre-sized lists to avoid resizing in the sampling loop. Elements and
+                // lists remain pool-owned; a consumer that retains them must create an owned snapshot.
                 val safeMeasurements = measurementListPool[measurementListPoolIndex]
                 safeMeasurements.clear()
                 for (i in 0 until measurementsBuffer.size) safeMeasurements.add(measurementsBuffer[i])
@@ -136,4 +135,3 @@ class FtcVisionPortalIO(
         }
     }
 }
-

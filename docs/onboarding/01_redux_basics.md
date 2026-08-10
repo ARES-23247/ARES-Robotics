@@ -1,49 +1,55 @@
-# Module 1: Redux & Robot State Machine Basics
+# Onboarding 1: Redux and the robot state machine
 
-Welcome to ARESLib-Kotlin! In this module, you will learn the core principles of the Redux Architecture used by our robot software.
+ARESLib routes robot intent and observations through one store. The usual flow is:
 
----
+```text
+input or sensor observation
+        -> RobotAction
+        -> Store.dispatch
+        -> rootReducer + slice/season reducers
+        -> RobotState
+        -> controller reads state and cached IO
+```
 
-## 1. The 3 Core Pillars of Redux
+## State, actions, and reducers
 
-1. **Single Source of Truth (`RobotState`)**: All robot data (drivetrain pose, velocities, tuning gains, superstructure positions) lives in one single immutable data class.
-2. **State is Read-Only (`RobotAction`)**: You never mutate state variables directly. To change anything, you dispatch an immutable `RobotAction`.
-3. **Changes are Made by Pure Reducers (`rootReducer`)**: Reducers are pure mathematical functions that calculate the new state from the old state and an incoming action:
-   $$\text{State}_{\text{new}} = \text{rootReducer}(\text{State}_{\text{old}}, \text{Action})$$
+- `RobotState` is the root state snapshot. Its fields refer to drive, vision, superstructure, path, costmap, and tuning slices.
+- `RobotAction` describes an event or requested transition. An action is not a hardware command.
+- `rootReducer(state, action)` synchronously applies the domain reducers and returns the next root snapshot.
+- `Store` owns the latest state and notifies subscribers after dispatch.
 
----
+Reducers must be deterministic and free of hardware, network, file, and clock side effects. Most transitions use data-class `copy`. A few estimator/diagnostic buffers are deliberately mutable and pooled for zero-allocation loops; callers must not retain or mutate those shared internals outside their owning pipeline.
 
-## 2. Hands-On Exercise: Writing Your First Unit Test
+The store serializes dispatch, but robot code should still dispatch from the main robot loop. Do not use listeners as a second control loop.
 
-Open `core/src/test/kotlin/com/areslib/student/StudentOnboardingTest.kt` and run your first unit test:
+## Exercise: heading-hold transition
+
+The checked-in reference test is `core/src/test/kotlin/com/areslib/student/StudentOnboardingTest.kt`. Heading target and drive mode are separate actions:
 
 ```kotlin
-package com.areslib.student
+val initial = RobotState()
 
-import com.areslib.action.RobotAction
-import com.areslib.reducer.rootReducer
-import com.areslib.state.DriveMode
-import com.areslib.state.RobotState
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+val withTarget = rootReducer(
+    initial,
+    RobotAction.SetHeadingLockTarget(Math.PI / 2.0)
+)
+val holding = rootReducer(
+    withTarget,
+    RobotAction.SetDriveMode(DriveMode.HEADING_HOLD)
+)
 
-class StudentOnboardingTest {
-
-    @Test
-    fun testHeadingLockStateTransition() {
-        val initialState = RobotState()
-        
-        // Dispatch an action to lock heading at 90 degrees (Math.PI / 2)
-        val newState = rootReducer(initialState, RobotAction.SetHeadingLockTarget(Math.PI / 2.0))
-        
-        // Assert state transitions
-        assertEquals(DriveMode.HEADING_HOLD, newState.drive.driveMode)
-        assertEquals(Math.PI / 2.0, newState.drive.headingLockTargetRadians)
-    }
-}
+assertEquals(DriveMode.HEADING_HOLD, holding.drive.driveMode)
+assertEquals(Math.PI / 2.0, holding.drive.headingLockTargetRadians)
 ```
 
-Run tests from your terminal:
+Run it from the repository root:
+
 ```powershell
-.\gradlew.bat test
+.\gradlew.bat :core:test --tests "com.areslib.student.StudentOnboardingTest"
 ```
+
+## Adding season state
+
+Season repositories compose their reducer around `rootReducer`. Keep reusable drive/vision/path transitions in ARESLib and game-specific mechanism state in the season repository. Never replace `rootReducer` with a season reducer that drops core transitions.
+
+Next: [Desktop simulator](02_desktop_simulator.md).

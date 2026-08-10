@@ -12,21 +12,9 @@ import com.areslib.state.RobotState
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * HolonomicDriveFacadeTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class HolonomicDriveFacadeTest {
 
     @Test
-    /**
-     * testHolonomicDriveFacadeGetters declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testHolonomicDriveFacadeGetters() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)
@@ -41,12 +29,6 @@ class HolonomicDriveFacadeTest {
     }
 
     @Test
-    /**
-     * testRobotRelativeDrive declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testRobotRelativeDrive() {
         val actions = mutableListOf<RobotAction>()
         val store = Store(RobotState()) { state, action ->
@@ -55,25 +37,19 @@ class HolonomicDriveFacadeTest {
         }
         val facade = MecanumDriveFacade(store)
 
-        facade.robotRelativeDrive(0.5, -0.3, 0.2)
+        facade.driveRobotRelativeNormalized(0.5, -0.3, 0.2)
 
         assertEquals(1, actions.size)
         val action = actions[0]
         assertTrue(action is RobotAction.JoystickDriveIntent)
         val driveIntent = action as RobotAction.JoystickDriveIntent
-        assertEquals(0.5, driveIntent.targetXVelocity)
-        assertEquals(-0.3, driveIntent.targetYVelocity)
-        assertEquals(0.2, driveIntent.targetAngularVelocity)
+        assertEquals(0.5 * facade.maxSpeedMps, driveIntent.targetXVelocity)
+        assertEquals(-0.3 * facade.maxSpeedMps, driveIntent.targetYVelocity)
+        assertEquals(0.2 * facade.maxAngularSpeedRps, driveIntent.targetAngularVelocity)
         assertFalse(driveIntent.isFieldCentric)
     }
 
     @Test
-    /**
-     * testFieldRelativeDrive declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testFieldRelativeDrive() {
         val actions = mutableListOf<RobotAction>()
         val store = Store(RobotState()) { state, action ->
@@ -83,44 +59,32 @@ class HolonomicDriveFacadeTest {
         val facade = MecanumDriveFacade(store)
 
         // Robot facing forward (0 heading), so fieldRelative maps 1-1 to robotRelative
-        facade.fieldRelativeDrive(0.5, 0.0, 0.0)
+        facade.driveFieldRelativeNormalized(0.5, 0.0, 0.0)
 
         // Should find JoystickDriveIntent dispatched
         val intent = actions.filterIsInstance<RobotAction.JoystickDriveIntent>().lastOrNull()
         assertNotNull(intent)
-        assertEquals(0.5, intent!!.targetXVelocity, 1e-6)
+        assertEquals(0.5 * facade.maxSpeedMps, intent!!.targetXVelocity, 1e-6)
         assertEquals(0.0, intent.targetYVelocity, 1e-6)
     }
 
     @Test
-    /**
-     * testHeadingLockLogic declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testHeadingLockLogic() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)
 
         // 1. Enable heading lock with zero turn speed -> sets heading target
-        facade.fieldRelativeDrive(0.0, 0.0, 0.0, useHeadingLock = true)
+        facade.driveFieldRelativeNormalized(0.0, 0.0, 0.0, useHeadingLock = true)
         assertEquals(DriveMode.HEADING_HOLD, store.state.drive.driveMode)
         assertNotNull(store.state.drive.headingLockTargetRadians)
 
         // 2. Drive with useHeadingLock=true but non-zero omega -> unlocks heading
-        facade.fieldRelativeDrive(0.0, 0.0, 0.5, useHeadingLock = true)
+        facade.driveFieldRelativeNormalized(0.0, 0.0, 0.5, useHeadingLock = true)
         assertEquals(DriveMode.TELEOP, store.state.drive.driveMode)
         assertNull(store.state.drive.headingLockTargetRadians)
     }
 
     @Test
-    /**
-     * testFollowPath declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testFollowPath() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)

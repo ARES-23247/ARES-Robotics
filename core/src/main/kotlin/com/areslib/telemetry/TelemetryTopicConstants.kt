@@ -21,22 +21,10 @@ object TelemetryTopicConstants {
     const val ESTIMATED_POSE_HEADING = "ARES/EstimatedPose/2"
 }
 
-/**
- * Resolves legacy or non-standard telemetry keys into standard ARESLib topic paths.
- */
+/** Removes transport-only leading slashes from an ARES telemetry topic. */
 object TelemetryTopicNormalizer {
-    fun normalizeTopic(key: String): String {
-        val cleanKey = key.removePrefix("/")
-        return when (cleanKey) {
-            "Drive/Drive_Heading" -> TelemetryTopicConstants.DRIVE_POSE_HEADING
-            "pinpoint_x", "pinpoint/x" -> TelemetryTopicConstants.DRIVE_ODOM_X
-            "pinpoint_y", "pinpoint/y" -> TelemetryTopicConstants.DRIVE_ODOM_Y
-            "pinpoint_heading", "pinpoint/heading" -> TelemetryTopicConstants.DRIVE_ODOM_HEADING
-            "Vision/Pose/X" -> TelemetryTopicConstants.VISION_POSE_X
-            "Vision/Pose/Y" -> TelemetryTopicConstants.VISION_POSE_Y
-            "Vision/Pose/Heading" -> TelemetryTopicConstants.VISION_POSE_HEADING
-            "SysId_Data", "sysid_data" -> "SysId/Data"
-            else -> cleanKey
-        }
-    }
+    fun normalizeTopic(key: String): String = key.trimStart('/')
+
+    /** Converts a canonical ARES key to the single-root form used in NT4 wire announcements. */
+    fun toWireTopic(key: String): String = "/${normalizeTopic(key)}"
 }

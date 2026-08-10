@@ -2,44 +2,22 @@ package com.areslib.ftc.power
 
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.VoltageSensor
+import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.hardware.actuator.MotorIO
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-/**
- * MockVoltageSensor declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockVoltageSensor(override var voltage: Double = 12.0) : VoltageSensor
 
-/**
- * MockMotorCurrentIO declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockMotorCurrentIO(override var currentAmps: Double = 0.0) : MotorIO {
     override var power: Double = 0.0
     override val velocity: Double = 0.0
     override val position: Double = 0.0
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun resetEncoder() {}
 }
 
-/**
- * FtcPowerManagerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class FtcPowerManagerTest {
     @Test
     fun `test voltage filter sag compensation and rate limiting`() {
@@ -106,5 +84,86 @@ class FtcPowerManagerTest {
             com.areslib.hardware.HardwareRegistry.clear()
         }
     }
-}
 
+    @Test
+    fun `invalid voltage fails closed and a later valid sample recovers`() {
+        val mockSensor = MockVoltageSensor(Double.NaN)
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(mockSensor as T)
+        }
+
+        com.areslib.hardware.HardwareRegistry.clear()
+        try {
+            val powerManager = FtcPowerManager(hardwareMap)
+
+            assertEquals(0.0, powerManager.update(0.02, 100), 1e-9)
+            assertEquals(0.0, powerManager.batteryVoltage, 1e-9)
+
+            mockSensor.voltage = 12.0
+            assertEquals(1.0, powerManager.update(0.02, 250), 1e-9)
+            assertEquals(12.0, powerManager.batteryVoltage, 1e-9)
+        } finally {
+            com.areslib.hardware.HardwareRegistry.clear()
+        }
+    }
+
+    @Test
+    fun `invalid installed floodgate falls back to software current budgeting`() {
+        val voltageSensor = MockVoltageSensor(12.0)
+        val invalidFloodgate = object : AnalogInput() {
+            override val voltage: Double = Double.NaN
+        }
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
+                if (classOrType == AnalogInput::class.java && deviceName == "floodgate") {
+                    return invalidFloodgate as T
+                }
+                throw IllegalArgumentException("Unknown device $deviceName")
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(voltageSensor as T)
+        }
+
+        com.areslib.hardware.HardwareRegistry.clear()
+        try {
+            val powerManager = FtcPowerManager(hardwareMap)
+            powerManager.update(0.02, 100)
+
+            assertTrue(powerManager.floodgate?.isReadingValid == false)
+            assertNotNull(powerManager.currentBudgetManager)
+            assertTrue(powerManager.powerScale.isFinite())
+        } finally {
+            com.areslib.hardware.HardwareRegistry.clear()
+        }
+    }
+
+    @Test
+    fun `floodgate instantaneous overload reduces power before thermal model heats`() {
+        val voltageSensor = MockVoltageSensor(12.0)
+        val floodgateAnalog = object : AnalogInput() {
+            override val voltage: Double = 3.3
+        }
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
+                if (classOrType == AnalogInput::class.java && deviceName == "floodgate") {
+                    return floodgateAnalog as T
+                }
+                throw IllegalArgumentException("Unknown device $deviceName")
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(voltageSensor as T)
+        }
+
+        val powerManager = FtcPowerManager(hardwareMap)
+        repeat(4) { index -> powerManager.update(0.02, 100L + index * 110L) }
+
+        assertTrue(powerManager.floodgate?.isReadingValid == true)
+        assertTrue(powerManager.currentAmps > 18.0)
+        assertTrue(powerManager.powerScale < 1.0)
+    }
+}

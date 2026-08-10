@@ -1,207 +1,219 @@
 package com.areslib.ftc.dsl
 
-import com.areslib.telemetry.AresGamepad
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
-import com.areslib.telemetry.GamepadState
-import org.firstinspires.ftc.robotcore.external.Telemetry
+import com.areslib.ftc.FtcBaseRobot
 import com.areslib.ftc.update
+import com.areslib.telemetry.AresGamepad
+import com.areslib.telemetry.GamepadState
+import com.areslib.telemetry.RobotStatusTracker
+import com.areslib.telemetry.SimInputBridge
+import com.areslib.util.PoseStorage
+import com.qualcomm.robotcore.eventloop.opmode.OpMode
+import org.firstinspires.ftc.robotcore.external.Telemetry
+import kotlin.math.abs
+
+/** Prevents lifecycle declarations from accidentally resolving against the wrong nested receiver. */
+@DslMarker
+annotation class AresOpModeDsl
 
 /**
- * Generic DSL Builder class for configuring declarative FTC TeleOp OpModes.
+ * Stable receiver exposed to every TeleOp lifecycle block.
  *
- * Configures initialization callbacks ([onInit]), driver gamepad mappings ([onConfigure]), and main teleoperated loops ([onLoop]).
- *
- * @param R Type of team robot facade class.
- *
- * @see FtcTeleOpBase
+ * [driver] maps Driver Station gamepad 1 and [operator] maps gamepad 2. The same receiver instance is
+ * reused throughout the OpMode; callbacks should keep their own small state in the surrounding class
+ * or DSL block when needed.
  */
+@AresOpModeDsl
+class FtcTeleOpContext<R> internal constructor(
+    val robot: R,
+    val driver: AresGamepad,
+    val operator: AresGamepad,
+    val telemetry: Telemetry
+)
+
+/**
+ * Declarative FTC TeleOp definition with lifecycle names that match when each block executes.
+ *
+ * A typical mode needs [controls] and [everyLoop]. [duringInit] and [onStart] are optional. Registering
+ * the same phase twice is a configuration error instead of silently discarding the first block.
+ */
+@AresOpModeDsl
 class FtcTeleOpBuilder<R> {
-    internal var onInitBlock: ((R, Telemetry) -> Unit)? = null
-    internal var onConfigureBlock: ((R, AresGamepad) -> Unit)? = null
-    internal var onLoopBlock: ((R, AresGamepad, Telemetry) -> Unit)? = null
+    internal var setupBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
+        private set
+    internal var controlsBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
+        private set
+    internal var duringInitBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
+        private set
+    internal var onStartBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
+        private set
+    internal var everyLoopBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
+        private set
 
-    /**
-     * Registers a callback executed repeatedly while the OpMode is in the `"Init"` state.
-     *
-     * @param block Initialization logic lambda receiving the team robot wrapper [R] and FTC [Telemetry].
-     */
-    fun onInit(block: (robot: R, telemetry: Telemetry) -> Unit) {
-        onInitBlock = block
-    }
-    
-    /**
-     * Registers a callback executed once during initialization to configure Driver Station controls and button labels.
-     *
-     * @param block Configuration logic lambda receiving team robot wrapper [R] and driver [AresGamepad].
-     */
-    fun onConfigure(block: (robot: R, driver: AresGamepad) -> Unit) {
-        onConfigureBlock = block
+    /** Runs once immediately after the robot is built. Configure initial robot state here. */
+    fun setup(block: FtcTeleOpContext<R>.() -> Unit) {
+        check(setupBlock == null) { "TeleOp setup { } may only be declared once" }
+        setupBlock = block
     }
 
-    /**
-     * Registers the main TeleOp execution loop callback executed every frame (50Hz–100Hz frequency).
-     *
-     * @param block Loop logic lambda receiving team robot wrapper [R], driver [AresGamepad], and FTC [Telemetry].
-     */
-    fun onLoop(block: (robot: R, driver: AresGamepad, telemetry: Telemetry) -> Unit) {
-        onLoopBlock = block
+    /** Runs once after [setup]. Bind driver and operator buttons here. */
+    fun controls(block: FtcTeleOpContext<R>.() -> Unit) {
+        check(controlsBlock == null) { "TeleOp controls { } may only be declared once" }
+        controlsBlock = block
+    }
+
+    /** Runs repeatedly while the Driver Station shows INIT. Keep this non-blocking. */
+    fun duringInit(block: FtcTeleOpContext<R>.() -> Unit) {
+        check(duringInitBlock == null) { "TeleOp duringInit { } may only be declared once" }
+        duringInitBlock = block
+    }
+
+    /** Runs exactly once after pose restoration and immediately before the active loop. */
+    fun onStart(block: FtcTeleOpContext<R>.() -> Unit) {
+        check(onStartBlock == null) { "TeleOp onStart { } may only be declared once" }
+        onStartBlock = block
+    }
+
+    /** Runs once per active robot loop and is required for a usable TeleOp. */
+    fun everyLoop(block: FtcTeleOpContext<R>.() -> Unit) {
+        check(everyLoopBlock == null) { "TeleOp everyLoop { } may only be declared once" }
+        everyLoopBlock = block
+    }
+
+    internal fun validate() {
+        require(everyLoopBlock != null) {
+            "TeleOp definition is missing everyLoop { ... }; add the robot's periodic driver behavior there"
+        }
     }
 }
 
+/** Creates and validates a student-facing TeleOp definition. */
+fun <R> teleOp(block: FtcTeleOpBuilder<R>.() -> Unit): FtcTeleOpBuilder<R> =
+    FtcTeleOpBuilder<R>().apply(block).also { it.validate() }
+
 /**
- * Generic base class for student-facing declarative FTC TeleOp OpModes.
+ * Generic lifecycle runner for declarative FTC TeleOps.
  *
- * Manages OpMode lifecycle transitions, proxy background servers, pose restoration from Autonomous ([com.areslib.util.PoseStorage]),
- * web dashboard simulation input bridges ([com.areslib.telemetry.SimInputBridge]), gamepad polling, and safe hardware shutdowns.
- *
- * ### TeleOp Lifecycle Flow:
- * 1. **Init Phase**: Evaluates [FtcTeleOpBuilder.onInit] blocks and refreshes EKF state with zero gamepad input.
- * 2. **Start Phase**: Restores previous autonomous pose from [com.areslib.util.PoseStorage] or sets alliance default starting pose.
- * 3. **Active Loop Phase**:
- *    - Updates [GamepadState] snapshots for Driver 1 and Driver 2 in-place (zero-GC).
- *    - Bridges web simulation inputs if active.
- *    - Invokes [FtcTeleOpBuilder.onLoop] DSL blocks.
- *    - Updates physical robot actuators via [updateRobot].
- * 4. **Cleanup Phase**: Safely halts motor outputs and releases resources via [closeRobot].
- *
- * @param R Type of team robot facade class.
- *
- * @see LinearOpMode
- * @see FtcTeleOpBuilder
- * @see GamepadState
+ * Hardware is refreshed during INIT and the active phase. Pose restoration is typed through
+ * [getBaseRobot], so wrappers never require reflection. Cleanup always disables Photon after the
+ * team robot has been closed.
  */
-abstract class FtcTeleOpBase<R> : LinearOpMode() {
-    /**
-     * Constructs the DSL configuration layout for this TeleOp OpMode.
-     *
-     * @return [FtcTeleOpBuilder] containing registered `onInit`, `onConfigure`, and `onLoop` blocks.
-     */
+abstract class FtcTeleOpBase<R> : OpMode() {
     abstract fun define(): FtcTeleOpBuilder<R>
-
-    /**
-     * Factory hook constructing the team robot facade instance.
-     *
-     * @return Initialized team robot wrapper instance [R].
-     */
     abstract fun buildRobot(): R
-
-    /**
-     * Periodic update hook executing hardware sensor reads and subsystem updates for the team robot facade.
-     *
-     * @param robot Team robot wrapper instance.
-     * @param g1 In-place updated Driver 1 [GamepadState] snapshot.
-     * @param g2 In-place updated Driver 2 [GamepadState] snapshot.
-     */
+    abstract fun getBaseRobot(robot: R): FtcBaseRobot?
     abstract fun updateRobot(robot: R, g1: GamepadState, g2: GamepadState)
-    
-    /**
-     * Shutdown hook releasing active hardware resources upon TeleOp completion.
-     *
-     * @param robot Team robot wrapper instance.
-     */
     abstract fun closeRobot(robot: R)
 
-    /**
-     * Main execution entry point for FTC LinearOpMode lifecycle.
-     */
-    override fun runOpMode() {
-        val builder = define()
-        
+    private var definition: FtcTeleOpBuilder<R>? = null
+    private var robot: R? = null
+    private var context: FtcTeleOpContext<R>? = null
+    private val driver = AresGamepad()
+    private val operator = AresGamepad()
+    private val g1State = GamepadState()
+    private val g2State = GamepadState()
+    private var closed = false
+
+    /** Builds the robot and evaluates the one-time DSL setup phases. */
+    final override fun init() {
+        val builtDefinition = define().also { it.validate() }
+        com.areslib.math.estimation.PoseEstimator.activeTags =
+            com.areslib.math.coordinate.FieldLayouts.getTagsForLayout(
+                com.areslib.math.coordinate.FieldLayout.SQUARE_STANDARD
+            )
+        val builtRobot = buildRobot()
+        val builtContext = FtcTeleOpContext(builtRobot, driver, operator, telemetry)
+        definition = builtDefinition
+        robot = builtRobot
+        context = builtContext
+
+        builtDefinition.setupBlock?.invoke(builtContext)
+        labelDefaultDriverControls(driver)
+        builtDefinition.controlsBlock?.invoke(builtContext)
+    }
+
+    /** Refreshes hardware and the optional INIT callback once per SDK init frame. */
+    final override fun init_loop() {
+        val activeRobot = robot ?: return
+        refreshGamepadStates()
+        driver.update(g1State)
+        operator.update(g2State)
+        updateRobot(activeRobot, g1State, g2State)
+        context?.let { definition?.duringInitBlock?.invoke(it) }
+    }
+
+    /** Restores autonomous pose and invokes the one-time start callback. */
+    final override fun start() {
+        val activeRobot = robot ?: return
+        RobotStatusTracker.activeOpMode = "TeleOp"
+        restoreStartingPose(getBaseRobot(activeRobot))
+        com.areslib.ftc.telemetry.LimelightProxyAutoStart.stop()
+        context?.let { definition?.onStartBlock?.invoke(it) }
+    }
+
+    /** Executes one bounded driver-control frame. */
+    final override fun loop() {
+        val activeRobot = robot ?: return
+        val activeContext = context ?: return
+        refreshGamepadStates()
+        applySimulationDriveInput(g1State)
+        driver.update(g1State)
+        operator.update(g2State)
+        definition?.everyLoopBlock?.invoke(activeContext)
+        updateRobot(activeRobot, g1State, g2State)
+    }
+
+    /** Closes the robot and optional Photon transport exactly once. */
+    final override fun stop() {
+        if (closed) return
+        closed = true
+        val activeRobot = robot
         try {
-            com.areslib.ftc.photon.AresPhotonCore.enable()
-        } catch(e: Exception) {
-            // Ignore in simulation
-        }
-        
-        // Configure the EKF with the tag positions of the selected field layout
-        com.areslib.math.estimation.PoseEstimator.activeTags = com.areslib.math.coordinate.FieldLayouts.getTagsForLayout(com.areslib.math.coordinate.FieldLayout.SQUARE_STANDARD)
-
-        val robot = buildRobot()
-
-        val driver = AresGamepad()
-        driver.leftStick.label("Field-centric Translation (X/Y)")
-        driver.rightStickX.label("Robot Rotation")
-        driver.y.label("Reset Field Centric Pose")
-        driver.x.label("Drive to TestWaypoint")
-
-        builder.onConfigureBlock?.invoke(robot, driver)
-
-        try {
-            while (opModeInInit() && !Thread.currentThread().isInterrupted) {
-                // Initial update pass with empty gamepad state
-                updateRobot(robot, GamepadState(), GamepadState())
-                builder.onInitBlock?.invoke(robot, telemetry)
-            }
-            if (isStopRequested || Thread.currentThread().isInterrupted) return
-
-            com.areslib.telemetry.RobotStatusTracker.activeOpMode = "TeleOp"
-
-            // Set initial pose: restore from Autonomous if valid, otherwise use alliance default
-            try {
-                val baseField = robot!!.javaClass.getDeclaredField("base")
-                baseField.isAccessible = true
-                val baseRobot = baseField.get(robot) as? com.areslib.ftc.FtcBaseRobot
-                if (baseRobot != null) {
-                    if (com.areslib.util.PoseStorage.hasValidPose) {
-                        baseRobot.resetPose(com.areslib.util.PoseStorage.currentPose)
-                    } else {
-                        baseRobot.resetPoseForAlliance()
-                    }
-                }
-            } catch (_: Exception) {
-                (robot as? com.areslib.ftc.FtcBaseRobot)?.let { baseRobot ->
-                    if (com.areslib.util.PoseStorage.hasValidPose) {
-                        baseRobot.resetPose(com.areslib.util.PoseStorage.currentPose)
-                    } else {
-                        baseRobot.resetPoseForAlliance()
-                    }
-                }
-            }
-
-            // NOTE: Hardware specific init code (like vision tracker flags) should be handled by the team's buildRobot/wrapper logic
-            com.areslib.ftc.telemetry.LimelightProxyAutoStart.stop()
-            
-            val g1State = GamepadState()
-            val g2State = GamepadState()
-            
-            while (opModeIsActive() && !Thread.currentThread().isInterrupted) {
-                g1State.update(gamepad1)
-                g2State.update(gamepad2)
-                
-                try {
-                    val webVx = com.areslib.telemetry.SimInputBridge.webVx
-                    val webVy = com.areslib.telemetry.SimInputBridge.webVy
-                    val webOmega = com.areslib.telemetry.SimInputBridge.webOmega
-                    
-                    if (kotlin.math.abs(webVx) > 0.01 || kotlin.math.abs(webVy) > 0.01 || kotlin.math.abs(webOmega) > 0.01) {
-                        if (kotlin.math.abs(g1State.leftStickY) < 0.05f) {
-                            g1State.leftStickY = (-webVx / 4.0).coerceIn(-1.0, 1.0).toFloat()
-                        }
-                        if (kotlin.math.abs(g1State.leftStickX) < 0.05f) {
-                            g1State.leftStickX = (-webVy / 4.0).coerceIn(-1.0, 1.0).toFloat()
-                        }
-                        if (kotlin.math.abs(g1State.rightStickX) < 0.05f) {
-                            g1State.rightStickX = (-webOmega / 2.0).coerceIn(-1.0, 1.0).toFloat()
-                        }
-                    }
-                } catch (_: Throwable) {}
-
-                
-                driver.update(g1State)
-                
-                // Allow the user DSL loop to dispatch inputs
-                builder.onLoopBlock?.invoke(robot, driver, telemetry)
-                
-                // Update physical hardware and sensors via the provided robot interface
-                updateRobot(robot, g1State, g2State)
-            }
+            if (activeRobot != null) closeRobot(activeRobot)
         } finally {
-            closeRobot(robot)
+            robot = null
+            context = null
             try {
                 com.areslib.ftc.photon.AresPhotonCore.disable()
-            } catch (e: Exception) {}
+            } catch (_: Exception) {
+                // Robot shutdown must continue when the optional Photon layer was never enabled.
+            }
         }
     }
+
+    private fun refreshGamepadStates() {
+        g1State.update(gamepad1)
+        g2State.update(gamepad2)
+    }
+
+    private fun restoreStartingPose(baseRobot: FtcBaseRobot?) {
+        if (baseRobot == null) return
+        if (PoseStorage.hasValidPose) {
+            baseRobot.resetPose(PoseStorage.currentPose)
+        } else {
+            baseRobot.resetPoseForAlliance()
+        }
+    }
+
+    private fun applySimulationDriveInput(g1State: GamepadState) {
+        val webVx = SimInputBridge.webVx
+        val webVy = SimInputBridge.webVy
+        val webOmega = SimInputBridge.webOmega
+        if (!webVx.isFinite() || !webVy.isFinite() || !webOmega.isFinite()) return
+        if (abs(webVx) <= 0.01 && abs(webVy) <= 0.01 && abs(webOmega) <= 0.01) return
+
+        if (abs(g1State.leftStickY) < 0.05f) {
+            g1State.leftStickY = (-webVx / 4.0).coerceIn(-1.0, 1.0).toFloat()
+        }
+        if (abs(g1State.leftStickX) < 0.05f) {
+            g1State.leftStickX = (-webVy / 4.0).coerceIn(-1.0, 1.0).toFloat()
+        }
+        if (abs(g1State.rightStickX) < 0.05f) {
+            g1State.rightStickX = (-webOmega / 2.0).coerceIn(-1.0, 1.0).toFloat()
+        }
+    }
+
+    private fun labelDefaultDriverControls(driver: AresGamepad) {
+        driver.leftStick.label("Field-centric translation")
+        driver.rightStickX.label("Robot rotation")
+    }
 }
-
-

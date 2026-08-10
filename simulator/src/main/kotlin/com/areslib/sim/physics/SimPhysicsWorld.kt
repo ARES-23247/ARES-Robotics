@@ -7,6 +7,7 @@ import com.areslib.sim.field.FieldObstacleLoader
 import com.areslib.sim.network.NT4FieldPublisher
 import com.areslib.state.Alliance
 import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldManager
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
@@ -16,8 +17,15 @@ import org.dyn4j.geometry.Vector2
 import java.io.File
 
 /**
- * Manages the Dyn4j 2D top-down physics world, robot body creation, perimeter walls,
- * static field obstacles, and dynamic game piece elements.
+ * Owns the center-origin Dyn4j top-down world and its robot/field bodies.
+ *
+ * Distances are meters and body rotations are CCW-positive radians. The FTC field is bounded at
+ * approximately ±1.825 m on each axis. [loadFieldElements] removes prior dynamic field content
+ * before loading a supplied configuration; when no configuration is supplied it searches known
+ * development checkout locations and leaves a missing/invalid asset category empty.
+ *
+ * Dyn4j world mutation is single-thread-owned by the simulation loop. Public body collections are
+ * exposed for visualization but callers must not mutate them concurrently with physics stepping.
  */
 class SimPhysicsWorld {
     val world = World<Body>()
@@ -42,10 +50,8 @@ class SimPhysicsWorld {
     }
 
     /**
-     * setupSpawnPose declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Hard-sets the alliance spawn transform and returns the applied pose.
+     * Red starts at `(0, -1.2, +π/2)` and Blue at `(0, +1.2, -π/2)` in the center-origin frame.
      */
     fun setupSpawnPose(isRedAlliance: Boolean): Pose2d {
         val startPose = if (isRedAlliance) {
@@ -59,10 +65,8 @@ class SimPhysicsWorld {
     }
 
     /**
-     * loadFieldElements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Replaces obstacles and game pieces from [activeConfig], or discovers the canonical `field.json`
+     * when it is `null`. The active dashboard field topics are updated for successfully loaded data.
      */
     fun loadFieldElements(activeConfig: RobotFieldConfig?) {
         for (body in activeObstacles) {
@@ -84,62 +88,26 @@ class SimPhysicsWorld {
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
             NT4FieldPublisher.publishAprilTags(activeConfig.apriltags)
         } else {
-            var obstaclesFile: File? = null
-            val obsPaths = listOf(
-                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json").path,
-                "../ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json",
-                "src/main/assets/paths/obstacles.json",
-                "TeamCode/src/main/assets/paths/obstacles.json",
-                "../src/main/assets/paths/obstacles.json"
+            val canonicalConfigPaths = listOf(
+                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
+                File("../ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
+                File("TeamCode/src/main/assets/paths/field.json"),
+                File("src/main/assets/paths/field.json"),
+                File("src/main/deploy/paths/field.json")
             )
-            for (p in obsPaths) {
-                val f = File(p)
-                if (f.exists()) {
-                    obstaclesFile = f
-                    break
-                }
-            }
-            if (obstaclesFile != null) {
+            val canonicalConfigFile = canonicalConfigPaths.firstOrNull(File::isFile)
+            if (canonicalConfigFile != null) {
                 try {
-                    println("[Simulator] Loading obstacles from: ${obstaclesFile.absolutePath}")
-                    val content = obstaclesFile.readText()
-                    val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
-                    val loaded = FieldObstacleLoader.loadObstacles(world, obstacles)
-                    activeObstacles.addAll(loaded)
-                    NT4FieldPublisher.publishObstacles(obstacles)
-
-                    val newConfig = RobotFieldManager.activeConfig.copy(obstacles = obstacles)
-                    RobotFieldManager.setActiveConfig(newConfig)
+                    val config = RobotFieldDocument.decode(canonicalConfigFile.readText())
+                    RobotFieldManager.setActiveConfig(config)
+                    println("[Simulator] Loading canonical field document: ${canonicalConfigFile.absolutePath}")
+                    loadFieldElements(config)
+                    return
                 } catch (e: Exception) {
-                    println("Failed to load initial field obstacles: ${e.message}")
+                    System.err.println("[Simulator] Failed to load canonical field document: ${e.message}")
                 }
             }
 
-            var gamePiecesFile: File? = null
-            val gpPaths = listOf(
-                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json").path,
-                "../ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json",
-                "src/main/assets/paths/game_pieces.json",
-                "TeamCode/src/main/assets/paths/game_pieces.json",
-                "../src/main/assets/paths/game_pieces.json"
-            )
-            for (p in gpPaths) {
-                val f = File(p)
-                if (f.exists()) {
-                    gamePiecesFile = f
-                    break
-                }
-            }
-            if (gamePiecesFile != null) {
-                try {
-                    println("[Simulator] Loading game pieces from: ${gamePiecesFile.absolutePath}")
-                    val content = gamePiecesFile.readText()
-                    val loadedGp = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
-                    gamePieces.addAll(loadedGp)
-                } catch (e: Exception) {
-                    println("Failed to load initial game pieces: ${e.message}")
-                }
-            }
         }
     }
 
@@ -162,6 +130,40 @@ class SimPhysicsWorld {
             wallBody.setMass(MassType.INFINITE)
             wallBody.transform.setTranslation(pos)
             world.addBody(wallBody)
+        }
+    }
+
+    /**
+     * Replaces only static obstacles from an ARES-Analytics JSON-array payload.
+     * Returns `false` without changing existing obstacles when parsing fails; once parsing succeeds,
+     * replacement and NT4 publication occur synchronously on the caller's thread.
+     */
+    fun replaceObstaclesFromAnalyticsJson(json: String): Boolean {
+        return try {
+            if (!com.google.gson.JsonParser.parseString(json).isJsonArray) return false
+            val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(json)
+            for (body in activeObstacles) world.removeBody(body)
+            activeObstacles.clear()
+            activeObstacles.addAll(FieldObstacleLoader.loadObstacles(world, obstacles))
+            RobotFieldManager.setActiveConfig(RobotFieldManager.activeConfig.copy(obstacles = obstacles))
+            NT4FieldPublisher.publishObstacles(obstacles)
+            true
+        } catch (e: Exception) {
+            System.err.println("Failed to apply dashboard obstacles: ${e.message}")
+            false
+        }
+    }
+
+    /** Atomically replaces all authored field content from the canonical editor document. */
+    fun replaceFieldDocumentJson(json: String): Boolean {
+        return try {
+            val config = RobotFieldDocument.decode(json)
+            RobotFieldManager.setActiveConfig(config)
+            loadFieldElements(config)
+            true
+        } catch (e: Exception) {
+            System.err.println("Failed to apply dashboard field document: ${e.message}")
+            false
         }
     }
 }

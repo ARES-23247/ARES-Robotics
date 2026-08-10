@@ -6,76 +6,73 @@ import com.areslib.math.geometry.Pose2d
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Object implementation for Task Callbacks.
+ * Process-wide callback registry keyed strictly by task object identity.
  *
- * Asynchronous superstructure task sequence execution unit.
+ * At most one completion and one failure callback are retained for each task. Invocation is
+ * synchronous on the executor thread. Terminal invocation removes both callbacks before executing
+ * user code, making callbacks one-shot and releasing captured state even when the callback throws.
  */
 object TaskCallbacks {
-    private val completeCallbacks = ConcurrentHashMap<Task, () -> Unit>()
-    private val failCallbacks = ConcurrentHashMap<Task, () -> Unit>()
+    private class TaskIdentity(val task: Task) {
+        override fun hashCode(): Int = System.identityHashCode(task)
+        override fun equals(other: Any?): Boolean = other is TaskIdentity && task === other.task
+    }
 
-    /**
-     * registerComplete declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    private val completeCallbacks = ConcurrentHashMap<TaskIdentity, () -> Unit>()
+    private val failCallbacks = ConcurrentHashMap<TaskIdentity, () -> Unit>()
+
+    /** Replaces the completion callback associated with [task]. */
     fun registerComplete(task: Task, callback: () -> Unit) {
-        completeCallbacks[task] = callback
+        completeCallbacks[TaskIdentity(task)] = callback
     }
 
-    /**
-     * registerFail declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Replaces the failure callback associated with [task]. */
     fun registerFail(task: Task, callback: () -> Unit) {
-        failCallbacks[task] = callback
+        failCallbacks[TaskIdentity(task)] = callback
     }
 
-    /**
-     * invokeComplete declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Invokes [task]'s completion callback when registered. */
     fun invokeComplete(task: Task) {
-        completeCallbacks[task]?.invoke()
+        val key = TaskIdentity(task)
+        val callback = completeCallbacks.remove(key)
+        failCallbacks.remove(key)
+        callback?.invoke()
     }
 
-    /**
-     * invokeFail declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Invokes [task]'s failure callback when registered. */
     fun invokeFail(task: Task) {
-        failCallbacks[task]?.invoke()
+        val key = TaskIdentity(task)
+        val callback = failCallbacks.remove(key)
+        completeCallbacks.remove(key)
+        callback?.invoke()
     }
 
-    /**
-     * reset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Removes all callbacks and retained references for [task]. */
     fun reset(task: Task) {
-        completeCallbacks.remove(task)
-        failCallbacks.remove(task)
+        val key = TaskIdentity(task)
+        completeCallbacks.remove(key)
+        failCallbacks.remove(key)
     }
 }
 
 /**
- * Interface representing a discrete superstructure or autonomous execution task.
- * Acts as a Facade delegating to internal single-responsibility controllers.
+ * Synchronous lifecycle unit executed by [TaskExecutor].
+ *
+ * Lifecycle order is [initialize], repeated [isCompleted]/[execute], then [end]. Methods return
+ * Redux actions for the caller to dispatch; tasks do not mutate the store directly. Overrides of
+ * [initialize], [execute], and [end] must call their default implementation to preserve status,
+ * timeout, and callback behavior.
+ *
+ * Statuses, timeouts, and callbacks live in process-wide registries. Executors call
+ * [releaseRuntimeState] after true terminal transitions; [reset] additionally removes observable
+ * status before an instance is configured for reuse.
  */
 interface Task {
     val name: String
     val priority: Int get() = 0
 
     /**
-     * Called once when the task becomes active.
+     * Marks the task running, records its timeout origin, and returns no actions by default.
      */
     fun initialize(state: RobotState): List<RobotAction> {
         TaskStateMachine.transitionTo(this, TaskStatus.RUNNING)
@@ -84,17 +81,18 @@ interface Task {
     }
 
     /**
-     * Checked periodically. Returns true when the wait conditions/guards are satisfied.
+     * Returns whether the task's domain-specific completion condition is satisfied.
+     * [elapsedMs] is supplied by the executor and uses its timestamp domain.
      */
     fun isCompleted(state: RobotState, elapsedMs: Long): Boolean
 
     /**
-     * Called periodically while the task is running.
+     * Runs once per active update. The default detects elapsed-time timeout, marks failure, and
+     * invokes the failure callback; overrides must call it before producing their own actions.
      */
     fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         if (TaskTimeoutManager.isTimedOut(this, elapsedMs)) {
-            if (TaskStateMachine.getStatus(this) != TaskStatus.FAILED) {
-                TaskStateMachine.transitionTo(this, TaskStatus.FAILED)
+            if (TaskStateMachine.markFailed(this)) {
                 TaskCallbacks.invokeFail(this)
             }
         }
@@ -102,11 +100,23 @@ interface Task {
     }
 
     /**
-     * Called once when isCompleted returns true.
+     * Pauses this task for higher-priority work without performing terminal cleanup.
+     * Override to stop transient outputs that must not remain active while preempted.
+     */
+    fun pause(state: RobotState): List<RobotAction> = emptyList()
+
+    /** Restores transient outputs after a preemption; elapsed time resumes where it paused. */
+    fun resume(state: RobotState): List<RobotAction> = emptyList()
+
+    /**
+     * Finalizes the task. Interrupted endings become cancelled unless the task already failed;
+     * normal endings become completed and invoke the completion callback.
      */
     fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         if (interrupted) {
-            TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+            if (TaskStateMachine.getStatus(this) != TaskStatus.FAILED) {
+                TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+            }
         } else {
             TaskStateMachine.transitionTo(this, TaskStatus.COMPLETED)
             TaskCallbacks.invokeComplete(this)
@@ -114,56 +124,37 @@ interface Task {
         return emptyList()
     }
 
-    /**
-     * cancel declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Marks the task cancelled without invoking [end] or dispatching cleanup actions. */
     fun cancel() {
         TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+        releaseRuntimeState()
     }
 
-    /**
-     * reset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    fun reset() {
-        TaskStateMachine.reset(this)
+    /** Releases timeout and callback state while retaining the terminal status for diagnostics. */
+    fun releaseRuntimeState() {
         TaskTimeoutManager.reset(this)
         TaskCallbacks.reset(this)
     }
 
-    /**
-     * onComplete declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Removes status, timeout, and callback state so this instance can be configured again. */
+    fun reset() {
+        TaskStateMachine.reset(this)
+        releaseRuntimeState()
+    }
+
+    /** Registers/replaces a synchronous completion callback and returns this task for chaining. */
     fun onComplete(callback: () -> Unit): Task {
         TaskCallbacks.registerComplete(this, callback)
         return this
     }
 
-    /**
-     * onFail declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Registers/replaces a synchronous timeout/failure callback and returns this task for chaining. */
     fun onFail(callback: () -> Unit): Task {
         TaskCallbacks.registerFail(this, callback)
         return this
     }
 
-    /**
-     * withTimeout declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Associates a strict `elapsedMs > ms` timeout and returns this task for chaining. */
     fun withTimeout(ms: Long): Task {
         TaskTimeoutManager.setTimeout(this, ms)
         return this
@@ -176,14 +167,13 @@ interface Task {
 class TimeWaitTask(
     private val durationMs: Long
 ) : Task {
+    init {
+        require(durationMs >= 0L) { "Wait duration must be non-negative" }
+    }
+
     override val name = "TimeWait($durationMs ms)"
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Completes when executor elapsed time reaches [durationMs]. */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return elapsedMs >= durationMs
     }
@@ -197,9 +187,7 @@ class WaitUntilTask(
 ) : Task {
     override val name = "WaitUntil"
 
-    /**
-     * isCompleted declaration.
-     */
+    /** Evaluates [predicate] against the most recent immutable robot-state snapshot. */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return predicate(state)
     }
@@ -212,14 +200,16 @@ class PathProgressWaitTask(
     private val targetDistanceMeters: Double,
     private val timeoutMs: Long = 10000L
 ) : Task {
+    init {
+        require(targetDistanceMeters.isFinite() && targetDistanceMeters >= 0.0) {
+            "Target path distance must be finite and non-negative"
+        }
+        require(timeoutMs >= 0L) { "Fallback timeout must be non-negative" }
+    }
+
     override val name = "PathProgressWait($targetDistanceMeters m)"
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Completes at the target path distance or after the built-in fallback timeout. */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return state.pathState.currentDistanceMeters >= targetDistanceMeters || elapsedMs >= timeoutMs
     }
@@ -235,27 +225,42 @@ class ActionDispatchTask(
 
     private var dispatched = false
 
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Marks the task running and returns [action] exactly once for this initialization. */
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         dispatched = true
         return listOf(action)
     }
 
-    /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Completes immediately after [initialize] has produced the action. */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         return dispatched
     }
+}
+
+/**
+ * Creates one Redux action from the state observed when the task starts.
+ *
+ * This is useful for season actions that must preserve unrelated immutable subsystem fields. The
+ * factory runs once during initialization, so auto-registration never captures a stale state.
+ */
+class StateActionTask(
+    override val name: String,
+    private val actionFactory: (RobotState) -> RobotAction
+) : Task {
+    private var dispatched = false
+
+    init {
+        require(name.isNotBlank()) { "State action task name must not be blank" }
+    }
+
+    override fun initialize(state: RobotState): List<RobotAction> {
+        super.initialize(state)
+        dispatched = true
+        return listOf(actionFactory(state))
+    }
+
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = dispatched
 }
 
 /**
@@ -273,7 +278,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     override val name = "FollowPath(${path.points.size} points)"
     private var lastTimeMs = 0L
     private lateinit var activePath: com.areslib.pathing.Path
-    private val triggeredEvents = mutableSetOf<String>()
+    private var triggeredEvents = BooleanArray(0)
     
     private val scratchMutablePoint = com.areslib.pathing.MutablePathPoint()
     private val scratchPathPoint = com.areslib.pathing.PathPoint(Pose2d(), 0.0)
@@ -282,18 +287,13 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val activeEventTasks = mutableListOf<Task>()
     private val taskStartTimes = mutableMapOf<Task, Long>()
 
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Selects alliance geometry, projects current pose onto the path, and dispatches [RobotAction.SwitchPath]. */
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
         activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
-        triggeredEvents.clear()
+        triggeredEvents = BooleanArray(activePath.events.size)
         activeEventTasks.clear()
         taskStartTimes.clear()
 
@@ -306,10 +306,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * isCompleted declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Completes on virtual progress when holding velocity, otherwise requires final pose tolerance.
+     * A 15-second fallback completes even if the robot remains outside tolerance.
      */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (activePath.points.isEmpty()) return true
@@ -333,12 +331,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return (distToTarget < 0.08 && headingError < Math.toRadians(5.0)) || elapsedMs >= 15000L
     }
 
-    /**
-     * execute declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Advances path progress and event tasks using `RobotClock`; non-advancing time yields no actions. */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
         val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
@@ -393,8 +386,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
         for (i in 0 until activePath.events.size) {
             val event = activePath.events[i]
-            if (event.eventName !in triggeredEvents && event.triggerDistanceMeters <= nextDistance) {
-                triggeredEvents.add(event.eventName)
+            if (!triggeredEvents[i] && event.triggerDistanceMeters <= nextDistance) {
+                triggeredEvents[i] = true
                 actionsList.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
                 
                 val cmdTask = com.areslib.pathing.NamedCommands.getCommand(event.eventName, currentTimestamp)
@@ -410,8 +403,10 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             val cmdTask = activeEventTasks[i]
             val startTime = taskStartTimes[cmdTask] ?: currentTimestamp
             val cmdElapsed = currentTimestamp - startTime
-            if (cmdTask.isCompleted(state, cmdElapsed)) {
-                actionsList.addAll(cmdTask.end(state, false))
+            val failed = TaskStateMachine.getStatus(cmdTask) == TaskStatus.FAILED
+            if (failed || cmdTask.isCompleted(state, cmdElapsed)) {
+                actionsList.addAll(cmdTask.end(state, interrupted = failed))
+                cmdTask.releaseRuntimeState()
                 activeEventTasks.removeAt(i)
                 taskStartTimes.remove(cmdTask)
             } else {
@@ -422,12 +417,13 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return actionsList
     }
 
-    /**
-     * end declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Stops controller output while a higher-priority task owns the drivetrain. */
+    override fun pause(state: RobotState): List<RobotAction> {
+        follower.stop()
+        return emptyList()
+    }
+
+    /** Stops the follower unless velocity hold was requested and interrupts all active event tasks. */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         super.end(state, interrupted)
         if (!holdVelocity) {
@@ -436,6 +432,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         val actions = mutableListOf<RobotAction>()
         for (cmdTask in activeEventTasks) {
             actions.addAll(cmdTask.end(state, interrupted = true))
+            cmdTask.releaseRuntimeState()
         }
         activeEventTasks.clear()
         taskStartTimes.clear()

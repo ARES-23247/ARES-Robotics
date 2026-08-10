@@ -9,8 +9,7 @@ import com.areslib.hardware.actuator.RevEncoderVersion
 import com.areslib.hardware.drive.OdometryIO
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import com.areslib.math.wrapAngle
 
 @I2cDeviceType
 @DeviceProperties(
@@ -68,15 +67,16 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         const val REG_LOC_H = 0x6A
         const val REG_LOC_VEL_H = 0x6C
         
-        val OCTOQUAD_ENDIAN = ByteOrder.LITTLE_ENDIAN
         /** Multiplier scaling raw 16-bit localizer heading readings to radians ($rad$). */
         const val SCALAR_LOCALIZER_HEADING = 0.001f
         /** Multiplier scaling raw 16-bit localizer heading rate to radians per second ($rad/s$). */
         const val SCALAR_LOCALIZER_HEADING_VELOCITY = 0.001f
     }
 
-    private var isInitialized = false
-    private var lastUpdateTimeMs = 0L
+    @Volatile private var isInitialized = false
+    @Volatile
+    var lastLocalizerUpdateTimestampMs: Long = 0L
+        private set
  
     // Cache buffers for registers
     private val cachedPositions = IntArray(8)
@@ -103,11 +103,12 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
     
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
+    private val pollingThread: Thread
 
     init {
         com.areslib.hardware.HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
+        pollingThread = Thread {
             while (running) {
                 if (isInitialized) {
                     var posSuccess = false
@@ -169,16 +170,16 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
                             cachedLocalizerData.velX_mmS = threadLocalizer.velX_mmS
                             cachedLocalizerData.velY_mmS = threadLocalizer.velY_mmS
                             cachedLocalizerData.velHeading_radS = threadLocalizer.velHeading_radS
+                            lastLocalizerUpdateTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
                         }
-                        lastUpdateTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
                     }
                 }
                 try { Thread.sleep(5) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
             }
         }
-        thread.isDaemon = true
-        thread.name = "ARES-Octoquad-Thread"
-        thread.start()
+        pollingThread.isDaemon = true
+        pollingThread.name = "ARES-Octoquad-Thread"
+        pollingThread.start()
     }
 
     /**
@@ -209,11 +210,6 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     /** Returns human-readable device identifier string. */
     override fun getDeviceName(): String = "OctoQuad FWv3"
 
-    /** No-op update hook (handled asynchronously by background sampling thread). */
-    fun update() {
-        // Background thread handles update
-    }
-
     /** Returns thread-safe cached encoder position for channel $[0 \dots 7]$. */
     fun getCachedPosition(channel: Int): Int = synchronized(lock) { cachedPositions.getOrElse(channel) { 0 } }
 
@@ -222,39 +218,6 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
 
     /** Returns thread-safe cached PWM pulse width ($\mu s$) for channel $[0 \dots 7]$. */
     fun getCachedPulseWidth(channel: Int): Int = synchronized(lock) { cachedPulseWidths.getOrElse(channel) { 0 } }
-
-    /** Reads single encoder position synchronously from I2C bus (legacy fallback). */
-    fun readEncoderPosition(channel: Int): Int {
-        return try {
-            val bytes = deviceClient.read(REG_ENC_0 + (channel * 4), 4)
-            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-            buf.int
-        } catch (_: Exception) {
-            0
-        }
-    }
-
-    /** Reads single encoder velocity synchronously from I2C bus (legacy fallback). */
-    fun readEncoderVelocity(channel: Int): Int {
-        return try {
-            val bytes = deviceClient.read(REG_VEL_0 + (channel * 4), 4)
-            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-            buf.int
-        } catch (_: Exception) {
-            0
-        }
-    }
-
-    /** Reads single channel PWM pulse width synchronously in microseconds ($\mu s$) (legacy fallback). */
-    fun readChannelPulseWidth(channel: Int): Int {
-        return try {
-            val bytes = deviceClient.read(REG_PULSE_WIDTH_0 + (channel * 2), 2)
-            val buf = ByteBuffer.wrap(bytes).order(OCTOQUAD_ENDIAN)
-            buf.short.toInt() and 0xFFFF
-        } catch (_: Exception) {
-            0
-        }
-    }
 
     /** Sends a command byte resetting the specified encoder channel position counter $[0 \dots 7]$ to zero. */
     fun resetEncoder(channel: Int) {
@@ -265,7 +228,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     /**
-     * Immutable snapshot data block containing raw localizer telemetry outputs.
+     * Mutable reusable data block containing raw localizer telemetry outputs.
      *
      * @property posX_mm Field X position in millimeters ($mm$).
      * @property posY_mm Field Y position in millimeters ($mm$).
@@ -283,12 +246,31 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         var velHeading_radS: Float = 0f
     )
 
-    /** Returns thread-safe cached copy of current localizer data block. */
-    fun readLocalizerData(): LocalizerDataBlock = synchronized(lock) { cachedLocalizerData }
+    /** Returns an owned snapshot of the current localizer block. Prefer [copyLocalizerDataInto] in hot paths. */
+    fun readLocalizerData(): LocalizerDataBlock = synchronized(lock) { cachedLocalizerData.copy() }
+
+    /** Copies the current localizer block into caller-owned [destination] without allocating. */
+    fun copyLocalizerDataInto(destination: LocalizerDataBlock) = synchronized(lock) {
+        destination.posX_mm = cachedLocalizerData.posX_mm
+        destination.posY_mm = cachedLocalizerData.posY_mm
+        destination.heading_rad = cachedLocalizerData.heading_rad
+        destination.velX_mmS = cachedLocalizerData.velX_mmS
+        destination.velY_mmS = cachedLocalizerData.velY_mmS
+        destination.velHeading_radS = cachedLocalizerData.velHeading_radS
+    }
 
     /** Terminates background sampling thread and releases device client handles. */
     override fun close() {
         running = false
+        pollingThread.interrupt()
+        if (Thread.currentThread() !== pollingThread) {
+            try {
+                pollingThread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
+        deviceClient.close()
     }
 }
 
@@ -297,21 +279,14 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
  * Wrapper for an individual encoder plugged into the OctoQuad.
  */
 class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel: Int) : MotorIO {
+    init {
+        require(channel in 0..7) { "OctoQuad encoder channel must be in 0..7" }
+    }
     override var power: Double
         get() = 0.0 // Encoders are read-only
         set(@Suppress("UNUSED_PARAMETER") value) {
             // Encoders are read-only, cannot set power
         }
-
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    fun updateInputs() {
-        octoQuad.update()
-    }
 
     override val velocity: Double
         get() = octoQuad.getCachedVelocity(channel).toDouble()
@@ -319,12 +294,7 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
     override val position: Double
         get() = octoQuad.getCachedPosition(channel).toDouble()
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Sends a hardware reset for this encoder channel. */
     override fun resetEncoder() {
         octoQuad.resetEncoder(channel)
     }
@@ -341,19 +311,14 @@ class OctoQuadAbsolutePWMEncoder(
 ) : MotorIO {
     private var offset = 0.0
 
+    init {
+        require(channel in 0..7) { "OctoQuad PWM channel must be in 0..7" }
+        require(ticksPerRev.isFinite() && ticksPerRev > 0.0) { "ticksPerRev must be finite and positive" }
+    }
+
     override var power: Double
         get() = 0.0
         set(@Suppress("UNUSED_PARAMETER") value) {}
-
-    /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    fun updateInputs() {
-        octoQuad.update()
-    }
 
     override val velocity: Double
         get() = 0.0
@@ -367,14 +332,8 @@ class OctoQuadAbsolutePWMEncoder(
             return (clampedNormalized * ticksPerRev) - offset
         }
 
-    /**
-     * resetEncoder declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Captures the current normalized pulse position as this wrapper's software zero. */
     override fun resetEncoder() {
-        octoQuad.update()
         val pulseUs = octoQuad.getCachedPulseWidth(channel).toDouble()
         val range = version.maxPulseUs - version.minPulseUs
         val normalized = if (range != 0.0) (pulseUs - version.minPulseUs) / range else 0.0
@@ -387,34 +346,86 @@ class OctoQuadAbsolutePWMEncoder(
  * Wrapper for the OctoQuad's absolute localizer feature.
  */
 class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
-    /**
-     * initialize declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    override fun initialize(startPose: Pose2d) {
-        // Reset command
-        octoQuad.resetEncoder(0) // Dummy implementation for now
-    }
+    private val rawData = OctoQuadFWv3.LocalizerDataBlock()
+    private val frameTransform = OctoQuadLocalizerFrameTransform()
+    private var requestedStartPose = Pose2d()
+    private var frameInitialized = false
 
     /**
-     * updateInputs declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Seeds a software rigid transform from the localizer's current native frame to [startPose].
+     * The OctoQuad FWv3 register surface does not expose a field-pose write, so no unrelated encoder
+     * channel is reset. Subsequent positions and velocities are rotated into the seeded field frame.
      */
+    override fun initialize(startPose: Pose2d) {
+        require(startPose.x.isFinite() && startPose.y.isFinite() && startPose.heading.radians.isFinite()) {
+            "OctoQuad start pose must be finite"
+        }
+        requestedStartPose = startPose
+        frameInitialized = false
+        initializeFrameFromCacheIfFresh()
+    }
+
+    /** Copies the latest cached localizer block into meter/radian odometry fields. */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
-        octoQuad.update()
-        val lastData = octoQuad.readLocalizerData()
-        inputs.posX = lastData.posX_mm / 1000.0
-        inputs.posY = lastData.posY_mm / 1000.0
-        inputs.heading = lastData.heading_rad.toDouble()
-        inputs.velX = lastData.velX_mmS / 1000.0
-        inputs.velY = lastData.velY_mmS / 1000.0
-        inputs.headingVelocity = lastData.velHeading_radS.toDouble()
-        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
+        val sampleTimestampMs = octoQuad.lastLocalizerUpdateTimestampMs
+        if (sampleTimestampMs <= 0L) {
+            inputs.posX = requestedStartPose.x
+            inputs.posY = requestedStartPose.y
+            inputs.heading = requestedStartPose.heading.radians
+            inputs.velX = 0.0
+            inputs.velY = 0.0
+            inputs.headingVelocity = 0.0
+            inputs.timestampMs = 0L
+            return
+        }
+        octoQuad.copyLocalizerDataInto(rawData)
+        initializeFrameFromCacheIfFresh()
+        frameTransform.apply(rawData, inputs)
+        inputs.timestampMs = sampleTimestampMs
+    }
+
+    private fun initializeFrameFromCacheIfFresh() {
+        if (frameInitialized || octoQuad.lastLocalizerUpdateTimestampMs <= 0L) return
+        octoQuad.copyLocalizerDataInto(rawData)
+        frameTransform.initialize(requestedStartPose, rawData)
+        frameInitialized = true
     }
 }
 
+/** Allocation-free rigid transform from the OctoQuad native localizer frame to the field frame. */
+internal class OctoQuadLocalizerFrameTransform {
+    private var rawOriginXMeters = 0.0
+    private var rawOriginYMeters = 0.0
+    private var fieldOriginXMeters = 0.0
+    private var fieldOriginYMeters = 0.0
+    private var headingOffsetRadians = 0.0
+    private var offsetCos = 1.0
+    private var offsetSin = 0.0
 
+    fun initialize(startPose: Pose2d, raw: OctoQuadFWv3.LocalizerDataBlock) {
+        require(startPose.x.isFinite() && startPose.y.isFinite() && startPose.heading.radians.isFinite()) {
+            "OctoQuad start pose must be finite"
+        }
+        rawOriginXMeters = raw.posX_mm / 1000.0
+        rawOriginYMeters = raw.posY_mm / 1000.0
+        fieldOriginXMeters = startPose.x
+        fieldOriginYMeters = startPose.y
+        headingOffsetRadians = wrapAngle(startPose.heading.radians - raw.heading_rad.toDouble())
+        offsetCos = kotlin.math.cos(headingOffsetRadians)
+        offsetSin = kotlin.math.sin(headingOffsetRadians)
+    }
+
+    fun apply(raw: OctoQuadFWv3.LocalizerDataBlock, inputs: com.areslib.hardware.drive.OdometryInputs) {
+        val deltaX = raw.posX_mm / 1000.0 - rawOriginXMeters
+        val deltaY = raw.posY_mm / 1000.0 - rawOriginYMeters
+        inputs.posX = fieldOriginXMeters + offsetCos * deltaX - offsetSin * deltaY
+        inputs.posY = fieldOriginYMeters + offsetSin * deltaX + offsetCos * deltaY
+        inputs.heading = wrapAngle(raw.heading_rad.toDouble() + headingOffsetRadians)
+
+        val rawVelocityX = raw.velX_mmS / 1000.0
+        val rawVelocityY = raw.velY_mmS / 1000.0
+        inputs.velX = offsetCos * rawVelocityX - offsetSin * rawVelocityY
+        inputs.velY = offsetSin * rawVelocityX + offsetCos * rawVelocityY
+        inputs.headingVelocity = raw.velHeading_radS.toDouble()
+    }
+}

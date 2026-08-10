@@ -5,12 +5,6 @@ import com.areslib.math.geometry.Rotation2d
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 
-/**
- * FindClosestDistanceTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class FindClosestDistanceTest {
 
     /** Helper to create a simple straight-line path from (x1,y1) to (x2,y2). */

@@ -4,6 +4,7 @@ import com.areslib.action.RobotAction
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
+import com.areslib.hardware.vision.VisionOutlierFilter
 import com.areslib.Store
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
@@ -14,7 +15,7 @@ import com.areslib.math.wrapAngle
 /**
  * AprilTag vision tracking and field localization manager for FTC platforms.
  *
- * Implements a 4-tier outlier rejection cascade (ambiguity filter, 3D field boundary check, distance cutoff, and EKF Mahalanobis distance validation).
+ * Implements a 4-tier outlier rejection cascade (ambiguity filter, rotated robot-footprint field boundary check, distance cutoff, and EKF Mahalanobis distance validation).
  * Coordinates vision-based pose initialization and active-play kidnapped robot recovery (`RESEED_SNAP`).
  *
  * ### Recovery States & Thresholds:
@@ -35,7 +36,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private val store: Store,
     val limelightIO: VisionIO?,
     private val pinpointIO: PinpointIO?,
-    var stdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1)
+    var stdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
+    private val onOdometryReseed: ((Pose2d) -> Unit)? = null
 ) : VisionTracker {
     /** Vision inputs container polled each loop frame. */
     val visionInputs = VisionIOInputs()
@@ -99,7 +101,6 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             }
         }
         val measurement = bestMeasurement
-        lastLimelightPose = measurement.targetPose.toPose2d()
         lastLimelightTimeMs = timestampMs
 
         val robotPose = store.state.drive.poseEstimator.estimatedPose
@@ -114,6 +115,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                 com.areslib.math.geometry.Rotation3d(fieldPose3d.rotation.x, fieldPose3d.rotation.y, fieldPose2d.heading.radians)
             )
         }
+        // Expose the same alliance-adjusted field pose that filtering and estimator fusion consume.
+        lastLimelightPose = fieldPose2d
 
         val dx = fieldPose2d.x - robotPose.x
         val dy = fieldPose2d.y - robotPose.y
@@ -121,8 +124,17 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val fieldYaw = fieldPose3d.rotation.z
         val headingDiff = wrapAngle(fieldYaw - robotHeading)
 
-        lastVisionStatus = checkVisionOutlierRejection(measurement, distance, headingDiff)
+        lastVisionStatus = checkVisionOutlierRejection(
+            measurement,
+            fieldPose3d,
+            fieldPose2d,
+            distance,
+            headingDiff
+        )
         val filterConfig = store.state.vision.filterConfig
+        val passesSnapPlausibility = measurement.ambiguity.isFinite() &&
+            measurement.ambiguity < filterConfig.maxAmbiguity &&
+            VisionOutlierFilter.isPoseWithinFieldBounds(filterConfig, fieldPose3d)
 
         val tuning = store.state.tuning
         val velThreshold = tuning.stolenRobotVelocityThreshold
@@ -131,9 +143,9 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                            kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < velThreshold &&
                            kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
 
-        if (!hasInitializedPoseWithVision && measurement.ambiguity < filterConfig.maxAmbiguity && isStationary) {
-            val snapPose = measurement.targetPose.toPose2d()
-            pinpointIO?.initialize(snapPose, resetHardware = false)
+        if (!hasInitializedPoseWithVision && passesSnapPlausibility && isStationary) {
+            val snapPose = fieldPose2d
+            reseedOdometry(snapPose)
             hasInitializedPoseWithVision = true
             lastVisionStatus = "INIT_ALIGN_SNAP"
             store.dispatch(RobotAction.PoseUpdate(
@@ -147,10 +159,11 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             // Kidnapped Robot Recovery (Active Play)
             // Triggered if vision observation is rejected by EKF OR pose error relative to EKF > 0.4m
             val isRejectedOrDivergent = lastVisionStatus.startsWith("REJ_") || distance > 0.4
-            val isHighConfidence = measurement.ambiguity < filterConfig.maxAmbiguity
+            val isHighConfidence = measurement.ambiguity.isFinite() &&
+                measurement.ambiguity < filterConfig.maxAmbiguity
 
-            if (isRejectedOrDivergent && isHighConfidence && isStationary) {
-                val p2d = measurement.targetPose.toPose2d()
+            if (isRejectedOrDivergent && isHighConfidence && passesSnapPlausibility && isStationary) {
+                val p2d = fieldPose2d
                 accumX += p2d.x
                 accumY += p2d.y
                 accumSin += kotlin.math.sin(p2d.heading.radians)
@@ -164,7 +177,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                     val avgHeading = kotlin.math.atan2(accumSin, accumCos)
                     val snapPose = Pose2d(avgX, avgY, Rotation2d(avgHeading))
 
-                    pinpointIO?.initialize(snapPose, resetHardware = false)
+                    reseedOdometry(snapPose)
 
                     consecutiveVisionRejections = 0
                     accumX = 0.0
@@ -200,22 +213,29 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
     }
 
+    private fun reseedOdometry(pose: Pose2d) {
+        val reseed = onOdometryReseed
+        if (reseed != null) {
+            reseed(pose)
+        } else {
+            pinpointIO?.initialize(pose, resetHardware = false)
+        }
+    }
+
     private fun checkVisionOutlierRejection(
         measurement: com.areslib.state.VisionMeasurement,
+        fieldPose3d: com.areslib.math.geometry.Pose3d,
+        fieldPose2d: Pose2d,
         distance: Double,
         headingDiff: Double
     ): String {
-        val fieldPose3d = measurement.targetPose
-        val fieldPose2d = fieldPose3d.toPose2d()
         val filterConfig = store.state.vision.filterConfig
 
         return when {
-            measurement.ambiguity > filterConfig.maxAmbiguity -> {
+            !measurement.ambiguity.isFinite() || measurement.ambiguity > filterConfig.maxAmbiguity -> {
                 "REJ_AMBIG"
             }
-            fieldPose3d.x < filterConfig.minFieldX || fieldPose3d.x > filterConfig.maxFieldX ||
-            fieldPose3d.y < filterConfig.minFieldY || fieldPose3d.y > filterConfig.maxFieldY ||
-            fieldPose3d.z < filterConfig.minFieldZ || fieldPose3d.z > filterConfig.maxFieldZ -> {
+            !VisionOutlierFilter.isPoseWithinFieldBounds(filterConfig, fieldPose3d) -> {
                 "REJ_BOUNDS"
             }
             distance > filterConfig.maxDistanceMeters -> {
@@ -238,7 +258,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                     }
                     if (closestIndex != -1) {
                         val baseEntry = currentEstimator.history[closestIndex]
-                        val numTags = visionInputs.measurements.size
+                        val numTags = measurement.tagCount.coerceAtLeast(1)
                         val tagFactor = if (numTags <= 1) 2.5 else (1.0 / kotlin.math.sqrt(numTags.toDouble()))
                         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
                         

@@ -9,12 +9,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-/**
- * FtcMecanumRobotBuilderTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class FtcMecanumRobotBuilderTest {
 
     @Test

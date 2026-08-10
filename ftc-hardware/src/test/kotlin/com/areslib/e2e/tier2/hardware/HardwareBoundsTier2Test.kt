@@ -8,33 +8,15 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * MockAnalogInput declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MockAnalogInput : AnalogInput() {
     var mockVoltage: Double = 0.0
     override val voltage: Double
         get() = mockVoltage
 }
 
-/**
- * HardwareBoundsTier2Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class HardwareBoundsTier2Test {
 
     @Test
-    /**
-     * testBrownoutGuardBatteryVoltageCompensationLimits declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testBrownoutGuardBatteryVoltageCompensationLimits() {
         val brownout = BrownoutGuard.ftcDefaults()
 
@@ -58,12 +40,6 @@ class HardwareBoundsTier2Test {
     }
 
     @Test
-    /**
-     * testFloodgateThermalLoadCalculationsAtExactCurrentBorders declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testFloodgateThermalLoadCalculationsAtExactCurrentBorders() {
         val analog = MockAnalogInput()
         // 3.3V full scale corresponds to 80A. 
@@ -103,5 +79,23 @@ class HardwareBoundsTier2Test {
         
         // Instantaneous warning at high current
         assertTrue(sensor.isOverloadWarning(18.0))
+    }
+
+    @Test
+    fun `invalid floodgate sample does not poison filter and later sample recovers`() {
+        val analog = MockAnalogInput()
+        val sensor = FtcFloodgateCurrentSensor(analog, maxCurrentAmps = 80.0, filterAlpha = 1.0)
+
+        analog.mockVoltage = Double.NaN
+        sensor.update()
+        assertFalse(sensor.isReadingValid)
+        assertEquals(0.0, sensor.current, 1e-9)
+        assertTrue(sensor.fuseThermalLoadPercent.isFinite())
+
+        analog.mockVoltage = 0.825
+        sensor.update()
+        assertTrue(sensor.isReadingValid)
+        assertEquals(20.0, sensor.current, 1e-9)
+        assertTrue(sensor.fuseThermalLoadPercent.isFinite())
     }
 }

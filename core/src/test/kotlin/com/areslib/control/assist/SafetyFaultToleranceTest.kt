@@ -16,12 +16,6 @@ import com.areslib.control.feedback.LQRController
 import com.areslib.control.feedback.GravityFeedforward
 import com.areslib.control.safety.CurrentBudgetManager
 
-/**
- * SafetyFaultToleranceTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class SafetyFaultToleranceTest {
 
     @Test
@@ -158,4 +152,3 @@ class SafetyFaultToleranceTest {
         assertTrue(budget.powerScale > 0.0)
     }
 }
-

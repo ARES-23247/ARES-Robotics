@@ -29,8 +29,8 @@ class SlewRateLimiter(
     initialValue: Double = 0.0
 ) {
 
-    private var lastValue = initialValue
-    private var hasBeenCalled = false
+    private var lastValue = if (initialValue.isFinite()) initialValue else 0.0
+    private var hasBeenCalled = true
 
     /** Current output value of the rate limiter. */
     val value: Double get() = lastValue
@@ -43,17 +43,18 @@ class SlewRateLimiter(
      * @return Rate-limited output signal value.
      */
     fun calculate(input: Double, dtSeconds: Double): Double {
+        if (!input.isFinite() || !dtSeconds.isFinite() ||
+            !positiveRateLimit.isFinite() || !negativeRateLimit.isFinite()
+        ) return lastValue
+
         if (!hasBeenCalled) {
             lastValue = input
             hasBeenCalled = true
             return input
         }
 
-        if (!dtSeconds.isFinite()) return lastValue
         val dt = if (dtSeconds > 0.0) dtSeconds else 0.0
         if (dt == 0.0) return lastValue
-
-        if (!input.isFinite() || !positiveRateLimit.isFinite() || !negativeRateLimit.isFinite()) return lastValue
 
         val change = input - lastValue
         val posLimit = kotlin.math.abs(positiveRateLimit)
@@ -70,7 +71,7 @@ class SlewRateLimiter(
      * @param value New baseline output signal value.
      */
     fun reset(value: Double = 0.0) {
-        lastValue = value
+        lastValue = if (value.isFinite()) value else 0.0
         hasBeenCalled = true
     }
 

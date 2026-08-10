@@ -19,12 +19,6 @@ import com.areslib.state.RobotFieldElementInstance
 object FieldElementLoader {
     private val gson = Gson()
 
-    /**
-     * loadElements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadElements(world: World<Body>, jsonString: String): List<Body> {
         try {
             val config = gson.fromJson(jsonString, RobotFieldConfig::class.java)
@@ -38,12 +32,6 @@ object FieldElementLoader {
         return emptyList()
     }
 
-    /**
-     * loadElements declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun loadElements(
         world: World<Body>,
         elementTypes: List<RobotFieldElementType>,
@@ -57,57 +45,6 @@ object FieldElementLoader {
             val body = createBodyFromSpec(typeSpec, el.x, el.y, el.rotation, el.id)
             world.addBody(body)
             spawnedBodies.add(body)
-        }
-        return spawnedBodies
-    }
-
-    private data class SimGamePiece(
-        val id: String = "",
-        val name: String = "",
-        val x: Double = 0.0,
-        val y: Double = 0.0,
-        val type: String = "Custom"
-    )
-
-    /**
-     * loadGamePiecesFromAnalyticsJson declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
-    fun loadGamePiecesFromAnalyticsJson(world: World<Body>, jsonString: String): List<Body> {
-        val spawnedBodies = mutableListOf<Body>()
-        try {
-            val listType = object : com.google.gson.reflect.TypeToken<List<SimGamePiece>>() {}.type
-            val gamePieces: List<SimGamePiece> = gson.fromJson(jsonString, listType) ?: return emptyList()
-
-            for (gp in gamePieces) {
-                val isSample = gp.type.contains("Sample")
-                val isNote = gp.type.contains("Note")
-                
-                val shape = if (isSample) "box" else "cylinder"
-                val width = if (isSample) 0.15 else 0.1
-                val height = if (isSample) 0.05 else 0.1
-                val diameter = if (isNote) 0.35 else 0.15
-                
-                val typeSpec = RobotFieldElementType(
-                    id = gp.type,
-                    name = gp.type,
-                    shape = shape,
-                    width = width,
-                    height = height,
-                    diameter = diameter,
-                    movable = true,
-                    massKg = if (isSample) 0.2 else 0.24
-                )
-                
-                val body = createBodyFromSpec(typeSpec, gp.x, gp.y, 0.0, gp.name)
-                world.addBody(body)
-                spawnedBodies.add(body)
-            }
-        } catch (e: Exception) {
-            System.err.println("Failed to parse game_pieces.json: ${e.message}")
-            e.printStackTrace()
         }
         return spawnedBodies
     }
@@ -130,8 +67,8 @@ object FieldElementLoader {
         }
 
         val fixture = BodyFixture(shape)
-        fixture.friction = 0.6
-        fixture.restitution = 0.3
+        fixture.friction = type.friction
+        fixture.restitution = type.restitution
 
         val area = shape.getArea()
         val density = if (area > 0) type.massKg / area else 1.0

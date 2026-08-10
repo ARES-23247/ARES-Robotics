@@ -1,6 +1,5 @@
 package com.areslib.control.profile
 
-import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
@@ -86,82 +85,108 @@ class TrapezoidProfile {
         currentLocal.setTo(current)
         goalLocal.setTo(goal)
 
-        val direction = if (goalLocal.position < currentLocal.position) -1.0 else 1.0
-        val dist = abs(goalLocal.position - currentLocal.position)
-
-        if (dist < 1e-6 || constraints.maxAcceleration <= 0.0 || constraints.maxVelocity <= 0.0) {
-            outState.setTo(goalLocal)
+        if (!dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !constraints.maxAcceleration.isFinite() || constraints.maxAcceleration <= 0.0 ||
+            !constraints.maxVelocity.isFinite() || constraints.maxVelocity <= 0.0 ||
+            !currentLocal.position.isFinite() || !currentLocal.velocity.isFinite() ||
+            !goalLocal.position.isFinite() || !goalLocal.velocity.isFinite()
+        ) {
+            if (currentLocal.position.isFinite() && currentLocal.velocity.isFinite()) {
+                outState.setTo(currentLocal)
+            } else {
+                outState.position = 0.0
+                outState.velocity = 0.0
+            }
             return
         }
 
+        // Solve in a coordinate system where the goal is always in the positive direction.
+        // This is the standard cutoff-distance formulation and supports arbitrary finite
+        // initial and final velocities rather than assuming both are zero.
+        var direction = if (currentLocal.position > goalLocal.position) -1.0 else 1.0
         val maxV = constraints.maxVelocity
         val maxA = constraints.maxAcceleration
-
-        // Calculate time needed to reach goal
-        val velInDirection = currentLocal.velocity * direction
-        val deltaV = maxV - velInDirection
-        val accelTime = if (deltaV > 0) deltaV / maxA else 0.0
-        val accelDist = velInDirection * accelTime + 0.5 * maxA * accelTime * accelTime
-        val decelDist = 0.5 * (maxV * maxV) / maxA
-
-        val cruiseDist: Double
-        val actualMaxV: Double
-        val actualAccelTime: Double
-
-        if (accelDist + decelDist > dist) {
-            // Triangular profile
-            actualAccelTime = sqrt(dist / maxA)
-            actualMaxV = maxA * actualAccelTime
-            cruiseDist = 0.0
-        } else {
-            // Trapezoidal profile
-            actualAccelTime = accelTime
-            actualMaxV = maxV
-            cruiseDist = dist - 2 * accelDist
-        }
-
-        val cruiseTime = if (actualMaxV > 0) cruiseDist / actualMaxV else 0.0
-        val decelTime = actualAccelTime
-        val totalTime = actualAccelTime + cruiseTime + decelTime
-
-        if (dtSeconds >= totalTime) {
-            outState.setTo(goalLocal)
+        if (kotlin.math.abs(goalLocal.velocity) > maxV) {
+            outState.setTo(currentLocal)
             return
         }
 
-        var newPos: Double
-        var newVel: Double
-
-        if (dtSeconds <= actualAccelTime) {
-            // Acceleration phase
-            newVel = currentLocal.velocity + direction * maxA * dtSeconds
-            if (abs(newVel) > actualMaxV) newVel = direction * actualMaxV
-            newPos = currentLocal.position + currentLocal.velocity * dtSeconds + 0.5 * direction * maxA * dtSeconds * dtSeconds
-        } else if (dtSeconds <= actualAccelTime + cruiseTime) {
-            // Constant velocity phase
-            val cruiseDt = dtSeconds - actualAccelTime
-            val startCruisePos = currentLocal.position + 0.5 * direction * maxA * actualAccelTime * actualAccelTime
-            newVel = direction * actualMaxV
-            newPos = startCruisePos + newVel * cruiseDt
-        } else {
-            // Deceleration phase
-            val decelDt = dtSeconds - actualAccelTime - cruiseTime
-            val startDecelPos = currentLocal.position + (0.5 * direction * maxA * actualAccelTime * actualAccelTime) + (direction * actualMaxV * cruiseTime)
-            val startDecelVel = direction * actualMaxV
-            newVel = startDecelVel - direction * maxA * decelDt
-            newPos = startDecelPos + startDecelVel * decelDt - 0.5 * direction * maxA * decelDt * decelDt
+        var currentPosition = currentLocal.position * direction
+        var currentVelocity = currentLocal.velocity * direction
+        var goalPosition = goalLocal.position * direction
+        var goalVelocity = goalLocal.velocity * direction
+        var cutoffBegin = currentVelocity / maxA
+        var cutoffDistBegin = cutoffBegin * cutoffBegin * maxA * 0.5
+        var cutoffEnd = goalVelocity / maxA
+        var cutoffDistEnd = cutoffEnd * cutoffEnd * maxA * 0.5
+        var fullTrapezoidDist = cutoffDistBegin + (goalPosition - currentPosition) + cutoffDistEnd
+        if (!fullTrapezoidDist.isFinite() || fullTrapezoidDist < 0.0) {
+            outState.setTo(currentLocal)
+            return
         }
 
-        // Final sanity check for direction overshooting
-        if (direction > 0 && newPos > goalLocal.position) {
-            newPos = goalLocal.position
-            newVel = goalLocal.velocity
-        } else if (direction < 0 && newPos < goalLocal.position) {
-            newPos = goalLocal.position
-            newVel = goalLocal.velocity
+        var accelerationTime = maxV / maxA
+        var fullSpeedDist = fullTrapezoidDist - accelerationTime * accelerationTime * maxA
+        if (fullSpeedDist < 0.0) {
+            accelerationTime = sqrt(fullTrapezoidDist / maxA)
+            fullSpeedDist = 0.0
         }
 
-        outState.position = newPos
-        outState.velocity = newVel
+        // A positive boundary velocity above the monotonic profile's peak means the
+        // mechanism cannot stop at the goal without first overshooting it. Reverse the
+        // profile coordinate so the solution brakes, reverses, and returns continuously.
+        if (cutoffBegin > accelerationTime || cutoffEnd > accelerationTime) {
+            direction = -direction
+            currentPosition = currentLocal.position * direction
+            currentVelocity = currentLocal.velocity * direction
+            goalPosition = goalLocal.position * direction
+            goalVelocity = goalLocal.velocity * direction
+            cutoffBegin = currentVelocity / maxA
+            cutoffDistBegin = cutoffBegin * cutoffBegin * maxA * 0.5
+            cutoffEnd = goalVelocity / maxA
+            cutoffDistEnd = cutoffEnd * cutoffEnd * maxA * 0.5
+            fullTrapezoidDist = cutoffDistBegin + (goalPosition - currentPosition) + cutoffDistEnd
+            if (!fullTrapezoidDist.isFinite() || fullTrapezoidDist < 0.0) {
+                outState.setTo(currentLocal)
+                return
+            }
+            accelerationTime = maxV / maxA
+            fullSpeedDist = fullTrapezoidDist - accelerationTime * accelerationTime * maxA
+            if (fullSpeedDist < 0.0) {
+                accelerationTime = sqrt(fullTrapezoidDist / maxA)
+                fullSpeedDist = 0.0
+            }
+        }
+
+        val endAccel = accelerationTime - cutoffBegin
+        val endFullSpeed = endAccel + fullSpeedDist / maxV
+        val endDecel = endFullSpeed + accelerationTime - cutoffEnd
+
+        val newPosition: Double
+        val newVelocity: Double
+        when {
+            dtSeconds < endAccel -> {
+                newVelocity = currentVelocity + dtSeconds * maxA
+                newPosition = currentPosition + (currentVelocity + dtSeconds * maxA * 0.5) * dtSeconds
+            }
+            dtSeconds < endFullSpeed -> {
+                newVelocity = maxV
+                newPosition = currentPosition +
+                    (currentVelocity + endAccel * maxA * 0.5) * endAccel +
+                    maxV * (dtSeconds - endAccel)
+            }
+            dtSeconds <= endDecel -> {
+                val timeLeft = endDecel - dtSeconds
+                newVelocity = goalVelocity + timeLeft * maxA
+                newPosition = goalPosition - (goalVelocity + timeLeft * maxA * 0.5) * timeLeft
+            }
+            else -> {
+                outState.setTo(goalLocal)
+                return
+            }
+        }
+
+        outState.position = newPosition * direction
+        outState.velocity = newVelocity * direction
     }
 }

@@ -42,12 +42,6 @@ open class Gamepad {
     @JvmField var m3: Boolean = false
     @JvmField var m4: Boolean = false
 
-    /**
-     * copy declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun copy(other: Gamepad) {
         this.left_stick_x = other.left_stick_x
         this.left_stick_y = other.left_stick_y

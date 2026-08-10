@@ -1,7 +1,7 @@
 package com.areslib.telemetry
 
-import com.areslib.state.RobotState
 import com.areslib.control.safety.BrownoutGuard
+import com.areslib.state.RobotState
 
 /**
  * Serializes and publishes the complete RobotState to an ITelemetry interface.
@@ -10,17 +10,20 @@ import com.areslib.control.safety.BrownoutGuard
  */
 class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
-    private val EMPTY_DOUBLE_ARRAY = DoubleArray(0)
+    private val emptyDoubleArray = DoubleArray(0)
+    private val emptyGamepadState = GamepadState()
     private val covarianceArray = DoubleArray(3)
+    private val estimatedPoseArray = DoubleArray(3)
     
     private var lastPublishedPath: com.areslib.pathing.Path? = null
-    private var cachedPathPoints: DoubleArray = EMPTY_DOUBLE_ARRAY
+    private var cachedPathPoints: DoubleArray = emptyDoubleArray
+    private var commandCatalogRevision = Long.MIN_VALUE
+    private var commandCatalogJson = "[]"
 
     /**
-     * publish declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Publishes one immutable state snapshot and flushes the telemetry backend.
+     * Reusable pose and covariance arrays avoid the largest avoidable per-frame buffers; topic
+     * formatting and the backend may still allocate.
      */
     fun publish(
         state: RobotState,
@@ -28,30 +31,36 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         gamepad2: GamepadState? = null,
         dtSeconds: Double? = null,
         batteryVoltage: Double? = null,
-        brownoutGuard: com.areslib.control.safety.BrownoutGuard? = null
+        brownoutGuard: BrownoutGuard? = null
     ) {
         // ── Drive ──
         // Raw Pinpoint Odometry
-        telemetry.putNumber("Drive/Odom_X", state.drive.odometryX)
-        telemetry.putNumber("Drive/Odom_Y", state.drive.odometryY)
-        telemetry.putNumber("Drive/Odom_Heading", state.drive.odometryHeading)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_ODOM_X, state.drive.odometryX)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_ODOM_Y, state.drive.odometryY)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_ODOM_HEADING, state.drive.odometryHeading)
 
         // Fused EKF Estimated Pose
-        telemetry.putNumber("Drive/Pose_X", state.drive.poseEstimator.estimatedPose.x)
-        telemetry.putNumber("Drive/Pose_Y", state.drive.poseEstimator.estimatedPose.y)
-        telemetry.putNumber("Drive/Drive_Heading", state.drive.poseEstimator.estimatedPose.heading.radians)
-        telemetry.putDoubleArray("ARES/EstimatedPose", doubleArrayOf(
-            state.drive.poseEstimator.estimatedPose.x,
-            state.drive.poseEstimator.estimatedPose.y,
-            state.drive.poseEstimator.estimatedPose.heading.radians
-        ))
-        telemetry.putNumber("ARES/EstimatedPose/0", state.drive.poseEstimator.estimatedPose.x)
-        telemetry.putNumber("ARES/EstimatedPose/1", state.drive.poseEstimator.estimatedPose.y)
-        telemetry.putNumber("ARES/EstimatedPose/2", state.drive.poseEstimator.estimatedPose.heading.radians)
+        val estimatedPose = state.drive.poseEstimator.estimatedPose
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_X, estimatedPose.x)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_Y, estimatedPose.y)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_HEADING, estimatedPose.heading.radians)
+        telemetry.putString(
+            "Drive/Pose_Source",
+            if (state.drive.poseEstimateIsExternal) "EXTERNAL" else "ARES_EKF"
+        )
+        estimatedPoseArray[0] = estimatedPose.x
+        estimatedPoseArray[1] = estimatedPose.y
+        estimatedPoseArray[2] = estimatedPose.heading.radians
+        telemetry.putDoubleArray("ARES/EstimatedPose", estimatedPoseArray)
+        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_X, estimatedPose.x)
+        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_Y, estimatedPose.y)
+        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_HEADING, estimatedPose.heading.radians)
 
         telemetry.putNumber("Drive/Velocity_X", state.drive.xVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Y", state.drive.yVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Omega", state.drive.angularVelocityRadiansPerSecond)
+
+        publishCommandCatalog()
 
         // ── EKF Covariance Diagonals ──
         val cov = state.drive.poseEstimator.covariance
@@ -61,7 +70,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceArray)
 
         // ── AdvantageScope 3D Pose ──
-        telemetry.logPose3d("Robot/Pose3d", state.drive.poseEstimator.estimatedPose)
+        telemetry.logPose3d("Robot/Pose3d", estimatedPose)
 
         // ── Loop Time & Diagnostics ──
         if (dtSeconds != null) {
@@ -100,7 +109,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
             telemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
         } else {
-            telemetry.putDoubleArray("Vision/PoseArray", EMPTY_DOUBLE_ARRAY)
+            telemetry.putDoubleArray("Vision/PoseArray", emptyDoubleArray)
             telemetry.putNumber("Vision/Pose_X", 0.0)
             telemetry.putNumber("Vision/Pose_Y", 0.0)
             telemetry.putNumber("Vision/Pose_Heading", 0.0)
@@ -142,15 +151,15 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putDoubleArray("Path/Points", cachedPathPoints)
         } else {
             lastPublishedPath = null
-            cachedPathPoints = EMPTY_DOUBLE_ARRAY
-            telemetry.putDoubleArray("Path/Points", EMPTY_DOUBLE_ARRAY)
+            cachedPathPoints = emptyDoubleArray
+            telemetry.putDoubleArray("Path/Points", emptyDoubleArray)
         }
 
         // ── Gamepad 1 ──
-        telemetry.logGamepad("Gamepad1", gamepad1 ?: GamepadState())
+        telemetry.logGamepad("Gamepad1", gamepad1 ?: emptyGamepadState)
 
         // ── Gamepad 2 ──
-        telemetry.logGamepad("Gamepad2", gamepad2 ?: GamepadState())
+        telemetry.logGamepad("Gamepad2", gamepad2 ?: emptyGamepadState)
 
         // ── Indicator Lights ──
         for (i in state.superstructure.indicatorLights.entries) {
@@ -162,35 +171,52 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     }
 
     /**
-     * publishTopology declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Publishes the hardware topology JSON and flushes it immediately.
      */
     fun publishTopology(topologyJson: String) {
         telemetry.putString("Topology/HardwareMap", topologyJson)
         telemetry.update()
     }
 
+    /** Publishes the robot's actual auto capabilities for the guided Analytics editor. */
+    private fun publishCommandCatalog() {
+        val revision = com.areslib.pathing.NamedCommands.catalogRevision
+        if (revision != commandCatalogRevision) {
+            commandCatalogRevision = revision
+            val catalog = com.areslib.pathing.NamedCommands.catalog().map { descriptor ->
+                mapOf(
+                    "key" to descriptor.key.value,
+                    "displayName" to descriptor.displayName,
+                    "description" to descriptor.description,
+                    "category" to descriptor.category
+                )
+            }
+            commandCatalogJson = com.google.gson.Gson().toJson(catalog)
+        }
+        telemetry.putString("ARES/Auto/CommandCatalog", commandCatalogJson)
+    }
+
     /**
-     * publishCalibration declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
+     * Publishes one camera-calibration observation and flushes it immediately.
      */
     fun publishCalibration(
         isActive: Boolean,
         gyroHeading: Double,
         tagIndex: Int,
         cameraIndex: Int,
-        cameraToTag: DoubleArray
+        cameraToTag: DoubleArray,
+        tagFieldPosition: DoubleArray = UNKNOWN_TAG_FIELD_POSITION
     ) {
         telemetry.putBoolean("Calibration/IsActive", isActive)
         telemetry.putNumber("Calibration/GyroHeading", gyroHeading)
         telemetry.putNumber("Calibration/TagIndex", tagIndex.toDouble())
         telemetry.putNumber("Calibration/CameraIndex", cameraIndex.toDouble())
         telemetry.putDoubleArray("Calibration/CameraToTag", cameraToTag)
+        telemetry.putDoubleArray("Calibration/TagField", tagFieldPosition)
         telemetry.update()
     }
-}
 
+    private companion object {
+        val UNKNOWN_TAG_FIELD_POSITION = doubleArrayOf(Double.NaN, Double.NaN, Double.NaN)
+    }
+}

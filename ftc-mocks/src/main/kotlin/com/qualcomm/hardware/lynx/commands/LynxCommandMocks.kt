@@ -21,19 +21,7 @@ open class LynxMessage {
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 open class LynxRespondable<T : LynxMessage> : LynxMessage() {
-    /**
-     * onResponseReceived declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun onResponseReceived(response: LynxMessage) {}
-    /**
-     * onAckReceived declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     open fun onAckReceived(ack: com.qualcomm.hardware.lynx.commands.standard.LynxAck) {}
 }
 /**
@@ -50,11 +38,5 @@ open class LynxCommand<T : LynxMessage> : LynxRespondable<T>()
 open class LynxDatagram {
     constructor() {}
     constructor(message: LynxMessage) {}
-    /**
-     * toByteArray declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun toByteArray(): ByteArray = ByteArray(0)
 }

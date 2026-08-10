@@ -4,12 +4,6 @@ import com.areslib.math.geometry.ChassisSpeeds
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * MecanumKinematicsTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MecanumKinematicsTest {
 
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.5, wheelBaseMeters = 0.5)
@@ -63,4 +57,3 @@ class MecanumKinematicsTest {
         assertEquals(0.0, arr3[3], 0.001)
     }
 }
-

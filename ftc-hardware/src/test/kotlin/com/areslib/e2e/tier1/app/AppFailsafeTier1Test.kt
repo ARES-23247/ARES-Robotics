@@ -9,21 +9,9 @@ import com.qualcomm.robotcore.hardware.VoltageSensor
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * AppFailsafeTier1Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class AppFailsafeTier1Test {
 
     @Test
-    /**
-     * testLoopOverrunWatchdog declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testLoopOverrunWatchdog() {
         val fl = MockDcMotorEx()
         val fr = MockDcMotorEx()
@@ -87,12 +75,6 @@ class AppFailsafeTier1Test {
     }
 
     @Test
-    /**
-     * testPerIterationFailsafeRecovery declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testPerIterationFailsafeRecovery() {
         val fl = MockDcMotorEx()
         val fr = MockDcMotorEx()

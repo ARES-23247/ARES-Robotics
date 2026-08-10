@@ -16,23 +16,11 @@ class MockI2cDeviceSynch : I2cDeviceSynch {
     var onWrite: ((register: Int, data: ByteArray) -> Unit)? = null
     var onRead: ((register: Int, length: Int) -> Unit)? = null
 
-    /**
-     * read8 declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun read8(register: Int): Byte {
         onRead?.invoke(register, 1)
         return registers.getOrElse(register) { 0 }
     }
 
-    /**
-     * read declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun read(register: Int, length: Int): ByteArray {
         onRead?.invoke(register, length)
         val data = ByteArray(length)
@@ -43,12 +31,6 @@ class MockI2cDeviceSynch : I2cDeviceSynch {
         return data
     }
 
-    /**
-     * write declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     override fun write(register: Int, data: ByteArray) {
         for (i in data.indices) {
             val regIndex = register + i

@@ -16,7 +16,8 @@ import com.areslib.math.geometry.*
  * @property y Robot field-centric Y position in meters ($m$).
  * @property headingRad Robot field-centric heading in radians ($rad$), **CCW-positive**.
  * @property covariance 3x3 error covariance matrix $\mathbf{P}$ at [timestampMs].
- * @property qScale Dynamic process noise scaling factor $s_q$ active during this update frame.
+ * @property qScale Full process noise multiplier applied during this frame, including
+ * tilt, slip, translation-rate, and elapsed-time scaling.
  */
 data class PoseHistoryEntry(
     var timestampMs: Long = 0L,
@@ -291,20 +292,23 @@ object PoseEstimator {
 
     var qX: Double = 0.01
         set(value) {
-            field = value
-            Q.m00 = value
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m00 = safeValue
         }
 
     var qY: Double = 0.01
         set(value) {
-            field = value
-            Q.m11 = value
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m11 = safeValue
         }
 
     var qTheta: Double = 0.01
         set(value) {
-            field = value
-            Q.m22 = value
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m22 = safeValue
         }
 
     private class ScratchpadContainer {
@@ -394,6 +398,50 @@ object PoseEstimator {
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
             gyroRateRadPerSec, dtSeconds, Q, scratch.scratchQ, scratch.scratchCov
         )
+    }
+
+    /**
+     * Mirrors the output of an upstream authoritative pose estimator into the shared
+     * robot state without applying a second prediction or correction step.
+     *
+     * This is used by platforms such as CTRE swerve where wheel, gyro, and vision
+     * observations have already been fused. Treating that pose as raw odometry would
+     * rotate field-frame corrections again and give the local covariance a false
+     * statistical meaning.
+     */
+    fun acceptExternalEstimate(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        xMeters: Double,
+        yMeters: Double,
+        headingRadians: Double
+    ): PoseEstimatorState {
+        if (!xMeters.isFinite() || !yMeters.isFinite() || !headingRadians.isFinite()) {
+            return state
+        }
+
+        val normalizedHeading = wrapAngle(headingRadians)
+        state.estimatedPoseX = xMeters
+        state.estimatedPoseY = yMeters
+        state.estimatedPoseHeading = normalizedHeading
+        state.lastInnovationX = 0.0
+        state.lastInnovationY = 0.0
+        state.lastInnovationTheta = 0.0
+        state.lastKalmanGain.fill(0.0)
+        state.lastMeasurementAccepted = false
+        state.lastRejectionReason = null
+
+        // Preserve the upstream estimator's pose history for replay/telemetry consumers.
+        // qScale=0 records that ARES did not apply local process noise to this sample.
+        state.history.addEntryDirect(
+            timestampMs,
+            xMeters,
+            yMeters,
+            normalizedHeading,
+            state.covariance,
+            0.0
+        )
+        return state
     }
 
     /**

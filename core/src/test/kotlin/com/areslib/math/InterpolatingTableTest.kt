@@ -4,20 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/**
- * InterpolatingTableTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class InterpolatingTableTest {
 
-    /**
-     * ShotParameters declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     data class ShotParameters(val rpm: Double, val cowlAngle: Double) : Interpolatable<ShotParameters> {
         override fun interpolate(other: ShotParameters, ratio: Double): ShotParameters {
             return ShotParameters(

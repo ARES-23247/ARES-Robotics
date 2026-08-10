@@ -153,7 +153,9 @@ object OdometryFusionController {
                 state.covarianceArray[3], state.covarianceArray[4], state.covarianceArray[5],
                 state.covarianceArray[6], state.covarianceArray[7], state.covarianceArray[8]
             )
-            state.history.addEntry(timestampMs, poseForHistory, covForHistory, 1.0)
+            // No state or covariance propagation occurred for this sample, so a later
+            // rewind must not inject process noise while replaying it.
+            state.history.addEntry(timestampMs, poseForHistory, covForHistory, 0.0)
             state.isBeached = true
             state.lastUnbeachedTimeMs = unbeachedTime
             return state
@@ -208,19 +210,20 @@ object OdometryFusionController {
         scratchQ.setTo(baseQ)
         val speed = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY) / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
         val movementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
-        scratchQ.multiplyInPlace(tiltScale * slipScale * movementScale * dtSeconds)
+        val processNoiseScale = tiltScale * slipScale * movementScale * dtSeconds
+        scratchQ.multiplyInPlace(processNoiseScale)
 
         val slipWeight = if (slipScale >= 10.0) 0.8 else 0.0
         val blendedDeltaHeading = (1.0 - slipWeight) * correctedDeltaHeading + slipWeight * (correctedGyroRate * dtSeconds)
         val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + blendedDeltaHeading)
 
-        // 1. Convert input field-frame deltas to robot-local displacement
+        // The odometry input is already robot-local. Integrate its SE(2) twist into an
+        // exact constant-curvature arc before rotating that arc into the field frame.
         val cosEst = kotlin.math.cos(state.estimatedPoseHeading)
         val sinEst = kotlin.math.sin(state.estimatedPoseHeading)
-        val robotLocalDx =  deltaX * cosEst + deltaY * sinEst
-        val robotLocalDy = -deltaX * sinEst + deltaY * cosEst
 
-        // 2. SE(2) Lie Group Pose Exponential Integration (Twist2d -> Pose2d exact constant-curvature arc integration)
+        // SE(2) Lie Group Pose Exponential Integration (Twist2d -> Pose2d exact
+        // constant-curvature arc integration).
         val dTheta = blendedDeltaHeading
         val s: Double
         val c: Double
@@ -233,25 +236,27 @@ object OdometryFusionController {
         }
 
         // Arc displacement in robot frame
-        val dxArc = s * robotLocalDx - c * robotLocalDy
-        val dyArc = c * robotLocalDx + s * robotLocalDy
+        val dxArc = s * deltaX - c * deltaY
+        val dyArc = c * deltaX + s * deltaY
 
-        // 3. Transform arc displacement back to field frame
+        // Transform the robot-frame arc displacement into the field frame using the
+        // pre-update heading.
         val fieldDx = dxArc * cosEst - dyArc * sinEst
         val fieldDy = dxArc * sinEst + dyArc * cosEst
 
         val newX = state.estimatedPoseX + fieldDx
         val newY = state.estimatedPoseY + fieldDy
         
-        val thetaMid = state.estimatedPoseHeading + blendedDeltaHeading * 0.5
-        
         val newCovariance = scratchCov
 
+        // The covariance Jacobian must linearize the same exact arc displacement used
+        // above. Using the raw twist at a midpoint heading is only an approximation and
+        // diverges from the state transition for finite rotations.
         EKFStatePropagator.propagate(
             state.covarianceArray,
-            robotLocalDx,
-            robotLocalDy,
-            thetaMid,
+            dxArc,
+            dyArc,
+            state.estimatedPoseHeading,
             scratchQ,
             newCovariance
         )
@@ -266,7 +271,7 @@ object OdometryFusionController {
         state.covarianceArray[7] = newCovariance.m21
         state.covarianceArray[8] = newCovariance.m22
 
-        state.history.addEntryDirect(timestampMs, newX, newY, newHeadingRad, newCovariance, tiltScale * slipScale)
+        state.history.addEntryDirect(timestampMs, newX, newY, newHeadingRad, newCovariance, processNoiseScale)
 
         state.estimatedPoseX = newX
         state.estimatedPoseY = newY

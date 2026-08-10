@@ -6,20 +6,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * RobotWebServerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class RobotWebServerTest {
     @Test
-    /**
-     * testStatusEndpointWithVision declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testStatusEndpointWithVision() {
         // Configure tracker
         RobotStatusTracker.isEnabled = true

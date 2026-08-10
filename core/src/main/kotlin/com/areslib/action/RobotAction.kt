@@ -3,8 +3,11 @@ package com.areslib.action
 import com.areslib.math.geometry.Vector3
 
 /**
- * Represents an immutable intent or hardware update event dispatched to the Redux store.
- * All concrete subtypes are data classes with `val` fields, ensuring immutability.
+ * Represents an intent or hardware update event dispatched to the Redux store.
+ *
+ * Most concrete actions are immutable values. [PoseUpdate] and [JoystickDriveIntent] deliberately
+ * use mutable fields so robot hot paths can reuse preallocated instances; asynchronous consumers
+ * must snapshot those actions during dispatch rather than retaining their references.
  */
 interface RobotAction {
     val timestampMs: Long
@@ -27,11 +30,6 @@ interface RobotAction {
      * @property yAccelerationG Y-axis acceleration in G-forces (left positive).
      * @property zAccelerationG Z-axis acceleration in G-forces (up positive).
      */
-    /**
-     * Class implementation for Drive Hardware Update.
-     *
-     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
-     */
     data class DriveHardwareUpdate(
         val xVelocity: Double,
         val yVelocity: Double,
@@ -48,30 +46,20 @@ interface RobotAction {
     ) : RobotAction
     
     /**
-     * Reports a simple 2D vision target detection (legacy single-target tracking).
-     *
-     * @property hasTarget Whether a target is currently detected.
-     * @property targetX Target X coordinate in the camera frame (meters).
-     * @property targetY Target Y coordinate in the camera frame (meters).
-     */
-    data class VisionUpdate(
-        val hasTarget: Boolean,
-        val targetX: Double,
-        val targetY: Double,
-        override val timestampMs: Long
-    ) : RobotAction
-
-    /**
      * Reports all AprilTag fiducial detections from the vision subsystem in a single frame.
      *
      * @property measurements List of individual tag detections with pose estimates.
      * @property customVisionStdDevs Optional override for EKF vision measurement standard deviations
      *   as a [Vector3] of (x meters, y meters, heading radians). If null, defaults are used.
+     * @property fuseIntoPoseEstimator False when an upstream estimator has already consumed
+     *   these observations. The vision slice is still updated for diagnostics and dashboards,
+     *   but the ARES EKF is left unchanged.
      */
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
-        val customVisionStdDevs: Vector3? = null
+        val customVisionStdDevs: Vector3? = null,
+        val fuseIntoPoseEstimator: Boolean = true
     ) : RobotAction
 
     /**
@@ -86,11 +74,10 @@ interface RobotAction {
      * @property yAccelerationG Y-axis acceleration in G-forces.
      * @property zAccelerationG Z-axis acceleration in G-forces.
      * @property isReset If true, forces the EKF to hard-reset to this pose (e.g., re-initialization at match start).
-     */
-    /**
-     * Class implementation for Pose Update.
-     *
-     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+     * @property isExternalEstimate If true, [xMeters], [yMeters], and [headingRadians]
+     * are the output of an upstream pose estimator and must be mirrored directly rather
+     * than treated as another odometry observation. This prevents estimator-on-estimator
+     * feedback and correlated sensor measurements from being fused twice.
      */
     data class PoseUpdate(
         var xMeters: Double,
@@ -105,7 +92,8 @@ interface RobotAction {
         var isReset: Boolean = false,
         var angularVelocityRadiansPerSecond: Double = 0.0,
         var xVelocityMetersPerSecond: Double = 0.0,
-        var yVelocityMetersPerSecond: Double = 0.0
+        var yVelocityMetersPerSecond: Double = 0.0,
+        var isExternalEstimate: Boolean = false
     ) : RobotAction
 
     /** Sets the active alliance color for field-centric driving and EKF initialization. */
@@ -153,16 +141,11 @@ interface RobotAction {
     /**
      * Dispatches driver joystick commands as velocity intents.
      *
-     * @property targetXVelocity Desired forward velocity as a normalized value [-1.0, 1.0] (WPILib: +X = forward).
-     * @property targetYVelocity Desired lateral velocity as a normalized value [-1.0, 1.0] (WPILib: +Y = left).
-     * @property targetAngularVelocity Desired rotational velocity as a normalized value [-1.0, 1.0] (CCW-positive).
+     * @property targetXVelocity Desired forward velocity in meters per second (WPILib: +X = forward).
+     * @property targetYVelocity Desired lateral velocity in meters per second (WPILib: +Y = left).
+     * @property targetAngularVelocity Desired rotational velocity in radians per second (CCW-positive).
      * @property isFieldCentric If true, X/Y are relative to the field; if false, relative to the robot chassis.
      * @property isXLock If true, locks X movement.
-     */
-    /**
-     * Class implementation for Joystick Drive Intent.
-     *
-     * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
      */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         var targetXVelocity: Double,

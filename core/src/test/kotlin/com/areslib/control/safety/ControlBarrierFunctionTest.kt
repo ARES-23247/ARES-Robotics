@@ -4,12 +4,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * ControlBarrierFunctionTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ControlBarrierFunctionTest {
 
     @Test
@@ -92,5 +86,38 @@ class ControlBarrierFunctionTest {
         // The system should have settled smoothly on the boundary line
         assertTrue(x1 >= 2.0, "State x1 should remain safely deployed")
         assertTrue(x2 <= 3.0 + 1e-3, "State x2 should be constrained by protective state x1")
+    }
+
+    @Test
+    fun `invalid timestep still projects target into static safe set`() {
+        val output = CBFFilteredOutput()
+        ControlBarrierFunction(m = 1.0).filter(
+            x1Target = 0.0,
+            x2Target = 10.0,
+            x1Current = 0.0,
+            x2Current = 0.0,
+            dtSeconds = Double.NaN,
+            outBuffer = output
+        )
+
+        assertTrue(output.x1Filtered - output.x2Filtered >= -1e-12)
+        assertEquals(5.0, output.x1Filtered, 1e-12)
+        assertEquals(5.0, output.x2Filtered, 1e-12)
+    }
+
+    @Test
+    fun `invalid target holds finite current state safely`() {
+        val output = CBFFilteredOutput()
+        ControlBarrierFunction(m = 1.0).filter(
+            x1Target = Double.NaN,
+            x2Target = 2.0,
+            x1Current = 3.0,
+            x2Current = 1.0,
+            dtSeconds = 0.02,
+            outBuffer = output
+        )
+
+        assertEquals(3.0, output.x1Filtered, 1e-12)
+        assertEquals(1.0, output.x2Filtered, 1e-12)
     }
 }

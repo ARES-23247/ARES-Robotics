@@ -1,7 +1,11 @@
 package com.areslib.ftc.telemetry
 
 /**
- * Tracks nanosecond-accurate sub-section execution timings and loop overrun counts for FTC robot loops.
+ * Single-loop accumulator for FTC phase timings and overrun counts.
+ *
+ * Callers supply monotonic nanosecond boundaries, normally from `RobotClock.nanoTime`. Published
+ * durations are milliseconds. A total loop strictly greater than 25 ms increments the cumulative
+ * overrun counter; the counter resets only with a new profiler instance.
  */
 class FtcLoopProfiler {
     var profBulkCacheMs = 0.0
@@ -15,12 +19,7 @@ class FtcLoopProfiler {
 
     private var loopOverrunCount = 0
 
-    /**
-     * recordSensorsProfiling declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Replaces the latest already-converted sensor phase durations in milliseconds. */
     fun recordSensorsProfiling(bulkMs: Double, inputsMs: Double, pinpointMs: Double, visionMs: Double) {
         profBulkCacheMs = bulkMs
         profHardwareInputsMs = inputsMs
@@ -28,12 +27,7 @@ class FtcLoopProfiler {
         profVisionMs = visionMs
     }
 
-    /**
-     * publishSensorsProfiling declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Publishes the latest sensor phase durations without reading hardware. */
     fun publishSensorsProfiling(telemetryManager: FtcTelemetryManager) {
         val dl = telemetryManager.dataLoggingTelemetry
         dl.putNumber("Profiling/BulkCacheClear_ms", profBulkCacheMs)
@@ -42,12 +36,7 @@ class FtcLoopProfiler {
         dl.putNumber("Profiling/Vision_ms", profVisionMs)
     }
 
-    /**
-     * recordAndPublishLoopDiagnostics declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Converts ordered nanosecond boundaries [t0] through [t4] and publishes phase durations. */
     fun recordAndPublishLoopDiagnostics(
         telemetryManager: FtcTelemetryManager,
         t0: Long,

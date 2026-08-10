@@ -48,12 +48,6 @@ class GamepadState(
     var f11: Boolean = false,
     var f12: Boolean = false
 ) {
-    /**
-     * copyFrom declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun copyFrom(other: GamepadState) {
         this.leftStickX = other.leftStickX
         this.leftStickY = other.leftStickY
@@ -98,12 +92,6 @@ class GamepadState(
         this.f12 = other.f12
     }
 
-    /**
-     * reset declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun reset() {
         this.leftStickX = 0f
         this.leftStickY = 0f

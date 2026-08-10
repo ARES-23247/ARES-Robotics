@@ -6,4 +6,7 @@ package android.content
  *
  * Robotics framework control component.
  */
-open class Context
+open class Context {
+    /** Desktop asset resolver compatible with the Android `Context.assets` surface. */
+    open val assets: android.content.res.AssetManager = android.content.res.AssetManager()
+}

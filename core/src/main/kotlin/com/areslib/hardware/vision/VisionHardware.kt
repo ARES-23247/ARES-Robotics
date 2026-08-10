@@ -12,12 +12,6 @@ class VisionHardware(
 ) {
     private val inputs = VisionIOInputs()
 
-    /**
-     * periodic declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun periodic(): RobotAction.VisionMeasurementsReceived? {
         io.updateInputs(inputs)
 

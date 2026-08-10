@@ -4,12 +4,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 
-/**
- * FrcPowerManagerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class FrcPowerManagerTest {
     @Test
     fun `test battery voltage monitoring and brownout scaling`() {
@@ -37,5 +31,20 @@ class FrcPowerManagerTest {
         val scaleCritical = powerManager.update(0.02, 1040L)
         assertEquals(6.0, powerManager.batteryVoltage, 1e-6)
         assertEquals(0.0, scaleCritical, 1e-6) // Critical shutdown scale is 0.0
+    }
+
+    @Test
+    fun `invalid or failed voltage readings fail closed`() {
+        val powerManager = FrcPowerManager()
+
+        powerManager.batteryVoltageSupplier = { Double.NaN }
+        assertEquals(0.0, powerManager.update(0.02, 1_000L), 1e-9)
+
+        powerManager.batteryVoltageSupplier = { throw IllegalStateException("CAN unavailable") }
+        assertEquals(0.0, powerManager.update(0.02, 1_020L), 1e-9)
+        assertEquals(0.0, powerManager.batteryVoltage, 1e-9)
+
+        powerManager.batteryVoltageSupplier = { 12.4 }
+        assertEquals(1.0, powerManager.update(0.02, 1_040L), 1e-9)
     }
 }

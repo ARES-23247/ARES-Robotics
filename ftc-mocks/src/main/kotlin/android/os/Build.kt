@@ -9,15 +9,18 @@ package android.os
  * This mock shadows the SDK stub when running desktop unit tests and simulation.
  */
 object Build {
-    object VERSION {
-        @JvmField
-        val SDK_INT: Int = 0
+    /** Public constructor matches Android's nested class for reflection-heavy JVM libraries. */
+    class VERSION {
+        companion object {
+            @JvmField
+            val SDK_INT: Int = 0
 
-        @JvmField
-        val RELEASE: String = "0.0"
+            @JvmField
+            val RELEASE: String = "0.0"
 
-        @JvmField
-        val CODENAME: String = "REL"
+            @JvmField
+            val CODENAME: String = "REL"
+        }
     }
 
     @JvmField

@@ -6,21 +6,119 @@ import kotlin.test.assertTrue
 import kotlin.test.assertSame
 import kotlin.test.assertEquals
 
-/**
- * ARESDataLoggerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class ARESDataLoggerTest {
 
     @Test
-    /**
-     * testAsyncCSVLogging declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    fun `log becomes importable only after clean shutdown`() {
+        val mode = "ActiveMarker_${System.nanoTime()}"
+        val logger = ARESDataLogger(mode)
+        val logsDir = File("./logs/")
+
+        assertEquals(
+            1,
+            logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv.active") }?.size ?: 0
+        )
+        assertEquals(
+            0,
+            logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv") }?.size ?: 0
+        )
+
+        logger.logFrame(hashMapOf("TimestampMs" to 1L, "Value" to 1.0))
+        logger.stop()
+
+        assertEquals(
+            0,
+            logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv.active") }?.size ?: 0
+        )
+        val completed = logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv") }.orEmpty()
+        assertEquals(1, completed.size)
+        completed.single().delete()
+    }
+
+    @Test
+    fun csvEscapesValuesAndPreservesLateFieldsInStableSchema() {
+        val mode = "CsvSafety_${System.nanoTime()}"
+        val logger = ARESDataLogger(mode)
+
+        logger.logFrame(hashMapOf(
+            "TimestampMs" to 1L,
+            "Status" to "ready, \"quoted\""
+        ))
+        logger.logFrame(hashMapOf(
+            "TimestampMs" to 2L,
+            "Status" to "second",
+            "Late,Key" to "late, \"value\""
+        ))
+        logger.stop()
+
+        val logFile = File("./logs/").listFiles { _, name ->
+            name.endsWith("_${mode}.csv")
+        }!!.single()
+        val lines = logFile.readLines()
+        assertEquals(3, lines.size)
+
+        val header = parseCsvLine(lines[0])
+        val firstRow = parseCsvLine(lines[1])
+        val secondRow = parseCsvLine(lines[2])
+        assertEquals(header.size, firstRow.size)
+        assertEquals(header.size, secondRow.size)
+        assertEquals("ready, \"quoted\"", firstRow[header.indexOf("Status")])
+
+        val extras = secondRow[header.indexOf(ARESDataLogger.EXTRA_FIELDS_COLUMN)]
+        assertTrue(extras.contains("\"Late,Key\""))
+        assertTrue(extras.contains("late, \\\"value\\\""))
+        logFile.delete()
+    }
+
+    @Test
+    fun stopDrainsAcceptedFramesAndRejectionsAreCounted() {
+        val mode = "Drain_${System.nanoTime()}"
+        val logger = ARESDataLogger(mode)
+        for (i in 0 until 200) {
+            logger.logFrame(hashMapOf("TimestampMs" to i.toLong(), "Value" to i))
+        }
+
+        val droppedWhileRunning = logger.droppedFrameCount
+        logger.stop()
+        val rejected = logger.obtainMap().apply { this["Value"] = -1 }
+        logger.logFrame(rejected)
+        assertEquals(droppedWhileRunning + 1L, logger.droppedFrameCount)
+
+        val logFile = File("./logs/").listFiles { _, name ->
+            name.endsWith("_${mode}.csv")
+        }!!.single()
+        assertEquals(201 - droppedWhileRunning.toInt(), logFile.readLines().size)
+        logFile.delete()
+    }
+
+    @Test
+    fun stopRacingProducerAccountsForEveryFrame() {
+        val mode = "StopRace_${System.nanoTime()}"
+        val logger = ARESDataLogger(mode)
+        val attempted = 500
+        val attemptsMade = java.util.concurrent.atomic.AtomicInteger(0)
+        val producer = Thread {
+            for (i in 0 until attempted) {
+                logger.logFrame(hashMapOf("TimestampMs" to i.toLong(), "Value" to i))
+                attemptsMade.incrementAndGet()
+            }
+        }
+        producer.start()
+        while (attemptsMade.get() < 10) Thread.yield()
+
+        logger.stop()
+        producer.join()
+
+        val logFile = File("./logs/").listFiles { _, name ->
+            name.endsWith("_${mode}.csv")
+        }!!.single()
+        val lineCount = logFile.readLines().size
+        val loggedFrames = if (lineCount == 0) 0 else lineCount - 1
+        assertEquals(attempted.toLong(), loggedFrames.toLong() + logger.droppedFrameCount)
+        logFile.delete()
+    }
+
+    @Test
     fun testAsyncCSVLogging() {
         val telemetry = DataLoggingTelemetry()
         
@@ -59,12 +157,6 @@ class ARESDataLoggerTest {
     }
 
     @Test
-    /**
-     * testMapPoolingAndZeroAllocations declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testMapPoolingAndZeroAllocations() {
         val logger = ARESDataLogger()
         
@@ -95,12 +187,6 @@ class ARESDataLoggerTest {
     }
 
     @Test
-    /**
-     * testDataLoggingThrottle declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testDataLoggingThrottle() {
         com.areslib.util.RobotClock.useMockTime(1000L)
         try {
@@ -142,5 +228,30 @@ class ARESDataLoggerTest {
         } finally {
             com.areslib.util.RobotClock.useSystemTime()
         }
+    }
+
+    private fun parseCsvLine(line: String): List<String> {
+        val fields = mutableListOf<String>()
+        val value = StringBuilder()
+        var quoted = false
+        var i = 0
+        while (i < line.length) {
+            val c = line[i]
+            when {
+                c == '"' && quoted && i + 1 < line.length && line[i + 1] == '"' -> {
+                    value.append('"')
+                    i++
+                }
+                c == '"' -> quoted = !quoted
+                c == ',' && !quoted -> {
+                    fields.add(value.toString())
+                    value.setLength(0)
+                }
+                else -> value.append(c)
+            }
+            i++
+        }
+        fields.add(value.toString())
+        return fields
     }
 }

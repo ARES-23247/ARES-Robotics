@@ -4,6 +4,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.subsystem.AresRobot
 import com.areslib.ftc.drivetrain.PinpointIO
+import com.areslib.ftc.drivetrain.FtcOdometrySource
+import com.areslib.ftc.drivetrain.FtcOdometrySourceArbiter
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.ftc.vision.FtcVisionTracker
 import com.areslib.ftc.telemetry.FtcTelemetryManager
@@ -11,6 +13,7 @@ import com.areslib.ftc.telemetry.FtcLoopProfiler
 import com.areslib.ftc.power.FtcPowerManager
 import com.areslib.action.RobotAction
 import com.areslib.hardware.sensor.ImuIO
+import com.areslib.hardware.sensor.ImuInputs
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import com.areslib.state.VisionState
@@ -51,8 +54,9 @@ import com.areslib.ftc.core.FtcOpModeLifecycleController
  *   Heading polarity is normalized to CCW-positive natively at the [PinpointIO] layer (using `pinpointIsCcwPositive`).
  * - **Limelight 3D Vision**: Fused via [FtcVisionTracker] with customizable standard deviation covariance $\mathbf{R}_{\text{vision}} = \text{diag}(\sigma_x^2, \sigma_y^2, \sigma_\theta^2)$.
  *
- * ### Zero-GC Execution Compliance:
- * The 50Hz–100Hz execution loop in [update] and [readSensors] strictly satisfies a zero-GC allocation footprint.
+ * ### Allocation behavior:
+ * Sensor and actuator adapters reuse their loop buffers. Redux state transitions and telemetry may
+ * allocate, so target-device loop jitter—not a blanket zero-GC claim—is the performance contract.
  * Sensor values, bulk readers, and diagnostics vectors rely on pre-allocated object instances and thread-safe primitive registers.
  *
  * @param hardwareMap Qualcomm FTC SDK hardware map reference.
@@ -130,6 +134,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         com.areslib.hardware.HardwareRegistry.clear()
         lifecycleController.init(hardwareMap)
         activeInstance = this
+        com.areslib.telemetry.RobotStatusTracker.odometrySource = FtcOdometrySource.UNINITIALIZED.name
+        com.areslib.telemetry.RobotStatusTracker.odometryStatus = "UNKNOWN"
 
         com.areslib.math.estimation.PoseEstimator.qX = odomQx
         com.areslib.math.estimation.PoseEstimator.qY = odomQy
@@ -175,14 +181,31 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val limelightIO: VisionIO? get() = hardwareInitializer.limelightIO
 
     /** AprilTag localization and pose fusion tracking engine. */
-    val visionTracker = FtcVisionTracker(store, limelightIO, pinpointIO, visionStdDevs)
+    val visionTracker = FtcVisionTracker(
+        store,
+        limelightIO,
+        pinpointIO,
+        visionStdDevs,
+        onOdometryReseed = ::reseedOdometrySources
+    )
 
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
     private var hasReadSensorsThisFrame = false
+    private val odometrySourceArbiter = FtcOdometrySourceArbiter()
+    private var heldFallbackX = 0.0
+    private var heldFallbackY = 0.0
+    private var heldFallbackHeadingOffset = 0.0
+
+    /** Cached independent Control Hub IMU sample used by drivetrain fallback odometry. */
+    protected val cachedImuInputs = ImuInputs()
+
+    /** Source currently responsible for advancing the FTC EKF process model. */
+    val activeOdometrySource: FtcOdometrySource
+        get() = odometrySourceArbiter.activeSource
 
     /**
-     * Executes the zero-GC sensor sampling cycle for the current robot loop frame.
+     * Executes the cached sensor-sampling cycle for the current robot loop frame.
      *
      * 1. Clears REV Lynx Hub bulk caches via [FtcPerformanceManager.clearBulkCaches].
      * 2. Calls [updateHardwareInputs] for subclass motor and encoder polling.
@@ -191,7 +214,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * 5. Updates the [visionTracker] pipeline.
      * 6. Records execution metrics in [profiler].
      *
-     * Zero-GC Guarantee: Performs zero heap allocations inside the 50Hz execution cycle.
+     * Implementations should reuse hardware input buffers and avoid blocking work in this cycle.
      */
     fun readSensors() {
         if (hasReadSensorsThisFrame) return
@@ -203,16 +226,57 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
+        refreshCachedImu(timestamp)
         val s2 = com.areslib.util.RobotClock.nanoTime()
 
-        val poseUpdate = pinpointIO?.getPoseUpdate() ?: getFallbackPoseUpdate(timestamp)
+        val pinpoint = pinpointIO
+        val pinpointCandidate = pinpoint?.getPoseUpdate()
+        val pinpointHealthy = pinpoint != null && pinpointCandidate != null && pinpoint.isHealthy(timestamp)
+        val previousSource = odometrySourceArbiter.activeSource
+        var selectedSource = odometrySourceArbiter.update(pinpoint != null, pinpointHealthy)
+
+        var poseUpdate: RobotAction.PoseUpdate
+        if (selectedSource == FtcOdometrySource.PINPOINT && pinpoint != null && pinpointCandidate != null) {
+            poseUpdate = if (previousSource == FtcOdometrySource.DRIVETRAIN_FALLBACK) {
+                // Rebase the recovered primary to the current fused pose before publishing
+                // it. This prevents a discontinuity if the robot moved during the outage.
+                pinpoint.initialize(store.state.drive.poseEstimator.estimatedPose, resetHardware = false)
+                val rebased = pinpoint.getPoseUpdate()
+                if (pinpoint.lastInitializeSucceeded && pinpoint.isHealthy(timestamp)) {
+                    rebased
+                } else {
+                    odometrySourceArbiter.forceFallback()
+                    selectedSource = FtcOdometrySource.DRIVETRAIN_FALLBACK
+                    prepareFallbackOdometry(
+                        store.state.drive.poseEstimator.estimatedPose,
+                        cachedImuInputs.headingRadians
+                    )
+                    getFallbackPoseUpdate(timestamp)
+                }
+            } else {
+                pinpointCandidate
+            }
+        } else {
+            if (previousSource != FtcOdometrySource.DRIVETRAIN_FALLBACK) {
+                prepareFallbackOdometry(
+                    store.state.drive.poseEstimator.estimatedPose,
+                    cachedImuInputs.headingRadians
+                )
+            }
+            poseUpdate = getFallbackPoseUpdate(timestamp)
+        }
+
+        com.areslib.telemetry.RobotStatusTracker.odometrySource = selectedSource.name
+        com.areslib.telemetry.RobotStatusTracker.odometryStatus = pinpoint?.healthStatus?.name
+            ?: "PINPOINT_UNAVAILABLE"
         val s3 = com.areslib.util.RobotClock.nanoTime()
 
-        val isPinpointStale = pinpointIO != null && poseUpdate.timestampMs != 0L && (timestamp - poseUpdate.timestampMs) > 100
-        val age = timestamp - poseUpdate.timestampMs
+        val isPinpointFaulted = pinpoint != null && selectedSource == FtcOdometrySource.DRIVETRAIN_FALLBACK
         when {
-            isPinpointStale && (timestamp - lastPinpointWarningTime > 2000L) -> {
-                System.err.println("FtcBaseRobot: Pinpoint pose update is stale! Age: ${age}ms")
+            isPinpointFaulted && (timestamp - lastPinpointWarningTime > 2000L) -> {
+                System.err.println(
+                    "FtcBaseRobot: Pinpoint ${pinpoint?.healthStatus}; using drivetrain + Control Hub IMU odometry"
+                )
                 lastPinpointWarningTime = timestamp
             }
         }
@@ -240,21 +304,55 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * @return Formatted [RobotAction.PoseUpdate] containing estimated position and heading.
      */
     protected open fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
-        var heading = 0.0
-        var yawVel = 0.0
-        imuIO?.let {
-            val inputs = com.areslib.hardware.sensor.ImuInputs()
-            it.updateInputs(inputs)
-            heading = inputs.headingRadians
-            yawVel = inputs.yawVelocityRadPerSec
-        }
         return RobotAction.PoseUpdate(
-            xMeters = 0.0,
-            yMeters = 0.0,
-            headingRadians = heading,
-            angularVelocityRadiansPerSecond = yawVel,
+            xMeters = heldFallbackX,
+            yMeters = heldFallbackY,
+            headingRadians = com.areslib.math.wrapAngle(
+                cachedImuInputs.headingRadians + heldFallbackHeadingOffset
+            ),
+            angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec,
             timestampMs = timestampMs
         )
+    }
+
+    /** Seeds a drivetrain-specific fallback integrator at the current fused pose. */
+    protected open fun prepareFallbackOdometry(pose: Pose2d, rawImuHeadingRadians: Double) {
+        heldFallbackX = pose.x
+        heldFallbackY = pose.y
+        heldFallbackHeadingOffset = com.areslib.math.wrapAngle(
+            pose.heading.radians - rawImuHeadingRadians
+        )
+    }
+
+    private fun refreshCachedImu(timestampMs: Long) {
+        val imu = imuIO
+        if (imu == null) {
+            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
+            cachedImuInputs.pitchRadians = 0.0
+            cachedImuInputs.rollRadians = 0.0
+            cachedImuInputs.yawVelocityRadPerSec = 0.0
+            cachedImuInputs.timestampMs = timestampMs
+            return
+        }
+
+        try {
+            imu.updateInputs(cachedImuInputs)
+            if (!cachedImuInputs.headingRadians.isFinite() ||
+                !cachedImuInputs.yawVelocityRadPerSec.isFinite()) {
+                cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
+                cachedImuInputs.yawVelocityRadPerSec = 0.0
+            }
+            cachedImuInputs.timestampMs = timestampMs
+        } catch (_: Throwable) {
+            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
+            cachedImuInputs.yawVelocityRadPerSec = 0.0
+            cachedImuInputs.timestampMs = timestampMs
+        }
+    }
+
+    private fun reseedOdometrySources(pose: Pose2d) {
+        pinpointIO?.initialize(pose, resetHardware = false)
+        prepareFallbackOdometry(pose, cachedImuInputs.headingRadians)
     }
 
     private var lastWallTime: Long = 0L
@@ -356,6 +454,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     @kotlin.jvm.JvmOverloads
     fun resetPose(pose: Pose2d = Pose2d(), resetHardware: Boolean = false) {
         pinpointIO?.initialize(pose, resetHardware = resetHardware)
+        prepareFallbackOdometry(pose, cachedImuInputs.headingRadians)
         visionTracker.hasInitializedPoseWithVision = true
         store.dispatch(
             RobotAction.PoseUpdate(
@@ -395,4 +494,3 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         hardwareInitializer.close()
     }
 }
-

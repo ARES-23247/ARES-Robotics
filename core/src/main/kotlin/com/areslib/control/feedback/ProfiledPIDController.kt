@@ -33,13 +33,31 @@ import com.areslib.control.profile.TrapezoidProfile
  * @see TrapezoidProfile
  */
 class ProfiledPIDController(
-    var p: Double,
-    var i: Double,
-    var d: Double,
+    p: Double,
+    i: Double,
+    d: Double,
     var constraints: TrapezoidProfile.Constraints
 ) {
     /** Underlying un-profiled feedback controller instance. */
     val pidController = PIDController(p, i, d)
+
+    var p: Double = p
+        set(value) {
+            field = value
+            pidController.p = value
+        }
+
+    var i: Double = i
+        set(value) {
+            field = value
+            pidController.i = value
+        }
+
+    var d: Double = d
+        set(value) {
+            field = value
+            pidController.d = value
+        }
 
     /** Underlying 1D motion profile generator. */
     val profile = TrapezoidProfile()

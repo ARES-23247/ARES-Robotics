@@ -1,187 +1,132 @@
-# ARESLib-Kotlin: AI & Developer Guidelines
+# ARESLib-Kotlin contributor rules
 
-This document serves as the absolute source of truth for repository structure, building, testing, and coding standards. AI agents and developers must strictly adhere to these directives.
+This file is the repository-specific guide for automated contributors. Read it before modifying code. Human-facing architecture and operational details live in [`docs/`](docs/).
 
----
+## Repository role
 
-## 1. Project Overview & Architecture
+ARESLib-Kotlin is the shared foundation for ARES-FTC, ARES-FRC, ARES-Analytics, and the desktop simulator. It is organized as:
 
-`ARESLib-Kotlin` is a high-performance, functional, cross-platform (FTC and FRC) robotics library. The codebase is designed around two core principles: **Immutable State Representation** (Redux-style flow) and **Decoupled Hardware Interfaces** (IO Layer pattern).
+- `core`: SDK-independent state, math, estimation, control, safety, pathing, sequencing, IO contracts, NT4, telemetry, and logging.
+- `ftc-hardware`: FTC hardware adapters and base robot/facade classes.
+- `frc-hardware`: WPILib/vendor adapters and base robot/facade classes.
+- `ftc-mocks`: desktop FTC/Android API mocks.
+- `simulator`: Dyn4j physics, OpMode runner, replay, virtual driver station, and NT4 bridge.
 
-```mermaid
-graph TD
-    A[Driver Input / Gamepads] -->|Joystick Drive Intent| B[Mecanum / Swerve Facades]
-    B -->|Dispatch Action| C[Store / State Reducer]
-    C -->|Calculate Kinematics| D[Kinematics & Control Controllers]
-    D -->|Voltage Command| E[Hardware IO Layer]
-    E -->|Write| F[Physical Motors / Mocks]
-    F -->|Read Sensors| G[Pinpoint / Gyro / Vision IO]
-    G -->|Dispatch Observation| C
+Platform and season code depend inward on `core`. Do not add FTC, Android, WPILib, or vendor API types to `core`. Game-specific mechanism and field code belongs in the season repositories.
+
+See [Architecture](docs/architecture.md) for package ownership and extension guidance.
+
+## Build and consumer order
+
+Use the checked-in wrapper and JDK 17:
+
+```powershell
+.\gradlew.bat compileKotlin compileTestKotlin
+.\gradlew.bat test
+.\gradlew.bat :core:test
+.\gradlew.bat :ftc-hardware:test
+.\gradlew.bat :frc-hardware:test
+.\gradlew.bat :simulator:test
+.\gradlew.bat publishToMavenLocal
 ```
 
-### Core Architecture Constraints:
-1. **Redux Store Architecture**: 
-   * **State**: The `RobotState` and its sub-states (`DriveState`, `SuperstructureState`, etc.) are 100% immutable data classes.
-   * **Actions**: All state updates occur by dispatching `RobotAction` objects.
-   * **Reducers**: State transitions are handled exclusively through pure, deterministic reducer functions (e.g., `rootReducer`).
-2. **Unified Simulation Clock**:
-   * **CRITICAL**: Never call `System.currentTimeMillis()` or `System.nanoTime()` inside library code.
-   * Always use `com.areslib.util.RobotClock.currentTimeMillis()` to ensure that simulation logs and replay runs are perfectly deterministic and free from wall-clock drift.
-3. **Android/RoboRIO GC Allocation Budget**:
-   * Drivetrain update cycles, state-space controller loops, and pathfinders execute at high frequencies (50Hz - 100Hz).
-   * **CRITICAL**: Object allocations are prohibited inside hot paths (e.g. `update()`, trajectory sampling, VFH steering loops). 
-   * Always use pre-allocated buffers, primitive types, and object pools (like the `kalmanGainPool` in `PoseEstimator` and the `pathPool` in `ThetaStarPlanner`) to maintain a zero-allocation footprint.
-4. **Decoupled Hardware IO Layer**:
-   * All hardware interactions are abstracted through thin IO interfaces (e.g. `MecanumHardwareIO`, `PinpointIO`).
-   * The actual implementation is split between physical SDK implementations (`ftc-hardware/`) and robust mock components (`ftc-mocks/`), enabling 100% offline desktop-level simulation.
+After changing ARESLib, test it and publish to Maven Local before testing consumers. Some sibling repositories use Gradle composite substitution; inspect their `settings.gradle` when resolving stale or unexpected artifacts. Publication coordinates are listed in [README.md](README.md).
 
----
+## State and reducer contract
 
-## 2. Directory Structure
+The normal flow is input/observation -> `RobotAction` -> `Store` -> `rootReducer` plus slice/season reducers -> `RobotState` -> controllers -> hardware outputs.
 
-* **`core/`**: Pure mathematical, planning, and control logic. Fully decoupled from FRC and FTC SDKs.
-  * `src/main/kotlin/com/areslib/state/`: Immutable Redux state definitions.
-  * `src/main/kotlin/com/areslib/control/`: DARE-converged LQR controllers, Kalman observers, gravity feedforwards.
-  * `src/main/kotlin/com/areslib/math/`: EKF localization, Mahalanobis outlier filtering, geometry wrappers.
-  * `src/main/kotlin/com/areslib/pathing/`: Theta* any-angle pathfinders, costmap inflation, jerk-limited S-curve generators, and VFH+.
-  * `src/main/kotlin/com/areslib/subsystem/`: Subsystem facades and Ares robot definitions.
-* **`ftc-hardware/`**: FTC-specific hardware wrapping, GoBilda Pinpoint and Limelight integration, and the student-facing Mecanum robot facade.
-* **`ftc-mocks/`**: Stubbed, light implementation of Qualcomm and external FTC APIs, enabling core compilation and desktop test executions without Android hardware.
-* **`frc-hardware/`**: FRC-specific kinematics, Swerve Facades, WPILib adapters, and the `FrcBaseRobot` scaffold (parallel to `FtcBaseRobot`). Season-specific subsystem code (state, reducers, actions, subsystem facades) lives in the team repository (`ARES-FRC`).
-* **`simulator/`**: Dynamic physics simulator and dynamic visualizers.
+- Reducers are deterministic and contain no I/O, clock calls, logging, network work, or background jobs.
+- Season reducers compose with `rootReducer`; they do not bypass it.
+- Root/slice transitions normally use data-class `copy`.
+- Some EKF, diagnostic, and vision objects are deliberately mutable or pooled to satisfy steady-state allocation requirements. Do not retain or mutate these shared internals outside the owning pipeline, and do not describe them as deeply immutable.
+- Dispatch control actions from the main robot loop. Do not create a second control loop in store listeners.
 
----
+## Time and deterministic execution
 
-## 3. Build & Test Commands
+Library runtime code uses `com.areslib.util.RobotClock.currentTimeMillis()` and `RobotClock.nanoTime()`. Do not call `System.currentTimeMillis()` or `System.nanoTime()` directly. Simulation/replay control the mock clock; bypassing it breaks timeouts, latency compensation, and reproducibility.
 
-Always default to using the local Gradle wrapper (`gradlew.bat` on Windows, `./gradlew` on Linux/WSL2).
+Reducers should receive timestamps through actions rather than reading the clock themselves.
 
-### Standard Development Commands:
-* **Compile Kotlin Code**:
-  ```powershell
-  .\gradlew.bat compileKotlin compileTestKotlin
-  ```
-* **Run Entire Test Suite**:
-  ```powershell
-  .\gradlew.bat test
-  ```
-* **Run Specific Module Tests**:
-  ```powershell
-  .\gradlew.bat :core:test
-  .\gradlew.bat :ftc-hardware:test
-  ```
-* **Publish to Local Maven Repository (Transitive Dependencies Packaged)**:
-  ```powershell
-  .\gradlew.bat publishToMavenLocal
-  ```
-* **Clean Build Cache**:
-  ```powershell
-  .\gradlew.bat clean build
-  ```
+## Coordinate and estimator contract
 
----
+- Field position is meters.
+- Internal heading is radians, counter-clockwise positive.
+- Heading zero faces `+X`; `+pi/2` faces `+Y`.
+- Angular residuals are wrapped across `-pi`/`pi`.
+- `PoseEstimator` odometry deltas are robot-local SE(2) displacement, not field-relative displacement.
+- Delayed vision timestamps are capture timestamps in `RobotClock` milliseconds. Camera latency is subtracted exactly once at the hardware boundary.
+- Vision standard-deviation inputs are standard deviations: meters for X/Y and radians for heading.
 
-## 4. Coding Conventions
+### Pinpoint
 
-1. **Kotlin Features**:
-   * Leverage Kotlin DSLs for student configuration: `aresRobot { ... }` and `ftcMecanumRobot(hardwareMap) { ... }`.
-   * Use trailing lambdas and functional programming idioms.
-2. **KDoc API Documentation**:
-   * All public classes, parameters, facades, and mathematical algorithms must be documented using descriptive inline KDoc formatting.
-   * Document specific math equations, coordinate directions, positive/negative rotations, and expected physical units (meters, radians, seconds).
-3. **Redux Reducer Safety**:
-   * Reducer logic must be pure. No side-effects, I/O calls, or clock calls inside reducers.
-   * Use `.copy()` on state data classes to transition values.
+`PinpointIO` converts heading polarity once with its `isHeadingCcwPositive` configuration. After that boundary, odometry, EKF, state, telemetry, and dashboard data are CCW-positive. Never add a downstream sign correction.
 
----
+### Limelight target space
 
-## 5. Coordinate Systems & Heading Convention
+For `VisionMeasurement.robotPoseTargetSpace`:
 
-This section documents the **canonical coordinate and heading conventions** used across the entire ARES ecosystem (ARESLib-Kotlin, ARES-FTC, ARES-Analytics, simulator). Failure to follow these conventions has caused real bugs. Reference this section before writing any code that touches heading, rotation, or field coordinates.
+- X+ is right of the tag.
+- Y+ is vertically upward.
+- Z+ is outward from the tag face.
+- Planar robot yaw is `-robotPoseTargetSpace.rotation.y`.
 
-### 5.1 Field Coordinate System (FTC)
-- **Origin**: Center of the FTC field
-- **+X axis**: One of the side walls (e.g., audience or back wall depending on the game year). *Note: In older "diamond" field configurations, +X points toward the blue alliance wall.*
-- **+Y axis**: Toward the blue alliance station wall (in standard rectangular configurations).
-- **-Y axis**: Toward the red alliance station wall (true for both rectangular and diamond configurations).
-- **Units**: Meters
+Do not use `rotation.z` as target-relative robot heading.
 
-### 5.2 Heading Convention (CCW-Positive, Math Standard)
-- **0°**: Facing +X
-- **90° (+π/2)**: Facing +Y (toward blue alliance wall)
-- **180° (π)**: Facing -X
-- **-90° (-π/2)**: Facing -Y (toward red alliance wall)
-- **Direction**: Counter-clockwise positive (standard math convention)
-- **Units**: Radians internally, degrees for display only
+### Display transforms
 
-### 5.3 Hardware Boundary: GoBilda Pinpoint
-The GoBilda Pinpoint odometry computer outputs **counter-clockwise-positive** (CCW+) heading natively IF mounted right-side up. However, many physical robot mounts place the Pinpoint upside down, causing it to output **clockwise-positive** (CW+) natively. 
-To align with the library's CCW-positive standard, `PinpointIO.kt` exposes an `isHeadingCcwPositive` parameter (defaulting to `false` via `FtcBaseRobot.pinpointIsCcwPositive`). 
+ARES Analytics swaps/negates field axes for canvas rendering and applies an icon-angle offset. That is display-only behavior and must not enter robot, path, or estimator math.
 
-```kotlin
-// PinpointIO.kt — hardware boundary
-val headingMult = if (isHeadingCcwPositive) 1.0 else -1.0
-val rawHeading = headingMult * driver.getHeading(AngleUnit.RADIANS) 
-```
+The complete review checklist is in [Math and coordinate contracts](docs/math-and-coordinate-contracts.md).
 
-**CRITICAL**: The heading is forced to CCW-positive at `PinpointIO`. Do NOT add negations elsewhere in the pipeline. It remains CCW-positive from `PinpointIO` onward through the EKF, Redux store, telemetry, and dashboard.
+## Hardware loop contract
 
-### 5.4 Simulator Heading Pipeline
-The Dyn4j physics engine uses CCW-positive heading natively (same as our convention). To simulate the real GoBilda hardware:
+All hardware reads happen once per loop during refresh/read-inputs and are stored in preallocated cached fields/input containers. Controllers, getters, telemetry, and output writers consume cached values only. Never add hidden device reads to a getter or `writeOutputs()`.
 
-```
-Dyn4j body (CCW+) → MecanumRobotDouble.updateSensors() passes CCW+ directly 
-→ GoBildaPinpointDriver mock (CCW+) → PinpointIO passes CCW+ 
-→ DriveReducer → EKF → Telemetry
-```
+Failures and stale inputs fail closed. Invalid voltage/current/velocity data must not increase an actuator command. Mode/autonomous exception paths stop every mechanism, not just the drivetrain.
 
-### 5.5 ARES-Analytics Dashboard Field Canvas
-The FTC field-to-canvas coordinate transform **swaps and negates axes**:
+FTC drive motor map names are `fl`, `fr`, `rl`, and `rr`; consumers may support `bl`/`br` as aliases but must not change the robot hardware-map contract.
 
-```kotlin
-// FieldCanvasUtils.kt
-canvasX = (-fieldY / fieldWidth + 0.5) * canvasWidth
-canvasY = (-fieldX / fieldHeight + 0.5) * canvasHeight
-```
+## Allocation contract
 
-This means:
-- Field +X → Canvas UP
-- Field +Y → Canvas LEFT
-- The robot icon arrow points RIGHT (+canvasX) at zero rotation
-- A **-90° offset** is applied to the heading rotation in `PathRenderer.kt` to compensate
+Steady-state 50-100 Hz loops, estimator/replay propagation, trajectory sampling, hardware refresh, and local planner steering must not allocate. Use preallocated buffers, primitive/direct overloads, matrix/path pools, and index loops. Do not use reflection, construct geometry/arrays per frame, or launch jobs/coroutines per update.
 
-**CRITICAL**: If you modify the field-to-canvas transform or the robot icon drawing, you MUST verify the -90° heading offset is still correct.
+One-time initialization, file parsing, and explicit operator actions may allocate outside timing-critical loops. Run `com.areslib.test.ZeroGcRegressionTest` for hot-path changes.
 
-### 5.6 Telemetry Topic Map
+## NT4 and logging contract
 
-| NT4 Topic | Source | Content | Units |
-|---|---|---|---|
-| `Drive/Odom_Heading` | OpMode (ARESNetworkStatePublisher) | Raw PinpointIO heading (CCW+) | radians |
-| `Drive/Drive_Heading` | OpMode (ARESNetworkStatePublisher) | EKF-fused heading (CCW+) | radians |
-| `ARES/EstimatedPose/2` | Sim (TelemetryPublisher) | Ground truth Dyn4j heading (CCW+) | radians |
-| `pinpoint_heading` | OpMode (FtcTelemetryManager) | EKF estimated heading (confusing name!) | radians |
+- Custom/simulator NT4 listens on port `5810`.
+- `LogManagerServer` listens on port `5002`.
+- `RobotWebServer` defaults to port `8082`.
+- NT4 topics are canonicalized without a leading slash.
+- An announced NT4 topic keeps one type for its lifetime.
+- Keep publisher/subscriber topic spelling, units, types, and heading signs consistent across all four repositories.
+- Robots never push logs to cloud services. ARES Analytics pulls local logs and the laptop performs optional cloud sync.
+- `ARESDataLogger.stop()` drains accepted frames. Watch `droppedFrameCount`; never block a robot loop waiting for storage.
 
-### 5.7 Motor Hardware Names
-The FTC robot registers motors with these hardware map names: `fl`, `fr`, `rl`, `rr` (front-left, front-right, **rear-left**, **rear-right**). Note: NOT `bl`/`br`. Dashboard visualizers must handle BOTH naming conventions (`bl`↔`rl`, `br`↔`rr`).
+The endpoint and topic tables are in [Telemetry and logging](docs/telemetry-and-logging.md).
 
----
+## Testing expectations
 
-## 6. Cloud Telemetry & Networking Guidelines
+Use focused tests while iterating, then run every affected module. A cross-repository contract change is not complete until affected season/dashboard tests pass against the current ARESLib publication or composite build.
 
-1. **ARES-Analytics Gateway Architecture**:
-   * The backend gateway (`aresfirst-portal`) runs on Ktor in Google Cloud Run. It accepts high-throughput payloads (Parquet) via secure GCS Signed URLs.
-   * The gateway **does not** accept raw `.jsonl` files directly from robots.
-2. **Offline-First Robot Operations**:
-   * FTC Control Hubs and FRC RoboRIOs operate without internet access during competition matches.
-   * Log uploading must follow the **Desktop Pull Architecture**:
-     * The `LogManagerServer` (NanoHTTPD) running on port `5002` must expose local endpoints (like `/api/download`) to serve raw log files locally.
-     * The ARES-Analytics desktop application pulls these logs to the driver station laptop, parses them into SQLite, and then the laptop handles the delta-sync and GCS uploads to the cloud.
+Add regression cases for:
 
+- non-finite values and zero/negative time deltas;
+- angle wraparound, robot-local curved motion, and delayed vision;
+- hardware disconnect/stale input and stop behavior;
+- path bounds, empty paths, and alliance transforms;
+- malformed/oversized network and log inputs;
+- concurrency/lifecycle transitions;
+- steady-state allocation for hot paths.
 
-## 7. Audit-Enforced Invariants
+See [Development, testing, and troubleshooting](docs/development.md) and [TEST_INFRA.md](TEST_INFRA.md).
 
-Following the multi-agent swarm audit, the following invariants MUST be strictly observed by AI agents:
-1. **Zero-GC Hot Paths:** Absolutely NO reflection (getMethod) or dynamic heap allocations (DoubleArray, Rotation2d instantiations) inside 50Hz update() loops across FTC or FRC targets.
-2. **Offline-First Networking:** Never write code that attempts to push data directly to Google Cloud or Zulip from the robot. All log uploading MUST go through local subnet fetches.
-3. **Thread Purity:** Never launch un-cancellable GlobalScope.launch jobs for background hardware tasks.
+## Change checklist
 
+1. Preserve unrelated working-tree changes.
+2. Identify all sibling-repository consumers before changing a public type, topic, unit, file format, or behavior.
+3. Keep source KDoc explicit about frames, units, signs, timestamps, invalid inputs, and ownership of mutable/pool-backed data.
+4. Run focused and module tests.
+5. Publish to Maven Local and test affected consumers.
+6. Update the nearest document in the same change.

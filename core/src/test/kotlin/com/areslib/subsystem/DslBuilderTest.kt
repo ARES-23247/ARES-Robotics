@@ -5,12 +5,6 @@ import com.areslib.state.RobotState
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-/**
- * DslBuilderTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class DslBuilderTest {
 
     @Test
@@ -48,12 +42,6 @@ class DslBuilderTest {
     }
 
     @Test
-    /**
-     * testAresRobotLifecycle declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testAresRobotLifecycle() {
         val robot = aresRobot {}
         var readSensorsCalled = false

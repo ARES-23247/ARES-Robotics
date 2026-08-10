@@ -43,7 +43,7 @@ interface VL53L5CXDriverProxy {
  * @see MultizoneDistanceSensorIO
  * @see VL53L5CXDriverProxy
  */
-class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSensorIO {
+class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSensorIO, AutoCloseable {
     /** Measured grid row count. Returns 0 if communication fails. */
     override val rows: Int
         get() = try { driver.rows } catch (_: Exception) { 0 }
@@ -53,41 +53,61 @@ class FtcVL53L5CX(private val driver: VL53L5CXDriverProxy) : MultizoneDistanceSe
         get() = try { driver.columns } catch (_: Exception) { 0 }
 
     private val lock = Any()
-    private var running = true
-    private var lastDistances = DoubleArray(0)
+    @Volatile private var running = true
+    private var readDistances = DoubleArray(0)
+    private var writeDistances = DoubleArray(0)
+    private val pollingThread: Thread
 
     init {
-        val thread = Thread {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
+        pollingThread = Thread {
             while (running) {
                 try {
                     driver.update()
                     val raw = driver.distancesMillimeters
-                    val dists = DoubleArray(raw.size)
+                    if (writeDistances.size != raw.size) {
+                        writeDistances = DoubleArray(raw.size)
+                    }
                     for (i in raw.indices) {
-                        dists[i] = raw[i] / 1000.0
+                        writeDistances[i] = raw[i] / 1000.0
                     }
                     synchronized(lock) {
-                        lastDistances = dists
+                        val oldRead = readDistances
+                        readDistances = writeDistances
+                        writeDistances = if (oldRead.size == raw.size) oldRead else DoubleArray(raw.size)
                     }
                 } catch (_: Exception) {}
                 try { Thread.sleep(20) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
             }
         }
-        thread.isDaemon = true
-        thread.name = "ARES-VL53L5CX-Thread"
-        thread.start()
+        pollingThread.isDaemon = true
+        pollingThread.name = "ARES-VL53L5CX-Thread"
+        pollingThread.start()
     }
 
     /** Latest multizone distance readings in meters ($m$). Access is thread-safe. */
     override val distancesMeters: DoubleArray
-        get() = synchronized(lock) { lastDistances }
+        get() = synchronized(lock) { readDistances.copyOf() }
+
+    override fun copyDistancesMetersInto(destination: DoubleArray): Int = synchronized(lock) {
+        val count = minOf(readDistances.size, destination.size)
+        readDistances.copyInto(destination, endIndex = count)
+        count
+    }
 
     /**
      * Terminates background thread execution and releases hardware resources.
      */
-    fun close() {
+    override fun close() {
         running = false
+        pollingThread.interrupt()
+        if (Thread.currentThread() !== pollingThread) {
+            try {
+                pollingThread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
     }
 }
-
 

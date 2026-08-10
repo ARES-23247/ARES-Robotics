@@ -9,12 +9,6 @@ import com.areslib.action.RobotAction
 import com.areslib.reducer.DriveReducer
 import com.areslib.math.wrapAngle
 
-/**
- * CoordinateTransformersTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class CoordinateTransformersTest {
 
     @Test

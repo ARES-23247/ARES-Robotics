@@ -18,6 +18,14 @@ import java.util.Locale
  */
 object SwerveOffsetManager {
 
+    /** Optional storage root override used by simulators and isolated tests. */
+    const val STORAGE_ROOT_PROPERTY = "ares.swerve.offset.storageRoot"
+
+    private val configuredRootDir: File?
+        get() = System.getProperty(STORAGE_ROOT_PROPERTY)
+            ?.takeIf { it.isNotBlank() }
+            ?.let(::File)
+
     private val isRoboRio: Boolean
         get() = File("/home/lvuser").exists()
 
@@ -25,17 +33,25 @@ object SwerveOffsetManager {
         get() = File("/sdcard/FIRST").exists()
 
     val rootDir: File
-        get() = when {
-            isRoboRio -> File("/home/lvuser")
-            isFtcControlHub -> File("/sdcard/FIRST")
-            else -> File(".")
+        get() {
+            val override = configuredRootDir
+            return when {
+                override != null -> override
+                isRoboRio -> File("/home/lvuser")
+                isFtcControlHub -> File("/sdcard/FIRST")
+                else -> File(".")
+            }
         }
 
     val deployDir: File
-        get() = when {
-            isRoboRio -> File("/home/lvuser/deploy")
-            isFtcControlHub -> File("/sdcard/FIRST/deploy")
-            else -> File("./src/main/deploy")
+        get() {
+            val override = configuredRootDir
+            return when {
+                override != null -> File(override, "deploy")
+                isRoboRio -> File("/home/lvuser/deploy")
+                isFtcControlHub -> File("/sdcard/FIRST/deploy")
+                else -> File("./src/main/deploy")
+            }
         }
 
     val backupsDir: File

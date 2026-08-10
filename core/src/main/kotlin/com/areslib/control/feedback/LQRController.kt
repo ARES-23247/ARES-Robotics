@@ -96,6 +96,7 @@ class LQRController(
         require(initialState.size == numStates) { "Initial state must match system dimensions" }
         xHat = Matrix(numStates, 1, initialState)
         u = Matrix(numInputs, 1)
+        zeroControlOutput()
     }
 
     /**
@@ -180,16 +181,31 @@ class LQRController(
         try {
             require(y.size == numOutputs) { "Measurement dimensions mismatch" }
             require(xRef.size == numStates) { "Reference state dimensions mismatch" }
-            var inputsValid = y.all { it.isFinite() } && xRef.all { it.isFinite() }
+            var inputsValid = true
+            for (index in y.indices) {
+                if (!y[index].isFinite()) {
+                    inputsValid = false
+                    break
+                }
+            }
+            if (inputsValid) {
+                for (index in xRef.indices) {
+                    if (!xRef[index].isFinite()) {
+                        inputsValid = false
+                        break
+                    }
+                }
+            }
             when {
-                !inputsValid || dtSeconds <= 0.0 -> {
+                !inputsValid || !dtSeconds.isFinite() || dtSeconds <= 0.0 -> {
                     val now = RobotClock.currentTimeMillis()
                     when {
                         now - lastWarningTime > 2000L -> {
-                            System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning pre-allocated zero/last output.")
+                            System.err.println("LQRController: Invalid inputs detected (finite/dt check failed). Returning zero output.")
                             lastWarningTime = now
                         }
                     }
+                    zeroControlOutput()
                     return outU
                 }
             }
@@ -242,9 +258,16 @@ class LQRController(
             return outU
         } catch (e: Throwable) {
             System.err.println("LQRController FATAL ERROR: ${e.message}")
-            // Zero the outputs to prevent runaway
-            for (i in 0 until numInputs) outU[i] = 0.0
+            zeroControlOutput()
             return outU
+        }
+    }
+
+    private fun zeroControlOutput() {
+        for (i in 0 until numInputs) {
+            outU[i] = 0.0
+            saturatedU.set(i, 0, 0.0)
+            u.set(i, 0, 0.0)
         }
     }
 

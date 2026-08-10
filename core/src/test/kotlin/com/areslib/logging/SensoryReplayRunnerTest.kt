@@ -11,12 +11,6 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.io.FileWriter
 
-/**
- * SensoryReplayRunnerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class SensoryReplayRunnerTest {
 
     private val gson = Gson()
@@ -162,4 +156,3 @@ class SensoryReplayRunnerTest {
         }
     }
 }
-

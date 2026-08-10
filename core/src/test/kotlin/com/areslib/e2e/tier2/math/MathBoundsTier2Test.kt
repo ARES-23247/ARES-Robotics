@@ -10,21 +10,9 @@ import com.areslib.pathing.ThetaStarPlanner
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-/**
- * MathBoundsTier2Test declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class MathBoundsTier2Test {
 
     @Test
-    /**
-     * testThetaStarZeroDistanceMoveBoundary declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testThetaStarZeroDistanceMoveBoundary() {
         val costmap = Costmap(widthMeters = 2.0, heightMeters = 2.0, resolutionMeters = 0.1)
         val start = Translation2d(0.0, 0.0)
@@ -39,12 +27,6 @@ class MathBoundsTier2Test {
     }
 
     @Test
-    /**
-     * testThetaStarOutOfBoundsBoundary declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testThetaStarOutOfBoundsBoundary() {
         val costmap = Costmap(widthMeters = 2.0, heightMeters = 2.0, resolutionMeters = 0.1)
         
@@ -59,12 +41,6 @@ class MathBoundsTier2Test {
     }
 
     @Test
-    /**
-     * testEkfPitchHysteresisBoundaries declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testEkfPitchHysteresisBoundaries() {
         val initialState = PoseEstimatorState()
         
@@ -101,12 +77,6 @@ class MathBoundsTier2Test {
     }
 
     @Test
-    /**
-     * testLqrControllerSingularMatrixHandling declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testLqrControllerSingularMatrixHandling() {
         val lqr = LQRController(1, 1, 1)
         
@@ -121,4 +91,3 @@ class MathBoundsTier2Test {
         }
     }
 }
-

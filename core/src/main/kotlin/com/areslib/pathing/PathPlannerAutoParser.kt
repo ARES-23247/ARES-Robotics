@@ -138,15 +138,16 @@ object PathPlannerAutoParser {
             }
             "wait" -> {
                 val waitTimeSec = data.get("waitTime")?.asDouble ?: error("Wait command missing 'waitTime'")
+                require(waitTimeSec.isFinite() && waitTimeSec >= 0.0 && waitTimeSec <= Long.MAX_VALUE / 1_000.0) {
+                    "Wait command duration must be finite, non-negative, and representable"
+                }
                 val waitTimeMs = (waitTimeSec * 1000.0).toLong()
                 TimeWaitTask(waitTimeMs)
             }
             "named" -> {
                 val name = data.get("name")?.asString ?: error("Named command missing 'name'")
-                NamedCommands.getCommand(name, timestampMs) ?: object : Task {
-                    override val name = "DummyNamed($name)"
-                    override fun isCompleted(state: com.areslib.state.RobotState, elapsedMs: Long) = true
-                }
+                NamedCommands.getCommand(name, timestampMs)
+                    ?: error("Named command '$name' is not registered")
             }
             else -> error("Unknown command type: '$type'")
         }

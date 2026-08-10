@@ -23,53 +23,79 @@ sealed interface NT4Value {
         override fun getAsObject(): Any = value
     }
 
+    data class FloatVal(val value: Float) : NT4Value {
+        override val typeString: String = "float"
+        override fun getAsObject(): Any = value
+    }
+
     data class StringVal(val value: String) : NT4Value {
         override val typeString: String = "string"
         override fun getAsObject(): Any = value
     }
 
-    data class BooleanArrayVal(val value: BooleanArray) : NT4Value {
+    class BooleanArrayVal(value: BooleanArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: BooleanArray get() = snapshot.copyOf()
         override val typeString: String = "boolean[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is BooleanArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class DoubleArrayVal(val value: DoubleArray) : NT4Value {
+    class DoubleArrayVal(value: DoubleArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: DoubleArray get() = snapshot.copyOf()
         override val typeString: String = "double[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is DoubleArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class LongArrayVal(val value: LongArray) : NT4Value {
+    class LongArrayVal(value: LongArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: LongArray get() = snapshot.copyOf()
         override val typeString: String = "int[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is LongArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class StringArrayVal(val value: Array<String>) : NT4Value {
+    class FloatArrayVal(value: FloatArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: FloatArray get() = snapshot.copyOf()
+        override val typeString: String = "float[]"
+        override fun getAsObject(): Any = snapshot.copyOf()
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is FloatArrayVal) return false
+            return snapshot.contentEquals(other.snapshot)
+        }
+        override fun hashCode(): Int = snapshot.contentHashCode()
+    }
+
+    class StringArrayVal(value: Array<String>) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: Array<String> get() = snapshot.copyOf()
         override val typeString: String = "string[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is StringArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
     companion object {
@@ -90,12 +116,12 @@ sealed interface NT4Value {
         fun fromObject(obj: Any?): NT4Value = when (obj) {
             is Boolean -> BooleanVal(obj)
             is Double -> DoubleVal(obj)
-            is Float -> DoubleVal(obj.toDouble())
+            is Float -> FloatVal(obj)
             is Number -> LongVal(obj.toLong())
             is String -> StringVal(obj)
             is BooleanArray -> BooleanArrayVal(obj)
             is DoubleArray -> DoubleArrayVal(obj)
-            is FloatArray -> DoubleArrayVal(obj.map { it.toDouble() }.toDoubleArray())
+            is FloatArray -> FloatArrayVal(obj)
             is IntArray -> LongArrayVal(obj.map { it.toLong() }.toLongArray())
             is LongArray -> LongArrayVal(obj)
             is Array<*> -> {

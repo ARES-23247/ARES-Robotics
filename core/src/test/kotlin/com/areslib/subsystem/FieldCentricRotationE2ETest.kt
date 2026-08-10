@@ -46,7 +46,7 @@ class FieldCentricRotationE2ETest {
             }
             val facadeSpy = MecanumDriveFacade(storeSpy)
 
-            facadeSpy.fieldRelativeDrive(vx = 0.0, vy = 1.0, omega = 0.0)
+            facadeSpy.driveFieldRelativeNormalized(vx = 0.0, vy = 1.0, omega = 0.0)
             assertNotNull(dispatchedIntent, "JoystickDriveIntent must be dispatched for angle $angleDeg°")
 
             val robotVx = dispatchedIntent!!.targetXVelocity
@@ -62,7 +62,7 @@ class FieldCentricRotationE2ETest {
             val fieldVy = robotVx * sinH + robotVy * cosH
 
             assertEquals(0.0, fieldVx, 1e-5, "At angle $angleDeg°, Forward command must yield 0 field X velocity")
-            assertEquals(1.0, fieldVy, 1e-5, "At angle $angleDeg°, Forward command must yield 1.0 field Y velocity")
+            assertEquals(facadeSpy.maxSpeedMps, fieldVy, 1e-5, "At angle $angleDeg°, full input must yield max field Y velocity")
 
             // 2. Verify wheel kinematics produces pure field velocity without diagonal drift
             val speeds = DoubleArray(4)
@@ -80,11 +80,11 @@ class FieldCentricRotationE2ETest {
             val reconstructedFieldVy = rawVx * sinH + rawVy * cosH
 
             assertEquals(0.0, reconstructedFieldVx, 1e-5, "Reconstructed field X velocity at angle $angleDeg° must be 0.0")
-            assertEquals(1.0, reconstructedFieldVy, 1e-5, "Reconstructed field Y velocity at angle $angleDeg° must be 1.0")
+            assertEquals(facadeSpy.maxSpeedMps, reconstructedFieldVy, 1e-5, "Reconstructed field Y velocity must equal max speed at $angleDeg°")
 
             // 3. Test Field Right effort (vx = 1.0, vy = 0.0) -> MUST result in fieldVx = 1.0 and fieldVy = 0.0
             dispatchedIntent = null
-            facadeSpy.fieldRelativeDrive(vx = 1.0, vy = 0.0, omega = 0.0)
+            facadeSpy.driveFieldRelativeNormalized(vx = 1.0, vy = 0.0, omega = 0.0)
             assertNotNull(dispatchedIntent)
 
             val rightRobotVx = dispatchedIntent!!.targetXVelocity
@@ -93,7 +93,7 @@ class FieldCentricRotationE2ETest {
             val rightFieldVx = rightRobotVx * cosH - rightRobotVy * sinH
             val rightFieldVy = rightRobotVx * sinH + rightRobotVy * cosH
 
-            assertEquals(1.0, rightFieldVx, 1e-5, "At angle $angleDeg°, Right command must yield 1.0 field X velocity")
+            assertEquals(facadeSpy.maxSpeedMps, rightFieldVx, 1e-5, "At angle $angleDeg°, full input must yield max field X velocity")
             assertEquals(0.0, rightFieldVy, 1e-5, "At angle $angleDeg°, Right command must yield 0 field Y velocity")
         }
 

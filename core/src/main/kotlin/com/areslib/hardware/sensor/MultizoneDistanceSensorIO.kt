@@ -17,7 +17,16 @@ interface MultizoneDistanceSensorIO {
 
     /**
      * Flattened array of distances in meters for each zone.
-     * The length of this array is [rows] * [columns].
+     * The length of this array is [rows] * [columns] and the returned array is caller-owned.
+     * Hot paths should use [copyDistancesMetersInto].
      */
     val distancesMeters: DoubleArray
+
+    /** Copies the latest flattened zone frame into caller-owned [destination]. */
+    fun copyDistancesMetersInto(destination: DoubleArray): Int {
+        val source = distancesMeters
+        val count = minOf(source.size, destination.size)
+        source.copyInto(destination, endIndex = count)
+        return count
+    }
 }

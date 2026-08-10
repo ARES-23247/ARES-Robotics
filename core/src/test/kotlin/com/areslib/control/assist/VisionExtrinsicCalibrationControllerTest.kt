@@ -17,22 +17,13 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import com.areslib.control.feedback.PIDController
 import com.areslib.control.drivetrain.HolonomicDriveController
+import com.areslib.state.RobotFieldAprilTag
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldManager
 
-/**
- * VisionExtrinsicCalibrationControllerTest declaration.
- *
- * @param args Standard arguments (if applicable).
- * @return Corresponding output value or Unit.
- */
 class VisionExtrinsicCalibrationControllerTest {
 
     @Test
-    /**
-     * testCalibrationSweepAndTargetLogging declaration.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
     fun testCalibrationSweepAndTargetLogging() {
         val actions = mutableListOf<RobotAction>()
         val store = Store(RobotState()) { state, action ->
@@ -78,6 +69,10 @@ class VisionExtrinsicCalibrationControllerTest {
         assertEquals(1, controller.cameraIndex)
 
         // 3. Update active sweep with detected vision tag
+        val priorFieldConfig = RobotFieldManager.activeConfig
+        RobotFieldManager.setActiveConfig(
+            RobotFieldConfig(apriltags = listOf(RobotFieldAprilTag(id = 42, x = 4.0, y = 5.0, z = 0.75)))
+        )
         val visionMeasurement = VisionMeasurement(
             timestampMs = 12345L,
             tagId = 42,
@@ -103,6 +98,16 @@ class VisionExtrinsicCalibrationControllerTest {
         // Verify Telemetry publisher output
         assertEquals(true, telemetryMap["Calibration/IsActive"])
         assertEquals(42.0, telemetryMap["Calibration/TagIndex"])
+        assertArrayEquals(
+            doubleArrayOf(1.0, 2.0, 3.0, 0.0, 0.0, 0.0),
+            telemetryMap["Calibration/CameraToTag"] as DoubleArray,
+            1e-9
+        )
+        assertArrayEquals(
+            doubleArrayOf(4.0, 5.0, 0.75),
+            telemetryMap["Calibration/TagField"] as DoubleArray,
+            1e-9
+        )
+        RobotFieldManager.setActiveConfig(priorFieldConfig)
     }
 }
-

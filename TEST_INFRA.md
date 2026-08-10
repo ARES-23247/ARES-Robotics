@@ -1,42 +1,72 @@
-# E2E Test Infra: ARESLib-Kotlin Fault Tolerance
+# Test infrastructure
 
-## Test Philosophy
-- Opaque-box, requirement-driven. No dependency on implementation design.
-- Methodology: Category-Partition + BVA + Pairwise + Workload Testing.
+ARESLib uses Gradle for every module. Core and hardware suites run on JUnit Platform; the simulator module currently includes JUnit 4 tests. Tests are organized by behavior and owning module rather than by one global test harness.
 
-## Feature Inventory
-| # | Feature | Source (requirement) | Tier 1 | Tier 2 | Tier 3 |
-|---|---------|---------------------|:------:|:------:|:------:|
-| 1 | Math Bounds Checking | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ |
-| 2 | Hot-path GC Avoidance | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ |
-| 3 | PID Output Clamping | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ |
-| 4 | State Immutability | ORIGINAL_REQUEST R2 | 5 | 5 | ✓ |
-| 5 | Safe Action Reduction | ORIGINAL_REQUEST R2 | 5 | 5 | ✓ |
-| 6 | I2C/UART Read Timeouts | ORIGINAL_REQUEST R3 | 5 | 5 | ✓ |
-| 7 | Motor Stall Detection | ORIGINAL_REQUEST R3 | 5 | 5 | ✓ |
-| 8 | OpMode Loop Failsafe | ORIGINAL_REQUEST R4 | 5 | 5 | ✓ |
-| 9 | Loop Time Watchdog | ORIGINAL_REQUEST R4 | 5 | 5 | ✓ |
+## Run tests
 
-## Test Architecture
-- Test runner: `./gradlew test --tests "com.areslib.e2e.*"`
-- Test case format: JUnit 5 test classes under `core/src/test/kotlin/com/areslib/e2e/`.
-- Directory layout:
-  - `core/src/test/kotlin/com/areslib/e2e/tier1/`
-  - `core/src/test/kotlin/com/areslib/e2e/tier2/`
-  - `core/src/test/kotlin/com/areslib/e2e/tier3/`
-  - `core/src/test/kotlin/com/areslib/e2e/tier4/`
+```powershell
+# Entire repository
+.\gradlew.bat test
 
-## Real-World Application Scenarios (Tier 4)
-| # | Scenario | Features Exercised | Complexity |
-|---|----------|--------------------|------------|
-| 1 | Full Auto with Sensor Disconnect | 6, 8, 9 | High |
-| 2 | Pathing through Singularities | 1, 3, 5 | Medium |
-| 3 | Teleop with Motor Stall | 7, 8, 9 | High |
-| 4 | Extreme Noise Inputs to EKF | 1, 4, 5 | Medium |
-| 5 | High-Frequency Loop Overrun | 2, 8, 9 | High |
+# By module
+.\gradlew.bat :core:test
+.\gradlew.bat :ftc-hardware:test
+.\gradlew.bat :frc-hardware:test
+.\gradlew.bat :simulator:test
 
-## Coverage Thresholds
-- Tier 1: ≥5 per feature
-- Tier 2: ≥5 per feature (where boundaries exist)
-- Tier 3: pairwise coverage of major feature interactions
-- Tier 4: ≥5 realistic application scenarios
+# One class or package pattern
+.\gradlew.bat :core:test --tests "com.areslib.math.estimation.PoseEstimatorTest"
+.\gradlew.bat :core:test --tests "com.areslib.e2e.*"
+```
+
+The `frc-hardware` task extracts WPILib/vendor desktop JNI libraries. When installed, it runs tests with `C:/Users/Public/wpilib/2026/jdk/bin/java.exe` to match the WPILib runtime.
+
+## Coverage by area
+
+| Area | Representative tests |
+|---|---|
+| Geometry and kinematics | `GeometryTest`, `ChassisSpeedsTest`, `MecanumKinematicsTest`, `SwerveKinematicsTest` |
+| Estimation | `PoseEstimatorTest`, `PoseEstimatorHardeningTest`, `PoseEstimatorVisionHardeningTest`, `EstimatorMathRegressionTest` |
+| Control and safety | PID/LQR/ADRC/profile tests, `BrownoutGuardTest`, `CurrentBudgetManagerTest`, `SafetyFaultToleranceTest` |
+| Pathing | parser parity, spline/trajectory, costmap, path safety, chaining, Theta*, follower, and correctness regression tests |
+| State | root/slice reducer, immutability, and action-safety tests |
+| Hardware | IO simulations, registry, sensor threading, FTC/FRC adapter and power tests |
+| Telemetry and logs | NT4 protocol/hardening, robot web server, logger, log manager, replay, and diagnostics tests |
+| Simulator | telemetry/input end-to-end and simulated vision field-of-view tests |
+| Allocation | `ZeroGcRegressionTest` and E2E GC-avoidance coverage |
+
+## E2E tiers
+
+The current `com.areslib.e2e` packages contain requirement-level coverage for math bounds, PID clamping, Redux safety, state behavior, hardware fault tolerance, and loop failsafes. The checked-in tiers are the source of truth; do not rely on historical planned-count tables.
+
+E2E tests complement focused mathematical and adapter tests. Passing only `com.areslib.e2e.*` does not validate all networking, logging, pathing, platform-native, or simulator behavior.
+
+## Test design requirements
+
+For new behavior, include the applicable categories:
+
+- Nominal result with physically meaningful units.
+- Boundary values and angle wraparound.
+- `NaN`, infinity, empty input, and non-positive `dt`.
+- Stale/disconnected hardware and stop behavior.
+- Deterministic mock-time progression.
+- Delayed/out-of-order data for estimator, replay, and networking code.
+- Malformed and bounded-size inputs for parsers/protocols.
+- Concurrency and lifecycle transitions for background workers/servers.
+- Steady-state allocation for robot-loop changes.
+
+Avoid sleeps and wall-clock assumptions. Use `RobotClock` mock time where the production code uses robot time, and restore system time in teardown/finally blocks.
+
+## Cross-repository verification
+
+After ARESLib tests pass:
+
+```powershell
+.\gradlew.bat publishToMavenLocal
+```
+
+Then run the affected ARES-FTC, ARES-FRC, and ARES-Analytics suites. This is required for changes to public APIs, season interfaces, PathPlanner parsing, coordinate conventions, NT4 topics/types, or log formats.
+
+## Port-owning tests
+
+Network integration tests may bind ports `5810`, `5002`, or `8082`. Do not run multiple suites that own the same port concurrently. Ensure test/server shutdown completes before rerunning after a failure.

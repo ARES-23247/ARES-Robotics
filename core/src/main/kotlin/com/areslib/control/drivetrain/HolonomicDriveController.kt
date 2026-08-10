@@ -127,6 +127,16 @@ class HolonomicDriveController(
         maxCentripetalAccel: Double = 2.5,
         progressPercentage: Double = 0.0
     ): ChassisSpeeds {
+        if (!currentX.isFinite() || !currentY.isFinite() || !currentHeadingRad.isFinite() ||
+            !targetX.isFinite() || !targetY.isFinite() || !targetHeadingRad.isFinite() ||
+            !targetVelocityMps.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            pathTangentRadians.isInfinite() || !curvature.isFinite() ||
+            !maxCentripetalAccel.isFinite() || maxCentripetalAccel <= 0.0 ||
+            !maxOutputMps.isFinite() || maxOutputMps <= 0.0 || !progressPercentage.isFinite()
+        ) {
+            return ChassisSpeeds()
+        }
+
         val xError = targetX - currentX
         val yError = targetY - currentY
 
@@ -162,6 +172,10 @@ class HolonomicDriveController(
 
         val thetaFeedback = thetaAdrc?.calculate(targetHeadingRad, currentHeadingRad, dtSeconds)
             ?: thetaController.calculate(currentHeadingRad, targetHeadingRad, dtSeconds)
+
+        if (!xFeedback.isFinite() || !yFeedback.isFinite() || !thetaFeedback.isFinite()) {
+            return ChassisSpeeds()
+        }
 
         val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {
             val maxVel = kotlin.math.sqrt(maxCentripetalAccel / kotlin.math.abs(curvature))
