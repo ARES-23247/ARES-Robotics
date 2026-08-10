@@ -11,7 +11,7 @@ import java.lang.reflect.Proxy
 import java.net.InetSocketAddress
 import java.util.Collections
 import kotlin.test.assertEquals
-import kotlin.test.assertSame
+import kotlin.test.assertNull
 
 class NT4PublisherLifecycleTest {
 
@@ -48,7 +48,7 @@ class NT4PublisherLifecycleTest {
     }
 
     @Test
-    fun `closing owners follows the same final-owner lifecycle and preserves the topic entry`() {
+    fun `closing owners follows the same final-owner lifecycle and deletes the transient topic`() {
         val server = newServer()
         val first = webSocketProxy()
         val second = webSocketProxy()
@@ -67,7 +67,7 @@ class NT4PublisherLifecycleTest {
 
         server.onClose(second, 1000, "test", false)
         assertEquals(listOf(NT4EventType.TOPIC_UNPUBLISHED), events)
-        assertSame(entry, server.getTopicEntry("/Shared/Close"), "unpublish must not silently replace topic identity")
+        assertNull(server.getTopicEntry("/Shared/Close"))
     }
 
     @Test

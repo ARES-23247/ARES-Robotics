@@ -12,6 +12,8 @@ import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.SwerveDriveFacade
 import com.areslib.telemetry.*
 import kotlin.math.abs
+import com.areslib.tuning.TuningManager
+import java.io.File
 
 /**
  * FRC Swerve Robot — high-level drivebase robot container facade.
@@ -71,7 +73,8 @@ class FrcSwerveRobot(
         } catch (_: Throwable) {
             "Active"
         }
-    }
+    },
+    tuningFile: File = File(if (File("/home/lvuser").isDirectory) "/home/lvuser/ares_tuning.json" else "ares_tuning-frc.json")
 ) : FrcBaseRobot(initialState, reducer, baseTelemetry, isEnabledProvider, robotModeProvider) {
 
     // ── Subsystem Facades ──
@@ -87,6 +90,8 @@ class FrcSwerveRobot(
 
     override val telemetryManager = FrcTelemetryManager(baseTelemetry, store, swerveIO)
     override val powerManager = FrcPowerManager()
+    private val tuningManager = TuningManager(store, baseTelemetry, tuningFile)
+    var isLiveTuningEnabled: Boolean = false
 
     private val _visionTracker = FrcVisionTracker(store, visionIO, swerveIO, isSimulation)
 
@@ -108,6 +113,7 @@ class FrcSwerveRobot(
      * Handles beached-chassis recovery by holding the last known EKF pose when traction is lost.
      */
     override fun updateHardwareInputs(timestampMs: Long) {
+        if (isLiveTuningEnabled) tuningManager.update(timestampMs)
         if (!isSimulation && swerveIO != null) {
             val driveState = swerveIO.read()
             val currentlyBeached = isBeached

@@ -35,7 +35,13 @@ class FrcPowerManager : PowerManager {
 
     /** Total current draw in Amperes ($A$) calculated across all registered motors in [com.areslib.hardware.HardwareRegistry]. */
     override val currentAmps: Double
-        get() = com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf { it.currentAmps }
+        get() = com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf { motor ->
+            try {
+                motor.currentAmps.takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
+            } catch (_: Exception) {
+                0.0
+            }
+        }
 
     /**
      * Updates battery voltage reading, evaluates brownout protection status, and applies power scale limits to registered motors.
@@ -47,7 +53,11 @@ class FrcPowerManager : PowerManager {
      * @return Calculated global power scale factor $[0.0, 1.0]$.
      */
     override fun update(dtSeconds: Double, timestampMs: Long): Double {
-        batteryVoltage = batteryVoltageSupplier()
+        batteryVoltage = try {
+            batteryVoltageSupplier()
+        } catch (_: Exception) {
+            0.0
+        }
         brownoutGuard.update(batteryVoltage)
         powerScale = brownoutGuard.powerScale
 

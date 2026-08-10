@@ -85,6 +85,7 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             linearAccelYG: Double = 0.0,
             linearAccelZG: Double = 1.0
         ): Boolean {
+            if (!config.isValid()) return false
             val pose = measurement.targetPose
             if (!measurement.ambiguity.isFinite() ||
                 !pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() ||
@@ -144,5 +145,16 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
 
             return true
         }
+
+        private fun VisionFilterConfig.isValid(): Boolean =
+            maxDistanceMeters.isFinite() && maxDistanceMeters >= 0.0 &&
+                maxAmbiguity.isFinite() && maxAmbiguity >= 0.0 &&
+                maxRotationDeviationRad.isFinite() && maxRotationDeviationRad >= 0.0 &&
+                minFieldX.isFinite() && maxFieldX.isFinite() && minFieldX <= maxFieldX &&
+                minFieldY.isFinite() && maxFieldY.isFinite() && minFieldY <= maxFieldY &&
+                minFieldZ.isFinite() && maxFieldZ.isFinite() && minFieldZ <= maxFieldZ &&
+                maxAngularVelocityRadPerSec.isFinite() && maxAngularVelocityRadPerSec >= 0.0 &&
+                maxAccelerationG.isFinite() && maxAccelerationG >= 0.0 &&
+                mahalanobisThreshold.isFinite() && mahalanobisThreshold > 0.0
     }
 }

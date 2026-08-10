@@ -32,7 +32,7 @@ class TuningManagerTest {
     }
 
     @Test
-    fun `test nested PIDF flattening and unflattening`(@TempDir tempDir: File) {
+    fun `canonical nested PIDF topic updates state and persists`(@TempDir tempDir: File) {
         val store = Store(RobotState())
         val mockTelemetry = MockTelemetry()
         val saveFile = File(tempDir, "ares_tuning.json")
@@ -44,7 +44,7 @@ class TuningManagerTest {
         assertEquals(2.0, initialState.pathTranslationGains.kP)
         
         // Simulate a dashboard modification via NT4 (user sets kP to 5.0)
-        mockTelemetry.putNumber("Tuning/pathTranslationGains/kP", 5.0)
+        mockTelemetry.putNumber("Tuning/drive/pathTranslationGains/kP", 5.0)
         
         // Call update
         manager.update()
@@ -69,4 +69,56 @@ class TuningManagerTest {
         val loadedState = newStore.state.tuning
         assertEquals(5.0, loadedState.pathTranslationGains.kP)
     }
+
+    @Test
+    fun `nonfinite dashboard tuning value is rejected and republished`(@TempDir tempDir: File) {
+        val store = Store(RobotState())
+        val telemetry = MockTelemetry()
+        val manager = TuningManager(store, telemetry, File(tempDir, "ares_tuning.json"))
+        val key = "Tuning/drive/pathTranslationGains/kP"
+
+        telemetry.putNumber(key, Double.NaN)
+        manager.update(timestampMs = 1_000L)
+
+        assertEquals(2.0, store.state.tuning.pathTranslationGains.kP)
+        assertEquals(2.0, telemetry.data[key])
+    }
+
+    @Test
+    fun `corrupt primary tuning file recovers from validated backup`(@TempDir tempDir: File) {
+        val saveFile = File(tempDir, "ares_tuning.json")
+        saveFile.writeText("{not-json")
+        File(tempDir, "ares_tuning.backup.json").writeText(
+            """{"_schemaVersion":2,"drive":{"pathTranslationGains":{"kP":4.5}}}"""
+        )
+
+        val store = Store(RobotState())
+        TuningManager(store, MockTelemetry(), saveFile)
+
+        assertEquals(4.5, store.state.tuning.pathTranslationGains.kP)
+    }
+
+    @Test
+    fun `nonfinite number in tuning file cannot poison redux state`(@TempDir tempDir: File) {
+        val saveFile = File(tempDir, "ares_tuning.json")
+        saveFile.writeText("""{"_schemaVersion":2,"drive":{"pathTranslationGains":{"kP":NaN}}}""")
+
+        val store = Store(RobotState())
+        TuningManager(store, MockTelemetry(), saveFile)
+
+        assertEquals(2.0, store.state.tuning.pathTranslationGains.kP)
+        assertTrue(store.state.tuning.pathTranslationGains.kP.isFinite())
+    }
+
+    @Test
+    fun `schema v1 tuning file is rejected`(@TempDir tempDir: File) {
+        val saveFile = File(tempDir, "ares_tuning.json")
+        saveFile.writeText("""{"pathTranslationGains":{"kP":9.0}}""")
+
+        val store = Store(RobotState())
+        TuningManager(store, MockTelemetry(), saveFile)
+
+        assertEquals(2.0, store.state.tuning.pathTranslationGains.kP)
+    }
+
 }

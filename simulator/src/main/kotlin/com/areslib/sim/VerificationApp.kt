@@ -1,12 +1,12 @@
 package com.areslib.sim
 
-import edu.wpi.first.networktables.NetworkTableInstance
+import com.areslib.networktables.NT4Server
 import kotlin.concurrent.thread
 import kotlin.math.abs
 
 import com.areslib.math.wrapAngle
 
-fun main(args: Array<String>) {
+fun main() {
     println("=================================================================")
     println("STARTING PROGRAMMATIC INTEGRATION VERIFICATION")
     println("=================================================================")
@@ -25,15 +25,15 @@ fun main(args: Array<String>) {
 
     // Helper wrappers for publishing inputs
     val setVx = { v: Double ->
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/Input/vx", v)
+        NT4Server.publishTopic("ARES/Input/vx", v)
         com.areslib.telemetry.SimInputBridge.rawWebVx = v
     }
     val setVy = { v: Double ->
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/Input/vy", v)
+        NT4Server.publishTopic("ARES/Input/vy", v)
         com.areslib.telemetry.SimInputBridge.rawWebVy = v
     }
     val setOmega = { v: Double ->
-        org.frcforftc.networktables.NT4Server.publishTopic("ARES/Input/omega", v)
+        NT4Server.publishTopic("ARES/Input/omega", v)
         com.areslib.telemetry.SimInputBridge.rawWebOmega = v
     }
 
@@ -42,8 +42,8 @@ fun main(args: Array<String>) {
     thread {
         var count = 0L
         while (running.get()) {
-            org.frcforftc.networktables.NT4Server.publishTopic("ARES/Input/heartbeat", count++)
-            org.frcforftc.networktables.NT4Server.publishTopic("ARES/Input/isTeleopMode", true)
+            NT4Server.publishTopic("ARES/Input/heartbeat", count++)
+            NT4Server.publishTopic("ARES/Input/isTeleopMode", true)
             try {
                 Thread.sleep(50)
             } catch (_: InterruptedException) {
@@ -53,24 +53,24 @@ fun main(args: Array<String>) {
     }
 
     // 3. Command INIT
-    org.frcforftc.networktables.NT4Server.publishTopic("ARES/DriverStation/SelectedOpMode", "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp")
-    org.frcforftc.networktables.NT4Server.publishTopic("ARES/DriverStation/Command", "INIT")
+    NT4Server.publishTopic("ARES/DriverStation/SelectedOpMode", "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp")
+    NT4Server.publishTopic("ARES/DriverStation/Command", "INIT")
     println("Sent INIT command for ARESMecanumTeleOp.")
     Thread.sleep(3000) // Wait for init loop
 
     // 4. Command START
-    org.frcforftc.networktables.NT4Server.publishTopic("ARES/DriverStation/Command", "START")
+    NT4Server.publishTopic("ARES/DriverStation/Command", "START")
     println("Sent START command.")
     Thread.sleep(1500) // Wait for OpMode to transition to RUNNING and complete starting pose sync
 
     fun getPose(): Triple<Double, Double, Double> {
-        val px = org.frcforftc.networktables.NT4Server.getDouble("Drive/Pose_X", 0.0)
-        val py = org.frcforftc.networktables.NT4Server.getDouble("Drive/Pose_Y", 0.0)
-        val ph = org.frcforftc.networktables.NT4Server.getDouble("Drive/Drive_Heading", 0.0)
+        val px = NT4Server.getDouble("Drive/Pose_X", 0.0)
+        val py = NT4Server.getDouble("Drive/Pose_Y", 0.0)
+        val ph = NT4Server.getDouble("Drive/Pose_Heading", 0.0)
         if (kotlin.math.abs(px) > 1e-4 || kotlin.math.abs(py) > 1e-4 || kotlin.math.abs(ph) > 1e-4) {
             return Triple(px, py, ph)
         }
-        val arr = org.frcforftc.networktables.NT4Server.getDoubleArray("ARES/EstimatedPose", doubleArrayOf(0.0, 0.0, 0.0))
+        val arr = NT4Server.getDoubleArray("ARES/EstimatedPose", doubleArrayOf(0.0, 0.0, 0.0))
         if (arr.size >= 3) {
             return Triple(arr[0], arr[1], arr[2])
         }

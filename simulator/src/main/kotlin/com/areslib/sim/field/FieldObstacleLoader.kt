@@ -167,8 +167,8 @@ object FieldObstacleLoader {
                     val radius = obs.width.coerceAtLeast(0.05)
                     val circle = Geometry.createCircle(radius)
                     val fixture = BodyFixture(circle)
-                    fixture.friction = 0.5
-                    fixture.restitution = 0.0
+                    fixture.friction = obs.friction
+                    fixture.restitution = obs.restitution
                     body.addFixture(fixture)
                     body.transform.setTranslation(obs.x, obs.y)
                 }
@@ -180,8 +180,8 @@ object FieldObstacleLoader {
                             val vecs = pts.map { Vector2(it.x, it.y) }.toTypedArray()
                             val poly = Geometry.createPolygon(*vecs)
                             val fixture = BodyFixture(poly)
-                            fixture.friction = 0.5
-                            fixture.restitution = 0.0
+                            fixture.friction = obs.friction
+                            fixture.restitution = obs.restitution
                             body.addFixture(fixture)
                             polySuccess = true
                         } catch (_: Exception) {}
@@ -205,8 +205,8 @@ object FieldObstacleLoader {
                                 wallRect.translate(midX, midY)
 
                                 val fixture = BodyFixture(wallRect)
-                                fixture.friction = 0.5
-                                fixture.restitution = 0.0
+                                fixture.friction = obs.friction
+                                fixture.restitution = obs.restitution
                                 body.addFixture(fixture)
                             }
                         }
@@ -219,11 +219,11 @@ object FieldObstacleLoader {
                     val h = obs.height.coerceAtLeast(0.05)
                     val rect = Geometry.createRectangle(w, h)
                     val fixture = BodyFixture(rect)
-                    fixture.friction = 0.5
-                    fixture.restitution = 0.0
+                    fixture.friction = obs.friction
+                    fixture.restitution = obs.restitution
                     body.addFixture(fixture)
                     body.transform.setTranslation(obs.x, obs.y)
-                    body.transform.rotation = org.dyn4j.geometry.Rotation(obs.rotation)
+                    body.transform.rotation = org.dyn4j.geometry.Rotation(Math.toRadians(obs.rotation))
                 }
             }
 

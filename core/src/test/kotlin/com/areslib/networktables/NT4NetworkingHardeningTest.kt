@@ -32,8 +32,6 @@ class NT4NetworkingHardeningTest {
     fun oversizedArrayIsTruncatedWithoutDesynchronizingFollowingFrame() {
         val output = ByteArrayOutputStream()
         val packer = MessagePack.newDefaultPacker(output)
-        packer.packArrayHeader(2)
-
         packer.packArrayHeader(4)
         packer.packLong(10L)
         packer.packLong(100L)
@@ -177,7 +175,7 @@ class NT4NetworkingHardeningTest {
 
         server.onMessage(connectionA, """{"method":"unpublish","params":{"pubuid":2000}}""")
         server.onMessage(connectionA, server.encodeNT4Message(3L, 2000L, 0L, 1, 9.0))
-        assertEquals(1.25, server.getTopicEntry("Client/A")?.value?.getAsObject())
+        assertEquals(null, server.getTopicEntry("Client/A"))
 
         server.onClose(connectionA, 1000, "test", false)
         server.onMessage(connectionB, server.encodeNT4Message(4L, 2000L, 0L, 1, 3.5))
@@ -265,7 +263,6 @@ class NT4NetworkingHardeningTest {
         val server = newServer()
         val output = ByteArrayOutputStream()
         MessagePack.newDefaultPacker(output).use { packer ->
-            packer.packArrayHeader(1)
             packer.packArrayHeader(4)
             packer.packLong(10L)
             packer.packLong(100L)
@@ -283,7 +280,6 @@ class NT4NetworkingHardeningTest {
     fun analyticsWireDecoderRejectsWholeFrameWhenLaterTupleIsMalformed() {
         val output = ByteArrayOutputStream()
         MessagePack.newDefaultPacker(output).use { packer ->
-            packer.packArrayHeader(2)
             packer.packArrayHeader(4)
             packer.packLong(1L)
             packer.packLong(10L)
@@ -302,7 +298,6 @@ class NT4NetworkingHardeningTest {
     fun analyticsWireDecoderBoundsDeclaredStringBeforeAllocation() {
         val output = ByteArrayOutputStream()
         MessagePack.newDefaultPacker(output).use { packer ->
-            packer.packArrayHeader(1)
             packer.packArrayHeader(4)
             packer.packLong(1L)
             packer.packLong(10L)
@@ -314,7 +309,7 @@ class NT4NetworkingHardeningTest {
     }
 
     @Test
-    fun flatLegacyUpdateTupleIsRejectedByBothDecoders() {
+    fun standardFlatUpdateTupleIsAcceptedByBothDecoders() {
         val output = ByteArrayOutputStream()
         MessagePack.newDefaultPacker(output).use { packer ->
             packer.packArrayHeader(4)
@@ -325,13 +320,76 @@ class NT4NetworkingHardeningTest {
         }
         val bytes = output.toByteArray()
 
-        assertTrue(
-            NT4WireProtocol.unpackMessageFrames(bytes).isEmpty(),
-            "NT4 requires an outer update batch even when it contains one tuple"
-        )
-        assertThrows(java.io.IOException::class.java) {
-            newServer().decodeNT4Messages(ByteBuffer.wrap(bytes))
-        }
+        assertEquals(4.5, NT4WireProtocol.unpackMessageFrames(bytes).single().value)
+        assertEquals(4.5, newServer().decodeNT4Messages(ByteBuffer.wrap(bytes)).single().dataValue)
+    }
+
+    @Test
+    fun encoderEmitsStandardTupleStreamAndReturnsOwnedBuffers() {
+        val server = newServer()
+        val firstEntry = NT4Entry(1, "One", NT4Value.DoubleVal(1.0), timestampUs = 10L)
+        val secondEntry = NT4Entry(2, "Two", NT4Value.DoubleVal(2.0), timestampUs = 20L)
+        val first = server.encodeNT4Messages(99L, listOf(firstEntry))
+        val firstSnapshot = ByteArray(first.remaining()).also { first.duplicate().get(it) }
+
+        val second = server.encodeNT4Messages(99L, listOf(secondEntry))
+        val afterReuse = ByteArray(first.remaining()).also { first.duplicate().get(it) }
+
+        assertEquals(0x94.toByte(), firstSnapshot.first(), "a standard update starts with its 4-tuple")
+        assertTrue(firstSnapshot.contentEquals(afterReuse), "queued frames must not alias the reusable encoder")
+        assertEquals(1.0, server.decodeNT4Messages(ByteBuffer.wrap(firstSnapshot)).single().dataValue)
+        assertEquals(2.0, server.decodeNT4Messages(second).single().dataValue)
+    }
+
+    @Test
+    fun announcementsAreScopedEscapedAndTransientTopicsAreUnannounced() {
+        val server = newServer()
+        val publisherText = mutableListOf<String>()
+        val subscriberText = mutableListOf<String>()
+        val bystanderText = mutableListOf<String>()
+        val publisher = webSocketProxy(textMessages = publisherText)
+        val subscriber = webSocketProxy(textMessages = subscriberText)
+        val bystander = webSocketProxy(textMessages = bystanderText)
+        val handshake = proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) }
+        server.onOpen(publisher, handshake)
+        server.onOpen(subscriber, handshake)
+        server.onOpen(bystander, handshake)
+        assertTrue(publisherText.isEmpty() && subscriberText.isEmpty() && bystanderText.isEmpty())
+
+        server.onMessage(subscriber, subscribe(1, listOf("/Scoped/"), prefix = true))
+        server.onMessage(publisher, publish("Scoped/Quoted\\\"Topic", 9, "double"))
+
+        assertTrue(publisherText.single().contains("\"pubuid\":9"))
+        assertTrue(subscriberText.single().contains("Quoted\\\"Topic"))
+        assertFalse(subscriberText.single().contains("pubuid"))
+        assertTrue(bystanderText.isEmpty())
+
+        server.onMessage(publisher, """{"method":"unpublish","params":{"pubuid":9}}""")
+        assertTrue(subscriberText.last().contains("\"method\":\"unannounce\""))
+        assertTrue(publisherText.last().contains("\"method\":\"unannounce\""))
+        assertEquals(null, server.getTopicEntry("Scoped/Quoted\"Topic"))
+    }
+
+    @Test
+    fun firstDefaultValuedUpdateIsPublishedAndOlderUpdatesCannotRollBackState() {
+        val server = newServer()
+        val publisher = webSocketProxy()
+        val subscriberBinary = mutableListOf<ByteArray>()
+        val subscriber = webSocketProxy(subscriberBinary)
+        val handshake = proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) }
+        server.onOpen(publisher, handshake)
+        server.onOpen(subscriber, handshake)
+        server.onMessage(subscriber, subscribe(1, listOf("/Timestamped"), prefix = false))
+        server.onMessage(publisher, publish("Timestamped", 7, "double"))
+
+        server.onMessage(publisher, server.encodeNT4Message(100L, 7L, 0L, 1, 0.0))
+        server.flush()
+        assertEquals(0.0, server.decodeNT4Messages(ByteBuffer.wrap(subscriberBinary.single())).single().dataValue)
+
+        server.onMessage(publisher, server.encodeNT4Message(90L, 7L, 0L, 1, 5.0))
+        server.flush()
+        assertEquals(1, subscriberBinary.size)
+        assertEquals(0.0, server.getTopicEntry("Timestamped")?.value?.getAsObject())
     }
 
     private fun newServer(): NT4Server = NT4Server(
@@ -350,7 +408,10 @@ class NT4NetworkingHardeningTest {
         return """{"method":"subscribe","params":{"topics":[$encodedTopics],"subuid":$subUid,"options":{"prefix":$prefix}}}"""
     }
 
-    private fun webSocketProxy(binaryMessages: MutableList<ByteArray>? = null): WebSocket {
+    private fun webSocketProxy(
+        binaryMessages: MutableList<ByteArray>? = null,
+        textMessages: MutableList<String>? = null
+    ): WebSocket {
         return proxy { method, args ->
             when (method.name) {
                 "hasBufferedData" -> false
@@ -360,6 +421,8 @@ class NT4NetworkingHardeningTest {
                         val copy = ByteArray(message.remaining())
                         message.duplicate().get(copy)
                         binaryMessages.add(copy)
+                    } else if (message is String && textMessages != null) {
+                        textMessages.add(message)
                     }
                     null
                 }

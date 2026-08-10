@@ -35,9 +35,8 @@ class ThreadedColorSensor(
                 cachedGreen = physicalSensor.green
                 cachedBlue = physicalSensor.blue
                 cachedAlpha = physicalSensor.alpha
-                val newNorm = physicalSensor.normalizedRgb
                 val writeBuffer = if (activeBuffer === bufferA) bufferB else bufferA
-                newNorm.copyInto(writeBuffer)
+                physicalSensor.copyNormalizedRgbInto(writeBuffer)
                 activeBuffer = writeBuffer
             } catch (e: Exception) {
                 // Keep last cached values
@@ -50,7 +49,12 @@ class ThreadedColorSensor(
     override val blue: Int get() = cachedBlue
     override val alpha: Int get() = cachedAlpha
 
-    override val normalizedRgb: DoubleArray get() = activeBuffer
+    override val normalizedRgb: DoubleArray get() = activeBuffer.copyOf()
+
+    override fun copyNormalizedRgbInto(destination: DoubleArray) {
+        require(destination.size >= 4) { "Normalized RGBA destination must contain at least four elements" }
+        activeBuffer.copyInto(destination, endIndex = 4)
+    }
 
     /**
      * Safely shuts down the polling background thread and waits for termination.

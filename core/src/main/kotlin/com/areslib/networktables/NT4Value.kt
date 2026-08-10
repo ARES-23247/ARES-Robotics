@@ -33,59 +33,69 @@ sealed interface NT4Value {
         override fun getAsObject(): Any = value
     }
 
-    data class BooleanArrayVal(val value: BooleanArray) : NT4Value {
+    class BooleanArrayVal(value: BooleanArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: BooleanArray get() = snapshot.copyOf()
         override val typeString: String = "boolean[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is BooleanArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class DoubleArrayVal(val value: DoubleArray) : NT4Value {
+    class DoubleArrayVal(value: DoubleArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: DoubleArray get() = snapshot.copyOf()
         override val typeString: String = "double[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is DoubleArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class LongArrayVal(val value: LongArray) : NT4Value {
+    class LongArrayVal(value: LongArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: LongArray get() = snapshot.copyOf()
         override val typeString: String = "int[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is LongArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class FloatArrayVal(val value: FloatArray) : NT4Value {
+    class FloatArrayVal(value: FloatArray) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: FloatArray get() = snapshot.copyOf()
         override val typeString: String = "float[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is FloatArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
-    data class StringArrayVal(val value: Array<String>) : NT4Value {
+    class StringArrayVal(value: Array<String>) : NT4Value {
+        private val snapshot = value.copyOf()
+        val value: Array<String> get() = snapshot.copyOf()
         override val typeString: String = "string[]"
-        override fun getAsObject(): Any = value
+        override fun getAsObject(): Any = snapshot.copyOf()
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is StringArrayVal) return false
-            return value.contentEquals(other.value)
+            return snapshot.contentEquals(other.snapshot)
         }
-        override fun hashCode(): Int = value.contentHashCode()
+        override fun hashCode(): Int = snapshot.contentHashCode()
     }
 
     companion object {

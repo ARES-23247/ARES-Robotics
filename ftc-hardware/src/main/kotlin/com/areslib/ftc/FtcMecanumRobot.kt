@@ -202,15 +202,25 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         get() = calibrationController.customSysIdVelocityProvider
         set(value) { calibrationController.customSysIdVelocityProvider = value }
 
+    /** Season flywheel used by the shared SysId mechanism adapter. */
+    var sysIdFlywheelIO: com.areslib.hardware.actuator.FlywheelIO?
+        get() = calibrationController.flywheelIO
+        set(value) { calibrationController.flywheelIO = value }
+
     /** Autonomous trajectory builder providing high-level motion path generation. */
     val autoBuilder: AutoBuilder get() = trajectoryFollower.autoBuilder
+
+    /** Shared follower used by native ARES auto compilation and online pathfinding. */
+    val pathFollower get() = trajectoryFollower.pathfindFollower
     private var lastLocalTelemetryUpdateMs = 0L
 
     init {
         val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
+        val maxAngularSpeed = maxSpeed / kinematicsController.kinematics.k
         drive.maxSpeedMps = maxSpeed
+        drive.maxAngularSpeedRadiansPerSecond = maxAngularSpeed
         mecanumDrive.maxSpeedMps = maxSpeed
-        mecanumDrive.maxAngularSpeedRps = maxSpeed / kinematicsController.kinematics.k
+        mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
     }
 
     /**
@@ -316,7 +326,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param rotation Angular CCW rotation velocity intent $[-1.0, 1.0]$.
      */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
-        mecanumDrive.fieldRelativeDrive(x, y, rotation)
+        mecanumDrive.driveFieldRelativeNormalized(x, y, rotation)
     }
 
     /**
@@ -327,7 +337,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param rotation Angular CCW rotation velocity intent $[-1.0, 1.0]$.
      */
     fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
-        store.dispatch(RobotAction.JoystickDriveIntent(x, y, rotation, isFieldCentric = false))
+        mecanumDrive.driveRobotRelativeNormalized(x, y, rotation)
     }
 
     /**
@@ -368,9 +378,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     
     /** Alias for [stopAll]. */
     fun stop() = stopAll()
-
-    /** Compatibility trajectory follower stub function. */
-    fun followTrajectory(path: Any? = null) { } // Compatibility alias as requested
 
     /**
      * Computes dead-reckoning fallback odometry when Pinpoint hardware is offline.

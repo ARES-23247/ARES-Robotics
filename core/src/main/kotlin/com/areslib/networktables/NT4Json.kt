@@ -1,9 +1,10 @@
 package com.areslib.networktables
 
 /**
- * Lightweight, zero-allocation micro JSON parser and builder tailored specifically
+ * Lightweight JSON parser and builder tailored specifically
  * for WPILib NetworkTables 4.1 JSON-RPC protocol frames (`announce`, `publish`, `unpublish`, `subscribe`).
- * Replaces heavy Jackson `ObjectMapper` AST nodes to maintain Zero-GC compliance.
+ * Replaces heavy Jackson `ObjectMapper` AST nodes on the robot-side control path. Parsing is
+ * bounded before allocating collections, and all emitted strings use JSON escaping.
  */
 object NT4Json {
 
@@ -22,6 +23,7 @@ object NT4Json {
      * or a JSON array of objects `[{...}, {...}]`).
      */
     fun parseMessages(jsonText: String): List<ParsedMessage> {
+        require(jsonText.length <= MAX_JSON_CHARS) { "NT4 JSON frame exceeds $MAX_JSON_CHARS characters" }
         val trimmed = jsonText.trim()
         if (trimmed.isEmpty()) return emptyList()
 
@@ -65,6 +67,7 @@ object NT4Json {
             } else if (c == '}') {
                 depth--
                 if (depth == 0 && start != -1) {
+                    require(list.size < MAX_MESSAGES) { "NT4 JSON frame exceeds $MAX_MESSAGES messages" }
                     list.add(start..i)
                     start = -1
                 }
@@ -111,7 +114,7 @@ object NT4Json {
         val quoteEnd = findClosingQuote(json, quoteStart + 1, searchEnd)
         if (quoteEnd == -1) return null
 
-        return json.substring(quoteStart + 1, quoteEnd)
+        return decodeJsonString(json, quoteStart + 1, quoteEnd)
     }
 
     fun extractIntField(json: String, fieldName: String, searchStart: Int, searchEnd: Int): Int? {
@@ -173,7 +176,8 @@ object NT4Json {
             if (qStart == -1 || qStart >= bracketEnd) break
             val qEnd = findClosingQuote(json, qStart + 1, bracketEnd)
             if (qEnd == -1 || qEnd > bracketEnd) break
-            result.add(json.substring(qStart + 1, qEnd))
+            require(result.size < MAX_TOPICS) { "NT4 subscription exceeds $MAX_TOPICS topics" }
+            result.add(decodeJsonString(json, qStart + 1, qEnd))
             idx = qEnd + 1
         }
         return result
@@ -196,6 +200,39 @@ object NT4Json {
         return -1
     }
 
+    private fun decodeJsonString(source: String, start: Int, endExclusive: Int): String {
+        val firstEscape = source.indexOf('\\', start).takeIf { it in start until endExclusive }
+            ?: return source.substring(start, endExclusive)
+        val result = java.lang.StringBuilder(endExclusive - start)
+        result.append(source, start, firstEscape)
+        var index = firstEscape
+        while (index < endExclusive) {
+            val character = source[index++]
+            if (character != '\\') {
+                result.append(character)
+                continue
+            }
+            require(index < endExclusive) { "Incomplete JSON escape" }
+            when (val escaped = source[index++]) {
+                '"', '\\', '/' -> result.append(escaped)
+                'b' -> result.append('\b')
+                'f' -> result.append('\u000c')
+                'n' -> result.append('\n')
+                'r' -> result.append('\r')
+                't' -> result.append('\t')
+                'u' -> {
+                    require(index + 4 <= endExclusive) { "Incomplete JSON unicode escape" }
+                    val codePoint = source.substring(index, index + 4).toIntOrNull(16)
+                        ?: throw IllegalArgumentException("Invalid JSON unicode escape")
+                    result.append(codePoint.toChar())
+                    index += 4
+                }
+                else -> throw IllegalArgumentException("Invalid JSON escape: \\$escaped")
+            }
+        }
+        return result.toString()
+    }
+
     /**
      * Constructs an NT4 `announce` JSON array payload for the provided entries.
      */
@@ -207,7 +244,7 @@ object NT4Json {
         for (entry in entries) {
             if (!first) sb.append(",")
             first = false
-            buildAnnounceObject(sb, entry)
+            buildAnnounceObject(sb, entry, null)
         }
         sb.append("]")
         return sb.toString()
@@ -216,22 +253,62 @@ object NT4Json {
     /**
      * Constructs a single NT4 `announce` JSON array payload for one entry.
      */
-    fun buildAnnounceSingle(entry: NT4Entry): String {
+    fun buildAnnounceSingle(entry: NT4Entry, pubUid: Int? = null): String {
         val sb = java.lang.StringBuilder(160)
         sb.append("[")
-        buildAnnounceObject(sb, entry)
+        buildAnnounceObject(sb, entry, pubUid)
         sb.append("]")
         return sb.toString()
     }
 
-    private fun buildAnnounceObject(sb: java.lang.StringBuilder, entry: NT4Entry) {
+    private fun buildAnnounceObject(sb: java.lang.StringBuilder, entry: NT4Entry, pubUid: Int?) {
         val cleanTopic = if (entry.topic.startsWith("/")) entry.topic else "/" + entry.topic
         sb.append("{\"method\":\"announce\",\"params\":{")
-        sb.append("\"name\":\"").append(cleanTopic).append("\",")
+        sb.append("\"name\":")
+        appendJsonString(sb, cleanTopic)
+        sb.append(',')
         sb.append("\"id\":").append(entry.id).append(",")
-        sb.append("\"type\":\"").append(entry.value.typeString).append("\",")
-        sb.append("\"pubuid\":").append(entry.id).append(",")
+        sb.append("\"type\":")
+        appendJsonString(sb, entry.value.typeString)
+        sb.append(',')
+        if (pubUid != null) sb.append("\"pubuid\":").append(pubUid).append(',')
         sb.append("\"properties\":{}")
         sb.append("}}")
     }
+
+    /** Constructs one `unannounce` control message for a deleted topic. */
+    fun buildUnannounceSingle(entry: NT4Entry): String {
+        val cleanTopic = if (entry.topic.startsWith("/")) entry.topic else "/" + entry.topic
+        val sb = java.lang.StringBuilder(cleanTopic.length + 96)
+        sb.append("[{\"method\":\"unannounce\",\"params\":{\"name\":")
+        appendJsonString(sb, cleanTopic)
+        sb.append(",\"id\":").append(entry.id).append("}}]")
+        return sb.toString()
+    }
+
+    private fun appendJsonString(sb: java.lang.StringBuilder, value: String) {
+        sb.append('"')
+        for (character in value) {
+            when (character) {
+                '"' -> sb.append("\\\"")
+                '\\' -> sb.append("\\\\")
+                '\b' -> sb.append("\\b")
+                '\u000c' -> sb.append("\\f")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> if (character < ' ') {
+                    sb.append("\\u")
+                    sb.append(character.code.toString(16).padStart(4, '0'))
+                } else {
+                    sb.append(character)
+                }
+            }
+        }
+        sb.append('"')
+    }
+
+    internal const val MAX_JSON_CHARS = 1_048_576
+    internal const val MAX_MESSAGES = 1_024
+    internal const val MAX_TOPICS = 256
 }

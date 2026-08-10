@@ -31,9 +31,8 @@ class ThreadedMultizoneDistanceSensor(
         HardwareRegistry.registerCloseable(this)
         scheduler.scheduleAtFixedRate({
             try {
-                val newDistances = physicalSensor.distancesMeters
                 val writeBuffer = if (activeBuffer === bufferA) bufferB else bufferA
-                newDistances.copyInto(writeBuffer)
+                physicalSensor.copyDistancesMetersInto(writeBuffer)
                 activeBuffer = writeBuffer
             } catch (e: Exception) {
                 // Keep last cached values
@@ -42,10 +41,17 @@ class ThreadedMultizoneDistanceSensor(
     }
 
     /**
-     * Instantly returns a defensive copy of the latest cached zone readings from memory (0.0 ms execution time).
+     * Returns a caller-owned copy of the latest cached zone readings.
      */
     override val distancesMeters: DoubleArray
-        get() = activeBuffer
+        get() = activeBuffer.copyOf()
+
+    override fun copyDistancesMetersInto(destination: DoubleArray): Int {
+        val source = activeBuffer
+        val count = minOf(source.size, destination.size)
+        source.copyInto(destination, endIndex = count)
+        return count
+    }
 
     /**
      * Safely shuts down the polling background thread and waits for termination.

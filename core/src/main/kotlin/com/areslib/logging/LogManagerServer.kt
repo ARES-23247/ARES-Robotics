@@ -13,7 +13,7 @@ import java.util.Locale
  *
  * The singleton binds port `5002` and exposes `GET /api/logs`, `GET /api/download?file=...`, and
  * `POST /api/delete?file=...`, plus a small browser dashboard at `/`. It serves only files beneath
- * [CloudExporter.logDir] or its `synced` child after canonical-path validation. Responses are
+ * [RobotLogEnvironment.logDirectory] or its `synced` child after canonical-path validation. Responses are
  * unauthenticated and intended for the trusted robot/laptop LAN; do not expose this port publicly.
  *
  * Requests are limited per remote IP by a ten-token bucket refilled at ten requests per second.
@@ -22,7 +22,7 @@ import java.util.Locale
 object LogManagerServer : NanoHTTPD(5002) {
 
     private val gson = Gson()
-    private val logDir = CloudExporter.logDir
+    private val logDir = RobotLogEnvironment.logDirectory
     private val syncedDir = File(logDir, "synced")
     // Canonical (symlink-resolved) base paths, resolved once at construction to avoid a
     // filesystem syscall on every request.

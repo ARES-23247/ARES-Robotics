@@ -80,4 +80,22 @@ class HardwareBoundsTier2Test {
         // Instantaneous warning at high current
         assertTrue(sensor.isOverloadWarning(18.0))
     }
+
+    @Test
+    fun `invalid floodgate sample does not poison filter and later sample recovers`() {
+        val analog = MockAnalogInput()
+        val sensor = FtcFloodgateCurrentSensor(analog, maxCurrentAmps = 80.0, filterAlpha = 1.0)
+
+        analog.mockVoltage = Double.NaN
+        sensor.update()
+        assertFalse(sensor.isReadingValid)
+        assertEquals(0.0, sensor.current, 1e-9)
+        assertTrue(sensor.fuseThermalLoadPercent.isFinite())
+
+        analog.mockVoltage = 0.825
+        sensor.update()
+        assertTrue(sensor.isReadingValid)
+        assertEquals(20.0, sensor.current, 1e-9)
+        assertTrue(sensor.fuseThermalLoadPercent.isFinite())
+    }
 }

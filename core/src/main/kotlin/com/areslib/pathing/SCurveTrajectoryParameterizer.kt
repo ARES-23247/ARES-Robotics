@@ -69,11 +69,31 @@ object SCurveTrajectoryParameterizer {
         constraints: Constraints,
         startHeading: Rotation2d = Rotation2d(0.0),
         endHeading: Rotation2d = Rotation2d(0.0),
+        startVelocityMps: Double = 0.0,
+        endVelocityMps: Double = 0.0,
         spacingMeters: Double = 0.02
     ): Path {
+        require(constraints.maxVelocityMps.isFinite() && constraints.maxVelocityMps > 0.0) {
+            "Maximum velocity must be finite and positive"
+        }
+        require(constraints.maxAccelerationMps2.isFinite() && constraints.maxAccelerationMps2 > 0.0) {
+            "Maximum acceleration must be finite and positive"
+        }
+        require(constraints.maxJerkMps3.isFinite() && constraints.maxJerkMps3 > 0.0) {
+            "Maximum jerk must be finite and positive"
+        }
+        require(constraints.maxCentripetalAccelMps2.isFinite() && constraints.maxCentripetalAccelMps2 > 0.0) {
+            "Maximum centripetal acceleration must be finite and positive"
+        }
+        require(startVelocityMps.isFinite() && startVelocityMps in 0.0..constraints.maxVelocityMps) {
+            "Start velocity must be finite and within the configured velocity limit"
+        }
+        require(endVelocityMps.isFinite() && endVelocityMps in 0.0..constraints.maxVelocityMps) {
+            "End velocity must be finite and within the configured velocity limit"
+        }
         if (waypoints.isEmpty()) return Path(emptyList())
         if (waypoints.size == 1) {
-            return Path(listOf(PathPoint(Pose2d(waypoints[0].x, waypoints[0].y, startHeading), 0.0)))
+            return Path(listOf(PathPoint(Pose2d(waypoints[0].x, waypoints[0].y, startHeading), endVelocityMps)))
         }
 
         val validSpacing = if (spacingMeters.isNaN() || spacingMeters.isInfinite() || spacingMeters <= 1e-5) 0.02 else spacingMeters
@@ -171,8 +191,8 @@ object SCurveTrajectoryParameterizer {
         }
 
         // Enforce boundary velocities
-        velocities[0] = 0.0
-        velocities[numPoints - 1] = 0.0
+        velocities[0] = startVelocityMps
+        velocities[numPoints - 1] = endVelocityMps
 
         // Forward Pass: Enforce forward acceleration & jerk limit
         accelerations[0] = 0.0
@@ -206,6 +226,7 @@ object SCurveTrajectoryParameterizer {
         }
 
         // Backward Pass: Enforce deceleration & jerk limit
+        velocities[numPoints - 1] = endVelocityMps
         var decel = 0.0
         for (i in numPoints - 1 downTo 1) {
             val ds = distances[i] - distances[i - 1]

@@ -6,26 +6,10 @@ import kotlin.test.assertEquals
 class TelemetryTopicNormalizerTest {
 
     @Test
-    fun `legacy aliases normalize to canonical pose vision odometry and sysid topics`() {
-        val cases = mapOf(
-            "Drive/Drive_Heading" to TelemetryTopicConstants.DRIVE_POSE_HEADING,
-            "/Drive/Drive_Heading" to TelemetryTopicConstants.DRIVE_POSE_HEADING,
-            "pinpoint_x" to TelemetryTopicConstants.DRIVE_ODOM_X,
-            "pinpoint/x" to TelemetryTopicConstants.DRIVE_ODOM_X,
-            "pinpoint_y" to TelemetryTopicConstants.DRIVE_ODOM_Y,
-            "pinpoint/y" to TelemetryTopicConstants.DRIVE_ODOM_Y,
-            "pinpoint_heading" to TelemetryTopicConstants.DRIVE_ODOM_HEADING,
-            "pinpoint/heading" to TelemetryTopicConstants.DRIVE_ODOM_HEADING,
-            "Vision/Pose/X" to TelemetryTopicConstants.VISION_POSE_X,
-            "Vision/Pose/Y" to TelemetryTopicConstants.VISION_POSE_Y,
-            "Vision/Pose/Heading" to TelemetryTopicConstants.VISION_POSE_HEADING,
-            "SysId_Data" to "SysId/Data",
-            "sysid_data" to "SysId/Data"
-        )
-
-        for ((input, expected) in cases) {
-            assertEquals(expected, TelemetryTopicNormalizer.normalizeTopic(input), input)
-        }
+    fun `aliases are not rewritten`() {
+        assertEquals("Drive/Drive_Heading", TelemetryTopicNormalizer.normalizeTopic("Drive/Drive_Heading"))
+        assertEquals("pinpoint_heading", TelemetryTopicNormalizer.normalizeTopic("pinpoint_heading"))
+        assertEquals("SysId_Data", TelemetryTopicNormalizer.normalizeTopic("SysId_Data"))
     }
 
     @Test
@@ -53,10 +37,10 @@ class TelemetryTopicNormalizerTest {
     fun `all leading slashes collapse to the same canonical topic`() {
         assertEquals(
             TelemetryTopicConstants.DRIVE_POSE_HEADING,
-            TelemetryTopicNormalizer.normalizeTopic("////Drive/Drive_Heading")
+            TelemetryTopicNormalizer.normalizeTopic("////Drive/Pose_Heading")
         )
         assertEquals(
-            TelemetryTopicConstants.DRIVE_ODOM_HEADING,
+            "pinpoint_heading",
             TelemetryTopicNormalizer.normalizeTopic("///pinpoint_heading")
         )
         assertEquals(

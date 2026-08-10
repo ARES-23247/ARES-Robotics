@@ -51,6 +51,7 @@ open class DeviceMapping<T : HardwareDevice>(val deviceType: Class<T>) : Iterabl
  * test/simulator subclass supplies lookup behavior, preventing silent use of missing hardware.
  */
 open class HardwareMap {
+    @JvmField val appContext: android.content.Context = android.content.Context()
     @JvmField val voltageSensor: DeviceMapping<VoltageSensor> = DeviceMapping(VoltageSensor::class.java)
     @JvmField val servo: DeviceMapping<Servo> = DeviceMapping(Servo::class.java)
     @JvmField val dcMotor: DeviceMapping<DcMotor> = DeviceMapping(DcMotor::class.java)

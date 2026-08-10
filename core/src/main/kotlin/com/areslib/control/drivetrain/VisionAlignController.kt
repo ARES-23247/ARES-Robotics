@@ -32,7 +32,7 @@ import kotlin.math.sin
  * - Target Distance ($d_{target}, Z$): Meters ($m$)
  * - Lateral Target Offset ($X$): Meters ($m$)
  * - Robot Yaw ($\phi, e_{\theta}$): Radians ($rad$), counter-clockwise positive
- * - Linear Velocity Commands ($u_X, u_Y$): Meters per second ($m/s$) or normalized duty cycle
+ * - Linear Velocity Commands ($u_X, u_Y$): Meters per second ($m/s$)
  * - Angular Velocity Command ($u_{\omega}$): Radians per second ($rad/s$)
  * - Data Freshness Threshold: $\le 250$ milliseconds ($ms$)
  *
@@ -80,7 +80,8 @@ class VisionAlignController {
         var activeMeasurement: com.areslib.state.VisionMeasurement? = null
         for (i in 0 until state.vision.measurements.size) {
             val measurement = state.vision.measurements[i]
-            if (measurement.tagId == targetTagId && (now - measurement.timestampMs) < 250L) {
+            val ageMs = now - measurement.timestampMs
+            if (measurement.tagId == targetTagId && ageMs in 0L..249L && isUsableTargetSpace(measurement, state)) {
                 activeMeasurement = measurement
                 break
             }
@@ -96,9 +97,10 @@ class VisionAlignController {
             val tuning = state.tuning
             val rawZ = robotPoseTargetSpace.z
             val rawY = robotPoseTargetSpace.y
-            val correctedZ = rawZ * cos(imuPitch) - rawY * sin(imuPitch)
+            val safePitch = imuPitch.takeIf { it.isFinite() } ?: 0.0
+            val correctedZ = rawZ * cos(safePitch) - rawY * sin(safePitch)
             val distanceZ = abs(correctedZ)
-            val targetDistanceMeters = tuning.visionAlignTargetDistance
+            val targetDistanceMeters = tuning.visionAlignTargetDistance.finiteNonNegative()
             val errorForwardT = distanceZ - targetDistanceMeters
             val errorLeftT = robotPoseTargetSpace.x
             
@@ -109,7 +111,7 @@ class VisionAlignController {
             val wrappedYaw = wrapAngle(robotYaw)
             
             // 1. Yaw rate-of-change sanity check (reject PnP flips/jumps)
-            val maxHeadingChange = tuning.visionAlignMaxHeadingChangeRad
+            val maxHeadingChange = tuning.visionAlignMaxHeadingChangeRad.finiteNonNegative()
             val sanitizedYaw = if (hasPrevFiltered) {
                 val diff = wrapAngle(wrappedYaw - prevRawYaw)
                 if (abs(diff) > maxHeadingChange) prevRawYaw else wrappedYaw
@@ -128,8 +130,8 @@ class VisionAlignController {
             val errHeading = wrapAngle(pointingTarget - phi)
             
             // 2. Low-pass filters to smooth out high-frequency vision noise
-            val alphaTranslation = tuning.visionAlignAlphaTranslation
-            val alphaHeading = tuning.visionAlignAlphaHeading
+            val alphaTranslation = tuning.visionAlignAlphaTranslation.finiteUnitInterval()
+            val alphaHeading = tuning.visionAlignAlphaHeading.finiteUnitInterval()
             
             val hadPreviousMeasurement = hasPrevFiltered
             val errXFiltered = if (hadPreviousMeasurement) alphaTranslation * errX + (1.0 - alphaTranslation) * prevErrX else errX
@@ -146,13 +148,13 @@ class VisionAlignController {
             prevErrY = errYFiltered
             prevErrHeading = errHeadingFiltered
             
-            val kP_translation = tuning.visionAlignKpTranslation
-            val kP_rotation = tuning.visionAlignKpRotation
-            val kD_rotation = tuning.visionAlignKdRotation
+            val kP_translation = tuning.visionAlignKpTranslation.finiteOrZero()
+            val kP_rotation = tuning.visionAlignKpRotation.finiteOrZero()
+            val kD_rotation = tuning.visionAlignKdRotation.finiteOrZero()
             
             // 3. Apply deadbands to prevent limit-cycle oscillations (jittering)
-            val translationDeadband = tuning.visionAlignTranslationDeadband
-            val headingErrorDeadband = tuning.visionAlignHeadingErrorDeadband
+            val translationDeadband = tuning.visionAlignTranslationDeadband.finiteNonNegative()
+            val headingErrorDeadband = tuning.visionAlignHeadingErrorDeadband.finiteNonNegative()
             
             // Speed-limit translation commands to keep the tag in the camera's FOV
             var ctrlX = if (abs(errXFiltered) > translationDeadband) {
@@ -163,7 +165,7 @@ class VisionAlignController {
                 errYFiltered * kP_translation
             } else 0.0
 
-            val maxClamp = tuning.visionAlignClampTranslationX
+            val maxClamp = tuning.visionAlignClampTranslationX.finiteNonNegative()
             val magnitude = kotlin.math.hypot(ctrlX, ctrlY)
             if (magnitude > maxClamp) {
                 val scale = maxClamp / magnitude
@@ -171,7 +173,7 @@ class VisionAlignController {
                 ctrlY *= scale
             }
             
-            val kS_rotational = tuning.visionAlignKsRotational
+            val kS_rotational = tuning.visionAlignKsRotational.finiteOrZero()
             
             // Compute derivative term: rate of heading error change
             val dtSec = ((now - prevLoopTimeMs).coerceIn(1, 200)) / 1000.0
@@ -190,9 +192,10 @@ class VisionAlignController {
                 integralAccum = integralAccum.coerceIn(-0.3, 0.3)
                 
                 val pTerm = activeErr * kP_rotation
-                val iTerm = (tuning.visionAlignKpRotation * 0.1) * integralAccum
+                val iTerm = (kP_rotation * 0.1) * integralAccum
                 val dTerm = headingErrorRate * kD_rotation
-                (pTerm + iTerm + dTerm + currentSign * kS_rotational).coerceIn(-tuning.visionAlignClampRotation, tuning.visionAlignClampRotation)
+                val rotationClamp = tuning.visionAlignClampRotation.finiteNonNegative()
+                (pTerm + iTerm + dTerm + currentSign * kS_rotational).coerceIn(-rotationClamp, rotationClamp)
             } else {
                 integralAccum = 0.0
                 0.0
@@ -223,11 +226,11 @@ class VisionAlignController {
                 if (!wasTrackingTag) lastKnownSearchDirection = -1.0 // start CW
             }
             
-            val firstSweepMs = tuning.visionAlignSearchFirstSweepMs
-            val secondSweepMs = tuning.visionAlignSearchSecondSweepMs
-            val totalSearchMs = firstSweepMs + secondSweepMs
+            val firstSweepMs = tuning.visionAlignSearchFirstSweepMs.coerceAtLeast(0L)
+            val secondSweepMs = tuning.visionAlignSearchSecondSweepMs.coerceAtLeast(0L)
+            val totalSearchMs = if (Long.MAX_VALUE - firstSweepMs < secondSweepMs) Long.MAX_VALUE else firstSweepMs + secondSweepMs
             val timeSinceLost = RobotClock.currentTimeMillis() - tagLostTimestampMs
-            val searchSpeed = tuning.visionAlignSearchSpeed
+            val searchSpeed = tuning.visionAlignSearchSpeed.finiteOrZero()
             
             if (timeSinceLost < totalSearchMs) {
                 // Active search
@@ -250,4 +253,26 @@ class VisionAlignController {
             }
         }
     }
+
+    private fun isUsableTargetSpace(
+        measurement: com.areslib.state.VisionMeasurement,
+        state: RobotState
+    ): Boolean {
+        val pose = measurement.robotPoseTargetSpace
+        if (!pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() || pose.z < 0.0 ||
+            !pose.rotation.x.isFinite() || !pose.rotation.y.isFinite() || !pose.rotation.z.isFinite()) {
+            return false
+        }
+        val maxDistance = state.vision.filterConfig.maxDistanceMeters
+            .takeIf { it.isFinite() && it >= 0.0 } ?: return false
+        return kotlin.math.sqrt(pose.x * pose.x + pose.y * pose.y + pose.z * pose.z).let {
+            it.isFinite() && it <= maxDistance
+        }
+    }
+
+    private fun Double.finiteOrZero(): Double = if (isFinite()) this else 0.0
+
+    private fun Double.finiteNonNegative(): Double = if (isFinite()) coerceAtLeast(0.0) else 0.0
+
+    private fun Double.finiteUnitInterval(): Double = if (isFinite()) coerceIn(0.0, 1.0) else 0.0
 }

@@ -23,18 +23,25 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * A submitted map is owned by the logger until it is written or rejected and must not be mutated by
  * the caller. Any [HashMap] passed to [logFrame] is cleared and returned to the logger's pool, so use
- * [obtainMap] for pooled producer frames and do not retain that reference. [stop] blocks until every
- * accepted frame is drained and the writer is closed.
+ * [obtainMap] for pooled producer frames and do not retain that reference. While writing, the file
+ * ends in `.csv.active`; [stop] blocks until every accepted frame is drained and atomically exposes
+ * the completed `.csv` name. Importers can therefore ignore active files instead of guessing from
+ * temporary size stability.
  *
  * This class is thread-safe for producers and shutdown. It reduces control-loop IO latency; it does
  * not promise allocation-free logging when the pool is exhausted or when rows are serialized.
  */
-class ARESDataLogger(val mode: String = "Init") {
+class ARESDataLogger(
+    val mode: String = "Init",
+    private val logDirectory: File = RobotLogEnvironment.logDirectory
+) {
 
     private val logQueue = LinkedBlockingQueue<Map<String, Any>>(1000)
     private val activeKeys = mutableListOf<String>()
     private val activeKeySet = HashSet<String>()
     private var writer: BufferedWriter? = null
+    private var activeLogFile: File? = null
+    private var completedLogFile: File? = null
     private var isHeaderWritten = false
     @Volatile private var isRunning = false
     private val queueStateLock = Any()
@@ -62,22 +69,16 @@ class ARESDataLogger(val mode: String = "Init") {
         }
 
         try {
-            val javaVendor = System.getProperty("java.vendor") ?: ""
-            val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
-
-            val logDir = if (isAndroid) {
-                File("/sdcard/FIRST/telemetry_logs/")
-            } else {
-                File("./logs/")
+            if (!logDirectory.exists() && !logDirectory.mkdirs()) {
+                throw java.io.IOException("Could not create log directory: ${logDirectory.absolutePath}")
             }
 
-            if (!logDir.exists()) {
-                logDir.mkdirs()
-            }
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault()).format(Date())
+            val finalFile = File(logDirectory, "ares_log_${timestamp}_$mode.csv")
+            val logFile = File(logDirectory, "${finalFile.name}.active")
 
-            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
-            val logFile = File(logDir, "ares_log_${timestamp}_$mode.csv")
-
+            activeLogFile = logFile
+            completedLogFile = finalFile
             writer = BufferedWriter(FileWriter(logFile))
             isRunning = true
             startLoggingLoop()
@@ -147,6 +148,7 @@ class ARESDataLogger(val mode: String = "Init") {
                 }
             } finally {
                 closeWriter()
+                finalizeLogFile()
                 workerDone.countDown()
                 if (wasInterrupted) Thread.currentThread().interrupt()
             }
@@ -347,6 +349,21 @@ class ARESDataLogger(val mode: String = "Init") {
         } finally {
             writer = null
         }
+    }
+
+    private fun finalizeLogFile() {
+        val active = activeLogFile ?: return
+        val completed = completedLogFile ?: return
+        if (!active.exists()) return
+        if (completed.exists() && !completed.delete()) {
+            System.err.println("ARESDataLogger: Could not replace existing completed log ${completed.absolutePath}")
+            return
+        }
+        if (!active.renameTo(completed)) {
+            System.err.println("ARESDataLogger: Could not finalize active log ${active.absolutePath}")
+            return
+        }
+        activeLogFile = null
     }
 
     /**

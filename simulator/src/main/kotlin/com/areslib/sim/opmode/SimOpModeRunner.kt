@@ -1,6 +1,9 @@
 package com.areslib.sim.opmode
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous
+import com.qualcomm.robotcore.eventloop.opmode.Disabled
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import java.io.File
 import java.util.jar.JarFile
 
@@ -20,36 +23,13 @@ object SimOpModeRunner {
      */
     fun scanAndPublishOpModes() {
         try {
-            val disabledClass = try {
-                @Suppress("UNCHECKED_CAST")
-                Class.forName("com.qualcomm.robotcore.eventloop.opmode.Disabled") as Class<out Annotation>
-            } catch (_: Exception) { null }
-
-            val disabledOpModes = disabledClass?.let { findAnnotatedClasses(it).map { c -> c.name }.toSet() } ?: emptySet()
-
-            val teleOpClass = try {
-                @Suppress("UNCHECKED_CAST")
-                Class.forName("com.qualcomm.robotcore.eventloop.opmode.TeleOp") as Class<out Annotation>
-            } catch (_: Exception) { null }
-
-            val autonomousClass = try {
-                @Suppress("UNCHECKED_CAST")
-                Class.forName("com.qualcomm.robotcore.eventloop.opmode.Autonomous") as Class<out Annotation>
-            } catch (_: Exception) { null }
-
-            var teleops = teleOpClass?.let {
-                findAnnotatedClasses(it)
-                    .filter { opMode -> !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") }
-                    .filter { opMode -> disabledClass == null || (!opMode.isAnnotationPresent(disabledClass) && opMode.name !in disabledOpModes) }
-                    .map { opMode -> opMode.name }
-            } ?: emptyList()
-
-            var autos = autonomousClass?.let {
-                findAnnotatedClasses(it)
-                    .filter { opMode -> !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") }
-                    .filter { opMode -> disabledClass == null || (!opMode.isAnnotationPresent(disabledClass) && opMode.name !in disabledOpModes) }
-                    .map { opMode -> opMode.name }
-            } ?: emptyList()
+            val disabledOpModes = findAnnotatedClasses(Disabled::class.java).mapTo(mutableSetOf(), Class<*>::getName)
+            val enabledFilter: (Class<*>) -> Boolean = { opMode ->
+                !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") &&
+                    !opMode.isAnnotationPresent(Disabled::class.java) && opMode.name !in disabledOpModes
+            }
+            var teleops = findAnnotatedClasses(TeleOp::class.java).filter(enabledFilter).map(Class<*>::getName)
+            var autos = findAnnotatedClasses(Autonomous::class.java).filter(enabledFilter).map(Class<*>::getName)
 
             // Include default ARESLib integration test opmode if lists are empty
             if (teleops.isEmpty()) {
@@ -157,9 +137,9 @@ object SimOpModeRunner {
         opModeClassName: String?
     ): LinearOpMode? {
         if (opModeArg != null) return opModeArg
-        if (opModeClassName.isNull_or_blank()) return null
-        
-        val name = opModeClassName!!.trim()
+        if (opModeClassName.isNullOrBlank()) return null
+
+        val name = opModeClassName.trim()
         val candidates = listOf(
             name,
             "org.firstinspires.ftc.teamcode.opmodes.$name",
@@ -180,8 +160,8 @@ object SimOpModeRunner {
 
         // Fallback: search discovered OpModes by simple class name or annotation name
         try {
-            val teleOpClass = Class.forName("com.qualcomm.robotcore.eventloop.opmode.TeleOp") as Class<out Annotation>
-            val autoClass = Class.forName("com.qualcomm.robotcore.eventloop.opmode.Autonomous") as Class<out Annotation>
+            val teleOpClass = TeleOp::class.java
+            val autoClass = Autonomous::class.java
             val allOpModes = findAnnotatedClasses(teleOpClass) + findAnnotatedClasses(autoClass)
             
             for (clazz in allOpModes) {
@@ -194,8 +174,8 @@ object SimOpModeRunner {
                 }
                 val teleAnno = clazz.getAnnotation(teleOpClass)
                 if (teleAnno != null) {
-                    val annoName = teleOpClass.getMethod("name").invoke(teleAnno) as? String
-                    if (annoName != null && annoName.equals(name, ignoreCase = true)) {
+                    val annoName = teleAnno.name
+                    if (annoName.equals(name, ignoreCase = true)) {
                         val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
                         if (instance != null) {
                             println("[Simulator] Successfully matched OpMode by TeleOp annotation name '$annoName': ${clazz.name}")
@@ -205,8 +185,8 @@ object SimOpModeRunner {
                 }
                 val autoAnno = clazz.getAnnotation(autoClass)
                 if (autoAnno != null) {
-                    val annoName = autoClass.getMethod("name").invoke(autoAnno) as? String
-                    if (annoName != null && annoName.equals(name, ignoreCase = true)) {
+                    val annoName = autoAnno.name
+                    if (annoName.equals(name, ignoreCase = true)) {
                         val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
                         if (instance != null) {
                             println("[Simulator] Successfully matched OpMode by Autonomous annotation name '$annoName': ${clazz.name}")
@@ -228,5 +208,4 @@ object SimOpModeRunner {
         }
     }
 
-    private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()
 }

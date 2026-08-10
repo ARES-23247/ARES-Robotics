@@ -7,6 +7,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 
 annotation class TeleOp(val name: String = "", val group: String = "")
 annotation class Autonomous(val name: String = "", val group: String = "")
+annotation class Disabled
 
 /**
  * Class implementation for Linear Op Mode.
@@ -48,5 +49,10 @@ abstract class LinearOpMode {
         } else {
             Thread.sleep(milliseconds)
         }
+    }
+
+    /** Mirrors the SDK's cooperative OpMode-thread yield without introducing simulated time. */
+    fun idle() {
+        Thread.yield()
     }
 }

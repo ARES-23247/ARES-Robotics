@@ -25,6 +25,11 @@ enum class DriverStationSide {
     @SerializedName("west") WEST
 }
 
+enum class FtcFieldCoordinateSystem {
+    @SerializedName("diamond") DIAMOND,
+    @SerializedName("square") SQUARE
+}
+
 enum class ObstacleType {
     @SerializedName("blocking") BLOCKING,
     @SerializedName("ramp") RAMP
@@ -59,7 +64,10 @@ data class RobotFieldObstacle(
     val points: List<RobotFieldPoint> = emptyList(),
     val friction: Double = 0.5,
     val restitution: Double = 0.3,
-    val rotation: Double = 0.0
+    /** Counter-clockwise rotation in degrees. */
+    val rotation: Double = 0.0,
+    val locked: Boolean = false,
+    val color: String = "#E53935"
 )
 
 /**
@@ -72,7 +80,9 @@ data class RobotFieldAprilTag(
     val x: Double = 0.0,
     val y: Double = 0.0,
     val z: Double = 0.0,
-    val yaw: Double = 0.0 // Yaw rotation in degrees
+    val yaw: Double = 0.0, // Yaw rotation in degrees
+    val editorId: String = "",
+    val locked: Boolean = false
 )
 
 /**
@@ -90,7 +100,9 @@ data class RobotFieldElementType(
     val diameter: Double? = null,
     val color: String = "#FFFFFF",
     val massKg: Double = 1.0,
-    val movable: Boolean = false
+    val movable: Boolean = false,
+    val friction: Double = 0.6,
+    val restitution: Double = 0.3
 )
 
 /**
@@ -101,9 +113,32 @@ data class RobotFieldElementType(
 data class RobotFieldElementInstance(
     val id: String = "",
     val elementTypeId: String = "",
+    val name: String = "",
     val x: Double = 0.0,
     val y: Double = 0.0,
-    val rotation: Double = 0.0
+    val rotation: Double = 0.0,
+    val locked: Boolean = false
+)
+
+/** Rendering calibration for the field image stored beside the field document. */
+data class RobotFieldImageConfig(
+    val imagePath: String = "field_image.png",
+    val rotationDegrees: Double = 0.0,
+    val cropLeft: Double = 0.0,
+    val cropRight: Double = 1.0,
+    val cropTop: Double = 0.0,
+    val cropBottom: Double = 1.0,
+    val ftcCoordinateSystem: FtcFieldCoordinateSystem = FtcFieldCoordinateSystem.DIAMOND
+)
+
+/** Named field pose in meters with a counter-clockwise heading in degrees. */
+data class RobotFieldWaypoint(
+    val id: String = "",
+    val name: String = "",
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val headingDegrees: Double = 0.0,
+    val locked: Boolean = false
 )
 
 /**
@@ -112,10 +147,15 @@ data class RobotFieldElementInstance(
  * Pure Redux state definition and deterministic reducer transition handler.
  */
 data class RobotFieldConfig(
+    val schemaVersion: Int = CURRENT_FIELD_SCHEMA_VERSION,
+    val revision: Long = 0L,
     val id: String = "",
     val name: String = "",
     val gameYear: String = "",
     val fieldType: FieldType = FieldType.FTC,
+    /** Explicit dimensions in meters; zero selects the league default. */
+    val widthMeters: Double = 0.0,
+    val heightMeters: Double = 0.0,
     val xAxisDirection: AxisDirection = AxisDirection.UP,
     val yAxisDirection: AxisDirection = AxisDirection.LEFT,
     val redDriverStation: DriverStationSide = DriverStationSide.SOUTH,
@@ -123,8 +163,18 @@ data class RobotFieldConfig(
     val obstacles: List<RobotFieldObstacle> = emptyList(),
     val apriltags: List<RobotFieldAprilTag> = emptyList(),
     val elementTypes: List<RobotFieldElementType> = emptyList(),
-    val elements: List<RobotFieldElementInstance> = emptyList()
+    val elements: List<RobotFieldElementInstance> = emptyList(),
+    val fieldWaypoints: List<RobotFieldWaypoint> = emptyList(),
+    val image: RobotFieldImageConfig? = null
 ) {
+    val resolvedWidthMeters: Double
+        get() = widthMeters.takeIf { it > 0.0 }
+            ?: if (fieldType == FieldType.FTC) 3.6576 else 16.541
+
+    val resolvedHeightMeters: Double
+        get() = heightMeters.takeIf { it > 0.0 }
+            ?: if (fieldType == FieldType.FTC) 3.6576 else 8.211
+
     /**
      * Resolves the starting pose based on the alliance's driver station wall.
      * Starts adjacent to the wall facing the field center.
@@ -206,6 +256,24 @@ data class RobotFieldConfig(
     }
 }
 
+const val CURRENT_FIELD_SCHEMA_VERSION: Int = 1
+
+/** Gson codec for the canonical, versioned field document. */
+object RobotFieldDocument {
+    private val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+
+    fun decode(json: String): RobotFieldConfig {
+        val config = gson.fromJson(json, RobotFieldConfig::class.java)
+            ?: throw IllegalArgumentException("Field document is empty")
+        require(config.schemaVersion in 1..CURRENT_FIELD_SCHEMA_VERSION) {
+            "Unsupported field schema version ${config.schemaVersion}; supported version is $CURRENT_FIELD_SCHEMA_VERSION"
+        }
+        return config
+    }
+
+    fun encode(config: RobotFieldConfig): String = gson.toJson(config)
+}
+
 /**
  * Object implementation for Robot Field Manager.
  *
@@ -230,12 +298,9 @@ object RobotFieldManager {
             val file = File(filePath)
             if (!file.exists()) return false
             val jsonContent = file.readText()
-            val loaded = gson.fromJson(jsonContent, RobotFieldConfig::class.java)
-            if (loaded != null) {
-                activeConfig = loaded
-                return true
-            }
-            false
+            val loaded = RobotFieldDocument.decode(jsonContent)
+            activeConfig = loaded
+            true
         } catch (e: Exception) {
             println("ARES Field Manager Error: Failed to load field json from $filePath: ${e.message}")
             false

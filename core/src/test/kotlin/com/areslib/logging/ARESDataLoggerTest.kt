@@ -9,6 +9,33 @@ import kotlin.test.assertEquals
 class ARESDataLoggerTest {
 
     @Test
+    fun `log becomes importable only after clean shutdown`() {
+        val mode = "ActiveMarker_${System.nanoTime()}"
+        val logger = ARESDataLogger(mode)
+        val logsDir = File("./logs/")
+
+        assertEquals(
+            1,
+            logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv.active") }?.size ?: 0
+        )
+        assertEquals(
+            0,
+            logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv") }?.size ?: 0
+        )
+
+        logger.logFrame(hashMapOf("TimestampMs" to 1L, "Value" to 1.0))
+        logger.stop()
+
+        assertEquals(
+            0,
+            logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv.active") }?.size ?: 0
+        )
+        val completed = logsDir.listFiles { _, name -> name.endsWith("_${mode}.csv") }.orEmpty()
+        assertEquals(1, completed.size)
+        completed.single().delete()
+    }
+
+    @Test
     fun csvEscapesValuesAndPreservesLateFieldsInStableSchema() {
         val mode = "CsvSafety_${System.nanoTime()}"
         val logger = ARESDataLogger(mode)

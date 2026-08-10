@@ -1,24 +1,18 @@
 package com.areslib.sim.cli
 
-import com.areslib.math.geometry.Vector3
 import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldManager
-import com.google.gson.Gson
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * Class implementation for Sim Cli Args.
- *
- * Robotics framework control component.
- */
+/** Parsed simulator startup options. */
 data class SimCliArgs(
     val fieldConfigArg: String? = null,
     val watchFieldConfig: Boolean = false,
     val headless: Boolean = false,
-    val opModeClassName: String? = null,
-    val replayCloudId: String? = null
+    val opModeClassName: String? = null
 )
 
 /**
@@ -31,35 +25,28 @@ object SimCliParser {
         var watchFieldConfig = false
         var headless = false
         var opModeClassName: String? = null
-        var replayCloudId: String? = null
 
         var argIdx = 0
         while (argIdx < args.size) {
-            when (args[argIdx]) {
-                "--field-config" -> {
-                    if (argIdx + 1 < args.size) {
-                        fieldConfigArg = args[argIdx + 1]
-                        argIdx++
-                    }
+            val argument = args[argIdx]
+            when {
+                argument.startsWith("--field-config=") -> {
+                    fieldConfigArg = argument.substringAfter('=').requireValue("--field-config")
                 }
-                "--watch" -> {
-                    watchFieldConfig = true
+                argument.startsWith("--opmode=") -> {
+                    opModeClassName = argument.substringAfter('=').requireValue("--opmode")
                 }
-                "--headless" -> {
-                    headless = true
+                argument == "--field-config" -> {
+                    fieldConfigArg = args.getOrNull(++argIdx)?.requireValue(argument)
+                        ?: throw IllegalArgumentException("$argument requires a value")
                 }
-                "--opmode" -> {
-                    if (argIdx + 1 < args.size) {
-                        opModeClassName = args[argIdx + 1]
-                        argIdx++
-                    }
+                argument == "--watch" -> watchFieldConfig = true
+                argument == "--headless" -> headless = true
+                argument == "--opmode" -> {
+                    opModeClassName = args.getOrNull(++argIdx)?.requireValue(argument)
+                        ?: throw IllegalArgumentException("$argument requires a value")
                 }
-                "--replay-cloud" -> {
-                    if (argIdx + 1 < args.size) {
-                        replayCloudId = args[argIdx + 1]
-                        argIdx++
-                    }
-                }
+                else -> throw IllegalArgumentException("Unknown simulator option: $argument")
             }
             argIdx++
         }
@@ -68,53 +55,26 @@ object SimCliParser {
             fieldConfigArg = fieldConfigArg,
             watchFieldConfig = watchFieldConfig,
             headless = headless,
-            opModeClassName = opModeClassName,
-            replayCloudId = replayCloudId
+            opModeClassName = opModeClassName
         )
     }
+
+    private fun String.requireValue(option: String): String =
+        trim().takeIf(String::isNotEmpty)
+            ?: throw IllegalArgumentException("$option requires a non-empty value")
 
     fun loadFieldConfig(fieldConfigArg: String?): RobotFieldConfig? {
         if (fieldConfigArg == null) return null
         val content = loadConfigContent(fieldConfigArg) ?: return null
         return try {
-            val gson = Gson()
-            val config = gson.fromJson(content, RobotFieldConfig::class.java)
-            if (config != null) {
-                println("[Simulator] Successfully loaded field config: ${config.name}")
-                RobotFieldManager.setActiveConfig(config)
-            }
+            val config = RobotFieldDocument.decode(content)
+            println("[Simulator] Successfully loaded field config: ${config.name}")
+            RobotFieldManager.setActiveConfig(config)
             config
         } catch (e: Exception) {
             System.err.println("Failed to parse loaded field config: ${e.message}")
             null
         }
-    }
-
-    fun loadEkfOverrides(): Vector3? {
-        var configFile = File("config_override.json")
-        if (!configFile.exists()) {
-            val parentFile = File("../config_override.json")
-            if (parentFile.exists()) {
-                configFile = parentFile
-            }
-        }
-        if (configFile.exists()) {
-            try {
-                val configContent = configFile.readText()
-                val gson = Gson()
-                val configMap = gson.fromJson(configContent, Map::class.java)
-                val overrideX = (configMap["visionStdDevX"] as? Number)?.toDouble()
-                val overrideY = (configMap["visionStdDevY"] as? Number)?.toDouble()
-                val overrideTheta = (configMap["visionStdDevTheta"] as? Number)?.toDouble()
-                if (overrideX != null && overrideY != null && overrideTheta != null) {
-                    println("[Simulator Config] Loaded EKF Standard Deviation overrides: X=$overrideX, Y=$overrideY, Theta=$overrideTheta")
-                    return Vector3(overrideX, overrideY, overrideTheta)
-                }
-            } catch (e: Exception) {
-                println("[Simulator Config] Failed to parse config_override.json: ${e.message}")
-            }
-        }
-        return null
     }
 
     private fun loadConfigContent(arg: String): String? {

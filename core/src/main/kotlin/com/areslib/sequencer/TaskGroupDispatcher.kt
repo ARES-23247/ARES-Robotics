@@ -14,7 +14,7 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
-
+        super.initialize(state)
         currentIndex = 0
         currentTaskStartTimeMs = 0L
         pendingActions.clear()
@@ -28,11 +28,12 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
             val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
             val status = TaskStateMachine.getStatus(currentTask)
             if (status == TaskStatus.FAILED || status == TaskStatus.CANCELLED) {
-                TaskStateMachine.transitionTo(this, TaskStatus.FAILED)
+                TaskStateMachine.markFailed(this)
                 return false
             }
             if (currentTask.isCompleted(state, currentTaskElapsed)) {
                 pendingActions.addAll(currentTask.end(state, interrupted = false))
+                currentTask.releaseRuntimeState()
                 currentIndex++
                 currentTaskStartTimeMs = elapsedMs
                 if (currentIndex < tasks.size) {
@@ -61,15 +62,17 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-
         val actions = mutableListOf<RobotAction>()
         if (pendingActions.isNotEmpty()) {
             actions.addAll(pendingActions)
             pendingActions.clear()
         }
         if (interrupted && currentIndex < tasks.size) {
-            actions.addAll(tasks[currentIndex].end(state, interrupted = true))
+            val current = tasks[currentIndex]
+            actions.addAll(current.end(state, interrupted = true))
+            current.releaseRuntimeState()
         }
+        super.end(state, interrupted)
         return actions
     }
 }
@@ -84,7 +87,7 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
-
+        super.initialize(state)
         completedTasks.clear()
         pendingActions.clear()
         return tasks.flatMap { it.initialize(state) }
@@ -94,9 +97,17 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         for (i in 0 until tasks.size) {
             val task = tasks[i]
             if (!completedTasks.contains(task)) {
+                if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                    TaskStateMachine.markFailed(this)
+                    return false
+                }
                 if (task.isCompleted(state, elapsedMs)) {
                     completedTasks.add(task)
                     pendingActions.addAll(task.end(state, interrupted = false))
+                    task.releaseRuntimeState()
+                } else if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                    TaskStateMachine.markFailed(this)
+                    return false
                 }
             }
         }
@@ -120,7 +131,6 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-
         val actions = mutableListOf<RobotAction>()
         if (pendingActions.isNotEmpty()) {
             actions.addAll(pendingActions)
@@ -134,10 +144,13 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
                         actions.addAll(task.end(state, interrupted = true))
                     } catch (e: Exception) {
                         System.err.println("TaskGroup: Exception ending task ${task.name}: ${e.message}")
+                    } finally {
+                        task.releaseRuntimeState()
                     }
                 }
             }
         }
+        super.end(state, interrupted)
         return actions
     }
 }
@@ -154,7 +167,7 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
     private var isCompleted = false
 
     override fun initialize(state: RobotState): List<RobotAction> {
-
+        super.initialize(state)
         completedTasks.clear()
         pendingActions.clear()
         isCompleted = false
@@ -166,10 +179,18 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
         var anyCompleted = false
         for (i in 0 until tasks.size) {
             val task = tasks[i]
+            if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                TaskStateMachine.markFailed(this)
+                return false
+            }
             if (task.isCompleted(state, elapsedMs)) {
                 completedTasks.add(task)
                 pendingActions.addAll(task.end(state, interrupted = false))
+                task.releaseRuntimeState()
                 anyCompleted = true
+            } else if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                TaskStateMachine.markFailed(this)
+                return false
             }
         }
         if (anyCompleted) {
@@ -197,7 +218,6 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-
         val actions = mutableListOf<RobotAction>()
         if (pendingActions.isNotEmpty()) {
             actions.addAll(pendingActions)
@@ -207,8 +227,10 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
             val task = tasks[i]
             if (!completedTasks.contains(task)) {
                 actions.addAll(task.end(state, interrupted = true))
+                task.releaseRuntimeState()
             }
         }
+        super.end(state, interrupted)
         return actions
     }
 }
@@ -228,7 +250,7 @@ class ParallelDeadlineGroup(
     private val actionsList = mutableListOf<RobotAction>()
 
     override fun initialize(state: RobotState): List<RobotAction> {
-
+        super.initialize(state)
         completedTasks.clear()
         pendingActions.clear()
         return tasks.flatMap { it.initialize(state) }
@@ -238,9 +260,17 @@ class ParallelDeadlineGroup(
         for (i in 0 until tasks.size) {
             val task = tasks[i]
             if (!completedTasks.contains(task)) {
+                if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                    TaskStateMachine.markFailed(this)
+                    return false
+                }
                 if (task.isCompleted(state, elapsedMs)) {
                     completedTasks.add(task)
                     pendingActions.addAll(task.end(state, interrupted = false))
+                    task.releaseRuntimeState()
+                } else if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                    TaskStateMachine.markFailed(this)
+                    return false
                 }
             }
         }
@@ -275,8 +305,10 @@ class ParallelDeadlineGroup(
             val task = tasks[i]
             if (!completedTasks.contains(task)) {
                 actions.addAll(task.end(state, interrupted = true))
+                task.releaseRuntimeState()
             }
         }
+        super.end(state, interrupted)
         return actions
     }
 }

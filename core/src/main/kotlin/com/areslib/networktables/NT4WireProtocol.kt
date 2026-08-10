@@ -27,7 +27,6 @@ object NT4WireProtocol {
         val out = ByteArrayOutputStream()
         val packer = MessagePack.newDefaultPacker(out)
         
-        packer.packArrayHeader(1)
         packer.packArrayHeader(4)
         packer.packLong(topicId)
         packer.packLong(timestampUs)
@@ -50,8 +49,8 @@ object NT4WireProtocol {
 
     /**
      * Unpacks incoming binary MsgPack payload into a list of [NT4ValueMessage] objects.
-     * NT4 binary updates are always a batch of tuples:
-     * `[[id, time, type, value], ...]`.
+     * An NT4 WebSocket frame is a MessagePack stream of four-element arrays. Multiple updates
+     * are concatenated in that stream; they are not wrapped in another array.
      */
     fun unpackMessageFrames(bytes: ByteArray): List<NT4ValueMessage> {
         if (bytes.isEmpty()) return emptyList()
@@ -66,16 +65,9 @@ object NT4WireProtocol {
                     }
 
                     val arrayLen = unpacker.unpackArrayHeader()
-                    if (arrayLen == 0) continue
-                    requireLength("message count", arrayLen, MAX_MESSAGES_PER_FRAME)
-                    for (i in 0 until arrayLen) {
-                        if (!unpacker.hasNext() || unpacker.getNextFormat().valueType != ValueType.ARRAY) {
-                            throw IOException("NT4 update batch contains a non-array tuple")
-                        }
-                        val innerLen = unpacker.unpackArrayHeader()
-                        if (innerLen != 4) throw IOException("NT4 update tuple must have 4 elements, got $innerLen")
-                        messages.add(unpackTuple(unpacker))
-                    }
+                    if (arrayLen != 4) throw IOException("NT4 update tuple must have 4 elements, got $arrayLen")
+                    requireLength("message count", messages.size + 1, MAX_MESSAGES_PER_FRAME)
+                    messages.add(unpackTuple(unpacker))
                 }
             }
         } catch (_: Exception) {

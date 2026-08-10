@@ -130,7 +130,7 @@ object TelemetryPublisher {
      *
      * [com.areslib.sim.DesktopSimLauncher] deliberately supplies Dyn4j ground truth because its local Redux state is
      * not the OpMode estimator. The same pose is mirrored to `Drive/Pose_X`, `Drive/Pose_Y`, and
-     * `Drive/Drive_Heading` for dashboard compatibility.
+     * `Drive/Pose_Heading` for the fused-pose dashboard contract.
      *
      * @param pose The field-relative estimated pose.
      */
@@ -145,7 +145,7 @@ object TelemetryPublisher {
         NT4Server.publishTopic("ARES/EstimatedPose/2", pose.heading.radians)
         NT4Server.publishTopic("Drive/Pose_X", pose.x)
         NT4Server.publishTopic("Drive/Pose_Y", pose.y)
-        NT4Server.publishTopic("Drive/Drive_Heading", pose.heading.radians)
+        NT4Server.publishTopic("Drive/Pose_Heading", pose.heading.radians)
         ntInst.flush()
     }
 

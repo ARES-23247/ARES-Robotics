@@ -43,9 +43,9 @@ class HardwareRegistryTest {
     }
 
     class MockCloseable : AutoCloseable {
-        var closed = false
+        var closeCount = 0
         override fun close() {
-            closed = true
+            closeCount++
         }
     }
 
@@ -90,7 +90,7 @@ class HardwareRegistryTest {
         HardwareRegistry.registerCloseable(closeable)
 
         HardwareRegistry.closeAll()
-        assertTrue(closeable.closed)
+        assertEquals(1, closeable.closeCount)
     }
 
     @Test
@@ -154,5 +154,50 @@ class HardwareRegistryTest {
         assertTrue(d2.pollSyncCount > 0)
         // Usually should be roughly equal (differ by at most 1)
         assertTrue(kotlin.math.abs(d1.pollSyncCount - d2.pollSyncCount) <= 1)
+    }
+
+    @Test
+    fun `throwing polled device does not stop healthy devices`() {
+        val throwing = object : SyncPolledDevice {
+            override fun pollSync() = error("sensor unavailable")
+        }
+        val healthy = MockSyncPolledDevice()
+        HardwareRegistry.setPollingIntervalMs(10L)
+
+        HardwareRegistry.registerRoundRobinDevice(throwing)
+        HardwareRegistry.registerRoundRobinDevice(healthy)
+        Thread.sleep(100L)
+        HardwareRegistry.closeAll()
+
+        assertTrue(healthy.pollSyncCount > 0)
+    }
+
+    @Test
+    fun `same logical name replaces lifecycle entry instead of duplicating it`() {
+        val first = MockSubsystemIO()
+        val replacement = MockSubsystemIO()
+        HardwareRegistry.registerDevice("arm", first)
+        HardwareRegistry.registerDevice("arm", replacement)
+
+        HardwareRegistry.refreshAll()
+
+        assertFalse(first.refreshCalled)
+        assertTrue(replacement.refreshCalled)
+    }
+
+    @Test
+    fun `resource registered through both ownership paths closes once`() {
+        class CloseableDevice : LoggableDevice, AutoCloseable {
+            var closeCount = 0
+            override fun logTelemetry(telemetry: ITelemetry, prefix: String) = Unit
+            override fun close() { closeCount++ }
+        }
+        val device = CloseableDevice()
+        HardwareRegistry.registerDevice("owned", device)
+        HardwareRegistry.registerCloseable(device)
+
+        HardwareRegistry.closeAll()
+
+        assertEquals(1, device.closeCount)
     }
 }

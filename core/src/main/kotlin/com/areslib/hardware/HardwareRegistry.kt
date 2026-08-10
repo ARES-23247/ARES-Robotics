@@ -4,6 +4,8 @@ import com.areslib.telemetry.ITelemetry
 import com.google.gson.Gson
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.Collections
+import java.util.IdentityHashMap
 import com.areslib.hardware.actuator.*
 
 /**
@@ -15,7 +17,8 @@ import com.areslib.hardware.actuator.*
  * Hardware exceptions are isolated during best-effort safety, telemetry, and close passes.
  *
  * The polling daemon services at most one regular and one round-robin device per interval. Polled
- * devices must cache results for robot-loop getters and must not throw from [SyncPolledDevice.pollSync].
+ * devices must cache results for robot-loop getters. A device exception is isolated and
+ * exponentially rate-limited in stderr so one failed sensor cannot stop polling every other sensor.
  */
 object HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
@@ -23,12 +26,16 @@ object HardwareRegistry {
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
     private val devicesNamesList = CopyOnWriteArrayList<String>()
     private val devicesPrefixList = CopyOnWriteArrayList<String>()
+    private val deviceIndices = ConcurrentHashMap<String, Int>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
     private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
     private val cachedMotorsWithNames = ConcurrentHashMap<String, MotorIO>()
     private val cachedMotorsList = CopyOnWriteArrayList<MotorIO>()
+    private val registeredMotorsView: List<MotorIO> = Collections.unmodifiableList(cachedMotorsList)
+    private val registeredMotorsByNameView: Map<String, MotorIO> = Collections.unmodifiableMap(cachedMotorsWithNames)
     private val syncPolledDevices = CopyOnWriteArrayList<SyncPolledDevice>()
     private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
+    private val pollingFailureCounts = ConcurrentHashMap<SyncPolledDevice, Long>()
     
     @Volatile private var pollingRunning = false
     private var pollingThread: Thread? = null
@@ -45,7 +52,7 @@ object HardwareRegistry {
      * Registers a lifecycle resource for best-effort closure by [closeAll].
      */
     fun registerCloseable(closeable: AutoCloseable) {
-        closeables.add(closeable)
+        closeables.addIfAbsent(closeable)
     }
 
     /**
@@ -81,13 +88,13 @@ object HardwareRegistry {
                     var polledAny = false
                     if (syncPolledDevices.isNotEmpty()) {
                         val idx = index % syncPolledDevices.size
-                        syncPolledDevices[idx].pollSync()
+                        pollSafely(syncPolledDevices[idx])
                         index++
                         polledAny = true
                     }
                     if (roundRobinDevices.isNotEmpty()) {
                         val idx = roundRobinIndex % roundRobinDevices.size
-                        roundRobinDevices[idx].pollSync()
+                        pollSafely(roundRobinDevices[idx])
                         roundRobinIndex++
                         polledAny = true
                     }
@@ -105,18 +112,48 @@ object HardwareRegistry {
         }
     }
 
+    private fun pollSafely(device: SyncPolledDevice) {
+        try {
+            device.pollSync()
+            pollingFailureCounts.remove(device)
+        } catch (exception: Exception) {
+            val failures = pollingFailureCounts.merge(device, 1L) { prior, increment -> prior + increment } ?: 1L
+            if (failures == 1L || failures and (failures - 1L) == 0L) {
+                System.err.println(
+                    "HardwareRegistry: ${device.javaClass.simpleName} polling failed " +
+                        "($failures consecutive): ${exception.message}"
+                )
+            }
+        }
+    }
+
     /**
      * Registers [device] under [name] for telemetry and lifecycle operations.
      * Names should be unique; reusing a name replaces map lookup data but does not remove the prior
      * device from ordered refresh/publish lists.
      */
+    @Synchronized
     fun registerDevice(name: String, device: LoggableDevice) {
-        devices[name] = device
-        devicesList.add(device)
-        devicesNamesList.add(name)
-        devicesPrefixList.add("Hardware/$name")
+        require(name.isNotBlank()) { "Hardware device name must not be blank" }
+        val prior = devices.put(name, device)
+        val existingIndex = deviceIndices[name]
+        if (existingIndex == null) {
+            deviceIndices[name] = devicesList.size
+            devicesList.add(device)
+            devicesNamesList.add(name)
+            devicesPrefixList.add("Hardware/$name")
+        } else {
+            devicesList[existingIndex] = device
+        }
+
+        val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
+        if (prior is MotorIO && prior !== device) {
+            cachedMotorsWithNames.remove(shortName, prior)
+            if (cachedMotorsWithNames.values.none { it === prior }) {
+                cachedMotorsList.remove(prior)
+            }
+        }
         if (device is MotorIO) {
-            val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
             cachedMotorsWithNames[shortName] = device
             if (!cachedMotorsList.contains(device)) {
                 cachedMotorsList.add(device)
@@ -208,7 +245,7 @@ object HardwareRegistry {
 
     /** Builds a point-in-time topology snapshot. Concurrent-map node order is unspecified. */
     fun buildTopology(robotId: String): HardwareTopology {
-        return HardwareTopology(robotId, topologyNodes.values.toList())
+        return HardwareTopology(robotId, topologyNodes.values.sortedBy { it.id })
     }
 
     /** Serializes the current topology snapshot as JSON for dashboard discovery. */
@@ -238,7 +275,7 @@ object HardwareRegistry {
      * Callers must not cast and mutate the returned collection.
      */
     fun getRegisteredMotors(): List<MotorIO> {
-        return cachedMotorsList
+        return registeredMotorsView
     }
 
     /**
@@ -246,7 +283,7 @@ object HardwareRegistry {
      * Callers must treat the returned map as read-only.
      */
     fun getRegisteredMotorsWithNames(): Map<String, MotorIO> {
-        return cachedMotorsWithNames
+        return registeredMotorsByNameView
     }
 
     /**
@@ -287,22 +324,30 @@ object HardwareRegistry {
         val thread = pollingThread
         if (thread != null) {
             thread.interrupt()
-            try { thread.join(1000) } catch (_: InterruptedException) {}
+            try {
+                thread.join(1000)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
             pollingThread = null
         }
         syncPolledDevices.clear()
         roundRobinDevices.clear()
+        pollingFailureCounts.clear()
 
+        val closedByIdentity = Collections.newSetFromMap(IdentityHashMap<AutoCloseable, Boolean>())
         for (i in 0 until closeables.size) {
+            val closeable = closeables[i]
+            if (!closedByIdentity.add(closeable)) continue
             try {
-                closeables[i].close()
+                closeable.close()
             } catch (_: Exception) {}
         }
         closeables.clear()
 
         for (i in 0 until devicesList.size) {
             val device = devicesList[i]
-            if (device is AutoCloseable) {
+            if (device is AutoCloseable && closedByIdentity.add(device)) {
                 try {
                     device.close()
                 } catch (_: Exception) {}
@@ -312,6 +357,7 @@ object HardwareRegistry {
         devicesList.clear()
         devicesNamesList.clear()
         devicesPrefixList.clear()
+        deviceIndices.clear()
         topologyNodes.clear()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
@@ -333,8 +379,8 @@ object HardwareRegistry {
             val count = kotlin.math.min(devicesList.size, devicesPrefixList.size)
             for (i in 0 until count) {
                 try {
-                    val device = devicesList[i] as? LoggableDevice ?: continue
-                    val prefix = devicesPrefixList[i] ?: ""
+                    val device = devicesList[i]
+                    val prefix = devicesPrefixList[i]
                     device.logTelemetry(telemetry, prefix)
                 } catch (_: IndexOutOfBoundsException) { break }
             }

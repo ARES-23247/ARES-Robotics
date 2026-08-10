@@ -32,13 +32,13 @@ These files received substantive documentation corrections or small, behavior-pr
 |---|---|---|
 | Core state and time | `core/.../Store.kt`, `util/RobotClock.kt` | Document synchronized reduction versus callback execution, snapshot visibility, dispatch ordering, the process-global mock clock, and monotonic versus wall-clock semantics. |
 | Core hardware | `hardware/SyncPolledDevice.kt`, `HardwareRegistry.kt`, `hardware/vision/VisionIO.kt`, `CompositeVisionIO.kt` | Define polling-thread ownership, cache requirements, registry lifetime, snapshot ownership, units, ordering, close behavior, and exception expectations. |
-| Core NT4 and telemetry | `networktables/NT4Entry.kt`, `NT4Instance.kt`, `telemetry/ITelemetry.kt`, `org/frcforftc/networktables/NT4Compatibility.kt` | Replace overbroad thread-safety claims; document listener threads, process-wide server replacement, canonical keys, fallback reads, and array-copy ownership. |
+| Core NT4 and telemetry | `networktables/NT4Entry.kt`, `NT4Instance.kt`, `telemetry/ITelemetry.kt` | Replace overbroad thread-safety claims; document listener threads, process-wide server replacement, canonical keys, and array-copy ownership. The redundant compatibility facade was removed. |
 | Core logging and HTTP | `logging/ARESDataLogger.kt`, `LogManagerServer.kt`, `DataLoggingTelemetry.kt`, `telemetry/web/LogArchivePackager.kt`, `PortForwarder.kt` | Describe bounded queues, dropped data, stable CSV schemas, map recycling, shutdown/drain behavior, LAN trust boundary, path preconditions, throttling, and socket/thread ownership. |
 | Core sequencer | `sequencer/Task.kt`, `TaskExecutor.kt`, `TaskStateMachine.kt`, `TaskTimeoutManager.kt` | Define lifecycle order, action ownership, synchronization, preemption, transition limits, global registry retention, timeout clock, and completion fallback behavior. |
-| FTC drive, cache, power, and profiling | `ftc-hardware/.../hardware/CachedHardware.kt`, `drivetrain/MecanumHardwareIO.kt`, `power/FtcPowerManager.kt`, `hardware/OctoquadIO.kt`, `telemetry/FtcLoopProfiler.kt` | Correct motor-name text; document normalized input scaling, one-read caching, voltage fallback, odometry reset limits, timestamp units, and overrun thresholds. `MecanumHardwareIO` also removes an avoidable `Pair` allocation from its hot path. |
+| FTC drive, cache, power, and profiling | `ftc-hardware/.../hardware/CachedHardware.kt`, `drivetrain/MecanumHardwareIO.kt`, `power/FtcPowerManager.kt`, `hardware/OctoquadIO.kt`, `telemetry/FtcLoopProfiler.kt` | Correct motor-name text; document normalized input scaling, one-read caching, voltage fallback, software odometry-frame seeding, sample timestamps, and overrun thresholds. `MecanumHardwareIO` also removes an avoidable `Pair` allocation from its hot path. |
 | FTC vision and Photon | `ftc-hardware/.../vision/FtcVisionPortalIO.kt`, `photon/AresPhotonCore.kt`, `AresPhotonLynxModule.kt`, `AresPhotonReflectionUtils.kt` | Correct inaccurate asynchronous-write and safe-copy claims; document frames/units, measurement-pool ownership, synchronous global serialization, lock interception, ACK behavior, reflection timing, and shallow copies. |
 | FRC boundaries | `frc-hardware/.../drivetrain/FRCSwerveHardwareIO.kt`, `power/FrcPowerManager.kt`, `telemetry/FrcTelemetryManager.kt` | Clarify estimator seeding units, cached PDP reads, actual CSV output, CAN topic names, utilization units, and ignored compatibility parameters. |
-| Simulator | `simulator/.../physics/SimPhysicsWorld.kt`, `network/TelemetryPublisher.kt`, `replay/SimReplayEngine.kt`, `opmode/SimOpModeRunner.kt`, `infra/VirtualDriverStation.kt`, `hardware/vision/SimVisionIO.kt` | Define coordinate origin/units, mutation-thread ownership, field-load fallback, canonical NT4 topics, ground-truth pose source, blocking replay IO, reflection lifecycle, Swing/gamepad behavior, and persistent synthetic vision data. |
+| Simulator | `simulator/.../physics/SimPhysicsWorld.kt`, `network/TelemetryPublisher.kt`, `opmode/SimOpModeRunner.kt`, `infra/VirtualDriverStation.kt`, `hardware/vision/SimVisionIO.kt` | Define coordinate origin/units, mutation-thread ownership, field-load fallback, canonical NT4 topics, ground-truth pose source, reflection lifecycle, Swing/gamepad behavior, and persistent synthetic vision data. |
 | FTC mocks | `ftc-mocks/.../util/ElapsedTime.kt`, `hardware/gobilda/GoBildaPinpointDriver.kt`, `external/Telemetry.kt`, `hardware/HardwareDeviceMocks.kt`, `com/areslib/ftc/MockIndicatorLightIO.kt`, `configuration/annotations/Annotations.kt`, `com/qualcomm/robotcore/WebHandlerRegistrar.kt`, `org/firstinspires/ftc/robotcore/external/ExternalMocks.kt` | State exactly which SDK subset is modeled, which operations are snapshots/no-ops/unsupported, what units are retained, and where desktop behavior intentionally differs from hardware. |
 
 ## Mechanical placeholder cleanup (135 files)
@@ -57,7 +57,9 @@ An exact six-line generated KDoc pattern of the form “`X declaration` / `Stand
 <details>
 <summary>Test files (79)</summary>
 
-- `core`: `ControlChampionshipTest.kt`, `SafetyFaultToleranceTest.kt`, `ShotSetupTest.kt`, `SysIdManagerTest.kt`, `VisionExtrinsicCalibrationControllerTest.kt`, `HolonomicDriveControllerTest.kt`, `LinearADRCTest.kt`, `LQRControllerTest.kt`, `FiltersTest.kt`, `TrapezoidProfileTest.kt`, `BrownoutGuardTest.kt`, `ControlBarrierFunctionTest.kt`, `CurrentBudgetManagerTest.kt`, `PidClampingTier1Test.kt`, `GcAvoidanceTier1Test.kt`, `MathBoundsTier1Test.kt`, `ReducerSafetyTier1Test.kt`, `StateImmutabilityTier1Test.kt`, `MathBoundsTier2Test.kt`, `GoBildaMotorTest.kt`, `HardwareIOSimTest.kt`, `HardwareRegistryTest.kt`, `ThreadedSensorsTest.kt`, `VisionMeasurementBufferTest.kt`, `VisionNoiseRejectionTest.kt`, `ARESControllerTest.kt`, `MecanumKinematicsTest.kt`, `SwerveKinematicsTest.kt`, `ARESDataLoggerTest.kt`, `CloudExporterTest.kt`, `CloudReplayProviderTest.kt`, `DiagnosticRingBufferTest.kt`, `LogManagerServerTest.kt`, `RobotInputsFrameTest.kt`, `SensoryReplayRunnerTest.kt`, `AimingMathTest.kt`, `AllianceMirroringTest.kt`, `CoordinateTransformersTest.kt`, `KalmanFilterTest.kt`, `PoseEstimatorHardeningTest.kt`, `PoseEstimatorTest.kt`, `PoseEstimatorVisionHardeningTest.kt`, `FilterTest.kt`, `MedianFilterTest.kt`, `SlewRateLimiterTest.kt`, `ChassisSpeedsTest.kt`, `Geometry3dTest.kt`, `GeometryTest.kt`, `InputMathTest.kt`, `InterpolatingTableTest.kt`, `OdometryMathTest.kt`, `MathUtilsTest.kt`, `DetourGeneratorTest.kt`, `FindClosestDistanceTest.kt`, `PathChainerTest.kt`, `PathingChampionshipTest.kt`, `PathPlannerAutoParserTest.kt`, `PathPlannerParserParityTest.kt`, `PathPlannerParserTest.kt`, `PathSafetyEvaluatorTest.kt`, `TrajectoryFollowerTest.kt`, `JoystickDriveReducerTest.kt`, `RootReducerTest.kt`, `ConfigAutoParserTest.kt`, `TaskGroupTest.kt`, `RobotFieldConfigTest.kt`, `DslBuilderTest.kt`, `HolonomicDriveFacadeTest.kt`, `RobotWebServerTest.kt`, `TuningManagerTest.kt`, `NetworkTableInstance.kt`.
+- `core`: reducer, math, control, estimation, pathing, sequencer, telemetry, logging, hardware,
+  networking, and tuning tests under `core/src/test`. Robot-side cloud exporter/replay tests were
+  removed with those obsolete APIs; desktop Analytics owns cloud sync and replay.
 - `ftc-hardware`: `AppFailsafeTier1Test.kt`, `HardwareFaultToleranceTier1Test.kt`, `HardwareBoundsTier2Test.kt`, `CompositeVisionIOTest.kt`, `FtcMecanumRobotBuilderTest.kt`, `MecanumHardwareIOTest.kt`, `FtcPowerManagerTest.kt`.
 - `frc-hardware`: `FrcPowerManagerTest.kt`.
 
@@ -67,24 +69,23 @@ An exact six-line generated KDoc pattern of the form “`X declaration` / `Stand
 
 The remaining 252 files were retained after inventory and scan. Their comments were either useful and consistent with the implementation, too trivial to warrant KDoc, or under concurrent behavioral edits where changing adjacent text would create unnecessary merge risk. This number closes the inventory exactly: 180 changed plus 252 unchanged equals 432 reviewed source/test files.
 
-## Behavioral findings intentionally not fixed here
+## Behavioral findings and remediation
 
-The following implementation concerns were reported separately so that a documentation pass would not silently change runtime behavior:
+The documentation review originally separated the following runtime concerns from its mechanical edits. A subsequent implementation pass addressed them rather than preserving compatibility shims:
 
-- NT4 primitive-array values can retain caller-owned mutable buffers. Reusing a telemetry buffer may mutate the stored value before change detection, suppressing dirty notifications; getters can also expose mutable backing storage.
-- The common drive facade describes normalized `[-1, 1]` commands. FTC scales those commands into physical velocity, while the FRC boundary forwards the same values as metres/second and radians/second.
-- `OctoQuadOdometryIO.initialize(startPose)` ignores `startPose` and resets only encoder channel 0.
-- `LogArchivePackager` relies on a trusted filename and does not itself reject traversal components.
-- `AllianceMirroring` infers an origin convention from field length rather than receiving an explicit field-origin contract.
-- Sequencer state-machine and timeout registries use process-global strong keys and are not cleared by `TaskExecutor.reset()`.
-- A failed task can be changed to `CANCELLED` by the default `end(interrupted = true)` path, losing the final failure status.
-- One exception from a `SyncPolledDevice.update()` call can terminate the shared hardware polling loop.
-- FTC vision returns pooled mutable measurement objects, which is unsafe if consumers retain them in immutable Redux state.
-- Photon bulk writes are synchronous and globally serialized; synthetic ACK and unfinished-command bookkeeping deserve a separate correctness review.
+- NT4 values now snapshot mutable arrays at ownership boundaries and return owned array copies.
+- Normalized drive-facade methods are named explicitly; Redux drive state and hardware boundaries use physical SI units.
+- OctoQuad and SRS Pinpoint adapters seed an explicit software frame transform and expose the timestamp of the last successful device sample. They no longer manufacture fresh timestamps for stale/default data.
+- `LogArchivePackager` validates names at its own file boundary and rejects traversal components.
+- Alliance mirroring receives an explicit field-origin contract instead of guessing from field length.
+- Sequencer registries use weak identity keys, terminal paths release task state, and failures remain `FAILED` after interruption cleanup.
+- `HardwareRegistry` isolates polling exceptions per device so one failed peripheral cannot stop every cache refresh.
+- FTC vision measurements are copied before immutable Redux ownership; pooled transport objects remain internal.
+- Photon remains an opt-in optimization, is enabled deliberately by FTC TeleOp and Auto bases, and no longer fabricates ACKs or clears unfinished commands on an arbitrary timer.
 
-## Static validation
+## Validation
 
-- Gradle was deliberately not run in this shared-edit phase.
-- `git diff --check` reported no whitespace errors; Git emitted only line-ending conversion warnings.
+- `:core:test`, `:ftc-hardware:test`, and `:simulator:test` pass after the remediation pass.
+- `publishToMavenLocal` succeeds, and the FTC, FRC, and Analytics consumer suites pass against the resulting APIs.
+- `git diff --check` reports no whitespace errors; Git emits only line-ending conversion warnings.
 - All 432 files decode as strict UTF-8. A raw block-comment delimiter scan found only three apparent mismatches, each explained by a literal wildcard topic or route containing `/*`; their actual KDoc blocks are closed.
-- Run the repository's focused compile/test commands after concurrent edits settle.

@@ -7,8 +7,8 @@ import com.areslib.math.geometry.Pose2d
 /**
  * Platform-neutral key/value telemetry boundary used by robot and simulator code.
  *
- * Topic keys are canonical without a leading slash. Implementations may normalize legacy input,
- * but callers should publish canonical keys directly. Getters return `defaultValue` when a topic is
+ * Topic keys are canonical without a leading slash. Implementations strip transport-only leading
+ * slashes, but aliases are not supported. Getters return `defaultValue` when a topic is
  * absent, disconnected, or incompatible. Implementations that retain or asynchronously serialize a
  * [DoubleArray] must snapshot it before returning from [putDoubleArray], because hot-path callers
  * intentionally reuse preallocated buffers.
@@ -42,14 +42,15 @@ interface ITelemetry {
 }
 
 /**
- * Logs cached motor state using the legacy `Drive/Motor*_{name}` topic convention.
+ * Logs cached motor state beneath the canonical `Hardware/Motors/{name}` topic prefix.
  * No hardware reads should occur through [MotorIO] getters.
  */
 fun ITelemetry.logDriveMotor(name: String, motor: MotorIO) {
-    putNumber("Drive/MotorPower_$name", motor.power * motor.powerScale)
-    putNumber("Drive/MotorEncoder_$name", motor.position)
-    putNumber("Drive/MotorVelocity_$name", motor.velocity)
-    putNumber("Drive/MotorCurrent_$name", motor.currentAmps)
+    val prefix = "Hardware/Motors/$name"
+    putNumber("$prefix/Power", motor.power * motor.powerScale)
+    putNumber("$prefix/Position", motor.position)
+    putNumber("$prefix/Velocity", motor.velocity)
+    putNumber("$prefix/CurrentAmps", motor.currentAmps)
 }
 
 /**

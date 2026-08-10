@@ -1,6 +1,7 @@
 package com.areslib.state
 
 import com.areslib.math.geometry.Pose3d
+import com.areslib.math.geometry.deepCopy
 import com.areslib.math.estimation.PoseEstimatorState
 
 /**
@@ -200,7 +201,17 @@ data class VisionMeasurement(
     var robotPoseTargetSpace: Pose3d = Pose3d(),
     /** Number of tags used to solve this single field-pose observation. */
     var tagCount: Int = 1
-)
+) {
+    /** Snapshots this pooled/mutable measurement for immutable Redux or replay ownership. */
+    fun ownedCopy(): VisionMeasurement = VisionMeasurement(
+        timestampMs = timestampMs,
+        targetPose = targetPose.deepCopy(),
+        tagId = tagId,
+        ambiguity = ambiguity,
+        robotPoseTargetSpace = robotPoseTargetSpace.deepCopy(),
+        tagCount = tagCount
+    )
+}
 
 /**
  * Class implementation for Vision State.

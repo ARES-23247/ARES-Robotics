@@ -24,6 +24,12 @@ interface FlywheelIO : SubsystemIO {
     /** Sets the applied voltage of the flywheel motors directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
 
+    /** Applies identified velocity-loop parameters; unsupported controllers may keep their current configuration. */
+    fun configureVelocityController(
+        gains: com.areslib.control.tuning.PIDFCoefficients,
+        feedforward: com.areslib.control.tuning.SimpleFeedforwardCoeffs
+    ) {}
+
     /** Gets the measured rotational velocity of the flywheel in RPM */
     val velocityRpm: Double
         get() = 0.0
@@ -76,6 +82,10 @@ interface CowlIO : SubsystemIO {
     val angleRotations: Double
         get() = 0.0
 
+    /** True only when [angleRotations] was refreshed successfully this loop. */
+    val angleValid: Boolean
+        get() = false
+
     /** Gets the stator current draw in Amperes */
     val currentAmps: Double
         get() = 0.0
@@ -118,6 +128,10 @@ interface IntakeIO : SubsystemIO {
     /** Gets the current absolute angle of the pivot arm in degrees */
     val pivotAngleDegrees: Double
         get() = 0.0
+
+    /** True only when [pivotAngleDegrees] was refreshed successfully this loop. */
+    val pivotAngleValid: Boolean
+        get() = false
 
     /** Gets the measured current of the pivot motor in Amperes */
     val pivotCurrentAmps: Double
@@ -201,6 +215,10 @@ interface ClimberIO : SubsystemIO {
     /** Gets the current measured mechanism position in rotations. */
     val positionRotations: Double
         get() = 0.0
+
+    /** True only when [positionRotations] was refreshed successfully this loop. */
+    val positionValid: Boolean
+        get() = false
 
     /** Gets the stator current draw in Amperes */
     val currentAmps: Double

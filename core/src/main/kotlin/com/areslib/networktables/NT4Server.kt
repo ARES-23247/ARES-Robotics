@@ -14,6 +14,7 @@ import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.atomic.AtomicLong
 
 data class NT4Message(
     val id: Long,
@@ -25,7 +26,8 @@ data class NT4Message(
 /**
  * Idiomatic Kotlin NT4 Server for ARESLib-Kotlin.
  * Provides high-performance, standard-compliant WPILib NT4 4.1 WebSocket server functionality.
- * Refactored for Zero-GC compliance and zero-allocation JSON-RPC message handling.
+ * Uses bounded parsing and reusable encoding buffers on high-rate paths. Connection lifecycle,
+ * JSON control messages, and topic discovery may allocate.
  */
 class NT4Server(
     address: InetSocketAddress,
@@ -42,15 +44,15 @@ class NT4Server(
     private val clientSubscriptions = ConcurrentHashMap<WebSocket, ConcurrentHashMap<Int, ClientSubscription>>()
     private val clientPublishers = ConcurrentHashMap<WebSocket, ConcurrentHashMap<Long, NT4Entry>>()
     private val pendingEntriesByConnection = ConcurrentHashMap<WebSocket, MutableSet<NT4Entry>>()
+    private val announcedEntriesByConnection = ConcurrentHashMap<WebSocket, MutableSet<NT4Entry>>()
     private val dirtyEntriesLock = Any()
     private var dirtyEntries: MutableSet<NT4Entry> = LinkedHashSet()
+    private val rejectedTextFrames = AtomicLong()
+    private val rejectedBinaryFrames = AtomicLong()
+    private val sendFailures = AtomicLong()
+    private val socketErrors = AtomicLong()
 
-    private class FastByteArrayOutputStream(size: Int) : java.io.ByteArrayOutputStream(size) {
-        fun buffer(): ByteArray = buf
-        fun count(): Int = count
-    }
-
-    private val encodeBuffer = FastByteArrayOutputStream(4096)
+    private val encodeBuffer = java.io.ByteArrayOutputStream(4096)
     private val entriesToSendBuffer = ArrayList<NT4Entry>(128)
     private var packer: org.msgpack.core.MessagePacker = try {
         MessagePack.newDefaultPacker(encodeBuffer)
@@ -60,23 +62,19 @@ class NT4Server(
 
     override fun onOpen(conn: WebSocket, handshake: org.java_websocket.handshake.ClientHandshake) {
         pendingEntriesByConnection.computeIfAbsent(conn) { ConcurrentHashMap.newKeySet() }
+        announcedEntriesByConnection.computeIfAbsent(conn) { ConcurrentHashMap.newKeySet() }
         connections.add(conn)
-        val announceText = NT4Json.buildAnnounceArray(entries.values)
-        if (announceText != "[]") {
-            conn.send(announceText)
-        }
     }
 
     override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
         connections.remove(conn)
         pendingEntriesByConnection.remove(conn)
+        announcedEntriesByConnection.remove(conn)
         clientSubscriptions.remove(conn)
-        
+
         val publishers = clientPublishers.remove(conn)?.values?.toSet().orEmpty()
         for (entry in publishers) {
-            if (!isPublishedByAnyClient(entry)) {
-                entry.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, entry.value)
-            }
+            handleLastClientPublisherRemoved(entry)
         }
     }
 
@@ -90,13 +88,17 @@ class NT4Server(
     }
 
     override fun onMessage(conn: WebSocket, message: String) {
+        if (message.length > NT4Json.MAX_JSON_CHARS) {
+            reportRateLimited("rejected JSON frame", rejectedTextFrames, null)
+            return
+        }
         try {
             val parsedList = NT4Json.parseMessages(message)
             for (msg in parsedList) {
                 processParsedMessage(conn, msg)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            reportRateLimited("rejected JSON frame", rejectedTextFrames, e)
         }
     }
 
@@ -112,19 +114,19 @@ class NT4Server(
                     val entry = getEntryForId(conn, decoded.id)
                     if (entry != null && decoded.dataValue != null) {
                         val newValue = NT4Value.fromObject(decoded.dataValue)
-                        if (newValue.typeString == entry.value.typeString && entry.update(newValue)) {
+                        if (newValue.typeString == entry.value.typeString && entry.update(newValue, decoded.timestamp)) {
                             markDirty(entry)
                         }
                     }
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            reportRateLimited("rejected binary frame", rejectedBinaryFrames, e)
         }
     }
 
     override fun onError(conn: WebSocket?, ex: Exception) {
-        ex.printStackTrace()
+        reportRateLimited("WebSocket error", socketErrors, ex)
     }
 
     override fun onStart() {
@@ -143,8 +145,12 @@ class NT4Server(
     private fun handlePublish(conn: WebSocket, msg: NT4Json.ParsedMessage) {
         val topic = msg.topicName?.trimStart('/')?.takeIf { it.isNotEmpty() } ?: return
         val pubUID = msg.pubUid ?: return
+        if (pubUID < 0 || topic.length > MAX_TOPIC_NAME_CHARS || topic.startsWith('$')) return
         val type = msg.type ?: "string"
         if (type !in SUPPORTED_TOPIC_TYPES) return
+
+        val publishers = clientPublishers.computeIfAbsent(conn) { ConcurrentHashMap() }
+        if (!publishers.containsKey(pubUID.toLong()) && publishers.size >= MAX_PUBLISHERS_PER_CLIENT) return
 
         var isNew = false
         var typeMatches = true
@@ -153,6 +159,7 @@ class NT4Server(
                 typeMatches = existing.value.typeString == type
                 return@compute existing
             }
+            if (entries.size >= MAX_TOPICS) return@compute null
             isNew = true
             val defaultValue: Any = when (type) {
                 "boolean" -> false
@@ -167,20 +174,18 @@ class NT4Server(
                 else -> "" // Guarded by SUPPORTED_TOPIC_TYPES.
             }
             val id = nextTopicId.getAndIncrement()
-            NT4Entry(id, topic, NT4Value.fromObject(defaultValue))
+            NT4Entry(id, topic, NT4Value.fromObject(defaultValue), hasValue = false)
         } ?: return
         if (!typeMatches) return
-        if (isNew) {
-            markDirty(entry)
-        }
 
-        val publishers = clientPublishers.computeIfAbsent(conn) { ConcurrentHashMap() }
         val previous = publishers.put(pubUID.toLong(), entry)
-        if (previous != null && previous !== entry && !isPublishedByAnyClient(previous)) {
-            previous.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, previous.value)
-        }
+        if (previous != null && previous !== entry) handleLastClientPublisherRemoved(previous)
+
+        // A publish request always receives an acknowledgement announcement containing the
+        // caller's connection-local publisher UID. Other subscribers must not see that UID.
+        sendAnnouncement(conn, entry, pubUID)
         if (isNew) {
-            announceEntry(entry)
+            announceEntryToSubscribers(entry, except = conn)
         }
         entry.notifyListeners(NT4EventType.TOPIC_PUBLISHED, entry.value)
     }
@@ -190,36 +195,47 @@ class NT4Server(
         val publishers = clientPublishers[conn] ?: return
         val entry = publishers.remove(pubUID.toLong()) ?: return
         if (publishers.isEmpty()) clientPublishers.remove(conn, publishers)
-        if (!isPublishedByAnyClient(entry)) {
-            entry.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, entry.value)
-        }
+        handleLastClientPublisherRemoved(entry)
     }
 
     private fun isPublishedByAnyClient(entry: NT4Entry): Boolean {
         return clientPublishers.values.any { publishers -> publishers.containsValue(entry) }
     }
 
+    private fun handleLastClientPublisherRemoved(entry: NT4Entry) {
+        if (isPublishedByAnyClient(entry) || serverOwnedTopics.contains(entry.topic)) return
+        if (!entries.remove(entry.topic, entry)) return
+        synchronized(dirtyEntriesLock) {
+            dirtyEntries.remove(entry)
+        }
+        for (pending in pendingEntriesByConnection.values) pending.remove(entry)
+        unannounceDeletedEntry(entry)
+        entry.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, entry.value)
+    }
+
     private fun handleSubscribe(conn: WebSocket, msg: NT4Json.ParsedMessage) {
+        val subUid = msg.subUid ?: return
+        if (msg.topics.isEmpty() || msg.topics.size > NT4Json.MAX_TOPICS) return
         val topics = ArrayList<String>(msg.topics.size)
 
         for (t in msg.topics) {
-            topics.add(t.trimStart('/'))
+            val topic = t.trimStart('/')
+            if (topic.length > MAX_TOPIC_NAME_CHARS) return
+            topics.add(topic)
         }
         val subscription = ClientSubscription(topics, msg.prefix)
-        val subUid = msg.subUid ?: 0
-        clientSubscriptions.computeIfAbsent(conn) { ConcurrentHashMap() }[subUid] = subscription
+        val subscriptions = clientSubscriptions.computeIfAbsent(conn) { ConcurrentHashMap() }
+        if (!subscriptions.containsKey(subUid) && subscriptions.size >= MAX_SUBSCRIPTIONS_PER_CLIENT) return
+        subscriptions[subUid] = subscription
 
+        val matchingEntries = ArrayList<NT4Entry>()
         for (entry in entries.values) {
             if (subscription.matches(entry.topic)) {
-                try {
-                    val announceText = NT4Json.buildAnnounceSingle(entry)
-                    conn.send(announceText)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                sendBinaryUpdate(conn, entry)
+                matchingEntries.add(entry)
             }
         }
+        sendAnnouncements(conn, matchingEntries)
+        sendBinaryEntries(conn, matchingEntries.filter(NT4Entry::hasValue))
     }
 
     private fun handleUnsubscribe(conn: WebSocket, msg: NT4Json.ParsedMessage) {
@@ -234,9 +250,43 @@ class NT4Server(
         return clientSubscriptions[conn]?.values?.any { it.matches(entry.topic) } == true
     }
 
-    private fun announceEntry(entry: NT4Entry) {
-        val announceText = NT4Json.buildAnnounceSingle(entry)
-        broadcast(announceText)
+    private fun announceEntryToSubscribers(entry: NT4Entry, except: WebSocket? = null) {
+        for (conn in connections) {
+            if (conn !== except && isSubscribed(conn, entry)) sendAnnouncement(conn, entry)
+        }
+    }
+
+    private fun sendAnnouncement(conn: WebSocket, entry: NT4Entry, pubUid: Int? = null) {
+        if (sendText(conn, NT4Json.buildAnnounceSingle(entry, pubUid))) {
+            announcedEntriesByConnection.computeIfAbsent(conn) { ConcurrentHashMap.newKeySet() }.add(entry)
+        }
+    }
+
+    private fun sendAnnouncements(conn: WebSocket, entries: List<NT4Entry>) {
+        var start = 0
+        while (start < entries.size) {
+            val end = (start + MAX_ENTRIES_PER_SEND).coerceAtMost(entries.size)
+            val batch = entries.subList(start, end)
+            if (!sendText(conn, NT4Json.buildAnnounceArray(batch))) return
+            announcedEntriesByConnection.computeIfAbsent(conn) { ConcurrentHashMap.newKeySet() }.addAll(batch)
+            start = end
+        }
+    }
+
+    private fun unannounceDeletedEntry(entry: NT4Entry) {
+        val message = NT4Json.buildUnannounceSingle(entry)
+        for (conn in connections) {
+            val announced = announcedEntriesByConnection[conn] ?: continue
+            if (announced.remove(entry)) sendText(conn, message)
+        }
+    }
+
+    private fun sendText(conn: WebSocket, message: String): Boolean = try {
+        conn.send(message)
+        true
+    } catch (e: Exception) {
+        reportRateLimited("WebSocket send failure", sendFailures, e)
+        false
     }
 
     private fun heartbeat(conn: WebSocket, clientTime: Long) {
@@ -244,13 +294,21 @@ class NT4Server(
         sendBinaryBuffer(conn, binMsg)
     }
 
-    private fun sendBinaryUpdate(conn: WebSocket, entry: NT4Entry) {
-        try {
-            val binMsg = encodeNT4Messages(com.areslib.util.RobotClock.currentTimeMillis() * 1000L, listOf(entry))
-            sendBinaryBuffer(conn, binMsg)
-        } catch (e: IOException) {
-            e.printStackTrace()
+    private fun sendBinaryEntries(conn: WebSocket, entries: List<NT4Entry>): Boolean {
+        var start = 0
+        while (start < entries.size) {
+            val end = (start + MAX_ENTRIES_PER_SEND).coerceAtMost(entries.size)
+            val batch = entries.subList(start, end)
+            val timestamp = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
+            try {
+                if (!sendBinaryBuffer(conn, encodeNT4Messages(timestamp, batch))) return false
+            } catch (e: IOException) {
+                reportRateLimited("NT4 encode failure", sendFailures, e)
+                return false
+            }
+            start = end
         }
+        return true
     }
 
     private fun sendBinaryBuffer(conn: WebSocket, buffer: ByteBuffer): Boolean {
@@ -258,7 +316,7 @@ class NT4Server(
             conn.send(buffer)
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            reportRateLimited("WebSocket send failure", sendFailures, e)
             false
         }
     }
@@ -266,31 +324,37 @@ class NT4Server(
     @Synchronized
     fun encodeNT4Messages(timestamp: Long, entries: List<NT4Entry>): ByteBuffer {
         encodeBuffer.reset()
-        packer.packArrayHeader(entries.size)
         for (entry in entries) {
             val dataType = getTypeIdFromValue(entry.value)
             val dataValue = entry.value.getAsObject()
             packer.packArrayHeader(4)
             packer.packLong(entry.id.toLong())
-            packer.packLong(timestamp)
+            packer.packLong(if (entry.timestampUs == Long.MIN_VALUE) timestamp else entry.timestampUs)
             packer.packInt(dataType)
             packDataValue(dataType, dataValue)
         }
         packer.flush()
-        return ByteBuffer.wrap(encodeBuffer.buffer(), 0, encodeBuffer.count())
+        // Java-WebSocket is allowed to enqueue the ByteBuffer by reference. Return an owned
+        // snapshot because the shared encoder stream is reused by the next publication.
+        return ByteBuffer.wrap(encodeBuffer.toByteArray())
     }
 
     @Synchronized
-    fun encodeNT4Message(timestamp: Long, topicId: Long, _pubUID: Long, dataType: Int, dataValue: Any): ByteBuffer {
+    fun encodeNT4Message(
+        timestamp: Long,
+        topicId: Long,
+        @Suppress("UNUSED_PARAMETER") pubUID: Long,
+        dataType: Int,
+        dataValue: Any
+    ): ByteBuffer {
         encodeBuffer.reset()
-        packer.packArrayHeader(1)
         packer.packArrayHeader(4)
         packer.packLong(topicId)
         packer.packLong(timestamp)
         packer.packInt(dataType)
         packDataValue(dataType, dataValue)
         packer.flush()
-        return ByteBuffer.wrap(encodeBuffer.buffer(), 0, encodeBuffer.count())
+        return ByteBuffer.wrap(encodeBuffer.toByteArray())
     }
 
     private fun packDataValue(dataType: Int, dataValue: Any) {
@@ -354,16 +418,16 @@ class NT4Server(
         }
 
         try {
-            val numElements = unpacker.unpackArrayHeader()
-            requireDecodedLength("message count", numElements, MAX_MESSAGES_PER_FRAME)
-            val list = ArrayList<NT4Message>(numElements)
-            for (i in 0 until numElements) {
-                if (!unpacker.hasNext() || unpacker.nextFormat.valueType.name != "ARRAY") {
-                    throw IOException("NT4 update batch contains a non-array tuple")
+            val list = ArrayList<NT4Message>()
+            while (unpacker.hasNext()) {
+                if (unpacker.nextFormat.valueType.name != "ARRAY") {
+                    throw IOException("NT4 frame contains a non-array message")
                 }
+                val header = unpacker.unpackArrayHeader()
+                if (header != 4) throw IOException("NT4 update tuple must have 4 elements, got $header")
+                requireDecodedLength("message count", list.size + 1, MAX_MESSAGES_PER_FRAME)
                 list.add(decodeSingleNT4Message(unpacker))
             }
-            if (unpacker.hasNext()) throw IOException("Trailing data after NT4 update frame")
             return list
         } finally {
             unpacker.close()
@@ -371,8 +435,6 @@ class NT4Server(
     }
 
     private fun decodeSingleNT4Message(unpacker: MessageUnpacker): NT4Message {
-        val tupleSize = unpacker.unpackArrayHeader()
-        if (tupleSize != 4) throw IOException("NT4 update tuple must have 4 elements, got $tupleSize")
         val id = unpacker.unpackLong()
         val timestamp = unpacker.unpackLong()
         val dataType = unpacker.unpackInt()
@@ -457,27 +519,42 @@ class NT4Server(
     fun putTopic(topic: String, value: NT4Value): NT4Entry {
         val normalizedTopic = topic.trimStart('/').takeIf { it.isNotEmpty() }
             ?: throw IllegalArgumentException("NT4 topic must not be empty")
+        require(normalizedTopic.length <= MAX_TOPIC_NAME_CHARS) {
+            "NT4 topic exceeds $MAX_TOPIC_NAME_CHARS characters"
+        }
+        require(!normalizedTopic.startsWith('$')) { "NT4 topics beginning with '$' are server-reserved" }
         var isNew = false
         var updated = false
+        var typeMatches = true
         val entry = entries.compute(normalizedTopic) { _, existing ->
             if (existing != null) {
                 // NT4 topic types are immutable for the lifetime of an announcement.
                 // Preserve the existing value when a caller attempts a type change.
                 if (existing.value.typeString == value.typeString) {
                     updated = existing.update(value)
+                } else {
+                    typeMatches = false
                 }
                 return@compute existing
             }
+            require(entries.size < MAX_TOPICS) { "NT4 topic limit of $MAX_TOPICS reached" }
             isNew = true
             val id = nextTopicId.getAndIncrement()
-            NT4Entry(id, normalizedTopic, value)
+            NT4Entry(
+                id,
+                normalizedTopic,
+                value,
+                hasValue = true,
+                timestampUs = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
+            )
         } ?: error("ConcurrentHashMap.compute returned null")
+        if (typeMatches) serverOwnedTopics.add(normalizedTopic)
         if (isNew || updated) {
             markDirty(entry)
         }
 
         if (isNew) {
-            announceEntry(entry)
+            announceEntryToSubscribers(entry)
         }
         return entry
     }
@@ -526,17 +603,31 @@ class NT4Server(
             if (conn.hasBufferedData() || pendingEntries.isEmpty()) continue
 
             entriesToSendBuffer.clear()
-            entriesToSendBuffer.addAll(pendingEntries)
+            pendingEntries.filterTo(entriesToSendBuffer, NT4Entry::hasValue)
             if (entriesToSendBuffer.isNotEmpty()) {
-                try {
-                    val binMsg = encodeNT4Messages(timestamp, entriesToSendBuffer)
-                    if (sendBinaryBuffer(conn, binMsg)) {
-                        pendingEntries.removeAll(entriesToSendBuffer)
+                var start = 0
+                while (start < entriesToSendBuffer.size) {
+                    val end = (start + MAX_ENTRIES_PER_SEND).coerceAtMost(entriesToSendBuffer.size)
+                    val batch = entriesToSendBuffer.subList(start, end)
+                    try {
+                        val binMsg = encodeNT4Messages(timestamp, batch)
+                        if (!sendBinaryBuffer(conn, binMsg)) break
+                        for (entry in batch) pendingEntries.remove(entry)
+                    } catch (e: IOException) {
+                        reportRateLimited("NT4 encode failure", sendFailures, e)
+                        break
                     }
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                    start = end
                 }
             }
+        }
+    }
+
+    private fun reportRateLimited(label: String, counter: AtomicLong, error: Exception?) {
+        val occurrence = counter.incrementAndGet()
+        if (occurrence == 1L || occurrence and (occurrence - 1L) == 0L) {
+            val detail = error?.message?.takeIf(String::isNotBlank)?.let { ": $it" }.orEmpty()
+            println("[NT4Server] $label ($occurrence occurrences)$detail")
         }
     }
 
@@ -559,6 +650,11 @@ class NT4Server(
         internal const val MAX_STRING_BYTES = 65_536
         internal const val MAX_BINARY_BYTES = 1_048_576
         internal const val MAX_DECODED_FRAME_BYTES = 4_194_304
+        internal const val MAX_TOPIC_NAME_CHARS = 1_024
+        internal const val MAX_TOPICS = 16_384
+        internal const val MAX_PUBLISHERS_PER_CLIENT = 4_096
+        internal const val MAX_SUBSCRIPTIONS_PER_CLIENT = 1_024
+        internal const val MAX_ENTRIES_PER_SEND = 128
         private val SUPPORTED_TOPIC_TYPES = setOf(
             "boolean", "double", "int", "float", "string",
             "boolean[]", "double[]", "int[]", "float[]", "string[]"
@@ -567,6 +663,7 @@ class NT4Server(
         private var serverInstance: NT4Server? = null
         private var shutdownHookAdded = false
         private val entries = ConcurrentHashMap<String, NT4Entry>()
+        private val serverOwnedTopics = ConcurrentHashMap.newKeySet<String>()
         private val nextTopicId = java.util.concurrent.atomic.AtomicInteger(1)
 
         @JvmStatic
@@ -591,10 +688,8 @@ class NT4Server(
             if (!shutdownHookAdded) {
                 Runtime.getRuntime().addShutdownHook(Thread {
                     try {
-                        server.stop()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                        serverInstance?.stop()
+                    } catch (_: Exception) {}
                 })
                 shutdownHookAdded = true
             }
@@ -621,6 +716,7 @@ class NT4Server(
         @JvmStatic
         fun resetSharedState() {
             entries.clear()
+            serverOwnedTopics.clear()
             nextTopicId.set(1)
         }
 

@@ -114,7 +114,8 @@ class MecanumMotorCluster(
     }
 
     /**
-     * Commands duty-cycle power settings (-1.0 to 1.0) to all 4 motors simultaneously.
+     * Stores unscaled duty-cycle requests and applies each motor's safety scale exactly once at the
+     * physical hardware boundary.
      *
      * @param fl Front-left motor power.
      * @param fr Front-right motor power.
@@ -122,15 +123,20 @@ class MecanumMotorCluster(
      * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
-        safeSetPower(frontLeft, fl, "frontLeft")
-        safeSetPower(frontRight, fr, "frontRight")
-        safeSetPower(rearLeft, rl, "rearLeft")
-        safeSetPower(rearRight, rr, "rearRight")
+        val safeFl = finitePower(fl)
+        val safeFr = finitePower(fr)
+        val safeRl = finitePower(rl)
+        val safeRr = finitePower(rr)
 
-        flIO.power = fl
-        frIO.power = fr
-        rlIO.power = rl
-        rrIO.power = rr
+        flIO.power = safeFl
+        frIO.power = safeFr
+        rlIO.power = safeRl
+        rrIO.power = safeRr
+
+        safeSetPower(frontLeft, safeFl * flIO.powerScale, "frontLeft")
+        safeSetPower(frontRight, safeFr * frIO.powerScale, "frontRight")
+        safeSetPower(rearLeft, safeRl * rlIO.powerScale, "rearLeft")
+        safeSetPower(rearRight, safeRr * rrIO.powerScale, "rearRight")
     }
 
     /**
@@ -139,7 +145,7 @@ class MecanumMotorCluster(
      * @param scale Master power scale factor.
      */
     fun applyPowerScale(scale: Double) {
-        val s = scale.coerceIn(0.0, 1.0)
+        val s = if (scale.isFinite()) scale.coerceIn(0.0, 1.0) else 0.0
         flIO.powerScale = s
         frIO.powerScale = s
         rlIO.powerScale = s
@@ -172,7 +178,7 @@ class MecanumMotorCluster(
 
     private fun safeSetPower(motor: DcMotorEx, power: Double, name: String) {
         try {
-            motor.power = power
+            motor.power = finitePower(power)
         } catch (e: Exception) {
             val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
@@ -181,6 +187,9 @@ class MecanumMotorCluster(
             }
         }
     }
+
+    private fun finitePower(power: Double): Double =
+        if (power.isFinite()) power.coerceIn(-1.0, 1.0) else 0.0
 
     /**
      * Releases motor IO resources upon OpMode completion.

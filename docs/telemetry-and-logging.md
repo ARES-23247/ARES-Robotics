@@ -12,7 +12,9 @@ robot/simulator
                                                    `-- optional laptop-to-cloud sync
 ```
 
-`CloudExporter.uploadFile` is intentionally disabled. Do not reintroduce robot-to-cloud uploads, retries, authentication, or archival. A robot match and its logging must continue when WAN access is absent.
+Robot-side cloud upload and replay classes are intentionally absent. Do not add robot-to-cloud
+uploads, retries, authentication, or archival. A robot match and its logging must continue when WAN
+access is absent; the desktop application owns import, replay, and remote synchronization.
 
 ## NT4 contract
 
@@ -38,12 +40,12 @@ Code that publishes at loop rate should reuse arrays/buffers and call the teleme
 | `Drive/Odom_Heading` | Raw odometry heading | radians CCW+, double |
 | `Drive/Pose_X` | Fused EKF X | meters, double |
 | `Drive/Pose_Y` | Fused EKF Y | meters, double |
-| `Drive/Drive_Heading` | Fused EKF heading (legacy integration spelling) | radians CCW+, double |
+| `Drive/Pose_Heading` | Fused EKF heading | radians CCW+, double |
 | `ARES/EstimatedPose` | Fused `[x, y, heading]` | double array |
 | `ARES/EstimatedPose/0..2` | Scalar fused X/Y/heading | double |
 | `Robot/Odometry/Covariance` | EKF covariance diagonal `[Pxx, Pyy, Ptheta]` | double array |
 
-`TelemetryTopicNormalizer` maps `Drive/Drive_Heading` to the canonical `Drive/Pose_Heading` name for consumers that normalize stored data. Until every repository migrates together, do not silently remove the published legacy spelling. The scalar `ARES/EstimatedPose/*` and drive pose topics must carry the same frame and heading sign.
+`TelemetryTopicNormalizer` removes transport-only leading slashes; it does not translate aliases. All four repositories publish and consume the canonical names above. The scalar `ARES/EstimatedPose/*` and drive pose topics must carry the same frame and heading sign.
 
 The simulator also reads `ARES/Input/*` topics for drive commands, mode flags, alliance, buttons, heartbeat, and obstacle data. `ARES/Input/isRedAlliance` defaults to `true`, matching simulator startup state.
 

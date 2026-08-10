@@ -3,6 +3,7 @@ package com.areslib.math.coordinate
 import com.areslib.state.Alliance
 import com.areslib.pathing.Path
 import com.areslib.math.geometry.*
+import com.areslib.math.wrapAngle
 import com.areslib.pathing.PathPoint
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -77,5 +78,23 @@ class AllianceMirroringTest {
         assertEquals(0.3, reflectedPath.points[1].curvature, epsilon)
         assertEquals(1.0, reflectedPath.points[0].pose.x, epsilon)
         assertEquals(-1.5, reflectedPath.points[0].pose.y, epsilon)
+    }
+
+    @Test
+    fun `corner origin is explicit even when dimensions equal the FTC field size`() {
+        val original = Pose2d(0.5, 1.0, Rotation2d(0.25))
+
+        val mirrored = AllianceMirroring.mirror(
+            original,
+            Alliance.RED,
+            FieldSymmetry.MIRRORED,
+            fieldLength,
+            fieldWidth,
+            FieldOrigin.CORNER
+        )
+
+        assertEquals(fieldLength - original.x, mirrored.x, epsilon)
+        assertEquals(original.y, mirrored.y, epsilon)
+        assertEquals(wrapAngle(Math.PI - original.heading.radians), mirrored.heading.radians, epsilon)
     }
 }

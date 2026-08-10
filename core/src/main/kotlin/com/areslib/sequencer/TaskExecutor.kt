@@ -12,9 +12,9 @@ import java.util.ArrayDeque
  * caller-owned and are not dispatched internally. An update may finish/start several immediately
  * complete tasks, capped at 100 transitions to prevent a malformed queue from locking the loop.
  *
- * Preemption calls `end(interrupted = true)` on the paused task, then later resumes it without a
- * second initialization while preserving elapsed time. [clear] performs best-effort interrupted
- * cleanup and suppresses task exceptions.
+ * Preemption calls [Task.pause] without performing terminal cleanup and pauses the task's watchdog
+ * until [Task.resume] is called. [clear] performs best-effort interrupted
+ * cleanup, releases runtime registries, and suppresses task exceptions.
  */
 class TaskExecutor {
     private val queue = ArrayDeque<Task>()
@@ -62,10 +62,12 @@ class TaskExecutor {
             val elapsed = currentTimestampMs - activeTaskStartTimeMs
             preemptedStack.push(Pair(currentActive, elapsed))
             try {
-                actions = addActions(actions, currentActive.end(state, interrupted = true))
+                actions = addActions(actions, currentActive.pause(state))
             } catch (e: Exception) {
-                System.err.println("TaskExecutor: Exception during task.end for preempted task ${currentActive.name}: ${e.message}")
+                System.err.println("TaskExecutor: Exception while pausing task ${currentActive.name}: ${e.message}")
                 e.printStackTrace()
+            } finally {
+                TaskTimeoutManager.pause(currentActive)
             }
         }
         
@@ -103,6 +105,16 @@ class TaskExecutor {
                         val (resumedTask, priorElapsed) = preemptedStack.pop()
                         activeTask = resumedTask
                         activeTaskStartTimeMs = currentTimestampMs - priorElapsed
+                        TaskStateMachine.transitionTo(resumedTask, TaskStatus.RUNNING)
+                        TaskTimeoutManager.resume(resumedTask)
+                        try {
+                            actions = addActions(actions, resumedTask.resume(state))
+                        } catch (e: Exception) {
+                            System.err.println("TaskExecutor: Exception while resuming task ${resumedTask.name}: ${e.message}")
+                            actions = addActions(actions, handleTaskFailure(resumedTask, state))
+                            task = null
+                            continue
+                        }
                         task = resumedTask
                     }
                     queue.isNotEmpty() -> {
@@ -144,6 +156,8 @@ class TaskExecutor {
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
                         e.printStackTrace()
+                    } finally {
+                        task.releaseRuntimeState()
                     }
                     activeTask = null
                     task = null // Continue loop to dequeue/resume instantly
@@ -178,12 +192,21 @@ class TaskExecutor {
 
     private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
         System.err.println("TaskExecutor: Task ${task.name} failed. Removing task, preserving remaining queue.")
+        if (TaskStateMachine.markFailed(task)) {
+            try {
+                TaskCallbacks.invokeFail(task)
+            } catch (e: Exception) {
+                System.err.println("TaskExecutor: Exception during failure callback: ${e.message}")
+            }
+        }
         val cleanupActions = try {
             task.end(state, interrupted = true)
         } catch (e: Exception) {
             System.err.println("TaskExecutor: Exception during task.end cleanup: ${e.message}")
             e.printStackTrace()
             emptyList()
+        } finally {
+            task.releaseRuntimeState()
         }
         activeTask = null
         return cleanupActions
@@ -197,16 +220,19 @@ class TaskExecutor {
         try {
             activeTask?.end(state, interrupted = true)
         } catch (e: Exception) {}
+        activeTask?.releaseRuntimeState()
         
         for (task in queue) {
             try {
                 task.end(state, interrupted = true)
             } catch (e: Exception) {}
+            task.releaseRuntimeState()
         }
         for ((task, _) in preemptedStack) {
             try {
                 task.end(state, interrupted = true)
             } catch (e: Exception) {}
+            task.releaseRuntimeState()
         }
         
         queue.clear()

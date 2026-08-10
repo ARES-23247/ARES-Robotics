@@ -1,123 +1,166 @@
 package com.areslib.sequencer
 
 import com.areslib.action.RobotAction
-import com.areslib.pathing.Path
-import com.areslib.pathing.HolonomicPathFollower
+import com.areslib.hardware.actuator.IndicatorLightColor
 import com.areslib.math.coordinate.FieldSymmetry
+import com.areslib.pathing.CommandKey
+import com.areslib.pathing.HolonomicPathFollower
+import com.areslib.pathing.NamedCommands
+import com.areslib.pathing.Path
 import com.areslib.sequencer.tasks.BlinkIndicatorTask
 import com.areslib.sequencer.tasks.SetIndicatorColorTask
+import com.areslib.state.RobotState
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+
+/** Prevents task-building calls from accidentally targeting an outer sequence scope. */
+@DslMarker
+annotation class AresSequenceDsl
 
 /**
- * A fluid builder API to construct sequential and parallel autonomous sequences of [Task] objects.
- * Hides task class instantiation boilerplate behind clean, chainable method calls.
+ * Typed builder for autonomous task trees.
+ *
+ * The builder is shared by FTC and FRC. It describes robot behavior only; platform lifecycle code
+ * remains responsible for running the resulting [Task] through [TaskExecutor]. Durations use
+ * Kotlin [Duration], named commands use [CommandKey], and nested control flow is visually explicit.
+ *
+ * ```kotlin
+ * val routine = robotSequence {
+ *     dispatch(RobotAction.SetDriveMode(DriveMode.HEADING_HOLD))
+ *     parallel {
+ *         task(deployIntake())
+ *         waitFor(250.milliseconds)
+ *     }
+ *     race {
+ *         namedCommand(CommandKey("collect_piece"))
+ *         waitFor(2.seconds)
+ *     }
+ * }
+ * ```
  */
-class RobotSequence {
+@AresSequenceDsl
+class RobotSequence internal constructor() {
     private val tasks = mutableListOf<Task>()
 
+    /** Appends an already constructed task. A task instance must appear only once in a tree. */
+    fun task(task: Task) {
+        tasks += task
+    }
+
+    /** Dispatches one immutable Redux intent and completes immediately. */
+    fun dispatch(action: RobotAction) {
+        task(ActionDispatchTask(action))
+    }
+
+    /** Waits for a finite, non-negative [duration]. */
+    fun waitFor(duration: Duration) {
+        requireFiniteNonNegative(duration, "Wait duration")
+        task(TimeWaitTask(duration.inWholeMilliseconds))
+    }
+
+    /** Waits until [condition] becomes true. */
+    fun waitUntil(condition: (RobotState) -> Boolean) {
+        task(WaitUntilTask(condition))
+    }
+
     /**
-     * Commands the robot to follow a trajectory path.
+     * Waits until [condition] becomes true and fails the task after [timeout].
+     * A timeout is required at call sites where waiting forever would make an auto unsafe.
      */
+    fun waitUntil(timeout: Duration, condition: (RobotState) -> Boolean) {
+        requireFiniteNonNegative(timeout, "Wait timeout")
+        task(WaitUntilTask(condition).withTimeout(timeout.inWholeMilliseconds))
+    }
+
+    /** Waits for path progress to reach [meters], with a finite fallback [timeout]. */
+    fun waitForDistance(meters: Double, timeout: Duration = 10_000.milliseconds) {
+        require(meters.isFinite() && meters >= 0.0) {
+            "Path distance must be finite and non-negative"
+        }
+        requireFiniteNonNegative(timeout, "Path wait timeout")
+        task(PathProgressWaitTask(meters, timeout.inWholeMilliseconds))
+    }
+
+    /** Follows [path] using the shared holonomic follower. */
     fun followPath(
         path: Path,
-        follower: HolonomicPathFollower,
+        with: HolonomicPathFollower,
         symmetry: FieldSymmetry = FieldSymmetry.ROTATIONAL
-    ): RobotSequence {
-        tasks.add(FollowPathTask(follower, path, symmetry))
-        return this
+    ) {
+        require(path.points.isNotEmpty()) { "Cannot follow an empty path" }
+        task(FollowPathTask(with, path, symmetry))
     }
 
-    /**
-     * Blocks execution progress until the active path tracking covers the specified distance.
-     */
-    fun waitDistance(meters: Double): RobotSequence {
-        tasks.add(PathProgressWaitTask(meters))
-        return this
+    /** Creates a fresh task from the typed named-command registry when the routine runs. */
+    fun namedCommand(key: CommandKey) {
+        task(NamedCommands.task(key))
     }
 
-    /**
-     * Blocks execution for a specified duration of time in milliseconds.
-     */
-    fun waitTime(ms: Long): RobotSequence {
-        tasks.add(TimeWaitTask(ms))
-        return this
+    /** Runs every child concurrently and completes when every child completes. */
+    fun parallel(block: RobotSequence.() -> Unit) {
+        task(ParallelTaskGroup(childTasks("parallel", block)))
     }
 
-    /**
-     * Blocks execution until a dynamic condition is met.
-     */
-    fun waitUntil(predicate: (com.areslib.state.RobotState) -> Boolean): RobotSequence {
-        tasks.add(WaitUntilTask(predicate))
-        return this
+    /** Runs every child concurrently and completes when the first child completes. */
+    fun race(block: RobotSequence.() -> Unit) {
+        task(ParallelRaceGroup(childTasks("race", block)))
     }
 
-    /**
-     * Dispatches a single Redux [RobotAction] instantly.
-     */
-    fun dispatch(action: RobotAction): RobotSequence {
-        tasks.add(ActionDispatchTask(action))
-        return this
+    /** Runs [deadline] with the child tasks and interrupts the children when it completes. */
+    fun deadline(deadline: Task, block: RobotSequence.() -> Unit) {
+        val companions = childTasks("deadline", block)
+        task(ParallelDeadlineGroup(deadline, companions))
     }
 
-    /**
-     * Appends a generic [Task] to the sequence.
-     */
-    fun addTask(task: Task): RobotSequence {
-        tasks.add(task)
-        return this
+    /** Adds a nested sequential group when explicit grouping improves readability. */
+    fun sequence(block: RobotSequence.() -> Unit) {
+        task(SequentialTaskGroup(childTasks("sequence", block)))
     }
 
-    /**
-     * Appends a group of tasks that will execute concurrently in parallel.
-     */
-    fun addParallel(vararg tasks: Task): RobotSequence {
-        this.tasks.add(ParallelTaskGroup(tasks.toList()))
-        return this
+    /** Sets an indicator immediately. */
+    fun setIndicator(name: String, color: IndicatorLightColor) {
+        require(name.isNotBlank()) { "Indicator name must not be blank" }
+        task(SetIndicatorColorTask(name, color))
     }
 
-    /**
-     * Appends a group of tasks that will execute sequentially.
-     */
-    fun addSequential(vararg tasks: Task): RobotSequence {
-        this.tasks.add(SequentialTaskGroup(tasks.toList()))
-        return this
-    }
-
-    /**
-     * Sets a named indicator light to a predefined color.
-     * This is an instant task — it dispatches the action and completes immediately.
-     *
-     * @param name Hardware map name of the indicator light (e.g. "indicator").
-     * @param color The target [IndicatorLightColor].
-     */
-    fun setIndicator(name: String, color: com.areslib.hardware.actuator.IndicatorLightColor): RobotSequence {
-        tasks.add(SetIndicatorColorTask(name, color))
-        return this
-    }
-
-    /**
-     * Blinks a named indicator light between two colors for a duration.
-     *
-     * @param name Hardware map name of the indicator light.
-     * @param colorA First blink color (shown initially and on completion).
-     * @param colorB Second blink color (alternates with colorA).
-     * @param durationMs Total blink duration in milliseconds.
-     * @param periodMs Full blink cycle period in ms (default 500ms = 1Hz blink).
-     */
+    /** Blinks an indicator for a typed duration and period. */
     fun blinkIndicator(
         name: String,
-        colorA: com.areslib.hardware.actuator.IndicatorLightColor,
-        colorB: com.areslib.hardware.actuator.IndicatorLightColor = com.areslib.hardware.actuator.IndicatorLightColor.OFF,
-        durationMs: Long,
-        periodMs: Long = 500L
-    ): RobotSequence {
-        tasks.add(BlinkIndicatorTask(name, colorA, colorB, durationMs, periodMs))
-        return this
+        colorA: IndicatorLightColor,
+        colorB: IndicatorLightColor = IndicatorLightColor.OFF,
+        duration: Duration,
+        period: Duration = 500.milliseconds
+    ) {
+        require(name.isNotBlank()) { "Indicator name must not be blank" }
+        requireFiniteNonNegative(duration, "Blink duration")
+        requireFinitePositive(period, "Blink period")
+        task(
+            BlinkIndicatorTask(
+                lightName = name,
+                colorA = colorA,
+                colorB = colorB,
+                durationMs = duration.inWholeMilliseconds,
+                periodMs = period.inWholeMilliseconds
+            )
+        )
     }
 
-    /**
-     * Compiles the chained methods into a single composite [Task] (a [SequentialTaskGroup]).
-     */
-    fun build(): Task {
-        return SequentialTaskGroup(tasks)
+    internal fun build(): Task = SequentialTaskGroup(tasks.toList())
+
+    private fun childTasks(groupName: String, block: RobotSequence.() -> Unit): List<Task> {
+        val child = RobotSequence().apply(block)
+        require(child.tasks.isNotEmpty()) { "$groupName group must contain at least one task" }
+        return child.tasks.toList()
+    }
+
+    private fun requireFiniteNonNegative(duration: Duration, label: String) {
+        require(duration.isFinite() && !duration.isNegative()) { "$label must be finite and non-negative" }
+    }
+
+    private fun requireFinitePositive(duration: Duration, label: String) {
+        require(duration.isFinite() && duration.isPositive()) { "$label must be finite and positive" }
     }
 }
+
+/** Builds one cross-platform autonomous task tree. */
+fun robotSequence(block: RobotSequence.() -> Unit): Task = RobotSequence().apply(block).build()

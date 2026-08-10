@@ -48,8 +48,9 @@ class PathPlannerAutoParserTest {
     @Test
     fun testNamedCommandsRegistry() {
         NamedCommands.clear()
-        val mockTask = MockConditionTask("MockTask", 1)
-        NamedCommands.registerCommand("TestCmd") { mockTask }
+        NamedCommands.register(CommandKey("TestCmd"), "Test command") { _ ->
+            MockConditionTask("MockTask", 1)
+        }
 
         val resolved = NamedCommands.getCommand("TestCmd", 1000L)
         assertNotNull(resolved)
@@ -102,8 +103,9 @@ class PathPlannerAutoParserTest {
     @Test
     fun testParseAutoJson() {
         NamedCommands.clear()
-        val mockTask = MockConditionTask("MockAction", 1)
-        NamedCommands.registerCommand("ActionKey") { mockTask }
+        NamedCommands.register(CommandKey("ActionKey"), "Test auto action") { _ ->
+            MockConditionTask("MockAction", 1)
+        }
 
         val mockAutoJson = """
             {

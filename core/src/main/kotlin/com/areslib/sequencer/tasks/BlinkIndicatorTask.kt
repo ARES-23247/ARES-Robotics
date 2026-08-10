@@ -12,11 +12,11 @@ import com.areslib.state.RobotState
  * Only dispatches actions on phase transitions (not every tick)
  * to maintain zero-GC compliance in the hot loop.
  *
- * Usage in auto sequences:
+ * Usage in an ARES auto sequence:
  * ```
- * RobotSequence()
- *     .addTask(BlinkIndicatorTask("indicator", GREEN, OFF, durationMs = 2000, periodMs = 400))
- *     .build()
+ * robotSequence {
+ *     blinkIndicator("indicator", GREEN, OFF, duration = 2.seconds, period = 400.milliseconds)
+ * }
  * ```
  *
  * @param lightName Hardware map name of the indicator light.
@@ -24,11 +24,6 @@ import com.areslib.state.RobotState
  * @param colorB Second blink color (alternates with colorA).
  * @param durationMs Total blink duration in milliseconds.
  * @param periodMs Full blink cycle period in milliseconds (default 500ms = 1Hz blink).
- */
-/**
- * Class implementation for Blink Indicator Task.
- *
- * Asynchronous superstructure task sequence execution unit.
  */
 class BlinkIndicatorTask(
     private val lightName: String,

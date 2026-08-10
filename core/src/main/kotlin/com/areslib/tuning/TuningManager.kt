@@ -9,6 +9,10 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * Manages dynamically tunable variables for the robot.
@@ -23,30 +27,12 @@ class TuningManager(
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 
     init {
-        // Try to load initial configuration from file
-        if (saveFile.exists()) {
-            try {
-                val jsonStr = saveFile.readText()
-                val loadedJson = gson.fromJson(jsonStr, JsonObject::class.java)
-
-                // Merge into default state to preserve Kotlin defaults for missing fields
-                val defaultJson = gson.toJsonTree(store.state.tuning).asJsonObject
-                mergeJsonObjects(defaultJson, loadedJson)
-
-                var loadedState = gson.fromJson(defaultJson, TuningState::class.java)
-                if (loadedState != null) {
-                    if (loadedState.driveFeedforward.kS == 0.0 && loadedState.driveFeedforward.kV == 0.0 && loadedState.driveFeedforward.kA == 0.0) {
-                        loadedState = loadedState.copy(
-                            drive = loadedState.drive.copy(
-                                driveFeedforward = com.areslib.control.tuning.SimpleFeedforwardCoeffs(0.05, 0.638, 0.02)
-                            )
-                        )
-                    }
-                    store.dispatch(RobotAction.UpdateTuningState(loadedState))
-                }
-            } catch (e: Exception) {
-                System.err.println("TuningManager: Failed to load tuning config from ${saveFile.absolutePath}: ${e.message}")
-            }
+        val backupFile = backupFile()
+        val loadedState = loadTuningState(saveFile) ?: loadTuningState(backupFile)
+        if (loadedState != null) {
+            store.dispatch(RobotAction.UpdateTuningState(withDefaultFeedforward(loadedState)))
+        } else if (saveFile.exists() || backupFile.exists()) {
+            System.err.println("TuningManager: No valid tuning config found at ${saveFile.absolutePath} or its backup")
         }
 
         // Publish current constants once on startup so dashboard populates immediately
@@ -58,18 +44,33 @@ class TuningManager(
      */
     private fun mergeJsonObjects(target: JsonObject, source: JsonObject) {
         for ((key, element) in source.entrySet()) {
-            if (element.isJsonObject && target.has(key) && target.get(key).isJsonObject) {
-                mergeJsonObjects(target.getAsJsonObject(key), element.asJsonObject)
-            } else {
-                target.add(key, element)
+            val existing = target.get(key) ?: continue
+            when {
+                element.isJsonObject && existing.isJsonObject ->
+                    mergeJsonObjects(existing.asJsonObject, element.asJsonObject)
+                existing.isJsonNull && isSafeJsonValue(element) -> target.add(key, element)
+                element.isJsonNull -> target.add(key, element)
+                element.isJsonPrimitive && existing.isJsonPrimitive &&
+                    element.asJsonPrimitive.isNumber && existing.asJsonPrimitive.isNumber -> {
+                    val number = element.asDouble
+                    if (number.isFinite()) target.addProperty(key, number)
+                }
             }
         }
+    }
+
+    private fun isSafeJsonValue(element: JsonElement): Boolean = when {
+        element.isJsonNull -> true
+        element.isJsonPrimitive -> element.asJsonPrimitive.let { !it.isNumber || it.asDouble.isFinite() }
+        element.isJsonObject -> element.asJsonObject.entrySet().all { isSafeJsonValue(it.value) }
+        else -> false
     }
 
     /**
      * Publishes all tuning constants recursively over NT4.
      */
     fun publishInitialState() {
+        telemetry.putNumber(TuningTopics.SCHEMA_VERSION_TOPIC, TuningTopics.SCHEMA_VERSION.toDouble())
         val stateJson = gson.toJsonTree(store.state.tuning).asJsonObject
         publishJsonObject("", stateJson)
     }
@@ -116,32 +117,15 @@ class TuningManager(
         val result = JsonObject()
         var changed = false
 
-        val domainPrefixes = listOf(
-            "drive/ftc/", "localization/ftcPinpoint/", "localization/ekfNoise/", "subsystem/ftc/",
-            "drive/", "vision/", "visionAlign/", "localization/", "driver/", "recovery/", "telemetry/", "subsystem/"
-        )
-
         for ((key, element) in obj.entrySet()) {
             val currentPrefix = if (prefix.isEmpty()) key else "$prefix/$key"
             when {
                 element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
                     val ntKey = "Tuning/$currentPrefix"
-                    val currentValue = element.asDouble
-
-                    // Check primary domain-scoped key (e.g. Tuning/drive/pathTranslationGains/kP)
-                    // and fall back to legacy flat key (e.g. Tuning/pathTranslationGains/kP)
-                    val pathWithoutDomain = domainPrefixes.fold(currentPrefix) { acc, p ->
-                        if (acc.startsWith(p)) acc.substring(p.length) else acc
-                    }
-                    val legacyKey = "Tuning/$pathWithoutDomain"
+                    val currentValue = element.asDouble.let { if (it.isFinite()) it else 0.0 }
 
                     var ntValue = telemetry.getNumber(ntKey, currentValue)
-                    if (ntValue == currentValue && legacyKey != ntKey) {
-                        val legacyValue = telemetry.getNumber(legacyKey, currentValue)
-                        if (legacyValue != currentValue) {
-                            ntValue = legacyValue
-                        }
-                    }
+                    if (!ntValue.isFinite()) ntValue = currentValue
 
                     if (ntValue != currentValue) {
                         changed = true
@@ -163,16 +147,133 @@ class TuningManager(
     }
 
     private fun saveToDisk(state: TuningState) {
+        var tempFile: File? = null
         try {
-            // Create backup if file exists for 1-step rollback
+            val parent = saveFile.absoluteFile.parentFile
+            parent?.mkdirs()
+
             if (saveFile.exists()) {
-                val backupFile = File(saveFile.parentFile, saveFile.nameWithoutExtension + ".backup.json")
-                saveFile.copyTo(backupFile, overwrite = true)
+                val backup = backupFile()
+                val backupTemp = File.createTempFile("${saveFile.nameWithoutExtension}-backup-", ".tmp", parent)
+                try {
+                    saveFile.inputStream().use { input ->
+                        FileOutputStream(backupTemp).use { output ->
+                            input.copyTo(output)
+                            output.fd.sync()
+                        }
+                    }
+                    atomicReplace(backupTemp, backup)
+                } finally {
+                    backupTemp.delete()
+                }
             }
-            saveFile.parentFile?.mkdirs()
-            saveFile.writeText(gson.toJson(state))
+
+            tempFile = File.createTempFile("${saveFile.nameWithoutExtension}-", ".tmp", parent)
+            FileOutputStream(tempFile).use { output ->
+                val persisted = gson.toJsonTree(state).asJsonObject
+                persisted.addProperty("_schemaVersion", TuningTopics.SCHEMA_VERSION)
+                output.write(gson.toJson(persisted).toByteArray(Charsets.UTF_8))
+                output.fd.sync()
+            }
+            atomicReplace(tempFile, saveFile)
         } catch (e: Exception) {
             System.err.println("TuningManager: Failed to save tuning config: ${e.message}")
+        } finally {
+            tempFile?.delete()
+        }
+    }
+
+    private fun loadTuningState(file: File): TuningState? {
+        if (!file.isFile) return null
+        return try {
+            val loadedJson = gson.fromJson(file.readText(), JsonObject::class.java) ?: return null
+            val schemaVersion = loadedJson.get("_schemaVersion")
+                ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
+                ?.asInt
+            if (schemaVersion != TuningTopics.SCHEMA_VERSION) return null
+            val merged = gson.toJsonTree(store.state.tuning).asJsonObject
+            mergeCanonicalNumbers(merged, loadedJson)
+            gson.fromJson(merged, TuningState::class.java)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Flattens schema-v2 input and merges only known finite numeric leaves. */
+    private fun mergeCanonicalNumbers(target: JsonObject, source: JsonObject) {
+        val flattened = LinkedHashMap<String, Double>()
+        flattenNumbers(source, "", flattened)
+        for ((path, value) in flattened) {
+            if (!value.isFinite() || path == "_schemaVersion") continue
+            setCanonicalNumber(target, TuningTopics.statePath("Tuning/$path"), value)
+        }
+    }
+
+    private fun flattenNumbers(source: JsonObject, prefix: String, out: MutableMap<String, Double>) {
+        for ((key, element) in source.entrySet()) {
+            val path = if (prefix.isEmpty()) key else "$prefix/$key"
+            when {
+                element.isJsonObject -> flattenNumbers(element.asJsonObject, path, out)
+                element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
+                    val value = element.asDouble
+                    if (value.isFinite()) out[path] = value
+                }
+            }
+        }
+    }
+
+    private fun setCanonicalNumber(target: JsonObject, path: String, value: Double) {
+        val parts = path.split('/')
+        var cursor = target
+        var materializedOptionalObject = false
+        for (i in 0 until parts.lastIndex) {
+            val key = parts[i]
+            val existing = cursor.get(key) ?: return
+            cursor = when {
+                existing.isJsonObject -> existing.asJsonObject
+                existing.isJsonNull -> JsonObject().also {
+                    cursor.add(key, it)
+                    materializedOptionalObject = true
+                }
+                else -> return
+            }
+        }
+        val leaf = parts.lastOrNull() ?: return
+        val existingLeaf = cursor.get(leaf)
+        val optionalPidLeaf = path.startsWith("drive/ftc/motorGains/") && leaf in setOf("kP", "kI", "kD", "kF")
+        if (existingLeaf == null && (materializedOptionalObject || optionalPidLeaf) && optionalPidLeaf) {
+            cursor.addProperty(leaf, value)
+            return
+        }
+        existingLeaf ?: return
+        if (existingLeaf.isJsonPrimitive && existingLeaf.asJsonPrimitive.isNumber) {
+            cursor.addProperty(leaf, value)
+        }
+    }
+
+    private fun withDefaultFeedforward(state: TuningState): TuningState {
+        val feedforward = state.driveFeedforward
+        if (feedforward.kS != 0.0 || feedforward.kV != 0.0 || feedforward.kA != 0.0) return state
+        return state.copy(
+            drive = state.drive.copy(
+                driveFeedforward = com.areslib.control.tuning.SimpleFeedforwardCoeffs(0.05, 0.638, 0.02)
+            )
+        )
+    }
+
+    private fun backupFile(): File =
+        File(saveFile.absoluteFile.parentFile, saveFile.nameWithoutExtension + ".backup.json")
+
+    private fun atomicReplace(source: File, target: File) {
+        try {
+            Files.move(
+                source.toPath(),
+                target.toPath(),
+                StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING
+            )
+        } catch (_: AtomicMoveNotSupportedException) {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
     }
 }

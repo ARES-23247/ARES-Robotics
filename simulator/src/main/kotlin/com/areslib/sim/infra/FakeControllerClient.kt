@@ -51,7 +51,7 @@ object FakeControllerClient {
         val poseSub = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").subscribe(doubleArrayOf(0.0, 0.0, 0.0))
         val poseXSub = ntInst.getDoubleTopic("Drive/Pose_X").subscribe(0.0)
         val poseYSub = ntInst.getDoubleTopic("Drive/Pose_Y").subscribe(0.0)
-        val headingSub = ntInst.getDoubleTopic("Drive/Drive_Heading").subscribe(0.0)
+        val headingSub = ntInst.getDoubleTopic("Drive/Pose_Heading").subscribe(0.0)
         
         teleopPub.set(true)
         var heartbeat = 0L
@@ -69,15 +69,13 @@ object FakeControllerClient {
         println("  exit / quit                  - Stop robot and exit")
         println("==================================================================\n")
 
-        var runningShell = true
-        while (runningShell) {
+        while (true) {
             print("> ")
             if (!scanner.hasNextLine()) break
             val line = scanner.nextLine().trim()
             if (line.isEmpty()) continue
             
             if (line == "exit" || line == "quit") {
-                runningShell = false
                 break
             }
 
@@ -141,8 +139,8 @@ object FakeControllerClient {
                     val x = parts[1].toDoubleOrNull()
                     val y = parts[2].toDoubleOrNull()
                     val radius = parts[3].toDoubleOrNull()
-                    if (x == null || y == null || radius == null) {
-                        println("Error: coordinates and radius must be numeric.")
+                    if (x?.isFinite() != true || y?.isFinite() != true || radius?.isFinite() != true || radius <= 0.0) {
+                        println("Error: coordinates must be finite and radius must be positive.")
                         continue
                     }
                     val obstacleStr = "{\"x\":$x,\"y\":$y,\"radius\":$radius}"
@@ -156,8 +154,8 @@ object FakeControllerClient {
                     }
                     val param = parts[1]
                     val value = parts[2].toDoubleOrNull()
-                    if (value == null) {
-                        println("Error: value must be numeric.")
+                    if (value?.isFinite() != true) {
+                        println("Error: value must be finite.")
                         continue
                     }
                     println("Publishing tuning parameter: $param = $value")
@@ -173,8 +171,11 @@ object FakeControllerClient {
                     val omega = parts[2].toDoubleOrNull()
                     val duration = parts[3].toDoubleOrNull()
 
-                    if (vx == null || vy == null || omega == null || duration == null) {
-                        println("Error: all drive parameters must be numeric.")
+                    if (
+                        vx?.isFinite() != true || vy?.isFinite() != true || omega?.isFinite() != true ||
+                        duration?.isFinite() != true || duration <= 0.0
+                    ) {
+                        println("Error: drive values must be finite and duration must be positive.")
                         continue
                     }
 

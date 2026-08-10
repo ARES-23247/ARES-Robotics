@@ -94,20 +94,22 @@ class BrownoutGuardTest {
     }
 
     @Test
-    fun `NaN voltage is rejected and state unchanged`() {
+    fun `NaN voltage fails closed`() {
         guard.update(12.0) // establish healthy
         guard.update(Double.NaN)
-        assertEquals(BrownoutState.HEALTHY, guard.state)
-        assertEquals(1.0, guard.powerScale, 0.001)
-        assertEquals(12.0, guard.lastVoltage, 0.001)
+        assertEquals(BrownoutState.CRITICAL, guard.state)
+        assertEquals(0.0, guard.powerScale, 0.001)
+        assertEquals(0.0, guard.lastVoltage, 0.001)
+        assertEquals(0.0, guard.batteryPercent, 0.001)
     }
 
     @Test
-    fun `negative voltage is rejected`() {
+    fun `negative voltage fails closed`() {
         guard.update(12.0)
         guard.update(-5.0)
-        assertEquals(BrownoutState.HEALTHY, guard.state)
-        assertEquals(12.0, guard.lastVoltage, 0.001)
+        assertEquals(BrownoutState.CRITICAL, guard.state)
+        assertEquals(0.0, guard.powerScale, 0.001)
+        assertEquals(0.0, guard.lastVoltage, 0.001)
     }
 
     @Test

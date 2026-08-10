@@ -178,8 +178,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * Solves inverse kinematics for chassis speeds and updates physical motor outputs.
      * Zero-GC execution loop.
      * 
-     * @param driveState State containing normalized drive efforts; this FTC boundary scales them by
-     * [maxWheelSpeedMetersPerSecond] and the kinematic radius.
+     * @param driveState State containing physical chassis speeds in m/s and rad/s.
      * @param kinematics Mecanum kinematics model solver.
      * @param batteryVolts Current measured battery bus voltage in Volts ($V$).
      * @param dtSeconds Loop time step interval in seconds ($s$).
@@ -191,9 +190,9 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         dtSeconds: Double
     ) {
         val maxSpeed = maxWheelSpeedMetersPerSecond
-        val omega = driveState.angularVelocityRadiansPerSecond * (maxSpeed / kinematics.k)
-        val rawForward = driveState.xVelocityMetersPerSecond * maxSpeed
-        val rawLeft = driveState.yVelocityMetersPerSecond * maxSpeed
+        val omega = driveState.angularVelocityRadiansPerSecond
+        val rawForward = driveState.xVelocityMetersPerSecond
+        val rawLeft = driveState.yVelocityMetersPerSecond
 
         kinematics.toWheelSpeeds(rawForward, rawLeft, omega, speedBuffer)
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
@@ -204,8 +203,6 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             dtSeconds = dtSeconds,
             powerScale = flIO.powerScale
         )
-
-        applyPowerScale(flIO.powerScale)
     }
 
     /**
@@ -218,12 +215,12 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      */
     @kotlin.jvm.JvmOverloads
     fun apply(speeds: DoubleArray, batteryVolts: Double = 12.0, dtSeconds: Double = 0.02, powerScale: Double = 1.0) {
+        motorCluster.applyPowerScale(powerScale)
         feedforward.calculateMotorPowers(
             speeds = speeds,
             maxWheelSpeedMps = maxWheelSpeedMetersPerSecond,
             batteryVolts = batteryVolts,
             dtSeconds = dtSeconds,
-            powerScale = powerScale,
             useClosedLoopVelocity = useClosedLoopVelocity,
             ticksPerMeter = ticksPerMeter,
             flVel = flIO.velocity,

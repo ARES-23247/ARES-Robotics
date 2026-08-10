@@ -45,17 +45,19 @@ class SwerveModuleIOFtc(
     private val lock = Any()
     @Volatile private var running = true
     private var latestVoltage = 0.0
+    private var latestVoltageValid = false
 
-    init {
-        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
-        val thread = Thread {
+    private val samplingThread = Thread {
             while (running) {
                 try {
                     val volt = analogEncoder.voltage
                     synchronized(lock) {
-                        latestVoltage = volt
+                        latestVoltageValid = volt.isFinite() && volt in 0.0..3.3
+                        if (latestVoltageValid) latestVoltage = volt
                     }
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                    synchronized(lock) { latestVoltageValid = false }
+                }
                 try {
                     Thread.sleep(5)
                 } catch (_: InterruptedException) {
@@ -63,10 +65,14 @@ class SwerveModuleIOFtc(
                     break
                 }
             }
+        }.apply {
+            isDaemon = true
+            name = "ARES-SwerveModuleIOFtc-Analog-Thread"
         }
-        thread.isDaemon = true
-        thread.name = "ARES-SwerveModuleIOFtc-Analog-Thread"
-        thread.start()
+
+    init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
+        samplingThread.start()
     }
 
     /**
@@ -76,24 +82,40 @@ class SwerveModuleIOFtc(
      * @param inputs Telemetry struct populated with current physical sensor values.
      */
     override fun updateInputs(inputs: SwerveModuleInputs) {
+        var drivePositionValid = false
         try {
-            lastDrivePosition = driveMotor.currentPosition * 2.0 * Math.PI / 2048.0
+            val position = driveMotor.currentPosition * 2.0 * Math.PI / 2048.0
+            if (position.isFinite()) {
+                lastDrivePosition = position
+                drivePositionValid = true
+            }
         } catch (e: Exception) {
             logWarning("Drive position read failed: ${e.message}")
         }
 
+        var driveVelocityValid = false
         try {
-            lastDriveVelocity = driveMotor.velocity * 2.0 * Math.PI / 2048.0
+            val velocity = driveMotor.velocity * 2.0 * Math.PI / 2048.0
+            if (velocity.isFinite()) {
+                lastDriveVelocity = velocity
+                driveVelocityValid = true
+            }
         } catch (e: Exception) {
             logWarning("Drive velocity read failed: ${e.message}")
         }
 
-        val volt = synchronized(lock) { latestVoltage }
-        lastSteerAbsolute = (volt / 3.3) * 2.0 * Math.PI
+        val steerValid: Boolean
+        synchronized(lock) {
+            steerValid = latestVoltageValid
+            if (steerValid) lastSteerAbsolute = (latestVoltage / 3.3) * 2.0 * Math.PI
+        }
 
         inputs.drivePositionRads = lastDrivePosition
         inputs.driveVelocityRadsPerSec = lastDriveVelocity
         inputs.steerAbsolutePositionRads = lastSteerAbsolute
+        inputs.drivePositionValid = drivePositionValid
+        inputs.driveVelocityValid = driveVelocityValid
+        inputs.steerAbsoluteValid = steerValid
         inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     }
 
@@ -106,13 +128,13 @@ class SwerveModuleIOFtc(
      */
     override fun setDesiredPower(drivePower: Double, steerPower: Double) {
         try {
-            driveMotor.power = drivePower.coerceIn(-1.0, 1.0)
+            driveMotor.power = finitePower(drivePower)
         } catch (e: Exception) {
             logWarning("Drive setPower failed: ${e.message}")
         }
 
         try {
-            steerMotor.power = steerPower.coerceIn(-1.0, 1.0)
+            steerMotor.power = finitePower(steerPower)
         } catch (e: Exception) {
             logWarning("Steer setPower failed: ${e.message}")
         }
@@ -131,5 +153,16 @@ class SwerveModuleIOFtc(
      */
     override fun close() {
         running = false
+        samplingThread.interrupt()
+        if (Thread.currentThread() !== samplingThread) {
+            try {
+                samplingThread.join(100L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
     }
+
+    private fun finitePower(power: Double): Double =
+        if (power.isFinite()) power.coerceIn(-1.0, 1.0) else 0.0
 }

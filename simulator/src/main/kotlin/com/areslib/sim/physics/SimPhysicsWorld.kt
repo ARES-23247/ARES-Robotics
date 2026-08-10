@@ -7,6 +7,7 @@ import com.areslib.sim.field.FieldObstacleLoader
 import com.areslib.sim.network.NT4FieldPublisher
 import com.areslib.state.Alliance
 import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldManager
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
@@ -64,7 +65,7 @@ class SimPhysicsWorld {
     }
 
     /**
-     * Replaces obstacles and game pieces from [activeConfig], or performs best-effort asset discovery
+     * Replaces obstacles and game pieces from [activeConfig], or discovers the canonical `field.json`
      * when it is `null`. The active dashboard field topics are updated for successfully loaded data.
      */
     fun loadFieldElements(activeConfig: RobotFieldConfig?) {
@@ -87,62 +88,26 @@ class SimPhysicsWorld {
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
             NT4FieldPublisher.publishAprilTags(activeConfig.apriltags)
         } else {
-            var obstaclesFile: File? = null
-            val obsPaths = listOf(
-                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json").path,
-                "../ARES-FTC/TeamCode/src/main/assets/paths/obstacles.json",
-                "src/main/assets/paths/obstacles.json",
-                "TeamCode/src/main/assets/paths/obstacles.json",
-                "../src/main/assets/paths/obstacles.json"
+            val canonicalConfigPaths = listOf(
+                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
+                File("../ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
+                File("TeamCode/src/main/assets/paths/field.json"),
+                File("src/main/assets/paths/field.json"),
+                File("src/main/deploy/paths/field.json")
             )
-            for (p in obsPaths) {
-                val f = File(p)
-                if (f.exists()) {
-                    obstaclesFile = f
-                    break
-                }
-            }
-            if (obstaclesFile != null) {
+            val canonicalConfigFile = canonicalConfigPaths.firstOrNull(File::isFile)
+            if (canonicalConfigFile != null) {
                 try {
-                    println("[Simulator] Loading obstacles from: ${obstaclesFile.absolutePath}")
-                    val content = obstaclesFile.readText()
-                    val obstacles = FieldObstacleLoader.loadObstaclesFromAnalyticsJson(content)
-                    val loaded = FieldObstacleLoader.loadObstacles(world, obstacles)
-                    activeObstacles.addAll(loaded)
-                    NT4FieldPublisher.publishObstacles(obstacles)
-
-                    val newConfig = RobotFieldManager.activeConfig.copy(obstacles = obstacles)
-                    RobotFieldManager.setActiveConfig(newConfig)
+                    val config = RobotFieldDocument.decode(canonicalConfigFile.readText())
+                    RobotFieldManager.setActiveConfig(config)
+                    println("[Simulator] Loading canonical field document: ${canonicalConfigFile.absolutePath}")
+                    loadFieldElements(config)
+                    return
                 } catch (e: Exception) {
-                    println("Failed to load initial field obstacles: ${e.message}")
+                    System.err.println("[Simulator] Failed to load canonical field document: ${e.message}")
                 }
             }
 
-            var gamePiecesFile: File? = null
-            val gpPaths = listOf(
-                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json").path,
-                "../ARES-FTC/TeamCode/src/main/assets/paths/game_pieces.json",
-                "src/main/assets/paths/game_pieces.json",
-                "TeamCode/src/main/assets/paths/game_pieces.json",
-                "../src/main/assets/paths/game_pieces.json"
-            )
-            for (p in gpPaths) {
-                val f = File(p)
-                if (f.exists()) {
-                    gamePiecesFile = f
-                    break
-                }
-            }
-            if (gamePiecesFile != null) {
-                try {
-                    println("[Simulator] Loading game pieces from: ${gamePiecesFile.absolutePath}")
-                    val content = gamePiecesFile.readText()
-                    val loadedGp = FieldElementLoader.loadGamePiecesFromAnalyticsJson(world, content)
-                    gamePieces.addAll(loadedGp)
-                } catch (e: Exception) {
-                    println("Failed to load initial game pieces: ${e.message}")
-                }
-            }
         }
     }
 

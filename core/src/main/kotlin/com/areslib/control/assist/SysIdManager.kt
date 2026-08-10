@@ -42,6 +42,8 @@ enum class SysIdRoutine {
  *    $$V(t) = \begin{cases} 1.2 \cdot t & t < 2.5\text{ s} \\ -1.2 \cdot (t - 2.5) & t \ge 2.5\text{ s} \end{cases}$$
  * 2. **Dynamic Step Routine**:
  *    $$V(t) = \begin{cases} +3.0\text{ V} & t < 1.5\text{ s} \\ -3.0\text{ V} & t \ge 1.5\text{ s} \end{cases}$$
+ * 3. **Flywheel Profiles**: a one-direction 0-to-6 V quasistatic ramp, or a 6 V dynamic
+ *    step followed by a zero-voltage coast-down. This avoids reversing high-inertia mechanisms.
  *
  * ### Numerical Differentiation:
  * Calculates real-time acceleration:
@@ -226,14 +228,18 @@ class SysIdManager {
 
         currentVoltage = when (activeRoutine) {
             SysIdRoutine.QUASISTATIC -> {
-                if (elapsedSec < 2.5) {
+                if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+                    1.2 * elapsedSec
+                } else if (elapsedSec < 2.5) {
                     1.2 * elapsedSec
                 } else {
                     -1.2 * (elapsedSec - 2.5)
                 }
             }
             SysIdRoutine.DYNAMIC -> {
-                if (elapsedSec < 1.5) {
+                if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+                    if (elapsedSec < 2.5) 6.0 else 0.0
+                } else if (elapsedSec < 1.5) {
                     3.0
                 } else {
                     -3.0

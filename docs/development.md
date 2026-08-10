@@ -20,18 +20,22 @@ val startNanos = RobotClock.nanoTime()
 
 Tests and simulation switch the clock to mock time with `useMockTime`/`setMockTimeMs`, then restore system time with `useSystemTime`. Direct calls to `System.currentTimeMillis()` or `System.nanoTime()` make simulation, replay, timeouts, and logs disagree.
 
-### Zero-allocation hot paths
+### Allocation-aware hot paths
 
 Treat robot loops, hardware refresh, estimator updates/replay, trajectory sampling, and local-planner steering as hot paths. Within them:
 
-- Reuse input objects, primitive arrays, matrices, lists, and string buffers.
+- Reuse primitive buffers and mutable request objects where ownership is obvious.
 - Use index loops where collection iteration allocates on the target runtime.
 - Do not construct geometry objects merely to access scalars; prefer direct/primitive overloads.
 - Do not use reflection or create coroutines/jobs per frame.
 - Move JSON, file I/O, topology serialization, and path parsing outside the loop.
-- Measure allocation changes with `ZeroGcRegressionTest`; do not rely on JVM desktop behavior alone.
+- Measure allocation and loop-time changes on the target controller; desktop tests alone cannot
+  predict Android ART or RoboRIO pause behavior.
 
-Zero-GC is a steady-state requirement. One-time initialization and explicit user operations may allocate when they are outside timing-critical loops.
+The goal is bounded loop latency, not universal zero allocation. Small, readable allocations are
+acceptable outside timing-critical sensor, estimator, and actuator paths—and inside them when
+measurement shows they do not create harmful pause or throughput behavior. Do not introduce object
+pools or mutable aliasing solely to satisfy an unmeasured zero-GC claim.
 
 ### Cached hardware reads
 

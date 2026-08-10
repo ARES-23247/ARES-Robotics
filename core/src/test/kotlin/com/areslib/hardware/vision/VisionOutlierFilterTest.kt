@@ -99,6 +99,25 @@ class VisionOutlierFilterTest {
     }
 
     @Test
+    fun `invalid filter configuration fails closed`() {
+        val measurement = VisionMeasurement(
+            timestampMs = 100L,
+            targetPose = Pose3d(Translation3d(1.0, 0.0, 0.0), Rotation3d()),
+            tagId = 1,
+            ambiguity = 0.05
+        )
+
+        assertFalse(
+            VisionOutlierFilter(VisionFilterConfig(maxDistanceMeters = Double.NaN))
+                .isValid(measurement, robotHeadingRad, robotPose)
+        )
+        assertFalse(
+            VisionOutlierFilter(VisionFilterConfig(minFieldX = 2.0, maxFieldX = 1.0))
+                .isValid(measurement, robotHeadingRad, robotPose)
+        )
+    }
+
+    @Test
     /**
      * testHeadingRejection declaration.
      *

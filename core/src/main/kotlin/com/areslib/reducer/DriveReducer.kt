@@ -146,6 +146,15 @@ object DriveReducer {
                 state.copy(positionLockX = action.targetX, positionLockY = action.targetY)
             }
             is RobotAction.JoystickDriveIntent -> {
+                if (!action.targetXVelocity.isFinite() || !action.targetYVelocity.isFinite() ||
+                    !action.targetAngularVelocity.isFinite()) {
+                    return state.copy(
+                        xVelocityMetersPerSecond = 0.0,
+                        yVelocityMetersPerSecond = 0.0,
+                        angularVelocityRadiansPerSecond = 0.0,
+                        isXLock = false
+                    )
+                }
                 val hasLinearInput = kotlin.math.abs(action.targetXVelocity) > 0.05 || kotlin.math.abs(action.targetYVelocity) > 0.05
                 val hasAngularInput = !action.fromHeadingHold && kotlin.math.abs(action.targetAngularVelocity) > 0.05
                 

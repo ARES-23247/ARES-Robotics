@@ -119,6 +119,7 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     override fun close() {
         running = false
         imuThread.interrupt()
+        joinWorker(imuThread)
     }
 }
 
@@ -131,7 +132,7 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
  */
 class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoCloseable {
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
     private var latestVoltage = 0.0
 
     private val thread = Thread {
@@ -174,6 +175,7 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
     override fun close() {
         running = false
         thread.interrupt()
+        joinWorker(thread)
     }
 }
 
@@ -186,7 +188,7 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
  */
 class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : AutoCloseable {
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
     private var latestState = false
 
     private val thread = Thread {
@@ -233,6 +235,7 @@ class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : A
     override fun close() {
         running = false
         thread.interrupt()
+        joinWorker(thread)
     }
 }
 
@@ -258,7 +261,7 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     private var offset = 0.0
     private var cachedPosition = 0.0
     private val lock = Any()
-    private var running = true
+    @Volatile private var running = true
     private var latestVoltage = 0.0
 
     private val thread = Thread {
@@ -328,6 +331,15 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     override fun close() {
         running = false
         thread.interrupt()
+        joinWorker(thread)
     }
 }
 
+private fun joinWorker(thread: Thread) {
+    if (Thread.currentThread() === thread) return
+    try {
+        thread.join(100L)
+    } catch (_: InterruptedException) {
+        Thread.currentThread().interrupt()
+    }
+}

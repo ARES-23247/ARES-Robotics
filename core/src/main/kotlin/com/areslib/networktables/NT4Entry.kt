@@ -25,16 +25,34 @@ fun interface NT4EventListener {
 class NT4Entry(
     var id: Int,
     val topic: String,
-    @Volatile var value: NT4Value
+    @Volatile var value: NT4Value,
+    /** Whether a publisher has supplied a value, rather than only declaring the topic type. */
+    @Volatile var hasValue: Boolean = true,
+    /** Timestamp of [value] in the server time base, in microseconds. */
+    @Volatile var timestampUs: Long = Long.MIN_VALUE
 ) {
     private val listeners = CopyOnWriteArrayList<NT4EventListener>()
 
-    /** Replaces the value and emits [NT4EventType.TOPIC_UPDATED] only when equality changes. */
-    fun update(newValue: NT4Value): Boolean {
-        if (this.value == newValue) return false
+    /**
+     * Applies [newValue] when [timestampUs] is not older than the retained value.
+     *
+     * A newly declared client topic has a type placeholder but no value. Its first update must
+     * therefore be observable even when it equals that placeholder (for example, the first
+     * published double is `0.0`). NT4 also requires the retained value to be the update with the
+     * greatest timestamp, so delayed packets cannot roll state backwards.
+     */
+    @Synchronized
+    fun update(
+        newValue: NT4Value,
+        timestampUs: Long = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
+    ): Boolean {
+        if (hasValue && timestampUs < this.timestampUs) return false
+        val changed = !hasValue || this.value != newValue
         this.value = newValue
-        notifyListeners(NT4EventType.TOPIC_UPDATED, newValue)
-        return true
+        this.timestampUs = timestampUs
+        hasValue = true
+        if (changed) notifyListeners(NT4EventType.TOPIC_UPDATED, newValue)
+        return changed
     }
 
     /** Adds [listener]; duplicate registrations receive duplicate callbacks. */

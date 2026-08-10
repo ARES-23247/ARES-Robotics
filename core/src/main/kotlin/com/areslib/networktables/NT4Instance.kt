@@ -17,6 +17,12 @@ class NT4Instance private constructor() {
         return NT4Server.createInstance(address, port)
     }
 
+    /** Stops the process-wide server and clears its topic registry. */
+    fun closeServer() {
+        NT4Server.getInstance()?.stop()
+        NT4Server.resetSharedState()
+    }
+
     companion object {
         @JvmStatic
         val defaultInstance: NT4Instance by lazy { NT4Instance() }

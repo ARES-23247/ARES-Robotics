@@ -54,8 +54,9 @@ import com.areslib.ftc.core.FtcOpModeLifecycleController
  *   Heading polarity is normalized to CCW-positive natively at the [PinpointIO] layer (using `pinpointIsCcwPositive`).
  * - **Limelight 3D Vision**: Fused via [FtcVisionTracker] with customizable standard deviation covariance $\mathbf{R}_{\text{vision}} = \text{diag}(\sigma_x^2, \sigma_y^2, \sigma_\theta^2)$.
  *
- * ### Zero-GC Execution Compliance:
- * The 50Hz–100Hz execution loop in [update] and [readSensors] strictly satisfies a zero-GC allocation footprint.
+ * ### Allocation behavior:
+ * Sensor and actuator adapters reuse their loop buffers. Redux state transitions and telemetry may
+ * allocate, so target-device loop jitter—not a blanket zero-GC claim—is the performance contract.
  * Sensor values, bulk readers, and diagnostics vectors rely on pre-allocated object instances and thread-safe primitive registers.
  *
  * @param hardwareMap Qualcomm FTC SDK hardware map reference.
@@ -204,7 +205,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         get() = odometrySourceArbiter.activeSource
 
     /**
-     * Executes the zero-GC sensor sampling cycle for the current robot loop frame.
+     * Executes the cached sensor-sampling cycle for the current robot loop frame.
      *
      * 1. Clears REV Lynx Hub bulk caches via [FtcPerformanceManager.clearBulkCaches].
      * 2. Calls [updateHardwareInputs] for subclass motor and encoder polling.
@@ -213,7 +214,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * 5. Updates the [visionTracker] pipeline.
      * 6. Records execution metrics in [profiler].
      *
-     * Zero-GC Guarantee: Performs zero heap allocations inside the 50Hz execution cycle.
+     * Implementations should reuse hardware input buffers and avoid blocking work in this cycle.
      */
     fun readSensors() {
         if (hasReadSensorsThisFrame) return

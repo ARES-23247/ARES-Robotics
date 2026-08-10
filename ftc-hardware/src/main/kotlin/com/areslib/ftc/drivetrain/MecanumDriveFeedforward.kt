@@ -14,8 +14,12 @@ import kotlin.math.sign
  * ### Mathematical Formulation:
  * Feedforward calculation:
  * $$u_{FF} = \left(\frac{v_{desired}}{v_{max}} + k_S \cdot \text{sign}(v_{desired})\right) \cdot \frac{12.0}{V_{battery}}$$
- * Power effort with PID feedback and voltage scaling:
- * $$u_{out} = \text{coerceIn}\left((u_{FF} + u_{PID}) \cdot \text{powerScale}, -1.0, 1.0\right)$$
+ * Raw requested effort with PID feedback and voltage compensation:
+ * $$u_{raw} = \text{coerceIn}\left((u_{FF} + u_{PID}) \cdot \frac{12}{V_{battery}}, -1.0, 1.0\right)$$
+ *
+ * The drivetrain's safety scale is deliberately not applied here. [MecanumMotorCluster] owns that
+ * final hardware-boundary multiplication so [com.areslib.hardware.actuator.MotorIO.power] remains
+ * the unscaled request and current estimation does not apply the same scale twice.
  *
  * ### Physical Units & Range Boundaries:
  * - Wheel Surface Velocities: Meters per second ($m/s$).
@@ -60,12 +64,13 @@ class MecanumDriveFeedforward(
     /** Maximum acceleration slew rate limit. */
     var slewRateLimit: Double? = initialSlewRateLimit
         set(value) {
-            field = value
-            if (value != null) {
-                flLimiter = SlewRateLimiter(value)
-                frLimiter = SlewRateLimiter(value)
-                rlLimiter = SlewRateLimiter(value)
-                rrLimiter = SlewRateLimiter(value)
+            val validLimit = value?.takeIf { it.isFinite() && it > 0.0 }
+            field = validLimit
+            if (validLimit != null) {
+                flLimiter = SlewRateLimiter(validLimit)
+                frLimiter = SlewRateLimiter(validLimit)
+                rlLimiter = SlewRateLimiter(validLimit)
+                rrLimiter = SlewRateLimiter(validLimit)
             } else {
                 flLimiter = null
                 frLimiter = null
@@ -117,7 +122,6 @@ class MecanumDriveFeedforward(
      * @param maxWheelSpeedMps Maximum physical wheel speed capability (m/s).
      * @param batteryVolts Current battery voltage level in Volts ($V$).
      * @param dtSeconds Time step in seconds ($s$).
-     * @param powerScale Master power scaling multiplier (0.0 to 1.0).
      * @param useClosedLoopVelocity True if REV Control Hub internal closed-loop velocity PID is enabled.
      * @param ticksPerMeter Encoder resolution in ticks per meter.
      * @param flVel Front-left wheel velocity encoder reading (ticks/s).
@@ -131,7 +135,6 @@ class MecanumDriveFeedforward(
         maxWheelSpeedMps: Double,
         batteryVolts: Double,
         dtSeconds: Double,
-        powerScale: Double,
         useClosedLoopVelocity: Boolean,
         ticksPerMeter: Double,
         flVel: Double,
@@ -140,45 +143,59 @@ class MecanumDriveFeedforward(
         rrVel: Double,
         outputPowers: DoubleArray
     ) {
-        if (speeds.size < 4 || outputPowers.size < 4) return
+        if (outputPowers.size < 4) return
+        outputPowers[0] = 0.0
+        outputPowers[1] = 0.0
+        outputPowers[2] = 0.0
+        outputPowers[3] = 0.0
+        if (speeds.size < 4) return
+
+        val validMaxSpeed = maxWheelSpeedMps.takeIf { it.isFinite() && it > 0.0 } ?: return
+        val actualVolts = batteryVolts.takeIf { it.isFinite() && it > 0.1 } ?: return
+        val controlDt = dtSeconds.takeIf { it.isFinite() && it > 1e-4 } ?: 0.02
         val maxVolts = 12.0
-        val actualVolts = if (batteryVolts > 0.1) batteryVolts else 12.0
         val voltageCompensationFactor = maxVolts / actualVolts
+
+        val flTarget = finiteClampedSpeed(speeds[0], validMaxSpeed)
+        val frTarget = finiteClampedSpeed(speeds[1], validMaxSpeed)
+        val rlTarget = finiteClampedSpeed(speeds[2], validMaxSpeed)
+        val rrTarget = finiteClampedSpeed(speeds[3], validMaxSpeed)
 
         fun applyFeedforward(speedMetersPerSecond: Double, prevSpeed: Double): Double {
             if (abs(speedMetersPerSecond) < 1e-4) return 0.0
             val sign = sign(speedMetersPerSecond)
-            val acceleration = if (dtSeconds > 1e-4) (speedMetersPerSecond - prevSpeed) / dtSeconds else 0.0
-            val velocityFF = speedMetersPerSecond * kV
-            val accelFF = acceleration * kA
-            val staticFF = sign * kS
+            val acceleration = (speedMetersPerSecond - prevSpeed) / controlDt
+            val velocityFF = speedMetersPerSecond * kV.finiteOrZero()
+            val accelFF = acceleration * kA.finiteOrZero()
+            val staticFF = sign * kS.finiteOrZero()
             return (velocityFF + accelFF + staticFF)
         }
 
-        if (abs(speeds[0]) < 1e-4) flController?.reset()
-        if (abs(speeds[1]) < 1e-4) frController?.reset()
-        if (abs(speeds[2]) < 1e-4) rlController?.reset()
-        if (abs(speeds[3]) < 1e-4) rrController?.reset()
+        if (abs(flTarget) < 1e-4) flController?.reset()
+        if (abs(frTarget) < 1e-4) frController?.reset()
+        if (abs(rlTarget) < 1e-4) rlController?.reset()
+        if (abs(rrTarget) < 1e-4) rrController?.reset()
 
         val fl = flController
         val fr = frController
         val rl = rlController
         val rr = rrController
 
-        val flFeedback = if (!useClosedLoopVelocity && fl != null) fl.calculate(flVel / ticksPerMeter, speeds[0], dtSeconds) else 0.0
-        val frFeedback = if (!useClosedLoopVelocity && fr != null) fr.calculate(frVel / ticksPerMeter, speeds[1], dtSeconds) else 0.0
-        val rlFeedback = if (!useClosedLoopVelocity && rl != null) rl.calculate(rlVel / ticksPerMeter, speeds[2], dtSeconds) else 0.0
-        val rrFeedback = if (!useClosedLoopVelocity && rr != null) rr.calculate(rrVel / ticksPerMeter, speeds[3], dtSeconds) else 0.0
+        val validTicksPerMeter = ticksPerMeter.takeIf { it.isFinite() && abs(it) > 1e-9 }
+        val flFeedback = calculateFeedback(fl, flVel, validTicksPerMeter, flTarget, controlDt, useClosedLoopVelocity)
+        val frFeedback = calculateFeedback(fr, frVel, validTicksPerMeter, frTarget, controlDt, useClosedLoopVelocity)
+        val rlFeedback = calculateFeedback(rl, rlVel, validTicksPerMeter, rlTarget, controlDt, useClosedLoopVelocity)
+        val rrFeedback = calculateFeedback(rr, rrVel, validTicksPerMeter, rrTarget, controlDt, useClosedLoopVelocity)
 
-        var flPower = ((applyFeedforward(speeds[0], previousSpeeds[0]) + flFeedback) * powerScale)
-        var frPower = ((applyFeedforward(speeds[1], previousSpeeds[1]) + frFeedback) * powerScale)
-        var rlPower = ((applyFeedforward(speeds[2], previousSpeeds[2]) + rlFeedback) * powerScale)
-        var rrPower = ((applyFeedforward(speeds[3], previousSpeeds[3]) + rrFeedback) * powerScale)
+        var flPower = applyFeedforward(flTarget, previousSpeeds[0]) + flFeedback
+        var frPower = applyFeedforward(frTarget, previousSpeeds[1]) + frFeedback
+        var rlPower = applyFeedforward(rlTarget, previousSpeeds[2]) + rlFeedback
+        var rrPower = applyFeedforward(rrTarget, previousSpeeds[3]) + rrFeedback
         
-        previousSpeeds[0] = speeds[0]
-        previousSpeeds[1] = speeds[1]
-        previousSpeeds[2] = speeds[2]
-        previousSpeeds[3] = speeds[3]
+        previousSpeeds[0] = flTarget
+        previousSpeeds[1] = frTarget
+        previousSpeeds[2] = rlTarget
+        previousSpeeds[3] = rrTarget
 
         val baseLimit = slewRateLimit
         if (baseLimit != null) {
@@ -194,14 +211,35 @@ class MecanumDriveFeedforward(
             rrLimiter?.setRateLimits(posLimit, -baseLimit)
         }
 
-        flLimiter?.let { flPower = it.calculate(flPower, dtSeconds) }
-        frLimiter?.let { frPower = it.calculate(frPower, dtSeconds) }
-        rlLimiter?.let { rlPower = it.calculate(rlPower, dtSeconds) }
-        rrLimiter?.let { rrPower = it.calculate(rrPower, dtSeconds) }
+        flLimiter?.let { flPower = it.calculate(flPower, controlDt) }
+        frLimiter?.let { frPower = it.calculate(frPower, controlDt) }
+        rlLimiter?.let { rlPower = it.calculate(rlPower, controlDt) }
+        rrLimiter?.let { rrPower = it.calculate(rrPower, controlDt) }
 
-        outputPowers[0] = (flPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        outputPowers[1] = (frPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        outputPowers[2] = (rlPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
-        outputPowers[3] = (rrPower * voltageCompensationFactor).coerceIn(-1.0, 1.0)
+        outputPowers[0] = finiteClampedPower(flPower * voltageCompensationFactor)
+        outputPowers[1] = finiteClampedPower(frPower * voltageCompensationFactor)
+        outputPowers[2] = finiteClampedPower(rlPower * voltageCompensationFactor)
+        outputPowers[3] = finiteClampedPower(rrPower * voltageCompensationFactor)
     }
+
+    private fun calculateFeedback(
+        controller: PIDController?,
+        measuredTicksPerSecond: Double,
+        ticksPerMeter: Double?,
+        targetMetersPerSecond: Double,
+        dtSeconds: Double,
+        useClosedLoopVelocity: Boolean
+    ): Double {
+        if (useClosedLoopVelocity || controller == null || ticksPerMeter == null) return 0.0
+        val measuredMetersPerSecond = measuredTicksPerSecond.finiteOrZero() / ticksPerMeter
+        return controller.calculate(measuredMetersPerSecond, targetMetersPerSecond, dtSeconds).finiteOrZero()
+    }
+
+    private fun finiteClampedSpeed(value: Double, maxMagnitude: Double): Double =
+        if (value.isFinite()) value.coerceIn(-maxMagnitude, maxMagnitude) else 0.0
+
+    private fun finiteClampedPower(value: Double): Double =
+        if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
+
+    private fun Double.finiteOrZero(): Double = if (isFinite()) this else 0.0
 }

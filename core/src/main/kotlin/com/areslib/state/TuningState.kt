@@ -57,6 +57,7 @@ data class DriveTuningState(
     val positionHoldMaxOutputLimit: Double = 0.50,
     val teleOpTurnScale: Double = 0.60,
     val driveFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.05, kV = 0.638, kA = 0.02),
+    val angularFeedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(kS = 0.0, kV = 0.0, kA = 0.0),
     val driveSlewRateLimit: Double? = null,
     val pathVelocityScale: Double = 0.85,
     val pathAccelerationLimit: Double = 3.0,
@@ -145,11 +146,18 @@ data class TelemetryTuningState(
  * Master Subsystem Tuning State holding FTC mechanism presets.
  */
 data class SubsystemTuningState(
-    val ftc: FtcSubsystemTuningState = FtcSubsystemTuningState()
+    val ftc: FtcSubsystemTuningState = FtcSubsystemTuningState(),
+    val flywheel: MechanismTuningState = MechanismTuningState()
 ) {
     val intakeNominalVoltage: Double get() = ftc.intakeNominalVoltage
     val flywheelTargetRpmPreset: Double get() = ftc.flywheelTargetRpmPreset
 }
+
+/** Shared identified plant and feedback parameters for a velocity-controlled mechanism. */
+data class MechanismTuningState(
+    val feedforward: SimpleFeedforwardCoeffs = SimpleFeedforwardCoeffs(0.0, 0.0, 0.0),
+    val velocityGains: PIDFCoefficients = PIDFCoefficients(0.0, 0.0, 0.0, 0.0)
+)
 
 /**
  * Immutable Redux state holding all dynamically tunable constants for the robot,
@@ -181,6 +189,7 @@ data class TuningState(
     val positionHoldMaxOutputLimit: Double get() = drive.positionHoldMaxOutputLimit
     val teleOpTurnScale: Double get() = drive.teleOpTurnScale
     val driveFeedforward: SimpleFeedforwardCoeffs get() = drive.driveFeedforward
+    val angularFeedforward: SimpleFeedforwardCoeffs get() = drive.angularFeedforward
     val driveSlewRateLimit: Double? get() = drive.driveSlewRateLimit
     val motorGains: PIDFCoefficients? get() = drive.motorGains
     val ticksPerMeter: Double get() = drive.ticksPerMeter
@@ -238,4 +247,5 @@ data class TuningState(
     // Subsystem
     val intakeNominalVoltage: Double get() = subsystem.intakeNominalVoltage
     val flywheelTargetRpmPreset: Double get() = subsystem.flywheelTargetRpmPreset
+    val flywheelTuning: MechanismTuningState get() = subsystem.flywheel
 }

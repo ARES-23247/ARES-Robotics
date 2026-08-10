@@ -28,17 +28,6 @@ class ShotResult {
     var aimDistanceMeters: Double = 0.0
     var targetFlywheelRpm: Double = 0.0
     var targetCowlAngleRotations: Double = 0.0
-
-    /**
-     * Compatibility alias retained for callers compiled against the old, incorrectly
-     * labeled property. Values have always been mechanism rotations, never degrees.
-     */
-    @Deprecated("Cowl lookup values are rotations, not degrees", ReplaceWith("targetCowlAngleRotations"))
-    var targetCowlAngleDegrees: Double
-        get() = targetCowlAngleRotations
-        set(value) {
-            targetCowlAngleRotations = value
-        }
     var angularVelocityFeedforwardRadPerSec: Double = 0.0
 }
 
@@ -54,41 +43,44 @@ class ShotResult {
  * @property tofValues Projectile time-of-flight corresponding to each distance breakpoint ($s$).
  * @property shotKeys Sorted distance breakpoints for RPM and cowl angle interpolation ($m$).
  * @property shotRpm Target flywheel rotational speeds corresponding to distance breakpoints ($RPM$).
- * @property shotCowl Cowl mechanism rotations corresponding to each distance breakpoint.
- * This compatibility name is retained for source compatibility; use [shotCowlRotations]
- * when reading the configured table.
+ * @property shotCowlRotations Cowl mechanism rotations corresponding to each distance breakpoint.
  * @property delayCompensationSeconds Phase delay compensation for system latency ($s$).
  * @property shooterFacesRearward `true` if shooter points out the rear of the robot (180° offset from front).
  */
-data class ShotConfig(
+class ShotConfig(
     val shooterOffsetX: Double,
     val shooterOffsetY: Double,
-    val tofKeys: DoubleArray,
-    val tofValues: DoubleArray,
-    val shotKeys: DoubleArray,
-    val shotRpm: DoubleArray,
-    val shotCowl: DoubleArray,
+    tofKeys: DoubleArray,
+    tofValues: DoubleArray,
+    shotKeys: DoubleArray,
+    shotRpm: DoubleArray,
+    shotCowlRotations: DoubleArray,
     val delayCompensationSeconds: Double = 0.05,
     val shooterFacesRearward: Boolean = true
 ) {
-    /** Explicitly unit-labeled view of [shotCowl]. */
-    val shotCowlRotations: DoubleArray get() = shotCowl
+    internal val tofKeys = tofKeys.copyOf()
+    internal val tofValues = tofValues.copyOf()
+    internal val shotKeys = shotKeys.copyOf()
+    internal val shotRpm = shotRpm.copyOf()
+    internal val shotCowlRotations = shotCowlRotations.copyOf()
 
     init {
-        require(tofKeys.isNotEmpty()) { "tofKeys and tofValues must not be empty" }
-        require(shotKeys.isNotEmpty()) { "shot lookup tables must not be empty" }
-        require(tofKeys.size == tofValues.size) { "tofKeys and tofValues must have the same length" }
-        require(shotKeys.size == shotRpm.size) { "shotKeys and shotRpm must have the same length" }
-        require(shotKeys.size == shotCowl.size) { "shotKeys and shotCowl must have the same length" }
+        require(this.tofKeys.isNotEmpty()) { "tofKeys and tofValues must not be empty" }
+        require(this.shotKeys.isNotEmpty()) { "shot lookup tables must not be empty" }
+        require(this.tofKeys.size == this.tofValues.size) { "tofKeys and tofValues must have the same length" }
+        require(this.shotKeys.size == this.shotRpm.size) { "shotKeys and shotRpm must have the same length" }
+        require(this.shotKeys.size == this.shotCowlRotations.size) {
+            "shotKeys and shotCowlRotations must have the same length"
+        }
         require(shooterOffsetX.isFinite() && shooterOffsetY.isFinite()) { "Shooter offsets must be finite" }
         require(delayCompensationSeconds.isFinite() && delayCompensationSeconds >= 0.0) {
             "Delay compensation must be finite and non-negative"
         }
-        requireStrictlyIncreasingFinite(tofKeys, "tofKeys")
-        requireStrictlyIncreasingFinite(shotKeys, "shotKeys")
-        requireFinite(tofValues, "tofValues")
-        requireFinite(shotRpm, "shotRpm")
-        requireFinite(shotCowl, "shotCowl")
+        requireStrictlyIncreasingFinite(this.tofKeys, "tofKeys")
+        requireStrictlyIncreasingFinite(this.shotKeys, "shotKeys")
+        requireFinite(this.tofValues, "tofValues")
+        requireFinite(this.shotRpm, "shotRpm")
+        requireFinite(this.shotCowlRotations, "shotCowlRotations")
     }
 
     private fun requireStrictlyIncreasingFinite(values: DoubleArray, name: String) {
@@ -163,12 +155,6 @@ class ShotSetup(private val config: ShotConfig) {
      */
     fun interpolateCowlRotations(distance: Double): Double {
         return interpolate(config.shotKeys, config.shotCowlRotations, distance)
-    }
-
-    /** Compatibility alias for the formerly unit-ambiguous method name. */
-    @Deprecated("Use the rotation-labeled API", ReplaceWith("interpolateCowlRotations(distance)"))
-    fun interpolateCowl(distance: Double): Double {
-        return interpolateCowlRotations(distance)
     }
 
     /**

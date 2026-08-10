@@ -38,6 +38,19 @@ class SysIdManagerTest {
     }
 
     @Test
+    fun `flywheel profiles never reverse the mechanism`() {
+        val manager = SysIdManager()
+
+        manager.start(SysIdMechanism.FLYWHEEL, SysIdRoutine.QUASISTATIC, 1000L, 0.0, 0.0, 0.0)
+        assertEquals(1.2, manager.update(2000L, 20.0), 1e-6)
+        assertEquals(4.8, manager.update(5000L, 80.0), 1e-6)
+
+        manager.start(SysIdMechanism.FLYWHEEL, SysIdRoutine.DYNAMIC, 7000L, 0.0, 0.0, 0.0)
+        assertEquals(6.0, manager.update(8000L, 100.0), 1e-6)
+        assertEquals(0.0, manager.update(10000L, 60.0), 1e-6)
+    }
+
+    @Test
     fun testSafetyLinearLimit() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)

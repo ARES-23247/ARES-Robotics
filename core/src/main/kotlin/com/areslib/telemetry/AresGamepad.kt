@@ -22,11 +22,6 @@ package com.areslib.telemetry
  * driver.update(latestGamepadState)
  * ```
  */
-/**
- * Class implementation for Ares Gamepad.
- *
- * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
- */
 class AresGamepad {
     
     private var previousState = GamepadState()
@@ -68,8 +63,8 @@ class AresGamepad {
     val f11 = BindableButton { it.f11 }
     val f12 = BindableButton { it.f12 }
 
-    val leftStick = BindableStick { state -> Pair(state.leftStickX, state.leftStickY) }
-    val rightStick = BindableStick { state -> Pair(state.rightStickX, state.rightStickY) }
+    val leftStick = BindableStick({ it.leftStickX }, { it.leftStickY })
+    val rightStick = BindableStick({ it.rightStickX }, { it.rightStickY })
     val leftStickX = BindableAxis { it.leftStickX }
     val leftStickY = BindableAxis { it.leftStickY }
     val rightStickX = BindableAxis { it.rightStickX }
@@ -126,11 +121,7 @@ class AresGamepad {
         }
     }
 
-    /**
-     * Class implementation for Bindable Button.
-     *
-     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
-     */
+    /** A digital input with edge- and level-triggered bindings. */
     class BindableButton(val stateSelector: (GamepadState) -> Boolean) {
         var isPressed: Boolean = false
             internal set
@@ -185,11 +176,7 @@ class AresGamepad {
         }
     }
 
-    /**
-     * Class implementation for Bindable Axis.
-     *
-     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
-     */
+    /** One continuously sampled analog input. */
     class BindableAxis(private val valueSelector: (GamepadState) -> Float) {
         var value: Float = 0.0f
             private set
@@ -203,12 +190,11 @@ class AresGamepad {
         }
     }
 
-    /**
-     * Class implementation for Bindable Stick.
-     *
-     * Real-time telemetry streaming, diagnostic logging, and NetworkTables 4 communication handler.
-     */
-    class BindableStick(private val valueSelector: (GamepadState) -> Pair<Float, Float>) {
+    /** Two continuously sampled analog axes without allocating a [Pair] each loop. */
+    class BindableStick(
+        private val xSelector: (GamepadState) -> Float,
+        private val ySelector: (GamepadState) -> Float
+    ) {
         var x: Float = 0.0f
             private set
         var y: Float = 0.0f
@@ -219,9 +205,8 @@ class AresGamepad {
         }
 
         internal fun updateValue(state: GamepadState) {
-            val (newX, newY) = valueSelector(state)
-            x = newX
-            y = newY
+            x = xSelector(state)
+            y = ySelector(state)
         }
     }
 }

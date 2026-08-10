@@ -20,7 +20,6 @@ object ActionReplay {
     private val actionRegistry = ConcurrentHashMap<String, Class<out RobotAction>>().apply {
         putAll(mapOf(
             "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
-            "VisionUpdate" to RobotAction.VisionUpdate::class.java,
             "VisionMeasurementsReceived" to RobotAction.VisionMeasurementsReceived::class.java,
             "PoseUpdate" to RobotAction.PoseUpdate::class.java,
             "JoystickDriveIntent" to RobotAction.JoystickDriveIntent::class.java,

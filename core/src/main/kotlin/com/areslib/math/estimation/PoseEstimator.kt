@@ -292,20 +292,23 @@ object PoseEstimator {
 
     var qX: Double = 0.01
         set(value) {
-            field = value
-            Q.m00 = value
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m00 = safeValue
         }
 
     var qY: Double = 0.01
         set(value) {
-            field = value
-            Q.m11 = value
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m11 = safeValue
         }
 
     var qTheta: Double = 0.01
         set(value) {
-            field = value
-            Q.m22 = value
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m22 = safeValue
         }
 
     private class ScratchpadContainer {

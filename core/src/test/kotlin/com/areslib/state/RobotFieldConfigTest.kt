@@ -50,6 +50,7 @@ class RobotFieldConfigTest {
         // A typical JSON string exported by the Field Editor dashboard
         val json = """
             {
+              "schemaVersion": 1,
               "id": "config_xyz",
               "name": "Championship 2026",
               "gameYear": "2025-2026",
@@ -193,6 +194,7 @@ class RobotFieldConfigTest {
     fun testNewFieldsJsonParsing() {
         val json = """
             {
+              "schemaVersion": 1,
               "id": "config_new",
               "name": "Championship 2026 Elements",
               "fieldType": "ftc",

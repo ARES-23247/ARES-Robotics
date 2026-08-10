@@ -11,6 +11,10 @@ import com.areslib.hardware.sensor.ImuIO
 import com.areslib.hardware.sensor.ImuInputs
 import com.areslib.Store
 import com.areslib.util.RobotClock
+import com.areslib.hardware.actuator.FlywheelIO
+import com.areslib.control.assist.FlywheelSysIdAdapter
+import com.areslib.control.assist.SysIdMechanismIO
+import com.areslib.state.MechanismTuningState
 
 /**
  * Subsystem controller managing System Identification (SysId) routines and physical calibration workflows for FTC Mecanum drivetrains.
@@ -43,6 +47,16 @@ class FtcMecanumCalibrationController {
     /** Optional custom velocity provider function for Flywheel or custom mechanism SysId routines ($rad/s$ or $m/s$). */
     var customSysIdVelocityProvider: (() -> Double)? = null
 
+    /** Optional season flywheel adapter shared by FTC and FRC characterization paths. */
+    var flywheelIO: FlywheelIO? = null
+        set(value) {
+            field = value
+            flywheelSysIdAdapter = value?.let(::FlywheelSysIdAdapter)
+            lastFlywheelTuning = null
+        }
+    private var flywheelSysIdAdapter: SysIdMechanismIO? = null
+    private var lastFlywheelTuning: MechanismTuningState? = null
+
     private var lastCommandProcessed = ""
 
     /** Identifier name of the currently active physical calibration routine (`"NONE"`, `"PINPOINT_SPIN"`, `"TRACK_WIDTH_SPIN"`, etc.). */
@@ -50,6 +64,11 @@ class FtcMecanumCalibrationController {
         private set
     private var calibrationStartTimeMs = 0L
     private val EMPTY_SYSID_DATA = DoubleArray(0)
+    private val sysIdData = DoubleArray(5)
+    private val pinpointData = DoubleArray(5)
+    private val trackWidthData = DoubleArray(6)
+    private val visionData = DoubleArray(5)
+    private val linearData = DoubleArray(5)
 
     /**
      * Polls NetworkTables (`"SysId/Command"`) for active calibration triggers and initializes routine state machines.
@@ -67,11 +86,17 @@ class FtcMecanumCalibrationController {
         pinpointIO: PinpointIO?,
         onResetTuning: () -> Unit
     ) {
+        val flywheelTuning = store.state.tuning.subsystem.flywheel
+        if (flywheelTuning != lastFlywheelTuning) {
+            flywheelIO?.configureVelocityController(flywheelTuning.velocityGains, flywheelTuning.feedforward)
+            lastFlywheelTuning = flywheelTuning
+        }
         val command = telemetryManager.nt4.getString("SysId/Command", "")
         if (command != lastCommandProcessed) {
             lastCommandProcessed = command
             activeCalibration = "NONE"
             sysIdManager.stop()
+            flywheelSysIdAdapter?.stop()
 
             when {
                 command == "STOP" -> {
@@ -149,7 +174,6 @@ class FtcMecanumCalibrationController {
         val timestamp = RobotClock.currentTimeMillis()
 
         if (sysIdManager.isActive()) {
-            println("[CalibrationController] ACTIVE SYSID! activeMechanism=${sysIdManager.activeMechanism}")
             if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR || sysIdManager.activeMechanism == SysIdMechanism.ANGULAR) {
                 if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
                     sysIdManager.stop()
@@ -171,13 +195,20 @@ class FtcMecanumCalibrationController {
                     }
                 }
             } else {
-                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                val adapter = flywheelSysIdAdapter
+                if (adapter == null || !adapter.measurementValid ||
+                    !sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
                     sysIdManager.stop()
+                    adapter?.stop()
+                    telemetryManager.nt4.putString("SysId/Error", if (adapter == null) "NO_FLYWHEEL_ADAPTER" else "INVALID_FLYWHEEL_MEASUREMENT")
+                } else {
+                    val measuredVelocity = customSysIdVelocityProvider?.invoke() ?: adapter.velocity
+                    val voltage = sysIdManager.update(timestamp, measuredVelocity)
+                    adapter.setCharacterizationVoltage(voltage)
                 }
             }
             return true
         } else if (activeCalibration != "NONE") {
-            println("[CalibrationController] ACTIVE CALIBRATION: $activeCalibration")
             val elapsedSec = (timestamp - calibrationStartTimeMs) / 1000.0
             val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
 
@@ -243,34 +274,26 @@ class FtcMecanumCalibrationController {
             val velocity = when (sysIdManager.activeMechanism) {
                 SysIdMechanism.LINEAR -> store.state.drive.xVelocityMetersPerSecond
                 SysIdMechanism.ANGULAR -> store.state.drive.angularVelocityRadiansPerSecond
-                SysIdMechanism.FLYWHEEL -> customSysIdVelocityProvider?.invoke() ?: 0.0
+                SysIdMechanism.FLYWHEEL -> customSysIdVelocityProvider?.invoke() ?: flywheelSysIdAdapter?.velocity ?: 0.0
             }
 
-            dataLogging.putDoubleArray(
-                "SysId/Data",
-                doubleArrayOf(
-                    timestamp.toDouble(),
-                    sysIdManager.currentVoltage,
-                    position,
-                    velocity,
-                    sysIdManager.calculatedAcceleration
-                )
-            )
+            sysIdData[0] = timestamp.toDouble()
+            sysIdData[1] = sysIdManager.currentVoltage
+            sysIdData[2] = position
+            sysIdData[3] = velocity
+            sysIdData[4] = sysIdManager.calculatedAcceleration
+            dataLogging.putDoubleArray("SysId/Data", sysIdData)
         } else if (activeCalibration != "NONE") {
             dataLogging.putString("SysId/Status", activeCalibration)
             val pose = store.state.drive.poseEstimator.estimatedPose
             when (activeCalibration) {
                 "PINPOINT_SPIN" -> {
-                    dataLogging.putDoubleArray(
-                        "SysId/Data",
-                        doubleArrayOf(
-                            timestamp.toDouble(),
-                            pose.x,
-                            pose.y,
-                            pose.heading.radians,
-                            0.0
-                        )
-                    )
+                    pinpointData[0] = timestamp.toDouble()
+                    pinpointData[1] = pose.x
+                    pinpointData[2] = pose.y
+                    pinpointData[3] = pose.heading.radians
+                    pinpointData[4] = 0.0
+                    dataLogging.putDoubleArray("SysId/Data", pinpointData)
                 }
                 "TRACK_WIDTH_SPIN" -> {
                     val currentTicks = store.state.tuning.ticksPerMeter
@@ -280,39 +303,27 @@ class FtcMecanumCalibrationController {
                     val frPosMeters = mecanumIO.frIO.position / ticks
                     val rlPosMeters = mecanumIO.rlIO.position / ticks
                     val rrPosMeters = mecanumIO.rrIO.position / ticks
-                    val imuHeading = imuIO?.let {
-                        val inputs = ImuInputs()
-                        it.updateInputs(inputs)
-                        inputs.headingRadians
-                    } ?: 0.0
-
-                    dataLogging.putDoubleArray(
-                        "SysId/Data",
-                        doubleArrayOf(
-                            timestamp.toDouble(),
-                            flPosMeters,
-                            frPosMeters,
-                            rlPosMeters,
-                            rrPosMeters,
-                            imuHeading
-                        )
-                    )
+                    // The robot loop already cached this heading; never trigger a second IMU hardware read here.
+                    val imuHeading = store.state.drive.odometryHeading
+                    trackWidthData[0] = timestamp.toDouble()
+                    trackWidthData[1] = flPosMeters
+                    trackWidthData[2] = frPosMeters
+                    trackWidthData[3] = rlPosMeters
+                    trackWidthData[4] = rrPosMeters
+                    trackWidthData[5] = imuHeading
+                    dataLogging.putDoubleArray("SysId/Data", trackWidthData)
                 }
                 "VISION_CALIBRATION" -> {
                     val lastLL = visionTracker.lastLimelightPose
                     val tagX = lastLL?.x ?: 0.0
                     val tagY = lastLL?.y ?: 0.0
                     val tagHeading = lastLL?.heading?.radians ?: 0.0
-                    dataLogging.putDoubleArray(
-                        "SysId/Data",
-                        doubleArrayOf(
-                            timestamp.toDouble(),
-                            tagX,
-                            tagY,
-                            tagHeading,
-                            0.0
-                        )
-                    )
+                    visionData[0] = timestamp.toDouble()
+                    visionData[1] = tagX
+                    visionData[2] = tagY
+                    visionData[3] = tagHeading
+                    visionData[4] = 0.0
+                    dataLogging.putDoubleArray("SysId/Data", visionData)
                 }
                 "LINEAR_DRIVE" -> {
                     val currentTicks = store.state.tuning.ticksPerMeter
@@ -324,16 +335,12 @@ class FtcMecanumCalibrationController {
                     val rrPosMeters = mecanumIO.rrIO.position / ticks
                     val avgDisplacement = (flPosMeters + frPosMeters + rlPosMeters + rrPosMeters) / 4.0
 
-                    dataLogging.putDoubleArray(
-                        "SysId/Data",
-                        doubleArrayOf(
-                            timestamp.toDouble(),
-                            avgDisplacement,
-                            0.0,
-                            0.0,
-                            0.0
-                        )
-                    )
+                    linearData[0] = timestamp.toDouble()
+                    linearData[1] = avgDisplacement
+                    linearData[2] = 0.0
+                    linearData[3] = 0.0
+                    linearData[4] = 0.0
+                    dataLogging.putDoubleArray("SysId/Data", linearData)
                 }
                 else -> {
                     dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)

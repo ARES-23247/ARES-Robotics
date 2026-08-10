@@ -64,8 +64,15 @@ class BrownoutGuard(
      * @param voltage Current battery voltage reading in volts ($V$).
      */
     fun update(voltage: Double) {
-        // Reject garbage readings
-        if (!voltage.isFinite() || voltage < 0.0) return
+        if (!voltage.isFinite() || voltage < 0.0) {
+            val previousState = state
+            lastVoltage = 0.0
+            batteryPercent = 0.0
+            state = BrownoutState.CRITICAL
+            powerScale = 0.0
+            if (previousState == BrownoutState.HEALTHY) tripCount++
+            return
+        }
 
         lastVoltage = voltage
         val normVolt = if (nominalVoltage > 0.1) nominalVoltage else 13.0

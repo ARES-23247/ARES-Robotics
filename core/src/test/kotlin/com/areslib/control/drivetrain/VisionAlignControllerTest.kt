@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import kotlin.math.tan
 import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class VisionAlignControllerTest {
@@ -38,5 +39,50 @@ class VisionAlignControllerTest {
 
         assertTrue(command.targetAngularVelocity in 0.58..0.62,
             "First sample should contain P/I/kS only, got ${command.targetAngularVelocity}")
+    }
+
+    @Test
+    fun `future dated target space sample is not used for closed loop translation`() {
+        RobotClock.useMockTime(1_000L)
+        val measurement = VisionMeasurement(
+            timestampMs = 1_001L,
+            tagId = 7,
+            robotPoseTargetSpace = Pose3d(Translation3d(1.0, 0.0, 1.0), Rotation3d())
+        )
+        val command = assertNotNull(
+            VisionAlignController().calculate(
+                RobotState(vision = VisionState(measurements = listOf(measurement))),
+                targetTagId = 7,
+                isAlignmentRequested = true
+            )
+        )
+
+        assertEquals(0.0, command.targetXVelocity, 1e-9)
+        assertEquals(0.0, command.targetYVelocity, 1e-9)
+        assertTrue(command.targetAngularVelocity.isFinite())
+    }
+
+    @Test
+    fun `nonfinite target space sample cannot emit nonfinite commands`() {
+        RobotClock.useMockTime(1_000L)
+        val measurement = VisionMeasurement(
+            timestampMs = 1_000L,
+            tagId = 7,
+            robotPoseTargetSpace = Pose3d(
+                Translation3d(Double.NaN, 0.0, 1.0),
+                Rotation3d()
+            )
+        )
+        val command = assertNotNull(
+            VisionAlignController().calculate(
+                RobotState(vision = VisionState(measurements = listOf(measurement))),
+                targetTagId = 7,
+                isAlignmentRequested = true
+            )
+        )
+
+        assertTrue(command.targetXVelocity.isFinite())
+        assertTrue(command.targetYVelocity.isFinite())
+        assertTrue(command.targetAngularVelocity.isFinite())
     }
 }

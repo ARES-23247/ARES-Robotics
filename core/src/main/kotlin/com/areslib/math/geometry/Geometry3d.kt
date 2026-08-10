@@ -214,6 +214,12 @@ data class Pose3d(
     }
 }
 
+/** Returns an ownership-safe copy including nested mutable translation, rotation, and quaternion. */
+fun Pose3d.deepCopy(): Pose3d = Pose3d(
+    translation = Translation3d(translation.x, translation.y, translation.z),
+    rotation = Rotation3d(Quaternion(rotation.q.w, rotation.q.x, rotation.q.y, rotation.q.z))
+)
+
 /**
  * 3D Rigid Body Transformation matrix wrapper $(\mathbf{T}, \mathbf{R})$.
  *
@@ -275,4 +281,3 @@ fun Pose3d.relativeTo(other: Pose3d): Transform3d {
         invRot * rotation
     )
 }
-
