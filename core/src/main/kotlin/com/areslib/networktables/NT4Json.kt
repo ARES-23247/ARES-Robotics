@@ -262,7 +262,7 @@ object NT4Json {
     }
 
     private fun buildAnnounceObject(sb: java.lang.StringBuilder, entry: NT4Entry, pubUid: Int?) {
-        val cleanTopic = if (entry.topic.startsWith("/")) entry.topic else "/" + entry.topic
+        val cleanTopic = com.areslib.telemetry.TelemetryTopicNormalizer.toWireTopic(entry.topic)
         sb.append("{\"method\":\"announce\",\"params\":{")
         sb.append("\"name\":")
         appendJsonString(sb, cleanTopic)
@@ -278,7 +278,7 @@ object NT4Json {
 
     /** Constructs one `unannounce` control message for a deleted topic. */
     fun buildUnannounceSingle(entry: NT4Entry): String {
-        val cleanTopic = if (entry.topic.startsWith("/")) entry.topic else "/" + entry.topic
+        val cleanTopic = com.areslib.telemetry.TelemetryTopicNormalizer.toWireTopic(entry.topic)
         val sb = java.lang.StringBuilder(cleanTopic.length + 96)
         sb.append("[{\"method\":\"unannounce\",\"params\":{\"name\":")
         appendJsonString(sb, cleanTopic)

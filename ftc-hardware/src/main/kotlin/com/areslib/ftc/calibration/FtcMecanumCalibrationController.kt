@@ -94,6 +94,9 @@ class FtcMecanumCalibrationController {
         val command = telemetryManager.nt4.getString("SysId/Command", "")
         if (command != lastCommandProcessed) {
             lastCommandProcessed = command
+            if (command.isNotBlank()) {
+                println("[ARES Calibration] Received command: $command")
+            }
             activeCalibration = "NONE"
             sysIdManager.stop()
             flywheelSysIdAdapter?.stop()
@@ -260,6 +263,7 @@ class FtcMecanumCalibrationController {
         val dataLogging = telemetryManager.dataLoggingTelemetry
         if (sysIdManager.isActive()) {
             dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
+            telemetryManager.nt4.putString("SysId/Status", sysIdManager.activeRoutine.name)
             val pose = store.state.drive.poseEstimator.estimatedPose
             val position = when (sysIdManager.activeMechanism) {
                 SysIdMechanism.LINEAR -> {
@@ -283,8 +287,10 @@ class FtcMecanumCalibrationController {
             sysIdData[3] = velocity
             sysIdData[4] = sysIdManager.calculatedAcceleration
             dataLogging.putDoubleArray("SysId/Data", sysIdData)
+            telemetryManager.nt4.putDoubleArray("SysId/Data", sysIdData)
         } else if (activeCalibration != "NONE") {
             dataLogging.putString("SysId/Status", activeCalibration)
+            telemetryManager.nt4.putString("SysId/Status", activeCalibration)
             val pose = store.state.drive.poseEstimator.estimatedPose
             when (activeCalibration) {
                 "PINPOINT_SPIN" -> {
@@ -294,6 +300,7 @@ class FtcMecanumCalibrationController {
                     pinpointData[3] = pose.heading.radians
                     pinpointData[4] = 0.0
                     dataLogging.putDoubleArray("SysId/Data", pinpointData)
+                    telemetryManager.nt4.putDoubleArray("SysId/Data", pinpointData)
                 }
                 "TRACK_WIDTH_SPIN" -> {
                     val currentTicks = store.state.tuning.ticksPerMeter
@@ -312,6 +319,7 @@ class FtcMecanumCalibrationController {
                     trackWidthData[4] = rrPosMeters
                     trackWidthData[5] = imuHeading
                     dataLogging.putDoubleArray("SysId/Data", trackWidthData)
+                    telemetryManager.nt4.putDoubleArray("SysId/Data", trackWidthData)
                 }
                 "VISION_CALIBRATION" -> {
                     val lastLL = visionTracker.lastLimelightPose
@@ -324,6 +332,7 @@ class FtcMecanumCalibrationController {
                     visionData[3] = tagHeading
                     visionData[4] = 0.0
                     dataLogging.putDoubleArray("SysId/Data", visionData)
+                    telemetryManager.nt4.putDoubleArray("SysId/Data", visionData)
                 }
                 "LINEAR_DRIVE" -> {
                     val currentTicks = store.state.tuning.ticksPerMeter
@@ -341,15 +350,21 @@ class FtcMecanumCalibrationController {
                     linearData[3] = 0.0
                     linearData[4] = 0.0
                     dataLogging.putDoubleArray("SysId/Data", linearData)
+                    telemetryManager.nt4.putDoubleArray("SysId/Data", linearData)
                 }
                 else -> {
                     dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+                    telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
                 }
             }
         } else {
             dataLogging.putString("SysId/Status", "NONE")
             dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+            telemetryManager.nt4.putString("SysId/Status", "NONE")
+            telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
         }
+        // Calibration streams are safety/control feedback and must not wait for telemetry throttling.
+        telemetryManager.nt4.update()
     }
 }
 

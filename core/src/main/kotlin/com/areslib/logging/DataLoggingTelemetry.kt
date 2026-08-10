@@ -2,7 +2,6 @@ package com.areslib.logging
 
 import com.areslib.telemetry.ITelemetry
 import com.areslib.telemetry.RobotStatusTracker
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Single-owner telemetry accumulator that mirrors values to a live backend and asynchronous CSV.
@@ -21,6 +20,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
     
     private var logger = ARESDataLogger("Init")
     private val currentFrame = java.util.HashMap<String, Any>()
+    private val frameLock = Any()
     private var currentMode = "Init"
     private val arrayBuilder = java.lang.StringBuilder(128)
 
@@ -45,30 +45,32 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
 
     /** Stores [value] in the current frame and forwards it when network output is enabled. */
     override fun putNumber(key: String, value: Double) {
-        currentFrame[key] = value
+        synchronized(frameLock) { currentFrame[key] = value }
         if (ntEnabled) ntTelemetry?.putNumber(key, value)
     }
 
     /** Stores [value] numerically in CSV while preserving boolean type on the live backend. */
     override fun putBoolean(key: String, value: Boolean) {
-        currentFrame[key] = if (value) 1.0 else 0.0
+        synchronized(frameLock) { currentFrame[key] = if (value) 1.0 else 0.0 }
         if (ntEnabled) ntTelemetry?.putBoolean(key, value)
     }
 
     /** Stores and optionally forwards a string value. */
     override fun putString(key: String, value: String) {
-        currentFrame[key] = value
+        synchronized(frameLock) { currentFrame[key] = value }
         if (ntEnabled) ntTelemetry?.putString(key, value)
     }
 
     /** Serializes [value] for CSV and forwards the original array synchronously when enabled. */
     override fun putDoubleArray(key: String, value: DoubleArray) {
-        arrayBuilder.setLength(0)
-        for (i in value.indices) {
-            if (i > 0) arrayBuilder.append('|')
-            arrayBuilder.append(value[i])
+        synchronized(frameLock) {
+            arrayBuilder.setLength(0)
+            for (i in value.indices) {
+                if (i > 0) arrayBuilder.append('|')
+                arrayBuilder.append(value[i])
+            }
+            currentFrame[key] = arrayBuilder.toString()
         }
-        currentFrame[key] = arrayBuilder.toString()
         if (ntEnabled) ntTelemetry?.putDoubleArray(key, value)
     }
 
@@ -103,13 +105,14 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         // Log the complete frame asynchronously using the GC-free map pool only if interval elapsed
         if (now - lastLogTimeMs >= minLogIntervalMs) {
             lastLogTimeMs = now
-            currentFrame["TimestampMs"] = now
-            currentFrame["OpMode"] = currentMode
-            
             val map = logger.obtainMap()
-            map.putAll(currentFrame)
+            synchronized(frameLock) {
+                currentFrame["TimestampMs"] = now
+                currentFrame["OpMode"] = currentMode
+                map.putAll(currentFrame)
+                currentFrame.clear()
+            }
             logger.logFrame(map)
-            currentFrame.clear()
         }
         
         // Forward the update trigger to live streaming network tables (only on NT-enabled frames)

@@ -48,4 +48,10 @@ class TelemetryTopicNormalizerTest {
             TelemetryTopicNormalizer.normalizeTopic("////Custom/Diagnostic")
         )
     }
+
+    @Test
+    fun `wire topics always have exactly one root slash`() {
+        assertEquals("/SysId/Status", TelemetryTopicNormalizer.toWireTopic("SysId/Status"))
+        assertEquals("/SysId/Status", TelemetryTopicNormalizer.toWireTopic("///SysId/Status"))
+    }
 }

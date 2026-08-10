@@ -24,4 +24,7 @@ object TelemetryTopicConstants {
 /** Removes transport-only leading slashes from an ARES telemetry topic. */
 object TelemetryTopicNormalizer {
     fun normalizeTopic(key: String): String = key.trimStart('/')
+
+    /** Converts a canonical ARES key to the single-root form used in NT4 wire announcements. */
+    fun toWireTopic(key: String): String = "/${normalizeTopic(key)}"
 }
