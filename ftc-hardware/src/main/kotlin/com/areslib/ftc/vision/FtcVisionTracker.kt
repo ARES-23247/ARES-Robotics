@@ -39,13 +39,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     stdDevs: com.areslib.math.geometry.Vector3 = com.areslib.math.geometry.Vector3(0.05, 0.05, 0.1),
     private val onOdometryReseed: ((Pose2d) -> Unit)? = null
 ) : VisionTracker {
-    private var megaTag2StdDevs = Vector3(stdDevs.x, stdDevs.y, 1.0e6)
     var stdDevs: Vector3 = stdDevs
-        set(value) {
-            if (field == value) return
-            field = value
-            megaTag2StdDevs = Vector3(value.x, value.y, 1.0e6)
-        }
+        set(value) { field = value }
 
     /** Updates live covariance only when tuning values actually change. */
     fun setStdDevs(xMeters: Double, yMeters: Double, headingRadians: Double) {
@@ -177,15 +172,10 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         // Fuse once through the authoritative EKF path before recovery logic consumes
         // the decision. This prevents a tracker-side approximation from disagreeing
         // with the estimator's full covariance/Mahalanobis calculation.
-        val fusionStdDevs = if (measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2) {
-            megaTag2StdDevs
-        } else {
-            stdDevs
-        }
         store.dispatch(RobotAction.VisionMeasurementsReceived(
             freshMeasurements,
             timestampMs,
-            fusionStdDevs
+            stdDevs
         ))
         if (passesPhysicalFilters && hasInitializedPoseWithVision) {
             lastVisionStatus = if (store.state.vision.lastMeasurementAccepted) {

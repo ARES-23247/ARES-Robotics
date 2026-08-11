@@ -26,12 +26,17 @@ data class PoseHistoryEntry(
     var headingRad: Double = 0.0,
     var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
     var qScale: Double = 1.0,
+    /** Heading process-noise scale; NaN preserves compatibility with legacy entries. */
+    var qHeadingScale: Double = Double.NaN,
     /** Robot-frame SE(2) twist integrated from the preceding history entry. */
     var deltaXRobot: Double = 0.0,
     var deltaYRobot: Double = 0.0,
     var deltaHeadingRad: Double = 0.0,
     var hasMotion: Boolean = false
 ) {
+    val effectiveQHeadingScale: Double
+        get() = if (qHeadingScale.isFinite()) qHeadingScale else qScale
+
     /** Gets or sets the [Pose2d] representation of this historical entry. */
     var pose: Pose2d
         get() = Pose2d(x, y, Rotation2d(headingRad))
@@ -89,7 +94,8 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         deltaXRobot: Double,
         deltaYRobot: Double,
         deltaHeadingRad: Double,
-        hasMotion: Boolean
+        hasMotion: Boolean,
+        qHeadingScale: Double = qScale
     ): Int {
         require(requestedIndex in 0..count)
         var insertionIndex = requestedIndex
@@ -111,6 +117,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.qHeadingScale = qHeadingScale
         entry.deltaXRobot = deltaXRobot
         entry.deltaYRobot = deltaYRobot
         entry.deltaHeadingRad = deltaHeadingRad
@@ -127,6 +134,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         destination.headingRad = source.headingRad
         destination.covariance.setTo(source.covariance)
         destination.qScale = source.qScale
+        destination.qHeadingScale = source.qHeadingScale
         destination.deltaXRobot = source.deltaXRobot
         destination.deltaYRobot = source.deltaYRobot
         destination.deltaHeadingRad = source.deltaHeadingRad
@@ -147,6 +155,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.pose = pose
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.qHeadingScale = qScale
         entry.deltaXRobot = 0.0
         entry.deltaYRobot = 0.0
         entry.deltaHeadingRad = 0.0
@@ -175,7 +184,8 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         deltaXRobot: Double = 0.0,
         deltaYRobot: Double = 0.0,
         deltaHeadingRad: Double = 0.0,
-        hasMotion: Boolean = false
+        hasMotion: Boolean = false,
+        qHeadingScale: Double = qScale
     ) {
         val entry = entries[head]
         entry.timestampMs = timestampMs
@@ -184,6 +194,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.qHeadingScale = qHeadingScale
         entry.deltaXRobot = deltaXRobot
         entry.deltaYRobot = deltaYRobot
         entry.deltaHeadingRad = deltaHeadingRad
@@ -208,6 +219,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
             dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
             dest.qScale = src.qScale
+            dest.qHeadingScale = src.qHeadingScale
             dest.deltaXRobot = src.deltaXRobot
             dest.deltaYRobot = src.deltaYRobot
             dest.deltaHeadingRad = src.deltaHeadingRad
@@ -235,6 +247,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
             dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
             dest.qScale = src.qScale
+            dest.qHeadingScale = src.qHeadingScale
             dest.deltaXRobot = src.deltaXRobot
             dest.deltaYRobot = src.deltaYRobot
             dest.deltaHeadingRad = src.deltaHeadingRad
@@ -257,6 +270,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.pose = pose
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.qHeadingScale = qScale
     }
 
     /**
@@ -270,7 +284,16 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      * @param covariance Updated 3x3 error covariance matrix.
      * @param qScale Process noise scaling factor.
      */
-    fun updateEntryDirect(index: Int, timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
+    fun updateEntryDirect(
+        index: Int,
+        timestampMs: Long,
+        x: Double,
+        y: Double,
+        headingRad: Double,
+        covariance: Matrix3x3,
+        qScale: Double,
+        qHeadingScale: Double = qScale
+    ) {
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.x = x
@@ -278,6 +301,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.qHeadingScale = qHeadingScale
     }
 
     companion object {
