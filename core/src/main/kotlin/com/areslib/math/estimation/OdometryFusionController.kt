@@ -225,9 +225,26 @@ object OdometryFusionController {
 
         scratchQ.setTo(baseQ)
         val speed = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY) / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
-        val movementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
-        val processNoiseScale = tiltScale * slipScale * movementScale * dtSeconds
-        scratchQ.multiplyInPlace(processNoiseScale)
+        val translationMovementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
+        // Route calibration normalizes heading error by distance + rotation. This lets a turn-in-place
+        // grow heading covariance without pretending that translation uncertainty grew equally.
+        val headingMovementScale = if (isStationary) 0.001 else
+            kotlin.math.max(0.001, speed + kotlin.math.abs(correctedGyroRate))
+        val translationProcessNoiseScale = tiltScale * slipScale * translationMovementScale * dtSeconds
+        val headingProcessNoiseScale = tiltScale * slipScale * headingMovementScale * dtSeconds
+        val crossProcessNoiseScale = kotlin.math.sqrt(
+            translationProcessNoiseScale.coerceAtLeast(0.0) *
+                headingProcessNoiseScale.coerceAtLeast(0.0)
+        )
+        scratchQ.m00 *= translationProcessNoiseScale
+        scratchQ.m01 *= translationProcessNoiseScale
+        scratchQ.m10 *= translationProcessNoiseScale
+        scratchQ.m11 *= translationProcessNoiseScale
+        scratchQ.m02 *= crossProcessNoiseScale
+        scratchQ.m12 *= crossProcessNoiseScale
+        scratchQ.m20 *= crossProcessNoiseScale
+        scratchQ.m21 *= crossProcessNoiseScale
+        scratchQ.m22 *= headingProcessNoiseScale
 
         val slipWeight = if (applyGyroBiasCorrection && slipScale >= 10.0) 0.8 else 0.0
         val blendedDeltaHeading = (1.0 - slipWeight) * correctedDeltaHeading + slipWeight * (correctedGyroRate * dtSeconds)
@@ -293,11 +310,12 @@ object OdometryFusionController {
             newY,
             newHeadingRad,
             newCovariance,
-            processNoiseScale,
+            translationProcessNoiseScale,
             deltaX,
             deltaY,
             blendedDeltaHeading,
-            true
+            true,
+            qHeadingScale = headingProcessNoiseScale
         )
 
         state.estimatedPoseX = newX

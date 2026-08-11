@@ -39,8 +39,16 @@ class FrcLimelightIOTest {
             tvPub.set(1.0)
             tidPub.set(7.0)
             heartbeatPub.set(12.0)
-            mt1Pub.set(doubleArrayOf(1.1, 2.1, 0.0, 0.0, 0.0, 30.0, 20.0, 2.0, 1.0, 2.5, 3.0))
-            mt2Pub.set(doubleArrayOf(1.0, 2.0, 0.0, 0.0, 0.0, -80.0, 20.0, 2.0, 1.0, 2.5, 3.0))
+            mt1Pub.set(doubleArrayOf(
+                1.1, 2.1, 0.0, 0.0, 0.0, 30.0, 20.0, 2.0, 1.0, 2.5, 3.0,
+                5.0, 0.0, 0.0, 1.0, 2.8, 2.6, 0.04,
+                7.0, 0.0, 0.0, 1.0, 3.0, 2.9, 0.08
+            ))
+            mt2Pub.set(doubleArrayOf(
+                1.0, 2.0, 0.0, 0.0, 0.0, -80.0, 20.0, 2.0, 1.0, 2.5, 3.0,
+                6.0, 0.0, 0.0, 1.0, 1.7, 1.5, 0.03,
+                8.0, 0.0, 0.0, 1.0, 2.2, 2.0, 0.12
+            ))
             obsoleteMt2Pub.set(doubleArrayOf(99.0, 99.0, 0.0, 0.0, 0.0, 0.0, 20.0, 2.0, 1.0, 2.5, 3.0))
             targetSpacePub.set(doubleArrayOf(0.2, 0.1, 2.4, 1.0, 2.0, 3.0))
             stdDevsPub.set(doubleArrayOf(0.3, 0.4, 0.0, 0.0, 0.0, 8.0, 0.1, 0.2, 0.0, 0.0, 0.0, 2.0))
@@ -56,10 +64,14 @@ class FrcLimelightIOTest {
             assertEquals(1.0, measurement.targetPose.x, 0.0)
             assertEquals(2.0, measurement.targetPose.y, 0.0)
             assertEquals(2, measurement.tagCount)
+            assertEquals(6, measurement.tagId, "Closest raw fiducial should identify the solve")
             assertEquals(1.0, measurement.tagSpanMeters, 0.0)
             assertEquals(2.5, measurement.averageTagDistanceMeters, 0.0)
             assertEquals(3.0, measurement.averageTagAreaPercent, 0.0)
             assertFalse(measurement.ambiguityAvailable)
+            assertTrue(measurement.recoveryAmbiguityAvailable)
+            assertEquals(0.08, measurement.recoveryAmbiguity, 0.0)
+            assertEquals(measurement.frameId - 20_000L, measurement.captureTimestampMicros)
             assertTrue(measurement.hasRecoveryPose)
             assertEquals(1.1, measurement.recoveryPose.x, 0.0)
             assertEquals(0.1, measurement.stdDevXMeters, 0.0)

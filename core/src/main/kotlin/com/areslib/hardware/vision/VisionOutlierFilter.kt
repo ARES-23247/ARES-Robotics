@@ -19,6 +19,10 @@ data class VisionFilterConfig(
     val maxFieldY: Double = CoordinateTransformers.FTC_FIELD_SIZE / 2.0,
     val minFieldZ: Double = -0.2,
     val maxFieldZ: Double = 1.0,
+    val maxAbsoluteRollRad: Double = Math.toRadians(30.0),
+    val maxAbsolutePitchRad: Double = Math.toRadians(30.0),
+    /** Empty accepts every camera-field-map tag; otherwise the representative tag must be listed. */
+    val allowedTagIds: Set<Int> = emptySet(),
     val maxAngularVelocityRadPerSec: Double = 2.0,
     val maxAccelerationG: Double = 2.5,
     val mahalanobisThreshold: Double = 18.0,
@@ -46,6 +50,7 @@ data class VisionFilterConfig(
             maxFieldY = 9.0,
             minFieldZ = -0.2,
             maxFieldZ = 3.0,
+            allowedTagIds = (1..16).toSet(),
             robotLengthMeters = 0.0,
             robotWidthMeters = 0.0,
             fieldBoundsToleranceMeters = 0.0,
@@ -133,6 +138,7 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             if (measurement.ambiguityAvailable && measurement.ambiguity > config.maxAmbiguity) {
                 return false
             }
+            if (config.allowedTagIds.isNotEmpty() && measurement.tagId !in config.allowedTagIds) return false
 
             // Reject camera-reported impossible geometry without inventing a universal
             // target-area threshold (which is lens/exposure/pipeline dependent).
@@ -148,9 +154,8 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             }
 
             // 3. Check Distance
-            val tagPose2d = tagPose3d.toPose2d()
-            val dx = tagPose2d.x - robotPoseX
-            val dy = tagPose2d.y - robotPoseY
+            val dx = tagPose3d.x - robotPoseX
+            val dy = tagPose3d.y - robotPoseY
             val distance = kotlin.math.sqrt(dx * dx + dy * dy)
 
             if (distance > config.maxDistanceMeters) {
@@ -198,6 +203,8 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             }
 
             if (pose.z < config.minFieldZ || pose.z > config.maxFieldZ) return false
+            if (kotlin.math.abs(pose.rotation.x) > config.maxAbsoluteRollRad ||
+                kotlin.math.abs(pose.rotation.y) > config.maxAbsolutePitchRad) return false
 
             val heading = pose.rotation.z
             val absCos = kotlin.math.abs(kotlin.math.cos(heading))
@@ -221,6 +228,8 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
                 minFieldX.isFinite() && maxFieldX.isFinite() && minFieldX <= maxFieldX &&
                 minFieldY.isFinite() && maxFieldY.isFinite() && minFieldY <= maxFieldY &&
                 minFieldZ.isFinite() && maxFieldZ.isFinite() && minFieldZ <= maxFieldZ &&
+                maxAbsoluteRollRad.isFinite() && maxAbsoluteRollRad >= 0.0 &&
+                maxAbsolutePitchRad.isFinite() && maxAbsolutePitchRad >= 0.0 &&
                 robotLengthMeters.isFinite() && robotLengthMeters >= 0.0 &&
                 robotWidthMeters.isFinite() && robotWidthMeters >= 0.0 &&
                 fieldBoundsToleranceMeters.isFinite() && fieldBoundsToleranceMeters >= 0.0 &&

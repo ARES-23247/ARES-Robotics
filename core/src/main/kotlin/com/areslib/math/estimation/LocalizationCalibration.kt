@@ -52,6 +52,8 @@ data class LocalizationCalibrationSample(
     val tagDistanceMeters: Double = Double.NaN,
     val visionLatencyMs: Double = Double.NaN,
     val nis: Double = Double.NaN,
+    /** MegaTag2 translation updates are 2-DOF; full-pose updates are 3-DOF. */
+    val nisDegreesOfFreedom: Int = 3,
     val visionAccepted: Boolean = false
 ) {
     init {
@@ -132,6 +134,7 @@ data class LocalizationCalibrationSample(
                 tagDistanceMeters = tagDistance,
                 visionLatencyMs = representative?.latencyMs ?: Double.NaN,
                 nis = drive.poseEstimator.lastNormalizedInnovationSquared,
+                nisDegreesOfFreedom = if (representative?.solverType == VisionSolverType.MEGATAG2) 2 else 3,
                 visionAccepted = state.vision.lastMeasurementAccepted
             )
         }
@@ -183,6 +186,7 @@ class LocalizationCalibrationRecorder(
         row["TagDistanceMeters"] = sample.tagDistanceMeters
         row["VisionLatencyMs"] = sample.visionLatencyMs
         row["NIS"] = sample.nis
+        row["NISDegreesOfFreedom"] = sample.nisDegreesOfFreedom
         row["VisionAccepted"] = sample.visionAccepted
         logger.logFrame(row)
     }
@@ -212,10 +216,19 @@ data class LocalizationCalibrationReport(
     val mt2: VisionNoiseCalibrationFit,
     val processNoise: ProcessNoiseCalibrationFit,
     val consistency: LocalizationConsistencySnapshot,
+    val consistencyScale: ConsistencyScaleRecommendation,
     val warnings: List<String>
 ) {
     fun toJson(): String = GsonBuilder().setPrettyPrinting().create().toJson(this)
 }
+
+/** First-pass multipliers; rerun validation after applying them rather than compounding blindly. */
+data class ConsistencyScaleRecommendation(
+    /** Multiply vision R by this value when normalized NIS is systematically high/low. */
+    val visionRScale: Double,
+    /** Multiply process Q by this value when normalized NEES is systematically high/low. */
+    val processQScale: Double
+)
 
 /** Deterministic offline fitter. It recommends values but never mutates robot tuning. */
 object LocalizationCalibrationFitter {
@@ -266,7 +279,7 @@ object LocalizationCalibrationFitter {
 
         val evaluator = LocalizationConsistencyEvaluator()
         for (sample in samples) {
-            if (sample.nis.isFinite()) evaluator.recordNis(sample.nis)
+            if (sample.nis.isFinite()) evaluator.recordNis(sample.nis, sample.nisDegreesOfFreedom)
             if (sample.truthValid) {
                 val p = sample.covariance
                 evaluator.recordNees(
@@ -276,7 +289,14 @@ object LocalizationCalibrationFitter {
                 )
             }
         }
-        return LocalizationCalibrationReport(mt1, mt2, process, evaluator.snapshot(), warnings)
+        val consistency = evaluator.snapshot()
+        val scales = ConsistencyScaleRecommendation(
+            visionRScale = consistency.meanNormalizedNis,
+            processQScale = if (consistency.meanNees.isFinite()) consistency.meanNees / 3.0 else Double.NaN
+        )
+        if (consistency.nisCount < 30) warnings += "NIS validation has fewer than 30 accepted observations"
+        if (consistency.neesCount < 30) warnings += "NEES validation has fewer than 30 truth-referenced observations"
+        return LocalizationCalibrationReport(mt1, mt2, process, consistency, scales, warnings)
     }
 
     private fun fitVision(samples: List<LocalizationCalibrationSample>, useMt1: Boolean): VisionNoiseCalibrationFit {
@@ -345,7 +365,9 @@ object LocalizationCalibrationCsv {
                         mt1Valid = bool("Mt1Valid"), mt1X = double("Mt1X"), mt1Y = double("Mt1Y"), mt1Heading = double("Mt1Heading"),
                         mt2Valid = bool("Mt2Valid"), mt2X = double("Mt2X"), mt2Y = double("Mt2Y"), mt2Heading = double("Mt2Heading"),
                         tagCount = int("TagCount"), tagDistanceMeters = double("TagDistanceMeters"),
-                        visionLatencyMs = double("VisionLatencyMs"), nis = double("NIS"), visionAccepted = bool("VisionAccepted")
+                        visionLatencyMs = double("VisionLatencyMs"), nis = double("NIS"),
+                        nisDegreesOfFreedom = int("NISDegreesOfFreedom").takeIf { it in 1..3 } ?: 3,
+                        visionAccepted = bool("VisionAccepted")
                     )
                 } catch (_: RuntimeException) {
                     // Ignore incomplete/foreign rows; the report's sample-count warnings expose sparse input.

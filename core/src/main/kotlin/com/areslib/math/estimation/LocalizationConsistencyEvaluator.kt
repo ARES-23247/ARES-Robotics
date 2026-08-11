@@ -13,16 +13,24 @@ import com.areslib.math.wrapAngle
 class LocalizationConsistencyEvaluator {
     private var nisCount = 0L
     private var nisSum = 0.0
+    private var nisDegreesOfFreedomSum = 0L
     private var nisWithin95 = 0L
     private var neesCount = 0L
     private var neesSum = 0.0
     private var neesWithin95 = 0L
 
-    fun recordNis(normalizedInnovationSquared: Double) {
+    fun recordNis(normalizedInnovationSquared: Double, degreesOfFreedom: Int = 3) {
         if (!normalizedInnovationSquared.isFinite() || normalizedInnovationSquared < 0.0) return
+        if (degreesOfFreedom !in 1..3) return
         nisCount++
         nisSum += normalizedInnovationSquared
-        if (normalizedInnovationSquared <= CHI_SQUARE_3_DOF_95) nisWithin95++
+        nisDegreesOfFreedomSum += degreesOfFreedom
+        val threshold = when (degreesOfFreedom) {
+            1 -> CHI_SQUARE_1_DOF_95
+            2 -> CHI_SQUARE_2_DOF_95
+            else -> CHI_SQUARE_3_DOF_95
+        }
+        if (normalizedInnovationSquared <= threshold) nisWithin95++
     }
 
     fun recordNees(
@@ -67,6 +75,7 @@ class LocalizationConsistencyEvaluator {
     fun reset() {
         nisCount = 0L
         nisSum = 0.0
+        nisDegreesOfFreedomSum = 0L
         nisWithin95 = 0L
         neesCount = 0L
         neesSum = 0.0
@@ -76,6 +85,8 @@ class LocalizationConsistencyEvaluator {
     fun snapshot(): LocalizationConsistencySnapshot = LocalizationConsistencySnapshot(
         nisCount = nisCount,
         meanNis = if (nisCount == 0L) Double.NaN else nisSum / nisCount,
+        meanNormalizedNis = if (nisDegreesOfFreedomSum == 0L) Double.NaN
+            else nisSum / nisDegreesOfFreedomSum,
         nisCoverage95 = if (nisCount == 0L) Double.NaN else nisWithin95.toDouble() / nisCount,
         neesCount = neesCount,
         meanNees = if (neesCount == 0L) Double.NaN else neesSum / neesCount,
@@ -83,6 +94,8 @@ class LocalizationConsistencyEvaluator {
     )
 
     companion object {
+        const val CHI_SQUARE_1_DOF_95 = 3.841458820694124
+        const val CHI_SQUARE_2_DOF_95 = 5.991464547107979
         const val CHI_SQUARE_3_DOF_95 = 7.814727903251179
     }
 }
@@ -90,6 +103,8 @@ class LocalizationConsistencyEvaluator {
 data class LocalizationConsistencySnapshot(
     val nisCount: Long,
     val meanNis: Double,
+    /** Mean NIS divided by the actual observation degrees of freedom; ideal is near 1.0. */
+    val meanNormalizedNis: Double,
     val nisCoverage95: Double,
     val neesCount: Long,
     val meanNees: Double,

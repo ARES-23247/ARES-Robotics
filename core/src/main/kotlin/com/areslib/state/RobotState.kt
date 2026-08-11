@@ -204,6 +204,8 @@ enum class VisionSolverType {
 
 data class VisionMeasurement(
     var timestampMs: Long = 0L,
+    /** Capture timestamp in the source's monotonic microsecond clock; zero when unavailable. */
+    var captureTimestampMicros: Long = 0L,
     var targetPose: Pose3d = Pose3d(),
     var tagId: Int = -1,
     var ambiguity: Double = 0.0,
@@ -230,14 +232,20 @@ data class VisionMeasurement(
     var stdDevHeadingRadians: Double = 0.0,
     /** Independent MegaTag1 field pose reserved for stationary full-pose recovery. */
     var recoveryPose: Pose3d = Pose3d(),
-    var hasRecoveryPose: Boolean = false
+    var hasRecoveryPose: Boolean = false,
+    /** Ambiguity associated specifically with [recoveryPose]. */
+    var recoveryAmbiguity: Double = 0.0,
+    var recoveryAmbiguityAvailable: Boolean = false
 ) {
     /** Snapshots this pooled/mutable measurement for immutable Redux or replay ownership. */
     fun ownedCopy(): VisionMeasurement = VisionMeasurement(
         timestampMs = timestampMs,
+        captureTimestampMicros = captureTimestampMicros,
         targetPose = targetPose.deepCopy(),
         recoveryPose = recoveryPose.deepCopy(),
         hasRecoveryPose = hasRecoveryPose,
+        recoveryAmbiguity = recoveryAmbiguity,
+        recoveryAmbiguityAvailable = recoveryAmbiguityAvailable,
         tagId = tagId,
         ambiguity = ambiguity,
         ambiguityAvailable = ambiguityAvailable,

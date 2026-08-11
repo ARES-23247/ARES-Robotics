@@ -2,8 +2,6 @@ package com.areslib.hardware.vision
 
 import com.areslib.state.VisionMeasurement
 import com.areslib.math.geometry.Pose3d
-import com.areslib.math.geometry.Translation3d
-import com.areslib.math.geometry.Rotation3d
 
 import com.areslib.hardware.LoggableDevice
 
@@ -31,10 +29,11 @@ data class VisionIOInputs(
 interface VisionIO : LoggableDevice {
     /**
      * Camera-to-robot mounting transforms, in meters and radians, expressed in robot coordinates.
-     * The default is a single forward-facing camera 0.18 m ahead of robot center.
+     * An empty list means the transform is owned by the camera configuration. This is the safe
+     * default: publishing a guessed transform can silently corrupt every field-pose observation.
      */
     val cameraPoses: List<Pose3d>
-        get() = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+        get() = emptyList()
 
     /**
      * Replaces [inputs] with the latest cached/device snapshot for this loop.

@@ -5,9 +5,6 @@ import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
 import com.areslib.state.VisionSolverType
 import com.areslib.math.geometry.Pose3d
-import com.areslib.math.geometry.Translation3d
-import com.areslib.math.geometry.Rotation3d
-import com.areslib.math.geometry.Quaternion
 import edu.wpi.first.networktables.NetworkTableInstance
 
 /**
@@ -32,9 +29,11 @@ import edu.wpi.first.networktables.NetworkTableInstance
  */
 class FrcLimelightIO(
     val tableName: String = "limelight",
-    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0))),
+    /** Empty preserves the independently measured transform stored in this camera's web UI. */
+    override val cameraPoses: List<Pose3d> = emptyList(),
     val defaultPipeline: Int = 0,
-    val imuMode: Int = 4 // 4 = INTERNAL_EXTERNAL_ASSIST (recommended for LL3G/LL4), 0 = EXTERNAL_ONLY
+    val imuMode: Int = 4, // 4 = INTERNAL_EXTERNAL_ASSIST (recommended for LL3G/LL4), 0 = EXTERNAL_ONLY
+    private val validFiducialIds: IntArray = IntArray(0)
 ) : VisionIO, AutoCloseable {
 
     private val table = NetworkTableInstance.getDefault().getTable(tableName)
@@ -52,6 +51,7 @@ class FrcLimelightIO(
     private val ledModePub = table.getDoubleTopic("ledMode").publish()
     private val streamPub = table.getDoubleTopic("stream").publish()
     private val cameraPosePub = table.getDoubleArrayTopic("camerapose_robotspace_set").publish()
+    private val fiducialFilterPub = table.getDoubleArrayTopic("fiducial_id_filters_set").publish()
 
     private var lastHeartbeat = Long.MIN_VALUE
     private var lastHeartbeatChangeMs = Long.MIN_VALUE
@@ -61,10 +61,18 @@ class FrcLimelightIO(
     // Pre-allocated buffers to prevent GC
     private val scratchOrientation = DoubleArray(6)
     private val scratchCameraPose = DoubleArray(6)
+    private val scratchFiducialFilter = DoubleArray(validFiducialIds.size)
     
     // Single pre-allocated instance for Zero-GC
     private val cachedMeasurement = VisionMeasurement()
     private val cachedMeasurementList = java.util.Collections.singletonList(cachedMeasurement)
+    private val cachedTargetPose = Pose3d()
+    private val cachedRecoveryPose = Pose3d()
+    private val cachedTargetSpacePose = Pose3d()
+    private var parsedTagId = -1
+    private var parsedAmbiguity = 0.0
+    private var parsedAmbiguityAvailable = false
+    private var parsedClosestDistance = -1.0
 
     init {
         // Enforce match-ready settings to NetworkTables on startup
@@ -73,6 +81,7 @@ class FrcLimelightIO(
             ledModePub.set(1.0) // 1 = Force Off
             streamPub.set(0.0)  // 0 = Standard Stream
             publishCameraPose()
+            publishFiducialFilter()
             setImuMode(imuMode)
         } catch (e: Exception) {
             System.err.println("FrcLimelightIO: Failed to write startup configuration: ${e.message}")
@@ -123,6 +132,12 @@ class FrcLimelightIO(
         cameraPosePub.set(scratchCameraPose)
     }
 
+    private fun publishFiducialFilter() {
+        if (validFiducialIds.isEmpty()) return
+        for (index in validFiducialIds.indices) scratchFiducialFilter[index] = validFiducialIds[index].toDouble()
+        fiducialFilterPub.set(scratchFiducialFilter)
+    }
+
     /**
      * Polled update cycle extracting latest AprilTag vision measurements into [inputs].
      *
@@ -171,49 +186,64 @@ class FrcLimelightIO(
                 return
             }
             // Limelight latency (ms) is typically index 6.
-            val latencyMs = if (botpose.size > 6) botpose[6] else 0.0
+            val latencyMs = botpose.getOrNull(6)?.takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
             val timestampMs = nowMs - latencyMs.toLong()
-            
-            // Limelight's field-pose arrays do not contain solve ambiguity. Keep the
-            // numeric field JSON-safe while marking it semantically unavailable below.
-            val ambiguity = 0.0
-            
-            val targetPose = poseFromBotpose(botpose)
+
+            populatePoseFromBotpose(botpose, cachedTargetPose)
+            val selectedHasRawFiducials = parseRawFiducials(botpose)
+            val selectedRawTagId = parsedTagId
+            val selectedRawAmbiguity = parsedAmbiguity
+            val selectedRawAmbiguityAvailable = parsedAmbiguityAvailable
+            val selectedClosestDistance = parsedClosestDistance
             val recoveryIsCoherent = mt1TagCount > 0 && (!usingMegaTag2 ||
                 timestampsAreCoherent(observationTimestampMicros, megaTag1Sample.timestamp))
-            val recoveryPose = if (recoveryIsCoherent) poseFromBotpose(megaTag1Botpose) else Pose3d()
+            if (recoveryIsCoherent) populatePoseFromBotpose(megaTag1Botpose, cachedRecoveryPose)
+            else clearPose(cachedRecoveryPose)
+            val recoveryHasRawFiducials = recoveryIsCoherent && parseRawFiducials(megaTag1Botpose)
+            val recoveryAmbiguity = parsedAmbiguity
+            val recoveryAmbiguityAvailable = parsedAmbiguityAvailable
             
             // Populate target-space pose for alignment controllers
             val targetSpaceSample = botposeTargetSpaceSub.getAtomic()
             val targetSpace = targetSpaceSample.value
-            val robotPoseTargetSpace = if (targetSpace.size >= 6 &&
+            if (targetSpace.size >= 6 &&
                 timestampsAreCoherent(observationTimestampMicros, targetSpaceSample.timestamp)) {
-                Pose3d(
-                    Translation3d(targetSpace[0], targetSpace[1], targetSpace[2]),
-                    Rotation3d(Math.toRadians(targetSpace[3]), Math.toRadians(targetSpace[4]), Math.toRadians(targetSpace[5]))
+                cachedTargetSpacePose.translation.x = targetSpace[0]
+                cachedTargetSpacePose.translation.y = targetSpace[1]
+                cachedTargetSpacePose.translation.z = targetSpace[2]
+                cachedTargetSpacePose.rotation.setEulerAngles(
+                    Math.toRadians(targetSpace[3]), Math.toRadians(targetSpace[4]), Math.toRadians(targetSpace[5])
                 )
             } else {
-                Pose3d()
+                clearPose(cachedTargetSpacePose)
             }
             val tagIdSample = tidSub.getAtomic()
-            val tagId = if (timestampsAreCoherent(observationTimestampMicros, tagIdSample.timestamp)) {
+            val topicTagId = if (timestampsAreCoherent(observationTimestampMicros, tagIdSample.timestamp)) {
                 tagIdSample.value.toInt()
             } else {
                 -1
             }
+            val tagId = if (selectedHasRawFiducials) selectedRawTagId else topicTagId
             
             cachedMeasurement.timestampMs = timestampMs
-            cachedMeasurement.targetPose = targetPose
-            cachedMeasurement.recoveryPose = recoveryPose
+            cachedMeasurement.captureTimestampMicros = if (observationTimestampMicros > 0L) {
+                (observationTimestampMicros - (latencyMs * 1_000.0).toLong()).coerceAtLeast(0L)
+            } else 0L
+            cachedMeasurement.targetPose = cachedTargetPose
+            cachedMeasurement.recoveryPose = cachedRecoveryPose
             cachedMeasurement.hasRecoveryPose = recoveryIsCoherent
+            cachedMeasurement.recoveryAmbiguity = recoveryAmbiguity
+            cachedMeasurement.recoveryAmbiguityAvailable = recoveryHasRawFiducials && recoveryAmbiguityAvailable
             cachedMeasurement.tagId = tagId
             cachedMeasurement.tagCount = tagCount
-            cachedMeasurement.ambiguity = ambiguity
-            cachedMeasurement.ambiguityAvailable = false
+            cachedMeasurement.ambiguity = selectedRawAmbiguity
+            cachedMeasurement.ambiguityAvailable = !usingMegaTag2 && selectedRawAmbiguityAvailable
             cachedMeasurement.tagSpanMeters = finiteMetric(botpose, 8)
-            cachedMeasurement.averageTagDistanceMeters = finiteMetric(botpose, 9)
+            cachedMeasurement.averageTagDistanceMeters = finiteMetric(botpose, 9).let {
+                if (it >= 0.0) it else selectedClosestDistance
+            }
             cachedMeasurement.averageTagAreaPercent = finiteMetric(botpose, 10)
-            cachedMeasurement.robotPoseTargetSpace = robotPoseTargetSpace
+            cachedMeasurement.robotPoseTargetSpace = cachedTargetSpacePose
             cachedMeasurement.sourceId = tableName
             cachedMeasurement.frameId = if (frameId != Long.MIN_VALUE) frameId else timestampMs
             cachedMeasurement.solverType = if (usingMegaTag2) VisionSolverType.MEGATAG2 else VisionSolverType.MEGATAG1
@@ -227,27 +257,52 @@ class FrcLimelightIO(
         }
     }
 
-    private fun poseFromBotpose(botpose: DoubleArray): Pose3d {
-        val roll = Math.toRadians(botpose[3])
-        val pitch = Math.toRadians(botpose[4])
-        val yaw = Math.toRadians(botpose[5])
-        val cr = Math.cos(roll * 0.5)
-        val sr = Math.sin(roll * 0.5)
-        val cp = Math.cos(pitch * 0.5)
-        val sp = Math.sin(pitch * 0.5)
-        val cy = Math.cos(yaw * 0.5)
-        val sy = Math.sin(yaw * 0.5)
-        return Pose3d(
-            Translation3d(botpose[0], botpose[1], botpose[2]),
-            Rotation3d(
-                Quaternion(
-                    cr * cp * cy + sr * sp * sy,
-                    sr * cp * cy - cr * sp * sy,
-                    cr * sp * cy + sr * cp * sy,
-                    cr * cp * sy - sr * sp * cy
-                )
-            )
+    private fun populatePoseFromBotpose(botpose: DoubleArray, out: Pose3d) {
+        out.translation.x = botpose[0]
+        out.translation.y = botpose[1]
+        out.translation.z = botpose[2]
+        out.rotation.setEulerAngles(
+            Math.toRadians(botpose[3]), Math.toRadians(botpose[4]), Math.toRadians(botpose[5])
         )
+    }
+
+    private fun clearPose(out: Pose3d) {
+        out.translation.x = 0.0
+        out.translation.y = 0.0
+        out.translation.z = 0.0
+        out.rotation.setEulerAngles(0.0, 0.0, 0.0)
+    }
+
+    /** Parses the raw-fiducial records appended to official Limelight field-pose arrays. */
+    private fun parseRawFiducials(botpose: DoubleArray): Boolean {
+        parsedTagId = -1
+        parsedAmbiguity = 0.0
+        parsedAmbiguityAvailable = false
+        parsedClosestDistance = -1.0
+        val count = tagCountFromBotpose(botpose)
+        if (count <= 0 || botpose.size < RAW_FIDUCIAL_START + count * RAW_FIDUCIAL_STRIDE) return false
+        var closestDistance = Double.POSITIVE_INFINITY
+        var maxAmbiguity = 0.0
+        var ambiguityCount = 0
+        for (index in 0 until count) {
+            val offset = RAW_FIDUCIAL_START + index * RAW_FIDUCIAL_STRIDE
+            val id = botpose[offset]
+            val distanceToRobot = botpose[offset + 5]
+            val ambiguity = botpose[offset + 6]
+            if (id.isFinite() && distanceToRobot.isFinite() && distanceToRobot >= 0.0 &&
+                distanceToRobot < closestDistance) {
+                closestDistance = distanceToRobot
+                parsedTagId = id.toInt()
+            }
+            if (ambiguity.isFinite() && ambiguity >= 0.0) {
+                maxAmbiguity = kotlin.math.max(maxAmbiguity, ambiguity)
+                ambiguityCount++
+            }
+        }
+        parsedClosestDistance = if (closestDistance.isFinite()) closestDistance else -1.0
+        parsedAmbiguity = maxAmbiguity
+        parsedAmbiguityAvailable = ambiguityCount == count
+        return parsedTagId >= 0
     }
 
     private fun applyObservationStdDevs(
@@ -313,10 +368,13 @@ class FrcLimelightIO(
         ledModePub.close()
         streamPub.close()
         cameraPosePub.close()
+        fiducialFilterPub.close()
     }
 
     private companion object {
         const val MAX_COMPANION_TIMESTAMP_DELTA_MICROS = 50_000L
+        const val RAW_FIDUCIAL_START = 11
+        const val RAW_FIDUCIAL_STRIDE = 7
         val EMPTY_DOUBLE_ARRAY = DoubleArray(0)
     }
 }

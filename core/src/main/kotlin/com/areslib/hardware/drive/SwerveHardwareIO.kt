@@ -87,6 +87,12 @@ interface SwerveHardwareIO : SubsystemIO {
         addVisionMeasurement(pose, timestampSeconds)
     }
 
+    /**
+     * Samples the authoritative estimator at an historical timestamp. Implementations write
+     * X, Y, and CCW-positive heading radians into [out] and return false when history is absent.
+     */
+    fun samplePoseAt(timestampSeconds: Double, out: DoubleArray): Boolean = false
+
     /** Resets/seeds the underlying pose estimator. */
     fun seedPose(pose: Pose2d) {}
 

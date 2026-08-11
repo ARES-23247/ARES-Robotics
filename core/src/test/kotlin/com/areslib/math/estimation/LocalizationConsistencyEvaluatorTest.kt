@@ -19,9 +19,21 @@ class LocalizationConsistencyEvaluatorTest {
         val result = evaluator.snapshot()
         assertEquals(2L, result.nisCount)
         assertEquals(7.5, result.meanNis, 1e-12)
+        assertEquals(2.5, result.meanNormalizedNis, 1e-12)
         assertEquals(0.5, result.nisCoverage95, 1e-12)
         assertEquals(1L, result.neesCount)
         assertEquals(3.0, result.meanNees, 1e-12)
         assertEquals(1.0, result.neesCoverage95, 1e-12)
+    }
+
+    @Test
+    fun `translation-only NIS uses the two degree-of-freedom bound`() {
+        val evaluator = LocalizationConsistencyEvaluator()
+
+        evaluator.recordNis(6.5, degreesOfFreedom = 2)
+
+        val result = evaluator.snapshot()
+        assertEquals(0.0, result.nisCoverage95, 0.0)
+        assertEquals(3.25, result.meanNormalizedNis, 0.0)
     }
 }

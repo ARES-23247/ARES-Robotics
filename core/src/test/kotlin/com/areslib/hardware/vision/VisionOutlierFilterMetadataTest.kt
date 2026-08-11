@@ -34,6 +34,22 @@ class VisionOutlierFilterMetadataTest {
         assertFalse(VisionOutlierFilter.isValid(config, measurement, 0.0, 0.0, 0.0))
     }
 
+    @Test
+    fun `impossible field pose tilt and disallowed tags are rejected`() {
+        val constrained = config.copy(allowedTagIds = setOf(1, 2))
+        val rolled = validMeasurement().copy(
+            targetPose = Pose3d(
+                Translation3d(0.5, 0.0, 0.0),
+                Rotation3d(Math.toRadians(45.0), 0.0, 0.0)
+            )
+        )
+        val wrongTag = validMeasurement().copy(tagId = 9)
+
+        assertFalse(VisionOutlierFilter.isValid(constrained, rolled, 0.0, 0.0, 0.0))
+        assertFalse(VisionOutlierFilter.isValid(constrained, wrongTag, 0.0, 0.0, 0.0))
+        assertTrue(VisionOutlierFilter.isValid(constrained, validMeasurement(), 0.0, 0.0, 0.0))
+    }
+
     private fun validMeasurement() = VisionMeasurement(
         targetPose = Pose3d(Translation3d(0.5, 0.0, 0.0), Rotation3d()),
         tagId = 1,

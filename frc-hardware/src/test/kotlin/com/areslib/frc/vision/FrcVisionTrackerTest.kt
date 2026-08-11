@@ -76,6 +76,9 @@ class FrcVisionTrackerTest {
         var lastStdDevHeading = Double.NaN
         var seedCalls = 0
         var lastSeedPose = Pose2d()
+        var historicalPoseAvailable = false
+        val historicalPose = doubleArrayOf(0.0, 0.0, 0.0)
+        var sampledTimestampSeconds = Double.NaN
 
         override fun read(): DriveState = DriveState()
         override fun write(driveState: DriveState) {}
@@ -101,6 +104,15 @@ class FrcVisionTrackerTest {
         override fun seedPose(pose: Pose2d) {
             seedCalls++
             lastSeedPose = pose
+        }
+
+        override fun samplePoseAt(timestampSeconds: Double, out: DoubleArray): Boolean {
+            sampledTimestampSeconds = timestampSeconds
+            if (!historicalPoseAvailable) return false
+            out[0] = historicalPose[0]
+            out[1] = historicalPose[1]
+            out[2] = historicalPose[2]
+            return true
         }
     }
 
@@ -190,6 +202,42 @@ class FrcVisionTrackerTest {
     }
 
     @Test
+    fun `atomic capture timestamp and historical pose drive residual gating`() {
+        val store = Store(
+            RobotState(vision = VisionState(filterConfig = VisionFilterConfig.frcDefaults())),
+            ::rootReducer
+        )
+        store.dispatch(RobotAction.PoseUpdate(1.0, 1.0, 0.0, timestampMs = 100L, isReset = true))
+        val measurement = VisionMeasurement(
+            timestampMs = 150L,
+            captureTimestampMicros = 2_000_000L,
+            tagId = 2,
+            targetPose = Pose3d(Translation3d(4.0, 2.0, 0.0), Rotation3d()),
+            robotPoseTargetSpace = Pose3d(Translation3d(0.0, 0.0, 2.0), Rotation3d()),
+            sourceId = "limelight-back",
+            frameId = 99L,
+            solverType = VisionSolverType.MEGATAG2
+        )
+        val io = MockFrcVisionIO(listOf(measurement))
+        val swerve = RecordingSwerveIO().apply {
+            historicalPoseAvailable = true
+            historicalPose[0] = 4.0
+            historicalPose[1] = 2.0
+        }
+        val tracker = FrcVisionTracker(
+            store, io, swerve, isSimulation = false,
+            estimatorTimeSecondsProvider = { 999.0 },
+            fpgaToEstimatorTimeSeconds = { it + 100.0 }
+        )
+
+        tracker.update(200L)
+
+        assertEquals(1, swerve.visionCalls)
+        assertEquals(102.0, swerve.sampledTimestampSeconds, 0.0)
+        assertEquals(102.0, swerve.lastTimestampSeconds, 0.0)
+    }
+
+    @Test
     fun `disabled robot reseeds only after consistent independent MegaTag1 poses`() {
         val store = Store(
             RobotState(
@@ -203,11 +251,14 @@ class FrcVisionTrackerTest {
         store.dispatch(RobotAction.PoseUpdate(1.0, 1.0, 0.0, timestampMs = 100L, isReset = true))
         val first = VisionMeasurement(
             timestampMs = 150L,
+            tagId = 2,
             targetPose = Pose3d(Translation3d(1.1, 1.0, 0.0), Rotation3d()),
             recoveryPose = Pose3d(Translation3d(3.0, 3.0, 0.0), Rotation3d(0.0, 0.0, 0.8)),
             hasRecoveryPose = true,
             robotPoseTargetSpace = Pose3d(Translation3d(0.0, 0.0, 2.0), Rotation3d()),
             ambiguity = 0.02,
+            recoveryAmbiguity = 0.02,
+            recoveryAmbiguityAvailable = true,
             tagCount = 2,
             sourceId = "limelight-left",
             frameId = 41L,

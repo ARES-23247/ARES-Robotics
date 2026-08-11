@@ -37,13 +37,13 @@ class RobotConfig(private val hardwareMap: HardwareMap) {
         return if (names.size > 1) {
             val ios = names.map { name ->
                 val ll = hardwareMap.get(Limelight3A::class.java, name)
-                FtcLimelightIO(ll)
+                FtcLimelightIO(ll, sourceId = name)
             }
             CompositeVisionIO(ios)
         } else {
             val name = names.firstOrNull() ?: "limelight"
             val ll = hardwareMap.get(Limelight3A::class.java, name)
-            FtcLimelightIO(ll)
+            FtcLimelightIO(ll, sourceId = name)
         }
     }
     

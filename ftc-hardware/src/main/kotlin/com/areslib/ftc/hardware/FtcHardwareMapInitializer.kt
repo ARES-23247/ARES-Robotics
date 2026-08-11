@@ -96,13 +96,13 @@ object FtcHardwareMapInitializer {
                 names.size > 1 -> {
                     val ios = names.map { name ->
                         val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
-                        FtcLimelightIO(limelightDriver)
+                        FtcLimelightIO(limelightDriver, sourceId = name)
                     }
                     CompositeVisionIO(ios)
                 }
                 names.size == 1 -> {
                     val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
-                    FtcLimelightIO(limelightDriver)
+                    FtcLimelightIO(limelightDriver, sourceId = names[0])
                 }
                 else -> null
             }
@@ -111,4 +111,3 @@ object FtcHardwareMapInitializer {
         }
     }
 }
-

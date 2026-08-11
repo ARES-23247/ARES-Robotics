@@ -15,12 +15,17 @@ class CompositeVisionIOTest {
     class MockVisionIO(
         private val connected: Boolean,
         private val measurementsList: List<VisionMeasurement>,
-        override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+        override val cameraPoses: List<Pose3d> = emptyList()
     ) : VisionIO {
+        var observedImuMode = Int.MIN_VALUE
         override fun updateInputs(inputs: VisionIOInputs) {
             inputs.isConnected = connected
             inputs.measurements = measurementsList
             inputs.cameraPoses = cameraPoses
+        }
+
+        override fun setImuMode(mode: Int) {
+            observedImuMode = mode
         }
     }
 
@@ -60,6 +65,30 @@ class CompositeVisionIOTest {
 
         assertFalse(inputs.isConnected)
         assertTrue(inputs.measurements.isEmpty())
-        assertEquals(2, inputs.cameraPoses.size) // Defaults
+        assertTrue(inputs.cameraPoses.isEmpty())
+    }
+
+    @Test
+    fun `correlated camera frames keep only the best observation and forward IMU mode`() {
+        val weaker = VisionMeasurement(
+            timestampMs = 100L, sourceId = "left", tagCount = 1,
+            averageTagDistanceMeters = 3.0, stdDevXMeters = 0.5, stdDevYMeters = 0.5
+        )
+        val stronger = VisionMeasurement(
+            timestampMs = 105L, sourceId = "right", tagCount = 2,
+            averageTagDistanceMeters = 2.0, stdDevXMeters = 0.2, stdDevYMeters = 0.2
+        )
+        val later = VisionMeasurement(timestampMs = 130L, sourceId = "left", tagCount = 1)
+        val io1 = MockVisionIO(true, listOf(weaker, later), emptyList())
+        val io2 = MockVisionIO(true, listOf(stronger), emptyList())
+        val composite = CompositeVisionIO(listOf(io1, io2))
+        val inputs = VisionIOInputs()
+
+        composite.setImuMode(4)
+        composite.updateInputs(inputs)
+
+        assertEquals(4, io1.observedImuMode)
+        assertEquals(4, io2.observedImuMode)
+        assertEquals(listOf(stronger, later), inputs.measurements)
     }
 }

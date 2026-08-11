@@ -43,6 +43,7 @@ class FrcVisionTracker(
     // Phoenix 6 uses its own monotonic timebase for vision rewind. Supplying an FPGA
     // timestamp directly can place the observation in the wrong estimator epoch.
     private val estimatorTimeSecondsProvider: () -> Double = { com.ctre.phoenix6.Utils.getCurrentTimeSeconds() },
+    private val fpgaToEstimatorTimeSeconds: (Double) -> Double = { com.ctre.phoenix6.Utils.fpgaToCurrentTime(it) },
     private val isDisabledProvider: () -> Boolean = { edu.wpi.first.wpilibj.DriverStation.isDisabled() }
 ) : VisionTracker {
 
@@ -60,6 +61,7 @@ class FrcVisionTracker(
     private var recoveryCos = 0.0
     private var stationarySinceMs = 0L
     private var recoveryStartedMs = 0L
+    private val historicalPose = DoubleArray(3)
 
     /** Allows calibration to observe camera frames without contaminating odometry-only routes. */
     var fusionEnabled: Boolean = true
@@ -143,16 +145,26 @@ class FrcVisionTracker(
                     else -> Double.NaN
                 }
                 val filterConfig = store.state.vision.filterConfig
+                val timestampSec = measurementTimestampSeconds(measurement, timestampMs)
+                val hasHistoricalPose = try {
+                    swerveIO?.samplePoseAt(timestampSec, historicalPose) == true
+                } catch (_: Throwable) {
+                    false
+                }
+                val referenceX = if (hasHistoricalPose) historicalPose[0] else drive.poseEstimator.estimatedPoseX
+                val referenceY = if (hasHistoricalPose) historicalPose[1] else drive.poseEstimator.estimatedPoseY
+                val referenceHeading = if (hasHistoricalPose) historicalPose[2] else drive.poseEstimator.estimatedPoseHeading
                 val translationResidual = kotlin.math.hypot(
-                    measurement.targetPose.x - drive.poseEstimator.estimatedPoseX,
-                    measurement.targetPose.y - drive.poseEstimator.estimatedPoseY
+                    measurement.targetPose.x - referenceX,
+                    measurement.targetPose.y - referenceY
                 )
                 val passesNormalResidualGate = translationResidual <= MAX_NORMAL_FUSION_RESIDUAL_METERS
                 val passesCommonFilter = VisionOutlierFilter.isValid(
                     config = filterConfig,
                     measurement = measurement,
-                    robotHeadingRad = drive.poseEstimator.estimatedPoseHeading,
-                    robotPose = drive.poseEstimator.estimatedPose,
+                    robotHeadingRad = referenceHeading,
+                    robotPoseX = referenceX,
+                    robotPoseY = referenceY,
                     angularVelocityRadPerSec = drive.measuredAngularVelocityRadiansPerSecond,
                     linearAccelXG = drive.xAccelerationG,
                     linearAccelYG = drive.yAccelerationG,
@@ -166,8 +178,6 @@ class FrcVisionTracker(
                             measurement.targetPose.translation.y,
                             com.areslib.math.geometry.Rotation2d(measurement.targetPose.rotation.z)
                         )
-                        val latencyMs = (timestampMs - measurement.timestampMs).coerceIn(0L, 1_000L)
-                        val timestampSec = estimatorTimeSecondsProvider() - (latencyMs / 1000.0)
                         val stdDevX = validStdDevOrFallback(measurement.stdDevXMeters, 0.7)
                         val stdDevY = validStdDevOrFallback(measurement.stdDevYMeters, 0.7)
                         val headingFallback = if (measurement.solverType == VisionSolverType.MEGATAG2) 1.0e6 else 0.35
@@ -220,6 +230,19 @@ class FrcVisionTracker(
     private fun validStdDevOrFallback(value: Double, fallback: Double): Double =
         if (value.isFinite() && value > 0.0) value else fallback
 
+    private fun measurementTimestampSeconds(measurement: VisionMeasurement, nowMs: Long): Double {
+        if (measurement.captureTimestampMicros > 0L) {
+            val converted = try {
+                fpgaToEstimatorTimeSeconds(measurement.captureTimestampMicros / 1_000_000.0)
+            } catch (_: Throwable) {
+                Double.NaN
+            }
+            if (converted.isFinite()) return converted
+        }
+        val latencyMs = (nowMs - measurement.timestampMs).coerceIn(0L, 1_000L)
+        return estimatorTimeSecondsProvider() - latencyMs / 1_000.0
+    }
+
     private fun considerRecovery(
         measurement: VisionMeasurement,
         timestampMs: Long,
@@ -245,8 +268,10 @@ class FrcVisionTracker(
             drive.xAccelerationG * drive.xAccelerationG +
                 drive.yAccelerationG * drive.yAccelerationG + dynamicZ * dynamicZ
         )
-        val plausible = (!measurement.ambiguityAvailable ||
-            (measurement.ambiguity.isFinite() && measurement.ambiguity <= filterConfig.maxAmbiguity)) &&
+        val plausible = (!measurement.recoveryAmbiguityAvailable ||
+            (measurement.recoveryAmbiguity.isFinite() &&
+                measurement.recoveryAmbiguity <= filterConfig.maxAmbiguity)) &&
+            (filterConfig.allowedTagIds.isEmpty() || measurement.tagId in filterConfig.allowedTagIds) &&
             candidate3d.x.isFinite() && candidate3d.y.isFinite() && candidate3d.rotation.z.isFinite() &&
             targetRange.isFinite() && targetRange <= MAX_TARGET_RANGE_METERS &&
             kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <= filterConfig.maxAngularVelocityRadPerSec &&

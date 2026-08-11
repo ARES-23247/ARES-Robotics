@@ -131,6 +131,18 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
             visionStdDevs
         )
     }
+
+    override fun samplePoseAt(timestampSeconds: Double, out: DoubleArray): Boolean {
+        require(out.size >= 3) { "samplePoseAt output must contain X, Y, and heading" }
+        if (!timestampSeconds.isFinite()) return false
+        val sample = drivetrain.samplePoseAt(timestampSeconds)
+        if (sample.isEmpty) return false
+        val pose = sample.get()
+        out[0] = pose.x
+        out[1] = pose.y
+        out[2] = pose.rotation.radians
+        return true
+    }
     
     /**
      * Resets CTRE's authoritative field pose in meters and CCW-positive radians.

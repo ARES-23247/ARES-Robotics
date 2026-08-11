@@ -30,7 +30,9 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
  */
 class FtcLimelightIO(
     private val limelight: Limelight3A,
-    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+    override val cameraPoses: List<Pose3d> = emptyList(),
+    /** Stable hardware-map camera name used for per-source de-duplication. */
+    private val sourceId: String = "ftc-limelight"
 ) : VisionIO, AutoCloseable {
     
     private var lastWarningTime = 0L
@@ -196,6 +198,7 @@ class FtcLimelightIO(
                         // same cached camera frame on multiple robot loops.
                         val totalLatencyMs = (result.captureLatency + result.targetingLatency).toLong()
                         measurement.timestampMs = result.getControlHubTimeStamp() - totalLatencyMs
+                        measurement.captureTimestampMicros = measurement.timestampMs * 1_000L
                         measurement.targetPose = fieldPose
                         measurement.recoveryPose = recoveryFieldPose
                         measurement.hasRecoveryPose = megaTag1Pose != null
@@ -212,10 +215,12 @@ class FtcLimelightIO(
                             if (it > 0.0) it else kotlin.math.sqrt(representativeDistanceSquared)
                         }
                         measurement.averageTagAreaPercent = positiveMetric(result.getBotposeAvgArea())
-                        measurement.sourceId = "ftc-limelight"
+                        measurement.sourceId = sourceId
                         measurement.frameId = result.getControlHubTimeStamp()
                         measurement.solverType = if (usingMegaTag2) VisionSolverType.MEGATAG2 else VisionSolverType.MEGATAG1
                         measurement.latencyMs = totalLatencyMs.toDouble()
+                        measurement.recoveryAmbiguity = 0.0
+                        measurement.recoveryAmbiguityAvailable = false
                         applyObservationStdDevs(measurement, result, usingMegaTag2)
 
                         currentMeasurementList.add(measurement)

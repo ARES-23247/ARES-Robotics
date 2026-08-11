@@ -72,7 +72,7 @@ class FtcLimelightIOTest {
 
         val mockResult = MockLLResult(valid = true, botpose = ftcPose)
         val mockLimelight = MockLimelight3A(mockResult)
-        val limelightIO = FtcLimelightIO(mockLimelight)
+        val limelightIO = FtcLimelightIO(mockLimelight, sourceId = "limelight-front")
 
         val inputs = VisionIOInputs()
         limelightIO.updateInputs(inputs)
@@ -117,7 +117,7 @@ class FtcLimelightIOTest {
         
         val mockResult = MockFiducialLLResult(valid = true, botpose = ftcPose, fiducials = listOf(mockFiducial))
         val mockLimelight = MockLimelight3A(mockResult)
-        val limelightIO = FtcLimelightIO(mockLimelight)
+        val limelightIO = FtcLimelightIO(mockLimelight, sourceId = "limelight-front")
         
         val inputs = VisionIOInputs()
         limelightIO.updateInputs(inputs)
@@ -128,6 +128,8 @@ class FtcLimelightIOTest {
         val measurement = inputs.measurements[0]
         assertEquals(1, measurement.tagId)
         assertEquals(1, measurement.tagCount)
+        assertEquals("limelight-front", measurement.sourceId)
+        assertEquals(measurement.timestampMs * 1_000L, measurement.captureTimestampMicros)
         
         // Verify relative target space pose fields
         assertEquals(0.5, measurement.robotPoseTargetSpace.x, 1e-6)
