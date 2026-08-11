@@ -26,6 +26,10 @@ open class GoBildaPinpointDriver {
 
     @Volatile var xOffsetMeters: Double = 0.0
     @Volatile var yOffsetMeters: Double = 0.0
+    @Volatile var configuredEncoderResolution: Double? = null
+        private set
+    @Volatile var configuredPod: GoBildaOdometryPods? = null
+        private set
 
     @Volatile private var rawOffsetX: Double = 0.0
     @Volatile private var rawOffsetY: Double = 0.0
@@ -99,7 +103,7 @@ open class GoBildaPinpointDriver {
     /** SDK-compatible pod encoder direction values. */
     enum class EncoderDirection { FORWARD, REVERSE }
     /** SDK-compatible predefined pod models. */
-    enum class GoBildaOdometryPods { goBilda_SWERVE_POD, goBilda_4_BAR_POD }
+    enum class GoBildaOdometryPods { goBILDA_SWINGARM_POD, goBILDA_4_BAR_POD }
 
     /**
      * Stores pod offsets in meters. The SDK's first argument is lateral (robot Y) and its second is
@@ -114,10 +118,16 @@ open class GoBildaPinpointDriver {
         xOffsetMeters = yOffset * mult
     }
     
-    /** Compatibility no-op; simulated position is already expressed in meters. */
-    fun setEncoderResolution(resolution: Double, unit: DistanceUnit) {}
-    /** Compatibility no-op; predefined pod scale is not modeled. */
-    fun setEncoderResolution(pod: GoBildaOdometryPods) {}
+    /** Records custom calibration for contract tests; simulated truth is already in meters. */
+    fun setEncoderResolution(resolution: Double, unit: DistanceUnit) {
+        configuredEncoderResolution = resolution
+        configuredPod = null
+    }
+    /** Records the selected SDK pod preset for contract tests. */
+    fun setEncoderResolution(pod: GoBildaOdometryPods) {
+        configuredPod = pod
+        configuredEncoderResolution = null
+    }
     /** Compatibility no-op; simulator truth already uses the configured ARES coordinate convention. */
     fun setEncoderDirections(xDirection: EncoderDirection, yDirection: EncoderDirection) {}
 }

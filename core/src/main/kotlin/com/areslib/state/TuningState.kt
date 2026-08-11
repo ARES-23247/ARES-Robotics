@@ -11,7 +11,8 @@ import com.areslib.control.tuning.SimpleFeedforwardCoeffs
 data class FtcPinpointTuningState(
     val xOffsetMm: Double = 0.0,
     val yOffsetMm: Double = 0.0,
-    val encoderResolution: Double = 20.44 // 20.44 ticks/mm baseline
+    /** Positive values override the pod calibration; zero retains the SDK's named 4-Bar preset. */
+    val encoderResolution: Double = 0.0
 )
 
 /**

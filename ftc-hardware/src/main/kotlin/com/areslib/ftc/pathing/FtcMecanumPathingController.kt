@@ -63,7 +63,9 @@ class FtcMecanumPathingController(
                     costmap = costmap,
                     maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * store.state.tuning.pathVelocityScale,
                     maxAccelerationMps2 = store.state.tuning.pathAccelerationLimit,
-                    mirrorForAlliance = mirrorForAlliance
+                    mirrorForAlliance = mirrorForAlliance,
+                    symmetry = config.allianceSymmetry,
+                    authoredAlliance = com.areslib.state.Alliance.RED
                 )
 
                 pathfindStartMs = now

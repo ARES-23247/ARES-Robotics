@@ -85,4 +85,27 @@ class VisionAlignControllerTest {
         assertTrue(command.targetYVelocity.isFinite())
         assertTrue(command.targetAngularVelocity.isFinite())
     }
+
+    @Test
+    fun `target-space depth is not rotated again by robot pitch`() {
+        RobotClock.useMockTime(1_000L)
+        val measurement = VisionMeasurement(
+            timestampMs = 1_000L,
+            tagId = 7,
+            // Limelight target-space Y is positive downward. Z is already the solved
+            // tag-normal separation and must remain independent of IMU pitch.
+            robotPoseTargetSpace = Pose3d(Translation3d(0.0, 1.0, 1.5), Rotation3d())
+        )
+        val state = RobotState(vision = VisionState(measurements = listOf(measurement)))
+
+        val level = assertNotNull(
+            VisionAlignController().calculate(state, 7, true, imuPitch = 0.0)
+        )
+        val pitched = assertNotNull(
+            VisionAlignController().calculate(state, 7, true, imuPitch = 0.4)
+        )
+
+        assertEquals(level.targetXVelocity, pitched.targetXVelocity, 1e-9)
+        assertEquals(level.targetYVelocity, pitched.targetYVelocity, 1e-9)
+    }
 }

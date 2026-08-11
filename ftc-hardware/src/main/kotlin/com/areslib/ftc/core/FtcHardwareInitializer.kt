@@ -42,7 +42,7 @@ class FtcHardwareInitializer(
     private val pinpointEncoderResolution: Double? = null,
     private val pinpointXDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     private val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
-    private val pinpointIsCcwPositive: Boolean = false
+    private val pinpointIsCcwPositive: Boolean = true
 ) {
     /** Lazy-initialized GoBilda Pinpoint odometry IO interface. */
     val pinpointIO: PinpointIO? by lazy {
@@ -83,4 +83,3 @@ class FtcHardwareInitializer(
         com.areslib.ftc.hardware.FtcMotor.unregisterAll()
     }
 }
-

@@ -9,6 +9,8 @@ import com.areslib.pathing.PathPlannerParser
 import com.areslib.pathing.ThetaStarPlanner
 import com.areslib.pathing.Costmap
 import com.areslib.pathing.HolonomicPathFollower
+import com.areslib.math.coordinate.FieldSymmetry
+import com.areslib.state.Alliance
 
 /**
  * Task that dynamically plans a collision-free path around static costmap obstacles
@@ -20,15 +22,24 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     private val costmap: Costmap,
     private val maxVelocityMps: Double = 2.0,
     private val maxAccelerationMps2: Double = 1.5,
-    private val mirrorForAlliance: Boolean = true
+    private val mirrorForAlliance: Boolean = true,
+    private val symmetry: FieldSymmetry = FieldSymmetry.MIRRORED,
+    private val authoredAlliance: Alliance = Alliance.BLUE
 ) : Task {
     override val name = "PathfindToPose($targetPose)"
     private var delegateTask: FollowPathTask? = null
 
     override fun initialize(state: RobotState): List<RobotAction> {
         val startPose = state.drive.poseEstimator.estimatedPose
-        val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
-        val activeTargetPose = com.areslib.math.coordinate.AllianceMirroring.mirror(targetPose, alliance, com.areslib.math.coordinate.FieldSymmetry.MIRRORED)
+        val shouldTransform = mirrorForAlliance && state.drive.alliance != authoredAlliance
+        // AllianceMirroring's RED branch is the involutive geometry operation. Authorship
+        // metadata determines whether it is applied, so either alliance may be canonical.
+        val transformSelector = if (shouldTransform) Alliance.RED else Alliance.BLUE
+        val activeTargetPose = com.areslib.math.coordinate.AllianceMirroring.mirror(
+            targetPose,
+            transformSelector,
+            symmetry
+        )
 
         val startTrans = Translation2d(startPose.x, startPose.y)
         val targetTrans = Translation2d(activeTargetPose.x, activeTargetPose.y)

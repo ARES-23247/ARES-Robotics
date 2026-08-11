@@ -60,7 +60,7 @@ class MecanumTrajectoryFollower(
      * @param mecanumIO Drivetrain hardware IO cluster.
      * @param targetPose Destination pose $(x, y, \theta)$ ($m, m, rad$).
      * @param isRequested Flag indicating whether trajectory execution is actively requested.
-     * @param mirrorForAlliance Inverts coordinate axes if alliance assignment is Blue Alliance.
+     * @param mirrorForAlliance Applies the active season field's symmetry when Blue uses a Red-authored target.
      */
     @kotlin.jvm.JvmOverloads
     fun driveToPose(
@@ -85,7 +85,9 @@ class MecanumTrajectoryFollower(
                     costmap = costmap,
                     maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * store.state.tuning.pathVelocityScale,
                     maxAccelerationMps2 = store.state.tuning.pathAccelerationLimit,
-                    mirrorForAlliance = mirrorForAlliance
+                    mirrorForAlliance = mirrorForAlliance,
+                    symmetry = config.allianceSymmetry,
+                    authoredAlliance = com.areslib.state.Alliance.RED
                 )
 
                 pathfindStartMs = now
@@ -122,7 +124,7 @@ class MecanumTrajectoryFollower(
      * @param telemetryManager Telemetry manager for driver station error messages.
      * @param name Named waypoint identifier string.
      * @param isRequested Flag indicating whether waypoint navigation is requested.
-     * @param mirrorForAlliance Inverts coordinate axes if alliance assignment is Blue Alliance.
+     * @param mirrorForAlliance Applies the active season field's symmetry when Blue uses a Red-authored waypoint.
      */
     @kotlin.jvm.JvmOverloads
     fun driveToWaypoint(
@@ -163,4 +165,3 @@ class MecanumTrajectoryFollower(
         }
     }
 }
-

@@ -32,7 +32,7 @@ object FtcHardwareMapInitializer {
      * @param encoderResolution Optional custom encoder tick resolution rating in ticks per millimeter ($ticks/mm$).
      * @param xDirection Encoder count polarity direction for the X pod (`FORWARD` vs `REVERSE`).
      * @param yDirection Encoder count polarity direction for the Y pod (`FORWARD` vs `REVERSE`).
-     * @param isCcwPositive Set `true` if physical orientation yields CCW+ heading directly (default `false` for upside-down mounts).
+     * @param isCcwPositive Set `true` for the normal native CCW-positive Pinpoint convention.
      * @return Initialized [PinpointIO] instance with IMU recalibrated, or `null` if driver lookup fails.
      */
     fun initPinpoint(

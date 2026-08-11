@@ -18,7 +18,7 @@ import kotlin.math.sin
  * deadband bounds to prevent limit-cycle jitter, P-D + $k_S$ friction compensation for heading control, and automated sweep search behaviors when tag tracking is temporarily lost.
  *
  * ### Target-Space & Coordinate Transformation Mathematics:
- * In Limelight target space ($Z$ forward depth, $X$ right offset):
+ * In Limelight target space ($Z$ outward depth, $X$ right offset, $Y$ down):
  * $$e_{forward} = |Z| - d_{target}, \quad e_{left} = X$$
  * $$\phi = -\text{rotation.y} \quad \text{(Robot heading yaw in target space, CCW-positive)}$$
  * Robot-centric coordinate frame error rotation:
@@ -62,7 +62,12 @@ class VisionAlignController {
      * @param isAlignmentRequested `true` if the driver alignment trigger button is actively held down; `false` otherwise.
      * @return Commanded [RobotAction.JoystickDriveIntent] containing closed-loop alignment velocities, or `null` if alignment is disabled.
      */
-    fun calculate(state: RobotState, targetTagId: Int, isAlignmentRequested: Boolean, imuPitch: Double = 0.0): RobotAction.JoystickDriveIntent? {
+    fun calculate(
+        state: RobotState,
+        targetTagId: Int,
+        isAlignmentRequested: Boolean,
+        @Suppress("UNUSED_PARAMETER") imuPitch: Double = 0.0
+    ): RobotAction.JoystickDriveIntent? {
         if (!isAlignmentRequested) {
             // Reset state when button is released
             wasTrackingTag = false
@@ -96,10 +101,11 @@ class VisionAlignController {
             // target-space coordinates (Limelight: Z forward, X right)
             val tuning = state.tuning
             val rawZ = robotPoseTargetSpace.z
-            val rawY = robotPoseTargetSpace.y
-            val safePitch = imuPitch.takeIf { it.isFinite() } ?: 0.0
-            val correctedZ = rawZ * cos(safePitch) - rawY * sin(safePitch)
-            val distanceZ = abs(correctedZ)
+            // robotPoseTargetSpace is already a solved pose in the tag frame, not a camera
+            // ray. Its Z component is the tag-normal separation and must not be rotated a
+            // second time using robot IMU pitch. Y is Limelight-down and is intentionally
+            // irrelevant to planar ground-robot alignment.
+            val distanceZ = abs(rawZ)
             val targetDistanceMeters = tuning.visionAlignTargetDistance.finiteNonNegative()
             val errorForwardT = distanceZ - targetDistanceMeters
             val errorLeftT = robotPoseTargetSpace.x

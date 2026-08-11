@@ -69,10 +69,10 @@ import com.areslib.ftc.core.FtcOpModeLifecycleController
  * @param odomQtheta EKF process noise covariance for heading ($rad^2$).
  * @param pinpointXOffsetMm Pinpoint computer physical mounting offset along robot X-axis ($mm$).
  * @param pinpointYOffsetMm Pinpoint computer physical mounting offset along robot Y-axis ($mm$).
- * @param pinpointEncoderResolution Pinpoint odometry wheel resolution ($ticks/mm$). Defaults to GoBilda 4-bar standard (20.44 ticks/mm).
+ * @param pinpointEncoderResolution Optional custom pod resolution ($ticks/mm$). Null selects the FTC SDK's GoBilda 4-Bar pod calibration.
  * @param pinpointXDirection Direction configuration for X odometry pod encoder.
  * @param pinpointYDirection Direction configuration for Y odometry pod encoder.
- * @param pinpointIsCcwPositive Physical mounting polarity flag. Set `true` if upside-down mount reverses raw Pinpoint CCW readings.
+ * @param pinpointIsCcwPositive `true` for the normal native CCW-positive Pinpoint convention.
  * @param visionStdDevs Initial standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ for AprilTag pose updates ($m, m, rad$).
  * @param visionFilterConfig Outlier rejection threshold and gating configuration for vision updates.
  * @param reducer Redux state reducer function. Defaults to root [rootReducer].
@@ -99,7 +99,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val pinpointEncoderResolution: Double? = null,
     val pinpointXDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
-    val pinpointIsCcwPositive: Boolean = false,
+    val pinpointIsCcwPositive: Boolean = true,
 
     // Vision Configuration
     val visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
@@ -115,7 +115,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 ftcPinpoint = com.areslib.state.FtcPinpointTuningState(
                     xOffsetMm = pinpointXOffsetMm,
                     yOffsetMm = pinpointYOffsetMm,
-                    encoderResolution = pinpointEncoderResolution ?: 20.44
+                    // Zero means "retain the named pod calibration selected during hardware init".
+                    encoderResolution = pinpointEncoderResolution ?: 0.0
                 )
             )
         )

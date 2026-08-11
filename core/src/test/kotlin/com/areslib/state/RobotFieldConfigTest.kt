@@ -1,6 +1,7 @@
 package com.areslib.state
 
 import com.areslib.math.geometry.Pose2d
+import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.pathing.Costmap
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -59,6 +60,7 @@ class RobotFieldConfigTest {
               "yAxisDirection": "left",
               "redDriverStation": "south",
               "blueDriverStation": "north",
+              "allianceSymmetry": "mirrored",
               "obstacles": [
                 {
                   "id": "obs_1",
@@ -101,6 +103,7 @@ class RobotFieldConfigTest {
             assertEquals(AxisDirection.LEFT, config.yAxisDirection)
             assertEquals(DriverStationSide.SOUTH, config.redDriverStation)
             assertEquals(DriverStationSide.NORTH, config.blueDriverStation)
+            assertEquals(FieldSymmetry.MIRRORED, config.allianceSymmetry)
 
             assertEquals(2, config.obstacles.size)
             val obs1 = config.obstacles[0]

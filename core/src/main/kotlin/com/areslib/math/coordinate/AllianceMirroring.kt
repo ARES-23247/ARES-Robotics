@@ -5,15 +5,18 @@ import com.areslib.math.geometry.*
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
 import com.areslib.math.wrapAngle
+import com.google.gson.annotations.SerializedName
 
 /**
  * Defines the geometric field symmetry mapping between Red and Blue alliance field halves.
  */
 enum class FieldSymmetry {
     /** Rotational (180° point reflection) symmetry about the center of the field. */
+    @SerializedName("rotational")
     ROTATIONAL,
 
     /** Mirrored (line reflection) symmetry across the field center dividing axis. */
+    @SerializedName("mirrored")
     MIRRORED
 }
 

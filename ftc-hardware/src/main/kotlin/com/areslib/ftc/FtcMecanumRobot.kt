@@ -358,7 +358,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      *
      * @param targetPose Target destination pose $(x, y, \theta)$ ($m, m, rad$).
      * @param isRequested Enables or disables target tracking task.
-     * @param mirrorForAlliance Inverts coordinate axes if current Redux state is Blue Alliance.
+     * @param mirrorForAlliance Applies the active season field's symmetry for the alliance opposite the Red-authored target.
      */
     @kotlin.jvm.JvmOverloads
     fun driveToPose(targetPose: Pose2d, isRequested: Boolean, mirrorForAlliance: Boolean = true) {
@@ -370,7 +370,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      *
      * @param name Named waypoint identifier string.
      * @param isRequested Enables or disables waypoint tracking task.
-     * @param mirrorForAlliance Inverts coordinate axes if current Redux state is Blue Alliance.
+     * @param mirrorForAlliance Applies the active season field's symmetry for the alliance opposite the Red-authored waypoint.
      */
     @kotlin.jvm.JvmOverloads
     fun driveToWaypoint(name: String, isRequested: Boolean, mirrorForAlliance: Boolean = true) {

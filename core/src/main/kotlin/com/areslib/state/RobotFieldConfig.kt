@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 import java.io.File
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.coordinate.FieldSymmetry
 
 enum class FieldType {
     @SerializedName("ftc") FTC,
@@ -160,6 +161,8 @@ data class RobotFieldConfig(
     val yAxisDirection: AxisDirection = AxisDirection.LEFT,
     val redDriverStation: DriverStationSide = DriverStationSide.SOUTH,
     val blueDriverStation: DriverStationSide = DriverStationSide.NORTH,
+    /** Season-specific Red/Blue field geometry; this is distinct from driver-perspective controls. */
+    val allianceSymmetry: FieldSymmetry = FieldSymmetry.ROTATIONAL,
     val obstacles: List<RobotFieldObstacle> = emptyList(),
     val apriltags: List<RobotFieldAprilTag> = emptyList(),
     val elementTypes: List<RobotFieldElementType> = emptyList(),

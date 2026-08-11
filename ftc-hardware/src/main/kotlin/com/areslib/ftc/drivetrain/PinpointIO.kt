@@ -16,13 +16,14 @@ import com.areslib.math.wrapAngle
  * - **Velocity**: $v_x$ ($m/s$), $v_y$ ($m/s$).
  * - **Heading Convention**: Normalized to **Counter-Clockwise (CCW) Positive** math standard:
  *   $$\theta \in [-\pi, \pi], \quad 0 \text{ rad} = +X, \quad +\frac{\pi}{2} \text{ rad} = +Y$$
- * - **Polarity Correction**: The raw GoBilda Pinpoint driver outputs Clockwise (CW) positive heading natively when mounted right-side up.
- *   This class enforces CCW-positive transformation directly at the hardware boundary via [isHeadingCcwPositive] (`headingMult`),
- *   ensuring downstream EKF observers, kinematics solvers, and path followers receive CCW+ heading.
+ * - **Polarity Correction**: A normally mounted and configured GoBilda Pinpoint outputs
+ *   counter-clockwise-positive heading. [isHeadingCcwPositive] exists only for an unusual physical
+ *   installation whose observed heading polarity is reversed.
  *
  * ### Physical Units & Setup:
  * - Pod offsets: $X, Y$ mounting offsets in millimeters ($mm$).
- * - Encoder resolution: Ticks per millimeter ($ticks/mm$, defaults to GoBilda 4-bar standard 20.44 ticks/mm).
+ * - Encoder resolution: Ticks per millimeter ($ticks/mm$). A null value selects the FTC SDK's named
+ *   GoBilda 4-Bar pod calibration instead of duplicating a vendor calibration constant.
  * - Velocities: Linear $m/s$, Angular $rad/s$.
  * - Time: Milliseconds ($ms$).
  *
@@ -36,7 +37,7 @@ import com.areslib.math.wrapAngle
  * @param encoderResolution Encoder resolution ($ticks/mm$). Pass `null` for factory default.
  * @param xDirection Encoder direction for X pod.
  * @param yDirection Encoder direction for Y pod.
- * @param isHeadingCcwPositive Physical mounting polarity flag. Set `true` if upside-down mount reverses raw Pinpoint CCW readings.
+ * @param isHeadingCcwPositive `true` for the normal native CCW-positive Pinpoint convention.
  *
  * @see com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
  * @see RobotAction.PoseUpdate
@@ -48,7 +49,7 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     encoderResolution: Double? = null,
     xDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD,
     yDirection: GoBildaPinpointDriver.EncoderDirection = GoBildaPinpointDriver.EncoderDirection.FORWARD,
-    private val isHeadingCcwPositive: Boolean = false
+    private val isHeadingCcwPositive: Boolean = true
 ) : AutoCloseable {
     enum class HealthStatus {
         STARTING,
@@ -76,8 +77,10 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
 
     init {
         setOffsets(xOffsetMm, yOffsetMm)
-        if (encoderResolution != null) {
+        if (encoderResolution != null && encoderResolution > 0.0) {
             driver.setEncoderResolution(encoderResolution, DistanceUnit.MM)
+        } else {
+            driver.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
         }
         driver.setEncoderDirections(xDirection, yDirection)
         driver.resetPosAndIMU()

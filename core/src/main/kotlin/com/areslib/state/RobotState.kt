@@ -162,7 +162,7 @@ data class SuperstructureState(
  *
  *   ## Translation Access
  *   - `robotPoseTargetSpace.x` → lateral offset (positive = robot is right of tag center)
- *   - `robotPoseTargetSpace.y` → vertical offset (usually near 0 for ground robots)
+ *   - `robotPoseTargetSpace.y` → vertical offset (positive downward in Limelight target space)
  *   - `robotPoseTargetSpace.z` → distance from tag face (always positive, in meters)
  *
  *   ## ⚠️ CRITICAL: Rotation Axis Mapping (Limelight → Rotation3d)

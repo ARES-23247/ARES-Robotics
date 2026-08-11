@@ -42,39 +42,33 @@ class PinpointIOTest {
         assertEquals(wrapAngle(Math.PI), initialUpdate.headingRadians, 1e-6)
 
         // 2. Simulate raw movement relative to the initial reset state
-        // The raw driver heading is CW-positive (matching real GoBilda hardware).
-        // PinpointIO negates it internally to produce CCW-positive output.
-        // rawDriver.heading = 0.0 means no CW rotation from start → PinpointIO reads -0.0 = 0.0
+        // The raw driver heading is natively CCW-positive, matching configured hardware.
         rawDriver.posX = 0.5 // moved 0.5m forward in driver frame
         rawDriver.posY = 0.0
-        rawDriver.heading = 0.0  // No rotation (CW-positive raw)
+        rawDriver.heading = 0.0
         Thread.sleep(20) // Allow background thread to run
 
         val update1 = pinpointIO.getPoseUpdate()
-        // offsetHeading = wrapAngle(PI - (-0.0)) = PI
-        // rawHeading (negated) = -0.0 = 0.0
+        // offsetHeading = wrapAngle(PI - 0.0) = PI
         // heading = wrapAngle(0.0 + PI) = PI
         // x_field = 0.5 * cos(PI) - 0.0 * sin(PI) + 1.0 = -0.5 + 1.0 = 0.5
         assertEquals(0.5, update1.xMeters, 1e-6)
         assertEquals(-1.0, update1.yMeters, 1e-6)
         assertEquals(wrapAngle(Math.PI), update1.headingRadians, 1e-6)
 
-        // 3. Simulate CW rotation (positive in raw hardware) and translation in driver frame
-        // rawDriver.heading = 0.5 means 0.5 rad CW rotation in hardware
-        // PinpointIO negates to -0.5 rad (CCW convention)
+        // 3. Simulate a positive CCW rotation and translation in the driver frame.
         rawDriver.posX = 1.0
         rawDriver.posY = 0.5
-        rawDriver.heading = 0.5  // 0.5 rad CW in hardware → -0.5 rad CCW after negation
+        rawDriver.heading = 0.5
         Thread.sleep(20) // Allow background thread to run
 
         val update2 = pinpointIO.getPoseUpdate()
-        // rawHeading = -0.5
-        // heading = wrapAngle(-0.5 + PI) = PI - 0.5
+        // rawHeading = +0.5; heading = wrapAngle(0.5 + PI)
         // x_field = 1.0 * cos(PI) - 0.5 * sin(PI) + 1.0 = -1.0 + 1.0 = 0.0
         // y_field = 1.0 * sin(PI) + 0.5 * cos(PI) - 1.0 = 0.0 - 0.5 - 1.0 = -1.5
         assertEquals(0.0, update2.xMeters, 1e-6)
         assertEquals(-1.5, update2.yMeters, 1e-6)
-        assertEquals(wrapAngle(Math.PI - 0.5), update2.headingRadians, 1e-6)
+        assertEquals(wrapAngle(Math.PI + 0.5), update2.headingRadians, 1e-6)
     }
  
     @Test
@@ -105,17 +99,13 @@ class PinpointIOTest {
         assertEquals(4.0, snapUpdate.yMeters, 1e-6)
         assertEquals(1.5, snapUpdate.headingRadians, 1e-6)
  
-        // If the robot now rotates further by +0.1 rad CW (hardware positive) and moves +0.5m along raw X:
-        // CW hardware: heading goes from 0.5 to 0.6
-        // PinpointIO negates: from -0.5 to -0.6, a change of -0.1 rad
-        // So the CCW-positive heading should DECREASE by 0.1: from 1.5 to 1.4
+        // If the robot rotates a further +0.1 rad CCW, the aligned field heading also increases.
         rawDriver.posX += 0.5
-        rawDriver.heading += 0.1  // 0.1 rad further CW in hardware
+        rawDriver.heading += 0.1
         Thread.sleep(20) // Allow background thread to run
 
         val finalUpdate = pinpointIO.getPoseUpdate()
-        // CW rotation in hardware → heading decreases in CCW convention
-        assertEquals(1.4, finalUpdate.headingRadians, 1e-6)
+        assertEquals(1.6, finalUpdate.headingRadians, 1e-6)
     }
 
     private fun waitForInit(pinpointIO: PinpointIO, expectedX: Double) {
@@ -142,6 +132,32 @@ class PinpointIOTest {
         val updateCw = pinpointIOCw.getPoseUpdate()
         
         assertNotEquals(updateCcw.headingRadians, updateCw.headingRadians)
+    }
+
+    @Test
+    fun `default contract preserves native CCW heading and selects named 4 bar pod`() {
+        val rawDriver = GoBildaPinpointDriver()
+        val pinpointIO = PinpointIO(rawDriver)
+        rawDriver.heading = 0.75
+
+        val update = pinpointIO.getPoseUpdate()
+
+        assertEquals(0.75, update.headingRadians, 1e-6)
+        assertEquals(
+            GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD,
+            rawDriver.configuredPod
+        )
+        assertNull(rawDriver.configuredEncoderResolution)
+    }
+
+    @Test
+    fun `positive custom encoder resolution overrides named pod preset`() {
+        val rawDriver = GoBildaPinpointDriver()
+
+        PinpointIO(rawDriver, encoderResolution = 19.5)
+
+        assertEquals(19.5, rawDriver.configuredEncoderResolution)
+        assertNull(rawDriver.configuredPod)
     }
 
     @Test

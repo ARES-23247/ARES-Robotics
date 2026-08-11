@@ -294,7 +294,7 @@ abstract class FtcMecanumAutoBase<R> : OpMode() {
         AllianceMirroring.mirror(
             Pose2d(pose.xMeters, pose.yMeters, Rotation2d(pose.headingRadians)),
             alliance,
-            FieldSymmetry.ROTATIONAL
+            com.areslib.state.RobotFieldManager.activeConfig.allianceSymmetry
         )
     }
 

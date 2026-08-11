@@ -17,7 +17,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
  *
  * ### Limelight Target-Space Coordinate Frame:
  * - **$X+$**: Right of the AprilTag face in meters ($m$).
- * - **$Y+$**: Vertical height axis in meters ($m$).
+ * - **$Y+$**: Downward along the AprilTag face in meters ($m$).
  * - **$Z+$**: Distance/depth outward from tag face in meters ($m$).
  * - **Rotation Yaw**: Extracted from `rotation.y` (negated to align with **CCW-positive** robot heading standard).
  *
