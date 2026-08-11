@@ -391,18 +391,28 @@ object DesktopSimLauncher {
             }
 
             // Always publish motor powers, velocities, and current draws on every 50Hz physics tick
-            NT4Server.publishTopic("Hardware/Motors/fl/Power", robotDouble.fl.power)
-            NT4Server.publishTopic("Hardware/Motors/fr/Power", robotDouble.fr.power)
-            NT4Server.publishTopic("Hardware/Motors/rl/Power", robotDouble.rl.power)
-            NT4Server.publishTopic("Hardware/Motors/rr/Power", robotDouble.rr.power)
-            NT4Server.publishTopic("Hardware/Motors/bl/Power", robotDouble.rl.power)
-            NT4Server.publishTopic("Hardware/Motors/br/Power", robotDouble.rr.power)
-            NT4Server.publishTopic("Hardware/Motors/fl/Velocity", robotDouble.fl.velocity)
-            NT4Server.publishTopic("Hardware/Motors/fr/Velocity", robotDouble.fr.velocity)
-            NT4Server.publishTopic("Hardware/Motors/rl/Velocity", robotDouble.rl.velocity)
-            NT4Server.publishTopic("Hardware/Motors/rr/Velocity", robotDouble.rr.velocity)
-            NT4Server.publishTopic("Hardware/Motors/bl/Velocity", robotDouble.rl.velocity)
-            NT4Server.publishTopic("Hardware/Motors/br/Velocity", robotDouble.rr.velocity)
+            // The OpMode thread can change requested outputs concurrently. Snapshot once so the
+            // rear/back compatibility aliases describe the same simulator frame.
+            val flPower = robotDouble.fl.power
+            val frPower = robotDouble.fr.power
+            val rlPower = robotDouble.rl.power
+            val rrPower = robotDouble.rr.power
+            val flVelocity = robotDouble.fl.velocity
+            val frVelocity = robotDouble.fr.velocity
+            val rlVelocity = robotDouble.rl.velocity
+            val rrVelocity = robotDouble.rr.velocity
+            NT4Server.publishTopic("Hardware/Motors/fl/Power", flPower)
+            NT4Server.publishTopic("Hardware/Motors/fr/Power", frPower)
+            NT4Server.publishTopic("Hardware/Motors/rl/Power", rlPower)
+            NT4Server.publishTopic("Hardware/Motors/rr/Power", rrPower)
+            NT4Server.publishTopic("Hardware/Motors/bl/Power", rlPower)
+            NT4Server.publishTopic("Hardware/Motors/br/Power", rrPower)
+            NT4Server.publishTopic("Hardware/Motors/fl/Velocity", flVelocity)
+            NT4Server.publishTopic("Hardware/Motors/fr/Velocity", frVelocity)
+            NT4Server.publishTopic("Hardware/Motors/rl/Velocity", rlVelocity)
+            NT4Server.publishTopic("Hardware/Motors/rr/Velocity", rrVelocity)
+            NT4Server.publishTopic("Hardware/Motors/bl/Velocity", rlVelocity)
+            NT4Server.publishTopic("Hardware/Motors/br/Velocity", rrVelocity)
 
             val flCurrent = robotDouble.fl.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
             val frCurrent = robotDouble.fr.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)

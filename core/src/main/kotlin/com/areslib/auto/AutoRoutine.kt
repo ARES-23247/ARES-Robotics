@@ -439,6 +439,7 @@ object AresAutoCodec {
         val routine = try {
             // FTC SDK currently supplies Gson 2.8.x at runtime. The instance API is available
             // there and in newer desktop Gson versions; the static parseString API is not.
+            @Suppress("DEPRECATION")
             parseRoutine(JsonParser().parse(json).asJsonObject)
         } catch (error: Exception) {
             throw IllegalArgumentException("Auto document is not valid JSON: ${error.message}", error)

@@ -170,4 +170,42 @@ class FtcLimelightIOTest {
         assertEquals(2, inputs.measurements.single().tagCount)
         assertEquals(7, inputs.measurements.single().tagId, "Closest tag should represent target-space alignment")
     }
+
+    @Test
+    fun `MegaTag2 normal pose retains independent MegaTag1 recovery pose`() {
+        val mt2 = Pose3D(
+            Position(DistanceUnit.METER, 1.0, 0.2, 0.0, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+        )
+        val mt1 = Pose3D(
+            Position(DistanceUnit.METER, 1.1, 0.3, 0.0, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 60.0, 0.0, 0.0, 0)
+        )
+        val fiducial = com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult(
+            fiducialId = 1,
+            tx = 0.0,
+            ty = 0.0,
+            pose3d = Pose3D(),
+            robotPoseTargetSpace = Pose3D(
+                Position(DistanceUnit.METER, 0.0, 0.0, 1.0, 0),
+                YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+            )
+        )
+        val result = object : LLResult() {
+            override fun isValid() = true
+            override fun getBotpose() = mt1
+            override fun getBotpose_MT2() = mt2
+            override fun getFiducialResults() = listOf(fiducial)
+        }
+
+        val inputs = VisionIOInputs()
+        FtcLimelightIO(MockLimelight3A(result)).updateInputs(inputs)
+        val measurement = inputs.measurements.single()
+
+        assertEquals(1.0, measurement.targetPose.x, 1e-9)
+        assertTrue(measurement.hasRecoveryPose)
+        assertEquals(1.1, measurement.recoveryPose.x, 1e-9)
+        assertEquals(Math.toRadians(60.0), measurement.recoveryPose.rotation.z, 1e-9)
+        assertEquals(com.areslib.state.VisionSolverType.MEGATAG2, measurement.solverType)
+    }
 }

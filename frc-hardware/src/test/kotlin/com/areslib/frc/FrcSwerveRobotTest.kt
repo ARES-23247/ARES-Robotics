@@ -76,6 +76,8 @@ class FrcSwerveRobotTest {
 
         override fun write(driveState: DriveState) {}
 
+        override fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) {}
+
         override fun getCurrents(out: DoubleArray) {
             System.arraycopy(mockCurrents, 0, out, 0, out.size)
         }

@@ -60,7 +60,7 @@ class RevMotorController(
 
     override var powerScale: Double = 1.0
         set(value) {
-            field = value.coerceIn(0.0, 1.0)
+            field = sanitizeScale(value)
             if (!isStalled) {
                 try {
                     val commandPower = targetPower * field
@@ -75,11 +75,12 @@ class RevMotorController(
     override var power: Double
         get() = targetPower
         set(value) {
-            targetPower = value
+            val safePower = sanitizePower(value)
+            targetPower = safePower
             val timeMs = com.areslib.util.RobotClock.currentTimeMillis()
             val currentVel = this.velocity
 
-            if (kotlin.math.abs(value) > 0.5 && kotlin.math.abs(currentVel) < 10.0) {
+            if (kotlin.math.abs(safePower) > 0.5 && kotlin.math.abs(currentVel) < 10.0) {
                 when {
                     stallStartTimeMs == 0L -> stallStartTimeMs = timeMs
                     timeMs - stallStartTimeMs > 500 -> isStalled = true
@@ -95,7 +96,7 @@ class RevMotorController(
             }
 
             try {
-                val commandPower = if (isStalled) 0.0 else value * powerScale
+                val commandPower = if (isStalled) 0.0 else safePower * powerScale
                 if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
                     motor.power = commandPower
                     lastSentPower = commandPower
@@ -181,7 +182,7 @@ class RevCRServoController(
 
     override var powerScale: Double = 1.0
         set(value) {
-            field = value.coerceIn(0.0, 1.0)
+            field = sanitizeScale(value)
             try {
                 val commandPower = targetPower * field
                 if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
@@ -194,9 +195,10 @@ class RevCRServoController(
     override var power: Double
         get() = targetPower
         set(value) {
-            targetPower = value
+            val safePower = sanitizePower(value)
+            targetPower = safePower
             try {
-                val commandPower = value * powerScale
+                val commandPower = safePower * powerScale
                 if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
                     crServo.power = commandPower
                     lastSentPower = commandPower
@@ -215,6 +217,12 @@ class RevCRServoController(
         externalEncoder?.resetEncoder()
     }
 }
+
+private fun sanitizePower(value: Double): Double =
+    if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
+
+private fun sanitizeScale(value: Double): Double =
+    if (value.isFinite()) value.coerceIn(0.0, 1.0) else 0.0
 
 /**
  * Direct hardware IO controller for standalone motor port quadrature encoders.
@@ -343,4 +351,3 @@ class RevServoController(
             } catch (_: Exception) {}
         }
 }
-

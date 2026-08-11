@@ -28,6 +28,24 @@ tasks.test {
     include("**/*Test.class", "**/*Tests.class")
 }
 
+tasks.register<JavaExec>("fitLocalizationCalibration") {
+    group = "verification"
+    description = "Fits localization Q/R recommendations and NIS/NEES consistency from robot calibration CSV files"
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.areslib.math.estimation.LocalizationCalibrationCli")
+    doFirst {
+        val input = project.findProperty("calibrationFiles")?.toString()
+            ?: error("Pass -PcalibrationFiles=<csv>[|<csv>...]")
+        val cliArgs = input.split('|').filter(String::isNotBlank).toMutableList()
+        project.findProperty("calibrationOutput")?.toString()?.let {
+            cliArgs += "--output"
+            cliArgs += it
+        }
+        args = cliArgs
+    }
+}
+
 kotlin {
     jvmToolchain(17)
 }

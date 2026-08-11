@@ -33,6 +33,8 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
     private var latestPitch = 0.0
     private var latestRoll = 0.0
     private var latestYawVel = 0.0
+    private var latestPitchVel = 0.0
+    private var latestRollVel = 0.0
     private var latestTimestamp = 0L
     @Volatile private var running = true
 
@@ -46,6 +48,8 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
                     latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
                     latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
                     latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+                    latestPitchVel = angularVel.getYRotationRate(AngleUnit.RADIANS).toDouble()
+                    latestRollVel = angularVel.getXRotationRate(AngleUnit.RADIANS).toDouble()
                     latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
                 }
             } catch (_: Exception) {}
@@ -81,6 +85,8 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
                 latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
                 latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
                 latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
+                latestPitchVel = angularVel.getYRotationRate(AngleUnit.RADIANS).toDouble()
+                latestRollVel = angularVel.getXRotationRate(AngleUnit.RADIANS).toDouble()
                 latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
             }
         } catch (_: Exception) {}
@@ -100,6 +106,8 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
             inputs.pitchRadians = latestPitch
             inputs.rollRadians = latestRoll
             inputs.yawVelocityRadPerSec = latestYawVel
+            inputs.pitchVelocityRadPerSec = latestPitchVel
+            inputs.rollVelocityRadPerSec = latestRollVel
             inputs.timestampMs = latestTimestamp
         }
     }

@@ -253,7 +253,11 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             kinematicsController.updateTuning(currentTuning)
             trajectoryFollower.updateTuning(currentTuning)
 
-            visionTracker.stdDevs = Vector3(currentTuning.visionStdDevsX, currentTuning.visionStdDevsY, currentTuning.visionStdDevsHeading)
+            visionTracker.setStdDevs(
+                currentTuning.visionStdDevsX,
+                currentTuning.visionStdDevsY,
+                currentTuning.visionStdDevsHeading
+            )
             com.areslib.math.estimation.PoseEstimator.qX = currentTuning.odomQx
             com.areslib.math.estimation.PoseEstimator.qY = currentTuning.odomQy
             com.areslib.math.estimation.PoseEstimator.qTheta = currentTuning.odomQtheta

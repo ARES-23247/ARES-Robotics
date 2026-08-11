@@ -68,7 +68,9 @@ object VisionMahalanobisFilter {
     fun processVisionMeasurement(
         state: PoseEstimatorState,
         measurement: VisionMeasurement,
-        visionStdDevs: Vector3,
+        visionStdDevX: Double,
+        visionStdDevY: Double,
+        visionStdDevHeading: Double,
         numTags: Int,
         useMahalanobisRejection: Boolean,
         mahalanobisThreshold: Double,
@@ -81,7 +83,8 @@ object VisionMahalanobisFilter {
         scratchK: Matrix3x3,
         scratchCov: Matrix3x3,
         scratchHistory: HistoryBuffer,
-        scratchCov2: Matrix3x3
+        scratchCov2: Matrix3x3,
+        scratchInterpolatedEntry: PoseHistoryEntry
     ): PoseEstimatorState {
         if (state.history.isEmpty()) {
             state.lastMeasurementAccepted = false
@@ -106,9 +109,9 @@ object VisionMahalanobisFilter {
             state.lastRejectionReason = "no_tags"
             return state
         }
-        if (visionStdDevs.x.isNaN() || visionStdDevs.x.isInfinite() || 
-            visionStdDevs.y.isNaN() || visionStdDevs.y.isInfinite() || 
-            visionStdDevs.z.isNaN() || visionStdDevs.z.isInfinite()) {
+        if (!visionStdDevX.isFinite() || visionStdDevX <= 0.0 ||
+            !visionStdDevY.isFinite() || visionStdDevY <= 0.0 ||
+            !visionStdDevHeading.isFinite() || visionStdDevHeading <= 0.0) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "invalid_std_devs"
             return state
@@ -133,7 +136,14 @@ object VisionMahalanobisFilter {
             return state
         }
 
-        val baseEntry = state.history[closestIndex]
+        val intervalFraction = EKFStatePropagator.interpolateHistoryEntry(
+            state.history,
+            closestIndex,
+            measurement.timestampMs,
+            baseQ,
+            scratchInterpolatedEntry
+        )
+        val baseEntry = if (intervalFraction > 0.0) scratchInterpolatedEntry else state.history[closestIndex]
 
         val tagPose = activeTags[measurement.tagId]
         var incidenceScale = 1.0
@@ -158,9 +168,9 @@ object VisionMahalanobisFilter {
 
         val multiTagFactor = kotlin.math.max(0.5, 1.0 / kotlin.math.sqrt(numTags.coerceAtLeast(1).toDouble()))
         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-        val scaledStdDevsX = visionStdDevs.x * (multiTagFactor * distFactor * finalScale)
-        val scaledStdDevsY = visionStdDevs.y * (multiTagFactor * distFactor * finalScale)
-        val scaledStdDevsZ = visionStdDevs.z * (multiTagFactor * distFactor * finalScale)
+        val scaledStdDevsX = visionStdDevX * (multiTagFactor * distFactor * finalScale)
+        val scaledStdDevsY = visionStdDevY * (multiTagFactor * distFactor * finalScale)
+        val scaledStdDevsZ = visionStdDevHeading * (multiTagFactor * distFactor * finalScale)
 
         scratchR.m00 = scaledStdDevsX * scaledStdDevsX; scratchR.m01 = 0.0; scratchR.m02 = 0.0
         scratchR.m10 = 0.0; scratchR.m11 = scaledStdDevsY * scaledStdDevsY; scratchR.m12 = 0.0
@@ -176,30 +186,49 @@ object VisionMahalanobisFilter {
         scratchS.m21 = baseEntry.covariance.m21
         scratchS.m22 = baseEntry.covariance.m22 + scratchR.m22
 
-        val det = scratchS.m00 * (scratchS.m11 * scratchS.m22 - scratchS.m12 * scratchS.m21) -
-                  scratchS.m01 * (scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) +
-                  scratchS.m02 * (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20)
-
-        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-24) {
-            // Singular innovation covariance: S^-1 is undefined. Previously SInv was zeroed,
-            // forcing dM^2 = 0 and K = 0, which silently ACCEPTED the measurement as a no-op
-            // while reporting "vision healthy". Reject it up-front, like every other gate.
+        // S must be symmetric positive definite. Cholesky factorization is more
+        // numerically stable than an adjugate/determinant inverse and rejects an
+        // invalid covariance before it can produce a plausible-looking Kalman gain.
+        val l00Squared = scratchS.m00
+        if (!l00Squared.isFinite() || l00Squared <= 1e-18) {
             state.lastMeasurementAccepted = false
-            state.lastRejectionReason = "singular_innovation_covariance"
+            state.lastRejectionReason = "non_positive_definite_innovation_covariance"
             return state
         }
-        val invDet = 1.0 / det
-        scratchSInv.m00 =  (scratchS.m11 * scratchS.m22 - scratchS.m12 * scratchS.m21) * invDet
-        scratchSInv.m01 = -(scratchS.m01 * scratchS.m22 - scratchS.m02 * scratchS.m21) * invDet
-        scratchSInv.m02 =  (scratchS.m01 * scratchS.m12 - scratchS.m02 * scratchS.m11) * invDet
+        val l00 = kotlin.math.sqrt(l00Squared)
+        val l10 = scratchS.m10 / l00
+        val l20 = scratchS.m20 / l00
+        val l11Squared = scratchS.m11 - l10 * l10
+        if (!l11Squared.isFinite() || l11Squared <= 1e-18) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "non_positive_definite_innovation_covariance"
+            return state
+        }
+        val l11 = kotlin.math.sqrt(l11Squared)
+        val l21 = (scratchS.m21 - l20 * l10) / l11
+        val l22Squared = scratchS.m22 - l20 * l20 - l21 * l21
+        if (!l22Squared.isFinite() || l22Squared <= 1e-18) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "non_positive_definite_innovation_covariance"
+            return state
+        }
+        val l22 = kotlin.math.sqrt(l22Squared)
 
-        scratchSInv.m10 = -(scratchS.m10 * scratchS.m22 - scratchS.m12 * scratchS.m20) * invDet
-        scratchSInv.m11 =  (scratchS.m00 * scratchS.m22 - scratchS.m02 * scratchS.m20) * invDet
-        scratchSInv.m12 = -(scratchS.m00 * scratchS.m12 - scratchS.m02 * scratchS.m10) * invDet
-
-        scratchSInv.m20 =  (scratchS.m10 * scratchS.m21 - scratchS.m11 * scratchS.m20) * invDet
-        scratchSInv.m21 = -(scratchS.m00 * scratchS.m21 - scratchS.m01 * scratchS.m20) * invDet
-        scratchSInv.m22 =  (scratchS.m00 * scratchS.m11 - scratchS.m01 * scratchS.m10) * invDet
+        val a = 1.0 / l00
+        val b = -l10 / (l00 * l11)
+        val c = (l10 * l21 - l20 * l11) / (l00 * l11 * l22)
+        val d = 1.0 / l11
+        val e = -l21 / (l11 * l22)
+        val f = 1.0 / l22
+        scratchSInv.m00 = a * a + b * b + c * c
+        scratchSInv.m01 = b * d + c * e
+        scratchSInv.m02 = c * f
+        scratchSInv.m10 = scratchSInv.m01
+        scratchSInv.m11 = d * d + e * e
+        scratchSInv.m12 = e * f
+        scratchSInv.m20 = scratchSInv.m02
+        scratchSInv.m21 = scratchSInv.m12
+        scratchSInv.m22 = f * f
 
         val measurementPose2d = measurement.targetPose.toPose2d()
         val headingDiff = wrapAngle(measurementPose2d.heading.radians - baseEntry.headingRad)
@@ -212,11 +241,12 @@ object VisionMahalanobisFilter {
         val sInvYY = scratchSInv.m10 * yX + scratchSInv.m11 * yY + scratchSInv.m12 * yZ
         val sInvYZ = scratchSInv.m20 * yX + scratchSInv.m21 * yY + scratchSInv.m22 * yZ
 
+        val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
+        state.lastNormalizedInnovationSquared = if (dMSquared.isFinite() && dMSquared >= 0.0) dMSquared else 0.0
         if (useMahalanobisRejection) {
-            val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
-            if (dMSquared.isNaN() || dMSquared > mahalanobisThreshold) {
+            if (!dMSquared.isFinite() || dMSquared < -1e-9 || dMSquared > mahalanobisThreshold) {
                 state.lastMeasurementAccepted = false
-                state.lastRejectionReason = if (dMSquared.isNaN()) "nan_innovation" else "mahalanobis_rejected"
+                state.lastRejectionReason = if (!dMSquared.isFinite() || dMSquared < -1e-9) "invalid_innovation" else "mahalanobis_rejected"
                 state.lastInnovationX = yX
                 state.lastInnovationY = yY
                 state.lastInnovationTheta = yZ
@@ -328,10 +358,40 @@ object VisionMahalanobisFilter {
         scratchCov.m10 = sym01; scratchCov.m11 = sym11; scratchCov.m12 = sym12
         scratchCov.m20 = sym02; scratchCov.m21 = sym12; scratchCov.m22 = sym22
 
+        var replayIndex = closestIndex
+        if (intervalFraction > 0.0) {
+            // Persist the capture-time split so history remains internally consistent
+            // for the next camera frame. The following entry retains only the remaining
+            // odometry motion and process noise after image capture.
+            replayIndex = state.history.insertEntryDirect(
+                closestIndex + 1,
+                baseEntry.timestampMs,
+                baseEntry.x,
+                baseEntry.y,
+                baseEntry.headingRad,
+                baseEntry.covariance,
+                baseEntry.qScale,
+                baseEntry.deltaXRobot,
+                baseEntry.deltaYRobot,
+                baseEntry.deltaHeadingRad,
+                baseEntry.hasMotion
+            )
+            if (replayIndex + 1 < state.history.size) {
+                val remainingFraction = 1.0 - intervalFraction
+                val followingEntry = state.history[replayIndex + 1]
+                val remainderScale = remainingFraction / intervalFraction
+                followingEntry.deltaXRobot = baseEntry.deltaXRobot * remainderScale
+                followingEntry.deltaYRobot = baseEntry.deltaYRobot * remainderScale
+                followingEntry.deltaHeadingRad = baseEntry.deltaHeadingRad * remainderScale
+                followingEntry.qScale = baseEntry.qScale * remainderScale
+                followingEntry.hasMotion = remainingFraction > 0.0
+            }
+        }
+
         state.history.copyInto(scratchHistory)
 
         EKFStatePropagator.repropagateHistory(
-            state, closestIndex, baseEntry,
+            state, replayIndex, baseEntry,
             dxX, dxY, dxZ,
             scratchCov, baseQ,
             scratchHistory, scratchCov2

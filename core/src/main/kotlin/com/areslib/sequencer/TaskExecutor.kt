@@ -213,31 +213,50 @@ class TaskExecutor {
     }
 
     /**
-     * Clear all tasks in queue and stack.
+     * Interrupts initialized tasks, clears the executor, and returns every safe-cleanup action.
+     *
+     * Unlike [clear], this method makes cancellation output observable to its caller. Runtime
+     * managers must dispatch the returned actions before publishing their cancelled lifecycle
+     * event. Tasks that never initialized are released without calling `end`, because their
+     * cleanup implementations may depend on initialization-only state.
      */
     @Synchronized
-    fun clear(state: RobotState) {
-        try {
-            activeTask?.end(state, interrupted = true)
-        } catch (e: Exception) {}
-        activeTask?.releaseRuntimeState()
-        
-        for (task in queue) {
+    fun cancelAll(state: RobotState): List<RobotAction> {
+        val actions = mutableListOf<RobotAction>()
+        activeTask?.let { task ->
             try {
-                task.end(state, interrupted = true)
-            } catch (e: Exception) {}
-            task.releaseRuntimeState()
+                actions.addAll(task.end(state, interrupted = true))
+            } catch (error: Exception) {
+                System.err.println("TaskExecutor: Exception ending active task ${task.name}: ${error.message}")
+            } finally {
+                task.releaseRuntimeState()
+            }
         }
         for ((task, _) in preemptedStack) {
             try {
-                task.end(state, interrupted = true)
-            } catch (e: Exception) {}
+                actions.addAll(task.end(state, interrupted = true))
+            } catch (error: Exception) {
+                System.err.println("TaskExecutor: Exception ending preempted task ${task.name}: ${error.message}")
+            } finally {
+                task.releaseRuntimeState()
+            }
+        }
+        for (task in queue) {
             task.releaseRuntimeState()
         }
-        
         queue.clear()
         preemptedStack.clear()
         activeTask = null
+        return actions
+    }
+
+    /**
+     * Clears all tasks while retaining the legacy API that intentionally discards cleanup output.
+     * New lifecycle owners should call [cancelAll] and dispatch its returned actions.
+     */
+    @Synchronized
+    fun clear(state: RobotState) {
+        cancelAll(state)
     }
 
     /**

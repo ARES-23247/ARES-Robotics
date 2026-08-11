@@ -280,6 +280,14 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 lastPinpointWarningTime = timestamp
             }
         }
+        // Enrich every odometry source with the once-per-loop Control Hub IMU sample.
+        // This activates the estimator tilt/rate gates without adding hardware reads.
+        poseUpdate.pitchDegrees = Math.toDegrees(cachedImuInputs.pitchRadians)
+        poseUpdate.rollDegrees = Math.toDegrees(cachedImuInputs.rollRadians)
+        poseUpdate.pitchVelocityDegPerSec = Math.toDegrees(cachedImuInputs.pitchVelocityRadPerSec)
+        poseUpdate.rollVelocityDegPerSec = Math.toDegrees(cachedImuInputs.rollVelocityRadPerSec)
+        poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
+        poseUpdate.applyControlHubGyroCorrection = selectedSource == FtcOdometrySource.DRIVETRAIN_FALLBACK
         store.dispatch(poseUpdate)
 
         visionTracker.update(timestamp)

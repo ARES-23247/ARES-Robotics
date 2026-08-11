@@ -11,6 +11,7 @@ import com.areslib.math.geometry.Rotation3d
 import com.areslib.math.geometry.Vector3
 import com.areslib.Store
 import com.areslib.state.RobotState
+import com.areslib.state.DriveState
 import com.areslib.state.RecoveryTuningState
 import com.areslib.state.TuningState
 import com.areslib.state.VisionState
@@ -48,6 +49,28 @@ class MockVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList()) 
  * @return Corresponding output value or Unit.
  */
 class FtcVisionTrackerTest {
+    @Test
+    fun `tracker covariance is passed to the actual EKF update`() {
+        fun fusedX(stdDev: Double): Double {
+            val store = Store(RobotState(), ::rootReducer)
+            store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 0L, isReset = true))
+            val tracker = FtcVisionTracker(
+                store,
+                MockVisionIO(listOf(measurement(0.2, 0.0, 0.0, 100L))),
+                pinpointIO = null,
+                stdDevs = Vector3(stdDev, stdDev, stdDev)
+            )
+            tracker.hasInitializedPoseWithVision = true
+            tracker.update(100L)
+            return store.state.drive.poseEstimator.estimatedPoseX
+        }
+
+        val tightlyTrusted = fusedX(0.05)
+        val looselyTrusted = fusedX(1.0)
+
+        assertTrue(tightlyTrusted > looselyTrusted * 5.0)
+    }
+
     @Test
     fun `vision snap rebases every odometry source through callback`() {
         val store = Store(RobotState(), ::rootReducer)
@@ -96,7 +119,7 @@ class FtcVisionTrackerTest {
     }
 
     @Test
-    fun `last limelight pose uses the alliance-adjusted field frame`() {
+    fun `limelight field pose remains alliance independent`() {
         val store = Store(RobotState(), ::rootReducer)
         store.dispatch(RobotAction.SetAlliance(Alliance.RED, timestampMs = 1L))
         val tracker = FtcVisionTracker(
@@ -108,9 +131,11 @@ class FtcVisionTrackerTest {
         tracker.update(100L)
 
         val pose = assertNotNull(tracker.lastLimelightPose)
-        assertEquals(-0.5, pose.x, 1e-9)
-        assertEquals(0.25, pose.y, 1e-9)
-        assertEquals(com.areslib.math.wrapAngle(0.2 + Math.PI), pose.heading.radians, 1e-9)
+        assertEquals(0.5, pose.x, 1e-9)
+        assertEquals(-0.25, pose.y, 1e-9)
+        assertEquals(0.2, pose.heading.radians, 1e-9)
+        assertEquals(0.5, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+        assertEquals(-0.25, store.state.drive.poseEstimator.estimatedPose.y, 1e-9)
     }
 
     @Test
@@ -183,20 +208,9 @@ class FtcVisionTrackerTest {
             RobotState(vision = VisionState(filterConfig = recoveryFilter)),
             ::rootReducer
         )
-        store.dispatch(RobotAction.DriveHardwareUpdate(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0L))
-
-        val initM = VisionMeasurement(
-            tagId = 1,
-            targetPose = Pose3d(Translation3d(1.0, 1.0, 0.0), Rotation3d(0.0, 0.0, 0.0)),
-            ambiguity = 0.01,
-            timestampMs = 100
-        )
-        val visionIO = MockVisionIO(listOf(initM))
+        val visionIO = MockVisionIO()
         val tracker = FtcVisionTracker(store, visionIO, pinpointIO = null)
-        tracker.update(100)
-        assertEquals("INIT_ALIGN_SNAP", tracker.lastVisionStatus)
-
-        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, 200L, isReset = true))
+        tracker.hasInitializedPoseWithVision = true
 
         // Supply 45 readings with varying X inside the physical field (0.6 to 1.2, avg = 0.9)
         for (i in 1..45) {
@@ -251,6 +265,134 @@ class FtcVisionTrackerTest {
         assertEquals("INIT_ALIGN_SNAP", tracker.lastVisionStatus)
         assertEquals(0.666, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
         assertEquals(0.666, store.state.drive.poseEstimator.estimatedPose.y, 1e-9)
+    }
+
+    @Test
+    fun `init alignment applies distance yaw shock and finite gates`() {
+        val cases = listOf(
+            Triple(
+                RobotState(vision = VisionState(filterConfig = footprintConfig().copy(maxDistanceMeters = 0.1))),
+                measurement(0.6, 0.0, 0.0, 100L),
+                "REJ_DIST"
+            ),
+            Triple(
+                RobotState(vision = VisionState(filterConfig = footprintConfig().copy(maxRotationDeviationRad = 0.1))),
+                measurement(0.0, 0.0, 0.5, 100L),
+                "REJ_YAW"
+            ),
+            Triple(
+                RobotState(
+                    drive = DriveState(xAccelerationG = 3.0),
+                    vision = VisionState(filterConfig = footprintConfig())
+                ),
+                measurement(0.0, 0.0, 0.0, 100L),
+                "REJ_SHOCK"
+            ),
+            Triple(
+                RobotState(
+                    drive = DriveState(measuredAngularVelocityRadiansPerSecond = 3.0),
+                    vision = VisionState(filterConfig = footprintConfig())
+                ),
+                measurement(0.0, 0.0, 0.0, 100L),
+                "REJ_RATE"
+            ),
+            Triple(
+                RobotState(vision = VisionState(filterConfig = footprintConfig())),
+                measurement(Double.NaN, 0.0, 0.0, 100L),
+                "REJ_INVALID"
+            )
+        )
+
+        for ((initialState, measurement, expectedStatus) in cases) {
+            val store = Store(initialState, ::rootReducer)
+            val tracker = FtcVisionTracker(store, MockVisionIO(listOf(measurement)), pinpointIO = null)
+
+            tracker.update(100L)
+
+            assertEquals(expectedStatus, tracker.lastVisionStatus)
+            assertTrue(!tracker.hasInitializedPoseWithVision)
+            assertEquals(0.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+        }
+    }
+
+    @Test
+    fun `duplicate frames do not advance kidnapped robot recovery`() {
+        val config = footprintConfig().copy(maxRotationDeviationRad = 0.1)
+        val tuning = TuningState(
+            recovery = RecoveryTuningState(stolenRobotRejectionThreshold = 2.0)
+        )
+        val store = Store(
+            RobotState(vision = VisionState(filterConfig = config), tuning = tuning),
+            ::rootReducer
+        )
+        val rejected = measurement(0.6, 0.0, 0.5, 100L)
+        val visionIO = MockVisionIO(listOf(rejected))
+        val tracker = FtcVisionTracker(store, visionIO, pinpointIO = null)
+        tracker.hasInitializedPoseWithVision = true
+
+        tracker.update(100L)
+        tracker.update(120L)
+
+        assertEquals("STALE_FRAME", tracker.lastVisionStatus)
+        assertEquals(0.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+
+        visionIO.mockMeasurements = listOf(rejected.copy(timestampMs = 101L))
+        tracker.update(140L)
+
+        assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
+        assertEquals(0.6, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+    }
+
+    @Test
+    fun `independent MegaTag1 yaw recovers a stationary rotated robot`() {
+        val config = footprintConfig().copy(maxRotationDeviationRad = 0.1)
+        val tuning = TuningState(
+            recovery = RecoveryTuningState(stolenRobotRejectionThreshold = 3.0)
+        )
+        val store = Store(
+            RobotState(vision = VisionState(filterConfig = config), tuning = tuning),
+            ::rootReducer
+        )
+        val visionIO = MockVisionIO()
+        val tracker = FtcVisionTracker(store, visionIO, pinpointIO = null)
+        tracker.hasInitializedPoseWithVision = true
+
+        repeat(3) { index ->
+            val timestamp = 100L + index * 100L
+            visionIO.mockMeasurements = listOf(
+                VisionMeasurement(
+                    timestampMs = timestamp,
+                    targetPose = Pose3d(Translation3d(0.0, 0.0, 0.0), Rotation3d()),
+                    recoveryPose = Pose3d(Translation3d(0.4, 0.2, 0.0), Rotation3d(0.0, 0.0, 1.0)),
+                    hasRecoveryPose = true,
+                    solverType = com.areslib.state.VisionSolverType.MEGATAG2,
+                    tagId = 1,
+                    ambiguity = 0.01
+                )
+            )
+            tracker.update(timestamp)
+        }
+
+        assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
+        assertEquals(0.4, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+        assertEquals(0.2, store.state.drive.poseEstimator.estimatedPose.y, 1e-9)
+        assertEquals(1.0, store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-9)
+    }
+
+    @Test
+    fun `old first frame cannot initialize pose`() {
+        val store = Store(RobotState(), ::rootReducer)
+        val tracker = FtcVisionTracker(
+            store,
+            MockVisionIO(listOf(measurement(0.5, 0.0, 0.0, 100L))),
+            pinpointIO = null
+        )
+
+        tracker.update(1000L)
+
+        assertEquals("STALE_FRAME", tracker.lastVisionStatus)
+        assertTrue(!tracker.hasInitializedPoseWithVision)
+        assertEquals(0.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
     }
 
     @Test

@@ -25,7 +25,12 @@ data class PoseHistoryEntry(
     var y: Double = 0.0,
     var headingRad: Double = 0.0,
     var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
-    var qScale: Double = 1.0
+    var qScale: Double = 1.0,
+    /** Robot-frame SE(2) twist integrated from the preceding history entry. */
+    var deltaXRobot: Double = 0.0,
+    var deltaYRobot: Double = 0.0,
+    var deltaHeadingRad: Double = 0.0,
+    var hasMotion: Boolean = false
 ) {
     /** Gets or sets the [Pose2d] representation of this historical entry. */
     var pose: Pose2d
@@ -65,8 +70,67 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      */
     override fun get(index: Int): PoseHistoryEntry {
         if (index < 0 || index >= count) throw IndexOutOfBoundsException("Index: $index, Size: $count")
-        val physicalIndex = if (count == capacity) (head + index) % capacity else index
+        val physicalIndex = (head - count + index + capacity) % capacity
         return entries[physicalIndex]
+    }
+
+    /**
+     * Inserts an entry at a logical history index without allocating. If full, the
+     * oldest entry is discarded first. Returns the inserted entry's resulting index.
+     */
+    fun insertEntryDirect(
+        requestedIndex: Int,
+        timestampMs: Long,
+        x: Double,
+        y: Double,
+        headingRad: Double,
+        covariance: Matrix3x3,
+        qScale: Double,
+        deltaXRobot: Double,
+        deltaYRobot: Double,
+        deltaHeadingRad: Double,
+        hasMotion: Boolean
+    ): Int {
+        require(requestedIndex in 0..count)
+        var insertionIndex = requestedIndex
+        if (count == capacity) {
+            count--
+            insertionIndex = (insertionIndex - 1).coerceAtLeast(0)
+        }
+        val start = (head - count + capacity) % capacity
+        for (logicalIndex in count downTo insertionIndex + 1) {
+            copyEntry(
+                entries[(start + logicalIndex - 1) % capacity],
+                entries[(start + logicalIndex) % capacity]
+            )
+        }
+        val entry = entries[(start + insertionIndex) % capacity]
+        entry.timestampMs = timestampMs
+        entry.x = x
+        entry.y = y
+        entry.headingRad = headingRad
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        entry.deltaXRobot = deltaXRobot
+        entry.deltaYRobot = deltaYRobot
+        entry.deltaHeadingRad = deltaHeadingRad
+        entry.hasMotion = hasMotion && insertionIndex > 0
+        count++
+        head = (start + count) % capacity
+        return insertionIndex
+    }
+
+    private fun copyEntry(source: PoseHistoryEntry, destination: PoseHistoryEntry) {
+        destination.timestampMs = source.timestampMs
+        destination.x = source.x
+        destination.y = source.y
+        destination.headingRad = source.headingRad
+        destination.covariance.setTo(source.covariance)
+        destination.qScale = source.qScale
+        destination.deltaXRobot = source.deltaXRobot
+        destination.deltaYRobot = source.deltaYRobot
+        destination.deltaHeadingRad = source.deltaHeadingRad
+        destination.hasMotion = source.hasMotion
     }
 
     /**
@@ -83,6 +147,10 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.pose = pose
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.deltaXRobot = 0.0
+        entry.deltaYRobot = 0.0
+        entry.deltaHeadingRad = 0.0
+        entry.hasMotion = false
         head = (head + 1) % capacity
         if (count < capacity) count++
     }
@@ -97,7 +165,18 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      * @param covariance 3x3 state error covariance matrix $\mathbf{P}$.
      * @param qScale Process noise scaling factor.
      */
-    fun addEntryDirect(timestampMs: Long, x: Double, y: Double, headingRad: Double, covariance: Matrix3x3, qScale: Double) {
+    fun addEntryDirect(
+        timestampMs: Long,
+        x: Double,
+        y: Double,
+        headingRad: Double,
+        covariance: Matrix3x3,
+        qScale: Double,
+        deltaXRobot: Double = 0.0,
+        deltaYRobot: Double = 0.0,
+        deltaHeadingRad: Double = 0.0,
+        hasMotion: Boolean = false
+    ) {
         val entry = entries[head]
         entry.timestampMs = timestampMs
         entry.x = x
@@ -105,6 +184,10 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         entry.headingRad = headingRad
         entry.covariance.setTo(covariance)
         entry.qScale = qScale
+        entry.deltaXRobot = deltaXRobot
+        entry.deltaYRobot = deltaYRobot
+        entry.deltaHeadingRad = deltaHeadingRad
+        entry.hasMotion = hasMotion
         head = (head + 1) % capacity
         if (count < capacity) count++
     }
@@ -125,6 +208,10 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
             dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
             dest.qScale = src.qScale
+            dest.deltaXRobot = src.deltaXRobot
+            dest.deltaYRobot = src.deltaYRobot
+            dest.deltaHeadingRad = src.deltaHeadingRad
+            dest.hasMotion = src.hasMotion
         }
         newBuf.head = head
         newBuf.count = count
@@ -148,6 +235,10 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
             dest.headingRad = src.headingRad
             dest.covariance.setTo(src.covariance)
             dest.qScale = src.qScale
+            dest.deltaXRobot = src.deltaXRobot
+            dest.deltaYRobot = src.deltaYRobot
+            dest.deltaHeadingRad = src.deltaHeadingRad
+            dest.hasMotion = src.hasMotion
         }
     }
     
@@ -228,9 +319,13 @@ data class PoseEstimatorState(
     var isBeached: Boolean = false,
     var lastUnbeachedTimeMs: Long = 0L,
     var gyroBiasRadPerSec: Double = 0.0,
+    /** Start of the current stationary dwell used for safe gyro-bias learning. */
+    var stationarySinceMs: Long = 0L,
     var lastInnovationX: Double = 0.0,
     var lastInnovationY: Double = 0.0,
     var lastInnovationTheta: Double = 0.0,
+    /** Normalized innovation squared (NIS) from the most recent vision observation. */
+    var lastNormalizedInnovationSquared: Double = 0.0,
     var lastKalmanGain: DoubleArray = DoubleArray(9),
     var lastMeasurementAccepted: Boolean = false,
     var lastRejectionReason: String? = null
@@ -320,6 +415,7 @@ object PoseEstimator {
         val scratchCov = Matrix3x3()
         val scratchCov2 = Matrix3x3()
         val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
+        val scratchInterpolatedEntry = PoseHistoryEntry()
     }
 
     private val threadScratchpad = ThreadLocal.withInitial { ScratchpadContainer() }
@@ -353,13 +449,14 @@ object PoseEstimator {
         pitchVelocityDegPerSec: Double = 0.0,
         rollVelocityDegPerSec: Double = 0.0,
         gyroRateRadPerSec: Double = 0.0,
-        dtSeconds: Double = 0.02
+        dtSeconds: Double = 0.02,
+        applyGyroBiasCorrection: Boolean = true
     ): PoseEstimatorState {
         val scratch = threadScratchpad.get()
         return OdometryFusionController.processOdometryDirect(
             state, timestampMs, deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
-            gyroRateRadPerSec, dtSeconds, Q, scratch.scratchQ, scratch.scratchCov
+            gyroRateRadPerSec, dtSeconds, applyGyroBiasCorrection, Q, scratch.scratchQ, scratch.scratchCov
         )
     }
 
@@ -390,13 +487,14 @@ object PoseEstimator {
         pitchVelocityDegPerSec: Double = 0.0,
         rollVelocityDegPerSec: Double = 0.0,
         gyroRateRadPerSec: Double = 0.0,
-        dtSeconds: Double = 0.02
+        dtSeconds: Double = 0.02,
+        applyGyroBiasCorrection: Boolean = true
     ): PoseEstimatorState {
         val scratch = threadScratchpad.get()
         return OdometryFusionController.processOdometryDirect(
             state, timestampMs, deltaX, deltaY, deltaHeadingRad,
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
-            gyroRateRadPerSec, dtSeconds, Q, scratch.scratchQ, scratch.scratchCov
+            gyroRateRadPerSec, dtSeconds, applyGyroBiasCorrection, Q, scratch.scratchQ, scratch.scratchCov
         )
     }
 
@@ -427,6 +525,7 @@ object PoseEstimator {
         state.lastInnovationX = 0.0
         state.lastInnovationY = 0.0
         state.lastInnovationTheta = 0.0
+        state.lastNormalizedInnovationSquared = 0.0
         state.lastKalmanGain.fill(0.0)
         state.lastMeasurementAccepted = false
         state.lastRejectionReason = null
@@ -467,10 +566,33 @@ object PoseEstimator {
     ): PoseEstimatorState {
         val scratch = threadScratchpad.get()
         return VisionMahalanobisFilter.processVisionMeasurement(
-            state, measurement, visionStdDevs, numTags,
+            state, measurement, visionStdDevs.x, visionStdDevs.y, visionStdDevs.z, numTags,
             useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
             activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
-            scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2
+            scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2,
+            scratch.scratchInterpolatedEntry
+        )
+    }
+
+    /** Scalar covariance overload for zero-allocation per-frame camera uncertainty. */
+    fun addVisionMeasurementDirect(
+        state: PoseEstimatorState,
+        measurement: VisionMeasurement,
+        visionStdDevX: Double,
+        visionStdDevY: Double,
+        visionStdDevHeading: Double,
+        numTags: Int = 1,
+        useMahalanobisRejection: Boolean = true,
+        mahalanobisThreshold: Double = 12.0,
+        maxAmbiguity: Double = 0.2
+    ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
+        return VisionMahalanobisFilter.processVisionMeasurement(
+            state, measurement, visionStdDevX, visionStdDevY, visionStdDevHeading, numTags,
+            useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
+            activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
+            scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2,
+            scratch.scratchInterpolatedEntry
         )
     }
 }

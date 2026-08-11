@@ -5,6 +5,10 @@ import com.areslib.frc.drivetrain.SwerveCtreSpeedRequestWriter
 import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.state.DriveState
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
+import edu.wpi.first.math.Matrix
+import edu.wpi.first.math.Nat
+import edu.wpi.first.math.numbers.N1
+import edu.wpi.first.math.numbers.N3
 
 /**
  * Hardware IO bridge for FRC CTRE Phoenix 6 Swerve Drivetrains.
@@ -35,6 +39,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
 
     private val reader = SwerveCtreDrivetrainReader(drivetrain)
     private val writer = SwerveCtreSpeedRequestWriter(drivetrain)
+    private val visionStdDevs = Matrix<N3, N1>(Nat.N3(), Nat.N1())
 
     /** Synchronously refreshes cached CAN signals across motor currents, encoders, and IMU status signals. */
     override fun refresh() = reader.refresh()
@@ -62,6 +67,12 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     override val rollDegrees: Double
         get() = reader.rollDegrees
 
+    override val rawGyroYawDegrees: Double
+        get() = reader.rawGyroYawDegrees
+
+    override val yawRateDegreesPerSecond: Double
+        get() = reader.yawRateDegreesPerSecond
+
     /**
      * Reads individual module drive surface speeds in m/s into [out].
      * @param out 4-element output array.
@@ -81,6 +92,45 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      * @param driveState Immutable [DriveState] containing target velocities and field-centric flags.
      */
     override fun write(driveState: DriveState) = writer.write(driveState)
+
+    override fun addVisionMeasurement(pose: com.areslib.math.geometry.Pose2d, timestampSeconds: Double) {
+        drivetrain.addVisionMeasurement(
+            edu.wpi.first.math.geometry.Pose2d(
+                pose.x,
+                pose.y,
+                edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)
+            ),
+            timestampSeconds
+        )
+    }
+
+    override fun addVisionMeasurement(
+        pose: com.areslib.math.geometry.Pose2d,
+        timestampSeconds: Double,
+        stdDevXMeters: Double,
+        stdDevYMeters: Double,
+        stdDevHeadingRadians: Double
+    ) {
+        if (!stdDevXMeters.isFinite() || stdDevXMeters <= 0.0 ||
+            !stdDevYMeters.isFinite() || stdDevYMeters <= 0.0 ||
+            !stdDevHeadingRadians.isFinite() || stdDevHeadingRadians <= 0.0) {
+            addVisionMeasurement(pose, timestampSeconds)
+            return
+        }
+
+        visionStdDevs.set(0, 0, stdDevXMeters)
+        visionStdDevs.set(1, 0, stdDevYMeters)
+        visionStdDevs.set(2, 0, stdDevHeadingRadians)
+        drivetrain.addVisionMeasurement(
+            edu.wpi.first.math.geometry.Pose2d(
+                pose.x,
+                pose.y,
+                edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)
+            ),
+            timestampSeconds,
+            visionStdDevs
+        )
+    }
     
     /**
      * Resets CTRE's authoritative field pose in meters and CCW-positive radians.

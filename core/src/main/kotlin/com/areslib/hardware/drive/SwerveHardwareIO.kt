@@ -64,8 +64,28 @@ interface SwerveHardwareIO : SubsystemIO {
     /** Gets measured module linear velocities. */
     fun getModuleSpeeds(out: DoubleArray) {}
 
-    /** Feeds AprilTag measurements into drivetrain's pose estimator. */
-    fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) {}
+    /**
+     * Feeds an AprilTag observation into the drivetrain pose estimator.
+     *
+     * This is intentionally abstract: silently dropping an accepted localization
+     * observation is a safety-critical integration failure.
+     */
+    fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double)
+
+    /**
+     * Feeds an AprilTag observation with observation-specific standard deviations.
+     * Implementations without a covariance-aware vendor API still inject the pose
+     * through the mandatory two-argument method.
+     */
+    fun addVisionMeasurement(
+        pose: Pose2d,
+        timestampSeconds: Double,
+        stdDevXMeters: Double,
+        stdDevYMeters: Double,
+        stdDevHeadingRadians: Double
+    ) {
+        addVisionMeasurement(pose, timestampSeconds)
+    }
 
     /** Resets/seeds the underlying pose estimator. */
     fun seedPose(pose: Pose2d) {}

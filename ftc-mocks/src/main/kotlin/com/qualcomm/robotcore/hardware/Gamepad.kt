@@ -4,6 +4,9 @@ package com.qualcomm.robotcore.hardware
  * Mock representation of an FTC [Gamepad].
  */
 open class Gamepad {
+    /** Driver Station slot assigned to this controller, or [ID_UNASSOCIATED]. */
+    @JvmField var id: Int = 0
+
     @JvmField var left_stick_x: Float = 0f
     @JvmField var left_stick_y: Float = 0f
     @JvmField var right_stick_x: Float = 0f
@@ -79,4 +82,8 @@ open class Gamepad {
     open fun rumble(leftPower: Double, rightPower: Double, durationMs: Int) {}
     open fun rumbleBlips(count: Int) {}
     open fun stopRumble() {}
+
+    companion object {
+        const val ID_UNASSOCIATED: Int = -1
+    }
 }

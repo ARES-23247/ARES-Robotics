@@ -205,8 +205,14 @@ class DriveReducerTest {
     }
 
     @Test
-    fun `test corrupted or null action payloads`() {
-        val initialState = RobotState()
+    fun `nonfinite drive hardware update fails closed`() {
+        val initialState = RobotState(
+            drive = DriveState(
+                odometryX = 1.0,
+                odometryY = -2.0,
+                xVelocityMetersPerSecond = 0.25
+            )
+        )
         val action = RobotAction.DriveHardwareUpdate(
             xVelocity = Double.NaN,
             yVelocity = Double.NaN,
@@ -222,11 +228,27 @@ class DriveReducerTest {
             zAccelerationG = 0.0
         )
         val newState = rootReducer(initialState, action)
-        val isNanX = when {
-            newState.drive.xVelocityMetersPerSecond.isNaN() -> true
-            else -> false
-        }
-        assertEquals(true, isNanX)
+        assertEquals(initialState.drive, newState.drive)
+    }
+
+    @Test
+    fun `nonfinite inertial drive sample fails closed`() {
+        val initialState = RobotState()
+        val updated = rootReducer(
+            initialState,
+            RobotAction.DriveHardwareUpdate(
+                xVelocity = 0.0,
+                yVelocity = 0.0,
+                angularVelocity = 0.0,
+                deltaX = 0.0,
+                deltaY = 0.0,
+                deltaHeading = 0.0,
+                timestampMs = 100L,
+                xAccelerationG = Double.POSITIVE_INFINITY
+            )
+        )
+
+        assertEquals(initialState.drive, updated.drive)
     }
 
     @Test

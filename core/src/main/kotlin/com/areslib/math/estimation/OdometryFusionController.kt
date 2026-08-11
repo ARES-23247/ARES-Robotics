@@ -67,6 +67,7 @@ object OdometryFusionController {
         rollVelocityDegPerSec: Double,
         gyroRateRadPerSec: Double,
         dtSeconds: Double,
+        applyGyroBiasCorrection: Boolean = true,
         baseQ: Matrix3x3,
         scratchQ: Matrix3x3,
         scratchCov: Matrix3x3
@@ -74,7 +75,7 @@ object OdometryFusionController {
         return processOdometryDirect(
             state, timestampMs, deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
             pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
-            gyroRateRadPerSec, dtSeconds, baseQ, scratchQ, scratchCov
+            gyroRateRadPerSec, dtSeconds, applyGyroBiasCorrection, baseQ, scratchQ, scratchCov
         )
     }
 
@@ -109,6 +110,7 @@ object OdometryFusionController {
         rollVelocityDegPerSec: Double,
         gyroRateRadPerSec: Double,
         dtSeconds: Double,
+        applyGyroBiasCorrection: Boolean = true,
         baseQ: Matrix3x3,
         scratchQ: Matrix3x3,
         scratchCov: Matrix3x3
@@ -147,15 +149,16 @@ object OdometryFusionController {
 
         // Catastrophic tilt / beaching check: Freeze odometry updates
         if (currentlyBeached) {
-            val poseForHistory = Pose2d(state.estimatedPoseX, state.estimatedPoseY, Rotation2d(state.estimatedPoseHeading))
-            val covForHistory = Matrix3x3(
-                state.covarianceArray[0], state.covarianceArray[1], state.covarianceArray[2],
-                state.covarianceArray[3], state.covarianceArray[4], state.covarianceArray[5],
-                state.covarianceArray[6], state.covarianceArray[7], state.covarianceArray[8]
-            )
             // No state or covariance propagation occurred for this sample, so a later
             // rewind must not inject process noise while replaying it.
-            state.history.addEntry(timestampMs, poseForHistory, covForHistory, 0.0)
+            state.history.addEntryDirect(
+                timestampMs,
+                state.estimatedPoseX,
+                state.estimatedPoseY,
+                state.estimatedPoseHeading,
+                state.covariance,
+                0.0
+            )
             state.isBeached = true
             state.lastUnbeachedTimeMs = unbeachedTime
             return state
@@ -182,20 +185,33 @@ object OdometryFusionController {
             tiltScale = 100.0
         }
 
-        // Online Gyro Bias Estimation & Bias Correction
-        val isStationary = deltaX == 0.0 && deltaY == 0.0 && deltaHeadingRad == 0.0
-        val alpha = 0.01 * dtSeconds
-        val newBias = if (isStationary && gyroRateRadPerSec != 0.0) {
+        // Learn Control Hub gyro bias only after a thresholded stationary dwell. Pinpoint
+        // already fuses its own IMU with dead wheels, so applying this correction to a
+        // Pinpoint heading would count gyro information twice.
+        val translationSpeed = kotlin.math.hypot(deltaX, deltaY) / dtSeconds
+        val odometryYawRate = kotlin.math.abs(deltaHeadingRad) / dtSeconds
+        val isStationary = translationSpeed < 0.02 &&
+            odometryYawRate < 0.03 && kotlin.math.abs(gyroRateRadPerSec) < 0.08
+        val stationarySince = when {
+            !isStationary -> 0L
+            state.stationarySinceMs == 0L -> timestampMs
+            else -> state.stationarySinceMs
+        }
+        val stationaryDwellComplete = isStationary && timestampMs - stationarySince >= 500L
+        val alpha = 1.0 - kotlin.math.exp(-dtSeconds / 5.0)
+        val newBias = if (applyGyroBiasCorrection && stationaryDwellComplete) {
             state.gyroBiasRadPerSec * (1.0 - alpha) + gyroRateRadPerSec * alpha
         } else {
             state.gyroBiasRadPerSec
         }
 
         val correctedGyroRate = gyroRateRadPerSec - newBias
-        val correctedDeltaHeading = if (isStationary) {
+        val correctedDeltaHeading = if (applyGyroBiasCorrection && stationaryDwellComplete) {
             0.0
-        } else {
+        } else if (applyGyroBiasCorrection) {
             deltaHeadingRad - newBias * dtSeconds
+        } else {
+            deltaHeadingRad
         }
 
         // Gyro rate mismatch check for wheel slippage detection
@@ -213,7 +229,7 @@ object OdometryFusionController {
         val processNoiseScale = tiltScale * slipScale * movementScale * dtSeconds
         scratchQ.multiplyInPlace(processNoiseScale)
 
-        val slipWeight = if (slipScale >= 10.0) 0.8 else 0.0
+        val slipWeight = if (applyGyroBiasCorrection && slipScale >= 10.0) 0.8 else 0.0
         val blendedDeltaHeading = (1.0 - slipWeight) * correctedDeltaHeading + slipWeight * (correctedGyroRate * dtSeconds)
         val newHeadingRad = com.areslib.math.wrapAngle(state.estimatedPoseHeading + blendedDeltaHeading)
 
@@ -271,7 +287,18 @@ object OdometryFusionController {
         state.covarianceArray[7] = newCovariance.m21
         state.covarianceArray[8] = newCovariance.m22
 
-        state.history.addEntryDirect(timestampMs, newX, newY, newHeadingRad, newCovariance, processNoiseScale)
+        state.history.addEntryDirect(
+            timestampMs,
+            newX,
+            newY,
+            newHeadingRad,
+            newCovariance,
+            processNoiseScale,
+            deltaX,
+            deltaY,
+            blendedDeltaHeading,
+            true
+        )
 
         state.estimatedPoseX = newX
         state.estimatedPoseY = newY
@@ -279,6 +306,7 @@ object OdometryFusionController {
         state.isBeached = currentlyBeached
         state.lastUnbeachedTimeMs = unbeachedTime
         state.gyroBiasRadPerSec = newBias
+        state.stationarySinceMs = stationarySince
 
         return state
     }

@@ -158,6 +158,8 @@ class ActionLogger(
             snapshot.timestampMs = action.timestampMs
             snapshot.pitchDegrees = action.pitchDegrees
             snapshot.rollDegrees = action.rollDegrees
+            snapshot.pitchVelocityDegPerSec = action.pitchVelocityDegPerSec
+            snapshot.rollVelocityDegPerSec = action.rollVelocityDegPerSec
             snapshot.xAccelerationG = action.xAccelerationG
             snapshot.yAccelerationG = action.yAccelerationG
             snapshot.zAccelerationG = action.zAccelerationG
@@ -166,6 +168,7 @@ class ActionLogger(
             snapshot.xVelocityMetersPerSecond = action.xVelocityMetersPerSecond
             snapshot.yVelocityMetersPerSecond = action.yVelocityMetersPerSecond
             snapshot.isExternalEstimate = action.isExternalEstimate
+            snapshot.applyControlHubGyroCorrection = action.applyControlHubGyroCorrection
             snapshot
         }
         else -> action

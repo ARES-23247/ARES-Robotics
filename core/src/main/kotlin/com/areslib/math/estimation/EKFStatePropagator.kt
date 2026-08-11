@@ -36,6 +36,133 @@ import com.areslib.math.wrapAngle
 object EKFStatePropagator {
 
     /**
+     * Predicts the historical state at an exact timestamp inside one stored odometry
+     * interval. The interval twist and process noise are split by the same fraction.
+     */
+    fun interpolateHistoryEntry(
+        history: HistoryBuffer,
+        baseIndex: Int,
+        timestampMs: Long,
+        baseQ: Matrix3x3,
+        output: PoseHistoryEntry
+    ): Double {
+        val base = history[baseIndex]
+        if (baseIndex >= history.size - 1 || timestampMs <= base.timestampMs) {
+            output.timestampMs = base.timestampMs
+            output.x = base.x
+            output.y = base.y
+            output.headingRad = base.headingRad
+            output.covariance.setTo(base.covariance)
+            output.qScale = base.qScale
+            output.deltaXRobot = 0.0
+            output.deltaYRobot = 0.0
+            output.deltaHeadingRad = 0.0
+            output.hasMotion = false
+            return 0.0
+        }
+
+        val next = history[baseIndex + 1]
+        val intervalMs = next.timestampMs - base.timestampMs
+        if (intervalMs <= 0L) return 0.0
+        val fraction = ((timestampMs - base.timestampMs).toDouble() / intervalMs.toDouble()).coerceIn(0.0, 1.0)
+
+        var twistX = next.deltaXRobot
+        var twistY = next.deltaYRobot
+        val twistHeading = if (next.hasMotion) next.deltaHeadingRad else wrapAngle(next.headingRad - base.headingRad)
+        if (!next.hasMotion) {
+            val fieldDx = next.x - base.x
+            val fieldDy = next.y - base.y
+            val cosBase = kotlin.math.cos(base.headingRad)
+            val sinBase = kotlin.math.sin(base.headingRad)
+            val arcX = fieldDx * cosBase + fieldDy * sinBase
+            val arcY = -fieldDx * sinBase + fieldDy * cosBase
+            if (kotlin.math.abs(twistHeading) < 1e-6) {
+                twistX = arcX
+                twistY = arcY
+            } else {
+                val s = kotlin.math.sin(twistHeading) / twistHeading
+                val c = (1.0 - kotlin.math.cos(twistHeading)) / twistHeading
+                val determinant = s * s + c * c
+                twistX = (s * arcX + c * arcY) / determinant
+                twistY = (-c * arcX + s * arcY) / determinant
+            }
+        }
+
+        val partialX = twistX * fraction
+        val partialY = twistY * fraction
+        val partialHeading = twistHeading * fraction
+        val s: Double
+        val c: Double
+        if (kotlin.math.abs(partialHeading) < 1e-6) {
+            s = 1.0 - partialHeading * partialHeading / 6.0
+            c = partialHeading * 0.5
+        } else {
+            s = kotlin.math.sin(partialHeading) / partialHeading
+            c = (1.0 - kotlin.math.cos(partialHeading)) / partialHeading
+        }
+        val arcX = s * partialX - c * partialY
+        val arcY = c * partialX + s * partialY
+        val cosBase = kotlin.math.cos(base.headingRad)
+        val sinBase = kotlin.math.sin(base.headingRad)
+        val fieldDx = arcX * cosBase - arcY * sinBase
+        val fieldDy = arcX * sinBase + arcY * cosBase
+
+        output.timestampMs = timestampMs
+        output.x = base.x + fieldDx
+        output.y = base.y + fieldDy
+        output.headingRad = wrapAngle(base.headingRad + partialHeading)
+        output.qScale = next.qScale * fraction
+        output.deltaXRobot = partialX
+        output.deltaYRobot = partialY
+        output.deltaHeadingRad = partialHeading
+        output.hasMotion = true
+        propagateMatrix(base.covariance, arcX, arcY, base.headingRad, baseQ, output.qScale, output.covariance)
+        return fraction
+    }
+
+    private fun propagateMatrix(
+        covariance: Matrix3x3,
+        arcX: Double,
+        arcY: Double,
+        heading: Double,
+        baseQ: Matrix3x3,
+        qScale: Double,
+        output: Matrix3x3
+    ) {
+        val sinHeading = kotlin.math.sin(heading)
+        val cosHeading = kotlin.math.cos(heading)
+        val f02 = -arcX * sinHeading - arcY * cosHeading
+        val f12 = arcX * cosHeading - arcY * sinHeading
+        val fp00 = covariance.m00 + f02 * covariance.m20
+        val fp01 = covariance.m01 + f02 * covariance.m21
+        val fp02 = covariance.m02 + f02 * covariance.m22
+        val fp10 = covariance.m10 + f12 * covariance.m20
+        val fp11 = covariance.m11 + f12 * covariance.m21
+        val fp12 = covariance.m12 + f12 * covariance.m22
+        val fp20 = covariance.m20
+        val fp21 = covariance.m21
+        val fp22 = covariance.m22
+        val m00 = fp00 + f02 * fp02 + baseQ.m00 * qScale
+        val m01 = fp01 + f12 * fp02 + baseQ.m01 * qScale
+        val m02 = fp02 + baseQ.m02 * qScale
+        val m10 = fp10 + f02 * fp12 + baseQ.m10 * qScale
+        val m11 = fp11 + f12 * fp12 + baseQ.m11 * qScale
+        val m12 = fp12 + baseQ.m12 * qScale
+        val m20 = fp20 + f02 * fp22 + baseQ.m20 * qScale
+        val m21 = fp21 + f12 * fp22 + baseQ.m21 * qScale
+        val m22 = fp22 + baseQ.m22 * qScale
+        output.m00 = m00
+        output.m01 = (m01 + m10) * 0.5
+        output.m02 = (m02 + m20) * 0.5
+        output.m10 = output.m01
+        output.m11 = m11
+        output.m12 = (m12 + m21) * 0.5
+        output.m20 = output.m02
+        output.m21 = output.m12
+        output.m22 = m22
+    }
+
+    /**
      * Propagates a 3x3 state error covariance matrix forward one step using linearized local displacement deltas.
      *
      * @param covarianceArray Flattened 9-element 3x3 covariance matrix array $[P_{00}, P_{01}, \dots, P_{22}]$.
@@ -112,7 +239,8 @@ object EKFStatePropagator {
         updatedCovariance: Matrix3x3,
         baseQ: Matrix3x3,
         scratchHistory: HistoryBuffer,
-        scratchCov2: Matrix3x3
+        scratchCov2: Matrix3x3,
+        intervalFraction: Double = 0.0
     ) {
         var currentX = baseEntry.x + dxX
         var currentY = baseEntry.y + dxY
@@ -120,25 +248,49 @@ object EKFStatePropagator {
 
         scratchCov2.setTo(updatedCovariance)
 
-        scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, baseEntry.qScale)
+        if (intervalFraction <= 0.0) {
+            scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, baseEntry.qScale)
+        }
 
         for (i in (closestIndex + 1) until state.history.size) {
             val prevRaw = state.history[i - 1]
             val currRaw = state.history[i]
-
-            val originalFieldDx = currRaw.x - prevRaw.x
-            val originalFieldDy = currRaw.y - prevRaw.y
-            val deltaHeading = wrapAngle(currRaw.headingRad - prevRaw.headingRad)
-
-            // Recover the robot-frame arc displacement that produced the original
-            // historical transition. Replaying the old field delta directly would leave
-            // all later positions unchanged when vision corrects the historical heading.
-            val originalCos = kotlin.math.cos(prevRaw.headingRad)
-            val originalSin = kotlin.math.sin(prevRaw.headingRad)
-            val robotArcDx = originalFieldDx * originalCos + originalFieldDy * originalSin
-            val robotArcDy = -originalFieldDx * originalSin + originalFieldDy * originalCos
-
-            // Rotate that same local motion through the corrected pre-update heading.
+            var twistX = currRaw.deltaXRobot
+            var twistY = currRaw.deltaYRobot
+            var deltaHeading = if (currRaw.hasMotion) currRaw.deltaHeadingRad else wrapAngle(currRaw.headingRad - prevRaw.headingRad)
+            if (!currRaw.hasMotion) {
+                val originalFieldDx = currRaw.x - prevRaw.x
+                val originalFieldDy = currRaw.y - prevRaw.y
+                val originalCos = kotlin.math.cos(prevRaw.headingRad)
+                val originalSin = kotlin.math.sin(prevRaw.headingRad)
+                val robotArcDx = originalFieldDx * originalCos + originalFieldDy * originalSin
+                val robotArcDy = -originalFieldDx * originalSin + originalFieldDy * originalCos
+                if (kotlin.math.abs(deltaHeading) < 1e-6) {
+                    twistX = robotArcDx
+                    twistY = robotArcDy
+                } else {
+                    val s = kotlin.math.sin(deltaHeading) / deltaHeading
+                    val c = (1.0 - kotlin.math.cos(deltaHeading)) / deltaHeading
+                    val determinant = s * s + c * c
+                    twistX = (s * robotArcDx + c * robotArcDy) / determinant
+                    twistY = (-c * robotArcDx + s * robotArcDy) / determinant
+                }
+            }
+            val fraction = if (i == closestIndex + 1 && intervalFraction > 0.0) 1.0 - intervalFraction else 1.0
+            twistX *= fraction
+            twistY *= fraction
+            deltaHeading *= fraction
+            val expS: Double
+            val expC: Double
+            if (kotlin.math.abs(deltaHeading) < 1e-6) {
+                expS = 1.0 - deltaHeading * deltaHeading / 6.0
+                expC = deltaHeading * 0.5
+            } else {
+                expS = kotlin.math.sin(deltaHeading) / deltaHeading
+                expC = (1.0 - kotlin.math.cos(deltaHeading)) / deltaHeading
+            }
+            val robotArcDx = expS * twistX - expC * twistY
+            val robotArcDy = expC * twistX + expS * twistY
             val correctedCos = kotlin.math.cos(currentHeadingRad)
             val correctedSin = kotlin.math.sin(currentHeadingRad)
             val correctedFieldDx = robotArcDx * correctedCos - robotArcDy * correctedSin
@@ -148,7 +300,7 @@ object EKFStatePropagator {
             currentY += correctedFieldDy
             currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
 
-            val scale = currRaw.qScale
+            val scale = currRaw.qScale * fraction
             val reF02 = -correctedFieldDy
             val reF12 = correctedFieldDx
 

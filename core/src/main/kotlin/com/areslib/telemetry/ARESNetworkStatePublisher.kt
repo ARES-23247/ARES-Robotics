@@ -101,6 +101,11 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Vision/Target_X", state.vision.targetX)
         telemetry.putNumber("Vision/Target_Y", state.vision.targetY)
         telemetry.putNumber("Vision/MeasurementCount", state.vision.measurements.size.toDouble())
+        telemetry.putBoolean("Vision/EKF_Accepted", state.vision.lastMeasurementAccepted)
+        telemetry.putString("Vision/EKF_RejectionReason", state.vision.lastRejectionReason ?: "")
+        telemetry.putNumber("Vision/EKF_NIS", state.drive.poseEstimator.lastNormalizedInnovationSquared)
+        telemetry.putNumber("Vision/EKF_AcceptedCount", state.vision.measurementCount.toDouble())
+        telemetry.putNumber("Vision/EKF_RejectedCount", state.vision.rejectionCount.toDouble())
 
         if (primaryMeasurement != null) {
             val pose = primaryMeasurement.targetPose.toPose2d()
@@ -108,6 +113,13 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
             telemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
             telemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
+            telemetry.putString("Vision/Primary_Source", primaryMeasurement.sourceId)
+            telemetry.putString("Vision/Primary_Solver", primaryMeasurement.solverType.name)
+            telemetry.putNumber("Vision/Primary_FrameId", primaryMeasurement.frameId.toDouble())
+            telemetry.putNumber("Vision/Primary_LatencyMs", primaryMeasurement.latencyMs)
+            telemetry.putNumber("Vision/Primary_StdDevX", primaryMeasurement.stdDevXMeters)
+            telemetry.putNumber("Vision/Primary_StdDevY", primaryMeasurement.stdDevYMeters)
+            telemetry.putNumber("Vision/Primary_StdDevHeading", primaryMeasurement.stdDevHeadingRadians)
         } else {
             telemetry.putDoubleArray("Vision/PoseArray", emptyDoubleArray)
             telemetry.putNumber("Vision/Pose_X", 0.0)
@@ -115,6 +127,13 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putNumber("Vision/Pose_Heading", 0.0)
             telemetry.putNumber("Vision/Primary_TagId", -1.0)
             telemetry.putNumber("Vision/Primary_Ambiguity", 1.0)
+            telemetry.putString("Vision/Primary_Source", "")
+            telemetry.putString("Vision/Primary_Solver", "UNKNOWN")
+            telemetry.putNumber("Vision/Primary_FrameId", 0.0)
+            telemetry.putNumber("Vision/Primary_LatencyMs", 0.0)
+            telemetry.putNumber("Vision/Primary_StdDevX", 0.0)
+            telemetry.putNumber("Vision/Primary_StdDevY", 0.0)
+            telemetry.putNumber("Vision/Primary_StdDevHeading", 0.0)
         }
 
         // ── Path State ──

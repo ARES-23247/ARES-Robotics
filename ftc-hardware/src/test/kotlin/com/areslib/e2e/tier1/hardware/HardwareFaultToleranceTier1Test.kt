@@ -1,11 +1,13 @@
 package com.areslib.e2e.tier1.hardware
 
 import com.areslib.ftc.hardware.FtcMotor
+import com.areslib.ftc.hardware.FtcCRServo
 import com.areslib.ftc.hardware.FtcImu
 import com.areslib.hardware.sensor.ImuInputs
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
+import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.IMU
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity
@@ -36,6 +38,16 @@ class MockFtcMotorEx : DcMotorEx {
     }
 }
 
+class MockFtcCRServo : CRServo {
+    override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
+    var currentPower: Double = 0.0
+    override var power: Double
+        get() = currentPower
+        set(value) {
+            currentPower = value
+        }
+}
+
 class MockIMU : IMU {
     var shouldThrow = false
     var mockYaw = 1.0
@@ -60,6 +72,38 @@ class MockIMU : IMU {
 }
 
 class HardwareFaultToleranceTier1Test {
+
+    @Test
+    fun nonfiniteActuatorCommandsFailClosed() {
+        val mockMotor = MockFtcMotorEx()
+        val motor = FtcMotor(mockMotor)
+        val mockServo = MockFtcCRServo()
+        val servo = FtcCRServo(mockServo)
+
+        try {
+            motor.power = 0.4
+            motor.power = Double.NaN
+            assertEquals(0.0, motor.power, 0.0)
+            assertEquals(0.0, mockMotor.currentPower, 0.0)
+
+            motor.power = 0.4
+            motor.powerScale = Double.POSITIVE_INFINITY
+            assertEquals(0.0, motor.powerScale, 0.0)
+            assertEquals(0.0, mockMotor.currentPower, 0.0)
+
+            servo.power = -0.4
+            servo.power = Double.NaN
+            assertEquals(0.0, servo.power, 0.0)
+            assertEquals(0.0, mockServo.currentPower, 0.0)
+
+            servo.power = -0.4
+            servo.powerScale = Double.NEGATIVE_INFINITY
+            assertEquals(0.0, servo.powerScale, 0.0)
+            assertEquals(0.0, mockServo.currentPower, 0.0)
+        } finally {
+            motor.close()
+        }
+    }
 
     @Test
     fun testMotorStallDetection_tripsOnStall() {

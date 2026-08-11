@@ -3,6 +3,7 @@ package com.areslib.ftc.vision
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
+import com.areslib.state.VisionSolverType
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Translation3d
 import com.areslib.math.geometry.Rotation3d
@@ -60,6 +61,21 @@ class FtcLimelightIO(
         }
     }
 
+    /** Supplies the Control Hub IMU yaw required by MegaTag2 before polling a frame. */
+    override fun setOrientation(
+        yawDegrees: Double,
+        yawRateDegPerSec: Double,
+        pitchDegrees: Double,
+        pitchRateDegPerSec: Double,
+        rollDegrees: Double,
+        rollRateDegPerSec: Double,
+        linearVelocityMps: Double
+    ) {
+        if (yawDegrees.isFinite()) {
+            limelight.updateRobotOrientation(yawDegrees)
+        }
+    }
+
     /**
      * Polled 50Hz update cycle extracting latest AprilTag vision measurements into [inputs].
      *
@@ -79,10 +95,15 @@ class FtcLimelightIO(
                 val currentMeasurementList = measurementListPool[measurementListPoolIndex]
                 currentMeasurementList.clear()
 
-                val now = com.areslib.util.RobotClock.currentTimeMillis()
                 val fiducials = result.getFiducialResults()
                 
-                val botposeRaw = result.getBotpose()
+                // MegaTag2 uses the robot IMU heading supplied above and is substantially
+                // more resistant to single-tag pose ambiguity. Fall back to MT1 only when
+                // the camera/firmware does not provide an MT2 solve.
+                val megaTag2Pose = result.getBotpose_MT2()
+                val megaTag1Pose = result.getBotpose()
+                val botposeRaw = megaTag2Pose ?: megaTag1Pose
+                val usingMegaTag2 = megaTag2Pose != null
 
                 if (botposeRaw != null) {
                     translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
@@ -103,6 +124,26 @@ class FtcLimelightIO(
                     val fieldPose = posePool[posePoolIndex]
                     fieldPose.translation = fieldTrans
                     fieldPose.rotation = fieldRot
+
+                    var recoveryFieldPose = fieldPose
+                    if (megaTag1Pose != null && megaTag1Pose !== botposeRaw) {
+                        translationPoolIndex = (translationPoolIndex + 1) % translationPool.size
+                        val recoveryTrans = translationPool[translationPoolIndex]
+                        recoveryTrans.x = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(megaTag1Pose.position.unit, megaTag1Pose.position.x)
+                        recoveryTrans.y = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(megaTag1Pose.position.unit, megaTag1Pose.position.y)
+                        recoveryTrans.z = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER.fromUnit(megaTag1Pose.position.unit, megaTag1Pose.position.z)
+                        rotationPoolIndex = (rotationPoolIndex + 1) % rotationPool.size
+                        val recoveryRot = rotationPool[rotationPoolIndex]
+                        recoveryRot.setEulerAngles(
+                            Math.toRadians(megaTag1Pose.orientation.getRoll(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES)),
+                            Math.toRadians(megaTag1Pose.orientation.getPitch(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES)),
+                            Math.toRadians(megaTag1Pose.orientation.getYaw(org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES))
+                        )
+                        posePoolIndex = (posePoolIndex + 1) % posePool.size
+                        recoveryFieldPose = posePool[posePoolIndex]
+                        recoveryFieldPose.translation = recoveryTrans
+                        recoveryFieldPose.rotation = recoveryRot
+                    }
 
                     if (fiducials.isNotEmpty()) {
                         // getBotpose() is one camera-frame field-pose solve. Emitting that
@@ -147,8 +188,14 @@ class FtcLimelightIO(
                         visionMeasurementPoolIndex = (visionMeasurementPoolIndex + 1) % visionMeasurementPool.size
                         val measurement = visionMeasurementPool[visionMeasurementPoolIndex]
 
-                        measurement.timestampMs = now - (result.captureLatency + result.targetingLatency).toLong()
+                        // The SDK stamps the result when it is parsed on the Control Hub. Unlike
+                        // loop poll time, this remains stable when getLatestResult() returns the
+                        // same cached camera frame on multiple robot loops.
+                        val totalLatencyMs = (result.captureLatency + result.targetingLatency).toLong()
+                        measurement.timestampMs = result.getControlHubTimeStamp() - totalLatencyMs
                         measurement.targetPose = fieldPose
+                        measurement.recoveryPose = recoveryFieldPose
+                        measurement.hasRecoveryPose = megaTag1Pose != null
                         measurement.robotPoseTargetSpace = tPose
                         measurement.tagId = representative.getFiducialId()
                         measurement.tagCount = fiducials.size
@@ -157,6 +204,11 @@ class FtcLimelightIO(
                         // perfect 0.0 solve; distance/incidence/tag-count scaling still
                         // adjusts the final covariance.
                         measurement.ambiguity = 0.1
+                        measurement.sourceId = "ftc-limelight"
+                        measurement.frameId = result.getControlHubTimeStamp()
+                        measurement.solverType = if (usingMegaTag2) VisionSolverType.MEGATAG2 else VisionSolverType.MEGATAG1
+                        measurement.latencyMs = totalLatencyMs.toDouble()
+                        applyObservationStdDevs(measurement, result, usingMegaTag2)
 
                         currentMeasurementList.add(measurement)
                     }
@@ -182,5 +234,30 @@ class FtcLimelightIO(
      * Releases vision resources.
      */
     override fun close() {
+    }
+
+    private fun applyObservationStdDevs(
+        measurement: VisionMeasurement,
+        result: com.qualcomm.hardware.limelightvision.LLResult,
+        usingMegaTag2: Boolean
+    ) {
+        val reported = if (usingMegaTag2) result.getStddevMt2() else result.getStddevMt1()
+        val reportedX = reported.getOrNull(0)
+        val reportedY = reported.getOrNull(1)
+        val reportedHeadingDegrees = reported.getOrNull(5)
+        if (reportedX != null && reportedY != null && reportedHeadingDegrees != null &&
+            reportedX.isFinite() && reportedX > 0.0 &&
+            reportedY.isFinite() && reportedY > 0.0 &&
+            reportedHeadingDegrees.isFinite() && reportedHeadingDegrees > 0.0) {
+            measurement.stdDevXMeters = reportedX
+            measurement.stdDevYMeters = reportedY
+            measurement.stdDevHeadingRadians = if (usingMegaTag2) 1.0e6 else Math.toRadians(reportedHeadingDegrees)
+        } else {
+            // Older Limelight firmware does not publish these metrics. The reducer will
+            // fall back to the robot's field-calibrated baseline covariance.
+            measurement.stdDevXMeters = 0.0
+            measurement.stdDevYMeters = 0.0
+            measurement.stdDevHeadingRadians = 0.0
+        }
     }
 }

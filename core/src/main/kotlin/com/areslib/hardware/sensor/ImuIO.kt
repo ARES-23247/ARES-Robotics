@@ -12,6 +12,8 @@ data class ImuInputs(
     @SerializedName("pitchRadians") var pitchRadians: Double = 0.0,
     @SerializedName("rollRadians") var rollRadians: Double = 0.0,
     @SerializedName("yawVelocityRadPerSec") var yawVelocityRadPerSec: Double = 0.0,
+    @SerializedName("pitchVelocityRadPerSec") var pitchVelocityRadPerSec: Double = 0.0,
+    @SerializedName("rollVelocityRadPerSec") var rollVelocityRadPerSec: Double = 0.0,
     @SerializedName("timestampMs") var timestampMs: Long = 0L
 )
 
@@ -26,6 +28,8 @@ interface ImuIO : SubsystemIO {
         telemetry.putNumber("$prefix/PitchRad", inputs.pitchRadians)
         telemetry.putNumber("$prefix/RollRad", inputs.rollRadians)
         telemetry.putNumber("$prefix/YawVelocityRadPerSec", inputs.yawVelocityRadPerSec)
+        telemetry.putNumber("$prefix/PitchVelocityRadPerSec", inputs.pitchVelocityRadPerSec)
+        telemetry.putNumber("$prefix/RollVelocityRadPerSec", inputs.rollVelocityRadPerSec)
     }
 
     /**

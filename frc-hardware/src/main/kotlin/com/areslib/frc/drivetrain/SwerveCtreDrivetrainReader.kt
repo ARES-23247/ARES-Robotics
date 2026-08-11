@@ -122,6 +122,14 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
     val rollDegrees: Double
         get() = rollSignal.valueAsDouble
 
+    /** Raw Pigeon yaw in degrees for gyro-assisted camera localization. */
+    val rawGyroYawDegrees: Double
+        get() = yawSignal.valueAsDouble
+
+    /** Raw Pigeon world-Z angular velocity in degrees per second. */
+    val yawRateDegreesPerSecond: Double
+        get() = yawRateSignal.valueAsDouble
+
     /**
      * Reads module wheel speeds into the provided array.
      * 

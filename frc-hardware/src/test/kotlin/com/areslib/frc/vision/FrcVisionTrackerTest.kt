@@ -16,6 +16,12 @@ import com.areslib.action.RobotAction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import com.areslib.hardware.drive.SwerveHardwareIO
+import com.areslib.state.DriveState
+import com.areslib.math.geometry.Pose2d
+import com.areslib.state.VisionSolverType
+import com.areslib.state.RecoveryTuningState
+import com.areslib.state.TuningState
 
 /**
  * MockFrcVisionIO declaration.
@@ -44,6 +50,42 @@ class MockFrcVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList(
  * @return Corresponding output value or Unit.
  */
 class FrcVisionTrackerTest {
+    private class RecordingSwerveIO : SwerveHardwareIO {
+        var visionCalls = 0
+        var lastTimestampSeconds = Double.NaN
+        var lastStdDevX = Double.NaN
+        var lastStdDevY = Double.NaN
+        var lastStdDevHeading = Double.NaN
+        var seedCalls = 0
+        var lastSeedPose = Pose2d()
+
+        override fun read(): DriveState = DriveState()
+        override fun write(driveState: DriveState) {}
+        override fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) {
+            visionCalls++
+            lastTimestampSeconds = timestampSeconds
+        }
+
+        override fun addVisionMeasurement(
+            pose: Pose2d,
+            timestampSeconds: Double,
+            stdDevXMeters: Double,
+            stdDevYMeters: Double,
+            stdDevHeadingRadians: Double
+        ) {
+            visionCalls++
+            lastTimestampSeconds = timestampSeconds
+            lastStdDevX = stdDevXMeters
+            lastStdDevY = stdDevYMeters
+            lastStdDevHeading = stdDevHeadingRadians
+        }
+
+        override fun seedPose(pose: Pose2d) {
+            seedCalls++
+            lastSeedPose = pose
+        }
+    }
+
     @Test
     fun `test vision measurement forwarding and store dispatch`() {
         val initialState = RobotState(
@@ -75,5 +117,117 @@ class FrcVisionTrackerTest {
         assertEquals(1.0, store.state.drive.poseEstimator.estimatedPoseX, 0.0,
             "FRC vision is already owned by the platform estimator and must not be fused twice")
         assertEquals(1.0, store.state.drive.poseEstimator.estimatedPoseY, 0.0)
+    }
+
+    @Test
+    fun `accepted camera frame reaches swerve estimator once with covariance`() {
+        val store = Store(
+            RobotState(vision = VisionState(filterConfig = VisionFilterConfig.frcDefaults())),
+            ::rootReducer
+        )
+        store.dispatch(RobotAction.PoseUpdate(1.0, 1.0, 0.0, timestampMs = 100L, isReset = true))
+        val measurement = VisionMeasurement(
+            tagId = 2,
+            targetPose = Pose3d(Translation3d(1.2, 1.1, 0.0), Rotation3d()),
+            robotPoseTargetSpace = Pose3d(Translation3d(0.0, 0.0, 2.0), Rotation3d()),
+            ambiguity = 0.02,
+            timestampMs = 150L,
+            sourceId = "limelight-left",
+            frameId = 42L,
+            solverType = VisionSolverType.MEGATAG2,
+            stdDevXMeters = 0.2,
+            stdDevYMeters = 0.3,
+            stdDevHeadingRadians = 1.0e6
+        )
+        val visionIO = MockFrcVisionIO(listOf(measurement))
+        val swerveIO = RecordingSwerveIO()
+        val tracker = FrcVisionTracker(
+            store,
+            visionIO,
+            swerveIO,
+            isSimulation = false,
+            fpgaTimeSecondsProvider = { 10.0 }
+        )
+
+        tracker.update(200L)
+
+        assertEquals(1, swerveIO.visionCalls)
+        assertEquals(9.95, swerveIO.lastTimestampSeconds, 1e-9)
+        assertEquals(0.2, swerveIO.lastStdDevX, 0.0)
+        assertEquals(0.3, swerveIO.lastStdDevY, 0.0)
+        assertEquals(1.0e6, swerveIO.lastStdDevHeading, 0.0)
+        assertEquals("ACCEPTED", tracker.lastVisionStatus)
+
+        tracker.update(220L)
+
+        assertEquals(1, swerveIO.visionCalls, "A cached camera frame must not be fused twice")
+        assertEquals("STALE_FRAME", tracker.lastVisionStatus)
+
+        tracker.fusionEnabled = false
+        visionIO.mockMeasurements = listOf(measurement.copy(timestampMs = 180L, frameId = 43L))
+        tracker.update(240L)
+
+        assertEquals(1, swerveIO.visionCalls, "Odometry calibration must observe but not fuse camera frames")
+        assertEquals("FUSION_DISABLED", tracker.lastVisionStatus)
+    }
+
+    @Test
+    fun `disabled robot reseeds only after consistent independent MegaTag1 poses`() {
+        val store = Store(
+            RobotState(
+                vision = VisionState(filterConfig = VisionFilterConfig.frcDefaults()),
+                tuning = TuningState(
+                    recovery = RecoveryTuningState(stolenRobotRejectionThreshold = 2.0)
+                )
+            ),
+            ::rootReducer
+        )
+        store.dispatch(RobotAction.PoseUpdate(1.0, 1.0, 0.0, timestampMs = 100L, isReset = true))
+        val first = VisionMeasurement(
+            timestampMs = 150L,
+            targetPose = Pose3d(Translation3d(1.1, 1.0, 0.0), Rotation3d()),
+            recoveryPose = Pose3d(Translation3d(3.0, 3.0, 0.0), Rotation3d(0.0, 0.0, 0.8)),
+            hasRecoveryPose = true,
+            robotPoseTargetSpace = Pose3d(Translation3d(0.0, 0.0, 2.0), Rotation3d()),
+            ambiguity = 0.02,
+            tagCount = 2,
+            sourceId = "limelight-left",
+            frameId = 41L,
+            solverType = VisionSolverType.MEGATAG2,
+            stdDevXMeters = 0.2,
+            stdDevYMeters = 0.2,
+            stdDevHeadingRadians = 1.0e6
+        )
+        val visionIO = MockFrcVisionIO(listOf(first))
+        val swerveIO = RecordingSwerveIO()
+        val tracker = FrcVisionTracker(
+            store,
+            visionIO,
+            swerveIO,
+            isSimulation = false,
+            fpgaTimeSecondsProvider = { 10.0 },
+            isDisabledProvider = { true }
+        )
+
+        tracker.update(200L)
+        assertEquals(0, swerveIO.seedCalls)
+
+        visionIO.mockMeasurements = listOf(
+            first.copy(
+                timestampMs = 170L,
+                frameId = 42L,
+                recoveryPose = Pose3d(
+                    Translation3d(3.04, 2.98, 0.0),
+                    Rotation3d(0.0, 0.0, 0.82)
+                )
+            )
+        )
+        tracker.update(220L)
+
+        assertEquals(1, swerveIO.seedCalls)
+        assertEquals(3.02, swerveIO.lastSeedPose.x, 1e-9)
+        assertEquals(2.99, swerveIO.lastSeedPose.y, 1e-9)
+        assertEquals(0.81, swerveIO.lastSeedPose.heading.radians, 1e-3)
+        assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
     }
 }

@@ -22,6 +22,8 @@ data class VisionFilterConfig(
     val maxAngularVelocityRadPerSec: Double = 2.0,
     val maxAccelerationG: Double = 2.5,
     val mahalanobisThreshold: Double = 18.0,
+    /** Chi-square NIS threshold for translation-only observations such as MegaTag2. */
+    val mahalanobisThreshold2D: Double = 9.210340371976184,
     /** Full robot length along its local X axis. Zero preserves center-point-only filtering. */
     val robotLengthMeters: Double = 0.45,
     /** Full robot width along its local Y axis. Zero preserves center-point-only filtering. */
@@ -92,13 +94,36 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             linearAccelXG: Double = 0.0,
             linearAccelYG: Double = 0.0,
             linearAccelZG: Double = 1.0
+        ): Boolean = isValid(
+            config = config,
+            measurement = measurement,
+            robotHeadingRad = robotHeadingRad,
+            robotPoseX = robotPose.x,
+            robotPoseY = robotPose.y,
+            angularVelocityRadPerSec = angularVelocityRadPerSec,
+            linearAccelXG = linearAccelXG,
+            linearAccelYG = linearAccelYG,
+            linearAccelZG = linearAccelZG
+        )
+
+        /** Primitive overload for zero-allocation historical-pose gating. */
+        fun isValid(
+            config: VisionFilterConfig,
+            measurement: VisionMeasurement,
+            robotHeadingRad: Double,
+            robotPoseX: Double,
+            robotPoseY: Double,
+            angularVelocityRadPerSec: Double = 0.0,
+            linearAccelXG: Double = 0.0,
+            linearAccelYG: Double = 0.0,
+            linearAccelZG: Double = 1.0
         ): Boolean {
             if (!config.isValid()) return false
             val pose = measurement.targetPose
             if (!measurement.ambiguity.isFinite() ||
                 !pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() ||
                 !pose.rotation.x.isFinite() || !pose.rotation.y.isFinite() || !pose.rotation.z.isFinite() ||
-                !robotPose.x.isFinite() || !robotPose.y.isFinite() || !robotHeadingRad.isFinite() ||
+                !robotPoseX.isFinite() || !robotPoseY.isFinite() || !robotHeadingRad.isFinite() ||
                 !angularVelocityRadPerSec.isFinite() || !linearAccelXG.isFinite() ||
                 !linearAccelYG.isFinite() || !linearAccelZG.isFinite()) {
                 return false
@@ -117,8 +142,8 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
 
             // 3. Check Distance
             val tagPose2d = tagPose3d.toPose2d()
-            val dx = tagPose2d.x - robotPose.x
-            val dy = tagPose2d.y - robotPose.y
+            val dx = tagPose2d.x - robotPoseX
+            val dy = tagPose2d.y - robotPoseY
             val distance = kotlin.math.sqrt(dx * dx + dy * dy)
 
             if (distance > config.maxDistanceMeters) {
@@ -194,6 +219,7 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
                 fieldBoundsToleranceMeters.isFinite() && fieldBoundsToleranceMeters >= 0.0 &&
                 maxAngularVelocityRadPerSec.isFinite() && maxAngularVelocityRadPerSec >= 0.0 &&
                 maxAccelerationG.isFinite() && maxAccelerationG >= 0.0 &&
-                mahalanobisThreshold.isFinite() && mahalanobisThreshold > 0.0
+                mahalanobisThreshold.isFinite() && mahalanobisThreshold > 0.0 &&
+                mahalanobisThreshold2D.isFinite() && mahalanobisThreshold2D > 0.0
     }
 }

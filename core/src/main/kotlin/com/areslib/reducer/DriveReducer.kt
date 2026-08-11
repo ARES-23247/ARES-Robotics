@@ -23,6 +23,16 @@ object DriveReducer {
     fun reduce(state: DriveState, action: RobotAction): DriveState {
         return when (action) {
             is RobotAction.DriveHardwareUpdate -> {
+                if (!action.xVelocity.isFinite() || !action.yVelocity.isFinite() ||
+                    !action.angularVelocity.isFinite() || !action.deltaX.isFinite() ||
+                    !action.deltaY.isFinite() || !action.deltaHeading.isFinite() ||
+                    !action.pitchDegrees.isFinite() || !action.rollDegrees.isFinite() ||
+                    !action.xAccelerationG.isFinite() || !action.yAccelerationG.isFinite() ||
+                    !action.zAccelerationG.isFinite()) {
+                    return state
+                }
+
+                val dtSeconds = observationDtSeconds(state, action.timestampMs) ?: return state
                 val updatedEstimator = PoseEstimator.addOdometryObservationDirect(
                     state = state.poseEstimator,
                     timestampMs = action.timestampMs,
@@ -30,7 +40,9 @@ object DriveReducer {
                     deltaY = action.deltaY,
                     deltaHeadingRad = action.deltaHeading,
                     pitchDegrees = action.pitchDegrees,
-                    rollDegrees = action.rollDegrees
+                    rollDegrees = action.rollDegrees,
+                    gyroRateRadPerSec = action.angularVelocity,
+                    dtSeconds = dtSeconds
                 )
                 val nextOdomX = state.odometryX + action.deltaX
                 val nextOdomY = state.odometryY + action.deltaY
@@ -78,6 +90,7 @@ object DriveReducer {
                         headingRadians = action.headingRadians
                     )
                 } else {
+                    val dtSeconds = observationDtSeconds(state, action.timestampMs) ?: return state
                     val fieldDeltaX = action.xMeters - state.odometryX
                     val fieldDeltaY = action.yMeters - state.odometryY
                     val deltaHeading = wrapAngle(action.headingRadians - state.odometryHeading)
@@ -111,7 +124,11 @@ object DriveReducer {
                         deltaHeadingRad = deltaHeading,
                         pitchDegrees = action.pitchDegrees,
                         rollDegrees = action.rollDegrees,
-                        gyroRateRadPerSec = action.angularVelocityRadiansPerSecond
+                        pitchVelocityDegPerSec = action.pitchVelocityDegPerSec,
+                        rollVelocityDegPerSec = action.rollVelocityDegPerSec,
+                        gyroRateRadPerSec = action.angularVelocityRadiansPerSecond,
+                        dtSeconds = dtSeconds,
+                        applyGyroBiasCorrection = action.applyControlHubGyroCorrection
                     )
                 }
 
@@ -188,5 +205,18 @@ object DriveReducer {
             }
             else -> state
         }
+    }
+
+    /**
+     * Derives process-model time from sensor timestamps. Duplicate/out-of-order
+     * samples are rejected; long scheduler stalls are bounded so one bad interval
+     * cannot explode covariance or gyro-bias integration.
+     */
+    private fun observationDtSeconds(state: DriveState, timestampMs: Long): Double? {
+        val history = state.poseEstimator.history
+        if (history.isEmpty()) return 0.02
+        val deltaMs = timestampMs - history[history.size - 1].timestampMs
+        if (deltaMs <= 0L) return null
+        return (deltaMs / 1_000.0).coerceIn(0.001, 0.1)
     }
 }

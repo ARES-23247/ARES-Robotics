@@ -40,6 +40,7 @@ open class LLResultTypes {
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
 open class LLResult {
+    private val controlHubTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
     val ta: Double = 0.0
     val tx: Double = 0.0
     val ty: Double = 0.0
@@ -47,7 +48,12 @@ open class LLResult {
     val captureLatency: Double = 0.0
     
     open fun isValid(): Boolean = false
+    open fun getControlHubTimeStamp(): Long = controlHubTimestampMs
     open fun getBotpose(): Pose3D? = null
+    open fun getBotpose_MT2(): Pose3D? = null
+    open fun getStddevMt1(): DoubleArray = DoubleArray(0)
+    open fun getStddevMt2(): DoubleArray = DoubleArray(0)
+    open fun getBotposeAvgDist(): Double = 0.0
     open fun getFiducialResults(): List<LLResultTypes.FiducialResult> = emptyList()
 }
 
@@ -60,6 +66,8 @@ open class Limelight3A {
     @Volatile var simulatedResult: LLResult? = null
 
     open fun start() {}
+
+    open fun updateRobotOrientation(yawDegrees: Double): Boolean = true
 
     open fun getLatestResult(): LLResult? = simulatedResult
 
@@ -74,6 +82,7 @@ open class Limelight3A {
                 Position(DistanceUnit.METER, xMeters, yMeters, 0.0, 0L),
                 YawPitchRollAngles(AngleUnit.DEGREES, yawDegrees, 0.0, 0.0, 0L)
             )
+            override fun getBotpose_MT2(): Pose3D = getBotpose()!!
             override fun getFiducialResults(): List<LLResultTypes.FiducialResult> = listOf(
                 LLResultTypes.FiducialResult(tagId, 0.0, 0.0, getBotpose()!!)
             )

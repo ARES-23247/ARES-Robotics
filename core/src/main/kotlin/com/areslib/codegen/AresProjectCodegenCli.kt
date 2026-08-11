@@ -1,0 +1,152 @@
+package com.areslib.codegen
+
+import com.areslib.catalog.CapabilityCatalogCodec
+import com.areslib.controls.ControlSchemeCodec
+import com.areslib.controls.ControllerInputPlatform
+import com.areslib.controls.ControllerProfileCodec
+import com.areslib.routine.AresRoutineCodec
+import com.areslib.routine.AutonomousCatalogCodec
+import com.areslib.project.AresProjectMetadataCodec
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import kotlin.io.path.extension
+import kotlin.io.path.isRegularFile
+import kotlin.io.path.name
+
+/** Build-time entry point used by FTC/FRC Gradle tasks and the Analytics Generate button. */
+object AresProjectCodegenCli {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        run(args)
+    }
+
+    fun run(args: Array<String>): GeneratedKotlinSource {
+        val options = CliOptions.parse(args)
+        val projectRoot = options.project.toRealPath()
+        val aresRoot = projectRoot.resolve(".ares")
+        require(Files.isDirectory(aresRoot)) { "Missing project directory: $aresRoot" }
+        val output = options.output.toAbsolutePath().normalize()
+        require(output.startsWith(projectRoot)) { "Generated output must stay inside the selected project" }
+
+        val metadata = AresProjectMetadataCodec.decode(readRequired(aresRoot.resolve("project.json")))
+        val catalog = CapabilityCatalogCodec.decode(readRequired(aresRoot.resolve("action-catalog.json")))
+        val routines = readDocuments(aresRoot.resolve("routines"), "aresroutine") { AresRoutineCodec.decode(it) }
+        val controls = readDocuments(aresRoot.resolve("controls"), "arescontrols") { ControlSchemeCodec.decode(it) }
+        val profiles = readDocuments(aresRoot.resolve("controllers"), "arescontroller") { ControllerProfileCodec.decode(it) }
+        val autonomousCatalog = aresRoot.resolve("autonomous-catalog.json").takeIf(Files::isRegularFile)
+            ?.let { AutonomousCatalogCodec.decode(Files.readString(it)) }
+
+        val generated = AresKotlinProjectGenerator.generate(
+            KotlinProjectCodegenRequest(
+                packageName = options.packageName,
+                objectName = options.objectName,
+                registryInterfaceName = options.registryInterfaceName,
+                catalog = catalog,
+                routines = routines,
+                autonomousCatalog = autonomousCatalog,
+                controlSchemes = controls,
+                controllerProfiles = profiles,
+                targetInputPlatform = options.platform,
+                projectMetadata = metadata,
+            )
+        )
+
+        if (options.checkOnly) {
+            require(Files.isRegularFile(output)) {
+                "Generated source is missing at $output. Run the ARES generation task."
+            }
+            val current = Files.readString(output)
+            require(current == generated.source && AresKotlinProjectGenerator.hasValidEmbeddedSourceHash(current)) {
+                "Generated source is stale at $output. Regenerate and commit it before building."
+            }
+        } else if (!Files.isRegularFile(output) || Files.readString(output) != generated.source) {
+            writeAtomically(output, generated.source)
+        }
+        return generated
+    }
+
+    private fun readRequired(path: Path): String {
+        require(path.isRegularFile()) { "Required ARES project file is missing: $path" }
+        return Files.readString(path)
+    }
+
+    private fun <T> readDocuments(directory: Path, extension: String, decode: (String) -> T): List<T> {
+        if (!Files.isDirectory(directory)) return emptyList()
+        val paths = Files.list(directory).use { stream ->
+            stream.filter { it.isRegularFile() && it.extension.equals(extension, ignoreCase = true) }
+                .sorted(compareBy<Path> { it.name.lowercase() }.thenBy { it.name })
+                .toList()
+        }
+        return paths.map { path ->
+            runCatching { decode(Files.readString(path)) }.getOrElse { error ->
+                throw IllegalArgumentException("Could not read ${path.fileName}: ${error.message}", error)
+            }
+        }
+    }
+
+    private fun writeAtomically(output: Path, content: String) {
+        Files.createDirectories(output.parent)
+        val temporary = Files.createTempFile(output.parent, ".${output.fileName}.", ".tmp")
+        try {
+            Files.writeString(temporary, content)
+            try {
+                Files.move(
+                    temporary,
+                    output,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temporary, output, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            Files.deleteIfExists(temporary)
+        }
+    }
+
+    private data class CliOptions(
+        val project: Path,
+        val output: Path,
+        val packageName: String,
+        val objectName: String,
+        val registryInterfaceName: String,
+        val platform: ControllerInputPlatform?,
+        val checkOnly: Boolean
+    ) {
+        companion object {
+            fun parse(args: Array<String>): CliOptions {
+                val values = linkedMapOf<String, String>()
+                var checkOnly = false
+                var index = 0
+                while (index < args.size) {
+                    val key = args[index]
+                    if (key == "--check") {
+                        checkOnly = true
+                        index++
+                        continue
+                    }
+                    require(key in VALUE_OPTIONS) { "Unknown ARES codegen option '$key'" }
+                    require(index + 1 < args.size) { "Missing value after '$key'" }
+                    require(values.put(key, args[index + 1]) == null) { "Option '$key' was supplied twice" }
+                    index += 2
+                }
+                val project = Path.of(requireNotNull(values["--project"]) { "--project is required" })
+                val output = Path.of(requireNotNull(values["--output"]) { "--output is required" })
+                val packageName = requireNotNull(values["--package"]) { "--package is required" }
+                val objectName = values["--object"] ?: "GeneratedAresProject"
+                val registryName = values["--registry"] ?: "GeneratedAresProjectCapabilities"
+                val platform = values["--platform"]?.let { raw ->
+                    runCatching { ControllerInputPlatform.valueOf(raw.uppercase()) }
+                        .getOrElse { throw IllegalArgumentException("Unknown input platform '$raw'") }
+                }
+                return CliOptions(project, output, packageName, objectName, registryName, platform, checkOnly)
+            }
+
+            private val VALUE_OPTIONS = setOf(
+                "--project", "--output", "--package", "--object", "--registry", "--platform"
+            )
+        }
+    }
+}

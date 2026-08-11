@@ -20,6 +20,7 @@ data class RobotState(
     val vision: VisionState = VisionState(),
     val costmap: CostmapState = CostmapState(),
     val pathState: PathState = PathState(),
+    val routineState: RoutineLifecycleState = RoutineLifecycleState(),
     val tuning: TuningState = TuningState(),
     val timestampMs: Long = 0L
 )
@@ -193,6 +194,14 @@ data class SuperstructureState(
  *
  * Object-pooled data structure for zero-GC vision pipeline measurements.
  */
+enum class VisionSolverType {
+    UNKNOWN,
+    MEGATAG1,
+    MEGATAG2,
+    PHOTONVISION,
+    VISION_PORTAL
+}
+
 data class VisionMeasurement(
     var timestampMs: Long = 0L,
     var targetPose: Pose3d = Pose3d(),
@@ -200,16 +209,40 @@ data class VisionMeasurement(
     var ambiguity: Double = 0.0,
     var robotPoseTargetSpace: Pose3d = Pose3d(),
     /** Number of tags used to solve this single field-pose observation. */
-    var tagCount: Int = 1
+    var tagCount: Int = 1,
+    /** Stable camera/source identifier used for per-source frame de-duplication. */
+    var sourceId: String = "",
+    /** Monotonic camera frame identifier. Zero means that the source cannot provide one. */
+    var frameId: Long = 0L,
+    /** Pose solver that produced this observation. */
+    var solverType: VisionSolverType = VisionSolverType.UNKNOWN,
+    /** Total capture and processing latency reported by the source. */
+    var latencyMs: Double = 0.0,
+    /** Optional observation-specific standard deviations. Non-positive/NaN means unspecified. */
+    var stdDevXMeters: Double = 0.0,
+    var stdDevYMeters: Double = 0.0,
+    var stdDevHeadingRadians: Double = 0.0,
+    /** Independent MegaTag1 field pose reserved for stationary full-pose recovery. */
+    var recoveryPose: Pose3d = Pose3d(),
+    var hasRecoveryPose: Boolean = false
 ) {
     /** Snapshots this pooled/mutable measurement for immutable Redux or replay ownership. */
     fun ownedCopy(): VisionMeasurement = VisionMeasurement(
         timestampMs = timestampMs,
         targetPose = targetPose.deepCopy(),
+        recoveryPose = recoveryPose.deepCopy(),
+        hasRecoveryPose = hasRecoveryPose,
         tagId = tagId,
         ambiguity = ambiguity,
         robotPoseTargetSpace = robotPoseTargetSpace.deepCopy(),
-        tagCount = tagCount
+        tagCount = tagCount,
+        sourceId = sourceId,
+        frameId = frameId,
+        solverType = solverType,
+        latencyMs = latencyMs,
+        stdDevXMeters = stdDevXMeters,
+        stdDevYMeters = stdDevYMeters,
+        stdDevHeadingRadians = stdDevHeadingRadians
     )
 }
 

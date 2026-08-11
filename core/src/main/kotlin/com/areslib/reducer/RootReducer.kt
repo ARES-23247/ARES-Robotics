@@ -39,6 +39,7 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
                 vision = VisionReducer.reduce(state.vision, action),
                 superstructure = SuperstructureReducer.reduce(state.superstructure, action),
                 pathState = PathReducer.reduce(state.pathState, action),
+                routineState = RoutineReducer.reduce(state.routineState, action),
                 timestampMs = action.timestampMs
             )
         }
