@@ -33,11 +33,13 @@ This workspace (`C:\Users\david\dev\robotics\ares`) contains **4 interconnected 
 ```powershell
 # 1. Always do this FIRST after changing ARESLib-Kotlin:
 cd ARESLib-Kotlin ; .\gradlew.bat publishToMavenLocal
-# 2. Then build/consume projects. Coordinates: com.areslib:{core,frc-hardware,simulator}:1.0-SNAPSHOT
+# 2. Then build/consume projects. Core/FRC coordinates are
+#    com.areslib:{core,frc-hardware}:1.0-SNAPSHOT; FTC/simulator publications
+#    use com.github.ARES-23247.ARESLib-Kotlin:*:master-SNAPSHOT.
 ```
 
 **Dependency mechanisms (multiple, intentionally):**
-- **`ARES-Analytics` → ARESLib:** `mavenLocal()` artifact `com.areslib:core:1.0-SNAPSHOT` (`shared/build.gradle.kts`).
+- **`ARES-Analytics` → ARESLib:** `mavenLocal()` artifact `com.areslib:core:1.0-SNAPSHOT` (`shared/build.gradle.kts`), with sibling composite substitution when `../ARESLib-Kotlin` exists.
 - **`ARES-FRC` → ARESLib:** BOTH composite build (`includeBuild("../ARESLib-Kotlin")` in `settings.gradle`) AND `mavenLocal()` artifacts for `core`, `simulator`, `frc-hardware`.
 - **`ARES-FTC` → ARESLib:** JitPack-style coordinates `com.github.ARES-23247.ARESLib-Kotlin:<module>:master-SNAPSHOT`, with composite build substitution when the sibling repo exists.
 
@@ -116,7 +118,7 @@ The sim's `DesktopSimLauncher` maintains a local `var state = RobotState()`. Thi
 
 ### Vision & Kidnapped Robot Recovery
 - **FtcVisionTracker.kt**: Do NOT use `isInInit` flag. The snap triggers ONCE when `hasInitializedPoseWithVision` is false, then relies on `consecutiveVisionRejections >= 10` for further snaps during active play.
-- **Alliance & Field-Centric Drive**: Field-centric drive requires BOTH `joystickForward` and `joystickLeft` to be inverted if the alliance is BLUE. Handle in the OpMode before passing to `fieldRelativeDrive`.
+- **Alliance & Field-Centric Drive**: Mirror BOTH translational axes at the season input boundary. FTC currently mirrors for BLUE; FRC currently mirrors for RED because their driver-origin conventions differ. Do not add a second mirror in shared drivetrain math.
 - **Simulator Alliance State**: The sim teleport ONLY happens on INIT. If you switch alliance in the dashboard, the simulator MUST dispatch `SetAlliance` to the OpMode's store. The dashboard's `ARES/Input/isRedAlliance` NT4 topic MUST default to `true` so the simulator matches the OpMode's default Red alliance on startup.
 
 ### Motor names
@@ -190,14 +192,14 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 
 - **`app/src/main/kotlin/com/ares/analytics/`** (MVI: `XxxState` + `sealed XxxIntent` + `XxxViewModel`):
   - `Main.kt` (single-instance lock, crash handler, 1440×900 window), `di/ServiceRegistry.kt` (~25 services, lazy tiers — **the index into all business logic**)
-  - `service/` — `Nt4ClientService`+`nt4/`, `DatabaseService` (DuckDB)+`db/`, `FrameBatcher`, log decoders (`log/`: Wpi/Jsonl/Csv/Parquet/Hoot/DSLog/Rlog/Revlog/RoadRunner), analytics engines (`SummaryEngineService`, `SysIdService`, `CalibrationService`+`calibration/`, `DriverAnalysisService`, `AlertEngineService`, `AutoTunerService`, `ReplayEngineService`, `TrajectoryEstimator`), cloud (`FirebaseClientService`, `OAuthService`, `SyncEngineService`, `GoogleDriveService`, `TeamApiService`), `ProcessManagerService`, `SimulationService`, `GamepadService` (LWJGL)
+  - `service/` — `Nt4ClientService`+`nt4/`, `DatabaseService` (DuckDB)+`db/`, `FrameBatcher`, log decoders (`log/`: Wpi/Jsonl/Csv/Parquet/Hoot/DSLog/Rlog/Revlog/RoadRunner), analytics engines (`SummaryEngineService`, `SysIdService`, `CalibrationService`+`calibration/`, `DriverAnalysisService`, `AlertEngineService`, `ReplayEngineService`, `TrajectoryEstimator`), desktop-owned OAuth/Google Drive sync, `ProcessManagerService`, `SimulationService`, and `GamepadService` (LWJGL)
   - `viewmodel/` — Main, Dashboard, FieldViewer, FieldEditor, PathPlanner, Tuning, SysId, Cloud, Profile, Settings, Onboarding, CameraStream, SubsystemGenerator + helpers (`field/`, `pathing/`, `sysid/`)
   - `ui/` — `theme/` (`AresTheme`, Colors, Type), `screens/` (16 screens), `components/dashboard/` (~40 widgets incl. FieldViewerCard, PoseViewerCard, TelemetryChartPanel, MecanumVisualizer, SwerveVisualizer, ControlLoopProfilerCard), `components/pathplanner/`, `components/core/`, `components/terminal/`, etc.
-- **`gateway/src/main/kotlin/com/ares/analytics/gateway/`** — Ktor Netty on Cloud Run (:8080). `Application.kt`; `auth/FirebaseAuth.kt` (FirebasePrincipal, supports `MOCK_AUTH=true` dev); routes: `authRoutes` (`POST /api/auth/github`), `archiveRoutes` (upload-url/sync/delete/download-url, team robots CRUD), `diagnosticsRoutes` (`POST /api/diagnostics/forensics`, rate-limited).
+- **`gateway/src/main/kotlin/com/ares/analytics/gateway/`** — Small Ktor Netty service on Cloud Run (:8080). Google OIDC authentication, per-subject rate limiting, a 1 MiB body limit, `GET /healthz`, and the pit-forensics diagnostics route. Session storage and Google Drive synchronization remain desktop-owned.
 - **`shared/`** — shared JSON (`AppJson`), `Models.kt` (field geometry, Obstacle, GamePiece, AprilTagPlacement), `PathPlannerModels.kt` (full PathPlanner v2025.0 schema), `models/` (Session, SessionSummary, TelemetryFrame, AlertRecord, WorkspaceConfig, TopologyNode, HardwareTopology, ForensicsRequest, DriverProfile).
-- **Docs:** `ARCHITECTURE.md` (very detailed, 9 sections — data tiers, FrameBatcher, replay engine, SysId OLS, vision calibration, hardware topology), `AUDIT.md` (security findings), `reports/`.
+- **Docs:** `README.md`, `ARCHITECTURE.md`, `docs/TELEMETRY_CONTRACT.md`, and `docs/OPERATIONS.md` describe current behavior. `AUDIT.md` and `reports/` are dated evidence snapshots and may include remediated findings.
 - **Build/run:** `.\gradlew.bat :app:run` (mainClass `com.ares.analytics.MainKt`); `.\gradlew.bat run` (root) orchestrates gateway (bg) + app (fg). Native dist: `:app:packageReleaseMsi`.
-- **Known audit issues** (see `AUDIT.md`): hardcoded OAuth secret (reversed string), tenant-isolation gaps in rules. ~~LLM→raw SQL~~ (fixed: SELECT-only whitelist), ~~ReplayEngine concurrency~~ (fixed: ConcurrentHashMap + socket close).
+- **Audit status:** Never infer the live backlog from `AUDIT.md` severity counts; verify each dated finding against current source and tests.
 
 ## 7. Working in This Workspace — Checklist
 
@@ -225,5 +227,5 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 | FTC robot facade | `ARES-FTC/TeamCode/.../teamcode/opmodes/robot/AresRobot.kt` |
 | FRC robot lifecycle | `ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt` |
 | Dashboard business logic index | `ARES-Analytics/app/.../di/ServiceRegistry.kt` |
-| Gateway HTTP surface | `ARES-Analytics/gateway/.../routes/{Auth,Archive,Diagnostics}Routes.kt` |
+| Gateway HTTP surface | `ARES-Analytics/gateway/.../Application.kt`, `routes/DiagnosticsRoutes.kt` |
 | PathPlanner file format | `ARES-Analytics/shared/.../PathPlannerModels.kt`, `ARESLib-Kotlin/core/.../pathing/PathPlannerParser.kt` |

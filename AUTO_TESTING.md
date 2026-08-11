@@ -1,7 +1,7 @@
-# Autonomous verification
+# Routines, controls, and autonomous verification
 
-Run one command from the workspace root before committing an auto-builder, trajectory, action,
-or autonomous-runtime change:
+Run one command from the workspace root before committing a routine-builder, controller-editor,
+capability, generated-code, trajectory, or robot-runtime change:
 
 ```powershell
 .\verify-autos.ps1
@@ -13,19 +13,21 @@ macOS and Linux use the equivalent command:
 ./verify-autos.sh
 ```
 
-The default workflow is a fast cross-repository contract check. It runs sequentially to prevent
-the four Gradle builds from overwriting ARESLib outputs while another build reads them.
+The default workflow is a focused cross-repository contract check. Every Gradle invocation is
+serialized. Do not run another repository build beside this script: ARESLib publication and Gradle
+composite outputs are shared, and concurrent consumers can otherwise observe partially replaced
+artifacts.
 
-1. ARESLib round-trips a visual auto document, compiles its trajectory and named actions, and
-   deterministically executes the resulting task graph.
-2. ARESLib is published to Maven Local so every consumer sees the tested implementation.
-3. Analytics discovers offline actions, enforces robot-aware field bounds, saves atomically,
-   reloads, versions, and deploy-loads an `.aresauto` document.
-4. FTC checks every deployed native auto against the checked-in action manifest and the commands
-   registered by the season robot, then compiles each document with the robot-side compiler.
-5. FRC checks every deployed native auto against its offline/runtime action catalogs, compiles each
-   document for both alliances, verifies alliance pose seeding and field-footprint rejection, and
-   executes a command timeline through the production task runner.
+1. ARESLib checks the routine/autonomous schemas, lifecycle manager, control-scheme/profile
+   validation, digital/analog/chord safety, deterministic Kotlin generator, and project CLI.
+2. ARESLib checks both FTC and FRC gamepad-to-`InputFrame` platform adapters.
+3. The exact tested ARESLib snapshots are published to Maven Local.
+4. Analytics checks canonical project repositories and history, legacy migration, all routine node
+   editor models, visual controller editing, and action-catalog discovery.
+5. FTC explicitly verifies that checked-in generated Kotlin matches `.ares`, then runs its robot
+   asset/runtime contract.
+6. FRC explicitly verifies generated Kotlin, then checks catalog/runtime agreement, selection,
+   alliance transforms, field bounds, and generated execution.
 
 Run the complete test suites instead of the focused contract with:
 
@@ -37,9 +39,27 @@ Run the complete test suites instead of the focused contract with:
 ./verify-autos.sh --full
 ```
 
-The native GUI-to-robot `.aresauto` pipeline is enabled for both FTC and FRC. Each league keeps its
-season action catalog and deploy assets in its conventional project asset directory, while both use
-the same shared schema, compiler, trajectory providers, named-command registry, and task executor.
+`-Full`/`--full` replaces the focused filters with each repository's complete relevant test suite,
+while retaining explicit FTC/FRC generated-source checks and serialized build order.
+
+The canonical GUI-to-robot pipeline is enabled for both FTC and FRC. Each season repository keeps
+its source documents at the repository root under `.ares/` and commits deterministic
+`GeneratedAresProject.kt`. Both leagues use the same catalog, routine, controller, validation,
+code-generation, input-runtime, and task-lifecycle contracts. Legacy `.aresauto` files are
+migration inputs, not the new authoring format.
+
+## What the script does not test
+
+Desktop verification cannot prove that a specific Flydigi Vader 5 Pro firmware/Driver Station
+combination exposes every vendor button, that FTC Android forwards a vendor-only input, or that
+physical drivetrain signs and dimensions match configuration. Verify per-platform raw mappings on
+the target Driver Station, then run autonomous on restrained hardware with a stop operator ready.
+
+## Updating the focused suite
+
+Use fully qualified test class names that exist in the current source tree. When replacing a schema,
+editor, or runtime contract, update both scripts in the same change. Keep one Gradle invocation per
+repository phase; never parallelize these scripts as a speed optimization.
 
 ## GitHub Actions
 
