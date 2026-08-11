@@ -10,6 +10,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D
 import org.firstinspires.ftc.robotcore.external.navigation.Position
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -42,9 +43,13 @@ class FtcLimelightIOTest {
      * @return Corresponding output value or Unit.
      */
     class MockLimelight3A(
-        private val result: LLResult?
+        private val result: LLResult?,
+        private val connected: Boolean = true,
+        private val timeSinceLastUpdateMs: Long = 0L
     ) : Limelight3A() {
         override fun getLatestResult(): LLResult? = result
+        override fun isConnected(): Boolean = connected
+        override fun getTimeSinceLastUpdate(): Long = timeSinceLastUpdateMs
     }
 
     @Test
@@ -207,5 +212,73 @@ class FtcLimelightIOTest {
         assertEquals(1.1, measurement.recoveryPose.x, 1e-9)
         assertEquals(Math.toRadians(60.0), measurement.recoveryPose.rotation.z, 1e-9)
         assertEquals(com.areslib.state.VisionSolverType.MEGATAG2, measurement.solverType)
+    }
+
+    @Test
+    fun `capture timestamp quality metrics and unavailable ambiguity are preserved`() {
+        val fieldPose = Pose3D(
+            Position(DistanceUnit.METER, 1.2, 0.4, 0.0, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 20.0, 0.0, 0.0, 0)
+        )
+        val targetPose = Pose3D(
+            Position(DistanceUnit.METER, 0.0, 0.0, 2.0, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+        )
+        val fiducial = com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult(
+            5, 0.0, 0.0, Pose3D(), targetPose
+        )
+        val result = object : LLResult(
+            controlHubTimestampMs = 1_000L,
+            targetingLatency = 30.0,
+            captureLatency = 20.0
+        ) {
+            override fun isValid() = true
+            override fun getBotpose_MT2() = fieldPose
+            override fun getBotpose() = fieldPose
+            override fun getBotposeTagCount() = 2
+            override fun getBotposeSpan() = 1.4
+            override fun getBotposeAvgDist() = 2.3
+            override fun getBotposeAvgArea() = 4.2
+            override fun getFiducialResults() = listOf(fiducial)
+        }
+
+        val inputs = VisionIOInputs()
+        FtcLimelightIO(MockLimelight3A(result)).updateInputs(inputs)
+        val measurement = inputs.measurements.single()
+
+        assertEquals(950L, measurement.timestampMs)
+        assertEquals(1_000L, measurement.frameId)
+        assertEquals(50.0, measurement.latencyMs, 0.0)
+        assertEquals(2, measurement.tagCount)
+        assertEquals(1.4, measurement.tagSpanMeters, 0.0)
+        assertEquals(2.3, measurement.averageTagDistanceMeters, 0.0)
+        assertEquals(4.2, measurement.averageTagAreaPercent, 0.0)
+        assertFalse(measurement.ambiguityAvailable)
+    }
+
+    @Test
+    fun `stale or disconnected results are never emitted`() {
+        val fieldPose = Pose3D(
+            Position(DistanceUnit.METER, 1.0, 1.0, 0.0, 0),
+            YawPitchRollAngles(AngleUnit.DEGREES, 0.0, 0.0, 0.0, 0)
+        )
+        val fiducial = com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult(
+            1, 0.0, 0.0, Pose3D(), Pose3D()
+        )
+        val staleResult = object : LLResult() {
+            override fun isValid() = true
+            override fun getStaleness() = 251L
+            override fun getBotpose() = fieldPose
+            override fun getFiducialResults() = listOf(fiducial)
+        }
+        val staleInputs = VisionIOInputs()
+        FtcLimelightIO(MockLimelight3A(staleResult)).updateInputs(staleInputs)
+        assertTrue(staleInputs.isConnected)
+        assertTrue(staleInputs.measurements.isEmpty())
+
+        val disconnectedInputs = VisionIOInputs()
+        FtcLimelightIO(MockLimelight3A(staleResult, connected = false)).updateInputs(disconnectedInputs)
+        assertFalse(disconnectedInputs.isConnected)
+        assertTrue(disconnectedInputs.measurements.isEmpty())
     }
 }

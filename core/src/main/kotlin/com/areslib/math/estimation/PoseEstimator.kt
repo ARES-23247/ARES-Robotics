@@ -26,8 +26,8 @@ data class PoseHistoryEntry(
     var headingRad: Double = 0.0,
     var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
     var qScale: Double = 1.0,
-    /** Heading process-noise scale; NaN preserves compatibility with legacy entries. */
-    var qHeadingScale: Double = Double.NaN,
+    /** Heading process-noise scale, independently replayed from translation noise. */
+    var qHeadingScale: Double = qScale,
     /** Robot-frame SE(2) twist integrated from the preceding history entry. */
     var deltaXRobot: Double = 0.0,
     var deltaYRobot: Double = 0.0,

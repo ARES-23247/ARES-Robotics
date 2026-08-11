@@ -4,11 +4,48 @@ import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Rotation3d
 import com.areslib.math.geometry.Translation3d
 import com.areslib.math.geometry.Vector3
+import com.areslib.math.geometry.Matrix3x3
 import com.areslib.state.VisionMeasurement
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FractionalTimestampReplayTest {
+    @Test
+    fun `fractional replay scales translation and heading process noise independently`() {
+        val history = HistoryBuffer(4)
+        val zero = Matrix3x3()
+        history.addEntryDirect(0L, 0.0, 0.0, 0.0, zero, 0.0)
+        history.addEntryDirect(
+            timestampMs = 100L,
+            x = 0.0,
+            y = 0.0,
+            headingRad = 0.0,
+            covariance = zero,
+            qScale = 2.0,
+            deltaXRobot = 0.0,
+            deltaYRobot = 0.0,
+            deltaHeadingRad = 0.0,
+            hasMotion = true,
+            qHeadingScale = 8.0
+        )
+        val baseQ = Matrix3x3(
+            1.0, 0.0, 0.5,
+            0.0, 2.0, 0.25,
+            0.5, 0.25, 3.0
+        )
+        val output = PoseHistoryEntry()
+
+        EKFStatePropagator.interpolateHistoryEntry(history, 0, 50L, baseQ, output)
+
+        assertEquals(1.0, output.qScale, 0.0)
+        assertEquals(4.0, output.effectiveQHeadingScale, 0.0)
+        assertEquals(1.0, output.covariance.m00, 1e-12)
+        assertEquals(2.0, output.covariance.m11, 1e-12)
+        assertEquals(12.0, output.covariance.m22, 1e-12)
+        assertEquals(1.0, output.covariance.m02, 1e-12)
+        assertEquals(0.5, output.covariance.m12, 1e-12)
+    }
+
     @Test
     fun `vision inside an odometry interval matches an explicitly split replay`() {
         val delayed = seededState()

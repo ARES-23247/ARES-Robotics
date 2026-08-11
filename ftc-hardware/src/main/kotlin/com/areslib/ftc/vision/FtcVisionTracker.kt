@@ -193,8 +193,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val tuning = store.state.tuning
         val velThreshold = tuning.stolenRobotVelocityThreshold
         val angularThreshold = tuning.stolenRobotAngularVelocityThreshold
-        val isStationary = kotlin.math.abs(store.state.drive.xVelocityMetersPerSecond) < velThreshold &&
-                           kotlin.math.abs(store.state.drive.yVelocityMetersPerSecond) < velThreshold &&
+        val isStationary = kotlin.math.abs(store.state.drive.measuredFieldXVelocityMetersPerSecond) < velThreshold &&
+                           kotlin.math.abs(store.state.drive.measuredFieldYVelocityMetersPerSecond) < velThreshold &&
                            kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
 
         if (!hasInitializedPoseWithVision && isAccepted && isStationary) {
@@ -299,7 +299,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val drive = store.state.drive
 
         return when {
-            !measurement.ambiguity.isFinite() || !fieldPose3d.x.isFinite() ||
+            (measurement.ambiguityAvailable && !measurement.ambiguity.isFinite()) || !fieldPose3d.x.isFinite() ||
                 !fieldPose3d.y.isFinite() || !fieldPose3d.z.isFinite() ||
                 !fieldPose3d.rotation.x.isFinite() || !fieldPose3d.rotation.y.isFinite() ||
                 !fieldPose3d.rotation.z.isFinite() || !distance.isFinite() ||
@@ -308,7 +308,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                 !drive.zAccelerationG.isFinite() -> {
                 "REJ_INVALID"
             }
-            measurement.ambiguity > filterConfig.maxAmbiguity -> {
+            measurement.ambiguityAvailable && measurement.ambiguity > filterConfig.maxAmbiguity -> {
                 "REJ_AMBIG"
             }
             !VisionOutlierFilter.isPoseWithinFieldBounds(filterConfig, fieldPose3d) -> {

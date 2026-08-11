@@ -85,9 +85,12 @@ class FtcLimelightIO(
 
         inputs.cameraPoses = cameraPoses
         try {
+            val connected = limelight.isConnected()
             val result = limelight.getLatestResult()
 
-            if (result != null && result.isValid()) {
+            if (connected && result != null && result.isValid() &&
+                result.getStaleness() <= MAX_RESULT_STALENESS_MS &&
+                limelight.getTimeSinceLastUpdate() <= MAX_RESULT_STALENESS_MS) {
 
 
                 inputs.isConnected = true
@@ -198,12 +201,17 @@ class FtcLimelightIO(
                         measurement.hasRecoveryPose = megaTag1Pose != null
                         measurement.robotPoseTargetSpace = tPose
                         measurement.tagId = representative.getFiducialId()
-                        measurement.tagCount = fiducials.size
-                        // FTC's LLResult fiducial API does not expose solve ambiguity.
-                        // Retain a conservative synthetic value rather than claiming a
-                        // perfect 0.0 solve; distance/incidence/tag-count scaling still
-                        // adjusts the final covariance.
-                        measurement.ambiguity = 0.1
+                        val reportedTagCount = result.getBotposeTagCount()
+                        measurement.tagCount = if (reportedTagCount > 0) reportedTagCount else fiducials.size
+                        // FTC's LLResult API does not expose pose-solve ambiguity. Mark
+                        // that fact explicitly and use real std-dev/geometry metrics.
+                        measurement.ambiguity = 0.0
+                        measurement.ambiguityAvailable = false
+                        measurement.tagSpanMeters = positiveMetric(result.getBotposeSpan())
+                        measurement.averageTagDistanceMeters = positiveMetric(result.getBotposeAvgDist()).let {
+                            if (it > 0.0) it else kotlin.math.sqrt(representativeDistanceSquared)
+                        }
+                        measurement.averageTagAreaPercent = positiveMetric(result.getBotposeAvgArea())
                         measurement.sourceId = "ftc-limelight"
                         measurement.frameId = result.getControlHubTimeStamp()
                         measurement.solverType = if (usingMegaTag2) VisionSolverType.MEGATAG2 else VisionSolverType.MEGATAG1
@@ -216,7 +224,7 @@ class FtcLimelightIO(
 
                 inputs.measurements = currentMeasurementList
             } else {
-                inputs.isConnected = result != null
+                inputs.isConnected = connected
                 inputs.measurements = emptyList()
             }
         } catch (e: Throwable) {
@@ -234,6 +242,7 @@ class FtcLimelightIO(
      * Releases vision resources.
      */
     override fun close() {
+        limelight.stop()
     }
 
     private fun applyObservationStdDevs(
@@ -259,5 +268,12 @@ class FtcLimelightIO(
             measurement.stdDevYMeters = 0.0
             measurement.stdDevHeadingRadians = 0.0
         }
+    }
+
+    private fun positiveMetric(value: Double): Double =
+        if (value.isFinite() && value > 0.0) value else -1.0
+
+    private companion object {
+        const val MAX_RESULT_STALENESS_MS = 250L
     }
 }

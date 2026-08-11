@@ -374,7 +374,8 @@ object VisionMahalanobisFilter {
                 baseEntry.deltaXRobot,
                 baseEntry.deltaYRobot,
                 baseEntry.deltaHeadingRad,
-                baseEntry.hasMotion
+                baseEntry.hasMotion,
+                baseEntry.effectiveQHeadingScale
             )
             if (replayIndex + 1 < state.history.size) {
                 val remainingFraction = 1.0 - intervalFraction
@@ -384,6 +385,7 @@ object VisionMahalanobisFilter {
                 followingEntry.deltaYRobot = baseEntry.deltaYRobot * remainderScale
                 followingEntry.deltaHeadingRad = baseEntry.deltaHeadingRad * remainderScale
                 followingEntry.qScale = baseEntry.qScale * remainderScale
+                followingEntry.qHeadingScale = baseEntry.effectiveQHeadingScale * remainderScale
                 followingEntry.hasMotion = remainingFraction > 0.0
             }
         }

@@ -396,6 +396,68 @@ class FtcVisionTrackerTest {
     }
 
     @Test
+    fun `initial snap uses measured motion rather than drive command`() {
+        val movingStore = Store(
+            RobotState(
+                drive = DriveState(
+                    xVelocityMetersPerSecond = 0.0,
+                    measuredFieldXVelocityMetersPerSecond = 1.0
+                )
+            ),
+            ::rootReducer
+        )
+        var movingReseeded = false
+        val movingTracker = FtcVisionTracker(
+            movingStore,
+            MockVisionIO(listOf(measurement(0.5, 0.0, 0.0, 100L))),
+            pinpointIO = null,
+            onOdometryReseed = { movingReseeded = true }
+        )
+        movingTracker.update(100L)
+        assertTrue(!movingTracker.hasInitializedPoseWithVision)
+        assertTrue(!movingReseeded)
+
+        val stoppedStore = Store(
+            RobotState(
+                drive = DriveState(
+                    xVelocityMetersPerSecond = 3.0,
+                    measuredFieldXVelocityMetersPerSecond = 0.0
+                )
+            ),
+            ::rootReducer
+        )
+        var stoppedReseeded = false
+        val stoppedTracker = FtcVisionTracker(
+            stoppedStore,
+            MockVisionIO(listOf(measurement(0.5, 0.0, 0.0, 100L))),
+            pinpointIO = null,
+            onOdometryReseed = { stoppedReseeded = true }
+        )
+        stoppedTracker.update(100L)
+        assertTrue(stoppedTracker.hasInitializedPoseWithVision)
+        assertTrue(stoppedReseeded)
+        assertEquals("INIT_ALIGN_SNAP", stoppedTracker.lastVisionStatus)
+    }
+
+    @Test
+    fun `MegaTag2 yaw remains ignored by the centralized vision reducer`() {
+        val store = Store(RobotState(), ::rootReducer)
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.7, timestampMs = 0L, isReset = true))
+        val mt2 = measurement(0.1, 0.0, -2.0, 100L).copy(
+            solverType = com.areslib.state.VisionSolverType.MEGATAG2,
+            stdDevXMeters = 0.05,
+            stdDevYMeters = 0.05,
+            stdDevHeadingRadians = 0.001
+        )
+        val tracker = FtcVisionTracker(store, MockVisionIO(listOf(mt2)), pinpointIO = null)
+        tracker.hasInitializedPoseWithVision = true
+
+        tracker.update(100L)
+
+        assertEquals(0.7, store.state.drive.poseEstimator.estimatedPoseHeading, 1e-6)
+    }
+
+    @Test
     fun `reseed ignores footprint-outside frames before counting plausible rejections`() {
         val config = footprintConfig().copy(maxRotationDeviationRad = 0.1)
         val tuning = TuningState(

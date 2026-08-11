@@ -207,9 +207,15 @@ data class VisionMeasurement(
     var targetPose: Pose3d = Pose3d(),
     var tagId: Int = -1,
     var ambiguity: Double = 0.0,
+    /** False when the platform API does not expose solve ambiguity. */
+    var ambiguityAvailable: Boolean = true,
     var robotPoseTargetSpace: Pose3d = Pose3d(),
     /** Number of tags used to solve this single field-pose observation. */
     var tagCount: Int = 1,
+    /** Multi-tag geometry and image-quality metrics; negative means unavailable. */
+    var tagSpanMeters: Double = -1.0,
+    var averageTagDistanceMeters: Double = -1.0,
+    var averageTagAreaPercent: Double = -1.0,
     /** Stable camera/source identifier used for per-source frame de-duplication. */
     var sourceId: String = "",
     /** Monotonic camera frame identifier. Zero means that the source cannot provide one. */
@@ -234,8 +240,12 @@ data class VisionMeasurement(
         hasRecoveryPose = hasRecoveryPose,
         tagId = tagId,
         ambiguity = ambiguity,
+        ambiguityAvailable = ambiguityAvailable,
         robotPoseTargetSpace = robotPoseTargetSpace.deepCopy(),
         tagCount = tagCount,
+        tagSpanMeters = tagSpanMeters,
+        averageTagDistanceMeters = averageTagDistanceMeters,
+        averageTagAreaPercent = averageTagAreaPercent,
         sourceId = sourceId,
         frameId = frameId,
         solverType = solverType,

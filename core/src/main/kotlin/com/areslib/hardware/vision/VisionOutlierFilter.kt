@@ -120,7 +120,7 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
         ): Boolean {
             if (!config.isValid()) return false
             val pose = measurement.targetPose
-            if (!measurement.ambiguity.isFinite() ||
+            if ((measurement.ambiguityAvailable && !measurement.ambiguity.isFinite()) ||
                 !pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() ||
                 !pose.rotation.x.isFinite() || !pose.rotation.y.isFinite() || !pose.rotation.z.isFinite() ||
                 !robotPoseX.isFinite() || !robotPoseY.isFinite() || !robotHeadingRad.isFinite() ||
@@ -130,7 +130,14 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             }
 
             // 1. Check Ambiguity (if >= 0.0)
-            if (measurement.ambiguity > config.maxAmbiguity) {
+            if (measurement.ambiguityAvailable && measurement.ambiguity > config.maxAmbiguity) {
+                return false
+            }
+
+            // Reject camera-reported impossible geometry without inventing a universal
+            // target-area threshold (which is lens/exposure/pipeline dependent).
+            if (measurement.averageTagDistanceMeters >= 0.0 &&
+                measurement.averageTagDistanceMeters > config.maxDistanceMeters) {
                 return false
             }
 

@@ -81,8 +81,12 @@ class FrcVisionTracker(
 
         visionIO?.let { io ->
             val drive = store.state.drive
-            val yawRate = swerveIO?.yawRateDegreesPerSecond ?: Math.toDegrees(drive.angularVelocityRadiansPerSecond)
-            val yaw = swerveIO?.rawGyroYawDegrees ?: Math.toDegrees(drive.odometryHeading)
+            val disabled = isDisabledProvider()
+            val yawRate = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond)
+            // MegaTag2 needs the field-relative estimator heading. Raw Pigeon yaw can
+            // differ after CTRE resetPose() applies an odometry heading offset.
+            val yaw = Math.toDegrees(drive.poseEstimator.estimatedPoseHeading)
+            io.setImuMode(if (disabled) DISABLED_IMU_MODE else ENABLED_IMU_MODE)
             
             io.setOrientation(
                 yawDegrees = yaw,
@@ -91,7 +95,10 @@ class FrcVisionTracker(
                 pitchRateDegPerSec = 0.0,
                 rollDegrees = drive.rollDegrees,
                 rollRateDegPerSec = 0.0,
-                linearVelocityMps = Math.hypot(drive.xVelocityMetersPerSecond, drive.yVelocityMetersPerSecond)
+                linearVelocityMps = Math.hypot(
+                    drive.measuredFieldXVelocityMetersPerSecond,
+                    drive.measuredFieldYVelocityMetersPerSecond
+                )
             )
             io.updateInputs(visionInputs)
             if (visionInputs.measurements.isNotEmpty()) {
@@ -112,7 +119,7 @@ class FrcVisionTracker(
                     stationarySinceMs == 0L -> timestampMs
                     else -> stationarySinceMs
                 }
-                val recoveryAllowed = fusionEnabled && (isDisabledProvider() ||
+                val recoveryAllowed = fusionEnabled && (disabled ||
                     (stationary && timestampMs - stationarySinceMs >= 500L))
                 if (!recoveryAllowed) resetRecovery()
                 for (measurement in visionInputs.measurements) {
@@ -129,7 +136,12 @@ class FrcVisionTracker(
                 // Use full euclidean target-space distance; tag-normal depth (z) alone would
                 // let an off-axis robot at (x=5, z=1) pass the 6 m filter.
                 val ts = measurement.robotPoseTargetSpace
-                val distance = kotlin.math.hypot(kotlin.math.hypot(ts.x, ts.y), ts.z)
+                val targetSpaceDistance = kotlin.math.hypot(kotlin.math.hypot(ts.x, ts.y), ts.z)
+                val distance = when {
+                    measurement.averageTagDistanceMeters >= 0.0 -> measurement.averageTagDistanceMeters
+                    targetSpaceDistance > MIN_VALID_TARGET_RANGE_METERS -> targetSpaceDistance
+                    else -> Double.NaN
+                }
                 val filterConfig = store.state.vision.filterConfig
                 val translationResidual = kotlin.math.hypot(
                     measurement.targetPose.x - drive.poseEstimator.estimatedPoseX,
@@ -172,7 +184,8 @@ class FrcVisionTracker(
                         System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
                         rejectedCount++
                     }
-                } else if (distance >= MAX_TARGET_RANGE_METERS || !passesCommonFilter || !passesNormalResidualGate) {
+                } else if (!distance.isFinite() || distance >= MAX_TARGET_RANGE_METERS ||
+                    !passesCommonFilter || !passesNormalResidualGate) {
                     rejectedCount++
                     residualRejected = residualRejected || !passesNormalResidualGate
                 }
@@ -219,15 +232,21 @@ class FrcVisionTracker(
         val candidate3d = measurement.recoveryPose
         val filterConfig = store.state.vision.filterConfig
         val targetSpace = measurement.robotPoseTargetSpace
-        val targetRange = kotlin.math.sqrt(
+        val targetSpaceRange = kotlin.math.sqrt(
             targetSpace.x * targetSpace.x + targetSpace.y * targetSpace.y + targetSpace.z * targetSpace.z
         )
+        val targetRange = when {
+            measurement.averageTagDistanceMeters >= 0.0 -> measurement.averageTagDistanceMeters
+            targetSpaceRange > MIN_VALID_TARGET_RANGE_METERS -> targetSpaceRange
+            else -> Double.NaN
+        }
         val dynamicZ = if (drive.zAccelerationG == 0.0) 0.0 else drive.zAccelerationG - 1.0
         val shockMagnitude = kotlin.math.sqrt(
             drive.xAccelerationG * drive.xAccelerationG +
                 drive.yAccelerationG * drive.yAccelerationG + dynamicZ * dynamicZ
         )
-        val plausible = measurement.ambiguity.isFinite() && measurement.ambiguity <= filterConfig.maxAmbiguity &&
+        val plausible = (!measurement.ambiguityAvailable ||
+            (measurement.ambiguity.isFinite() && measurement.ambiguity <= filterConfig.maxAmbiguity)) &&
             candidate3d.x.isFinite() && candidate3d.y.isFinite() && candidate3d.rotation.z.isFinite() &&
             targetRange.isFinite() && targetRange <= MAX_TARGET_RANGE_METERS &&
             kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <= filterConfig.maxAngularVelocityRadPerSec &&
@@ -330,6 +349,9 @@ class FrcVisionTracker(
         const val MAX_NORMAL_FUSION_RESIDUAL_METERS = 1.0
         const val MAX_TARGET_RANGE_METERS = 6.0
         const val MIN_RECOVERY_CONSENSUS_MS = 500L
+        const val MIN_VALID_TARGET_RANGE_METERS = 0.05
+        const val DISABLED_IMU_MODE = 1
+        const val ENABLED_IMU_MODE = 4
     }
 }
 

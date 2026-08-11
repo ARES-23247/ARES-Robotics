@@ -39,13 +39,14 @@ open class LLResultTypes {
  *
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
-open class LLResult {
-    private val controlHubTimestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-    val ta: Double = 0.0
-    val tx: Double = 0.0
-    val ty: Double = 0.0
-    val targetingLatency: Double = 0.0
-    val captureLatency: Double = 0.0
+open class LLResult(
+    private val controlHubTimestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
+    open val ta: Double = 0.0,
+    open val tx: Double = 0.0,
+    open val ty: Double = 0.0,
+    open val targetingLatency: Double = 0.0,
+    open val captureLatency: Double = 0.0
+) {
     
     open fun isValid(): Boolean = false
     open fun getControlHubTimeStamp(): Long = controlHubTimestampMs
@@ -53,7 +54,11 @@ open class LLResult {
     open fun getBotpose_MT2(): Pose3D? = null
     open fun getStddevMt1(): DoubleArray = DoubleArray(0)
     open fun getStddevMt2(): DoubleArray = DoubleArray(0)
+    open fun getStaleness(): Long = 0L
+    open fun getBotposeTagCount(): Int = 0
+    open fun getBotposeSpan(): Double = 0.0
     open fun getBotposeAvgDist(): Double = 0.0
+    open fun getBotposeAvgArea(): Double = 0.0
     open fun getFiducialResults(): List<LLResultTypes.FiducialResult> = emptyList()
 }
 
@@ -66,6 +71,9 @@ open class Limelight3A {
     @Volatile var simulatedResult: LLResult? = null
 
     open fun start() {}
+    open fun stop() {}
+    open fun isConnected(): Boolean = true
+    open fun getTimeSinceLastUpdate(): Long = 0L
 
     open fun updateRobotOrientation(yawDegrees: Double): Boolean = true
 

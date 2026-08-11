@@ -31,6 +31,8 @@ import com.areslib.state.TuningState
  */
 class MockFrcVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList()) : VisionIO {
     val isConnected: Boolean = true
+    var lastYawDegrees = Double.NaN
+    var lastImuMode = Int.MIN_VALUE
     /**
      * updateInputs declaration.
      *
@@ -40,6 +42,22 @@ class MockFrcVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList(
     override fun updateInputs(inputs: VisionIOInputs) {
         inputs.isConnected = isConnected
         inputs.measurements = mockMeasurements
+    }
+
+    override fun setOrientation(
+        yawDegrees: Double,
+        yawRateDegPerSec: Double,
+        pitchDegrees: Double,
+        pitchRateDegPerSec: Double,
+        rollDegrees: Double,
+        rollRateDegPerSec: Double,
+        linearVelocityMps: Double
+    ) {
+        lastYawDegrees = yawDegrees
+    }
+
+    override fun setImuMode(mode: Int) {
+        lastImuMode = mode
     }
 }
 
@@ -146,7 +164,7 @@ class FrcVisionTrackerTest {
             visionIO,
             swerveIO,
             isSimulation = false,
-            fpgaTimeSecondsProvider = { 10.0 }
+            estimatorTimeSecondsProvider = { 10.0 }
         )
 
         tracker.update(200L)
@@ -205,7 +223,7 @@ class FrcVisionTrackerTest {
             visionIO,
             swerveIO,
             isSimulation = false,
-            fpgaTimeSecondsProvider = { 10.0 },
+            estimatorTimeSecondsProvider = { 10.0 },
             isDisabledProvider = { true }
         )
 
@@ -214,7 +232,7 @@ class FrcVisionTrackerTest {
 
         visionIO.mockMeasurements = listOf(
             first.copy(
-                timestampMs = 170L,
+                timestampMs = 670L,
                 frameId = 42L,
                 recoveryPose = Pose3d(
                     Translation3d(3.04, 2.98, 0.0),
@@ -222,12 +240,35 @@ class FrcVisionTrackerTest {
                 )
             )
         )
-        tracker.update(220L)
+        tracker.update(720L)
 
         assertEquals(1, swerveIO.seedCalls)
         assertEquals(3.02, swerveIO.lastSeedPose.x, 1e-9)
         assertEquals(2.99, swerveIO.lastSeedPose.y, 1e-9)
         assertEquals(0.81, swerveIO.lastSeedPose.heading.radians, 1e-3)
         assertEquals("RESEED_SNAP", tracker.lastVisionStatus)
+    }
+
+    @Test
+    fun `MegaTag2 receives estimator heading and lifecycle IMU mode`() {
+        val store = Store(RobotState(), ::rootReducer)
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.7, timestampMs = 100L, isReset = true))
+        val visionIO = MockFrcVisionIO()
+        var disabled = true
+        val tracker = FrcVisionTracker(
+            store,
+            visionIO,
+            swerveIO = RecordingSwerveIO(),
+            isSimulation = true,
+            isDisabledProvider = { disabled }
+        )
+
+        tracker.update(100L)
+        assertEquals(Math.toDegrees(0.7), visionIO.lastYawDegrees, 1e-9)
+        assertEquals(1, visionIO.lastImuMode)
+
+        disabled = false
+        tracker.update(120L)
+        assertEquals(4, visionIO.lastImuMode)
     }
 }

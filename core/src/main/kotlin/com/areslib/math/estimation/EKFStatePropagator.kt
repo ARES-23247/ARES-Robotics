@@ -54,6 +54,7 @@ object EKFStatePropagator {
             output.headingRad = base.headingRad
             output.covariance.setTo(base.covariance)
             output.qScale = base.qScale
+            output.qHeadingScale = base.effectiveQHeadingScale
             output.deltaXRobot = 0.0
             output.deltaYRobot = 0.0
             output.deltaHeadingRad = 0.0
@@ -112,11 +113,21 @@ object EKFStatePropagator {
         output.y = base.y + fieldDy
         output.headingRad = wrapAngle(base.headingRad + partialHeading)
         output.qScale = next.qScale * fraction
+        output.qHeadingScale = next.effectiveQHeadingScale * fraction
         output.deltaXRobot = partialX
         output.deltaYRobot = partialY
         output.deltaHeadingRad = partialHeading
         output.hasMotion = true
-        propagateMatrix(base.covariance, arcX, arcY, base.headingRad, baseQ, output.qScale, output.covariance)
+        propagateMatrix(
+            base.covariance,
+            arcX,
+            arcY,
+            base.headingRad,
+            baseQ,
+            output.qScale,
+            output.effectiveQHeadingScale,
+            output.covariance
+        )
         return fraction
     }
 
@@ -127,6 +138,7 @@ object EKFStatePropagator {
         heading: Double,
         baseQ: Matrix3x3,
         qScale: Double,
+        qHeadingScale: Double,
         output: Matrix3x3
     ) {
         val sinHeading = kotlin.math.sin(heading)
@@ -142,15 +154,16 @@ object EKFStatePropagator {
         val fp20 = covariance.m20
         val fp21 = covariance.m21
         val fp22 = covariance.m22
+        val qCrossScale = kotlin.math.sqrt(qScale.coerceAtLeast(0.0) * qHeadingScale.coerceAtLeast(0.0))
         val m00 = fp00 + f02 * fp02 + baseQ.m00 * qScale
         val m01 = fp01 + f12 * fp02 + baseQ.m01 * qScale
-        val m02 = fp02 + baseQ.m02 * qScale
+        val m02 = fp02 + baseQ.m02 * qCrossScale
         val m10 = fp10 + f02 * fp12 + baseQ.m10 * qScale
         val m11 = fp11 + f12 * fp12 + baseQ.m11 * qScale
-        val m12 = fp12 + baseQ.m12 * qScale
-        val m20 = fp20 + f02 * fp22 + baseQ.m20 * qScale
-        val m21 = fp21 + f12 * fp22 + baseQ.m21 * qScale
-        val m22 = fp22 + baseQ.m22 * qScale
+        val m12 = fp12 + baseQ.m12 * qCrossScale
+        val m20 = fp20 + f02 * fp22 + baseQ.m20 * qCrossScale
+        val m21 = fp21 + f12 * fp22 + baseQ.m21 * qCrossScale
+        val m22 = fp22 + baseQ.m22 * qHeadingScale
         output.m00 = m00
         output.m01 = (m01 + m10) * 0.5
         output.m02 = (m02 + m20) * 0.5
@@ -249,7 +262,16 @@ object EKFStatePropagator {
         scratchCov2.setTo(updatedCovariance)
 
         if (intervalFraction <= 0.0) {
-            scratchHistory.updateEntryDirect(closestIndex, baseEntry.timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, baseEntry.qScale)
+            scratchHistory.updateEntryDirect(
+                closestIndex,
+                baseEntry.timestampMs,
+                currentX,
+                currentY,
+                currentHeadingRad,
+                scratchCov2,
+                baseEntry.qScale,
+                baseEntry.effectiveQHeadingScale
+            )
         }
 
         for (i in (closestIndex + 1) until state.history.size) {
@@ -301,6 +323,8 @@ object EKFStatePropagator {
             currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
 
             val scale = currRaw.qScale * fraction
+            val headingScale = currRaw.effectiveQHeadingScale * fraction
+            val crossScale = kotlin.math.sqrt(scale.coerceAtLeast(0.0) * headingScale.coerceAtLeast(0.0))
             val reF02 = -correctedFieldDy
             val reF12 = correctedFieldDx
 
@@ -316,13 +340,13 @@ object EKFStatePropagator {
 
             val newM00 = reFp00 + reF02 * reFp02 + baseQ.m00 * scale
             val newM01 = reFp01 + reF12 * reFp02 + baseQ.m01 * scale
-            val newM02 = reFp02 + baseQ.m02 * scale
+            val newM02 = reFp02 + baseQ.m02 * crossScale
             val newM10 = reFp10 + reF02 * reFp12 + baseQ.m10 * scale
             val newM11 = reFp11 + reF12 * reFp12 + baseQ.m11 * scale
-            val newM12 = reFp12 + baseQ.m12 * scale
-            val newM20 = reFp20 + reF02 * reFp22 + baseQ.m20 * scale
-            val newM21 = reFp21 + reF12 * reFp22 + baseQ.m21 * scale
-            val newM22 = reFp22 + baseQ.m22 * scale
+            val newM12 = reFp12 + baseQ.m12 * crossScale
+            val newM20 = reFp20 + reF02 * reFp22 + baseQ.m20 * crossScale
+            val newM21 = reFp21 + reF12 * reFp22 + baseQ.m21 * crossScale
+            val newM22 = reFp22 + baseQ.m22 * headingScale
 
             val sym01 = (newM01 + newM10) * 0.5
             val sym02 = (newM02 + newM20) * 0.5
@@ -338,7 +362,16 @@ object EKFStatePropagator {
             scratchCov2.m21 = sym12
             scratchCov2.m22 = newM22
 
-            scratchHistory.updateEntryDirect(i, state.history[i].timestampMs, currentX, currentY, currentHeadingRad, scratchCov2, currRaw.qScale)
+            scratchHistory.updateEntryDirect(
+                i,
+                state.history[i].timestampMs,
+                currentX,
+                currentY,
+                currentHeadingRad,
+                scratchCov2,
+                currRaw.qScale,
+                currRaw.effectiveQHeadingScale
+            )
         }
 
         // Apply back to state

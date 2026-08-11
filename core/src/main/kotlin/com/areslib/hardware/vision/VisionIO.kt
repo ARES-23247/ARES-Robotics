@@ -52,4 +52,10 @@ interface VisionIO : LoggableDevice {
         rollDegrees: Double, rollRateDegPerSec: Double,
         linearVelocityMps: Double = 0.0
     ) {}
+
+    /**
+     * Selects a camera IMU mode when supported. Limelight 4 should normally use
+     * external seeding while disabled and assisted internal/external fusion while enabled.
+     */
+    fun setImuMode(mode: Int) {}
 }
