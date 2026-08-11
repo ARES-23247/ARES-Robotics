@@ -159,4 +159,21 @@ class CurrentBudgetManagerTest {
 
         assertEquals(12.0, manager.getMotorAmps(0), 1e-9)
     }
+
+    @Test
+    fun `FTC defaults enforce the 20 amp fuse boundaries`() {
+        val ftcManager = CurrentBudgetManager.ftcDefaults()
+
+        ftcManager.update(12.0, additionalMeasuredCurrentAmps = 16.0)
+        assertEquals(CurrentBudgetState.WARNING, ftcManager.state)
+        assertEquals(1.0, ftcManager.powerScale, 1e-9)
+
+        ftcManager.update(12.0, additionalMeasuredCurrentAmps = 17.0)
+        assertEquals(CurrentBudgetState.WARNING, ftcManager.state)
+        assertTrue(ftcManager.powerScale < 1.0)
+
+        ftcManager.update(12.0, additionalMeasuredCurrentAmps = 20.0)
+        assertEquals(CurrentBudgetState.CRITICAL, ftcManager.state)
+        assertEquals(ftcManager.minPowerScale, ftcManager.powerScale, 1e-9)
+    }
 }

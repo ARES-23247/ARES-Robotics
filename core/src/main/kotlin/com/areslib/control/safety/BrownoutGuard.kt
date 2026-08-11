@@ -83,12 +83,12 @@ class BrownoutGuard(
         // Apply hysteresis-aware state transitions
         state = when (state) {
             BrownoutState.HEALTHY -> when {
-                voltage < criticalVoltage -> BrownoutState.CRITICAL
+                voltage <= criticalVoltage -> BrownoutState.CRITICAL
                 voltage < warningVoltage -> BrownoutState.WARNING
                 else -> BrownoutState.HEALTHY
             }
             BrownoutState.WARNING -> when {
-                voltage < criticalVoltage -> BrownoutState.CRITICAL
+                voltage <= criticalVoltage -> BrownoutState.CRITICAL
                 voltage > warningVoltage + hysteresisVoltage -> BrownoutState.HEALTHY
                 else -> BrownoutState.WARNING
             }
@@ -100,7 +100,7 @@ class BrownoutGuard(
         }
 
         // Count state transitions into WARNING or CRITICAL
-        if (state != BrownoutState.HEALTHY && previousState == BrownoutState.HEALTHY) {
+        if (state.ordinal > previousState.ordinal) {
             tripCount++
         }
 
@@ -134,13 +134,15 @@ class BrownoutGuard(
 
     companion object {
         /**
-         * Factory constructor pre-configured with standard FTC defaults (12V system, REV Hub brownout ~7.5V).
+         * Factory constructor pre-configured for the REV Control Hub's documented 8V minimum
+         * operating voltage. Critical cutoff is intentionally above that boundary so one loop of
+         * additional sag cannot reboot the controller before outputs are removed.
          *
          * @return Pre-configured FTC [BrownoutGuard] instance.
          */
         fun ftcDefaults(): BrownoutGuard = BrownoutGuard(
             warningVoltage = 10.0,
-            criticalVoltage = 7.5,
+            criticalVoltage = 8.2,
             minPowerScale = 0.3,
             hysteresisVoltage = 0.4,
             nominalVoltage = 13.0

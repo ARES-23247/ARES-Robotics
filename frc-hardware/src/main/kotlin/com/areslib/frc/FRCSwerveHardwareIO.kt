@@ -59,6 +59,11 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      */
     override fun getEncoderPositions(out: DoubleArray) = reader.getEncoderPositions(out)
 
+    override val encoderPositionsValid: Boolean
+        get() = reader.encoderPositionsValid
+
+    override fun getFaults(out: IntArray) = reader.getFaults(out)
+
     /** Robot pitch inclination angle in degrees. */
     override val pitchDegrees: Double
         get() = reader.pitchDegrees

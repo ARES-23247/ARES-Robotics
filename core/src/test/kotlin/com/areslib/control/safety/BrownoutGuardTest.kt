@@ -22,16 +22,14 @@ class BrownoutGuardTest {
 
     @Test
     fun `warning voltage produces graduated power reduction`() {
-        guard.update(8.75) // Between 7.5 (critical) and 10.0 (warning)
+        guard.update(9.1) // Halfway between 8.2V critical and 10.0V warning
         assertEquals(BrownoutState.WARNING, guard.state)
-        // 8.75 is halfway between 7.5 and 10.0 → scale should be 0.65
-        // minPowerScale + ((8.75 - 7.5) / (10.0 - 7.5)) * (1.0 - 0.3) = 0.3 + 0.5 * 0.7 = 0.65
         assertEquals(0.65, guard.powerScale, 0.01)
     }
 
     @Test
     fun `critical voltage disables all motors`() {
-        guard.update(7.0) // Below 7.5 critical threshold
+        guard.update(8.2) // Exact critical boundary must fail closed
         assertEquals(BrownoutState.CRITICAL, guard.state)
         assertEquals(0.0, guard.powerScale, 0.001)
     }
@@ -70,11 +68,11 @@ class BrownoutGuardTest {
         assertEquals(BrownoutState.CRITICAL, guard.state)
 
         // Recover to exactly criticalVoltage — should stay CRITICAL due to hysteresis
-        guard.update(7.5)
+        guard.update(8.2)
         assertEquals(BrownoutState.CRITICAL, guard.state)
 
-        // Recover above criticalVoltage + hysteresis (7.5 + 0.4 = 7.9)
-        guard.update(8.0)
+        // Recover above criticalVoltage + hysteresis (8.2 + 0.4 = 8.6)
+        guard.update(8.7)
         assertEquals(BrownoutState.WARNING, guard.state)
     }
 
@@ -90,6 +88,13 @@ class BrownoutGuardTest {
         assertEquals(1, guard.tripCount)
 
         guard.update(9.0) // HEALTHY → WARNING again
+        assertEquals(2, guard.tripCount)
+    }
+
+    @Test
+    fun `trip counter records worsening warning to critical transition`() {
+        guard.update(9.5)
+        guard.update(8.2)
         assertEquals(2, guard.tripCount)
     }
 
@@ -148,7 +153,7 @@ class BrownoutGuardTest {
     @Test
     fun `ftc defaults use realistic thresholds`() {
         assertEquals(10.0, guard.warningVoltage, 0.001)
-        assertEquals(7.5, guard.criticalVoltage, 0.001)
+        assertEquals(8.2, guard.criticalVoltage, 0.001)
     }
 
     @Test
@@ -160,15 +165,15 @@ class BrownoutGuardTest {
 
         // Just above criticalVoltage → should be near minPowerScale
         val guard2 = BrownoutGuard.ftcDefaults()
-        guard2.update(7.51)
+        guard2.update(8.21)
         assertEquals(BrownoutState.WARNING, guard2.state)
         assertTrue(guard2.powerScale < 0.35)
     }
 
     @Test
     fun `graduated scaling is linear across warning band`() {
-        // Test multiple points across the warning band (7.5 to 10.0)
-        val voltages = listOf(8.0, 8.75, 9.5)
+        // Test multiple points across the warning band (8.2 to 10.0)
+        val voltages = listOf(8.3, 9.1, 9.5)
         val scales = voltages.map { v ->
             val g = BrownoutGuard.ftcDefaults()
             g.update(v)

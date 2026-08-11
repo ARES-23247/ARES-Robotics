@@ -101,7 +101,12 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
             )
         } catch (e: Throwable) {
             System.err.println("HolonomicPathFollower FATAL ERROR: ${e.message}")
-            stop()
+            try {
+                stop()
+            } catch (stopFailure: Throwable) {
+                e.addSuppressed(stopFailure)
+            }
+            throw e
         }
     }
 

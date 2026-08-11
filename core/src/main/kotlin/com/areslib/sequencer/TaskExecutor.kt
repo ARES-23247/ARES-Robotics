@@ -137,6 +137,10 @@ class TaskExecutor {
             }
 
             if (task != null) {
+                if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                    actions = addActions(actions, handleTaskFailure(task, state))
+                    break
+                }
                 val elapsed = currentTimestampMs - activeTaskStartTimeMs
                 val isCompleted = try {
                     task.isCompleted(state, elapsed)
@@ -148,11 +152,14 @@ class TaskExecutor {
                 }
                 
                 val isFailed = TaskStateMachine.getStatus(task) == TaskStatus.FAILED
-                
-                if (isCompleted || isFailed) {
+
+                if (isFailed) {
+                    actions = addActions(actions, handleTaskFailure(task, state))
+                    break
+                } else if (isCompleted) {
                     // Finalize active task
                     try {
-                        actions = addActions(actions, task.end(state, interrupted = isFailed))
+                        actions = addActions(actions, task.end(state, interrupted = false))
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
                         e.printStackTrace()
@@ -191,13 +198,13 @@ class TaskExecutor {
     }
 
     private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
-        System.err.println("TaskExecutor: Task ${task.name} failed. Removing task, preserving remaining queue.")
-        if (TaskStateMachine.markFailed(task)) {
-            try {
-                TaskCallbacks.invokeFail(task)
-            } catch (e: Exception) {
-                System.err.println("TaskExecutor: Exception during failure callback: ${e.message}")
-            }
+        System.err.println("TaskExecutor: Task ${task.name} failed. Aborting queued and preempted tasks.")
+        TaskStateMachine.markFailed(task)
+        try {
+            // Invocation is one-shot, so this also covers tasks that marked themselves failed.
+            TaskCallbacks.invokeFail(task)
+        } catch (e: Exception) {
+            System.err.println("TaskExecutor: Exception during failure callback: ${e.message}")
         }
         val cleanupActions = try {
             task.end(state, interrupted = true)
@@ -209,7 +216,9 @@ class TaskExecutor {
             task.releaseRuntimeState()
         }
         activeTask = null
-        return cleanupActions
+        val allCleanupActions = cleanupActions.toMutableList()
+        allCleanupActions.addAll(cancelAll(state))
+        return allCleanupActions
     }
 
     /**

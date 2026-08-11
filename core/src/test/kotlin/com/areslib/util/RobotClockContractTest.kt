@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import java.util.concurrent.atomic.AtomicBoolean
 
 class RobotClockContractTest {
 
@@ -46,5 +47,27 @@ class RobotClockContractTest {
         RobotClock.useSystemTime()
 
         assertFalse(RobotClock.isMocked)
+    }
+
+    @Test
+    fun `mode and injected timestamp publish coherently across threads`() {
+        val running = AtomicBoolean(true)
+        val sawTornInitialMock = AtomicBoolean(false)
+        val reader = Thread {
+            while (running.get()) {
+                if (RobotClock.isMocked && RobotClock.currentTimeMillis() == 0L) {
+                    sawTornInitialMock.set(true)
+                }
+            }
+        }
+        reader.start()
+        repeat(20_000) { iteration ->
+            RobotClock.useSystemTime()
+            RobotClock.useMockTime((iteration + 1).toLong())
+        }
+        running.set(false)
+        reader.join(2_000L)
+
+        assertFalse(sawTornInitialMock.get(), "Mock mode must never publish before its timestamp")
     }
 }

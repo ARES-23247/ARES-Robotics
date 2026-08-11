@@ -26,15 +26,12 @@ fun main() {
     // Helper wrappers for publishing inputs
     val setVx = { v: Double ->
         NT4Server.publishTopic("ARES/Input/vx", v)
-        com.areslib.telemetry.SimInputBridge.rawWebVx = v
     }
     val setVy = { v: Double ->
         NT4Server.publishTopic("ARES/Input/vy", v)
-        com.areslib.telemetry.SimInputBridge.rawWebVy = v
     }
     val setOmega = { v: Double ->
         NT4Server.publishTopic("ARES/Input/omega", v)
-        com.areslib.telemetry.SimInputBridge.rawWebOmega = v
     }
 
     // Start background heartbeat publisher to keep inputs active
@@ -156,7 +153,7 @@ fun main() {
         val stateYVel = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state?.drive?.yVelocityMetersPerSecond ?: -99.0
         println("[Segment 1 Step %d] Pose: X=%.3f, Y=%.3f, H=%.3f | rawWebVy=%.2f | stateYVel=%.2f".format(
             step, curX, curY, curH,
-            com.areslib.telemetry.SimInputBridge.rawWebVy,
+            com.areslib.telemetry.SimInputBridge.currentFrame().vy,
             stateYVel
         ))
     }

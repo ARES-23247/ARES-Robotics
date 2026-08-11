@@ -195,9 +195,10 @@ abstract class FtcTeleOpBase<R> : OpMode() {
     }
 
     private fun applySimulationDriveInput(g1State: GamepadState) {
-        val webVx = SimInputBridge.webVx
-        val webVy = SimInputBridge.webVy
-        val webOmega = SimInputBridge.webOmega
+        val commandFrame = SimInputBridge.currentFrame()
+        val webVx = commandFrame.vx
+        val webVy = commandFrame.vy
+        val webOmega = commandFrame.omega
         if (!webVx.isFinite() || !webVy.isFinite() || !webOmega.isFinite()) return
         if (abs(webVx) <= 0.01 && abs(webVy) <= 0.01 && abs(webOmega) <= 0.01) return
 

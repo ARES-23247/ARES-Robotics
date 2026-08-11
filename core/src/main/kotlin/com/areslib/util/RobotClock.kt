@@ -12,8 +12,18 @@ package com.areslib.util
  * by control-loop components. Always restore [useSystemTime] after a test or replay session.
  */
 object RobotClock {
-    private var mocked = false
-    private var mockTimeMs = 0L
+    /**
+     * One immutable mode snapshot prevents readers on different robot/simulator threads from
+     * observing `mocked == true` with an older mock timestamp (or the inverse transition).
+     * Volatile publication is sufficient here and keeps the 50-100 Hz read path allocation-free.
+     */
+    private sealed interface ClockMode {
+        data object System : ClockMode
+        data class Mock(val timeMs: Long) : ClockMode
+    }
+
+    @Volatile
+    private var mode: ClockMode = ClockMode.System
     private val startWallMs = System.currentTimeMillis()
     private val startNanos = System.nanoTime()
 
@@ -24,7 +34,10 @@ object RobotClock {
      * mock mode it is exactly the last value supplied to [useMockTime].
      */
     fun currentTimeMillis(): Long {
-        return if (mocked) mockTimeMs else startWallMs + (System.nanoTime() - startNanos) / 1_000_000L
+        return when (val snapshot = mode) {
+            is ClockMode.Mock -> snapshot.timeMs
+            ClockMode.System -> startWallMs + (System.nanoTime() - startNanos) / 1_000_000L
+        }
     }
 
     /**
@@ -32,15 +45,17 @@ object RobotClock {
      * converted to nanoseconds in mock mode. Do not compare the live value to Unix epoch time.
      */
     fun nanoTime(): Long {
-        return if (mocked) mockTimeMs * 1_000_000L else System.nanoTime()
+        return when (val snapshot = mode) {
+            is ClockMode.Mock -> snapshot.timeMs * 1_000_000L
+            ClockMode.System -> System.nanoTime()
+        }
     }
 
     /**
      * Enters mock mode at the fixed timestamp [timeMs]. Calling this again advances or rewinds time.
      */
     fun useMockTime(timeMs: Long) {
-        mocked = true
-        mockTimeMs = timeMs
+        mode = ClockMode.Mock(timeMs)
     }
 
     /**
@@ -54,11 +69,11 @@ object RobotClock {
      * Leaves mock mode and resumes the process's monotonic live timeline.
      */
     fun useSystemTime() {
-        mocked = false
+        mode = ClockMode.System
     }
 
     /**
      * Whether calls currently return the injected mock timestamp.
      */
-    val isMocked: Boolean get() = mocked
+    val isMocked: Boolean get() = mode is ClockMode.Mock
 }

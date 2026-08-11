@@ -111,6 +111,66 @@ class NT4NetworkingHardeningTest {
     }
 
     @Test
+    fun sustainedConnectedFlushesReuseOneOwnedBufferAfterWarmup() {
+        val server = newServer()
+        val buffered = AtomicBoolean(false)
+        val sentBuffers = mutableListOf<ByteBuffer>()
+        val sentArrays = mutableListOf<ByteArray>()
+        val sentLengths = mutableListOf<Int>()
+        val connection = proxy<WebSocket> { method, args ->
+            when (method.name) {
+                "hasBufferedData" -> buffered.get()
+                "send" -> {
+                    val message = args?.firstOrNull()
+                    if (message is ByteBuffer) {
+                        sentBuffers.add(message)
+                        sentArrays.add(message.array())
+                        sentLengths.add(message.remaining())
+                        buffered.set(true)
+                    }
+                    null
+                }
+                else -> defaultValue(method.returnType)
+            }
+        }
+        val handshake = proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) }
+        server.onOpen(connection, handshake)
+        server.onMessage(connection, subscribe(1, listOf("/Reuse/"), prefix = true))
+
+        server.putTopic("Reuse/Value", 1.0)
+        server.flush()
+        assertEquals(1, sentBuffers.size)
+        val backingArray = sentArrays.single()
+        val sendBuffer = sentBuffers.single()
+        val firstSnapshot = backingArray.copyOfRange(0, sentLengths.single())
+        val allocationsAfterWarmup = server.ownedSendBufferAllocationCount()
+
+        // A queued frame retains exclusive ownership: no encoding or mutation occurs while the
+        // connection reports buffered transport data.
+        server.putTopic("Reuse/Value", 2.0)
+        server.flush()
+        assertEquals(1, sentBuffers.size)
+        assertTrue(firstSnapshot.contentEquals(backingArray.copyOfRange(0, firstSnapshot.size)))
+
+        buffered.set(false)
+        server.flush()
+        repeat(100) { iteration ->
+            buffered.set(false)
+            server.putTopic("Reuse/Value", iteration + 3.0)
+            server.flush()
+        }
+
+        assertEquals(102, sentBuffers.size)
+        assertEquals(
+            allocationsAfterWarmup,
+            server.ownedSendBufferAllocationCount(),
+            "steady-state dirty flushes must not allocate another owned send buffer"
+        )
+        assertTrue(sentArrays.all { it === backingArray }, "every drained send must reuse the same backing array")
+        assertTrue(sentBuffers.all { it === sendBuffer }, "every drained send must reuse the same ByteBuffer view")
+    }
+
+    @Test
     fun concurrentPublicationAndDirtyDrainingDoesNotLoseTopics() {
         NT4Server.resetSharedState()
         val server = NT4Server(

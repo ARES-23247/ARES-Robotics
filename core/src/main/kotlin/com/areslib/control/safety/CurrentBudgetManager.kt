@@ -90,13 +90,17 @@ class CurrentBudgetManager(
      * @param batteryVoltage Current measured battery voltage in Volts ($V$).
      * @param enableCalibration If `true`, reads one actual motor current per cycle round-robin to calibrate the model (~2ms per cycle).
      */
-    fun update(batteryVoltage: Double, enableCalibration: Boolean = false) {
-        if (slots.isEmpty()) return
+    fun update(
+        batteryVoltage: Double,
+        enableCalibration: Boolean = false,
+        additionalMeasuredCurrentAmps: Double = 0.0
+    ) {
 
         val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
 
         // 1. Estimate current for each motor from the DC motor model + learned calibrationOffset
-        var totalAmps = 0.0
+        var totalAmps = additionalMeasuredCurrentAmps
+            .takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
         for (i in slots.indices) {
             val slot = slots[i]
             val rawEstimate = estimateRawCurrent(slot, vBat)
@@ -134,7 +138,8 @@ class CurrentBudgetManager(
                         slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
                     }
                     
-                    totalAmps = 0.0
+                    totalAmps = additionalMeasuredCurrentAmps
+                        .takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
                     for (i in slots.indices) totalAmps += slots[i].estimatedAmps
                 }
             } catch (_: Exception) {
@@ -149,12 +154,12 @@ class CurrentBudgetManager(
         val previousState = state
         state = when (state) {
             CurrentBudgetState.HEALTHY -> when {
-                totalAmps > criticalCurrentAmps -> CurrentBudgetState.CRITICAL
-                totalAmps > warningCurrentAmps -> CurrentBudgetState.WARNING
+                totalAmps >= criticalCurrentAmps -> CurrentBudgetState.CRITICAL
+                totalAmps >= warningCurrentAmps -> CurrentBudgetState.WARNING
                 else -> CurrentBudgetState.HEALTHY
             }
             CurrentBudgetState.WARNING -> when {
-                totalAmps > criticalCurrentAmps -> CurrentBudgetState.CRITICAL
+                totalAmps >= criticalCurrentAmps -> CurrentBudgetState.CRITICAL
                 totalAmps < warningCurrentAmps - hysteresisAmps -> CurrentBudgetState.HEALTHY
                 else -> CurrentBudgetState.WARNING
             }
@@ -212,6 +217,18 @@ class CurrentBudgetManager(
         return if (index in slots.indices) slots[index].estimatedAmps else 0.0
     }
 
+    /** Estimates one registered motor for aggregate/constituent reconciliation without mutation. */
+    fun estimateMotorAmps(motor: MotorIO, batteryVoltage: Double): Double {
+        val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
+        for (index in slots.indices) {
+            val slot = slots[index]
+            if (slot.motor === motor) {
+                return (estimateRawCurrent(slot, vBat) + slot.calibrationOffset).coerceAtLeast(0.0)
+            }
+        }
+        return 0.0
+    }
+
     /** Total number of registered motor slots. */
     val motorCount: Int get() = slots.size
 
@@ -255,15 +272,17 @@ class CurrentBudgetManager(
 
     companion object {
         /**
-         * Factory constructor pre-configured with standard FTC defaults (20A main battery fuse).
+         * Factory constructor pre-configured for the FTC 20A ATM main-battery fuse. The warning
+         * band leaves transient headroom while preventing sustained load from reaching the fuse's
+         * continuous rating.
          *
          * @return Pre-configured FTC [CurrentBudgetManager] instance.
          */
         fun ftcDefaults(): CurrentBudgetManager = CurrentBudgetManager(
-            warningCurrentAmps = 45.0,
-            criticalCurrentAmps = 60.0,
-            minPowerScale = 0.5,
-            hysteresisAmps = 3.0
+            warningCurrentAmps = 16.0,
+            criticalCurrentAmps = 20.0,
+            minPowerScale = 0.30,
+            hysteresisAmps = 2.0
         )
     }
 }

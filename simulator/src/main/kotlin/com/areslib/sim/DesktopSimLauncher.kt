@@ -218,6 +218,7 @@ object DesktopSimLauncher {
         var lastDsCommand = ""
         var lastSelectedOpMode = ""
         var inventoryCount = 0
+        var gamePieceTelemetryBuffer = DoubleArray(0)
 
         while (isSimRunning) {
           try {
@@ -351,21 +352,30 @@ object DesktopSimLauncher {
 
             // Stream dynamic game piece positions to NT4 for live visual rendering
             val pieces = physicsWorld.gamePieces
+            val requiredGamePieceDoubles = pieces.size * TelemetryPublisher.GAME_PIECE_RECORD_WIDTH
+            if (gamePieceTelemetryBuffer.size != requiredGamePieceDoubles) {
+                // Population changes are infrequent; reuse the exact-sized buffer on every stable
+                // 50 Hz frame and the singleton empty array after the final removal.
+                gamePieceTelemetryBuffer = if (requiredGamePieceDoubles == 0) {
+                    DoubleArray(0)
+                } else {
+                    DoubleArray(requiredGamePieceDoubles)
+                }
+            }
             if (pieces.isNotEmpty()) {
-                val arr = DoubleArray(pieces.size * 7)
                 for (i in pieces.indices) {
                     val p = pieces[i]
-                    val base = i * 7
-                    arr[base + 0] = p.transform.translationX
-                    arr[base + 1] = p.transform.translationY
-                    arr[base + 2] = p.transform.rotationAngle
-                    arr[base + 3] = 0.15
-                    arr[base + 4] = 0.15
-                    arr[base + 5] = 0.0
-                    arr[base + 6] = 0.0
+                    val base = i * TelemetryPublisher.GAME_PIECE_RECORD_WIDTH
+                    gamePieceTelemetryBuffer[base + 0] = p.transform.translationX
+                    gamePieceTelemetryBuffer[base + 1] = p.transform.translationY
+                    gamePieceTelemetryBuffer[base + 2] = p.transform.rotationAngle
+                    gamePieceTelemetryBuffer[base + 3] = 0.15
+                    gamePieceTelemetryBuffer[base + 4] = 0.15
+                    gamePieceTelemetryBuffer[base + 5] = 0.0
+                    gamePieceTelemetryBuffer[base + 6] = 0.0
                 }
-                TelemetryPublisher.publishGamePieces(arr)
             }
+            TelemetryPublisher.publishGamePieces(gamePieceTelemetryBuffer, pieces.size)
 
             TelemetryPublisher.publishTruePose(currentPhysPose)
 

@@ -19,6 +19,14 @@ object TelemetryTopicConstants {
     const val ESTIMATED_POSE_X = "ARES/EstimatedPose/0"
     const val ESTIMATED_POSE_Y = "ARES/EstimatedPose/1"
     const val ESTIMATED_POSE_HEADING = "ARES/EstimatedPose/2"
+
+    /** Atomic remote-drive command: version, session, sequence, client time, vx, vy, omega. */
+    const val DRIVE_INPUT_FRAME = "ARES/Input/driveFrame"
+
+    /** Packed seven-double records; consumers must honor [GAME_PIECES_COUNT]. */
+    const val GAME_PIECES = "ARES/GamePieces"
+    /** Number of live records in [GAME_PIECES], including the explicit zero/removal state. */
+    const val GAME_PIECES_COUNT = "ARES/GamePieces/Count"
 }
 
 /** Removes transport-only leading slashes from an ARES telemetry topic. */

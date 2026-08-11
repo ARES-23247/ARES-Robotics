@@ -109,28 +109,13 @@ object PathPlannerJsonParser {
     )
 
     fun parse(jsonString: String, fallbackMaxVel: Double, fallbackMaxAccel: Double): ParsedPathData {
+        require(jsonString.isNotBlank()) { "PathPlanner JSON must not be blank" }
         return try {
             parseInternal(jsonString, fallbackMaxVel, fallbackMaxAccel)
         } catch (e: Exception) {
-            System.err.println("[PathPlannerJsonParser] Failed to parse PathPlanner JSON: ${e.message}; returning empty result")
-            emptyParsedData(fallbackMaxVel, fallbackMaxAccel)
+            throw IllegalArgumentException("Failed to parse PathPlanner path JSON: ${e.message}", e)
         }
     }
-
-    private fun emptyParsedData(fallbackMaxVel: Double, fallbackMaxAccel: Double): ParsedPathData =
-        ParsedPathData(
-            waypoints = emptyList(),
-            defaultMaxVel = fallbackMaxVel,
-            defaultMaxAccel = fallbackMaxAccel,
-            startVel = 0.0,
-            startRotDeg = null,
-            endVel = 0.0,
-            endRotDeg = null,
-            rotationTargets = emptyList(),
-            constraintZones = emptyList(),
-            pointTowardsZones = emptyList(),
-            eventMarkers = emptyList()
-        )
 
     /**
      * Sanitizes a `waypointRelativePos` value.
@@ -163,6 +148,8 @@ object PathPlannerJsonParser {
         val root = gson.fromJson(jsonString, JsonObject::class.java)
 
         val waypointsArray = root.getAsJsonArray("waypoints")
+            ?: throw IllegalArgumentException("PathPlanner path is missing 'waypoints'")
+        require(waypointsArray.size() >= 2) { "PathPlanner path requires at least two waypoints" }
         val parsedWaypoints = mutableListOf<WaypointData>()
         for (i in 0 until waypointsArray.size()) {
             val wp = waypointsArray.get(i).asJsonObject

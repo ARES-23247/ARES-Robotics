@@ -6,7 +6,7 @@ import com.areslib.hardware.SubsystemIO
  * Pure abstraction for reading/writing to a physical motor.
  * Keeps the :core module decoupled from Qualcomm SDK.
  */
-interface MotorIO : SubsystemIO {
+interface MotorIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/Power", power * powerScale)
         telemetry.putNumber("$prefix/Position", position)
@@ -44,7 +44,7 @@ interface MotorIO : SubsystemIO {
      * Estimated or measured current draw of this motor in Amperes (Amps).
      * Defaults to 0.0 in simulations or when current monitoring is unsupported.
      */
-    val currentAmps: Double
+    override val currentAmps: Double
         get() = 0.0
     
     /**

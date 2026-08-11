@@ -16,15 +16,17 @@ interface AnalogVoltageInput {
  *
  * Maps the $0.0\text{V} \dots 3.3\text{V}$ analog telemetry output of the Floodgate V2 to real-time current draw in Amperes ($A$).
  * Incorporates an exponential moving average low-pass filter to smooth motor starting spikes, integrates battery charge consumption ($Ah$, $Wh$),
- * and models thermal accumulation ($I^2 \cdot t$) to prevent tripping the 80A smart breaker or blowing the 20A main battery fuse.
+ * and maintains a conservative overload-energy estimate for the external 20A ATM battery fuse.
+ * The Floodgate's independent 80A electronic cutoff and 60A internal fuse remain hardware-owned.
  *
  * ### Mathematical Formulations:
  * 1. Current conversion from analog telemetry voltage $V$:
  *    $$I_{raw} = \frac{V}{3.3} \cdot I_{max}$$
  * 2. Low-pass exponential filtering ($\alpha = \text{filterAlpha}$):
  *    $$I_{filtered} = \alpha \cdot I_{raw} + (1 - \alpha) \cdot I_{filtered, k-1}$$
- * 3. Thermal accumulation model ($I^2 \cdot t$ heating with linear cooling):
- *    $$\text{Load}_k = \max\left(0, \text{Load}_{k-1} + I_{raw}^2 \Delta t - 0.1 \cdot \text{Load}_{k-1} \Delta t\right)$$
+ * 3. Fuse overload-energy model. Current at or below the fuse rating adds no damage; excess
+ *    $I^2t$ accumulates and is normalized by a configurable calibration point:
+ *    $$E_k = \max(0, E_{k-1} + \max(0, I^2-I_r^2)\Delta t - E_{k-1}\Delta t/\tau_c)$$
  *
  * ### Physical Units:
  * - Telemetry Input: Volts ($V$), range $[0.0, 3.3] \text{ V}$.
@@ -36,13 +38,21 @@ interface AnalogVoltageInput {
  * @param analogInput Analog voltage supplier interface ([AnalogVoltageInput] or FTC SDK [AnalogInput]).
  * @param maxCurrentAmps Maximum current rating corresponding to 3.3V analog output ($A$, default 80A for Floodgate V2).
  * @param filterAlpha Low-pass smoothing alpha coefficient $[0.0, 1.0]$.
- * @param fuseRatingAmps Rating of the main battery fuse ($A$, default 20A standard FTC fuse).
+ * @param fuseRatingAmps Rating of the main battery fuse ($A$, default 20A FTC ATM fuse).
+ * @param fuseCalibrationMultiple Current multiple expected to consume the model's full thermal
+ * budget after [fuseCalibrationTripSeconds]. This must be replaced with measured or manufacturer
+ * time-current data when a specific fuse family is characterized.
+ * @param fuseCalibrationTripSeconds Conservative trip time at [fuseCalibrationMultiple].
+ * @param fuseCoolingTimeConstantSeconds Thermal recovery time constant below the fuse rating.
  */
 class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private val analogInput: AnalogVoltageInput,
     private val maxCurrentAmps: Double = 80.0, // Scale: 3.3V corresponds to max current (default 80A for V2)
     private val filterAlpha: Double = 0.15,    // Low-pass filter smoothing coefficient (0.0 to 1.0)
-    private val fuseRatingAmps: Double = 20.0  // Standard FTC main battery fuse rating
+    private val fuseRatingAmps: Double = 20.0, // Standard FTC main battery fuse rating
+    private val fuseCalibrationMultiple: Double = 2.0,
+    private val fuseCalibrationTripSeconds: Double = 2.0,
+    private val fuseCoolingTimeConstantSeconds: Double = 15.0
 ) {
 
     // Secondary constructors for backward compatibility with Qualcomm's concrete AnalogInput class
@@ -89,10 +99,20 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private val safeMaxCurrentAmps = maxCurrentAmps.takeIf { it.isFinite() && it > 0.0 } ?: 80.0
     private val safeFilterAlpha = filterAlpha.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.15
     private val safeFuseRatingAmps = fuseRatingAmps.takeIf { it.isFinite() && it > 0.0 } ?: 20.0
+    private val safeCalibrationMultiple = fuseCalibrationMultiple
+        .takeIf { it.isFinite() && it > 1.0 } ?: 2.0
+    private val safeCalibrationTripSeconds = fuseCalibrationTripSeconds
+        .takeIf { it.isFinite() && it > 0.0 } ?: 2.0
+    private val safeCoolingTimeConstantSeconds = fuseCoolingTimeConstantSeconds
+        .takeIf { it.isFinite() && it > 0.0 } ?: 15.0
 
-    // Thermal accumulation model to simulate a slow-blow thermal fuse behavior (I^2 * t)
+    // Conservative excess-I²t surrogate. This is deliberately parameterized rather than claiming
+    // that every legal vendor's 20A ATM fuse has the same time-current curve.
     private var accumulatedThermalLoad = 0.0
-    private val fuseThermalCapacity = safeFuseRatingAmps * safeFuseRatingAmps * 5.0
+    private val calibratedCurrent = safeFuseRatingAmps * safeCalibrationMultiple
+    private val fuseThermalCapacity =
+        (calibratedCurrent * calibratedCurrent - safeFuseRatingAmps * safeFuseRatingAmps) *
+            safeCalibrationTripSeconds
 
     /**
      * Periodically updates the current measurements, applies the smoothing filter, 
@@ -126,11 +146,15 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
             // 2. Integrate current over time to compute charge usage (Ampere-Seconds)
             totalAmpSeconds += rawCurrent * dtSeconds
 
-            // 3. Update I^2*t thermal accumulation modeling for the fuse
-            // Heat generated is proportional to current squared (I^2 * R). 
-            // Heat dissipated is proportional to ambient dissipation rate.
-            val heating = rawCurrent * rawCurrent * dtSeconds
-            val cooling = accumulatedThermalLoad * 0.1 * dtSeconds // Ambient heat dissipation
+            // 3. Accumulate only energy above the continuous fuse rating. A rated 20A load must
+            // not inevitably "blow" a 20A fuse in the software model.
+            val ratingSquared = safeFuseRatingAmps * safeFuseRatingAmps
+            val heating = (rawCurrent * rawCurrent - ratingSquared).coerceAtLeast(0.0) * dtSeconds
+            val cooling = if (rawCurrent < safeFuseRatingAmps) {
+                accumulatedThermalLoad / safeCoolingTimeConstantSeconds * dtSeconds
+            } else {
+                0.0
+            }
             accumulatedThermalLoad = (accumulatedThermalLoad + heating - cooling).coerceAtLeast(0.0)
         }
     }
@@ -177,7 +201,8 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
      * of tripping the Floodgate V2 smart current limit or blowing the main battery fuse.
      */
     fun isOverloadWarning(warningThresholdAmps: Double = 18.0): Boolean {
-        return current >= warningThresholdAmps || fuseThermalLoadPercent > 80.0
+        return maxOf(current, instantaneousCurrent) >= warningThresholdAmps ||
+            fuseThermalLoadPercent >= 70.0
     }
 
     /**

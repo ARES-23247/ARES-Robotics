@@ -7,8 +7,11 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Global tracker for robot runtime status, exposed to the web portal over Wi-Fi.
@@ -56,7 +59,8 @@ object RobotWebServer {
     private var serverThread: Thread? = null
     private var discoveryThread: Thread? = null
     private val activeForwarders = CopyOnWriteArrayList<PortForwarder>()
-    private var executor: ExecutorService? = null
+    private var executor: ThreadPoolExecutor? = null
+    private val rejectedConnections = AtomicInteger()
 
     /**
      * Shared-secret bearer token required on `/api/` routes when non-null.
@@ -95,9 +99,15 @@ object RobotWebServer {
         }
         try {
             if (executor == null || executor!!.isShutdown) {
-                executor = Executors.newCachedThreadPool { thread ->
-                    Thread(thread, "ARES-WebServer-Worker").apply { isDaemon = true }
-                }
+                executor = ThreadPoolExecutor(
+                    MAX_WORKERS,
+                    MAX_WORKERS,
+                    0L,
+                    TimeUnit.MILLISECONDS,
+                    ArrayBlockingQueue(MAX_QUEUED_CLIENTS),
+                    { runnable -> Thread(runnable, "ARES-WebServer-Worker").apply { isDaemon = true } },
+                    ThreadPoolExecutor.AbortPolicy()
+                ).apply { prestartAllCoreThreads() }
             }
 
             serverSocket = ServerSocket(port)
@@ -107,8 +117,16 @@ object RobotWebServer {
                 while (!Thread.currentThread().isInterrupted) {
                     try {
                         val client = socket.accept()
-                        executor?.submit {
-                            endpointHandler?.handleClient(client)
+                        client.soTimeout = CLIENT_READ_TIMEOUT_MS
+                        client.tcpNoDelay = true
+                        client.keepAlive = false
+                        try {
+                            executor?.execute {
+                                endpointHandler?.handleClient(client)
+                            } ?: client.close()
+                        } catch (_: RejectedExecutionException) {
+                            rejectedConnections.incrementAndGet()
+                            rejectBusyClient(client)
                         }
                     } catch (e: Exception) {
                         break
@@ -171,6 +189,10 @@ object RobotWebServer {
 
             println("ARES Robot WebServer started successfully on port $port")
         } catch (e: Exception) {
+            try { serverSocket?.close() } catch (_: Exception) {}
+            serverSocket = null
+            executor?.shutdownNow()
+            executor = null
             System.err.println("ARES Robot WebServer: Failed to start on port $port! ${e.message}")
         }
     }
@@ -199,4 +221,25 @@ object RobotWebServer {
         executor?.shutdownNow()
         executor = null
     }
+
+    private fun rejectBusyClient(client: Socket) {
+        try {
+            val body = "{\"error\":\"Server busy\"}"
+            val bytes = body.toByteArray(Charsets.UTF_8)
+            client.getOutputStream().use { output ->
+                output.write("HTTP/1.1 503 Service Unavailable\r\n".toByteArray(Charsets.US_ASCII))
+                output.write("Content-Type: application/json\r\n".toByteArray(Charsets.US_ASCII))
+                output.write("Content-Length: ${bytes.size}\r\n".toByteArray(Charsets.US_ASCII))
+                output.write("Connection: close\r\n\r\n".toByteArray(Charsets.US_ASCII))
+                output.write(bytes)
+            }
+        } catch (_: Exception) {
+            try { client.close() } catch (_: Exception) {}
+        }
+    }
+
+    internal fun rejectedConnectionCount(): Int = rejectedConnections.get()
+    internal const val MAX_WORKERS = 8
+    internal const val MAX_QUEUED_CLIENTS = 32
+    internal const val CLIENT_READ_TIMEOUT_MS = 2_000
 }

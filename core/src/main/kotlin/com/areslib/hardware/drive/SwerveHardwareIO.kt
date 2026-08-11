@@ -19,15 +19,25 @@ interface SwerveHardwareIO : SubsystemIO {
         private val scratchEncoderPositions = object : ThreadLocal<DoubleArray>() {
             override fun initialValue() = DoubleArray(4)
         }
+        private val scratchFaults = object : ThreadLocal<IntArray>() {
+            override fun initialValue() = IntArray(4)
+        }
     }
 
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         val curr = scratchCurrents.get()!!
         val enc = scratchEncoderPositions.get()!!
         getCurrents(curr)
-        getEncoderPositions(enc)
+        val encodersValid = getEncoderPositionsIfValid(enc)
         telemetry.putDoubleArray("$prefix/Currents", curr)
         telemetry.putDoubleArray("$prefix/EncoderPositions", enc)
+        telemetry.putBoolean("$prefix/EncoderPositionsValid", encodersValid)
+        val faults = scratchFaults.get()!!
+        getFaults(faults)
+        telemetry.putNumber("$prefix/FaultBits/FrontLeft", faults[0].toDouble())
+        telemetry.putNumber("$prefix/FaultBits/FrontRight", faults[1].toDouble())
+        telemetry.putNumber("$prefix/FaultBits/RearLeft", faults[2].toDouble())
+        telemetry.putNumber("$prefix/FaultBits/RearRight", faults[3].toDouble())
     }
 
     /** Refreshes cached status signals from the hardware. */
@@ -44,6 +54,20 @@ interface SwerveHardwareIO : SubsystemIO {
 
     /** Gets measured absolute encoder positions. */
     fun getEncoderPositions(out: DoubleArray) {}
+
+    /** Whether the last hardware refresh produced a trustworthy encoder snapshot. */
+    val encoderPositionsValid: Boolean
+        get() = true
+
+    /**
+     * Backward-compatible checked read. Existing implementations remain valid by default; hardware
+     * implementations with refresh status override [encoderPositionsValid].
+     */
+    fun getEncoderPositionsIfValid(out: DoubleArray): Boolean {
+        if (!encoderPositionsValid) return false
+        getEncoderPositions(out)
+        return true
+    }
 
     /** Gets gyro absolute pitch degrees. */
     val pitchDegrees: Double

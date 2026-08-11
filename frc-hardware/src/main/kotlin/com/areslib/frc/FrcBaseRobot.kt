@@ -78,6 +78,16 @@ abstract class FrcBaseRobot(
         get() = powerManager.batteryVoltageSupplier
         set(value) { powerManager.batteryVoltageSupplier = value }
 
+    /** Configurable total-current supplier, normally backed by WPILib PowerDistribution. */
+    var totalCurrentSupplier: () -> Double
+        get() = powerManager.totalCurrentSupplier
+        set(value) { powerManager.totalCurrentSupplier = value }
+
+    /** Configurable roboRIO brownout-state supplier. */
+    var brownedOutSupplier: () -> Boolean
+        get() = powerManager.brownedOutSupplier
+        set(value) { powerManager.brownedOutSupplier = value }
+
     private var lastUpdateTime = 0L
 
     init {
@@ -130,6 +140,10 @@ abstract class FrcBaseRobot(
             // 7. Telemetry
             telemetryManager.publish(store.state, gamepad1, gamepad2, dtSeconds, powerManager.batteryVoltage)
             telemetryManager.logBrownout(powerManager.brownoutGuard, powerManager.batteryVoltage)
+            telemetry.putNumber("Robot/TotalCurrentAmps", powerManager.currentAmps)
+            telemetry.putNumber("Robot/CurrentPowerScale", powerManager.currentPowerScale)
+            telemetry.putString("Robot/CurrentBudgetState", powerManager.currentBudgetState.name)
+            telemetry.putBoolean("Robot/RioBrownedOut", powerManager.isBrownedOut)
             com.areslib.hardware.HardwareRegistry.publishAll(telemetry)
             publishRobotTelemetry(timestamp)
             telemetryManager.dataLoggingTelemetry.update()

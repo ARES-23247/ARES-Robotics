@@ -28,10 +28,16 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
             val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
             val status = TaskStateMachine.getStatus(currentTask)
             if (status == TaskStatus.FAILED || status == TaskStatus.CANCELLED) {
-                TaskStateMachine.markFailed(this)
+                failGroup()
                 return false
             }
-            if (currentTask.isCompleted(state, currentTaskElapsed)) {
+            val childCompleted = currentTask.isCompleted(state, currentTaskElapsed)
+            val updatedStatus = TaskStateMachine.getStatus(currentTask)
+            if (updatedStatus == TaskStatus.FAILED || updatedStatus == TaskStatus.CANCELLED) {
+                failGroup()
+                return false
+            }
+            if (childCompleted) {
                 pendingActions.addAll(currentTask.end(state, interrupted = false))
                 currentTask.releaseRuntimeState()
                 currentIndex++
@@ -44,6 +50,12 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
             }
         }
         return true
+    }
+
+    private fun failGroup() {
+        if (TaskStateMachine.markFailed(this)) {
+            TaskCallbacks.invokeFail(this)
+        }
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {

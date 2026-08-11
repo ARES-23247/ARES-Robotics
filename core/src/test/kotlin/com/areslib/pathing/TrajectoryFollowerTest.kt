@@ -8,8 +8,32 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertThrows
 
 class TrajectoryFollowerTest {
+
+    @Test
+    fun `follower stops and propagates drivetrain failures`() {
+        val expected = IllegalStateException("pose estimator unavailable")
+        var stopped = false
+        val drivetrain = object : com.areslib.subsystem.DrivetrainSubsystem {
+            override fun getEstimatedPose(): Pose2d = throw expected
+            override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {
+                if (vx == 0.0 && vy == 0.0 && omega == 0.0) stopped = true
+            }
+            override fun readSensors(store: com.areslib.Store, timestampMs: Long) = Unit
+            override fun writeOutputs(state: com.areslib.state.RobotState, scale: Double) = Unit
+        }
+        val follower = HolonomicPathFollower(drivetrain)
+        val target = PathPoint(Pose2d(), 0.0)
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            follower.update(target, 0.02)
+        }
+
+        assertTrue(thrown === expected)
+        assertTrue(stopped, "Follower must command a stop before surfacing the failure")
+    }
 
     @Test
     fun testClosedLoopTrajectoryTracking() {

@@ -403,6 +403,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 gamepad2 = gamepad2,
                 dtSeconds = dtSeconds,
                 batteryVoltage = batteryVoltage,
+                powerBrownoutGuard = powerManager.brownoutGuard,
                 visionTracker = visionTracker,
                 timestamp = timestamp,
                 localTelemetry = localTelemetry,

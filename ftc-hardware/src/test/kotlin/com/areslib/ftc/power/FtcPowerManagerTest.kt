@@ -35,17 +35,17 @@ class FtcPowerManagerTest {
         powerManager.update(0.02, 100)
         assertEquals(12.0, powerManager.batteryVoltage, 1e-6)
 
-        // Drop voltage, but the read is rate-limited to 10Hz (100ms)
+        // Drop voltage, but the safety sampler is capped at 50Hz.
         mockSensor.voltage = 9.0
-        // Call update at timestamp 150 (only 50ms elapsed, should NOT read the new voltage)
-        powerManager.update(0.02, 150)
+        powerManager.update(0.01, 110)
         assertEquals(12.0, powerManager.batteryVoltage, 1e-6)
 
-        // Call update at timestamp 250 (150ms elapsed, exceeds 100ms threshold, should read and filter)
-        // filter math: alpha = dtSeconds / (0.1 + dtSeconds) = 0.02 / 0.12 = 1.0 / 6.0
+        // At 20ms the raw sag is consumed immediately by BrownoutGuard while the public filtered
+        // voltage uses the actual 20ms sample interval: alpha = 0.02 / 0.12 = 1/6.
         // voltage = 12.0 * (1.0 - alpha) + 9.0 * alpha = 11.5
-        powerManager.update(0.02, 250)
+        powerManager.update(0.01, 120)
         assertEquals(11.5, powerManager.batteryVoltage, 1e-6)
+        assertTrue(powerManager.powerScale < 1.0)
     }
 
     @Test
@@ -65,18 +65,17 @@ class FtcPowerManagerTest {
             com.areslib.hardware.HardwareRegistry.registerMotor("motor1", motors[0])
             com.areslib.hardware.HardwareRegistry.registerMotor("motor2", motors[1])
 
-            // Assert estimated current is sum of motor currents
-            assertEquals(3.0, powerManager.currentAmps, 1e-6)
+            // Getters expose only cached values; they never initiate a hub transaction.
+            assertEquals(0.0, powerManager.currentAmps, 1e-6)
 
             // Normal run should have 1.0 power scale
             val scale1 = powerManager.update(0.02, 100)
             assertEquals(1.0, scale1, 1e-6)
+            assertTrue(powerManager.currentAmps > 0.0)
 
             // Trigger brownout (drop voltage to 7.0V)
             mockSensor.voltage = 7.0
-            for (i in 1..10) {
-                powerManager.update(0.02, 300 + i * 110L)
-            }
+            powerManager.update(0.02, 300)
             
             // Power scale should be reduced by brownout guard
             assertTrue(powerManager.powerScale < 1.0)
@@ -135,6 +134,90 @@ class FtcPowerManagerTest {
             assertTrue(powerManager.floodgate?.isReadingValid == false)
             assertNotNull(powerManager.currentBudgetManager)
             assertTrue(powerManager.powerScale.isFinite())
+        } finally {
+            com.areslib.hardware.HardwareRegistry.clear()
+        }
+    }
+
+    @Test
+    fun `registered mechanism current participates in 20 amp fallback budget`() {
+        val voltageSensor = MockVoltageSensor(12.0)
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(voltageSensor as T)
+        }
+        val mechanism = object : com.areslib.hardware.SubsystemIO, com.areslib.hardware.CurrentSourceIO {
+            override val currentAmps: Double = 17.0
+        }
+
+        com.areslib.hardware.HardwareRegistry.clear()
+        try {
+            com.areslib.hardware.HardwareRegistry.registerDevice("Mechanism", mechanism)
+            val powerManager = FtcPowerManager(hardwareMap)
+            powerManager.update(0.02, 100)
+
+            assertEquals(17.0, powerManager.currentAmps, 1e-6)
+            assertTrue(powerManager.powerScale < 1.0)
+        } finally {
+            com.areslib.hardware.HardwareRegistry.clear()
+        }
+    }
+
+    @Test
+    fun `aggregate mechanism current replaces its modeled motor constituent`() {
+        val voltageSensor = MockVoltageSensor(12.0)
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(voltageSensor as T)
+        }
+        val motor = MockMotorCurrentIO(9.0).also { it.power = 1.0 }
+        val aggregate = object : com.areslib.hardware.SubsystemIO, com.areslib.hardware.CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; return 10.0 }
+            override fun includesCurrentFrom(other: com.areslib.hardware.CurrentSourceIO): Boolean =
+                other === this || other === motor
+        }
+
+        com.areslib.hardware.HardwareRegistry.clear()
+        try {
+            com.areslib.hardware.HardwareRegistry.registerMotor("mechanismMotor", motor)
+            com.areslib.hardware.HardwareRegistry.registerDevice("MechanismAggregate", aggregate)
+            val powerManager = FtcPowerManager(hardwareMap)
+            powerManager.update(0.02, 100)
+
+            assertTrue(powerManager.currentAmps < 12.0, "Aggregate and modeled motor must not be summed")
+            assertEquals(1, aggregate.reads)
+        } finally {
+            com.areslib.hardware.HardwareRegistry.clear()
+        }
+    }
+
+    @Test
+    fun `zero reading floodgate is rejected when motor model proves active load`() {
+        val voltageSensor = MockVoltageSensor(12.0)
+        val zeroFloodgate = object : AnalogInput() { override val voltage: Double = 0.0 }
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> get(classOrType: Class<out T>, deviceName: String): T {
+                if (classOrType == AnalogInput::class.java && deviceName == "floodgate") return zeroFloodgate as T
+                throw IllegalArgumentException(deviceName)
+            }
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(voltageSensor as T)
+        }
+
+        com.areslib.hardware.HardwareRegistry.clear()
+        try {
+            repeat(2) { index ->
+                val motor = MockMotorCurrentIO().also { it.power = 1.0 }
+                com.areslib.hardware.HardwareRegistry.registerMotor("drive$index", motor)
+            }
+            val powerManager = FtcPowerManager(hardwareMap)
+            powerManager.update(0.02, 100)
+
+            assertTrue(powerManager.floodgate?.isReadingValid == true)
+            assertTrue(powerManager.currentAmps > 16.0)
+            assertTrue(powerManager.powerScale < 1.0)
         } finally {
             com.areslib.hardware.HardwareRegistry.clear()
         }

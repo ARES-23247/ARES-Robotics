@@ -3,6 +3,7 @@ package com.areslib.pathing
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertFailsWith
 
 class PathPlannerParserTest {
 
@@ -63,5 +64,25 @@ class PathPlannerParserTest {
         assertEquals(0.0, path.points.first().pose.x)
         assertEquals(1.0, path.points.last().pose.x, 0.001)
         assertEquals(1.0, path.points.last().pose.y, 0.001)
+    }
+
+    @Test
+    fun `malformed path JSON propagates instead of becoming a successful empty path`() {
+        assertFailsWith<IllegalArgumentException> {
+            PathPlannerParser.parsePath("""{"waypoints":"not-an-array"}""")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            PathPlannerParser.parsePath("""{"waypoints":[{"anchor":{"x":0,"y":0}}]}""")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            PathPlannerParser.parsePath("""{"waypoints":[]}""")
+        }
+    }
+
+    @Test
+    fun `dynamic loader rejects traversal before searching filesystem or classpath`() {
+        assertFailsWith<IllegalArgumentException> { DynamicPathLoader.loadPath("../secret") }
+        assertFailsWith<IllegalArgumentException> { DynamicPathLoader.loadPath("nested/path") }
+        assertFailsWith<IllegalArgumentException> { DynamicPathLoader.loadAutoJsonString("..\\secret") }
     }
 }

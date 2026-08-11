@@ -275,6 +275,10 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val mirrorForAlliance: Boolean = true,
     private val holdVelocity: Boolean = false
 ) : Task {
+    private companion object {
+        const val MAX_PATH_DURATION_MS = 15_000L
+    }
+
     override val name = "FollowPath(${path.points.size} points)"
     private var lastTimeMs = 0L
     private lateinit var activePath: com.areslib.pathing.Path
@@ -297,6 +301,11 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         activeEventTasks.clear()
         taskStartTimes.clear()
 
+        if (activePath.points.isEmpty()) {
+            fail("path contains no trajectory points")
+            return emptyList()
+        }
+
         val currentPose = state.drive.poseEstimator.estimatedPose
         val startDistance = activePath.findClosestDistance(currentPose.x, currentPose.y)
 
@@ -307,17 +316,20 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
 
     /**
      * Completes on virtual progress when holding velocity, otherwise requires final pose tolerance.
-     * A 15-second fallback completes even if the robot remains outside tolerance.
+     * A path that cannot reach tolerance within 15 seconds fails so autonomous sequencing cannot
+     * silently advance after a blocked drivetrain.
      */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        if (activePath.points.isEmpty()) return true
+        if (activePath.points.isEmpty()) {
+            return fail("path contains no trajectory points")
+        }
         val targetDistance = activePath.points.last().distanceMeters
         
         val isVirtualComplete = state.pathState.currentDistanceMeters >= targetDistance
         if (holdVelocity && isVirtualComplete) {
             return true
         }
-        if (!isVirtualComplete && elapsedMs < 15000L) {
+        if (!isVirtualComplete && elapsedMs < MAX_PATH_DURATION_MS) {
             return false
         }
         
@@ -328,7 +340,25 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         val distToTarget = kotlin.math.sqrt(dx * dx + dy * dy)
         val headingError = kotlin.math.abs(com.areslib.math.wrapAngle(currentPose.heading.radians - endPose.heading.radians))
         
-        return (distToTarget < 0.08 && headingError < Math.toRadians(5.0)) || elapsedMs >= 15000L
+        if (distToTarget < 0.08 && headingError < Math.toRadians(5.0)) {
+            return true
+        }
+        if (elapsedMs >= MAX_PATH_DURATION_MS) {
+            return fail("failed to reach the final pose within ${MAX_PATH_DURATION_MS}ms")
+        }
+        return false
+    }
+
+    private fun fail(reason: String): Boolean {
+        if (TaskStateMachine.markFailed(this)) {
+            System.err.println("FollowPathTask: $reason")
+            try {
+                TaskCallbacks.invokeFail(this)
+            } catch (e: Exception) {
+                System.err.println("FollowPathTask: Exception during failure callback: ${e.message}")
+            }
+        }
+        return false
     }
 
     /** Advances path progress and event tasks using `RobotClock`; non-advancing time yields no actions. */

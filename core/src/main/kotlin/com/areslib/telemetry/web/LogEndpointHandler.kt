@@ -4,6 +4,8 @@ import com.areslib.telemetry.RobotStatusTracker
 import java.io.File
 import java.io.OutputStream
 import java.net.Socket
+import java.io.InputStream
+import java.io.IOException
 
 /**
  * Class implementation for Log Endpoint Handler.
@@ -20,8 +22,8 @@ class LogEndpointHandler(private val logDir: File, private val authToken: String
      */
     fun handleClient(client: Socket) {
         try {
-            val reader = client.getInputStream().bufferedReader(Charsets.UTF_8)
-            val firstLine = reader.readLine() ?: return
+            val input = client.getInputStream()
+            val firstLine = readHttpLine(input, MAX_REQUEST_LINE_BYTES) ?: return
 
             val tokens = firstLine.split(" ")
             if (tokens.size < 2) {
@@ -32,9 +34,17 @@ class LogEndpointHandler(private val logDir: File, private val authToken: String
             val fullPath = tokens[1]
 
             val headers = mutableMapOf<String, String>()
+            var headerCount = 0
+            var headerBytes = 0
             while (true) {
-                val line = reader.readLine()
+                val line = readHttpLine(input, MAX_HEADER_LINE_BYTES)
                 if (line == null || line.trim().isEmpty()) break
+                headerCount++
+                headerBytes += line.length
+                if (headerCount > MAX_HEADER_COUNT || headerBytes > MAX_HEADER_BYTES) {
+                    sendErrorResponse(client, 431, "Request Header Fields Too Large")
+                    return
+                }
                 val colonIdx = line.indexOf(':')
                 if (colonIdx != -1) {
                     val key = line.substring(0, colonIdx).trim().lowercase()
@@ -71,6 +81,19 @@ class LogEndpointHandler(private val logDir: File, private val authToken: String
             // Socket or parsing error
         } finally {
             try { client.close() } catch (_: Exception) {}
+        }
+    }
+
+    private fun readHttpLine(input: InputStream, maximumBytes: Int): String? {
+        val line = StringBuilder(kotlin.math.min(maximumBytes, 128))
+        while (true) {
+            val next = input.read()
+            if (next == -1) return if (line.isEmpty()) null else line.toString()
+            if (next == '\n'.code) return line.toString()
+            if (next != '\r'.code) {
+                if (line.length >= maximumBytes) throw IOException("HTTP line exceeds $maximumBytes bytes")
+                line.append(next.toChar())
+            }
         }
     }
 
@@ -268,5 +291,12 @@ class LogEndpointHandler(private val logDir: File, private val authToken: String
                 sendErrorResponse(client, 502, "Bad Gateway: Failed to stream from Limelight at $ip:5800. Error: ${e.message}")
             }
         }
+    }
+
+    private companion object {
+        const val MAX_REQUEST_LINE_BYTES = 8_192
+        const val MAX_HEADER_LINE_BYTES = 8_192
+        const val MAX_HEADER_BYTES = 32_768
+        const val MAX_HEADER_COUNT = 64
     }
 }

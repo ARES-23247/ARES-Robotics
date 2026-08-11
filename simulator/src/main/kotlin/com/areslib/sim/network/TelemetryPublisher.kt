@@ -26,7 +26,8 @@ object TelemetryPublisher {
     private val truePosePublisher = ntInst.getDoubleArrayTopic("ARES/TruePose").publish(
         edu.wpi.first.networktables.PubSubOption.periodic(0.01)
     )
-    private val gamePiecesPublisher = ntInst.getDoubleArrayTopic("ARES/GamePieces").publish()
+    private val gamePiecesPublisher = ntInst.getDoubleArrayTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES).publish()
+    private val gamePiecesCountPublisher = ntInst.getIntegerTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_COUNT).publish()
     private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 
     // --- AdvantageKit-level Swerve Module Telemetry ---
@@ -53,31 +54,25 @@ object TelemetryPublisher {
     private var lastFieldConfigJson = ""
 
     fun getWebVx(): Double {
-        val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vx", 0.0)
-        com.areslib.telemetry.SimInputBridge.rawWebVx = v
-        return v
+        return com.areslib.telemetry.SimInputBridge.currentFrame().vx
     }
     fun getWebVy(): Double {
-        val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/vy", 0.0)
-        com.areslib.telemetry.SimInputBridge.rawWebVy = v
-        return v
+        return com.areslib.telemetry.SimInputBridge.currentFrame().vy
     }
     fun getWebOmega(): Double {
-        val v = com.areslib.networktables.NT4Server.getDouble("ARES/Input/omega", 0.0)
-        com.areslib.telemetry.SimInputBridge.rawWebOmega = v
-        return v
+        return com.areslib.telemetry.SimInputBridge.currentFrame().omega
     }
 
-    fun getWebIsIntaking(): Boolean = NT4Server.getBoolean("ARES/Input/isIntaking", false)
-    fun getWebIsFlywheelOn(): Boolean = NT4Server.getBoolean("ARES/Input/isFlywheelOn", false)
-    fun getWebIsTransferring(): Boolean = NT4Server.getBoolean("ARES/Input/isTransferring", false)
-    fun getWebIsTeleopMode(): Boolean = NT4Server.getBoolean("ARES/Input/isTeleopMode", true)
-    fun getWebIsFieldCentric(): Boolean = NT4Server.getBoolean("ARES/Input/isFieldCentric", false)
-    fun getWebIsRedAlliance(): Boolean = NT4Server.getBoolean("ARES/Input/isRedAlliance", true)
-    fun getWebIsButtonAPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonAPressed", false)
-    fun getWebIsButtonBPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonBPressed", false)
-    fun getWebIsButtonXPressed(): Boolean = NT4Server.getBoolean("ARES/Input/isButtonXPressed", false)
-    fun getWebIsPoseReset(): Boolean = NT4Server.getBoolean("ARES/Input/isPoseReset", false)
+    fun getWebIsIntaking(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isIntaking
+    fun getWebIsFlywheelOn(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isFlywheelOn
+    fun getWebIsTransferring(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isTransferring
+    fun getWebIsTeleopMode(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isTeleopMode
+    fun getWebIsFieldCentric(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isFieldCentric
+    fun getWebIsRedAlliance(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isRedAlliance
+    fun getWebIsButtonAPressed(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isButtonAPressed
+    fun getWebIsButtonBPressed(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isButtonBPressed
+    fun getWebIsButtonXPressed(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isButtonXPressed
+    fun getWebIsPoseReset(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isPoseReset
     fun getWebObstacles(): String = NT4Server.getString("ARES/Input/obstacles", "")
     fun getWebFieldConfig(): String = NT4Server.getString("ARES/Input/fieldConfig", "")
 
@@ -182,11 +177,27 @@ object TelemetryPublisher {
     /**
      * Publishes the locations of game pieces on the field.
      *
+     * [count] is authoritative so consumers can discard stale tail records and reconcile removals.
+     * An explicit zero count is always accompanied by the shared empty array.
+     *
      * @param gamePieces Packed array representation of game pieces coordinates.
+     * @param count Number of live seven-double records in [gamePieces].
      */
-    fun publishGamePieces(gamePieces: DoubleArray) {
-        gamePiecesPublisher.set(gamePieces)
-        com.areslib.networktables.NT4Server.publishTopic("ARES/GamePieces", gamePieces)
+    fun publishGamePieces(gamePieces: DoubleArray, count: Int = gamePieces.size / GAME_PIECE_RECORD_WIDTH) {
+        require(count >= 0 && count * GAME_PIECE_RECORD_WIDTH <= gamePieces.size) {
+            "Game-piece count does not fit packed telemetry array"
+        }
+        val payload = if (count == 0) EMPTY_GAME_PIECES else gamePieces
+        gamePiecesCountPublisher.set(count.toLong())
+        gamePiecesPublisher.set(payload)
+        com.areslib.networktables.NT4Server.publishTopic(
+            com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_COUNT,
+            count.toLong()
+        )
+        com.areslib.networktables.NT4Server.publishTopic(
+            com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES,
+            payload
+        )
     }
 
     /**
@@ -242,27 +253,20 @@ object TelemetryPublisher {
      * @param driverStation Target virtual driver station to synchronize.
      */
     fun pollWebInputs(driverStation: VirtualDriverStation): String? {
-        val vx = getWebVx()
-        val vy = getWebVy()
-        val omega = getWebOmega()
-
-        driverStation.webVx = vx
-        driverStation.webVy = vy
-        driverStation.webOmega = omega
-
-        com.areslib.telemetry.SimInputBridge.rawWebVx = vx
-        com.areslib.telemetry.SimInputBridge.rawWebVy = vy
-        com.areslib.telemetry.SimInputBridge.rawWebOmega = omega
+        val command = com.areslib.telemetry.SimInputBridge.pollNetworkFrame()
+        driverStation.webVx = command.vx
+        driverStation.webVy = command.vy
+        driverStation.webOmega = command.omega
 
         // Dashboard clients connect to ARESLib's custom NT4 server. Read every web input from
         // that same registry; WPILib's process-local instance is a separate server and otherwise
         // leaves boolean/mode values stuck at their subscriber defaults.
-        driverStation.isIntaking = getWebIsIntaking()
-        driverStation.isFlywheelOn = getWebIsFlywheelOn()
-        driverStation.isTransferring = getWebIsTransferring()
-        driverStation.isTeleopMode = getWebIsTeleopMode()
-        driverStation.isFieldCentric = getWebIsFieldCentric()
-        val newRedAlliance = getWebIsRedAlliance()
+        driverStation.isIntaking = command.isIntaking
+        driverStation.isFlywheelOn = command.isFlywheelOn
+        driverStation.isTransferring = command.isTransferring
+        driverStation.isTeleopMode = command.isTeleopMode
+        driverStation.isFieldCentric = command.isFieldCentric
+        val newRedAlliance = command.isRedAlliance
         if (driverStation.isRedAlliance != newRedAlliance) {
             driverStation.isRedAlliance = newRedAlliance
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
@@ -270,10 +274,10 @@ object TelemetryPublisher {
                 robot.store.dispatch(com.areslib.action.RobotAction.SetAlliance(allianceEnum))
             }
         }
-        driverStation.isButtonAPressed = getWebIsButtonAPressed()
-        driverStation.isButtonBPressed = getWebIsButtonBPressed()
-        driverStation.isButtonXPressed = getWebIsButtonXPressed()
-        driverStation.isPoseReset = getWebIsPoseReset()
+        driverStation.isButtonAPressed = command.isButtonAPressed
+        driverStation.isButtonBPressed = command.isButtonBPressed
+        driverStation.isButtonXPressed = command.isButtonXPressed
+        driverStation.isPoseReset = command.isPoseReset
         val obstaclesJson = getWebObstacles()
         return if (obstaclesJson.isNotBlank() && obstaclesJson != lastObstaclesJson) {
             lastObstaclesJson = obstaclesJson
@@ -309,4 +313,7 @@ object TelemetryPublisher {
         ntInst.stopServer()
         DataLogManager.stop()
     }
+
+    const val GAME_PIECE_RECORD_WIDTH = 7
+    private val EMPTY_GAME_PIECES = DoubleArray(0)
 }

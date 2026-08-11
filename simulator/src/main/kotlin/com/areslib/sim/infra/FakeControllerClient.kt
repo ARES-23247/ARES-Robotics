@@ -183,12 +183,13 @@ object FakeControllerClient {
                     val steps = (duration * 10).toInt().coerceAtLeast(1)
                     
                     for (step in 1..steps) {
-                        heartbeat++
-                        heartbeatPub.set(heartbeat)
-                        
                         vxPub.set(vx)
                         vyPub.set(vy)
                         omegaPub.set(omega)
+                        // Commit the command frame last. The simulator brackets field reads with
+                        // heartbeat so it never accepts a partially-updated drive command.
+                        heartbeat++
+                        heartbeatPub.set(heartbeat)
                         
                         Thread.sleep(100)
                         

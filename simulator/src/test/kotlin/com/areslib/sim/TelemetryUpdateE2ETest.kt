@@ -17,11 +17,22 @@ import org.junit.runners.MethodSorters
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class TelemetryUpdateE2ETest {
+    private var drivePublisherThread: Thread? = null
 
     @org.junit.Before
     fun setup() {
         com.areslib.sim.DesktopSimLauncher.isSimRunning = false
+        com.areslib.telemetry.SimInputBridge.reset()
         Thread.sleep(300)
+    }
+
+    @org.junit.After
+    fun teardown() {
+        DesktopSimLauncher.isSimRunning = false
+        drivePublisherThread?.interrupt()
+        drivePublisherThread?.join(1_000L)
+        drivePublisherThread = null
+        com.areslib.telemetry.SimInputBridge.reset()
     }
 
     @Test
@@ -59,20 +70,48 @@ class TelemetryUpdateE2ETest {
 
         // 3. Inject drive input (vx = 2.0 m/s)
         println("[Telemetry E2E Test] Injecting vx = 2.0 m/s drive input...")
-        NT4Server.publishTopic("ARES/Input/vx", 2.0)
-        NT4Server.publishTopic("ARES/Input/vy", 0.0)
-        NT4Server.publishTopic("ARES/Input/omega", 0.0)
-
         // Boolean and mode inputs must come from the same custom NT4 registry as velocity.
         NT4Server.publishTopic("ARES/Input/isIntaking", true)
         NT4Server.publishTopic("ARES/Input/isFieldCentric", true)
         NT4Server.publishTopic("ARES/Input/isTeleopMode", false)
+        val driveSession = 23_247.0
+        NT4Server.publishTopic(
+            com.areslib.telemetry.TelemetryTopicConstants.DRIVE_INPUT_FRAME,
+            doubleArrayOf(1.0, driveSession, 0.0, 1_000.0, 0.0, 0.0, 0.0)
+        )
+        com.areslib.telemetry.SimInputBridge.pollNetworkFrame()
         assertTrue(com.areslib.sim.network.TelemetryPublisher.getWebIsIntaking())
         assertTrue(com.areslib.sim.network.TelemetryPublisher.getWebIsFieldCentric())
         assertFalse(com.areslib.sim.network.TelemetryPublisher.getWebIsTeleopMode())
         NT4Server.publishTopic("ARES/Input/isIntaking", false)
         NT4Server.publishTopic("ARES/Input/isFieldCentric", false)
         NT4Server.publishTopic("ARES/Input/isTeleopMode", true)
+        drivePublisherThread = Thread({
+            var sequence = 1L
+            try {
+                while (DesktopSimLauncher.isSimRunning) {
+                    NT4Server.publishTopic(
+                        com.areslib.telemetry.TelemetryTopicConstants.DRIVE_INPUT_FRAME,
+                        doubleArrayOf(
+                            1.0,
+                            driveSession,
+                            sequence.toDouble(),
+                            (1_000L + sequence * 20L).toDouble(),
+                            2.0,
+                            0.0,
+                            0.0
+                        )
+                    )
+                    sequence++
+                    Thread.sleep(20L)
+                }
+            } catch (_: InterruptedException) {
+                // Normal test shutdown.
+            }
+        }, "Telemetry-E2E-DrivePublisher").also {
+            it.isDaemon = true
+            it.start()
+        }
 
         val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":0.5,"centerY":0.25,"width":0.4,"height":0.2,"rotation":0.0}]"""
         NT4Server.publishTopic("ARES/Input/obstacles", obstacleJson)
@@ -160,7 +199,6 @@ class TelemetryUpdateE2ETest {
 
         println("[Telemetry E2E Test] SUCCESS! All simulated telemetry streams verified cleanly.")
 
-        // Cleanup: signal sim to stop
-        DesktopSimLauncher.isSimRunning = false
+        // Cleanup is performed by teardown even when an assertion fails.
     }
 }

@@ -29,6 +29,10 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  */
 class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, *>) {
 
+    /** True only when the most recent grouped CTRE refresh completed successfully. */
+    var encoderPositionsValid: Boolean = false
+        private set
+
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
     private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
     private val currentDraw3 = drivetrain.getModule(2).driveMotor.supplyCurrent
@@ -42,6 +46,9 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
     private val faultHardware = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_Hardware() }
     private val faultBrownout = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_BridgeBrownout() }
     private val faultTemp = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_DeviceTemp() }
+    private val steerFaultHardware = Array(4) { i -> drivetrain.getModule(i).steerMotor.getFault_Hardware() }
+    private val steerFaultBrownout = Array(4) { i -> drivetrain.getModule(i).steerMotor.getFault_BridgeBrownout() }
+    private val steerFaultTemp = Array(4) { i -> drivetrain.getModule(i).steerMotor.getFault_DeviceTemp() }
 
     private val pigeon = drivetrain.pigeon2
     private val pitchSignal = pigeon.pitch
@@ -58,9 +65,9 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
             faultBrownout[i].setUpdateFrequency(4.0, 0.0)
             faultTemp[i].setUpdateFrequency(4.0, 0.0)
             
-            drivetrain.getModule(i).steerMotor.getFault_Hardware().setUpdateFrequency(4.0, 0.0)
-            drivetrain.getModule(i).steerMotor.getFault_BridgeBrownout().setUpdateFrequency(4.0, 0.0)
-            drivetrain.getModule(i).steerMotor.getFault_DeviceTemp().setUpdateFrequency(4.0, 0.0)
+            steerFaultHardware[i].setUpdateFrequency(4.0, 0.0)
+            steerFaultBrownout[i].setUpdateFrequency(4.0, 0.0)
+            steerFaultTemp[i].setUpdateFrequency(4.0, 0.0)
         }
         pitchSignal.setUpdateFrequency(20.0, 0.0)
         rollSignal.setUpdateFrequency(20.0, 0.0)
@@ -72,14 +79,36 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
      * Zero-GC allocation.
      */
     fun refresh() {
-        BaseStatusSignal.refreshAll(
+        val refreshStatus = BaseStatusSignal.refreshAll(
             currentDraw1, currentDraw2, currentDraw3, currentDraw4,
             absEnc1, absEnc2, absEnc3, absEnc4,
             pitchSignal, rollSignal, yawSignal, yawRateSignal,
             faultHardware[0], faultHardware[1], faultHardware[2], faultHardware[3],
             faultBrownout[0], faultBrownout[1], faultBrownout[2], faultBrownout[3],
-            faultTemp[0], faultTemp[1], faultTemp[2], faultTemp[3]
+            faultTemp[0], faultTemp[1], faultTemp[2], faultTemp[3],
+            steerFaultHardware[0], steerFaultHardware[1], steerFaultHardware[2], steerFaultHardware[3],
+            steerFaultBrownout[0], steerFaultBrownout[1], steerFaultBrownout[2], steerFaultBrownout[3],
+            steerFaultTemp[0], steerFaultTemp[1], steerFaultTemp[2], steerFaultTemp[3]
         )
+        encoderPositionsValid = refreshStatus.isOK
+    }
+
+    /**
+     * Writes per-module live fault bitfields: bit 0 drive hardware, bit 1 drive brownout,
+     * bit 2 drive temperature, bit 3 steer hardware, bit 4 steer brownout, bit 5 steer temperature.
+     */
+    fun getFaults(out: IntArray) {
+        require(out.size >= 4) { "Swerve fault output must contain four modules" }
+        for (i in 0..3) {
+            var bits = 0
+            if (faultHardware[i].value == true) bits = bits or 0x01
+            if (faultBrownout[i].value == true) bits = bits or 0x02
+            if (faultTemp[i].value == true) bits = bits or 0x04
+            if (steerFaultHardware[i].value == true) bits = bits or 0x08
+            if (steerFaultBrownout[i].value == true) bits = bits or 0x10
+            if (steerFaultTemp[i].value == true) bits = bits or 0x20
+            out[i] = bits
+        }
     }
 
     /**

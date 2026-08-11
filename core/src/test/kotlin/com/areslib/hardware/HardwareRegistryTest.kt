@@ -200,4 +200,46 @@ class HardwareRegistryTest {
 
         assertEquals(1, device.closeCount)
     }
+
+    @Test
+    fun `current source registration replaces by name and clear removes cached views`() {
+        val first = object : SubsystemIO, CurrentSourceIO { override val currentAmps = 1.0 }
+        val replacement = object : SubsystemIO, CurrentSourceIO { override val currentAmps = 2.0 }
+        HardwareRegistry.registerDevice("current", first)
+        HardwareRegistry.registerDevice("current", replacement)
+
+        assertEquals(1, HardwareRegistry.getRegisteredCurrentSources().size)
+        assertSame(replacement, HardwareRegistry.getRegisteredCurrentSources().single())
+
+        HardwareRegistry.clear()
+        assertTrue(HardwareRegistry.getRegisteredCurrentSources().isEmpty())
+    }
+
+    @Test
+    fun `current sampler reads once isolates failures and suppresses covered constituents`() {
+        class Source(private val amps: Double) : SubsystemIO, CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; return amps }
+        }
+        val constituent = Source(5.0)
+        val aggregate = object : SubsystemIO, CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; return 7.0 }
+            override fun includesCurrentFrom(other: CurrentSourceIO): Boolean =
+                other === this || other === constituent
+        }
+        val independent = Source(4.0)
+        val throwing = object : SubsystemIO, CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; error("offline") }
+        }
+
+        val total = CurrentSourceSampler().sample(listOf(constituent, aggregate, independent, throwing))
+
+        assertEquals(11.0, total, 1e-9)
+        assertEquals(1, constituent.reads)
+        assertEquals(1, aggregate.reads)
+        assertEquals(1, independent.reads)
+        assertEquals(1, throwing.reads)
+    }
 }

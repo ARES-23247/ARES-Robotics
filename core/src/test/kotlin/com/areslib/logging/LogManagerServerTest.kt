@@ -11,11 +11,13 @@ class LogManagerServerTest {
 
     @BeforeEach
     fun setUp() {
+        LogManagerServer.configureDeleteToken(null)
         LogManagerServer.startServer()
     }
 
     @AfterEach
     fun tearDown() {
+        LogManagerServer.configureDeleteToken(null)
         LogManagerServer.stop()
     }
 
@@ -41,5 +43,36 @@ class LogManagerServerTest {
         assertEquals(200, apiConn.responseCode)
         val apiText = apiConn.inputStream.bufferedReader().use { it.readText() }
         assertTrue(apiText.startsWith("["), "Response should be a JSON array")
+    }
+
+    @Test
+    fun `delete is disabled by default and requires configured bearer token`() {
+        if (!LogManagerServer.isAlive) return
+        val disabled = deleteConnection("missing.jsonl")
+        assertEquals(403, disabled.responseCode)
+
+        val token = "test-delete-token-12345"
+        LogManagerServer.configureDeleteToken(token)
+        val unauthorized = deleteConnection("missing.jsonl")
+        assertEquals(401, unauthorized.responseCode)
+
+        val authorized = deleteConnection("missing.jsonl", token)
+        assertEquals(404, authorized.responseCode, "Authorized request should reach file validation")
+    }
+
+    @Test
+    fun `weak delete tokens are rejected`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            LogManagerServer.configureDeleteToken("short")
+        }
+    }
+
+    private fun deleteConnection(fileName: String, token: String? = null): HttpURLConnection {
+        val connection = URL("http://localhost:5002/api/delete?file=$fileName").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        if (token != null) connection.setRequestProperty("Authorization", "Bearer $token")
+        connection.outputStream.use { }
+        return connection
     }
 }

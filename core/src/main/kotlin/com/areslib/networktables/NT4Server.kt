@@ -9,6 +9,7 @@ import org.msgpack.core.MessageBufferPacker
 import org.msgpack.core.MessagePack
 import org.msgpack.core.MessageUnpacker
 import java.io.IOException
+import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.util.Collections
@@ -45,12 +46,15 @@ class NT4Server(
     private val clientPublishers = ConcurrentHashMap<WebSocket, ConcurrentHashMap<Long, NT4Entry>>()
     private val pendingEntriesByConnection = ConcurrentHashMap<WebSocket, MutableSet<NT4Entry>>()
     private val announcedEntriesByConnection = ConcurrentHashMap<WebSocket, MutableSet<NT4Entry>>()
+    private val sendStateByConnection = ConcurrentHashMap<WebSocket, ConnectionSendState>()
     private val dirtyEntriesLock = Any()
     private var dirtyEntries: MutableSet<NT4Entry> = LinkedHashSet()
+    private var reusableDrainedEntries: MutableSet<NT4Entry> = LinkedHashSet()
     private val rejectedTextFrames = AtomicLong()
     private val rejectedBinaryFrames = AtomicLong()
     private val sendFailures = AtomicLong()
     private val socketErrors = AtomicLong()
+    private val ownedSendBufferAllocations = AtomicLong()
 
     private val encodeBuffer = java.io.ByteArrayOutputStream(4096)
     private val entriesToSendBuffer = ArrayList<NT4Entry>(128)
@@ -60,9 +64,97 @@ class NT4Server(
         MessagePack.PackerConfig().newPacker(encodeBuffer)
     }
 
+    /** One transport-owned slot per connection; reuse is delayed until its socket queue drains. */
+    private inner class ConnectionSendState {
+        val slot = OwnedSendSlot()
+        var inFlight = false
+
+        fun acquireIfDrained(conn: WebSocket): OwnedSendSlot? {
+            if (conn.hasBufferedData()) return null
+            if (inFlight) inFlight = false
+            return slot
+        }
+
+        fun markInFlight() {
+            inFlight = true
+        }
+    }
+
+    private inner class OwnedSendSlot {
+        val output = ReusableByteArrayOutputStream(
+            INITIAL_OWNED_SEND_CAPACITY,
+            MAX_DECODED_FRAME_BYTES
+        ) { ownedSendBufferAllocations.incrementAndGet() }
+        val messagePacker: org.msgpack.core.MessagePacker = try {
+            MessagePack.newDefaultPacker(output)
+        } catch (_: Throwable) {
+            MessagePack.PackerConfig().newPacker(output)
+        }
+        private var sendBuffer = ByteBuffer.wrap(output.backingArray())
+
+        fun reset() {
+            output.reset()
+        }
+
+        fun finish(): ByteBuffer {
+            messagePacker.flush()
+            if (sendBuffer.array() !== output.backingArray()) {
+                sendBuffer = ByteBuffer.wrap(output.backingArray())
+            }
+            sendBuffer.clear()
+            sendBuffer.limit(output.size())
+            return sendBuffer
+        }
+    }
+
+    private class ReusableByteArrayOutputStream(
+        initialCapacity: Int,
+        private val maxCapacity: Int,
+        private val onAllocation: () -> Unit
+    ) : OutputStream() {
+        private var storage = ByteArray(initialCapacity).also { onAllocation() }
+        private var count = 0
+
+        override fun write(value: Int) {
+            ensureCapacity(count + 1)
+            storage[count++] = value.toByte()
+        }
+
+        override fun write(source: ByteArray, offset: Int, length: Int) {
+            if (offset < 0 || length < 0 || offset > source.size - length) {
+                throw IndexOutOfBoundsException()
+            }
+            ensureCapacity(count + length)
+            source.copyInto(storage, destinationOffset = count, startIndex = offset, endIndex = offset + length)
+            count += length
+        }
+
+        fun reset() {
+            count = 0
+        }
+
+        fun size(): Int = count
+        fun backingArray(): ByteArray = storage
+
+        private fun ensureCapacity(required: Int) {
+            if (required <= storage.size) return
+            if (required > maxCapacity) throw IOException("NT4 encoded frame exceeds $maxCapacity bytes")
+            var capacity = storage.size
+            while (capacity < required) {
+                capacity = (capacity * 2).coerceAtMost(maxCapacity)
+                if (capacity < required && capacity == maxCapacity) {
+                    throw IOException("NT4 encoded frame exceeds $maxCapacity bytes")
+                }
+            }
+            storage = storage.copyOf(capacity)
+            onAllocation()
+        }
+    }
+
     override fun onOpen(conn: WebSocket, handshake: org.java_websocket.handshake.ClientHandshake) {
         pendingEntriesByConnection.computeIfAbsent(conn) { ConcurrentHashMap.newKeySet() }
         announcedEntriesByConnection.computeIfAbsent(conn) { ConcurrentHashMap.newKeySet() }
+        sendStateByConnection.computeIfAbsent(conn) { ConnectionSendState() }
         connections.add(conn)
     }
 
@@ -70,6 +162,7 @@ class NT4Server(
         connections.remove(conn)
         pendingEntriesByConnection.remove(conn)
         announcedEntriesByConnection.remove(conn)
+        sendStateByConnection.remove(conn)
         clientSubscriptions.remove(conn)
 
         val publishers = clientPublishers.remove(conn)?.values?.toSet().orEmpty()
@@ -298,10 +391,9 @@ class NT4Server(
         var start = 0
         while (start < entries.size) {
             val end = (start + MAX_ENTRIES_PER_SEND).coerceAtMost(entries.size)
-            val batch = entries.subList(start, end)
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
             try {
-                if (!sendBinaryBuffer(conn, encodeNT4Messages(timestamp, batch))) return false
+                if (!sendBinaryBuffer(conn, encodeNT4Messages(timestamp, entries, start, end))) return false
             } catch (e: IOException) {
                 reportRateLimited("NT4 encode failure", sendFailures, e)
                 return false
@@ -323,15 +415,24 @@ class NT4Server(
 
     @Synchronized
     fun encodeNT4Messages(timestamp: Long, entries: List<NT4Entry>): ByteBuffer {
+        return encodeNT4Messages(timestamp, entries, 0, entries.size)
+    }
+
+    private fun encodeNT4Messages(
+        timestamp: Long,
+        entries: List<NT4Entry>,
+        startIndex: Int,
+        endIndex: Int
+    ): ByteBuffer {
         encodeBuffer.reset()
-        for (entry in entries) {
+        for (index in startIndex until endIndex) {
+            val entry = entries[index]
             val dataType = getTypeIdFromValue(entry.value)
-            val dataValue = entry.value.getAsObject()
             packer.packArrayHeader(4)
             packer.packLong(entry.id.toLong())
             packer.packLong(if (entry.timestampUs == Long.MIN_VALUE) timestamp else entry.timestampUs)
             packer.packInt(dataType)
-            packDataValue(dataType, dataValue)
+            packDataValue(packer, dataType, entry.value.borrowedValueForEncoding())
         }
         packer.flush()
         // Java-WebSocket is allowed to enqueue the ByteBuffer by reference. Return an owned
@@ -352,51 +453,76 @@ class NT4Server(
         packer.packLong(topicId)
         packer.packLong(timestamp)
         packer.packInt(dataType)
-        packDataValue(dataType, dataValue)
+        packDataValue(packer, dataType, dataValue)
         packer.flush()
         return ByteBuffer.wrap(encodeBuffer.toByteArray())
     }
 
-    private fun packDataValue(dataType: Int, dataValue: Any) {
+    private fun encodeOwnedEntries(
+        slot: OwnedSendSlot,
+        timestamp: Long,
+        entries: List<NT4Entry>,
+        startIndex: Int,
+        endIndex: Int
+    ): ByteBuffer {
+        slot.reset()
+        val ownedPacker = slot.messagePacker
+        for (index in startIndex until endIndex) {
+            val entry = entries[index]
+            val dataType = getTypeIdFromValue(entry.value)
+            ownedPacker.packArrayHeader(4)
+            ownedPacker.packLong(entry.id.toLong())
+            ownedPacker.packLong(if (entry.timestampUs == Long.MIN_VALUE) timestamp else entry.timestampUs)
+            ownedPacker.packInt(dataType)
+            packDataValue(ownedPacker, dataType, entry.value.borrowedValueForEncoding())
+        }
+        return slot.finish()
+    }
+
+    private fun packDataValue(
+        targetPacker: org.msgpack.core.MessagePacker,
+        dataType: Int,
+        dataValue: Any
+    ) {
         when (NT4Value.fromId(dataType)) {
-            NT4Type.BOOLEAN -> packer.packBoolean(dataValue as Boolean)
-            NT4Type.DOUBLE -> packer.packDouble((dataValue as Number).toDouble())
-            NT4Type.INT -> packer.packLong((dataValue as Number).toLong())
-            NT4Type.FLOAT -> packer.packFloat((dataValue as Number).toFloat())
-            NT4Type.STRING -> packer.packString(dataValue.toString())
+            NT4Type.BOOLEAN -> targetPacker.packBoolean(dataValue as Boolean)
+            NT4Type.DOUBLE -> targetPacker.packDouble((dataValue as Number).toDouble())
+            NT4Type.INT -> targetPacker.packLong((dataValue as Number).toLong())
+            NT4Type.FLOAT -> targetPacker.packFloat((dataValue as Number).toFloat())
+            NT4Type.STRING -> targetPacker.packString(dataValue.toString())
             NT4Type.BOOLEAN_ARRAY -> {
                 val arr = dataValue as BooleanArray
-                packer.packArrayHeader(arr.size)
-                for (b in arr) packer.packBoolean(b)
+                targetPacker.packArrayHeader(arr.size)
+                for (b in arr) targetPacker.packBoolean(b)
             }
             NT4Type.DOUBLE_ARRAY -> {
                 val arr = dataValue as DoubleArray
-                packer.packArrayHeader(arr.size)
-                for (d in arr) packer.packDouble(d)
+                targetPacker.packArrayHeader(arr.size)
+                for (d in arr) targetPacker.packDouble(d)
             }
             NT4Type.INT_ARRAY -> {
                 val arr = dataValue as LongArray
-                packer.packArrayHeader(arr.size)
-                for (l in arr) packer.packLong(l)
+                targetPacker.packArrayHeader(arr.size)
+                for (l in arr) targetPacker.packLong(l)
             }
             NT4Type.FLOAT_ARRAY -> {
                 val arr = dataValue as FloatArray
-                packer.packArrayHeader(arr.size)
-                for (f in arr) packer.packFloat(f)
+                targetPacker.packArrayHeader(arr.size)
+                for (f in arr) targetPacker.packFloat(f)
             }
             NT4Type.STRING_ARRAY -> {
                 @Suppress("UNCHECKED_CAST")
                 val arr = dataValue as Array<String>
-                packer.packArrayHeader(arr.size)
-                for (s in arr) packer.packString(s)
+                targetPacker.packArrayHeader(arr.size)
+                for (s in arr) targetPacker.packString(s)
             }
             else -> {
                 if (dataType == 5 || dataType == 7 || dataType == 8) {
                     val bytes = dataValue as? ByteArray ?: ByteArray(0)
-                    packer.packBinaryHeader(bytes.size)
-                    packer.writePayload(bytes)
+                    targetPacker.packBinaryHeader(bytes.size)
+                    targetPacker.writePayload(bytes)
                 } else {
-                    packer.packNil()
+                    targetPacker.packNil()
                 }
             }
         }
@@ -565,11 +691,16 @@ class NT4Server(
         }
     }
 
-    private fun drainDirtyEntries(): Set<NT4Entry> {
+    private fun drainDirtyEntries(): MutableSet<NT4Entry> {
         synchronized(dirtyEntriesLock) {
-            if (dirtyEntries.isEmpty()) return emptySet()
+            if (dirtyEntries.isEmpty()) {
+                reusableDrainedEntries.clear()
+                return reusableDrainedEntries
+            }
+            reusableDrainedEntries.clear()
             val currentDirty = dirtyEntries
-            dirtyEntries = LinkedHashSet()
+            dirtyEntries = reusableDrainedEntries
+            reusableDrainedEntries = currentDirty
             return currentDirty
         }
     }
@@ -589,39 +720,48 @@ class NT4Server(
         val currentDirty = drainDirtyEntries()
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis() * 1000L
 
-        for (conn in connections) {
-            val pendingEntries = pendingEntriesByConnection.computeIfAbsent(conn) {
-                ConcurrentHashMap.newKeySet()
-            }
-
-            for (entry in currentDirty) {
-                if (isSubscribed(conn, entry)) {
-                    pendingEntries.add(entry)
+        try {
+            for (conn in connections) {
+                val pendingEntries = pendingEntriesByConnection.computeIfAbsent(conn) {
+                    ConcurrentHashMap.newKeySet()
+                }
+                for (entry in currentDirty) {
+                    if (isSubscribed(conn, entry)) {
+                        pendingEntries.add(entry)
+                    }
                 }
             }
+        } finally {
+            // Entries are now retained per connection. Reuse the detached set on the next frame.
+            currentDirty.clear()
+        }
 
-            if (conn.hasBufferedData() || pendingEntries.isEmpty()) continue
+        for (conn in connections) {
+            val pendingEntries = pendingEntriesByConnection[conn] ?: continue
+            val sendState = sendStateByConnection.computeIfAbsent(conn) { ConnectionSendState() }
+            val ownedSlot = sendState.acquireIfDrained(conn) ?: continue
+            if (pendingEntries.isEmpty()) continue
 
             entriesToSendBuffer.clear()
             pendingEntries.filterTo(entriesToSendBuffer, NT4Entry::hasValue)
             if (entriesToSendBuffer.isNotEmpty()) {
-                var start = 0
-                while (start < entriesToSendBuffer.size) {
-                    val end = (start + MAX_ENTRIES_PER_SEND).coerceAtMost(entriesToSendBuffer.size)
-                    val batch = entriesToSendBuffer.subList(start, end)
-                    try {
-                        val binMsg = encodeNT4Messages(timestamp, batch)
-                        if (!sendBinaryBuffer(conn, binMsg)) break
-                        for (entry in batch) pendingEntries.remove(entry)
-                    } catch (e: IOException) {
-                        reportRateLimited("NT4 encode failure", sendFailures, e)
-                        break
+                val end = MAX_ENTRIES_PER_SEND.coerceAtMost(entriesToSendBuffer.size)
+                try {
+                    val binMsg = encodeOwnedEntries(ownedSlot, timestamp, entriesToSendBuffer, 0, end)
+                    // Mark before send: even an exceptional transport may have retained the buffer.
+                    sendState.markInFlight()
+                    if (sendBinaryBuffer(conn, binMsg)) {
+                        for (index in 0 until end) pendingEntries.remove(entriesToSendBuffer[index])
                     }
-                    start = end
+                } catch (e: IOException) {
+                    reportRateLimited("NT4 encode failure", sendFailures, e)
                 }
             }
         }
     }
+
+    /** Diagnostic used by allocation regressions; includes initial and growth backing arrays. */
+    internal fun ownedSendBufferAllocationCount(): Long = ownedSendBufferAllocations.get()
 
     private fun reportRateLimited(label: String, counter: AtomicLong, error: Exception?) {
         val occurrence = counter.incrementAndGet()
@@ -655,6 +795,7 @@ class NT4Server(
         internal const val MAX_PUBLISHERS_PER_CLIENT = 4_096
         internal const val MAX_SUBSCRIPTIONS_PER_CLIENT = 1_024
         internal const val MAX_ENTRIES_PER_SEND = 128
+        private const val INITIAL_OWNED_SEND_CAPACITY = 8_192
         private val SUPPORTED_TOPIC_TYPES = setOf(
             "boolean", "double", "int", "float", "string",
             "boolean[]", "double[]", "int[]", "float[]", "string[]"
@@ -778,6 +919,23 @@ class NT4Server(
                 is FloatArray -> v.map { it.toDouble() }.toDoubleArray()
                 else -> defaultValue
             }
+        }
+
+        /**
+         * Copies a retained double-array value into caller-owned storage without allocating.
+         *
+         * @return source element count, or `-1` when the topic has no published double-array value.
+         * Callers must reject a count larger than [destination] because only the fitting prefix is
+         * copied.
+         */
+        @JvmStatic
+        fun copyDoubleArray(topic: String, destination: DoubleArray): Int {
+            if (serverInstance == null) return -1
+            val entry = getEntryFlexible(topic) ?: return -1
+            if (!entry.hasValue) return -1
+            val source = (entry.value as? NT4Value.DoubleArrayVal)?.borrowedArray() ?: return -1
+            source.copyInto(destination, endIndex = minOf(source.size, destination.size))
+            return source.size
         }
 
         private fun getEntryFlexible(topic: String): NT4Entry? {
