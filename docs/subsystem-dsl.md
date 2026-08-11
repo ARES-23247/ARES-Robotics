@@ -1,0 +1,93 @@
+# Subsystem DSL and visual builder
+
+ARES supports three deliberate learning levels. They use the same lifecycle and state contracts,
+so students can move between them without rewriting the robot architecture.
+
+## Level 1: visual builder
+
+Open **Robot -> Subsystem Builder** in ARES Analytics. Select the robot project, add hardware,
+state values, and control rules, then choose **Save & Generate**.
+
+The editor stores a versioned `.ares/subsystems/<id>.aressubsystem` document and generates:
+
+- a readable `subsystem { ... }` definition;
+- immutable typed state;
+- cached `SubsystemIO` plus FTC or FRC hardware wiring;
+- a low-allocation controller and lifecycle host;
+- mock IO and a starter test;
+- a generated registry that installs the mechanism into the robot lifecycle.
+
+Each target state also derives one typed action key, such as
+`subsystem.elevator.set.targetMeters`. Generated project code merges those actions with the manual
+capability catalog, so controller bindings and routines can use a new subsystem without handwritten
+adapter methods. Derived keys may not be shadowed by a different manual action.
+
+The normal robot build verifies that managed Kotlin matches the document. A stale or invalid
+document fails the build instead of silently deploying different behavior.
+
+## Level 2: hand-authored DSL
+
+The generated definition is ordinary Kotlin and is intended to teach the vocabulary:
+
+```kotlin
+val elevator = subsystem("elevator", "Elevator", SubsystemPlatform.FTC) {
+    description = "Moves the carriage"
+
+    val target = state.double(
+        "targetMeters", "Target", SubsystemFieldRole.TARGET, default = 0.0, unit = "m"
+    )
+    val position = state.double(
+        "positionMeters", "Position", SubsystemFieldRole.MEASUREMENT, default = 0.0, unit = "m"
+    )
+    val leader = hardware.motor("leader", "Leader motor") {
+        hardwareMapName = "elevator"
+        measurement(
+            position,
+            SubsystemMeasurementSource.MOTOR_POSITION_NATIVE,
+            scale = 0.0005, // Measured meters per FTC encoder tick for this mechanism.
+        )
+    }
+    control.positionPid("position", "Position", leader, target, position) {
+        kP = 8.0
+        derivativeFilterTimeConstantSeconds = 0.02
+        minimumOutput = -4.0
+        maximumOutput = 10.0
+    }
+}
+```
+
+Students may use the same DSL in handwritten utilities, tests, and custom generators. Managed files
+carry a content hash and are overwritten on generation, so they must not be edited in place. To take
+full ownership, copy the readable design into a student-owned package, implement or adapt the
+IO/runtime alongside it, and remove the `.aressubsystem` document so there is one source of truth.
+
+## Level 3: custom Kotlin
+
+Advanced students can implement `SubsystemIO` and `Subsystem` directly, write a custom reducer, or
+compose season state by hand. The non-negotiable contracts remain:
+
+- hardware reads happen once in `refresh()`/`readSensors()` and getters return cached values;
+- output commands fail closed on non-finite values and respect the supplied power scale;
+- states are immutable and updates are dispatched through Redux;
+- named generated states use `RobotAction.UpdateNamedSubsystemState`, so one mechanism cannot
+  replace another mechanism or the season-specific superstructure state;
+- robot time comes from `RobotClock`;
+- `safe()` and `close()` leave every continuous actuator at zero effort.
+
+Generated PID loops reject non-finite sensor/target data, filter derivative noise, and use
+conditional integration to prevent windup while saturated. Target limits are enforced both in the
+catalog arguments and at the controller boundary. `kS` is output effort, while `kV` is output effort
+per target unit; keep the target and measurement units identical.
+
+Hardware signals are never relabeled implicitly. Select native position, native velocity, current
+amps, digital state, analog volts, or color ARGB explicitly, then provide scale and offset when
+converting to mechanism units. FTC motor native units are encoder ticks (and ticks/second); Phoenix
+6 FRC motor native units are rotations (and rotations/second). The cached value is
+`raw * scale + offset`.
+
+## Platform addressing
+
+FTC devices use hardware-map names. FRC TalonFX motors use CAN ID/bus, while PWM, digital, and analog
+devices use channels. The editor validates these rules before it generates source. FRC color-sensor
+wiring is intentionally rejected until a concrete I2C implementation is selected; the builder never
+guesses a hardware API.

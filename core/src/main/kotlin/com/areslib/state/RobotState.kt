@@ -138,6 +138,8 @@ data class SuperstructureState(
     val indicatorLights: Map<String, Double> = emptyMap(),
     /** Maps goBILDA Prism RGB LED Driver hardware names to their target pulse width in microseconds (500–2500µs). */
     val prismDrivers: Map<String, Int> = emptyMap(),
+    /** Independently addressable GUI/DSL-defined mechanism states. */
+    val subsystems: Map<String, SubsystemState> = emptyMap(),
     // Custom extensible container for season/robot-specific states
     val custom: Any? = null
 )

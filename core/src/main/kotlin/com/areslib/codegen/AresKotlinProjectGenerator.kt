@@ -43,10 +43,11 @@ import com.areslib.routine.validateRoutineSet
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.validateAresProjectMetadata
+import com.areslib.subsystem.SubsystemTargetCapability
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 2
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 3
 
 /** Complete, hermetic input to the Kotlin robot-project generator. */
 data class KotlinProjectCodegenRequest(
@@ -64,6 +65,10 @@ data class KotlinProjectCodegenRequest(
     val targetInputPlatform: ControllerInputPlatform? = null,
     /** Canonical project geometry. Build-time CLI projects require `.ares/project.json`. */
     val projectMetadata: AresProjectMetadataDocument? = null,
+    /** Target setters derived from subsystem documents rather than hand-authored catalog entries. */
+    val subsystemActions: Collection<SubsystemTargetCapability> = emptyList(),
+    /** Fully-qualified generated registry that creates the corresponding Redux tasks. */
+    val subsystemRegistryFqn: String? = null,
 )
 
 /** Generated source and the hashes a build can use to detect stale checked-in output. */
@@ -143,6 +148,7 @@ object AresKotlinProjectGenerator {
                 actionMethods,
                 conditionMethods,
                 continuousActionMethods,
+                request.subsystemActions.associateBy { it.descriptor.key },
             ))
             append('\n')
             append("/** Robot scheduler boundary used by generated direct-action controller bindings. */\n")
@@ -269,6 +275,18 @@ object AresKotlinProjectGenerator {
         require(catalogErrors.isEmpty()) {
             catalogErrors.joinToString(separator = "; ") { "${it.path}: ${it.message}" }
         }
+        val subsystemActionKeys = request.subsystemActions.map { it.descriptor.key }
+        require(subsystemActionKeys.distinct().size == subsystemActionKeys.size) {
+            "Generated subsystem action keys must be unique"
+        }
+        require(request.subsystemActions.isEmpty() || !request.subsystemRegistryFqn.isNullOrBlank()) {
+            "Generated subsystem actions require a subsystem registry FQN"
+        }
+        request.subsystemActions.forEach { capability ->
+            require(request.catalog.actions.singleOrNull { it == capability.descriptor } != null) {
+                "Subsystem action '${capability.descriptor.key}' is missing or differs in the merged catalog"
+            }
+        }
 
         val actions = request.catalog.actions.associateBy { it.key }
         val conditions = request.catalog.conditions.associateBy { it.key }
@@ -323,6 +341,18 @@ object AresKotlinProjectGenerator {
             }
         }
         validateControls(request, actions, routineIds)
+        val subsystemActionKeySet = subsystemActionKeys.toSet()
+        val analogSubsystemActions = request.controlSchemes.asSequence()
+            .flatMap { it.bindings.asSequence() }
+            .filter { it.enabled && it.source.kind in ANALOG_SOURCE_KINDS }
+            .map { it.target.key }
+            .filter(subsystemActionKeySet::contains)
+            .distinct()
+            .toList()
+        require(analogSubsystemActions.isEmpty()) {
+            "Generated subsystem setters are discrete actions; use a button/chord or hand-code a continuous action: " +
+                analogSubsystemActions.joinToString()
+        }
     }
 
     private fun validateStepArguments(
@@ -428,6 +458,7 @@ object AresKotlinProjectGenerator {
             digest.update(bytes)
         }
         record("generator", ARES_KOTLIN_CODEGEN_VERSION.toString())
+        record("subsystem-registry", request.subsystemRegistryFqn.orEmpty())
         request.projectMetadata?.let { record("project-metadata", AresProjectMetadataCodec.encode(it)) }
         record("catalog", CapabilityCatalogCodec.encode(request.catalog))
         routines.forEach { record("routine:${it.documentId}", AresRoutineCodec.encode(it)) }
@@ -460,6 +491,7 @@ object AresKotlinProjectGenerator {
         actionMethods: Map<String, String>,
         conditionMethods: Map<String, String>,
         continuousActionMethods: Map<String, String>,
+        subsystemActions: Map<String, SubsystemTargetCapability>,
     ): String = buildString {
         append("/** Typed robot implementations for every capability in the generated catalog. */\n")
         append("interface ${request.registryInterfaceName} {\n")
@@ -467,7 +499,17 @@ object AresKotlinProjectGenerator {
             append("    /** Implements action key ${descriptor.key}. */\n")
             append("    fun ${actionMethods.getValue(descriptor.key)}(")
             append(renderSignatureParameters(descriptor.parameters))
-            append("): Task\n\n")
+            if (descriptor.key !in subsystemActions) {
+                append("): Task\n\n")
+            } else {
+                val registry = requireNotNull(request.subsystemRegistryFqn)
+                val valueName = assignParameterNames(descriptor.parameters).getValue("value")
+                append("): Task = requireNotNull($registry.createActionTask(")
+                append(stringLiteral(descriptor.key))
+                append(", $valueName)) { ")
+                append(stringLiteral("Generated subsystem action '${descriptor.key}' rejected its value"))
+                append(" }\n\n")
+            }
         }
         actions.filter { it.key in continuousActionMethods }.forEach { descriptor ->
             append("    /** Allocation-free continuous control for action key ${descriptor.key}. */\n")

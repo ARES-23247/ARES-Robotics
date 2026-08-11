@@ -17,6 +17,9 @@ object SuperstructureReducer {
             is RobotAction.UpdateSubsystemState -> {
                 state.copy(custom = action.state)
             }
+            is RobotAction.UpdateNamedSubsystemState -> {
+                state.copy(subsystems = state.subsystems + (action.subsystemId to action.state))
+            }
             is RobotAction.SetIndicatorLight -> {
                 state.copy(
                     indicatorLights = state.indicatorLights + (action.name to action.position)

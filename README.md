@@ -105,6 +105,7 @@ The rationale and edge cases are documented in [Math and coordinate contracts](d
 - [Math and coordinate contracts](docs/math-and-coordinate-contracts.md)
 - [Telemetry and logging](docs/telemetry-and-logging.md)
 - [Routines, controls, and generated robot code](docs/routines-controls-and-codegen.md)
+- [Subsystem DSL and visual builder](docs/subsystem-dsl.md)
 - [Development, testing, and troubleshooting](docs/development.md)
 - [Redux onboarding](docs/onboarding/01_redux_basics.md)
 - [Desktop simulator onboarding](docs/onboarding/02_desktop_simulator.md)
