@@ -27,10 +27,10 @@ Use the checked-in wrapper and JDK 17:
 .\gradlew.bat :ftc-hardware:test
 .\gradlew.bat :frc-hardware:test
 .\gradlew.bat :simulator:test
-.\gradlew.bat publishToMavenLocal
+.\gradlew.bat apiCheck publishReleaseValidation
 ```
 
-After changing ARESLib, test it and publish to Maven Local before testing consumers. Some sibling repositories use Gradle composite substitution; inspect their `settings.gradle` when resolving stale or unexpected artifacts. Publication coordinates are listed in [README.md](README.md).
+After changing ARESLib, test it and publish the isolated validation repository before testing consumers with `-ParesRepository=<path>/build/release-repository`. Normal consumer builds use the pinned Maven Central version; sibling source substitution is opt-in. Publication coordinates are listed in [README.md](README.md).
 
 ## State and reducer contract
 

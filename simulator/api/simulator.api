@@ -1,0 +1,452 @@
+public final class com/areslib/hardware/vision/SimVisionIO : com/areslib/hardware/vision/VisionIO {
+	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getCameraPoses ()Ljava/util/List;
+	public final fun injectMeasurement (Lcom/areslib/hardware/vision/VisionIOInputs;DDDD)V
+	public static synthetic fun injectMeasurement$default (Lcom/areslib/hardware/vision/SimVisionIO;Lcom/areslib/hardware/vision/VisionIOInputs;DDDDILjava/lang/Object;)V
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun setImuMode (I)V
+	public fun setOrientation (DDDDDDD)V
+	public fun updateInputs (Lcom/areslib/hardware/vision/VisionIOInputs;)V
+}
+
+public final class com/areslib/sim/DesktopSimLauncher {
+	public static final field INSTANCE Lcom/areslib/sim/DesktopSimLauncher;
+	public final fun isSimRunning ()Z
+	public final fun launch ([Ljava/lang/String;Lcom/areslib/sim/SimInteractionModel;Ljava/lang/Object;)V
+	public static synthetic fun launch$default (Lcom/areslib/sim/DesktopSimLauncher;[Ljava/lang/String;Lcom/areslib/sim/SimInteractionModel;Ljava/lang/Object;ILjava/lang/Object;)V
+	public static final fun main ([Ljava/lang/String;)V
+	public final fun setSimRunning (Z)V
+}
+
+public final class com/areslib/sim/NoOpInteractionModel : com/areslib/sim/SimInteractionModel {
+	public fun <init> ()V
+	public fun reset ()V
+	public fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
+}
+
+public abstract interface class com/areslib/sim/SimInteractionModel {
+	public abstract fun reset ()V
+	public abstract fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
+}
+
+public final class com/areslib/sim/SimInteractionModel$DefaultImpls {
+	public static fun reset (Lcom/areslib/sim/SimInteractionModel;)V
+}
+
+public final class com/areslib/sim/TestCrashKt {
+	public static final fun main ()V
+	public static synthetic fun main ([Ljava/lang/String;)V
+}
+
+public final class com/areslib/sim/VerificationAppKt {
+	public static final fun main ()V
+	public static synthetic fun main ([Ljava/lang/String;)V
+}
+
+public final class com/areslib/sim/cli/SimCliArgs {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;ZZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;ZZLjava/lang/String;)Lcom/areslib/sim/cli/SimCliArgs;
+	public static synthetic fun copy$default (Lcom/areslib/sim/cli/SimCliArgs;Ljava/lang/String;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/sim/cli/SimCliArgs;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFieldConfigArg ()Ljava/lang/String;
+	public final fun getHeadless ()Z
+	public final fun getOpModeClassName ()Ljava/lang/String;
+	public final fun getWatchFieldConfig ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/sim/cli/SimCliParser {
+	public static final field INSTANCE Lcom/areslib/sim/cli/SimCliParser;
+	public final fun loadFieldConfig (Ljava/lang/String;)Lcom/areslib/state/RobotFieldConfig;
+	public final fun parseArgs ([Ljava/lang/String;)Lcom/areslib/sim/cli/SimCliArgs;
+}
+
+public final class com/areslib/sim/field/FieldElementLoader {
+	public static final field INSTANCE Lcom/areslib/sim/field/FieldElementLoader;
+	public final fun loadElements (Lorg/dyn4j/world/World;Ljava/lang/String;)Ljava/util/List;
+	public final fun loadElements (Lorg/dyn4j/world/World;Ljava/util/List;Ljava/util/List;)Ljava/util/List;
+}
+
+public final class com/areslib/sim/field/FieldObstacleLoader {
+	public static final field INSTANCE Lcom/areslib/sim/field/FieldObstacleLoader;
+	public final fun loadObstacles (Lorg/dyn4j/world/World;Ljava/lang/String;Z)Ljava/util/List;
+	public final fun loadObstacles (Lorg/dyn4j/world/World;Ljava/util/List;)Ljava/util/List;
+	public static synthetic fun loadObstacles$default (Lcom/areslib/sim/field/FieldObstacleLoader;Lorg/dyn4j/world/World;Ljava/lang/String;ZILjava/lang/Object;)Ljava/util/List;
+	public final fun loadObstaclesFromAnalyticsJson (Ljava/lang/String;)Ljava/util/List;
+}
+
+public final class com/areslib/sim/field/MecanumInteractionModel : com/areslib/sim/SimInteractionModel {
+	public static final field INTAKE_RADIUS_SQUARED D
+	public fun <init> ()V
+	public fun reset ()V
+	public fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
+}
+
+public final class com/areslib/sim/infra/FakeControllerClient {
+	public static final field INSTANCE Lcom/areslib/sim/infra/FakeControllerClient;
+	public static final fun main ([Ljava/lang/String;)V
+}
+
+public final class com/areslib/sim/infra/MockI2cDeviceSynch : com/qualcomm/robotcore/hardware/I2cDeviceSynch {
+	public fun <init> ()V
+	public fun close ()V
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getDeviceName ()Ljava/lang/String;
+	public fun getI2cAddress ()Lcom/qualcomm/robotcore/hardware/I2cAddr;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public final fun getOnRead ()Lkotlin/jvm/functions/Function2;
+	public final fun getOnWrite ()Lkotlin/jvm/functions/Function2;
+	public fun getReadWindow ()Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadWindow;
+	public final fun getRegisters ()[B
+	public fun getVersion ()I
+	public fun read (II)[B
+	public fun read8 (I)B
+	public fun resetDeviceConfigurationForOpMode ()V
+	public fun setI2cAddress (Lcom/qualcomm/robotcore/hardware/I2cAddr;)V
+	public final fun setOnRead (Lkotlin/jvm/functions/Function2;)V
+	public final fun setOnWrite (Lkotlin/jvm/functions/Function2;)V
+	public fun setReadWindow (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadWindow;)V
+	public fun write (I[B)V
+	public fun write8 (II)V
+}
+
+public final class com/areslib/sim/infra/SimGamepadManager : java/lang/AutoCloseable {
+	public static final field POLLING_STOP_JOIN_MS J
+	public fun <init> ()V
+	public final fun applyRemoteCommand (Lcom/areslib/telemetry/SimInputBridge$CommandFrame;)V
+	public final fun clearRemoteCommand ()V
+	public fun close ()V
+	public final fun getAppliedIsFieldCentric ()Z
+	public final fun getAppliedIsFlywheelOn ()Z
+	public final fun getAppliedIsIntaking ()Z
+	public final fun getChassisSpeeds ()Lcom/areslib/math/geometry/ChassisSpeeds;
+	public final fun getEffectiveIsFieldCentric ()Z
+	public final fun getEffectiveIsFlywheelOn ()Z
+	public final fun getEffectiveIsIntaking ()Z
+	public final fun getEffectiveIsRedAlliance ()Z
+	public final fun getEffectiveIsTeleopMode ()Z
+	public final fun getEffectiveIsTransferring ()Z
+	public final fun getGamepadLx ()F
+	public final fun getGamepadLy ()F
+	public final fun getGamepadName ()Ljava/lang/String;
+	public final fun getGamepadRx ()F
+	public final fun getGamepadRy ()F
+	public final fun getHasRemoteAuthority ()Z
+	public final fun getLastGamepadEnter ()Z
+	public final fun getLastGamepadRb ()Z
+	public final fun getLastGamepadShift ()Z
+	public final fun getLastLx ()F
+	public final fun getLastLy ()F
+	public final fun getLastRawButtons ()[B
+	public final fun getLastRx ()F
+	public final fun getLastRy ()F
+	public final fun getPressedKeys ()Ljava/util/concurrent/ConcurrentHashMap$KeySetView;
+	public final fun handleKeyPressed (ILkotlin/jvm/functions/Function0;)V
+	public final fun handleKeyReleased (ILkotlin/jvm/functions/Function0;)V
+	public final fun isButtonAPressed ()Z
+	public final fun isButtonBPressed ()Z
+	public final fun isButtonXPressed ()Z
+	public final fun isFieldCentric ()Z
+	public final fun isFlywheelOn ()Z
+	public final fun isGamepadConnected ()Z
+	public final fun isIntaking ()Z
+	public final fun isPoseReset ()Z
+	public final fun isRedAlliance ()Z
+	public final fun isTeleopMode ()Z
+	public final fun isTransferring ()Z
+	public final fun observeAcceptedMechanismState (ZZ)V
+	public final fun recordAppliedDriveFrame (Z)V
+	public final fun resetInjectionState ()V
+	public final fun setButtonAPressed (Z)V
+	public final fun setButtonBPressed (Z)V
+	public final fun setButtonXPressed (Z)V
+	public final fun setFieldCentric (Z)V
+	public final fun setFlywheelOn (Z)V
+	public final fun setGamepadConnected (Z)V
+	public final fun setGamepadLx (F)V
+	public final fun setGamepadLy (F)V
+	public final fun setGamepadName (Ljava/lang/String;)V
+	public final fun setGamepadRx (F)V
+	public final fun setGamepadRy (F)V
+	public final fun setIntaking (Z)V
+	public final fun setLastGamepadEnter (Z)V
+	public final fun setLastGamepadRb (Z)V
+	public final fun setLastGamepadShift (Z)V
+	public final fun setLastLx (F)V
+	public final fun setLastLy (F)V
+	public final fun setLastRawButtons ([B)V
+	public final fun setLastRx (F)V
+	public final fun setLastRy (F)V
+	public final fun setPoseReset (Z)V
+	public final fun setRedAlliance (Z)V
+	public final fun setTeleopMode (Z)V
+	public final fun setTransferring (Z)V
+	public final fun startPolling (Lkotlin/jvm/functions/Function0;)V
+	public final fun writeEffectiveGamepads (Lcom/qualcomm/robotcore/hardware/Gamepad;Lcom/qualcomm/robotcore/hardware/Gamepad;)V
+}
+
+public final class com/areslib/sim/infra/VirtualDriverStation : javax/swing/JFrame, java/awt/event/KeyListener {
+	public fun <init> (Lcom/areslib/sim/infra/SimGamepadManager;Lkotlin/jvm/functions/Function0;)V
+	public fun keyPressed (Ljava/awt/event/KeyEvent;)V
+	public fun keyReleased (Ljava/awt/event/KeyEvent;)V
+	public fun keyTyped (Ljava/awt/event/KeyEvent;)V
+}
+
+public final class com/areslib/sim/model/FlywheelSim {
+	public fun <init> ()V
+	public fun <init> (DDDDD)V
+	public synthetic fun <init> (DDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getCurrentAmps (D)D
+	public final fun getFrictionCoeff ()D
+	public final fun getKe ()D
+	public final fun getKt ()D
+	public final fun getMomentOfInertia ()D
+	public final fun getResistance ()D
+	public final fun getVelocityRpm ()D
+	public final fun reset ()V
+	public final fun update (DD)V
+}
+
+public final class com/areslib/sim/model/IntakePivotSim {
+	public fun <init> ()V
+	public fun <init> (DDDDDDD)V
+	public synthetic fun <init> (DDDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAngleDegrees ()D
+	public final fun getArmMassKg ()D
+	public final fun getFrictionCoeff ()D
+	public final fun getGearRatio ()D
+	public final fun getKt ()D
+	public final fun getLengthToComMeters ()D
+	public final fun getMomentOfInertia ()D
+	public final fun getResistance ()D
+	public final fun getVelocityDegreesPerSec ()D
+	public final fun reset (D)V
+	public static synthetic fun reset$default (Lcom/areslib/sim/model/IntakePivotSim;DILjava/lang/Object;)V
+	public final fun update (DD)V
+}
+
+public final class com/areslib/sim/model/MecanumRobotDouble {
+	public fun <init> ()V
+	public final fun getFl ()Lcom/areslib/sim/model/SimDcMotorEx;
+	public final fun getFr ()Lcom/areslib/sim/model/SimDcMotorEx;
+	public final fun getHardwareMap ()Lcom/qualcomm/robotcore/hardware/HardwareMap;
+	public final fun getLimelight ()Lcom/areslib/sim/model/SimLimelight3A;
+	public final fun getMockImu ()Lcom/qualcomm/robotcore/hardware/IMU;
+	public final fun getPinpoint ()Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver;
+	public final fun getRl ()Lcom/areslib/sim/model/SimDcMotorEx;
+	public final fun getRr ()Lcom/areslib/sim/model/SimDcMotorEx;
+	public final fun getVoltageSensor ()Lcom/qualcomm/robotcore/hardware/VoltageSensor;
+	public final fun updateSensors (DDDDDDDZ)V
+	public static synthetic fun updateSensors$default (Lcom/areslib/sim/model/MecanumRobotDouble;DDDDDDDZILjava/lang/Object;)V
+}
+
+public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/hardware/DcMotorEx {
+	public fun <init> ()V
+	public fun close ()V
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getCurrent (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
+	public fun getCurrentPosition ()I
+	public fun getDeviceName ()Ljava/lang/String;
+	public fun getDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public fun getPower ()D
+	public fun getVelocity ()D
+	public fun getVersion ()I
+	public fun resetDeviceConfigurationForOpMode ()V
+	public fun setCurrentPosition (I)V
+	public fun setDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
+	public fun setMode (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)V
+	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
+	public fun setPower (D)V
+	public fun setVelocity (D)V
+}
+
+public final class com/areslib/sim/model/SimLLResult : com/qualcomm/hardware/limelightvision/LLResult {
+	public fun <init> (ZLjava/util/List;Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;)V
+	public synthetic fun <init> (ZLjava/util/List;Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getBotpose ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
+	public fun getFiducialResults ()Ljava/util/List;
+	public fun isValid ()Z
+}
+
+public final class com/areslib/sim/model/SimLimelight3A : com/qualcomm/hardware/limelightvision/Limelight3A {
+	public fun <init> ()V
+	public fun setLatestResult (Lcom/qualcomm/hardware/limelightvision/LLResult;)V
+}
+
+public final class com/areslib/sim/model/SimServo : com/qualcomm/robotcore/hardware/Servo {
+	public fun <init> ()V
+	public fun close ()V
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getDeviceName ()Ljava/lang/String;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getPosition ()D
+	public fun getVersion ()I
+	public fun resetDeviceConfigurationForOpMode ()V
+	public fun setPosition (D)V
+}
+
+public final class com/areslib/sim/model/SwerveRobotDouble {
+	public fun <init> ()V
+	public final fun getDrivePositions ()[D
+	public final fun getDrivePowers ()[D
+	public final fun getDriveVelocities ()[D
+	public final fun getFlywheelPosition ()[D
+	public final fun getFlywheelPower ()D
+	public final fun getFlywheelRPM ()D
+	public final fun getFlywheelTargetRPM ()D
+	public final fun getHasBallInIntake ()Z
+	public final fun getHasBallInTransfer ()Z
+	public final fun getIntakePosition ()[D
+	public final fun getIntakePower ()D
+	public final fun getModuleX ()[D
+	public final fun getModuleY ()[D
+	public final fun getOctoQuadI2c ()Lcom/areslib/sim/infra/MockI2cDeviceSynch;
+	public final fun getSrsHubI2c ()Lcom/areslib/sim/infra/MockI2cDeviceSynch;
+	public final fun getSteerAngles ()[D
+	public final fun getSteerPowers ()[D
+	public final fun getTransferPosition ()[D
+	public final fun getTransferPower ()D
+	public final fun setFlywheelPower (D)V
+	public final fun setFlywheelTargetRPM (D)V
+	public final fun setHasBallInIntake (Z)V
+	public final fun setHasBallInTransfer (Z)V
+	public final fun setIntakePower (D)V
+	public final fun setTransferPower (D)V
+	public final fun update (D)V
+}
+
+public final class com/areslib/sim/network/DynamicElementPose {
+	public fun <init> (Ljava/lang/String;DDD)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun copy (Ljava/lang/String;DDD)Lcom/areslib/sim/network/DynamicElementPose;
+	public static synthetic fun copy$default (Lcom/areslib/sim/network/DynamicElementPose;Ljava/lang/String;DDDILjava/lang/Object;)Lcom/areslib/sim/network/DynamicElementPose;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getRotation ()D
+	public final fun getX ()D
+	public final fun getY ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/sim/network/NT4FieldPublisher {
+	public static final field INSTANCE Lcom/areslib/sim/network/NT4FieldPublisher;
+	public final fun publishAprilTags (Ljava/util/List;)V
+	public final fun publishConfigId (Ljava/lang/String;)V
+	public final fun publishElements (Ljava/util/List;)V
+	public final fun publishObstacles (Ljava/util/List;)V
+	public final fun publishScores (II)V
+}
+
+public final class com/areslib/sim/network/RobotStateStruct : edu/wpi/first/util/struct/Struct {
+	public fun <init> ()V
+	public fun getSchema ()Ljava/lang/String;
+	public fun getSize ()I
+	public fun getTypeClass ()Ljava/lang/Class;
+	public fun getTypeString ()Ljava/lang/String;
+	public fun pack (Ljava/nio/ByteBuffer;Lcom/areslib/state/RobotState;)V
+	public synthetic fun pack (Ljava/nio/ByteBuffer;Ljava/lang/Object;)V
+	public fun unpack (Ljava/nio/ByteBuffer;)Lcom/areslib/state/RobotState;
+	public synthetic fun unpack (Ljava/nio/ByteBuffer;)Ljava/lang/Object;
+}
+
+public final class com/areslib/sim/network/TelemetryPublisher {
+	public static final field GAME_PIECE_RECORD_WIDTH I
+	public static final field INSTANCE Lcom/areslib/sim/network/TelemetryPublisher;
+	public final fun getWebFieldConfig ()Ljava/lang/String;
+	public final fun getWebObstacles ()Ljava/lang/String;
+	public final fun init (Lcom/areslib/telemetry/NT4Telemetry;Lcom/areslib/telemetry/ARESNetworkStatePublisher;)V
+	public final fun pollWebFieldConfig ()Ljava/lang/String;
+	public final fun pollWebInputs (Lcom/areslib/sim/infra/SimGamepadManager;)Ljava/lang/String;
+	public final fun publish (Lcom/areslib/state/RobotState;Ljava/lang/Double;)V
+	public static synthetic fun publish$default (Lcom/areslib/sim/network/TelemetryPublisher;Lcom/areslib/state/RobotState;Ljava/lang/Double;ILjava/lang/Object;)V
+	public final fun publishChassisSpeeds (Lcom/areslib/math/geometry/ChassisSpeeds;)V
+	public final fun publishDriveMode (ZZZ)V
+	public final fun publishEstimatedPose (DDD)V
+	public final fun publishEstimatedPose (Lcom/areslib/math/geometry/Pose2d;)V
+	public final fun publishGamePieces ([DI)V
+	public static synthetic fun publishGamePieces$default (Lcom/areslib/sim/network/TelemetryPublisher;[DIILjava/lang/Object;)V
+	public final fun publishSuperstructure (Lcom/areslib/state/RobotState;)V
+	public final fun publishSwerveModules ([D[D[D[D)V
+	public final fun publishTargetPose (DDD)V
+	public final fun publishTargetPose (Lcom/areslib/math/geometry/Pose2d;)V
+	public final fun publishTruePose (DDD)V
+	public final fun publishTruePose (Lcom/areslib/math/geometry/Pose2d;)V
+	public final fun stop ()V
+}
+
+public final class com/areslib/sim/opmode/SimOpModeKind : java/lang/Enum {
+	public static final field AUTONOMOUS Lcom/areslib/sim/opmode/SimOpModeKind;
+	public static final field TELEOP Lcom/areslib/sim/opmode/SimOpModeKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/sim/opmode/SimOpModeKind;
+	public static fun values ()[Lcom/areslib/sim/opmode/SimOpModeKind;
+}
+
+public final class com/areslib/sim/opmode/SimOpModeLifecycle {
+	public static final field Companion Lcom/areslib/sim/opmode/SimOpModeLifecycle$Companion;
+	public synthetic fun <init> (Ljava/lang/Object;Lcom/areslib/sim/opmode/SimOpModeKind;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getGamepad1 ()Lcom/qualcomm/robotcore/hardware/Gamepad;
+	public final fun getGamepad2 ()Lcom/qualcomm/robotcore/hardware/Gamepad;
+	public final fun getHasPendingTermination ()Z
+	public final fun getModeKind ()Lcom/areslib/sim/opmode/SimOpModeKind;
+	public final fun getPublishedState ()Lcom/areslib/sim/opmode/SimOpModeState;
+	public final fun getRawOpMode ()Ljava/lang/Object;
+	public final fun getStopRequested ()Z
+	public final fun getTelemetry ()Lorg/firstinspires/ftc/robotcore/external/Telemetry;
+	public final fun initialize (Lcom/qualcomm/robotcore/hardware/HardwareMap;)V
+	public final fun isStarted ()Z
+	public final fun start ()V
+	public final fun stop ()V
+	public final fun tick ()V
+}
+
+public final class com/areslib/sim/opmode/SimOpModeLifecycle$Companion {
+	public final fun supports (Ljava/lang/Class;)Z
+	public final fun wrap (Ljava/lang/Object;)Lcom/areslib/sim/opmode/SimOpModeLifecycle;
+}
+
+public final class com/areslib/sim/opmode/SimOpModeRunner {
+	public static final field INSTANCE Lcom/areslib/sim/opmode/SimOpModeRunner;
+	public final fun createOpModeInstance (Ljava/lang/Object;Ljava/lang/String;)Lcom/areslib/sim/opmode/SimOpModeLifecycle;
+	public final fun scanAndPublishOpModes ()V
+}
+
+public final class com/areslib/sim/opmode/SimOpModeState : java/lang/Enum {
+	public static final field AUTO_INIT Lcom/areslib/sim/opmode/SimOpModeState;
+	public static final field AUTO_RUNNING Lcom/areslib/sim/opmode/SimOpModeState;
+	public static final field DISABLED Lcom/areslib/sim/opmode/SimOpModeState;
+	public static final field TELEOP_INIT Lcom/areslib/sim/opmode/SimOpModeState;
+	public static final field TELEOP_RUNNING Lcom/areslib/sim/opmode/SimOpModeState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/sim/opmode/SimOpModeState;
+	public static fun values ()[Lcom/areslib/sim/opmode/SimOpModeState;
+}
+
+public final class com/areslib/sim/physics/SimPhysicsWorld {
+	public fun <init> ()V
+	public final fun getActiveObstacles ()Ljava/util/List;
+	public final fun getGamePieces ()Ljava/util/List;
+	public final fun getRobotBody ()Lorg/dyn4j/dynamics/Body;
+	public final fun getWorld ()Lorg/dyn4j/world/World;
+	public final fun loadFieldElements (Lcom/areslib/state/RobotFieldConfig;)V
+	public final fun replaceFieldDocumentJson (Ljava/lang/String;)Z
+	public final fun replaceObstaclesFromAnalyticsJson (Ljava/lang/String;)Z
+	public final fun setupSpawnPose (Z)Lcom/areslib/math/geometry/Pose2d;
+}
+

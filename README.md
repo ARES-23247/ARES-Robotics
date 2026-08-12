@@ -7,10 +7,13 @@ ARESLib-Kotlin is the shared Kotlin foundation for the ARES FTC, FRC, simulator,
 | Module | Purpose | Depends on |
 |---|---|---|
 | `core` | State, reducers, geometry, EKF localization, controllers, safety, pathing, sequencer, NT4, telemetry, and logging | Kotlin/JVM libraries only |
+| `codegen` | Project, controls, autonomous, and subsystem Kotlin generation CLI | `core` |
 | `ftc-mocks` | Desktop implementations of the FTC and Android APIs used by library code | `core` |
 | `ftc-hardware` | FTC SDK adapters, mecanum robot base classes, Pinpoint, Limelight, cached hardware, and power management | `core`; mocks for compilation/tests |
 | `frc-hardware` | WPILib and vendor adapters, swerve robot base classes, Limelight, telemetry, and power management | `core` |
 | `simulator` | Dyn4j desktop physics, virtual driver station, OpMode runner, replay, and NT4 bridge | `core`, `ftc-hardware`, `ftc-mocks` |
+| `simulator-runtime-*` | Windows, Linux, or macOS JNI/LWJGL runtime selected by the consumer | `simulator` |
+| `ares-bom` | One version constraint for every published ARES artifact | all published modules |
 
 The important dependency rule is that platform and season code depend inward on `core`; `core` never imports FTC or WPILib APIs.
 
@@ -51,27 +54,31 @@ Run commands from this repository root:
 .\gradlew.bat :frc-hardware:test
 .\gradlew.bat :simulator:test
 
-# Publish snapshots for sibling repositories that consume Maven Local
-.\gradlew.bat publishToMavenLocal
+# Build the complete Maven bundle in an isolated repository under build/
+.\gradlew.bat apiCheck publishReleaseValidation
 ```
 
-Publish after every ARESLib change before building a consumer that resolves `1.0-SNAPSHOT` from Maven Local. In the four-repository workspace, the safe order is:
+Normal FTC, FRC, and Analytics builds consume immutable releases from Maven Central. To test an unpublished library change against a sibling consumer without composite substitution, publish the isolated bundle and pass its repository explicitly:
 
-1. Build and test ARESLib-Kotlin.
-2. Run `publishToMavenLocal` here.
-3. Build ARES-FTC, ARES-FRC, and ARES-Analytics.
+```powershell
+.\gradlew.bat publishReleaseValidation
+cd ..\ARES-FTC
+.\gradlew.bat test -ParesRepository="..\ARESLib-Kotlin\build\release-repository"
+```
 
-Local publication coordinates are defined by each module:
+All artifacts use the verified `org.aresfirst.ares` Maven namespace and one version:
 
 | Module | Coordinates |
 |---|---|
-| `core` | `com.areslib:core:1.0-SNAPSHOT` |
-| `frc-hardware` | `com.areslib:frc-hardware:1.0-SNAPSHOT` |
-| `ftc-hardware` | `com.github.ARES-23247.ARESLib-Kotlin:ftc-hardware:master-SNAPSHOT` |
-| `ftc-mocks` | `com.github.ARES-23247.ARESLib-Kotlin:ftc-mocks:master-SNAPSHOT` |
-| `simulator` | `com.github.ARES-23247.ARESLib-Kotlin:simulator:master-SNAPSHOT` |
+| BOM | `org.aresfirst.ares:ares-bom:3.0.0` |
+| Core | `org.aresfirst.ares:core` |
+| Code generation | `org.aresfirst.ares:codegen` |
+| FTC | `org.aresfirst.ares:ftc-hardware`, `org.aresfirst.ares:ftc-mocks` |
+| FRC | `org.aresfirst.ares:frc-hardware` |
+| Simulator | `org.aresfirst.ares:simulator` |
+| Simulator natives | `org.aresfirst.ares:simulator-runtime-{windows,linux,macos}` |
 
-Sibling repositories may also use Gradle composite substitution. Check the consumer's `settings.gradle` before diagnosing a stale dependency.
+Consumer builds pin the BOM version with the `aresVersion` Gradle property. Source substitution is an explicit library-development option: `-ParesUseSiblingLib=true`.
 
 ## Run the simulator
 

@@ -57,9 +57,10 @@ val elevator = subsystem("elevator", "Elevator", SubsystemPlatform.FTC) {
 ```
 
 Students may use the same DSL in handwritten utilities, tests, and custom generators. Managed files
-carry a content hash and are overwritten on generation, so they must not be edited in place. To take
-full ownership, copy the readable design into a student-owned package, implement or adapt the
-IO/runtime alongside it, and remove the `.aressubsystem` document so there is one source of truth.
+carry a content hash and are overwritten on generation, so they must not be edited in place. A
+student who takes ownership keeps the `.aressubsystem` document but changes its implementation kind
+to `HAND_AUTHORED`. The document becomes the GUI-facing contract; the Kotlin files remain the
+implementation source of truth and are never overwritten.
 
 ## Level 3: custom Kotlin
 
@@ -73,6 +74,55 @@ compose season state by hand. The non-negotiable contracts remain:
   replace another mechanism or the season-specific superstructure state;
 - robot time comes from `RobotClock`;
 - `safe()` and `close()` leave every continuous actuator at zero effort.
+
+Register custom Kotlin explicitly rather than asking ARES to scan source code. A hand-authored
+descriptor records:
+
+- `implementation.kind = HAND_AUTHORED` and `ownership = USER_OWNED`;
+- the owning Gradle module and normalized project-relative source files;
+- the subsystem, IO contract, and hardware-adapter class names;
+- mock/simulator availability and its adapter class when present;
+- teaching level, concepts, and an optional documentation path;
+- catalog action keys implemented by the subsystem.
+
+The descriptor does not grant the generator permission to edit those files. Hand-authored
+descriptors must set `generateMockIo` and `generateTest` to `false`; verification for them belongs in
+ordinary user-owned tests. Catalog merge fails if a declared action key is missing, so Controller
+Bindings cannot silently advertise an action that has no project capability. ARES does not parse
+Kotlin imports, reflection metadata, or class bodies to discover any of this information.
+
+Example JSON shape:
+
+```json
+{
+  "schemaVersion": 5,
+  "documentId": "prism",
+  "name": "Prism",
+  "platform": "FTC",
+  "implementation": {
+    "kind": "HAND_AUTHORED",
+    "ownership": "USER_OWNED",
+    "modulePath": ":TeamCode",
+    "sourceFiles": ["TeamCode/src/main/java/org/example/PrismSubsystem.kt"],
+    "subsystemClassName": "org.example.PrismSubsystem",
+    "ioContractClassName": "org.example.PrismIO",
+    "hardwareAdapterClassName": "org.example.FtcPrismIO",
+    "simulation": { "support": "HAND_AUTHORED_MOCK", "adapterClassName": "org.example.MockPrismIO" },
+    "teaching": {
+      "level": "BEGINNER",
+      "summary": "A small output-only subsystem.",
+      "documentationPath": "docs/examples/prism.md",
+      "concepts": ["safe neutral", "vendor adapter"]
+    }
+  },
+  "capabilityActionKeys": ["prism.setEffect", "prism.off"],
+  "generateMockIo": false,
+  "generateTest": false
+}
+```
+
+The complete document also contains its hardware, state, control, and safety contract; those fields
+were omitted from this example only to keep the ownership metadata readable.
 
 Generated PID loops reject non-finite sensor/target data, filter derivative noise, and use
 conditional integration to prevent windup while saturated. Target limits are enforced both in the

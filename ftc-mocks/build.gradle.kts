@@ -1,10 +1,16 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
+
 plugins {
     kotlin("jvm")
-    `maven-publish`
+    id("com.vanniktech.maven.publish")
 }
 
-group = "com.areslib"
-version = "1.0-SNAPSHOT"
+mavenPublishing {
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
+}
+
+description = "Desktop-compatible FTC SDK mocks used by ARES simulation and tests."
 
 repositories {
     mavenCentral()
@@ -12,20 +18,9 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":core"))
+    api(project(":core"))
 }
 
 kotlin {
     jvmToolchain(17)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            groupId = "com.github.ARES-23247.ARESLib-Kotlin"
-            artifactId = "ftc-mocks"
-            version = "master-SNAPSHOT"
-        }
-    }
 }

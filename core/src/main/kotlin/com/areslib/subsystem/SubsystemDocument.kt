@@ -1,11 +1,60 @@
 package com.areslib.subsystem
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 4
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 5
 
 enum class SubsystemPlatform { FTC, FRC }
+
+/** Whether ARES creates starter Kotlin or integrates an implementation owned by the project. */
+enum class SubsystemImplementationKind { GENERATED_STARTER, HAND_AUTHORED }
+
+/** Ownership is explicit so regeneration can never infer permission to replace Kotlin source. */
+enum class SubsystemSourceOwnership { GENERATED_STARTER, USER_OWNED }
+
+enum class SubsystemSimulationSupport {
+    GENERATED_MOCK,
+    HAND_AUTHORED_MOCK,
+    HAND_AUTHORED_SIMULATOR,
+    UNAVAILABLE,
+}
+
+enum class SubsystemTeachingLevel { BEGINNER, INTERMEDIATE, ADVANCED }
+
+/** Simulator/mock implementation advertised by a hand-authored or generated subsystem. */
+data class SubsystemSimulationDocument(
+    val support: SubsystemSimulationSupport = SubsystemSimulationSupport.GENERATED_MOCK,
+    val adapterClassName: String? = null,
+)
+
+/** Optional teaching information surfaced by the builder without inspecting Kotlin source. */
+data class SubsystemTeachingDocument(
+    val level: SubsystemTeachingLevel = SubsystemTeachingLevel.INTERMEDIATE,
+    val summary: String = "",
+    val documentationPath: String? = null,
+    val concepts: List<String> = emptyList(),
+)
+
+/**
+ * Explicit source contract for a subsystem implementation.
+ *
+ * Hand-authored implementations name their Gradle module, user-owned files, and runtime types.
+ * ARES reads this metadata instead of scanning or interpreting Kotlin. Generated starters leave
+ * project-specific source locations to the selected code-generation target.
+ */
+data class SubsystemImplementationDocument(
+    val kind: SubsystemImplementationKind = SubsystemImplementationKind.GENERATED_STARTER,
+    val ownership: SubsystemSourceOwnership = SubsystemSourceOwnership.GENERATED_STARTER,
+    val modulePath: String? = null,
+    val sourceFiles: List<String> = emptyList(),
+    val subsystemClassName: String? = null,
+    val ioContractClassName: String? = null,
+    val hardwareAdapterClassName: String? = null,
+    val simulation: SubsystemSimulationDocument = SubsystemSimulationDocument(),
+    val teaching: SubsystemTeachingDocument = SubsystemTeachingDocument(),
+)
 
 /** Hardware categories supported by the generated, cached IO boundary. */
 enum class SubsystemHardwareKind {
@@ -162,6 +211,9 @@ data class SubsystemDocument(
     val stateFields: List<SubsystemStateFieldDocument> = emptyList(),
     val controlLoops: List<SubsystemControlLoopDocument> = emptyList(),
     val template: SubsystemTemplate = SubsystemTemplate.ADVANCED_CUSTOM,
+    val implementation: SubsystemImplementationDocument = SubsystemImplementationDocument(),
+    /** Existing catalog actions exposed by a hand-authored implementation. */
+    val capabilityActionKeys: List<String> = emptyList(),
     val safety: SubsystemSafetyDocument = SubsystemSafetyDocument(),
     /** Stable resource owned while an autonomous action commands this subsystem. */
     val autonomousResourceKey: String? = null,
@@ -198,6 +250,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     if (document.generateTest && !document.generateMockIo) {
         issue("generateTest", "Generated starter tests require mock IO")
     }
+    validateImplementation(document, ::issue)
 
     duplicateIds(document.hardware.map { it.hardwareId }).forEach {
         issue("hardware", "Hardware ID '$it' is duplicated")
@@ -420,6 +473,127 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     }
 }
 
+private fun validateImplementation(
+    document: SubsystemDocument,
+    issue: (path: String, message: String) -> Unit,
+) {
+    val implementation = document.implementation
+    val duplicateSourceFiles = duplicateIds(implementation.sourceFiles)
+    duplicateSourceFiles.forEach { issue("implementation.sourceFiles", "Source file '$it' is duplicated") }
+    implementation.sourceFiles.forEachIndexed { index, path ->
+        if (!path.isSafeProjectRelativeKotlinPath()) {
+            issue(
+                "implementation.sourceFiles[$index]",
+                "Source files must be normalized project-relative Kotlin paths",
+            )
+        }
+    }
+    implementation.modulePath?.let { modulePath ->
+        if (!modulePath.matches(GRADLE_MODULE_PATH)) {
+            issue("implementation.modulePath", "Module path must be a Gradle project path such as ':TeamCode'")
+        }
+    }
+    listOf(
+        "subsystemClassName" to implementation.subsystemClassName,
+        "ioContractClassName" to implementation.ioContractClassName,
+        "hardwareAdapterClassName" to implementation.hardwareAdapterClassName,
+        "simulation.adapterClassName" to implementation.simulation.adapterClassName,
+    ).forEach { (field, className) ->
+        if (className != null && !className.matches(QUALIFIED_KOTLIN_NAME)) {
+            issue("implementation.$field", "Class name must be a fully qualified Kotlin name")
+        }
+    }
+    val teaching = implementation.teaching
+    if (teaching.documentationPath != null && !teaching.documentationPath.isSafeProjectRelativePath()) {
+        issue("implementation.teaching.documentationPath", "Documentation must use a normalized project-relative path")
+    }
+    if (teaching.summary.isBlank() && teaching.documentationPath != null) {
+        issue("implementation.teaching.summary", "A documented teaching example requires a short summary")
+    }
+    teaching.concepts.forEachIndexed { index, concept ->
+        if (concept.isBlank()) issue("implementation.teaching.concepts[$index]", "Teaching concepts cannot be blank")
+    }
+    duplicateIds(teaching.concepts).forEach {
+        issue("implementation.teaching.concepts", "Teaching concept '$it' is duplicated")
+    }
+    duplicateIds(document.capabilityActionKeys).forEach {
+        issue("capabilityActionKeys", "Capability action '$it' is duplicated")
+    }
+    document.capabilityActionKeys.forEachIndexed { index, key ->
+        if (!key.matches(CAPABILITY_KEY)) {
+            issue("capabilityActionKeys[$index]", "Capability action key '$key' is invalid")
+        }
+    }
+
+    when (implementation.kind) {
+        SubsystemImplementationKind.GENERATED_STARTER -> {
+            if (implementation.ownership != SubsystemSourceOwnership.GENERATED_STARTER) {
+                issue("implementation.ownership", "Generated starters must use GENERATED_STARTER ownership")
+            }
+            if (implementation.modulePath != null || implementation.sourceFiles.isNotEmpty() ||
+                implementation.subsystemClassName != null || implementation.ioContractClassName != null ||
+                implementation.hardwareAdapterClassName != null
+            ) {
+                issue("implementation", "Generated starter source locations come from the code-generation target")
+            }
+            val expectedSimulation = if (document.generateMockIo) {
+                SubsystemSimulationSupport.GENERATED_MOCK
+            } else {
+                SubsystemSimulationSupport.UNAVAILABLE
+            }
+            if (implementation.simulation.support != expectedSimulation ||
+                implementation.simulation.adapterClassName != null
+            ) {
+                issue(
+                    "implementation.simulation",
+                    "Generated starter simulation metadata must match generateMockIo",
+                )
+            }
+            if (document.capabilityActionKeys.isNotEmpty()) {
+                issue("capabilityActionKeys", "Generated starter actions are derived from target state fields")
+            }
+        }
+
+        SubsystemImplementationKind.HAND_AUTHORED -> {
+            if (implementation.ownership != SubsystemSourceOwnership.USER_OWNED) {
+                issue("implementation.ownership", "Hand-authored Kotlin must use USER_OWNED ownership")
+            }
+            if (implementation.modulePath == null) {
+                issue("implementation.modulePath", "Hand-authored subsystems require an owning Gradle module")
+            }
+            if (implementation.sourceFiles.isEmpty()) {
+                issue("implementation.sourceFiles", "Hand-authored subsystems require at least one user-owned source file")
+            }
+            listOf(
+                "subsystemClassName" to implementation.subsystemClassName,
+                "ioContractClassName" to implementation.ioContractClassName,
+                "hardwareAdapterClassName" to implementation.hardwareAdapterClassName,
+            ).forEach { (field, className) ->
+                if (className == null) issue("implementation.$field", "Hand-authored subsystems must name this runtime type")
+            }
+            if (document.generateMockIo || document.generateTest) {
+                issue(
+                    "implementation",
+                    "Hand-authored descriptors cannot request generated starter or test files",
+                )
+            }
+            when (implementation.simulation.support) {
+                SubsystemSimulationSupport.GENERATED_MOCK -> issue(
+                    "implementation.simulation.support",
+                    "Hand-authored subsystems cannot claim a generated mock",
+                )
+                SubsystemSimulationSupport.HAND_AUTHORED_MOCK,
+                SubsystemSimulationSupport.HAND_AUTHORED_SIMULATOR -> if (implementation.simulation.adapterClassName == null) {
+                    issue("implementation.simulation.adapterClassName", "Available simulation support requires its adapter class")
+                }
+                SubsystemSimulationSupport.UNAVAILABLE -> if (implementation.simulation.adapterClassName != null) {
+                    issue("implementation.simulation.adapterClassName", "Unavailable simulation support cannot name an adapter")
+                }
+            }
+        }
+    }
+}
+
 object SubsystemDocumentCodec {
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -430,6 +604,18 @@ object SubsystemDocumentCodec {
 
     fun decode(json: String): SubsystemDocument {
         val document = try {
+            val root = JsonParser.parseString(json).asJsonObject
+            val schemaVersion = root.get("schemaVersion")?.asInt
+            require(schemaVersion == ARES_SUBSYSTEM_SCHEMA_VERSION) {
+                "Unsupported subsystem schema $schemaVersion"
+            }
+            require(root.get("implementation")?.isJsonObject == true) {
+                "Subsystem implementation metadata is required"
+            }
+            val implementation = root.getAsJsonObject("implementation")
+            require(implementation.has("kind") && implementation.has("ownership")) {
+                "Subsystem implementation kind and ownership are required"
+            }
             gson.fromJson(json, SubsystemDocument::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Subsystem document is not valid JSON: ${error.message}", error)
@@ -462,6 +648,9 @@ private val KOTLIN_KEYWORDS = setOf(
     "reified", "sealed", "suspend", "tailrec", "vararg",
 )
 private val SHA_256 = Regex("[a-f0-9]{64}")
+private val GRADLE_MODULE_PATH = Regex(":[A-Za-z0-9_.-]+(?::[A-Za-z0-9_.-]+)*")
+private val QUALIFIED_KOTLIN_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+")
+private val CAPABILITY_KEY = Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")
 private val ACTUATOR_KINDS = setOf(
     SubsystemHardwareKind.MOTOR,
     SubsystemHardwareKind.POSITIONAL_SERVO,
@@ -473,6 +662,13 @@ private val CLOSED_LOOP_STRATEGIES = setOf(
     SubsystemControlStrategy.VELOCITY_PID,
     SubsystemControlStrategy.BANG_BANG,
 )
+
+private fun String.isSafeProjectRelativePath(): Boolean =
+    isNotBlank() && '/' in this && !startsWith('/') && '\\' !in this &&
+        split('/').none { it.isBlank() || it == "." || it == ".." }
+
+private fun String.isSafeProjectRelativeKotlinPath(): Boolean =
+    isSafeProjectRelativePath() && endsWith(".kt")
 
 fun SubsystemHardwareKind.compatibleMeasurementSources(): List<SubsystemMeasurementSource> = when (this) {
     SubsystemHardwareKind.MOTOR -> listOf(

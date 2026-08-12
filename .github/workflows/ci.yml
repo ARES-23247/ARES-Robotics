@@ -39,3 +39,6 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test --console=plain
+
+      - name: Check public API and publication bundle
+        run: ./gradlew apiCheck publishReleaseValidation --no-parallel --console=plain

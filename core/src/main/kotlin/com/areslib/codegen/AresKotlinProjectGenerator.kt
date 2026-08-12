@@ -1365,7 +1365,8 @@ object AresKotlinProjectGenerator {
             }
         }
         if (directKeys.any { CapabilityContext.AUTONOMOUS !in actions.getValue(it).allowedContexts }) return false
-        if (step.routineId != null && !routineSupportsContext(step.routineId, routines, actions, visited)) return false
+        val routineId = step.routineId
+        if (routineId != null && !routineSupportsContext(routineId, routines, actions, visited)) return false
         return step.deadline?.let { stepSupportsContext(it, routines, actions, visited) } != false &&
             step.children.all { stepSupportsContext(it, routines, actions, visited) } &&
             step.elseChildren.all { stepSupportsContext(it, routines, actions, visited) }
