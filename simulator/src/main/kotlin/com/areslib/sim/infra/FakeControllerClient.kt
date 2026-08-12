@@ -3,7 +3,9 @@ package com.areslib.sim.infra
 import edu.wpi.first.networktables.NetworkTableInstance
 import java.io.File
 import java.net.HttpURLConnection
+import java.net.URLEncoder
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.util.Scanner
 
 /**
@@ -107,12 +109,16 @@ object FakeControllerClient {
                         val match = regex.find(responseText)
                         val latestLog = match?.groupValues?.get(1)
                         if (latestLog != null) {
-                            println("Downloading latest log file: $latestLog...")
-                            val downloadUrl = URL("http://$serverIp:5002/api/download?file=$latestLog")
+                            val safeName = safeLogBasename(latestLog)
+                            println("Downloading latest log file: $safeName...")
+                            val encodedName = URLEncoder.encode(safeName, StandardCharsets.UTF_8)
+                            val downloadUrl = URL("http://$serverIp:5002/api/download?file=$encodedName")
                             val dlConn = downloadUrl.openConnection() as HttpURLConnection
                             dlConn.requestMethod = "GET"
                             if (dlConn.responseCode == 200) {
-                                val destFile = File(latestLog)
+                                val downloadRoot = File("ares-downloads").canonicalFile.also { it.mkdirs() }
+                                val destFile = File(downloadRoot, safeName).canonicalFile
+                                require(destFile.parentFile == downloadRoot) { "Log destination escaped download root" }
                                 dlConn.inputStream.use { input ->
                                     destFile.outputStream().use { output ->
                                         input.copyTo(output)
@@ -218,5 +224,17 @@ object FakeControllerClient {
         println("Stopping remote controller client...")
         publishDriveFrame(0.0, 0.0, 0.0)
         ntInst.stopClient()
+    }
+
+    internal fun safeLogBasename(serverName: String): String {
+        require(serverName.isNotBlank()) { "Log filename must not be blank" }
+        require(serverName == File(serverName).name) { "Log filename must be a basename" }
+        require('/' !in serverName && '\\' !in serverName && ':' !in serverName) {
+            "Log filename contains a path separator"
+        }
+        require(serverName.endsWith(".csv", ignoreCase = true) || serverName.endsWith(".jsonl", ignoreCase = true)) {
+            "Unsupported log filename"
+        }
+        return serverName
     }
 }
