@@ -26,6 +26,12 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import java.io.File
 
+/** Reference frame applied to normal FTC TeleOp translation commands. */
+enum class FtcTeleopDriveFrame {
+    FIELD_RELATIVE,
+    ROBOT_RELATIVE,
+}
+
 /**
  * Ready-to-use standard 4-wheel FTC Mecanum Robot facade in ARESLib-Kotlin.
  *
@@ -157,6 +163,16 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     reducer = reducer
 ) {
 
+    /**
+     * Reference frame used by the season TeleOp input boundary.
+     *
+     * Physical FTC operation defaults to field-relative. The desktop simulator updates this
+     * value from its leased atomic drive frame before invoking the OpMode, so the displayed mode
+     * and the command actually dispatched to Redux cannot diverge.
+     */
+    @Volatile
+    var teleopDriveFrame: FtcTeleopDriveFrame = FtcTeleopDriveFrame.FIELD_RELATIVE
+
     /** Subsystem state holder for drive states. */
     val drive = DriveSubsystem(store)
 
@@ -206,6 +222,25 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     var sysIdFlywheelIO: com.areslib.hardware.actuator.FlywheelIO?
         get() = calibrationController.flywheelIO
         set(value) { calibrationController.flywheelIO = value }
+
+    /** True only for a calibration-specific OpMode that opted in locally. */
+    val isCalibrationModeEnabled: Boolean get() = calibrationController.modeEnabled
+
+    /** True after the enabled OpMode receives a fresh neutral dashboard handshake. */
+    val isCalibrationModeArmed: Boolean get() = calibrationController.networkArmed
+
+    /**
+     * Enables calibration control for this OpMode. A fresh `SysId/EnableToken` with a `STOP`
+     * command is still required before any calibration command can own hardware outputs.
+     */
+    fun enableCalibrationMode() {
+        calibrationController.enableMode(telemetryManager, mecanumIO)
+    }
+
+    /** Immediately disarms calibration and neutrals drivetrain/flywheel characterization output. */
+    fun disableCalibrationMode() {
+        calibrationController.disableMode(telemetryManager, mecanumIO)
+    }
 
     /** Autonomous trajectory builder providing high-level motion path generation. */
     val autoBuilder: AutoBuilder get() = trajectoryFollower.autoBuilder
@@ -309,8 +344,20 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * Safely halts all drivetrain motors and resets output states.
      */
     override fun safeHardware() {
-        com.areslib.hardware.HardwareRegistry.safeAll()
-        stopAll()
+        var firstFailure: Throwable? = null
+        val safetySteps = arrayOf<() -> Unit>(
+            { calibrationController.disableMode(telemetryManager, mecanumIO) },
+            { com.areslib.hardware.HardwareRegistry.safeAll() },
+            { stopAll() }
+        )
+        for (step in safetySteps) {
+            try {
+                step()
+            } catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
     }
 
     /**

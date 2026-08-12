@@ -1,10 +1,10 @@
 package com.areslib.ftc.hardware
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
-import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.IMU
 import com.areslib.ftc.drivetrain.PinpointIO
+import com.areslib.ftc.vision.FtcLimelightFactory
 import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.hardware.sensor.ImuIO
 import com.areslib.hardware.vision.CompositeVisionIO
@@ -92,20 +92,7 @@ object FtcHardwareMapInitializer {
         if (limelightName == null) return null
         return try {
             val names = limelightName.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            when {
-                names.size > 1 -> {
-                    val ios = names.map { name ->
-                        val limelightDriver = hardwareMap.get(Limelight3A::class.java, name)
-                        FtcLimelightIO(limelightDriver, sourceId = name)
-                    }
-                    CompositeVisionIO(ios)
-                }
-                names.size == 1 -> {
-                    val limelightDriver = hardwareMap.get(Limelight3A::class.java, names[0])
-                    FtcLimelightIO(limelightDriver, sourceId = names[0])
-                }
-                else -> null
-            }
+            FtcLimelightFactory.create(hardwareMap, names)
         } catch (_: Throwable) {
             null
         }

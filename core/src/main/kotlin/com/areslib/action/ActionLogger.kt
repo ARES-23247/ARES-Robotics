@@ -4,55 +4,32 @@ import com.areslib.util.RobotClock
 import com.google.gson.Gson
 import java.io.BufferedWriter
 import java.io.File
-import java.io.FileWriter
 import java.io.IOException
+import java.nio.charset.StandardCharsets
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Thread-safe, non-blocking asynchronous JSONL (JSON Lines) recorder for [RobotAction] streams.
+ * Thread-safe asynchronous JSONL recorder for [RobotAction] streams.
  *
- * Captures Redux-style action dispatches in sequence and writes them to local disk storage on a
- * dedicated single-threaded daemon executor. Known reusable mutable actions are copied into pooled
- * logger-owned snapshots before enqueueing, so later producer mutations cannot rewrite history.
- * Enqueueing remains non-blocking; rejected actions are observable through [droppedActionCount].
- * Files use a `.jsonl.active` suffix until [stop] has drained every accepted action.
+ * Every action is converted to a detached JSON tree before it crosses the writer-thread boundary.
+ * This snapshots pooled [com.areslib.state.VisionMeasurement] objects, mutable pose/joystick
+ * actions, mutable path points, arrays, lists, and season payloads at the instant [logAction]
+ * accepts them. Producer reuse after dispatch therefore cannot rewrite recorded history.
  *
- * ### Output File Storage Path:
- * - **Android FTC Control Hub**: `/sdcard/FIRST/telemetry_logs/action_log_<timestamp>_<mode>.jsonl`
- * - **Desktop Simulation / FRC RoboRIO**: `./logs/action_log_<timestamp>_<mode>.jsonl`
- *
- * ### JSONL Output Schema:
- * ```json
- * {
- *   "run_id": "UUID-or-empty",
- *   "robot_id": "Robot-01",
- *   "match_number": 12,
- *   "alliance": "BLUE",
- *   "op_mode": "Teleop",
- *   "type": "JoystickDriveIntent",
- *   "payload": { "x": 0.5, "y": 0.0, "rotation": 0.1, "isFieldCentric": true }
- * }
- * ```
- *
- * @param runId Unique telemetry run identifier string.
- * @param robotId Target robot hardware identifier.
- * @param matchNumber Competition match number (0 for practice/testing).
- * @param alliance Active alliance color ("RED" or "BLUE").
- * @param mode Current operational mode ("Auto", "Teleop", or "Init").
- * @param logDirectory optional explicit output directory, primarily for hermetic tests
- */
-/**
- * Class implementation for Action Logger.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Active files end in `.jsonl.active` and are renamed only after [stop] drains all accepted
+ * actions. Names contain both the run id and mode. Creation uses `CREATE_NEW` plus a numeric suffix
+ * so equal clock values and repeated run ids never truncate an earlier run; finalization never
+ * deletes or replaces an existing completed log.
  */
 class ActionLogger(
     val runId: String = "",
@@ -63,7 +40,7 @@ class ActionLogger(
     private val logDirectory: File? = null
 ) {
     private val gson = Gson()
-    private val queue = LinkedBlockingQueue<RobotAction>(1000)
+    private val queue = LinkedBlockingQueue<ActionReplay.EncodedAction>(QUEUE_CAPACITY)
     private var writer: BufferedWriter? = null
     private var activeLogFile: File? = null
     private var completedLogFile: File? = null
@@ -71,15 +48,20 @@ class ActionLogger(
     private val queueStateLock = Any()
     private val workerDone = CountDownLatch(1)
     private val droppedActions = AtomicLong(0L)
-    private val joystickSnapshotPool = ConcurrentLinkedQueue<RobotAction.JoystickDriveIntent>()
-    private val poseSnapshotPool = ConcurrentLinkedQueue<RobotAction.PoseUpdate>()
 
-    /** Number of actions rejected during shutdown/queue saturation or lost to a write failure. */
+    /** Test-only scheduling seam used to prove enqueue-time ownership under a blocked writer. */
+    @Volatile
+    internal var beforeWriteForTest: (() -> Unit)? = null
+
+    /** Number of actions rejected during shutdown/queue saturation or lost to encoding/write failure. */
     val droppedActionCount: Long
         get() = droppedActions.get()
 
     private val executor = ThreadPoolExecutor(
-        1, 1, 0L, TimeUnit.MILLISECONDS,
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(),
         { thread -> Thread(thread, "ARES-ActionLogger-Thread").apply { isDaemon = true } }
     )
@@ -88,41 +70,37 @@ class ActionLogger(
         try {
             val javaVendor = System.getProperty("java.vendor") ?: ""
             val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
-
             val logDir = logDirectory ?: if (isAndroid) {
                 File("/sdcard/FIRST/telemetry_logs/")
             } else {
                 File("./logs/")
             }
+            Files.createDirectories(logDir.toPath())
 
-            if (!logDir.exists()) {
-                logDir.mkdirs()
-            }
-
-            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault()).format(Date(RobotClock.currentTimeMillis()))
-            val safeMode = mode.map { character ->
-                if (character.isLetterOrDigit() || character == '-' || character == '_') character else '_'
-            }.joinToString("").ifBlank { "Unknown" }
-            val finalFile = File(logDir, "action_log_${timestamp}_$safeMode.jsonl")
-            val logFile = File(logDir, "${finalFile.name}.active")
-
-            activeLogFile = logFile
-            completedLogFile = finalFile
-            writer = BufferedWriter(FileWriter(logFile))
+            val timestamp = SimpleDateFormat(
+                "yyyy-MM-dd_HH-mm-ss-SSS",
+                Locale.getDefault()
+            ).format(Date(RobotClock.currentTimeMillis()))
+            val safeRunId = sanitize(runId, "no-run-id")
+            val safeMode = sanitize(mode, "Unknown")
+            val baseName = "action_log_${timestamp}_${safeRunId}_${safeMode}"
+            val reservation = reserveUniqueFile(logDir, baseName)
+            activeLogFile = reservation.active
+            completedLogFile = reservation.completed
+            writer = reservation.writer
             isRunning = true
             startLoggingLoop()
         } catch (e: Exception) {
             System.err.println("ActionLogger: Failed to initialize! ${e.message}")
             isRunning = false
             workerDone.countDown()
+            executor.shutdown()
         }
     }
 
     /**
-     * Enqueues a [RobotAction] for background asynchronous serialization and disk writing.
-     * Non-blocking call returning immediately to maintain main loop performance.
-     *
-     * @param action The Redux action object dispatched to the store.
+     * Snapshots and enqueues [action]. Disk I/O remains on the background worker; queue insertion
+     * never blocks. Encoding failures and full/shutdown queues increment [droppedActionCount].
      */
     fun logAction(action: RobotAction) {
         synchronized(queueStateLock) {
@@ -130,55 +108,16 @@ class ActionLogger(
                 droppedActions.incrementAndGet()
                 return
             }
-            val snapshot = snapshotForQueue(action)
+            val snapshot = try {
+                ActionReplay.encodeForLog(action)
+            } catch (e: Exception) {
+                droppedActions.incrementAndGet()
+                System.err.println("ActionLogger: Failed to snapshot ${action.javaClass.name}: ${e.message}")
+                return
+            }
             if (!queue.offer(snapshot)) {
                 droppedActions.incrementAndGet()
-                recycleSnapshot(snapshot)
             }
-        }
-    }
-
-    private fun snapshotForQueue(action: RobotAction): RobotAction = when (action) {
-        is RobotAction.JoystickDriveIntent -> {
-            val snapshot = joystickSnapshotPool.poll() ?: RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0)
-            snapshot.targetXVelocity = action.targetXVelocity
-            snapshot.targetYVelocity = action.targetYVelocity
-            snapshot.targetAngularVelocity = action.targetAngularVelocity
-            snapshot.timestampMs = action.timestampMs
-            snapshot.isFieldCentric = action.isFieldCentric
-            snapshot.fromHeadingHold = action.fromHeadingHold
-            snapshot.isXLock = action.isXLock
-            snapshot
-        }
-        is RobotAction.PoseUpdate -> {
-            val snapshot = poseSnapshotPool.poll() ?: RobotAction.PoseUpdate(0.0, 0.0, 0.0, 0L)
-            snapshot.xMeters = action.xMeters
-            snapshot.yMeters = action.yMeters
-            snapshot.headingRadians = action.headingRadians
-            snapshot.timestampMs = action.timestampMs
-            snapshot.pitchDegrees = action.pitchDegrees
-            snapshot.rollDegrees = action.rollDegrees
-            snapshot.pitchVelocityDegPerSec = action.pitchVelocityDegPerSec
-            snapshot.rollVelocityDegPerSec = action.rollVelocityDegPerSec
-            snapshot.xAccelerationG = action.xAccelerationG
-            snapshot.yAccelerationG = action.yAccelerationG
-            snapshot.zAccelerationG = action.zAccelerationG
-            snapshot.isReset = action.isReset
-            snapshot.angularVelocityRadiansPerSecond = action.angularVelocityRadiansPerSecond
-            snapshot.xVelocityMetersPerSecond = action.xVelocityMetersPerSecond
-            snapshot.yVelocityMetersPerSecond = action.yVelocityMetersPerSecond
-            snapshot.isExternalEstimate = action.isExternalEstimate
-            snapshot.applyControlHubGyroCorrection = action.applyControlHubGyroCorrection
-            snapshot
-        }
-        else -> action
-    }
-
-    private fun recycleSnapshot(action: RobotAction) {
-        when (action) {
-            is RobotAction.JoystickDriveIntent -> joystickSnapshotPool.offer(action)
-            is RobotAction.PoseUpdate -> poseSnapshotPool.offer(action)
-            else -> Unit
         }
     }
 
@@ -189,11 +128,8 @@ class ActionLogger(
                 while (isRunning || queue.isNotEmpty()) {
                     try {
                         val action = queue.poll(100, TimeUnit.MILLISECONDS) ?: continue
-                        try {
-                            writeAction(action)
-                        } finally {
-                            recycleSnapshot(action)
-                        }
+                        beforeWriteForTest?.invoke()
+                        writeAction(action)
                     } catch (_: InterruptedException) {
                         wasInterrupted = true
                     } catch (e: Exception) {
@@ -210,37 +146,26 @@ class ActionLogger(
         }
     }
 
-    private val adapterCache = java.util.concurrent.ConcurrentHashMap<Class<*>, com.google.gson.TypeAdapter<RobotAction>>()
-
-    private fun writeAction(action: RobotAction) {
-        val w = writer ?: return
-        val clazz = action.javaClass
-        val typeName = clazz.simpleName
-        
-        @Suppress("UNCHECKED_CAST")
-        val adapter = adapterCache.getOrPut(clazz) { gson.getAdapter(clazz) as com.google.gson.TypeAdapter<RobotAction> }
-
-        try {
-            w.write("{\"run_id\":")
-            w.write(gson.toJson(runId))
-            w.write(",\"robot_id\":")
-            w.write(gson.toJson(robotId))
-            w.write(",\"match_number\":")
-            w.write(matchNumber.toString())
-            w.write(",\"alliance\":")
-            w.write(gson.toJson(alliance))
-            w.write(",\"op_mode\":")
-            w.write(gson.toJson(mode))
-            w.write(",\"type\":")
-            w.write(gson.toJson(typeName))
-            w.write(",\"payload\":")
-            adapter.toJson(w, action)
-            w.write("}")
-            w.newLine()
-        } catch (e: IOException) {
-            droppedActions.incrementAndGet()
-            System.err.println("ActionLogger: Failed to write JSONL: ${e.message}")
-        }
+    private fun writeAction(action: ActionReplay.EncodedAction) {
+        val output = writer ?: throw IOException("Action log writer is closed")
+        output.write("{\"schema_version\":")
+        output.write(ActionReplay.SCHEMA_VERSION.toString())
+        output.write(",\"run_id\":")
+        output.write(gson.toJson(runId))
+        output.write(",\"robot_id\":")
+        output.write(gson.toJson(robotId))
+        output.write(",\"match_number\":")
+        output.write(matchNumber.toString())
+        output.write(",\"alliance\":")
+        output.write(gson.toJson(alliance))
+        output.write(",\"op_mode\":")
+        output.write(gson.toJson(mode))
+        output.write(",\"type\":")
+        output.write(gson.toJson(action.type))
+        output.write(",\"payload\":")
+        gson.toJson(action.payload, output)
+        output.write("}")
+        output.newLine()
     }
 
     private fun closeWriter() {
@@ -258,20 +183,20 @@ class ActionLogger(
         val active = activeLogFile ?: return
         val completed = completedLogFile ?: return
         if (!active.exists()) return
-        if (completed.exists() && !completed.delete()) {
-            System.err.println("ActionLogger: Could not replace completed log ${completed.absolutePath}")
-            return
+        try {
+            // No REPLACE_EXISTING: an unexpected collision remains visible as an active file and
+            // can never destroy the completed run already present at this name.
+            Files.move(active.toPath(), completed.toPath())
+            activeLogFile = null
+        } catch (e: Exception) {
+            System.err.println(
+                "ActionLogger: Could not finalize ${active.absolutePath} without replacing " +
+                    "${completed.absolutePath}: ${e.message}"
+            )
         }
-        if (!active.renameTo(completed)) {
-            System.err.println("ActionLogger: Could not finalize active log ${active.absolutePath}")
-            return
-        }
-        activeLogFile = null
     }
 
-    /**
-     * Flushes remaining queued actions, closes disk file handles, and shuts down the background logging worker thread.
-     */
+    /** Drains accepted actions, closes the file, and makes the completed `.jsonl` visible. */
     fun stop() {
         synchronized(queueStateLock) {
             isRunning = false
@@ -286,5 +211,61 @@ class ActionLogger(
             }
         }
         if (wasInterrupted) Thread.currentThread().interrupt()
+    }
+
+    private data class FileReservation(
+        val active: File,
+        val completed: File,
+        val writer: BufferedWriter
+    )
+
+    private fun reserveUniqueFile(logDir: File, baseName: String): FileReservation {
+        for (collisionIndex in 0 until MAX_COLLISION_ATTEMPTS) {
+            val suffix = if (collisionIndex == 0) "" else "_$collisionIndex"
+            val completed = File(logDir, "$baseName$suffix.jsonl")
+            if (completed.exists()) continue
+            val active = File(logDir, "${completed.name}.active")
+            try {
+                val output = Files.newBufferedWriter(
+                    active.toPath(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.WRITE
+                )
+                // Close the narrow race where an older active file was finalized between the
+                // completed-file check and this CREATE_NEW reservation.
+                if (completed.exists()) {
+                    output.close()
+                    Files.deleteIfExists(active.toPath())
+                    continue
+                }
+                return FileReservation(active, completed, output)
+            } catch (_: FileAlreadyExistsException) {
+                continue
+            }
+        }
+        throw IOException("Could not reserve a unique action log name for '$baseName'")
+    }
+
+    private fun sanitize(value: String, fallback: String): String {
+        val sanitized = buildString(minOf(value.length, MAX_FILENAME_SEGMENT_LENGTH)) {
+            for (character in value) {
+                if (length == MAX_FILENAME_SEGMENT_LENGTH) break
+                append(
+                    if (character.isLetterOrDigit() || character == '-' || character == '_') {
+                        character
+                    } else {
+                        '_'
+                    }
+                )
+            }
+        }
+        return sanitized.ifBlank { fallback }
+    }
+
+    private companion object {
+        const val QUEUE_CAPACITY = 1000
+        const val MAX_COLLISION_ATTEMPTS = 10_000
+        const val MAX_FILENAME_SEGMENT_LENGTH = 64
     }
 }

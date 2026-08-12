@@ -86,7 +86,7 @@ object NT4WireProtocol {
     }
 
     private fun unpackValue(unpacker: org.msgpack.core.MessageUnpacker, depth: Int = 0): Any? {
-        if (depth > 4) {
+        if (depth > MAX_VALUE_NESTING_DEPTH) {
             throw IOException("NT4 value nesting exceeds maximum depth")
         }
         val format = unpacker.getNextFormat()
@@ -105,16 +105,11 @@ object NT4WireProtocol {
             ValueType.ARRAY -> {
                 val declaredSize = unpacker.unpackArrayHeader()
                 requireLength("array value", declaredSize, MAX_ARRAY_ELEMENTS)
-                val retainedSize = declaredSize.coerceAtMost(256)
-                val list = ArrayList<Any?>(retainedSize)
+                val list = ArrayList<Any?>(declaredSize)
                 for (i in 0 until declaredSize) {
-                    if (i < retainedSize) {
-                        list.add(unpackValue(unpacker, depth + 1))
-                    } else {
-                        // Oversized inputs are truncated for bounded memory use, but every
-                        // element must be skipped to keep subsequent frames synchronized.
-                        unpacker.skipValue()
-                    }
+                    // Decode every accepted element so nested string/blob/array bounds cannot be
+                    // bypassed by a skip path. The declared list itself is capped at 4096.
+                    list.add(unpackValue(unpacker, depth + 1))
                 }
                 list
             }
@@ -123,7 +118,7 @@ object NT4WireProtocol {
                 requireLength("binary value", len, MAX_BINARY_BYTES)
                 unpacker.readPayload(len)
             }
-            else -> { unpacker.skipValue(); null }
+            else -> throw IOException("Unsupported NT4 MessagePack value type ${format.valueType}")
         }
     }
 
@@ -136,4 +131,5 @@ object NT4WireProtocol {
     internal const val MAX_STRING_BYTES = 65_536
     internal const val MAX_BINARY_BYTES = 1_048_576
     internal const val MAX_FRAME_BYTES = 4_194_304
+    internal const val MAX_VALUE_NESTING_DEPTH = 4
 }

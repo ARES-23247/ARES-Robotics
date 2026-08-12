@@ -5,6 +5,12 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.nio.channels.FileChannel
+import java.nio.charset.StandardCharsets
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 
 /**
  * Manages the persistence, multi-tier fallback loading hierarchy, timestamped flash backups,
@@ -119,27 +125,18 @@ object SwerveOffsetManager {
     fun saveRuntimeOffsets(offsets: SwerveOffsetData, telemetry: ITelemetry? = null) {
         val json = offsets.toJsonString()
 
-        // 1. Write runtime file
-        runCatching {
-            rootDir.takeIf { !it.exists() }?.mkdirs()
-            runtimeFile.writeText(json)
-            println("ARES SwerveOffsetManager: Successfully saved runtime offsets to ${runtimeFile.absolutePath}")
-        }.onFailure { e ->
-            System.err.println("ARES SwerveOffsetManager: Failed to write runtime file: ${e.message}")
-        }
+        // 1. Atomically replace the authoritative runtime file. Persistence failure is surfaced;
+        // callers must not report a calibration as successful when it was not durably installed.
+        atomicWrite(runtimeFile, json)
+        println("ARES SwerveOffsetManager: Successfully saved runtime offsets to ${runtimeFile.absolutePath}")
 
-        // 2. Write timestamped backup file
-        runCatching {
-            backupsDir.takeIf { !it.exists() }?.mkdirs()
-            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
-            val backupFile = File(backupsDir, "swerve_offsets_$timestamp.json")
-            backupFile.writeText(json)
-            println("ARES SwerveOffsetManager: Saved backup to ${backupFile.absolutePath}")
-
-            pruneOldBackups()
-        }.onFailure { e ->
-            System.err.println("ARES SwerveOffsetManager: Failed to create backup file: ${e.message}")
-        }
+        // 2. Atomically create/replace the timestamped backup.
+        val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
+            .format(Date(com.areslib.util.RobotClock.currentTimeMillis()))
+        val backupFile = File(backupsDir, "swerve_offsets_$timestamp.json")
+        atomicWrite(backupFile, json)
+        println("ARES SwerveOffsetManager: Saved backup to ${backupFile.absolutePath}")
+        pruneOldBackups()
 
         // 3. Broadcast to Telemetry / NetworkTables
         telemetry?.let { t ->
@@ -148,6 +145,27 @@ object SwerveOffsetManager {
             t.putNumber("ARES/Swerve/Offsets/FrontRight", offsets.frontRight)
             t.putNumber("ARES/Swerve/Offsets/BackLeft", offsets.backLeft)
             t.putNumber("ARES/Swerve/Offsets/BackRight", offsets.backRight)
+        }
+    }
+
+    private fun atomicWrite(target: File, contents: String) {
+        val directory = target.absoluteFile.parentFile
+            ?: throw IllegalArgumentException("Offset target has no parent directory: $target")
+        require(directory.exists() || directory.mkdirs()) { "Unable to create offset directory $directory" }
+        val temp = Files.createTempFile(directory.toPath(), ".${target.name}.", ".tmp")
+        try {
+            FileChannel.open(temp, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING).use { channel ->
+                val bytes = StandardCharsets.UTF_8.encode(contents)
+                while (bytes.hasRemaining()) channel.write(bytes)
+                channel.force(true)
+            }
+            try {
+                Files.move(temp, target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temp, target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            Files.deleteIfExists(temp)
         }
     }
 

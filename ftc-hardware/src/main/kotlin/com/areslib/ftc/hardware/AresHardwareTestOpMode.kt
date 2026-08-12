@@ -67,9 +67,10 @@ class AresHardwareTestOpMode : LinearOpMode() {
                 g1State.update(gamepad1)
                 driver.update(g1State)
 
-                val webX = com.areslib.telemetry.SimInputBridge.webVx
-                val webY = com.areslib.telemetry.SimInputBridge.webVy
-                val webRot = com.areslib.telemetry.SimInputBridge.webOmega
+                val webFrame = com.areslib.telemetry.SimInputBridge.currentFrame()
+                val webX = webFrame.vx
+                val webY = webFrame.vy
+                val webRot = webFrame.omega
 
                 val driveX = if (kotlin.math.abs(g1State.leftStickY) > 0.05f) {
                     -g1State.leftStickY.toDouble()

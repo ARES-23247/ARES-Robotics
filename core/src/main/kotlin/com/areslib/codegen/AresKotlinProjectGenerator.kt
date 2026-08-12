@@ -31,7 +31,6 @@ import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.AutonomousCatalogEntry
-import com.areslib.routine.AutonomousRoutineEntryPoint
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
@@ -47,7 +46,7 @@ import com.areslib.subsystem.SubsystemTargetCapability
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 3
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 4
 
 /** Complete, hermetic input to the Kotlin robot-project generator. */
 data class KotlinProjectCodegenRequest(
@@ -57,8 +56,6 @@ data class KotlinProjectCodegenRequest(
     val catalog: CapabilityCatalogDocument,
     val routines: Collection<RoutineDocument>,
     val autonomousCatalog: AutonomousCatalogDocument? = null,
-    /** Compatibility input for projects that have not migrated to [autonomousCatalog]. */
-    val autonomousEntryPoints: Map<String, AutonomousRoutineEntryPoint> = emptyMap(),
     val controlSchemes: Collection<ControlSchemeDocument> = emptyList(),
     val controllerProfiles: Collection<ControllerProfileDocument> = emptyList(),
     /** Robot-side InputFrame adapter whose learned HID indexes must be emitted. */
@@ -111,7 +108,6 @@ object AresKotlinProjectGenerator {
             append("package ${request.packageName}\n\n")
             append("import com.areslib.codegen.CapabilityArgumentReader\n")
             append("import com.areslib.routine.AutonomousCatalogEntry\n")
-            append("import com.areslib.routine.AutonomousRoutineEntryPoint\n")
             append("import com.areslib.routine.RoutineDocument\n")
             append("import com.areslib.routine.RoutineDriveMarker\n")
             append("import com.areslib.routine.RoutineDriveStep\n")
@@ -119,26 +115,28 @@ object AresKotlinProjectGenerator {
             append("import com.areslib.routine.RoutineRuntimeBindings\n")
             append("import com.areslib.routine.RoutineStep\n")
             append("import com.areslib.routine.RoutineStepKind\n")
-            append("import com.areslib.routine.RoutineManager\n")
-            append("import com.areslib.routine.RoutineStartPolicy\n")
-            append("import com.areslib.input.AnalogBinding\n")
-            append("import com.areslib.input.AnalogBindingListener\n")
-            append("import com.areslib.input.AnalogEmissionPolicy\n")
-            append("import com.areslib.input.AnalogZone\n")
-            append("import com.areslib.input.AnalogZoneListener\n")
-            append("import com.areslib.input.AxisThresholdSource\n")
-            append("import com.areslib.input.AxisTransform\n")
-            append("import com.areslib.input.BindingReleaseReason\n")
-            append("import com.areslib.input.ButtonSuppressionState\n")
-            append("import com.areslib.input.ChordSource\n")
-            append("import com.areslib.input.ControllerBindingRuntime\n")
-            append("import com.areslib.input.DigitalBinding\n")
-            append("import com.areslib.input.DigitalBindingListener\n")
-            append("import com.areslib.input.DigitalBindingTiming\n")
-            append("import com.areslib.input.RawButtonSource\n")
-            append("import com.areslib.input.SuppressibleButtonSource\n")
-            append("import com.areslib.input.SuppressingButtonChordSource\n")
-            append("import com.areslib.input.ThresholdDirection\n")
+            if (request.controlSchemes.isNotEmpty()) {
+                append("import com.areslib.routine.RoutineManager\n")
+                append("import com.areslib.routine.RoutineStartPolicy\n")
+                append("import com.areslib.input.AnalogBinding\n")
+                append("import com.areslib.input.AnalogBindingListener\n")
+                append("import com.areslib.input.AnalogEmissionPolicy\n")
+                append("import com.areslib.input.AnalogZone\n")
+                append("import com.areslib.input.AnalogZoneListener\n")
+                append("import com.areslib.input.AxisThresholdSource\n")
+                append("import com.areslib.input.AxisTransform\n")
+                append("import com.areslib.input.BindingReleaseReason\n")
+                append("import com.areslib.input.ButtonSuppressionState\n")
+                append("import com.areslib.input.ChordSource\n")
+                append("import com.areslib.input.ControllerBindingRuntime\n")
+                append("import com.areslib.input.DigitalBinding\n")
+                append("import com.areslib.input.DigitalBindingListener\n")
+                append("import com.areslib.input.DigitalBindingTiming\n")
+                append("import com.areslib.input.RawButtonSource\n")
+                append("import com.areslib.input.SuppressibleButtonSource\n")
+                append("import com.areslib.input.SuppressingButtonChordSource\n")
+                append("import com.areslib.input.ThresholdDirection\n")
+            }
             append("import com.areslib.sequencer.Task\n")
             append("import com.areslib.state.RobotState\n\n")
             append(renderRegistryInterface(
@@ -151,10 +149,12 @@ object AresKotlinProjectGenerator {
                 request.subsystemActions.associateBy { it.descriptor.key },
             ))
             append('\n')
-            append("/** Robot scheduler boundary used by generated direct-action controller bindings. */\n")
-            append("fun interface ${request.objectName}ControlTaskSink {\n")
-            append("    fun submit(bindingId: String, task: Task)\n")
-            append("}\n\n")
+            if (request.controlSchemes.isNotEmpty()) {
+                append("/** Robot scheduler boundary used by generated direct-action controller bindings. */\n")
+                append("fun interface ${request.objectName}ControlTaskSink {\n")
+                append("    fun submit(bindingId: String, task: Task)\n")
+                append("}\n\n")
+            }
             append("/** Generated from the project's checked-in ARES documents. Do not edit by hand. */\n")
             append("object ${request.objectName} {\n")
             append("    const val GENERATOR_VERSION: Int = $ARES_KOTLIN_CODEGEN_VERSION\n")
@@ -181,20 +181,6 @@ object AresKotlinProjectGenerator {
                     append("        ${stringLiteral(routine.documentId)} to ")
                     append(renderRoutine(routine, 2))
                     append(",\n")
-                }
-                append("    )\n\n")
-            }
-            append("    val autonomousEntryPoints: Map<String, AutonomousRoutineEntryPoint> = linkedMapOf(")
-            val entries = request.autonomousEntryPoints.toSortedMap()
-            if (entries.isEmpty()) {
-                append(")\n\n")
-            } else {
-                append('\n')
-                entries.forEach { (entryId, entryPoint) ->
-                    append("        ${stringLiteral(entryId)} to AutonomousRoutineEntryPoint(\n")
-                    append("            routineId = ${stringLiteral(entryPoint.routineId)},\n")
-                    append("            startingPose = ${renderPose(entryPoint.startingPose, 3)},\n")
-                    append("        ),\n")
                 }
                 append("    )\n\n")
             }
@@ -259,9 +245,6 @@ object AresKotlinProjectGenerator {
         require(request.objectName != request.registryInterfaceName) {
             "Generated object and registry interface names must differ"
         }
-        require(request.autonomousCatalog == null || request.autonomousEntryPoints.isEmpty()) {
-            "Use autonomousCatalog or legacy autonomousEntryPoints, not both"
-        }
         request.projectMetadata?.let { metadata ->
             val metadataIssues = validateAresProjectMetadata(metadata)
             require(metadataIssues.isEmpty()) { metadataIssues.joinToString("; ") }
@@ -324,20 +307,6 @@ object AresKotlinProjectGenerator {
                 ) {
                     "Autonomous entry '${entry.entryId}' reaches an action that is not allowed in autonomous"
                 }
-            }
-        }
-        request.autonomousEntryPoints.forEach { (entryId, entryPoint) ->
-            require(entryId.matches(STABLE_ENTRY_ID_REGEX)) {
-                "Autonomous entry ID '$entryId' must be a filesystem-safe lowercase identifier"
-            }
-            require(entryPoint.routineId in routineIds) {
-                "Autonomous entry '$entryId' references missing routine '${entryPoint.routineId}'"
-            }
-            require(entryPoint.startingPose.isFinite()) {
-                "Autonomous entry '$entryId' has a non-finite starting pose"
-            }
-            require(routineSupportsContext(entryPoint.routineId, request.routines.associateBy { it.documentId }, actions, mutableSetOf())) {
-                "Autonomous entry '$entryId' reaches an action that is not allowed in autonomous"
             }
         }
         validateControls(request, actions, routineIds)
@@ -463,17 +432,6 @@ object AresKotlinProjectGenerator {
         record("catalog", CapabilityCatalogCodec.encode(request.catalog))
         routines.forEach { record("routine:${it.documentId}", AresRoutineCodec.encode(it)) }
         request.autonomousCatalog?.let { record("autonomous-catalog", AutonomousCatalogCodec.encode(it)) }
-        request.autonomousEntryPoints.toSortedMap().forEach { (id, entry) ->
-            record(
-                "auto:$id",
-                listOf(
-                    entry.routineId,
-                    entry.startingPose.xMeters.toRawBits(),
-                    entry.startingPose.yMeters.toRawBits(),
-                    entry.startingPose.headingRadians.toRawBits()
-                ).joinToString("|")
-            )
-        }
         request.controllerProfiles.sortedBy { it.documentId }.forEach {
             record("controller-profile:${it.documentId}", ControllerProfileCodec.encode(it))
         }
@@ -616,6 +574,7 @@ object AresKotlinProjectGenerator {
         continuousActionMethods: Map<String, String>,
     ): String = buildString {
         val schemes = request.controlSchemes.sortedBy { it.documentId }
+        if (schemes.isEmpty()) return@buildString
         val profiles = request.controllerProfiles.associateBy { it.documentId }
         val platform = request.targetInputPlatform
         check(schemes.isEmpty() || platform != null)
@@ -628,18 +587,11 @@ object AresKotlinProjectGenerator {
         append("     * ordered before constituent buttons and raise their effective press debounce to the chord\n")
         append("     * window, preventing a near-simultaneous chord from leaking a single-button action.\n")
         append("     */\n")
-        if (schemes.isEmpty()) append("    @Suppress(\"UNUSED_PARAMETER\")\n")
         append("    fun createControllerRuntimes(\n")
         append("        schemeId: String,\n")
         append("        registry: ${request.registryInterfaceName},\n")
         append("        routineManager: RoutineManager,\n")
         append("        taskSink: ${request.objectName}ControlTaskSink,\n")
-        if (schemes.isEmpty()) {
-            append("    ): Map<String, ControllerBindingRuntime> {\n")
-            append("        throw IllegalArgumentException(\"Unknown control scheme '\$schemeId'\")\n")
-            append("    }\n")
-            return@buildString
-        }
         append("    ): Map<String, ControllerBindingRuntime> = when (schemeId) {\n")
         schemes.forEach { scheme ->
             val enabledBindings = scheme.bindings.filter { it.enabled }
@@ -1470,7 +1422,6 @@ object AresKotlinProjectGenerator {
     private val SOURCE_HASH_DECLARATION =
         Regex("const val SOURCE_SHA256: String = \\\"([a-f0-9]{64})\\\"")
     private val SHA_256_REGEX = Regex("[a-f0-9]{64}")
-    private val STABLE_ENTRY_ID_REGEX = Regex("[a-z0-9][a-z0-9._-]{0,63}")
     private const val SOURCE_HASH_PLACEHOLDER = "0000000000000000000000000000000000000000000000000000000000000000"
     private const val NANOS_PER_SECOND = 1_000_000_000.0
     private const val MAX_NANOSECOND_DURATION_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND

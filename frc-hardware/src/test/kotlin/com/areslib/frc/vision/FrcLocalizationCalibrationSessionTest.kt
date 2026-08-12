@@ -26,7 +26,7 @@ class FrcLocalizationCalibrationSessionTest {
         var seedCount = 0
 
         override fun read() = DriveState()
-        override fun write(driveState: DriveState) = Unit
+        override fun write(driveState: DriveState, powerScale: Double) = Unit
         override fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) = Unit
         override fun seedPose(pose: Pose2d) {
             seeded = pose

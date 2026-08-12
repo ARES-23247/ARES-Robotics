@@ -33,6 +33,7 @@ class MockFrcVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList(
     val isConnected: Boolean = true
     var lastYawDegrees = Double.NaN
     var lastImuMode = Int.MIN_VALUE
+    var orientationCalls = 0
     /**
      * updateInputs declaration.
      *
@@ -53,6 +54,7 @@ class MockFrcVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList(
         rollRateDegPerSec: Double,
         linearVelocityMps: Double
     ) {
+        orientationCalls++
         lastYawDegrees = yawDegrees
     }
 
@@ -81,7 +83,7 @@ class FrcVisionTrackerTest {
         var sampledTimestampSeconds = Double.NaN
 
         override fun read(): DriveState = DriveState()
-        override fun write(driveState: DriveState) {}
+        override fun write(driveState: DriveState, powerScale: Double) {}
         override fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) {
             visionCalls++
             lastTimestampSeconds = timestampSeconds
@@ -114,6 +116,35 @@ class FrcVisionTrackerTest {
             out[2] = historicalPose[2]
             return true
         }
+    }
+
+    @Test
+    fun `invalid drive observations are not forwarded to MegaTag2`() {
+        val store = Store(
+            RobotState(
+                drive = DriveState(
+                    measuredMotionValid = false,
+                    imuMeasurementsValid = true
+                )
+            ),
+            ::rootReducer
+        )
+        val vision = MockFrcVisionIO()
+        val tracker = FrcVisionTracker(
+            store = store,
+            visionIO = vision,
+            swerveIO = RecordingSwerveIO(),
+            isSimulation = false,
+            estimatorTimeSecondsProvider = { 1.0 },
+            fpgaToEstimatorTimeSeconds = { it },
+            isDisabledProvider = { false }
+        )
+
+        tracker.update(1_000L)
+
+        assertEquals(0, vision.orientationCalls)
+        assertEquals("REJECTED_DRIVE_SIGNALS", tracker.lastVisionStatus)
+        assertTrue(RobotStatusTracker.visionConnected)
     }
 
     @Test

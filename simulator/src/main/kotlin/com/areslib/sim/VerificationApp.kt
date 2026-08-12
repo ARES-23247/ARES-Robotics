@@ -23,27 +23,36 @@ fun main() {
         }
     }
 
-    // Helper wrappers for publishing inputs
-    val setVx = { v: Double ->
-        NT4Server.publishTopic("ARES/Input/vx", v)
-        com.areslib.telemetry.SimInputBridge.rawWebVx = v
-    }
+    // One synchronized producer owns the exact v2 command frame.
+    val commandLock = Any()
+    val desiredAxes = DoubleArray(3)
+    val setVx = { v: Double -> synchronized(commandLock) { desiredAxes[0] = v } }
     val setVy = { v: Double ->
-        NT4Server.publishTopic("ARES/Input/vy", v)
-        com.areslib.telemetry.SimInputBridge.rawWebVy = v
+        synchronized(commandLock) { desiredAxes[1] = v }
     }
     val setOmega = { v: Double ->
-        NT4Server.publishTopic("ARES/Input/omega", v)
-        com.areslib.telemetry.SimInputBridge.rawWebOmega = v
+        synchronized(commandLock) { desiredAxes[2] = v }
     }
 
-    // Start background heartbeat publisher to keep inputs active
+    // Start one frame publisher; sequence zero is the required neutral session handshake.
     val running = java.util.concurrent.atomic.AtomicBoolean(true)
     thread {
-        var count = 0L
+        val frame = DoubleArray(8)
+        var sequence = 0L
+        var clientMonotonicMs = 0L
         while (running.get()) {
-            NT4Server.publishTopic("ARES/Input/heartbeat", count++)
-            NT4Server.publishTopic("ARES/Input/isTeleopMode", true)
+            frame[0] = 2.0
+            frame[1] = 23_247.0
+            frame[2] = sequence++.toDouble()
+            frame[3] = clientMonotonicMs.toDouble()
+            synchronized(commandLock) {
+                frame[4] = desiredAxes[0]
+                frame[5] = desiredAxes[1]
+                frame[6] = desiredAxes[2]
+            }
+            frame[7] = 56.0 // teleop + field-centric + red alliance
+            NT4Server.publishTopic(com.areslib.telemetry.TelemetryTopicConstants.DRIVE_INPUT_FRAME, frame)
+            clientMonotonicMs += 50L
             try {
                 Thread.sleep(50)
             } catch (_: InterruptedException) {
@@ -98,13 +107,13 @@ fun main() {
 
     fun rotateToTarget(targetRad: Double, toleranceRad: Double = 0.08, timeoutMs: Long = 8000): Boolean {
         println("Rotating to target: %.3f rad...".format(targetRad))
-        val startTime = System.currentTimeMillis()
+        val startTime = com.areslib.util.RobotClock.currentTimeMillis()
         var settledTicks = 0
         var lastH = getPose().third
-        var lastTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
+        var lastTime = com.areslib.util.RobotClock.currentTimeMillis()
+        while (com.areslib.util.RobotClock.currentTimeMillis() - startTime < timeoutMs) {
             val (_, _, currentH) = getPose()
-            val now = System.currentTimeMillis()
+            val now = com.areslib.util.RobotClock.currentTimeMillis()
             val dt = (now - lastTime) / 1000.0
             val velocity = if (dt > 0.01) wrapAngle(currentH - lastH) / dt else 0.0
             if (dt > 0.01) {
@@ -154,9 +163,9 @@ fun main() {
         Thread.sleep(100)
         val (curX, curY, curH) = getPose()
         val stateYVel = com.areslib.ftc.FtcBaseRobot.activeInstance?.store?.state?.drive?.yVelocityMetersPerSecond ?: -99.0
-        println("[Segment 1 Step %d] Pose: X=%.3f, Y=%.3f, H=%.3f | rawWebVy=%.2f | stateYVel=%.2f".format(
+        println("[Segment 1 Step %d] Pose: X=%.3f, Y=%.3f, H=%.3f | commandVy=%.2f | stateYVel=%.2f".format(
             step, curX, curY, curH,
-            com.areslib.telemetry.SimInputBridge.rawWebVy,
+            com.areslib.telemetry.SimInputBridge.currentFrame().vy,
             stateYVel
         ))
     }

@@ -52,6 +52,8 @@ data class DriveState(
     /** Measured field-relative Y velocity, distinct from the commanded drive intent above. */
     val measuredFieldYVelocityMetersPerSecond: Double = 0.0,
     val measuredAngularVelocityRadiansPerSecond: Double = 0.0,
+    /** True only when all measured chassis velocity components were fresh and finite. */
+    val measuredMotionValid: Boolean = false,
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
     val odometryHeading: Double = 0.0,
@@ -60,6 +62,8 @@ data class DriveState(
     val poseEstimateIsExternal: Boolean = false,
     val pitchDegrees: Double = 0.0,
     val rollDegrees: Double = 0.0,
+    /** True only when the inertial sample associated with this drive observation was fresh and finite. */
+    val imuMeasurementsValid: Boolean = false,
     val xAccelerationG: Double = 0.0,
     val yAccelerationG: Double = 0.0,
     val zAccelerationG: Double = 0.0,
@@ -89,13 +93,9 @@ data class DriveState(
      * @return Corresponding output value or Unit.
      */
     fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
-        // DELIBERATE OPTIMIZATION (Zero-GC): To avoid allocating a new DoubleArray(9) at 50Hz,
-        // we mutate the existing covariance array in-place. This technically breaks pure Redux
-        // immutability, but is required to keep the control loop allocation-free.
-        var cov = this.covarianceMatrix
-        if (cov.size != 9) {
-            cov = DoubleArray(9)
-        }
+        // Diagnostics are part of the published Redux snapshot and therefore must never reuse an
+        // array reachable from an older state.
+        val cov = DoubleArray(9)
         cov[0] = updatedEstimator.covariance.m00
         cov[1] = updatedEstimator.covariance.m01
         cov[2] = updatedEstimator.covariance.m02
@@ -117,7 +117,7 @@ data class DriveState(
             lastInnovationX = updatedEstimator.lastInnovationX,
             lastInnovationY = updatedEstimator.lastInnovationY,
             lastInnovationTheta = updatedEstimator.lastInnovationTheta,
-            lastKalmanGain = updatedEstimator.lastKalmanGain
+            lastKalmanGain = updatedEstimator.lastKalmanGain.copyOf()
         )
     }
 }

@@ -8,6 +8,8 @@ import com.areslib.state.RobotState
 import com.areslib.subsystem.AresRobot
 import com.areslib.subsystem.VisionTracker
 import com.areslib.telemetry.*
+import java.util.function.BooleanSupplier
+import java.util.function.DoubleSupplier
 
 /**
  * Abstract base container class for all FRC robots built on ARESLib.
@@ -37,6 +39,9 @@ abstract class FrcBaseRobot(
     initialState: RobotState = RobotState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
     baseTelemetry: ITelemetry = FRCTelemetry(),
+    telemetryManagerFactory: (com.areslib.Store, ITelemetry) -> FrcTelemetryManager = { store, telemetry ->
+        FrcTelemetryManager(telemetry, store)
+    },
     private val isEnabledProvider: () -> Boolean = {
         try {
             edu.wpi.first.wpilibj.DriverStation.isEnabled()
@@ -58,8 +63,12 @@ abstract class FrcBaseRobot(
     }
 ) : AresRobot(initialState, reducer) {
 
-    /** FRC telemetry manager composing NT4, CSV logging, and custom publishers. */
-    open val telemetryManager: FrcTelemetryManager = FrcTelemetryManager(baseTelemetry, store)
+    /**
+     * The single FRC telemetry manager owned by this robot instance. Subclasses provide their
+     * platform dependencies through [telemetryManagerFactory] instead of overriding this property;
+     * that prevents an eager base logger from being constructed and abandoned during subclass init.
+     */
+    val telemetryManager: FrcTelemetryManager = telemetryManagerFactory(store, baseTelemetry)
 
     /** FRC power/brownout manager. */
     open val powerManager: FrcPowerManager = FrcPowerManager()
@@ -74,14 +83,31 @@ abstract class FrcBaseRobot(
     val brownoutGuard get() = powerManager.brownoutGuard
 
     /** Configurable battery voltage supplier delegated to [powerManager]. */
-    var batteryVoltageSupplier: () -> Double
+    var batteryVoltageSupplier: DoubleSupplier
         get() = powerManager.batteryVoltageSupplier
         set(value) { powerManager.batteryVoltageSupplier = value }
 
+    /** Configurable total-current supplier, normally backed by WPILib PowerDistribution. */
+    var totalCurrentSupplier: DoubleSupplier
+        get() = powerManager.totalCurrentSupplier
+        set(value) { powerManager.totalCurrentSupplier = value }
+
+    /** Configurable roboRIO brownout-state supplier. */
+    var brownedOutSupplier: BooleanSupplier
+        get() = powerManager.brownedOutSupplier
+        set(value) { powerManager.brownedOutSupplier = value }
+
     private var lastUpdateTime = 0L
+    private var previousEnabled: Boolean? = null
+    private var topologyPublished = false
+    private var closed = false
+
+    /** First fatal loop failure. A robot instance remains inhibited after this is set. */
+    @Volatile
+    var fatalUpdateFailure: Throwable? = null
+        private set
 
     init {
-        RobotWebServer.start()
         RobotStatusTracker.isEnabled = false
         RobotStatusTracker.activeOpMode = "Init"
     }
@@ -96,12 +122,15 @@ abstract class FrcBaseRobot(
      * @param gamepad2 Optional operator gamepad state.
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
+        fatalUpdateFailure?.let { failure ->
+            safeHardware()
+            throw failure
+        }
         try {
             com.areslib.hardware.HardwareRegistry.refreshAll()
             val isEnabled = isEnabledProvider()
             val mode = robotModeProvider()
 
-            if (isEnabled) RobotWebServer.stop() else RobotWebServer.start()
             RobotStatusTracker.isEnabled = isEnabled
             RobotStatusTracker.activeOpMode = mode
 
@@ -121,23 +150,41 @@ abstract class FrcBaseRobot(
             // 4. Power scaling
             val scale = powerManager.update(dtSeconds, timestamp)
 
-            // 5. Write registered subsystem outputs
-            writeAllOutputs(scale)
-
-            // 6. Platform-specific hardware writes
-            writeHardwareOutputs(scale, powerManager.batteryVoltage)
+            // 5-6. WPILib disables vendor outputs, but the ARES loop must also avoid issuing stale
+            // desired commands while disabled. On the first disabled frame (and every enabled ->
+            // disabled transition), clear shared drive intent and invoke physical safety exactly
+            // once. Season shells clear their mechanism slice from disabledInit.
+            if (isEnabled) {
+                writeAllOutputs(scale)
+                writeHardwareOutputs(scale, powerManager.batteryVoltage)
+            } else if (previousEnabled != false) {
+                clearDriveIntentForDisable(timestamp)
+                safeHardware()
+            }
+            previousEnabled = isEnabled
 
             // 7. Telemetry
-            telemetryManager.publish(store.state, gamepad1, gamepad2, dtSeconds, powerManager.batteryVoltage)
             telemetryManager.logBrownout(powerManager.brownoutGuard, powerManager.batteryVoltage)
+            telemetryManager.publish(store.state, gamepad1, gamepad2, dtSeconds, powerManager.batteryVoltage)
+            telemetry.putNumber("Robot/TotalCurrentAmps", powerManager.currentAmps)
+            telemetry.putBoolean("Robot/CurrentMeasurementValid", powerManager.currentMeasurementValid)
+            telemetry.putNumber("Robot/CurrentPowerScale", powerManager.currentPowerScale)
+            telemetry.putString("Robot/CurrentBudgetState", powerManager.currentBudgetState.name)
+            telemetry.putBoolean("Robot/RioBrownedOut", powerManager.isBrownedOut)
             com.areslib.hardware.HardwareRegistry.publishAll(telemetry)
             publishRobotTelemetry(timestamp)
             telemetryManager.dataLoggingTelemetry.update()
 
         } catch (e: Throwable) {
+            fatalUpdateFailure = e
             System.err.println("FrcBaseRobot: Exception in update loop: ${e.message}")
             e.printStackTrace()
-            safeHardware()
+            try {
+                safeHardware()
+            } catch (safetyFailure: Throwable) {
+                e.addSuppressed(safetyFailure)
+            }
+            throw e
         }
     }
 
@@ -167,6 +214,36 @@ abstract class FrcBaseRobot(
     protected open fun publishRobotTelemetry(timestampMs: Long) {}
 
     /**
+     * Publishes the completed registry topology at most once for this robot instance.
+     *
+     * The value is added to the in-progress FRC telemetry frame without flushing; [update] performs
+     * the single explicit flush after every core, season, power, registry, and platform topic has
+     * been written.
+     */
+    fun publishHardwareTopology(robotId: String) {
+        if (topologyPublished) return
+        val json = com.areslib.hardware.HardwareRegistry.getTopologyJson(robotId)
+        telemetryManager.publisher.publishTopology(json, flush = false)
+        topologyPublished = true
+    }
+
+    private fun clearDriveIntentForDisable(timestampMs: Long) {
+        store.dispatch(
+            RobotAction.JoystickDriveIntent(
+                targetXVelocity = 0.0,
+                targetYVelocity = 0.0,
+                targetAngularVelocity = 0.0,
+                timestampMs = timestampMs,
+                isFieldCentric = false,
+                isXLock = true
+            )
+        )
+        store.dispatch(RobotAction.SetHeadingLockTarget(null, timestampMs))
+        store.dispatch(RobotAction.SetPositionLockTarget(null, null, timestampMs))
+        store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.X_BRAKE, timestampMs))
+    }
+
+    /**
      * Emergency-stops all hardware by zeroing registered subsystem outputs
      * and invoking [com.areslib.hardware.HardwareRegistry.safeAll].
      */
@@ -182,11 +259,28 @@ abstract class FrcBaseRobot(
      * Gracefully shuts down the robot: stops web server, closes telemetry,
      * releases all registered subsystems and hardware resources.
      */
+    @Synchronized
     open fun close() {
+        if (closed) return
+        closed = true
         RobotStatusTracker.isEnabled = false
-        RobotWebServer.stop()
-        telemetryManager.close()
-        closeSubsystems()
-        com.areslib.hardware.HardwareRegistry.closeAll()
+        closeBestEffort(
+            { safeHardware() },
+            { telemetryManager.close() },
+            { closeSubsystems() },
+            { com.areslib.hardware.HardwareRegistry.closeAll() }
+        )
+    }
+
+    private fun closeBestEffort(vararg actions: () -> Unit) {
+        var firstFailure: Throwable? = null
+        for (action in actions) {
+            try {
+                action()
+            } catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
     }
 }

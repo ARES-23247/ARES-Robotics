@@ -117,9 +117,12 @@ abstract class FtcTeleOpBase<R> : OpMode() {
     final override fun init() {
         val builtDefinition = define().also { it.validate() }
         com.areslib.math.estimation.PoseEstimator.activeTags =
-            com.areslib.math.coordinate.FieldLayouts.getTagsForLayout(
-                com.areslib.math.coordinate.FieldLayout.SQUARE_STANDARD
-            )
+            com.areslib.state.RobotFieldManager.activeConfig.apriltags.associate { tag ->
+                tag.id to com.areslib.math.geometry.Pose3d(
+                    com.areslib.math.geometry.Translation3d(tag.x, tag.y, tag.z),
+                    com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
+                )
+            }
         val builtRobot = buildRobot()
         val builtContext = FtcTeleOpContext(builtRobot, driver, operator, telemetry)
         definition = builtDefinition
@@ -135,8 +138,8 @@ abstract class FtcTeleOpBase<R> : OpMode() {
     final override fun init_loop() {
         val activeRobot = robot ?: return
         refreshGamepadStates()
-        driver.update(g1State)
-        operator.update(g2State)
+        driver.prime(g1State)
+        operator.prime(g2State)
         updateRobot(activeRobot, g1State, g2State)
         context?.let { definition?.duringInitBlock?.invoke(it) }
     }
@@ -147,6 +150,9 @@ abstract class FtcTeleOpBase<R> : OpMode() {
         RobotStatusTracker.activeOpMode = "TeleOp"
         restoreStartingPose(getBaseRobot(activeRobot))
         com.areslib.ftc.telemetry.LimelightProxyAutoStart.stop()
+        refreshGamepadStates()
+        driver.prime(g1State)
+        operator.prime(g2State)
         context?.let { definition?.onStartBlock?.invoke(it) }
     }
 
@@ -187,7 +193,10 @@ abstract class FtcTeleOpBase<R> : OpMode() {
 
     private fun restoreStartingPose(baseRobot: FtcBaseRobot?) {
         if (baseRobot == null) return
-        if (PoseStorage.hasValidPose) {
+        val hasValidStoredPose = PoseStorage.hasValidPose
+        val restoredAlliance = allianceForTeleOpRestore(hasValidStoredPose, PoseStorage.alliance)
+        baseRobot.store.dispatch(com.areslib.action.RobotAction.SetAlliance(restoredAlliance))
+        if (hasValidStoredPose) {
             baseRobot.resetPose(PoseStorage.currentPose)
         } else {
             baseRobot.resetPoseForAlliance()
@@ -195,9 +204,10 @@ abstract class FtcTeleOpBase<R> : OpMode() {
     }
 
     private fun applySimulationDriveInput(g1State: GamepadState) {
-        val webVx = SimInputBridge.webVx
-        val webVy = SimInputBridge.webVy
-        val webOmega = SimInputBridge.webOmega
+        val commandFrame = SimInputBridge.currentFrame()
+        val webVx = commandFrame.vx
+        val webVy = commandFrame.vy
+        val webOmega = commandFrame.omega
         if (!webVx.isFinite() || !webVy.isFinite() || !webOmega.isFinite()) return
         if (abs(webVx) <= 0.01 && abs(webVy) <= 0.01 && abs(webOmega) <= 0.01) return
 
@@ -217,3 +227,9 @@ abstract class FtcTeleOpBase<R> : OpMode() {
         driver.rightStickX.label("Robot rotation")
     }
 }
+
+/** Invalid pose storage must not leak an alliance retained by an older autonomous run. */
+internal fun allianceForTeleOpRestore(
+    hasValidStoredPose: Boolean,
+    storedAlliance: com.areslib.state.Alliance
+): com.areslib.state.Alliance = if (hasValidStoredPose) storedAlliance else com.areslib.state.Alliance.RED

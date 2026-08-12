@@ -10,6 +10,7 @@ import com.areslib.telemetry.GamepadState
 import com.areslib.telemetry.ITelemetry
 import com.areslib.telemetry.RobotTelemetryManager
 import com.areslib.hardware.HardwareRegistry
+import com.areslib.control.safety.BrownoutGuard
 
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.ftc.vision.FtcVisionTracker
@@ -55,8 +56,9 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     override val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
     /** Network state publisher translating Redux [RobotState] into NT4 topics. */
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
-    /** Battery voltage brownout guard instance configured with FTC defaults. */
-    val brownoutGuard = com.areslib.control.safety.BrownoutGuard.ftcDefaults()
+    private var activeBrownoutGuard = BrownoutGuard.ftcDefaults()
+    /** Guard currently used for both enforcement telemetry and compatibility publishing. */
+    val brownoutGuard: BrownoutGuard get() = activeBrownoutGuard
 
     /** List of custom telemetry publisher callbacks executed every frame. */
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
@@ -132,9 +134,9 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
             actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
         }
 
-        brownoutGuard.update(batteryVoltage)
+        activeBrownoutGuard.update(batteryVoltage)
 
-        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, brownoutGuard)
+        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, activeBrownoutGuard)
 
         // Global custom hardware telemetry
         HardwareRegistry.publishAll(dataLoggingTelemetry)
@@ -158,6 +160,8 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
      * @param dtSeconds Loop time step interval in seconds ($s$).
      * @param batteryVoltage Measured main battery voltage in Volts ($V$).
      * @param visionTracker Active [FtcVisionTracker] instance.
+     * @param powerBrownoutGuard Guard used by the actuator power manager. Passing the same instance
+     * keeps telemetry and the enforced output scale on one authoritative state machine.
      * @param timestamp System time in milliseconds ($ms$).
      * @param localTelemetry FTC SDK [Telemetry] console instance.
      * @param onSubclassPublish Custom lambda hook executed prior to flushing telemetry.
@@ -168,11 +172,13 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         gamepad2: GamepadState?,
         dtSeconds: Double,
         batteryVoltage: Double,
+        powerBrownoutGuard: BrownoutGuard,
         visionTracker: FtcVisionTracker,
         timestamp: Long,
         localTelemetry: Telemetry?,
         onSubclassPublish: () -> Unit = {}
     ) {
+        activeBrownoutGuard = powerBrownoutGuard
         val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
         if (detectedMode != actionLogger.mode) {
             actionLogger.stop()
@@ -187,12 +193,10 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         dataLoggingTelemetry.ntEnabled = isNtFrame
 
         val estPose = state.drive.poseEstimator.estimatedPose
-        brownoutGuard.update(batteryVoltage)
-
         // Subclass-specific telemetry (motor powers, currents, custom subsystems)
         onSubclassPublish()
 
-        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, brownoutGuard)
+        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, powerBrownoutGuard)
 
         // Vision telemetry status
         dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
@@ -248,6 +252,33 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         // Reset NT4 enabled for any out-of-band puts between frames
         dataLoggingTelemetry.ntEnabled = true
     }
+
+    /**
+     * Source-compatible overload for the original FTC telemetry API. Once the actuator power
+     * manager has supplied its guard, this path retains that same authoritative instance.
+     */
+    fun publishFull(
+        state: RobotState,
+        gamepad1: GamepadState?,
+        gamepad2: GamepadState?,
+        dtSeconds: Double,
+        batteryVoltage: Double,
+        visionTracker: FtcVisionTracker,
+        timestamp: Long,
+        localTelemetry: Telemetry?,
+        onSubclassPublish: () -> Unit = {}
+    ) = publishFull(
+        state = state,
+        gamepad1 = gamepad1,
+        gamepad2 = gamepad2,
+        dtSeconds = dtSeconds,
+        batteryVoltage = batteryVoltage,
+        powerBrownoutGuard = activeBrownoutGuard,
+        visionTracker = visionTracker,
+        timestamp = timestamp,
+        localTelemetry = localTelemetry,
+        onSubclassPublish = onSubclassPublish
+    )
 
     /** Legacy motor telemetry hook (obsolete, retained for compatibility). */
     @Suppress("UNUSED_PARAMETER")

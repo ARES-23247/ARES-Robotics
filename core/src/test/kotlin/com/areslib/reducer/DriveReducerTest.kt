@@ -170,6 +170,68 @@ class DriveReducerTest {
         assertEquals(-3.0, updated.drive.yVelocityMetersPerSecond)
         assertEquals(1.25, updated.drive.measuredFieldXVelocityMetersPerSecond)
         assertEquals(-0.75, updated.drive.measuredFieldYVelocityMetersPerSecond)
+        assertEquals(true, updated.drive.measuredMotionValid)
+        assertEquals(true, updated.drive.imuMeasurementsValid)
+    }
+
+    @Test
+    fun `pose update sanitizes invalid motion and imu without rejecting finite pose`() {
+        val updated = rootReducer(
+            RobotState(),
+            RobotAction.PoseUpdate(
+                xMeters = 2.0,
+                yMeters = 3.0,
+                headingRadians = 0.4,
+                timestampMs = 20L,
+                isExternalEstimate = true,
+                xVelocityMetersPerSecond = Double.NaN,
+                yVelocityMetersPerSecond = 1.0,
+                angularVelocityRadiansPerSecond = Double.POSITIVE_INFINITY,
+                pitchDegrees = Double.NaN,
+                rollDegrees = 2.0,
+                motionMeasurementsValid = true,
+                imuMeasurementsValid = true
+            )
+        )
+
+        assertEquals(2.0, updated.drive.odometryX)
+        assertEquals(3.0, updated.drive.odometryY)
+        assertEquals(0.0, updated.drive.measuredFieldXVelocityMetersPerSecond)
+        assertEquals(0.0, updated.drive.measuredFieldYVelocityMetersPerSecond)
+        assertEquals(0.0, updated.drive.measuredAngularVelocityRadiansPerSecond)
+        assertEquals(false, updated.drive.measuredMotionValid)
+        assertEquals(0.0, updated.drive.pitchDegrees)
+        assertEquals(0.0, updated.drive.rollDegrees)
+        assertEquals(false, updated.drive.imuMeasurementsValid)
+    }
+
+    @Test
+    fun `explicitly invalid finite observations cannot masquerade as stationary`() {
+        val updated = rootReducer(
+            RobotState(),
+            RobotAction.PoseUpdate(
+                xMeters = 1.0,
+                yMeters = 1.0,
+                headingRadians = 0.0,
+                timestampMs = 20L,
+                xVelocityMetersPerSecond = 4.0,
+                yVelocityMetersPerSecond = -3.0,
+                angularVelocityRadiansPerSecond = 2.0,
+                pitchDegrees = 8.0,
+                rollDegrees = -6.0,
+                motionMeasurementsValid = false,
+                imuMeasurementsValid = false,
+                isExternalEstimate = true
+            )
+        )
+
+        assertEquals(0.0, updated.drive.measuredFieldXVelocityMetersPerSecond)
+        assertEquals(0.0, updated.drive.measuredFieldYVelocityMetersPerSecond)
+        assertEquals(0.0, updated.drive.measuredAngularVelocityRadiansPerSecond)
+        assertEquals(false, updated.drive.measuredMotionValid)
+        assertEquals(0.0, updated.drive.pitchDegrees)
+        assertEquals(0.0, updated.drive.rollDegrees)
+        assertEquals(false, updated.drive.imuMeasurementsValid)
     }
 
     @Test

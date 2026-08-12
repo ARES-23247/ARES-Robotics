@@ -1,11 +1,9 @@
 package com.areslib.pathing
 
 import com.areslib.action.RobotAction
-import com.areslib.hardware.actuator.IndicatorLightColor
 import com.areslib.sequencer.Task
 import com.areslib.sequencer.TaskStateMachine
 import com.areslib.sequencer.TaskStatus
-import com.areslib.sequencer.tasks.SetIndicatorColorTask
 import com.areslib.state.RobotState
 
 /** Stable identifier shared by code, path event markers, and the auto editor. */
@@ -103,13 +101,10 @@ object NamedCommands {
     /** Creates a lazy task so registration is checked when the sequence starts, not when it is built. */
     fun task(key: CommandKey): Task = DeferredNamedCommandTask(key)
 
-    /** Resolves a path marker by string and retains explicit legacy indicator marker support. */
+    /** Resolves an exact registered path-marker key. Unregistered markers are rejected. */
     fun getCommand(name: String, timestampMs: Long): Task? {
         val key = runCatching { CommandKey(name) }.getOrNull()
-        if (key != null) {
-            create(key, timestampMs)?.let { return it }
-        }
-        return createLegacyIndicatorTask(name)
+        return key?.let { create(it, timestampMs) }
     }
 
     /** Removes all registrations. Primarily used between robot/test lifecycles. */
@@ -122,27 +117,6 @@ object NamedCommands {
         }
     }
 
-    private fun createLegacyIndicatorTask(name: String): Task? {
-        val parts = name.split('_')
-        val targetAndColor = when {
-            parts.size == 3 && parts[0] == "SetIndicatorColor" -> parts[1] to parts[2]
-            parts.size == 2 -> {
-                val target = when (parts[0]) {
-                    "SetIndicatorColor" -> "indicator"
-                    "SetSecondIndicatorColor" -> "indicator2"
-                    "SetThirdIndicatorColor" -> "indicator3"
-                    "SetFourthIndicatorColor" -> "indicator4"
-                    else -> return null
-                }
-                target to parts[1]
-            }
-            else -> return null
-        }
-        val color = IndicatorLightColor.entries.firstOrNull {
-            it.name.equals(targetAndColor.second, ignoreCase = true)
-        } ?: return null
-        return SetIndicatorColorTask(targetAndColor.first, color)
-    }
 }
 
 /** Delegates lifecycle to a newly-created named task and propagates its failure status. */

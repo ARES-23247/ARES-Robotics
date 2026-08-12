@@ -3,66 +3,91 @@ package com.areslib.sequencer
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 
-/** Small synchronized weak map whose keys use object identity rather than `equals`. */
+/**
+ * Small synchronized weak map whose keys use object identity rather than `equals`.
+ *
+ * Task registries are deliberately small, so a compact linear table avoids allocating temporary
+ * lookup weak references and `HashMap` iterators in 20 Hz watchdog scans. Entries allocate only
+ * when a new task is registered; lookup, removal, and [forEachLive] are allocation-free.
+ */
 internal class WeakIdentityMap<K : Any, V> {
+    internal fun interface EntryVisitor<K : Any, V> {
+        fun visit(key: K, value: V)
+    }
+
+    private class Entry<K : Any, V>(
+        val reference: WeakReference<K>,
+        var value: V,
+    )
+
     private val referenceQueue = ReferenceQueue<K>()
-    private val values = HashMap<IdentityReference<K>, V>()
+    private val entries = ArrayList<Entry<K, V>>(16)
 
     @Synchronized
     operator fun get(key: K): V? {
         removeCollectedKeys()
-        return values[IdentityReference.lookup(key)]
+        val index = findIndex(key)
+        return if (index >= 0) entries[index].value else null
     }
 
     @Synchronized
     operator fun set(key: K, value: V) {
         removeCollectedKeys()
-        values[IdentityReference(key, referenceQueue)] = value
+        val index = findIndex(key)
+        if (index >= 0) {
+            entries[index].value = value
+        } else {
+            entries.add(Entry(WeakReference(key, referenceQueue), value))
+        }
     }
 
     @Synchronized
     fun remove(key: K): V? {
         removeCollectedKeys()
-        return values.remove(IdentityReference.lookup(key))
+        val index = findIndex(key)
+        return if (index >= 0) entries.removeAt(index).value else null
     }
 
     @Synchronized
     fun containsKey(key: K): Boolean {
         removeCollectedKeys()
-        return values.containsKey(IdentityReference.lookup(key))
+        return findIndex(key) >= 0
     }
 
+    /** Visits live entries directly without constructing a snapshot, iterator, pair, or lambda. */
     @Synchronized
-    fun entriesSnapshot(): List<Pair<K, V>> {
+    fun forEachLive(visitor: EntryVisitor<K, V>) {
         removeCollectedKeys()
-        return values.mapNotNull { (reference, value) -> reference.get()?.let { it to value } }
+        var index = 0
+        while (index < entries.size) {
+            val entry = entries[index]
+            val key = entry.reference.get()
+            if (key != null) visitor.visit(key, entry.value)
+            index++
+        }
+    }
+
+    private fun findIndex(key: K): Int {
+        var index = 0
+        while (index < entries.size) {
+            if (entries[index].reference.get() === key) return index
+            index++
+        }
+        return -1
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun removeCollectedKeys() {
         while (true) {
-            val reference = referenceQueue.poll() as IdentityReference<K>? ?: return
-            values.remove(reference)
-        }
-    }
-
-    private class IdentityReference<T : Any>(
-        referent: T,
-        queue: ReferenceQueue<T>? = null
-    ) : WeakReference<T>(referent, queue) {
-        private val identityHash = System.identityHashCode(referent)
-
-        override fun hashCode(): Int = identityHash
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is IdentityReference<*>) return false
-            val left = get() ?: return false
-            return left === other.get()
-        }
-
-        companion object {
-            fun <T : Any> lookup(referent: T): IdentityReference<T> = IdentityReference(referent)
+            val collected = referenceQueue.poll() as WeakReference<K>? ?: return
+            var index = 0
+            while (index < entries.size) {
+                if (entries[index].reference === collected) {
+                    entries.removeAt(index)
+                    break
+                }
+                index++
+            }
         }
     }
 }

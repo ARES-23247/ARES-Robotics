@@ -4,6 +4,7 @@ import com.areslib.control.safety.BrownoutGuard
 import com.areslib.control.safety.CurrentBudgetManager
 import com.areslib.ftc.MockDcMotorEx
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
+import com.areslib.util.RobotClock
 import com.qualcomm.robotcore.hardware.AnalogInput
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -41,44 +42,33 @@ class HardwareBoundsTier2Test {
 
     @Test
     fun testFloodgateThermalLoadCalculationsAtExactCurrentBorders() {
-        val analog = MockAnalogInput()
-        // 3.3V full scale corresponds to 80A. 
-        // 0.825V corresponds to 20A (equal to fuse rating).
-        val sensor = FtcFloodgateCurrentSensor(
-            analogInput = analog,
-            maxCurrentAmps = 80.0,
-            filterAlpha = 1.0, // Bypass low pass filter for immediate raw reads
-            fuseRatingAmps = 20.0
-        )
+        RobotClock.useMockTime(0L)
+        try {
+            val analog = MockAnalogInput()
+            val sensor = FtcFloodgateCurrentSensor(
+                analogInput = analog,
+                maxCurrentAmps = 80.0,
+                filterAlpha = 1.0,
+                fuseRatingAmps = 20.0
+            )
 
-        // 1. At 0A (0V) -> thermal load should remain at 0%
-        analog.mockVoltage = 0.0
-        sensor.update()
-        assertEquals(0.0, sensor.current, 1e-6)
-        assertEquals(0.0, sensor.fuseThermalLoadPercent, 1e-6)
+            analog.mockVoltage = 0.825 // Exactly 20 A.
+            sensor.update()
+            RobotClock.useMockTime(10_000L)
+            sensor.update()
+            assertEquals(20.0, sensor.instantaneousCurrent, 1e-6)
+            assertEquals(0.0, sensor.fuseThermalLoadPercent, 1e-6, "Rated current must not accumulate overload damage")
 
-        // 2. At exactly 20A (0.825V) running for 1 second.
-        // Heating generated = 20^2 * 1 = 400.
-        // Cooling initially = 0 * 1 = 0.
-        // accumulatedThermalLoad = 400.
-        // fuseThermalCapacity = 20^2 * 5 = 2000.
-        // fuseThermalLoadPercent = 400 / 2000 * 100 = 20%.
-        // Wait, sensor uses nanoTime internally for dt. Let's simulate dt = 1.0 second by setting system mock or simulating updates.
-        // Wait, the FtcFloodgateCurrentSensor uses System.nanoTime() directly inside update()!
-        // To control dt, let's call update() and check that the thermal load increases as expected.
-        analog.mockVoltage = 0.825
-        sensor.resetTracker()
-        sensor.update()
-        assertEquals(20.0, sensor.instantaneousCurrent, 1e-6)
-        assertTrue(sensor.fuseThermalLoadPercent < 0.1)
-
-        // Let's sleep/spin briefly to simulate passage of time or let's verify warning thresholds
-        analog.mockVoltage = 1.65 // 40A
-        sensor.update() // Refresh cached analog voltage
-        assertTrue(sensor.instantaneousCurrent > 20.0)
-        
-        // Instantaneous warning at high current
-        assertTrue(sensor.isOverloadWarning(18.0))
+            sensor.resetTracker()
+            analog.mockVoltage = 1.65 // 40 A: the default calibration point is 2 seconds.
+            sensor.update()
+            RobotClock.useMockTime(12_000L)
+            sensor.update()
+            assertEquals(100.0, sensor.fuseThermalLoadPercent, 1e-6)
+            assertTrue(sensor.isOverloadWarning(18.0))
+        } finally {
+            RobotClock.useSystemTime()
+        }
     }
 
     @Test

@@ -47,12 +47,13 @@ object DynamicPathLoader {
      * @throws IOException If the path file cannot be found in any search target or is unreadable.
      */
     fun loadPath(pathName: String): Path {
+        validateAssetName(pathName, "path")
         var jsonString: String? = null
         val fileName = "$pathName.path"
 
         // 1. Filesystem Search Pass
         for (dirPath in SEARCH_PATHS) {
-            val file = File(dirPath, fileName)
+            val file = resolveContainedFile(dirPath, fileName) ?: continue
             if (file.exists() && file.isFile) {
                 try {
                     jsonString = file.readText(Charsets.UTF_8)
@@ -99,6 +100,7 @@ object DynamicPathLoader {
     }
 
     fun loadAutoJsonString(autoName: String): String {
+        validateAssetName(autoName, "auto")
         var jsonString: String? = null
         val fileName = "$autoName.auto"
         val autoSearchPaths = SEARCH_PATHS.map {
@@ -108,7 +110,7 @@ object DynamicPathLoader {
 
         // 1. Filesystem Search Pass
         for (dirPath in autoSearchPaths) {
-            val file = File(dirPath, fileName)
+            val file = resolveContainedFile(dirPath, fileName) ?: continue
             if (file.exists() && file.isFile) {
                 try {
                     jsonString = file.readText(Charsets.UTF_8)
@@ -152,6 +154,27 @@ object DynamicPathLoader {
         
         return jsonString
     }
+
+    private fun validateAssetName(name: String, kind: String) {
+        require(name.isNotBlank()) { "PathPlanner $kind name must not be blank" }
+        require(name.length <= MAX_ASSET_NAME_LENGTH) { "PathPlanner $kind name is too long" }
+        require(name != "." && !name.contains("..")) { "PathPlanner $kind name must not contain traversal segments" }
+        require(name.none { it == '/' || it == '\\' || it == ':' || it.code < 0x20 }) {
+            "PathPlanner $kind name must be a single safe file name"
+        }
+    }
+
+    private fun resolveContainedFile(directory: String, fileName: String): File? {
+        return try {
+            val base = File(directory).canonicalFile
+            val candidate = File(base, fileName).canonicalFile
+            if (candidate.toPath().startsWith(base.toPath())) candidate else null
+        } catch (_: IOException) {
+            null
+        }
+    }
+
+    private const val MAX_ASSET_NAME_LENGTH = 128
 
     /**
      * Attempts to find and parse a PathPlanner .auto file dynamically by its name.

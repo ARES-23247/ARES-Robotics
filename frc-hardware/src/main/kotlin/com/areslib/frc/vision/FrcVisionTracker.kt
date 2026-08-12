@@ -84,25 +84,34 @@ class FrcVisionTracker(
         visionIO?.let { io ->
             val drive = store.state.drive
             val disabled = isDisabledProvider()
-            val yawRate = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond)
             // MegaTag2 needs the field-relative estimator heading. Raw Pigeon yaw can
             // differ after CTRE resetPose() applies an odometry heading offset.
             val yaw = Math.toDegrees(drive.poseEstimator.estimatedPoseHeading)
+            val driveSignalsValid = drive.measuredMotionValid && drive.imuMeasurementsValid &&
+                yaw.isFinite()
             io.setImuMode(if (disabled) DISABLED_IMU_MODE else ENABLED_IMU_MODE)
-            
-            io.setOrientation(
-                yawDegrees = yaw,
-                yawRateDegPerSec = yawRate,
-                pitchDegrees = drive.pitchDegrees,
-                pitchRateDegPerSec = 0.0,
-                rollDegrees = drive.rollDegrees,
-                rollRateDegPerSec = 0.0,
-                linearVelocityMps = Math.hypot(
-                    drive.measuredFieldXVelocityMetersPerSecond,
-                    drive.measuredFieldYVelocityMetersPerSecond
+            if (driveSignalsValid) {
+                io.setOrientation(
+                    yawDegrees = yaw,
+                    yawRateDegPerSec = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond),
+                    pitchDegrees = drive.pitchDegrees,
+                    pitchRateDegPerSec = 0.0,
+                    rollDegrees = drive.rollDegrees,
+                    rollRateDegPerSec = 0.0,
+                    linearVelocityMps = Math.hypot(
+                        drive.measuredFieldXVelocityMetersPerSecond,
+                        drive.measuredFieldYVelocityMetersPerSecond
+                    )
                 )
-            )
+            }
             io.updateInputs(visionInputs)
+            if (!driveSignalsValid) {
+                stationarySinceMs = 0L
+                resetRecovery()
+                _lastVisionStatus = "REJECTED_DRIVE_SIGNALS"
+                RobotStatusTracker.visionConnected = visionInputs.isConnected
+                return@let
+            }
             if (visionInputs.measurements.isNotEmpty()) {
                 var acceptedCount = 0
                 var rejectedCount = 0
@@ -322,6 +331,16 @@ class FrcVisionTracker(
                 yMeters = snapPose.y,
                 headingRadians = snapPose.heading.radians,
                 timestampMs = timestampMs,
+                pitchDegrees = drive.pitchDegrees,
+                rollDegrees = drive.rollDegrees,
+                xAccelerationG = drive.xAccelerationG,
+                yAccelerationG = drive.yAccelerationG,
+                zAccelerationG = drive.zAccelerationG,
+                angularVelocityRadiansPerSecond = drive.measuredAngularVelocityRadiansPerSecond,
+                xVelocityMetersPerSecond = drive.measuredFieldXVelocityMetersPerSecond,
+                yVelocityMetersPerSecond = drive.measuredFieldYVelocityMetersPerSecond,
+                motionMeasurementsValid = drive.measuredMotionValid,
+                imuMeasurementsValid = drive.imuMeasurementsValid,
                 isExternalEstimate = true
             )
         )

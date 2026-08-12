@@ -7,7 +7,7 @@ import com.areslib.telemetry.ITelemetry
  * Pure abstraction for reading and writing to the physical dual-motor Flywheel shooter.
  * De-couples the pure math state engine from physical motor hardware libraries.
  */
-interface FlywheelIO : SubsystemIO {
+interface FlywheelIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/VelocityRpm", velocityRpm)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
@@ -20,6 +20,15 @@ interface FlywheelIO : SubsystemIO {
 
     /** Sets the target velocity of the flywheel using closed-loop controller on the motor */
     fun setVelocityRpm(rpm: Double)
+
+    /**
+     * Preserves the requested terminal speed while limiting the electrical effort available to
+     * reach it. Hardware implementations should override when their controller supports an output
+     * or current cap; the fallback preserves the lifecycle emergency-stop contract.
+     */
+    fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
+        if (maxEffortScale <= 0.0) setAppliedVoltage(0.0) else setVelocityRpm(rpm)
+    }
 
     /** Sets the applied voltage of the flywheel motors directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
@@ -39,8 +48,8 @@ interface FlywheelIO : SubsystemIO {
         get() = false
 
     /** Gets the measured stator current of the flywheel motors in Amperes */
-    val currentAmps: Double
-        get() = 0.0
+    override val currentAmps: Double
+        get() = Double.NaN
 
     /** Gets the temperature of the master motor in Celsius */
     val tempCelsius: Double
@@ -50,7 +59,7 @@ interface FlywheelIO : SubsystemIO {
 /**
  * Pure abstraction for the adjustable angle cowl/hood.
  */
-interface CowlIO : SubsystemIO {
+interface CowlIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/AngleRotations", angleRotations)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
@@ -87,14 +96,14 @@ interface CowlIO : SubsystemIO {
         get() = false
 
     /** Gets the stator current draw in Amperes */
-    val currentAmps: Double
-        get() = 0.0
+    override val currentAmps: Double
+        get() = Double.NaN
 }
 
 /**
  * Pure abstraction for the deployed pivot-arm intake and active rollers.
  */
-interface IntakeIO : SubsystemIO {
+interface IntakeIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/PivotAngleDegrees", pivotAngleDegrees)
         telemetry.putNumber("$prefix/PivotCurrentAmps", pivotCurrentAmps)
@@ -135,15 +144,24 @@ interface IntakeIO : SubsystemIO {
 
     /** Gets the measured current of the pivot motor in Amperes */
     val pivotCurrentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 
     /** Gets the measured current of the roller motor in Amperes */
     val rollerCurrentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 
     /** True only when [rollerCurrentAmps] is a fresh, trustworthy observation. */
     val rollerCurrentValid: Boolean
-        get() = true
+        get() = false
+
+    /** Aggregate pivot and roller current used by the system power budget. */
+    override val currentAmps: Double
+        get() = pivotCurrentAmps.coerceAtLeast(0.0) + rollerCurrentAmps.coerceAtLeast(0.0)
+
+    override fun isCurrentReadingValid(readingAmps: Double): Boolean =
+        rollerCurrentValid && readingAmps.isFinite() && readingAmps >= 0.0 &&
+            pivotCurrentAmps.isFinite() && pivotCurrentAmps >= 0.0 &&
+            rollerCurrentAmps.isFinite() && rollerCurrentAmps >= 0.0
 
     /**
      * Gets the roller motor encoder velocity in ticks per second.
@@ -159,7 +177,7 @@ interface IntakeIO : SubsystemIO {
 /**
  * Pure abstraction for the transfer/feeder rollers.
  */
-interface FeederIO : SubsystemIO {
+interface FeederIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putBoolean("$prefix/PieceDetected", isBeamBroken)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
@@ -184,14 +202,14 @@ interface FeederIO : SubsystemIO {
         get() = false
 
     /** Gets the stator current draw in Amperes */
-    val currentAmps: Double
-        get() = 0.0
+    override val currentAmps: Double
+        get() = Double.NaN
 }
 
 /**
  * Pure abstraction for the fast-climber vertical elevator.
  */
-interface ClimberIO : SubsystemIO {
+interface ClimberIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/PositionRotations", positionRotations)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
@@ -221,14 +239,14 @@ interface ClimberIO : SubsystemIO {
         get() = false
 
     /** Gets the stator current draw in Amperes */
-    val currentAmps: Double
-        get() = 0.0
+    override val currentAmps: Double
+        get() = Double.NaN
 }
 
 /**
  * Pure abstraction for the floor rollers.
  */
-interface FloorIO : SubsystemIO {
+interface FloorIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         telemetry.putNumber("$prefix/VelocityRps", velocityRps)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
@@ -246,6 +264,6 @@ interface FloorIO : SubsystemIO {
         get() = 0.0
 
     /** Gets the stator current draw in Amperes */
-    val currentAmps: Double
-        get() = 0.0
+    override val currentAmps: Double
+        get() = Double.NaN
 }

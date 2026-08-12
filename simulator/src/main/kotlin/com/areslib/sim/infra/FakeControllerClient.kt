@@ -39,11 +39,7 @@ object FakeControllerClient {
         
         println("Connected to NetworkTables successfully!")
         
-        val heartbeatPub = ntInst.getIntegerTopic("ARES/Input/heartbeat").publish()
-        val vxPub = ntInst.getDoubleTopic("ARES/Input/vx").publish()
-        val vyPub = ntInst.getDoubleTopic("ARES/Input/vy").publish()
-        val omegaPub = ntInst.getDoubleTopic("ARES/Input/omega").publish()
-        val teleopPub = ntInst.getBooleanTopic("ARES/Input/isTeleopMode").publish()
+        val driveFramePub = ntInst.getDoubleArrayTopic("ARES/Input/driveFrame").publish()
         val commandPub = ntInst.getStringTopic("ARES/Input/command").publish()
         val obstaclesPub = ntInst.getStringTopic("ARES/Input/obstacles").publish()
         
@@ -53,8 +49,25 @@ object FakeControllerClient {
         val poseYSub = ntInst.getDoubleTopic("Drive/Pose_Y").subscribe(0.0)
         val headingSub = ntInst.getDoubleTopic("Drive/Pose_Heading").subscribe(0.0)
         
-        teleopPub.set(true)
-        var heartbeat = 0L
+        val driveFrame = DoubleArray(8)
+        val sessionNonce = java.util.concurrent.ThreadLocalRandom.current()
+            .nextLong(1L, 9_007_199_254_740_991L)
+        var sequence = 0L
+        var clientMonotonicMs = 0L
+        fun publishDriveFrame(vx: Double, vy: Double, omega: Double) {
+            driveFrame[0] = 2.0
+            driveFrame[1] = sessionNonce.toDouble()
+            driveFrame[2] = sequence++.toDouble()
+            driveFrame[3] = clientMonotonicMs.toDouble()
+            driveFrame[4] = vx
+            driveFrame[5] = vy
+            driveFrame[6] = omega
+            driveFrame[7] = 56.0 // teleop + field-centric + red alliance
+            driveFramePub.set(driveFrame)
+            clientMonotonicMs += 100L
+        }
+        // Every session begins with a neutral frame before any actuator or axis command.
+        publishDriveFrame(0.0, 0.0, 0.0)
 
         val scanner = Scanner(System.`in`)
         println("\n==================================================================")
@@ -183,12 +196,7 @@ object FakeControllerClient {
                     val steps = (duration * 10).toInt().coerceAtLeast(1)
                     
                     for (step in 1..steps) {
-                        heartbeat++
-                        heartbeatPub.set(heartbeat)
-                        
-                        vxPub.set(vx)
-                        vyPub.set(vy)
-                        omegaPub.set(omega)
+                        publishDriveFrame(vx, vy, omega)
                         
                         Thread.sleep(100)
                         
@@ -201,18 +209,14 @@ object FakeControllerClient {
                             step, steps, rx, ry, rh))
                     }
                     
-                    vxPub.set(0.0)
-                    vyPub.set(0.0)
-                    omegaPub.set(0.0)
+                    publishDriveFrame(0.0, 0.0, 0.0)
                     println("Drive command completed. Robot stopped.")
                 }
             }
         }
         
         println("Stopping remote controller client...")
-        vxPub.set(0.0)
-        vyPub.set(0.0)
-        omegaPub.set(0.0)
+        publishDriveFrame(0.0, 0.0, 0.0)
         ntInst.stopClient()
     }
 }

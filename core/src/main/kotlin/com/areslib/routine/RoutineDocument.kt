@@ -27,12 +27,6 @@ data class RoutinePose(
     val headingRadians: Double
 )
 
-/** Metadata that invokes a neutral routine when autonomous begins. */
-data class AutonomousRoutineEntryPoint(
-    val routineId: String,
-    val startingPose: RoutinePose
-)
-
 /** Supported control-flow and behavior nodes in a routine document. */
 enum class RoutineStepKind {
     ACTION,

@@ -33,11 +33,13 @@ object HardwareRegistry {
     private val cachedMotorsList = CopyOnWriteArrayList<MotorIO>()
     private val registeredMotorsView: List<MotorIO> = Collections.unmodifiableList(cachedMotorsList)
     private val registeredMotorsByNameView: Map<String, MotorIO> = Collections.unmodifiableMap(cachedMotorsWithNames)
+    private val cachedCurrentSourcesList = CopyOnWriteArrayList<CurrentSourceIO>()
+    private val registeredCurrentSourcesView: List<CurrentSourceIO> = Collections.unmodifiableList(cachedCurrentSourcesList)
     private val syncPolledDevices = CopyOnWriteArrayList<SyncPolledDevice>()
     private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
     private val pollingFailureCounts = ConcurrentHashMap<SyncPolledDevice, Long>()
     
-    @Volatile private var pollingRunning = false
+    @Volatile private var pollingGeneration = 0L
     private var pollingThread: Thread? = null
     @Volatile private var pollingIntervalMs: Long = 50L
 
@@ -79,12 +81,13 @@ object HardwareRegistry {
 
     @Synchronized
     private fun startPollingThreadIfNeeded() {
-        if (pollingThread == null || !(pollingThread!!.isAlive)) {
-            pollingRunning = true
-            pollingThread = Thread {
+        if (pollingThread?.isAlive == true) return
+        val generation = ++pollingGeneration
+        val worker = Thread {
+            try {
                 var index = 0
                 var roundRobinIndex = 0
-                while (pollingRunning) {
+                while (pollingGeneration == generation) {
                     var polledAny = false
                     if (syncPolledDevices.isNotEmpty()) {
                         val idx = index % syncPolledDevices.size
@@ -104,12 +107,17 @@ object HardwareRegistry {
                         try { Thread.sleep(50L) } catch (_: InterruptedException) { break }
                     }
                 }
-            }.apply {
-                isDaemon = true
-                name = "ARES-HardwarePolling-Thread"
-                start()
+            } finally {
+                synchronized(this@HardwareRegistry) {
+                    if (pollingThread === Thread.currentThread()) pollingThread = null
+                }
             }
+        }.apply {
+            isDaemon = true
+            name = "ARES-HardwarePolling-Thread-$generation"
         }
+        pollingThread = worker
+        worker.start()
     }
 
     private fun pollSafely(device: SyncPolledDevice) {
@@ -153,11 +161,17 @@ object HardwareRegistry {
                 cachedMotorsList.remove(prior)
             }
         }
+        if (prior is CurrentSourceIO && prior !== device && devices.values.none { it === prior }) {
+            cachedCurrentSourcesList.remove(prior)
+        }
         if (device is MotorIO) {
             cachedMotorsWithNames[shortName] = device
             if (!cachedMotorsList.contains(device)) {
                 cachedMotorsList.add(device)
             }
+        }
+        if (device is CurrentSourceIO && !cachedCurrentSourcesList.contains(device)) {
+            cachedCurrentSourcesList.add(device)
         }
     }
 
@@ -286,6 +300,9 @@ object HardwareRegistry {
         return registeredMotorsByNameView
     }
 
+    /** Returns cached-current providers in registration order without performing hardware IO. */
+    fun getRegisteredCurrentSources(): List<CurrentSourceIO> = registeredCurrentSourcesView
+
     /**
      * Calls [SubsystemIO.refresh] once for every registered subsystem in registration order.
      * Unlike safety and close passes, refresh exceptions propagate to the caller.
@@ -320,8 +337,10 @@ object HardwareRegistry {
      * teardown; a resource registered in both ownership lists may receive more than one close call.
      */
     fun closeAll() {
-        pollingRunning = false
-        val thread = pollingThread
+        val thread = synchronized(this) {
+            pollingGeneration++
+            pollingThread.also { pollingThread = null }
+        }
         if (thread != null) {
             thread.interrupt()
             try {
@@ -329,7 +348,6 @@ object HardwareRegistry {
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
             }
-            pollingThread = null
         }
         syncPolledDevices.clear()
         roundRobinDevices.clear()
@@ -361,6 +379,7 @@ object HardwareRegistry {
         topologyNodes.clear()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
+        cachedCurrentSourcesList.clear()
     }
 
     /**

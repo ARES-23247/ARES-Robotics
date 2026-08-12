@@ -1,6 +1,7 @@
 package com.areslib.sim.opmode
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
+import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
 import com.qualcomm.robotcore.eventloop.opmode.Disabled
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
@@ -26,17 +27,18 @@ object SimOpModeRunner {
             val disabledOpModes = findAnnotatedClasses(Disabled::class.java).mapTo(mutableSetOf(), Class<*>::getName)
             val enabledFilter: (Class<*>) -> Boolean = { opMode ->
                 !opMode.name.startsWith("org.firstinspires.ftc.robotcontroller") &&
-                    !opMode.isAnnotationPresent(Disabled::class.java) && opMode.name !in disabledOpModes
+                    !opMode.isAnnotationPresent(Disabled::class.java) &&
+                    opMode.name !in disabledOpModes &&
+                    SimOpModeLifecycle.supports(opMode) &&
+                    !java.lang.reflect.Modifier.isAbstract(opMode.modifiers)
             }
             var teleops = findAnnotatedClasses(TeleOp::class.java).filter(enabledFilter).map(Class<*>::getName)
             var autos = findAnnotatedClasses(Autonomous::class.java).filter(enabledFilter).map(Class<*>::getName)
 
-            // Include default ARESLib integration test opmode if lists are empty
+            // A TeleOp fallback is useful for a library-only simulator. Never advertise it as an
+            // autonomous: lifecycle kind is annotation-derived and mode substitution is unsafe.
             if (teleops.isEmpty()) {
                 teleops = listOf("com.areslib.ftc.hardware.AresHardwareTestOpMode")
-            }
-            if (autos.isEmpty()) {
-                autos = listOf("com.areslib.ftc.hardware.AresHardwareTestOpMode")
             }
 
             val gson = com.google.gson.Gson()
@@ -129,14 +131,18 @@ object SimOpModeRunner {
 
     /**
      * Resolves [opModeClassName] as a fully qualified class, a known team package name, a discovered
-     * simple/annotation name, or finally [com.areslib.ftc.hardware.AresHardwareTestOpMode].
-     * Returns `null` only when no name/instance is supplied or the final fallback cannot be created.
+     * simple/annotation name. Both iterative [OpMode] and [LinearOpMode] classes are supported.
+     * An unknown, abstract, or unsupported class fails closed instead of silently running a
+     * different OpMode.
      */
     fun createOpModeInstance(
-        opModeArg: LinearOpMode?,
+        opModeArg: Any?,
         opModeClassName: String?
-    ): LinearOpMode? {
-        if (opModeArg != null) return opModeArg
+    ): SimOpModeLifecycle? {
+        if (opModeArg != null) {
+            return SimOpModeLifecycle.wrap(opModeArg)
+                ?: throw IllegalArgumentException("Unsupported OpMode type: ${opModeArg.javaClass.name}")
+        }
         if (opModeClassName.isNullOrBlank()) return null
 
         val name = opModeClassName.trim()
@@ -150,7 +156,7 @@ object SimOpModeRunner {
         for (candidate in candidates) {
             try {
                 val clazz = Class.forName(candidate)
-                val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                val instance = instantiateSupported(clazz)
                 if (instance != null) {
                     println("[Simulator] Successfully instantiated OpMode class: $candidate")
                     return instance
@@ -166,7 +172,7 @@ object SimOpModeRunner {
             
             for (clazz in allOpModes) {
                 if (clazz.simpleName.equals(name, ignoreCase = true) || clazz.name.equals(name, ignoreCase = true)) {
-                    val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                    val instance = instantiateSupported(clazz)
                     if (instance != null) {
                         println("[Simulator] Successfully matched and instantiated OpMode class by simple name: ${clazz.name}")
                         return instance
@@ -176,7 +182,7 @@ object SimOpModeRunner {
                 if (teleAnno != null) {
                     val annoName = teleAnno.name
                     if (annoName.equals(name, ignoreCase = true)) {
-                        val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                        val instance = instantiateSupported(clazz)
                         if (instance != null) {
                             println("[Simulator] Successfully matched OpMode by TeleOp annotation name '$annoName': ${clazz.name}")
                             return instance
@@ -187,7 +193,7 @@ object SimOpModeRunner {
                 if (autoAnno != null) {
                     val annoName = autoAnno.name
                     if (annoName.equals(name, ignoreCase = true)) {
-                        val instance = clazz.getDeclaredConstructor().newInstance() as? LinearOpMode
+                        val instance = instantiateSupported(clazz)
                         if (instance != null) {
                             println("[Simulator] Successfully matched OpMode by Autonomous annotation name '$annoName': ${clazz.name}")
                             return instance
@@ -199,13 +205,13 @@ object SimOpModeRunner {
             println("[Simulator] Error searching OpModes by annotation: ${e.message}")
         }
 
-        println("[Simulator] Class $opModeClassName not found. Falling back to AresHardwareTestOpMode.")
-        return try {
-            com.areslib.ftc.hardware.AresHardwareTestOpMode()
-        } catch (e: Exception) {
-            System.err.println("Failed to instantiate fallback OpMode: ${e.message}")
-            null
-        }
+        System.err.println("[Simulator] OpMode '$opModeClassName' was not found or is unsupported")
+        return null
+    }
+
+    private fun instantiateSupported(clazz: Class<*>): SimOpModeLifecycle? {
+        if (!SimOpModeLifecycle.supports(clazz) || java.lang.reflect.Modifier.isAbstract(clazz.modifiers)) return null
+        return SimOpModeLifecycle.wrap(clazz.getDeclaredConstructor().newInstance())
     }
 
 }

@@ -354,6 +354,13 @@ data class PoseEstimatorState(
     var lastMeasurementAccepted: Boolean = false,
     var lastRejectionReason: String? = null
 ) {
+    /** Creates an independently owned estimator snapshot suitable for reducer mutation. */
+    fun deepCopy(): PoseEstimatorState = copy(
+        covarianceArray = covarianceArray.copyOf(),
+        history = history.deepCopy(),
+        lastKalmanGain = lastKalmanGain.copyOf()
+    )
+
     val estimatedPose: Pose2d
         get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))
 

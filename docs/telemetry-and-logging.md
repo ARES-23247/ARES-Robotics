@@ -47,7 +47,11 @@ Code that publishes at loop rate should reuse arrays/buffers and call the teleme
 
 `TelemetryTopicNormalizer` removes transport-only leading slashes; it does not translate aliases. All four repositories publish and consume the canonical names above. The scalar `ARES/EstimatedPose/*` and drive pose topics must carry the same frame and heading sign.
 
-The simulator also reads `ARES/Input/*` topics for drive commands, mode flags, alliance, buttons, heartbeat, and obstacle data. `ARES/Input/isRedAlliance` defaults to `true`, matching simulator startup state.
+The simulator consumes the atomic leased `ARES/Input/driveFrame` v2 `double[8]` for drive,
+mode, alliance, and button state. Alliance is flag bit 5; each new session must begin with a
+neutral frame before motion is accepted. Field payloads remain separate non-control topics at
+`ARES/Input/obstacles` and `ARES/Input/fieldConfig`. Retired scalar input and heartbeat topics are
+not accepted.
 
 ## Local log API
 

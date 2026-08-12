@@ -78,6 +78,8 @@ interface RobotAction {
      * are the output of an upstream pose estimator and must be mirrored directly rather
      * than treated as another odometry observation. This prevents estimator-on-estimator
      * feedback and correlated sensor measurements from being fused twice.
+     * @property motionMeasurementsValid Whether chassis velocities are fresh and trustworthy.
+     * @property imuMeasurementsValid Whether pitch/roll/acceleration values are fresh and trustworthy.
      */
     data class PoseUpdate(
         var xMeters: Double,
@@ -97,7 +99,9 @@ interface RobotAction {
         var yVelocityMetersPerSecond: Double = 0.0,
         var isExternalEstimate: Boolean = false,
         /** False when heading already comes from a fused source such as Pinpoint. */
-        var applyControlHubGyroCorrection: Boolean = true
+        var applyControlHubGyroCorrection: Boolean = true,
+        var motionMeasurementsValid: Boolean = true,
+        var imuMeasurementsValid: Boolean = true
     ) : RobotAction
 
     /** Sets the active alliance color for field-centric driving and EKF initialization. */

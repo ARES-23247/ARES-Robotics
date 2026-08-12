@@ -38,6 +38,7 @@ sealed interface NT4Value {
         val value: BooleanArray get() = snapshot.copyOf()
         override val typeString: String = "boolean[]"
         override fun getAsObject(): Any = snapshot.copyOf()
+        internal fun borrowedArray(): BooleanArray = snapshot
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is BooleanArrayVal) return false
@@ -51,6 +52,7 @@ sealed interface NT4Value {
         val value: DoubleArray get() = snapshot.copyOf()
         override val typeString: String = "double[]"
         override fun getAsObject(): Any = snapshot.copyOf()
+        internal fun borrowedArray(): DoubleArray = snapshot
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is DoubleArrayVal) return false
@@ -64,6 +66,7 @@ sealed interface NT4Value {
         val value: LongArray get() = snapshot.copyOf()
         override val typeString: String = "int[]"
         override fun getAsObject(): Any = snapshot.copyOf()
+        internal fun borrowedArray(): LongArray = snapshot
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is LongArrayVal) return false
@@ -77,6 +80,7 @@ sealed interface NT4Value {
         val value: FloatArray get() = snapshot.copyOf()
         override val typeString: String = "float[]"
         override fun getAsObject(): Any = snapshot.copyOf()
+        internal fun borrowedArray(): FloatArray = snapshot
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is FloatArrayVal) return false
@@ -90,6 +94,7 @@ sealed interface NT4Value {
         val value: Array<String> get() = snapshot.copyOf()
         override val typeString: String = "string[]"
         override fun getAsObject(): Any = snapshot.copyOf()
+        internal fun borrowedArray(): Array<String> = snapshot
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is StringArrayVal) return false
@@ -136,6 +141,20 @@ sealed interface NT4Value {
             else -> StringVal(obj.toString())
         }
     }
+}
+
+/** Immutable storage view available only inside the core module's synchronous encoder. */
+internal fun NT4Value.borrowedValueForEncoding(): Any = when (this) {
+    is NT4Value.BooleanVal -> value
+    is NT4Value.DoubleVal -> value
+    is NT4Value.LongVal -> value
+    is NT4Value.FloatVal -> value
+    is NT4Value.StringVal -> value
+    is NT4Value.BooleanArrayVal -> borrowedArray()
+    is NT4Value.DoubleArrayVal -> borrowedArray()
+    is NT4Value.LongArrayVal -> borrowedArray()
+    is NT4Value.FloatArrayVal -> borrowedArray()
+    is NT4Value.StringArrayVal -> borrowedArray()
 }
 
 enum class NT4Type(val id: Int, val typeString: String) {

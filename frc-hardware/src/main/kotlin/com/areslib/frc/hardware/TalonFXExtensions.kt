@@ -20,13 +20,23 @@ import edu.wpi.first.wpilibj.DriverStation
  * @see TalonFX
  * @see TalonFXConfiguration
  */
-fun Iterable<TalonFX>.applyConfig(block: TalonFXConfiguration.() -> Unit) {
+/**
+ * Applies one configuration to every motor and returns `true` only when every device reports an
+ * OK status within [maxAttempts]. Mechanism initialization can use this checked variant to inhibit
+ * outputs when current limits or closed-loop gains were not accepted by hardware.
+ */
+fun Iterable<TalonFX>.applyConfigChecked(
+    maxAttempts: Int = 5,
+    block: TalonFXConfiguration.() -> Unit
+): Boolean {
+    require(maxAttempts > 0) { "TalonFX config attempts must be positive" }
     val config = TalonFXConfiguration()
     config.block()
+    var allApplied = true
     for (motor in this) {
         var lastStatus: StatusCode = StatusCode.OK
         var applied = false
-        for (attempt in 0 until 5) {
+        for (attempt in 0 until maxAttempts) {
             lastStatus = motor.configurator.apply(config)
             if (lastStatus.isOK) {
                 applied = true
@@ -34,12 +44,14 @@ fun Iterable<TalonFX>.applyConfig(block: TalonFXConfiguration.() -> Unit) {
             }
         }
         if (!applied) {
+            allApplied = false
             DriverStation.reportError(
-                "ARES: failed to apply TalonFX config to motor ${motor.deviceID} after 5 attempts (last status: $lastStatus)",
+                "ARES: failed to apply TalonFX config to motor ${motor.deviceID} after $maxAttempts attempts (last status: $lastStatus)",
                 false
             )
         }
     }
+    return allApplied
 }
 
 /**
@@ -55,4 +67,3 @@ fun setUpdateFrequencies(hz: Double, vararg signals: BaseStatusSignal) {
         signal.setUpdateFrequency(hz)
     }
 }
-

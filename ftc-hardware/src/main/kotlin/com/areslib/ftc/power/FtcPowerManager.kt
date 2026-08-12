@@ -12,17 +12,22 @@ import com.areslib.subsystem.PowerManager
 /**
  * FTC electrical safety coordinator with a hardware-current-sensor fallback policy.
  *
- * Voltage is sampled from the first configured FTC [VoltageSensor] at most every 100 ms and cached
- * between samples. Each [update] advances [BrownoutGuard], then uses a Floodgate sensor when present
- * or lazily creates a [CurrentBudgetManager] otherwise. The minimum resulting scale is copied to all
- * motors currently registered in the global hardware registry.
+ * Voltage is sampled from the first configured FTC [VoltageSensor] at up to 50 Hz. The raw sample
+ * drives [BrownoutGuard] immediately, while a 100 ms low-pass value is retained for compensation
+ * and telemetry. Each [update] also advances the 20 A software fuse budget; a plausible Floodgate
+ * reading supersedes that estimate. The minimum resulting scale is copied to all registered motors.
  *
  * Hardware reads occur only from [update]; [batteryVoltage], [powerScale], and [currentAmps] expose
  * cached/registered state. This class is single-loop-owned and is not thread-safe.
  */
 class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
+    private val currentSourceSampler = com.areslib.hardware.CurrentSourceSampler()
     private var lastVoltageReadTime = 0L
     private var cachedBatteryVoltage = 12.0
+    private var rawBatteryVoltage = 12.0
+    private var hasValidVoltageSample = false
+    private var cachedCurrentAmps = 0.0
+    private val voltageSensor: VoltageSensor? = hardwareMap.getAll(VoltageSensor::class.java).firstOrNull()
 
     /** Brownout protection guard — auto-scales motor power on voltage sag */
     val brownoutGuard = BrownoutGuard.ftcDefaults()
@@ -35,7 +40,7 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         null
     }
 
-    /** Software current budget manager — used as a fallback if no Floodgate sensor is found */
+    /** Software 20 A fuse budget — always advanced and used whenever Floodgate data is implausible. */
     var currentBudgetManager: CurrentBudgetManager? = null
 
     override var batteryVoltage = 12.0
@@ -49,65 +54,93 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
      * cached current estimates.
      */
     override val currentAmps: Double
-        get() {
-            val sensor = floodgate
-            if (sensor != null && sensor.isReadingValid) return sensor.current
-            return com.areslib.hardware.HardwareRegistry.getRegisteredMotors().sumOf {
-                it.currentAmps.takeIf(Double::isFinite)?.coerceAtLeast(0.0) ?: 0.0
-            }
-        }
+        get() = cachedCurrentAmps
 
     /**
-     * Updates the battery voltage reading (rate-limited to 10Hz) and recalculates power scaling.
+     * Updates the battery voltage reading (rate-limited to 50 Hz) and recalculates power scaling.
      *
      * @param dtSeconds Loop cycle delta time in seconds.
      * @param timestampMs Monotonic robot timestamp in milliseconds, normally from `RobotClock`.
      * @return The calculated power scale factor (0.0 to 1.0).
      */
     override fun update(dtSeconds: Double, timestampMs: Long): Double {
-        // Fetch voltage sensor for sag compensation (rate-limited to 10Hz/100ms to eliminate blocking JNI overhead)
-        if (timestampMs - lastVoltageReadTime > 100 || lastVoltageReadTime == 0L) {
+        // Brownout prevention needs a fresh sag observation. Sample at up to 50 Hz and feed the
+        // raw value to the guard; retain a correctly-timed low-pass value for voltage compensation
+        // and telemetry so command normalization does not amplify rapid sag/recovery oscillations.
+        val elapsedMs = if (lastVoltageReadTime == 0L) VOLTAGE_SAMPLE_PERIOD_MS
+            else (timestampMs - lastVoltageReadTime).coerceAtLeast(0L)
+        if (lastVoltageReadTime == 0L || elapsedMs >= VOLTAGE_SAMPLE_PERIOD_MS) {
             lastVoltageReadTime = timestampMs
-            val voltageSensors = hardwareMap.getAll(VoltageSensor::class.java)
-            val newVoltage = voltageSensors.firstOrNull()?.voltage ?: 12.0
-            
-            // Apply a low-pass filter (time constant ~100ms) to prevent positive feedback sag oscillations during rapid acceleration
-            val validDt = dtSeconds.takeIf { it.isFinite() && it > 0.0 } ?: 0.02
-            val alpha = validDt / (0.1 + validDt)
-            cachedBatteryVoltage = when {
-                !newVoltage.isFinite() || newVoltage <= 0.0 -> 0.0
-                !cachedBatteryVoltage.isFinite() || cachedBatteryVoltage <= 0.0 -> newVoltage
-                else -> (cachedBatteryVoltage * (1.0 - alpha)) + (newVoltage * alpha)
+            val newVoltage = try {
+                voltageSensor?.voltage ?: Double.NaN
+            } catch (_: Exception) {
+                Double.NaN
+            }
+            if (!newVoltage.isFinite() || newVoltage <= 0.0) {
+                rawBatteryVoltage = 0.0
+                cachedBatteryVoltage = 0.0
+                hasValidVoltageSample = false
+            } else {
+                rawBatteryVoltage = newVoltage
+                val sampleDt = (elapsedMs / 1000.0).coerceAtLeast(0.001)
+                val alpha = sampleDt / (VOLTAGE_FILTER_TIME_CONSTANT_SECONDS + sampleDt)
+                cachedBatteryVoltage = if (!hasValidVoltageSample || !cachedBatteryVoltage.isFinite()) {
+                    newVoltage
+                } else {
+                    cachedBatteryVoltage * (1.0 - alpha) + newVoltage * alpha
+                }
+                hasValidVoltageSample = true
             }
         }
         batteryVoltage = cachedBatteryVoltage
 
         // 1. Brownout protection — graduated power scaling on voltage sag
-        brownoutGuard.update(batteryVoltage)
+        brownoutGuard.update(rawBatteryVoltage)
         var scale = brownoutGuard.powerScale
 
-        // 2. Floodgate current protection — throttle on overload (or software fallback)
+        // 2. Always advance the model fallback. Beyond the drivetrain MotorIO slots, include all
+        // registered mechanism current sources so shooter/intake load participates in the 20A fuse
+        // budget. A valid Floodgate remains the authoritative total-current observation.
         val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
+        val softwareScale = updateSoftwareCurrentBudget(motors, batteryVoltage)
+        val modeledCurrent = currentBudgetManager?.totalEstimatedAmps ?: 0.0
         val floodgateSensor = floodgate
         if (floodgateSensor != null) {
             val fg = floodgateSensor
             fg.update()
-            if (!fg.isReadingValid) {
-                scale = minOf(scale, updateSoftwareCurrentBudget(motors, batteryVoltage))
+            val observedCurrent = maxOf(fg.current, fg.instantaneousCurrent)
+            val sensorDisagreesUnderLoad = observedCurrent < FLOODGATE_ZERO_CURRENT_AMPS &&
+                modeledCurrent >= FLOODGATE_EXPECTED_LOAD_AMPS
+            if (!fg.isReadingValid || sensorDisagreesUnderLoad) {
+                cachedCurrentAmps = modeledCurrent
+                scale = minOf(scale, softwareScale)
             } else if (fg.isOverloadWarning()) {
-                val thermalScale = (1.0 - fg.fuseThermalLoadPercent / 100.0).coerceIn(0.2, 1.0)
-                val instantaneousScale = (18.0 / fg.current).coerceIn(0.2, 1.0)
+                cachedCurrentAmps = observedCurrent
+                val thermalScale = if (fg.fuseThermalLoadPercent < FUSE_THERMAL_WARNING_PERCENT) {
+                    1.0
+                } else {
+                    val normalized = (fg.fuseThermalLoadPercent - FUSE_THERMAL_WARNING_PERCENT) /
+                        (100.0 - FUSE_THERMAL_WARNING_PERCENT)
+                    (1.0 - normalized * 0.8).coerceIn(0.2, 1.0)
+                }
+                val instantaneousScale = (FTC_CONTINUOUS_CURRENT_BUDGET_AMPS / observedCurrent)
+                    .coerceIn(0.2, 1.0)
                 scale = minOf(scale, thermalScale, instantaneousScale)
+            } else {
+                cachedCurrentAmps = observedCurrent
             }
         } else {
-            scale = minOf(scale, updateSoftwareCurrentBudget(motors, batteryVoltage))
+            cachedCurrentAmps = modeledCurrent
+            scale = minOf(scale, softwareScale)
         }
 
         powerScale = scale
         
         // Dynamically distribute final powerScale to all registered motors
-        for (m in motors) {
-            m.powerScale = scale
+        var motorIndex = 0
+        while (motorIndex < motors.size) {
+            motors[motorIndex].powerScale = scale
+            motorIndex++
         }
         
         return scale
@@ -117,11 +150,46 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         val manager = currentBudgetManager ?: CurrentBudgetManager.ftcDefaults().also {
             currentBudgetManager = it
         }
-        for (motor in motors) {
+        var motorIndex = 0
+        while (motorIndex < motors.size) {
+            val motor = motors[motorIndex]
             if (!manager.isRegistered(motor)) manager.register(motor)
+            motorIndex++
         }
-        manager.update(batteryVoltage, enableCalibration = true)
+        val currentSources = com.areslib.hardware.HardwareRegistry.getRegisteredCurrentSources()
+        currentSourceSampler.sample(currentSources, includeMotorSources = false)
+        var nonMotorMeasuredAmps = 0.0
+        var coveredModeledMotorAmps = 0.0
+        for (index in 0 until currentSourceSampler.size) {
+            if (!currentSourceSampler.isSelected(index)) continue
+            val source = currentSourceSampler.sourceAt(index)
+            if (source is MotorIO) continue
+            nonMotorMeasuredAmps += currentSourceSampler.readingAt(index)
+            motorIndex = 0
+            while (motorIndex < motors.size) {
+                val motor = motors[motorIndex]
+                if (currentSourceSampler.includes(source, motor)) {
+                    coveredModeledMotorAmps += manager.estimateMotorAmps(motor, batteryVoltage)
+                }
+                motorIndex++
+            }
+        }
+        val additionalMeasuredAmps = (nonMotorMeasuredAmps - coveredModeledMotorAmps).coerceAtLeast(0.0)
+        manager.update(
+            batteryVoltage,
+            enableCalibration = true,
+            additionalMeasuredCurrentAmps = additionalMeasuredAmps
+        )
         return manager.powerScale
+    }
+
+    private companion object {
+        const val VOLTAGE_SAMPLE_PERIOD_MS = 20L
+        const val VOLTAGE_FILTER_TIME_CONSTANT_SECONDS = 0.10
+        const val FTC_CONTINUOUS_CURRENT_BUDGET_AMPS = 18.0
+        const val FUSE_THERMAL_WARNING_PERCENT = 70.0
+        const val FLOODGATE_ZERO_CURRENT_AMPS = 0.25
+        const val FLOODGATE_EXPECTED_LOAD_AMPS = 5.0
     }
 }
 

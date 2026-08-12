@@ -195,9 +195,14 @@ class MecanumMotorCluster(
      * Releases motor IO resources upon OpMode completion.
      */
     override fun close() {
-        flIO.close()
-        frIO.close()
-        rlIO.close()
-        rrIO.close()
+        var firstFailure: Throwable? = null
+        for (motor in arrayOf(flIO, frIO, rlIO, rrIO)) {
+            try {
+                motor.close()
+            } catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
     }
 }

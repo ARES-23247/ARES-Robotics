@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     kotlin("jvm")
     id("edu.wpi.first.GradleRIO") version "2026.2.1"
@@ -68,9 +70,11 @@ tasks.test {
     useJUnitPlatform()
     
     // Configure test task to run using WPILib's compatible JDK to avoid JNI loader MSVC runtime crashes
-    val wpilibJdk = file("C:/Users/Public/wpilib/2026/jdk/bin/java.exe")
-    if (wpilibJdk.exists()) {
-        executable = wpilibJdk.absolutePath
+    if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        val wpilibJdk = File("C:/Users/Public/wpilib/2026/jdk/bin/java.exe")
+        if (wpilibJdk.isFile) {
+            executable = wpilibJdk.absolutePath
+        }
     }
 
     // Set the library path to the extracted native binaries directory
@@ -78,7 +82,7 @@ tasks.test {
     systemProperty("java.library.path", jniPath)
     
     // Prepend the native binaries directory to PATH so Windows can resolve transitive DLL dependencies
-    environment("PATH", "$jniPath;${System.getenv("PATH")}")
+    environment("PATH", "$jniPath${File.pathSeparator}${System.getenv("PATH").orEmpty()}")
 
     testLogging {
         events("passed", "skipped", "failed", "standardOut", "standardError")

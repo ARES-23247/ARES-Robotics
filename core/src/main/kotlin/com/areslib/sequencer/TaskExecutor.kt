@@ -137,6 +137,17 @@ class TaskExecutor {
             }
 
             if (task != null) {
+                when (TaskStateMachine.getStatus(task)) {
+                    TaskStatus.FAILED -> {
+                        actions = addActions(actions, handleTaskFailure(task, state))
+                        break
+                    }
+                    TaskStatus.CANCELLED -> {
+                        actions = addActions(actions, handleTaskCancellation(task, state))
+                        break
+                    }
+                    else -> Unit
+                }
                 val elapsed = currentTimestampMs - activeTaskStartTimeMs
                 val isCompleted = try {
                     task.isCompleted(state, elapsed)
@@ -147,18 +158,25 @@ class TaskExecutor {
                     break
                 }
                 
-                val isFailed = TaskStateMachine.getStatus(task) == TaskStatus.FAILED
-                
-                if (isCompleted || isFailed) {
+                val terminalStatus = TaskStateMachine.getStatus(task)
+
+                if (terminalStatus == TaskStatus.FAILED) {
+                    actions = addActions(actions, handleTaskFailure(task, state))
+                    break
+                } else if (terminalStatus == TaskStatus.CANCELLED) {
+                    actions = addActions(actions, handleTaskCancellation(task, state))
+                    break
+                } else if (isCompleted) {
                     // Finalize active task
                     try {
-                        actions = addActions(actions, task.end(state, interrupted = isFailed))
+                        actions = addActions(actions, task.end(state, interrupted = false))
                     } catch (e: Exception) {
                         System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
                         e.printStackTrace()
-                    } finally {
-                        task.releaseRuntimeState()
+                        actions = addActions(actions, handleTaskFailure(task, state))
+                        break
                     }
+                    task.releaseRuntimeState()
                     activeTask = null
                     task = null // Continue loop to dequeue/resume instantly
                 } else {
@@ -171,6 +189,11 @@ class TaskExecutor {
                         break
                     }
                     actions = addActions(actions, execActions)
+                    when (TaskStateMachine.getStatus(task)) {
+                        TaskStatus.FAILED -> actions = addActions(actions, handleTaskFailure(task, state))
+                        TaskStatus.CANCELLED -> actions = addActions(actions, handleTaskCancellation(task, state))
+                        else -> Unit
+                    }
                     break // Stop frame update as active task is currently running
                 }
             }
@@ -191,13 +214,13 @@ class TaskExecutor {
     }
 
     private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
-        System.err.println("TaskExecutor: Task ${task.name} failed. Removing task, preserving remaining queue.")
-        if (TaskStateMachine.markFailed(task)) {
-            try {
-                TaskCallbacks.invokeFail(task)
-            } catch (e: Exception) {
-                System.err.println("TaskExecutor: Exception during failure callback: ${e.message}")
-            }
+        System.err.println("TaskExecutor: Task ${task.name} failed. Aborting queued and preempted tasks.")
+        TaskStateMachine.markFailed(task)
+        try {
+            // Invocation is one-shot, so this also covers tasks that marked themselves failed.
+            TaskCallbacks.invokeFail(task)
+        } catch (e: Exception) {
+            System.err.println("TaskExecutor: Exception during failure callback: ${e.message}")
         }
         val cleanupActions = try {
             task.end(state, interrupted = true)
@@ -209,7 +232,25 @@ class TaskExecutor {
             task.releaseRuntimeState()
         }
         activeTask = null
-        return cleanupActions
+        val allCleanupActions = cleanupActions.toMutableList()
+        allCleanupActions.addAll(cancelAll(state))
+        return allCleanupActions
+    }
+
+    /** Performs interrupted cleanup without converting cancellation into completion or failure. */
+    private fun handleTaskCancellation(task: Task, state: RobotState): List<RobotAction> {
+        val cleanupActions = try {
+            task.end(state, interrupted = true)
+        } catch (error: Exception) {
+            System.err.println("TaskExecutor: Exception during cancelled task cleanup: ${error.message}")
+            emptyList()
+        } finally {
+            task.releaseRuntimeState()
+        }
+        activeTask = null
+        val allCleanupActions = cleanupActions.toMutableList()
+        allCleanupActions.addAll(cancelAll(state))
+        return allCleanupActions
     }
 
     /**

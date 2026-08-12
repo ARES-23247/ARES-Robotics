@@ -7,14 +7,18 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.security.MessageDigest
 
 /**
  * Robot-local HTTP server for discovering, downloading, and deleting offline log files.
  *
  * The singleton binds port `5002` and exposes `GET /api/logs`, `GET /api/download?file=...`, and
  * `POST /api/delete?file=...`, plus a small browser dashboard at `/`. It serves only files beneath
- * [RobotLogEnvironment.logDirectory] or its `synced` child after canonical-path validation. Responses are
- * unauthenticated and intended for the trusted robot/laptop LAN; do not expose this port publicly.
+ * [RobotLogEnvironment.logDirectory] or its `synced` child after canonical-path validation. Read
+ * endpoints remain available on the robot LAN, while destructive deletion is disabled until a
+ * shared token is explicitly configured through [configureDeleteToken], `ares.log.deleteToken`,
+ * or `ARES_LOG_DELETE_TOKEN`. Files ending in `.active` are live writer-owned reservations and are
+ * never listed, downloaded, or deleted, regardless of their modification time.
  *
  * Requests are limited per remote IP by a ten-token bucket refilled at ten requests per second.
  * Startup failure is logged and leaves the singleton inactive rather than aborting robot startup.
@@ -28,6 +32,8 @@ object LogManagerServer : NanoHTTPD(5002) {
     // filesystem syscall on every request.
     private val logDirCanonical: String = logDir.canonicalPath
     private val syncedDirCanonical: String = syncedDir.canonicalPath
+    @Volatile
+    private var deleteToken: String? = configuredDeleteToken()
 
     init {
         // Ensure directories exist
@@ -102,12 +108,12 @@ object LogManagerServer : NanoHTTPD(5002) {
         val allFiles = mutableListOf<LogFileInfo>()
         
         // Unsynced logs
-        logDir.listFiles { file -> file.isFile }?.forEach {
+        logDir.listFiles { file -> isCompletedLogFile(file) }?.forEach {
             allFiles.add(createLogFileInfo(it, synced = false))
         }
         
         // Synced logs
-        syncedDir.listFiles { file -> file.isFile }?.forEach {
+        syncedDir.listFiles { file -> isCompletedLogFile(file) }?.forEach {
             allFiles.add(createLogFileInfo(it, synced = true))
         }
 
@@ -119,6 +125,9 @@ object LogManagerServer : NanoHTTPD(5002) {
     private fun handleApiDownload(session: IHTTPSession): Response {
         val fileName = session.parameters["file"]?.firstOrNull()
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Missing file parameter")
+        if (!isSafeCompletedLogRequest(fileName)) {
+            return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        }
 
         val file = File(logDir, fileName)
         if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
@@ -144,9 +153,25 @@ object LogManagerServer : NanoHTTPD(5002) {
     }
 
     private fun handleApiDelete(session: IHTTPSession): Response {
+        val configuredToken = deleteToken
+            ?: return newFixedLengthResponse(
+                Response.Status.FORBIDDEN,
+                "application/json",
+                """{"error":"Log deletion is disabled"}"""
+            )
+        if (!hasValidDeleteToken(session, configuredToken)) {
+            return newFixedLengthResponse(
+                Response.Status.UNAUTHORIZED,
+                "application/json",
+                """{"error":"Unauthorized"}"""
+            )
+        }
         session.parseBody(HashMap())
         val fileName = session.parameters["file"]?.firstOrNull()
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error": "Missing file parameter"}""")
+        if (!isSafeCompletedLogRequest(fileName)) {
+            return newFixedLengthResponse(Response.Status.FORBIDDEN, "application/json", """{"error":"Access denied"}""")
+        }
 
         val file = File(logDir, fileName)
         if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
@@ -164,10 +189,41 @@ object LogManagerServer : NanoHTTPD(5002) {
         }
     }
 
+    /**
+     * Enables destructive log deletion with a shared token, or disables it with `null`.
+     * Tokens shorter than 16 characters are rejected to prevent accidental weak field-network
+     * credentials. Clients may send `Authorization: Bearer ...` or `X-ARES-Delete-Token`.
+     */
+    @JvmStatic
+    fun configureDeleteToken(token: String?) {
+        val normalized = token?.trim()?.takeIf(String::isNotEmpty)
+        require(normalized == null || normalized.length >= MIN_DELETE_TOKEN_LENGTH) {
+            "Log delete token must contain at least $MIN_DELETE_TOKEN_LENGTH characters"
+        }
+        deleteToken = normalized
+    }
+
+    private fun hasValidDeleteToken(session: IHTTPSession, expected: String): Boolean {
+        val authorization = session.headers["authorization"]
+        val supplied = when {
+            authorization?.startsWith("Bearer ", ignoreCase = true) == true -> authorization.substring(7)
+            else -> session.headers["x-ares-delete-token"]
+        } ?: return false
+        return MessageDigest.isEqual(
+            expected.toByteArray(Charsets.UTF_8),
+            supplied.toByteArray(Charsets.UTF_8)
+        )
+    }
+
+    private fun configuredDeleteToken(): String? {
+        val token = System.getProperty("ares.log.deleteToken")
+            ?.takeIf(String::isNotBlank)
+            ?: System.getenv("ARES_LOG_DELETE_TOKEN")?.takeIf(String::isNotBlank)
+        return token?.trim()?.takeIf { it.length >= MIN_DELETE_TOKEN_LENGTH }
+    }
+
     private fun createLogFileInfo(file: File, synced: Boolean): LogFileInfo {
         val lastMod = file.lastModified()
-        val diff = RobotClock.currentTimeMillis() - lastMod
-        val isActive = diff in 0L..5000L
         val fmt = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(lastMod))
         return LogFileInfo(
             name = file.name,
@@ -175,9 +231,28 @@ object LogManagerServer : NanoHTTPD(5002) {
             lastModifiedMs = lastMod,
             lastModifiedFmt = fmt,
             synced = synced,
-            isActive = isActive
+            isActive = false
         )
     }
+
+    /** True only for regular files whose writer has atomically removed the `.active` reservation. */
+    private fun isCompletedLogFile(file: File): Boolean =
+        file.isFile && !isActiveLogName(file.name)
+
+    /**
+     * Endpoint requests use one basename and let the server search the unsynced and synced roots.
+     * Rejecting separators, NTFS stream syntax, and trailing aliases prevents alternate spellings
+     * from resolving an active file after the raw suffix check.
+     */
+    private fun isSafeCompletedLogRequest(fileName: String): Boolean {
+        if (fileName.isBlank() || fileName != fileName.trim()) return false
+        if (fileName.indexOf('/') >= 0 || fileName.indexOf('\\') >= 0 || fileName.indexOf(':') >= 0) return false
+        if (fileName.endsWith('.') || fileName.endsWith(' ')) return false
+        return !isActiveLogName(fileName)
+    }
+
+    private fun isActiveLogName(fileName: String): Boolean =
+        fileName.trimEnd(' ', '.').endsWith(ACTIVE_LOG_SUFFIX, ignoreCase = true)
 
     /**
      * Class implementation for Log File Info.
@@ -390,7 +465,16 @@ object LogManagerServer : NanoHTTPD(5002) {
                         btn.innerText = 'Deleting...';
                         
                         try {
-                            const res = await fetch('/api/delete?file=' + fileName, { method: 'POST' });
+                            let token = sessionStorage.getItem('aresLogDeleteToken');
+                            if (!token) {
+                                token = prompt('Enter the ARES log-delete token:');
+                                if (!token) throw new Error('Delete token required');
+                                sessionStorage.setItem('aresLogDeleteToken', token);
+                            }
+                            const res = await fetch('/api/delete?file=' + encodeURIComponent(fileName), {
+                                method: 'POST',
+                                headers: { 'X-ARES-Delete-Token': token }
+                            });
                             if (res.ok) {
                                 await fetchLogs();
                             } else {
@@ -414,4 +498,7 @@ object LogManagerServer : NanoHTTPD(5002) {
 
         return newFixedLengthResponse(Response.Status.OK, "text/html", html)
     }
+
+    private const val MIN_DELETE_TOKEN_LENGTH = 16
+    private const val ACTIVE_LOG_SUFFIX = ".active"
 }

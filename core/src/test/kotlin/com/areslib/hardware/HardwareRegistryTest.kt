@@ -5,6 +5,10 @@ import com.areslib.hardware.actuator.MotorIO
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 class HardwareRegistryTest {
 
@@ -173,6 +177,54 @@ class HardwareRegistryTest {
     }
 
     @Test
+    fun `blocked old polling generation cannot resurrect after close and re-register`() {
+        val enteredOldPoll = CountDownLatch(1)
+        val releaseOldPoll = CountDownLatch(1)
+        val oldWorker = AtomicReference<Thread>()
+        val blocking = object : SyncPolledDevice {
+            override fun pollSync() {
+                oldWorker.set(Thread.currentThread())
+                enteredOldPoll.countDown()
+                while (releaseOldPoll.count > 0L) {
+                    try {
+                        releaseOldPoll.await()
+                    } catch (_: InterruptedException) {
+                        // Deliberately model a vendor call that ignores interruption.
+                    }
+                }
+            }
+        }
+        HardwareRegistry.setPollingIntervalMs(10L)
+        HardwareRegistry.registerRoundRobinDevice(blocking)
+        assertTrue(enteredOldPoll.await(1, TimeUnit.SECONDS))
+
+        // closeAll times out waiting for the deliberately blocked worker, then clears the registry.
+        HardwareRegistry.closeAll()
+
+        val newWorkerPolls = AtomicInteger()
+        val resurrectedOldWorkerPolls = AtomicInteger()
+        val newWorkerObserved = CountDownLatch(1)
+        val replacement = object : SyncPolledDevice {
+            override fun pollSync() {
+                if (Thread.currentThread() === oldWorker.get()) {
+                    resurrectedOldWorkerPolls.incrementAndGet()
+                } else {
+                    newWorkerPolls.incrementAndGet()
+                    newWorkerObserved.countDown()
+                }
+            }
+        }
+        HardwareRegistry.registerRoundRobinDevice(replacement)
+        assertTrue(newWorkerObserved.await(1, TimeUnit.SECONDS))
+        releaseOldPoll.countDown()
+        Thread.sleep(100L)
+        HardwareRegistry.closeAll()
+
+        assertTrue(newWorkerPolls.get() > 0)
+        assertEquals(0, resurrectedOldWorkerPolls.get())
+    }
+
+    @Test
     fun `same logical name replaces lifecycle entry instead of duplicating it`() {
         val first = MockSubsystemIO()
         val replacement = MockSubsystemIO()
@@ -199,5 +251,53 @@ class HardwareRegistryTest {
         HardwareRegistry.closeAll()
 
         assertEquals(1, device.closeCount)
+    }
+
+    @Test
+    fun `current source registration replaces by name and clear removes cached views`() {
+        val first = object : SubsystemIO, CurrentSourceIO { override val currentAmps = 1.0 }
+        val replacement = object : SubsystemIO, CurrentSourceIO { override val currentAmps = 2.0 }
+        HardwareRegistry.registerDevice("current", first)
+        HardwareRegistry.registerDevice("current", replacement)
+
+        assertEquals(1, HardwareRegistry.getRegisteredCurrentSources().size)
+        assertSame(replacement, HardwareRegistry.getRegisteredCurrentSources().single())
+
+        HardwareRegistry.clear()
+        assertTrue(HardwareRegistry.getRegisteredCurrentSources().isEmpty())
+    }
+
+    @Test
+    fun `current sampler reads once isolates failures and suppresses covered constituents`() {
+        class Source(private val amps: Double) : SubsystemIO, CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; return amps }
+        }
+        val constituent = Source(5.0)
+        val aggregate = object : SubsystemIO, CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; return 7.0 }
+            override fun includesCurrentFrom(other: CurrentSourceIO): Boolean =
+                other === this || other === constituent
+        }
+        val independent = Source(4.0)
+        val throwing = object : SubsystemIO, CurrentSourceIO {
+            var reads = 0
+            override val currentAmps: Double get() { reads++; error("offline") }
+        }
+
+        val sampler = CurrentSourceSampler()
+        val total = sampler.sample(listOf(constituent, aggregate, independent, throwing))
+
+        assertEquals(11.0, total, 1e-9)
+        assertEquals(1, constituent.reads)
+        assertEquals(1, aggregate.reads)
+        assertEquals(1, independent.reads)
+        assertEquals(1, throwing.reads)
+        assertFalse(sampler.hasCompleteCoverage)
+
+        val completeTotal = sampler.sample(listOf(constituent, aggregate, independent))
+        assertEquals(11.0, completeTotal, 1e-9)
+        assertTrue(sampler.hasCompleteCoverage)
     }
 }

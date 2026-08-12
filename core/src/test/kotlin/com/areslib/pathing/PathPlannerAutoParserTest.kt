@@ -54,6 +54,7 @@ class PathPlannerAutoParserTest {
 
         val resolved = NamedCommands.getCommand("TestCmd", 1000L)
         assertNotNull(resolved)
+        assertNull(NamedCommands.getCommand("SetThirdIndicatorColor_RED", 1000L))
         assertEquals("MockTask", resolved!!.name)
     }
 
