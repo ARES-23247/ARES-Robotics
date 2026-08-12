@@ -115,7 +115,6 @@ class RoutineBuilder internal constructor() {
         }
 }
 /** Strongly typed argument payload shared by action, condition, and branch DSL nodes. */
-@AresRoutineDsl
 class RoutineArgumentsBuilder internal constructor() {
     private val values = linkedMapOf<String, String>()
 

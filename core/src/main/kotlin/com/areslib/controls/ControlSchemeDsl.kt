@@ -1,5 +1,7 @@
 package com.areslib.controls
 
+import com.areslib.routine.RoutineArgumentsBuilder
+
 @DslMarker
 annotation class AresControlsDsl
 
@@ -131,8 +133,8 @@ class ControllerControlsBuilder internal constructor(
 class BindingTargetBuilder internal constructor() {
     private var target: ControlTargetDocument? = null
 
-    fun action(key: String, vararg arguments: Pair<String, Any>) {
-        set(ControlTargetDocument(ControlTargetKind.ACTION, key, arguments.toControlArguments()))
+    fun action(key: String, arguments: RoutineArgumentsBuilder.() -> Unit = {}) {
+        set(ControlTargetDocument(ControlTargetKind.ACTION, key, RoutineArgumentsBuilder().apply(arguments).build()))
     }
 
     fun routine(key: String, policy: RoutineInvocationPolicy = RoutineInvocationPolicy.RESTART_EXISTING) {
@@ -281,12 +283,3 @@ private fun stableBindingId(slot: String, source: String, event: ControlEvent, t
         .take(64)
 
 private fun ControlEvent.friendlyName(): String = name.lowercase().replace('_', ' ')
-
-private fun Array<out Pair<String, Any>>.toControlArguments(): Map<String, String> = associate { (key, value) ->
-    key to when (value) {
-        is Double -> value.also { require(it.isFinite()) }.toString()
-        is Float -> value.also { require(it.isFinite()) }.toString()
-        is Number, is Boolean, is String, is Enum<*> -> value.toString()
-        else -> error("Argument '$key' must be a number, Boolean, String, or enum")
-    }
-}
