@@ -17,6 +17,13 @@ fun routine(
 class RoutineBuilder internal constructor() {
     private val steps = mutableListOf<RoutineStep>()
 
+    /** Replaces the generated identity when a hand-authored DSL needs a durable external reference. */
+    fun identified(stepId: String, block: RoutineBuilder.() -> Unit) {
+        val nested = RoutineBuilder().apply(block).snapshot()
+        require(nested.size == 1) { "identified { } must contain exactly one step" }
+        steps += nested.single().copy(stepId = stepId)
+    }
+
     /** Runs one project action. Arguments are validated against the generated capability catalog. */
     fun action(key: String, vararg arguments: Pair<String, Any>) {
         steps += RoutineStep.action(key, arguments.toRoutineArguments())

@@ -90,6 +90,7 @@ object AresRoutineCodec {
             val step = element.asJsonObject
             val stepPath = "$path[$index]"
             requireExactFields(step, STEP_FIELDS, stepPath)
+            requireString(step, "stepId", stepPath, required = true)
             val kindElement = requireString(step, "kind", stepPath, required = true)
             runCatching { RoutineStepKind.valueOf(requireNotNull(kindElement).asString) }
                 .getOrElse { throw IllegalArgumentException("Unknown step kind at $stepPath") }
@@ -339,7 +340,7 @@ object AresRoutineCodec {
         "schemaVersion", "documentId", "revision", "parentContentHash", "name", "description", "steps"
     )
     private val STEP_FIELDS = setOf(
-        "kind", "actionKey", "arguments", "drive", "durationSeconds", "timeoutSeconds",
+        "kind", "stepId", "actionKey", "arguments", "drive", "durationSeconds", "timeoutSeconds",
         "conditionKey", "routineId", "repeatCount", "children", "deadline", "elseChildren"
     )
     private val DRIVE_FIELDS = setOf(

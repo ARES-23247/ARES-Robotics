@@ -64,6 +64,7 @@ fun validateRoutine(
             "Calls and repeats may expand to at most $MAX_EXPANDED_STEPS executable steps"
         )
     }
+    validateStepIds(routine, routine.steps, "steps", mutableSetOf(), issues)
     validateSteps(routine, routine.steps, "steps", 0, context, issues)
     findCallCycle(routine.documentId, documents)?.let { cycle ->
         issues += routine.error(
@@ -73,6 +74,33 @@ fun validateRoutine(
         )
     }
     return issues
+}
+
+private fun validateStepIds(
+    routine: RoutineDocument,
+    steps: List<RoutineStep>,
+    parentPath: String,
+    seen: MutableSet<String>,
+    issues: MutableList<RoutineValidationIssue>
+) {
+    steps.forEachIndexed { index, step ->
+        val path = "$parentPath[$index]"
+        when {
+            !step.stepId.matches(DOCUMENT_ID_REGEX) -> issues += routine.error(
+                "$path.stepId",
+                "invalid_step_id",
+                "Step ID must be a stable filesystem-safe lowercase identifier"
+            )
+            !seen.add(step.stepId) -> issues += routine.error(
+                "$path.stepId",
+                "duplicate_step_id",
+                "Step ID '${step.stepId}' is duplicated in this routine"
+            )
+        }
+        step.deadline?.let { validateStepIds(routine, listOf(it), "$path.deadline", seen, issues) }
+        validateStepIds(routine, step.children, "$path.children", seen, issues)
+        validateStepIds(routine, step.elseChildren, "$path.elseChildren", seen, issues)
+    }
 }
 
 /** Validates a complete project routine set, including duplicate IDs and cross-document calls. */

@@ -46,7 +46,7 @@ import com.areslib.subsystem.SubsystemTargetCapability
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 4
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 5
 
 /** Complete, hermetic input to the Kotlin robot-project generator. */
 data class KotlinProjectCodegenRequest(
@@ -1040,6 +1040,7 @@ object AresKotlinProjectGenerator {
     private fun renderStep(step: RoutineStep, indent: Int): String = buildString {
         append("RoutineStep(\n")
         appendIndent(indent + 1, "kind = RoutineStepKind.${step.kind.name},\n")
+        appendIndent(indent + 1, "stepId = ${stringLiteral(step.stepId)},\n")
         step.actionKey?.let { appendIndent(indent + 1, "actionKey = ${stringLiteral(it)},\n") }
         if (step.arguments.isNotEmpty()) {
             appendIndent(indent + 1, "arguments = ${renderStringMap(step.arguments, indent + 1)},\n")
