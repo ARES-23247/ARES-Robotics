@@ -1,10 +1,16 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
+
 plugins {
     kotlin("jvm")
-    `maven-publish`
+    id("com.vanniktech.maven.publish")
 }
 
-group = "com.areslib"
-version = "1.0-SNAPSHOT"
+mavenPublishing {
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
+}
+
+description = "FTC hardware adapters and robot foundations for ARES season projects."
 
 repositories {
     mavenCentral()
@@ -14,7 +20,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":core"))
+    api(project(":core"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     compileOnly(project(":ftc-mocks"))
     testImplementation(project(":ftc-mocks"))
@@ -27,15 +33,4 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            groupId = "com.github.ARES-23247.ARESLib-Kotlin"
-            artifactId = "ftc-hardware"
-            version = "master-SNAPSHOT"
-        }
-    }
 }

@@ -1,16 +1,21 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
+
 plugins {
     kotlin("jvm")
-    `maven-publish`
+    id("com.vanniktech.maven.publish")
 }
 
-group = "com.areslib"
-version = "1.0-SNAPSHOT"
+mavenPublishing {
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
+}
+
+description = "Platform-neutral math, control, state, pathing, telemetry, logging, and robot infrastructure."
 
 repositories {
     mavenCentral()
     maven("https://frcmaven.wpi.edu/artifactory/release/")
     maven("https://maven.ctr-electronics.com/release/")
-    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -48,15 +53,17 @@ tasks.register<JavaExec>("fitLocalizationCalibration") {
 
 kotlin {
     jvmToolchain(17)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            groupId = "com.areslib"
-            artifactId = "core"
-            version = "1.0-SNAPSHOT"
+    sourceSets {
+        main {
+            kotlin.exclude(
+                "com/areslib/codegen/AresKotlinProjectGenerator.kt",
+                "com/areslib/codegen/AresProjectCodegenCli.kt",
+                "com/areslib/codegen/SubsystemKotlinGenerator.kt",
+                "com/areslib/codegen/SubsystemStarterReconciler.kt",
+            )
+        }
+        test {
+            kotlin.exclude("com/areslib/codegen/**")
         }
     }
 }

@@ -101,7 +101,9 @@ object AresProjectCodegenCli {
             "--subsystems-package is required when generating subsystem sources"
         }
         val target = SubsystemKotlinCodegenTarget(platform, basePackage)
-        val files = subsystems.flatMap { document ->
+        val files = subsystems.filter {
+            it.implementation.kind == com.areslib.subsystem.SubsystemImplementationKind.GENERATED_STARTER
+        }.flatMap { document ->
             SubsystemKotlinGenerator.generate(document, target)
         } + SubsystemKotlinGenerator.generateRegistry(subsystems, target)
         val duplicate = files.groupBy { it.sourceSet to it.relativePath }.filterValues { it.size > 1 }.keys

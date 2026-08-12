@@ -39,11 +39,13 @@ class SubsystemBuilder internal constructor(
     var generateMockIo: Boolean = true
     var generateTest: Boolean = true
     var autonomousResourceKey: String? = null
+    private val capabilityActionKeys = mutableListOf<String>()
 
     val state = SubsystemStateBuilder()
     val hardware = SubsystemHardwareBuilder(platform)
     val control = SubsystemControlBuilder()
     val safety = SubsystemSafetyBuilder()
+    val implementation = SubsystemImplementationBuilder()
 
     internal fun build(): SubsystemDocument {
         val document = SubsystemDocument(
@@ -55,6 +57,8 @@ class SubsystemBuilder internal constructor(
             hardware = hardware.entries.toList(),
             stateFields = state.entries.toList(),
             controlLoops = control.entries.toList(),
+            implementation = implementation.build(generateMockIo),
+            capabilityActionKeys = capabilityActionKeys.toList(),
             safety = safety.build(),
             autonomousResourceKey = autonomousResourceKey,
             requiredAtStartup = requiredAtStartup,
@@ -64,6 +68,65 @@ class SubsystemBuilder internal constructor(
         val issues = validateSubsystemDocument(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
         return document
+    }
+
+    /** References an action implemented by hand and declared in `action-catalog.json`. */
+    fun capabilityAction(actionKey: String) {
+        capabilityActionKeys += actionKey
+    }
+}
+
+/** Explicit project-owned source metadata; ARES never discovers hand-authored code by scanning. */
+@AresSubsystemDsl
+class SubsystemImplementationBuilder internal constructor() {
+    var kind: SubsystemImplementationKind = SubsystemImplementationKind.GENERATED_STARTER
+    var ownership: SubsystemSourceOwnership = SubsystemSourceOwnership.GENERATED_STARTER
+    var modulePath: String? = null
+    var subsystemClassName: String? = null
+    var ioContractClassName: String? = null
+    var hardwareAdapterClassName: String? = null
+    var simulationSupport: SubsystemSimulationSupport = SubsystemSimulationSupport.GENERATED_MOCK
+    var simulationAdapterClassName: String? = null
+    var teachingLevel: SubsystemTeachingLevel = SubsystemTeachingLevel.INTERMEDIATE
+    var teachingSummary: String = ""
+    var documentationPath: String? = null
+    internal val sourceFiles = mutableListOf<String>()
+    internal val teachingConcepts = mutableListOf<String>()
+
+    fun sourceFile(projectRelativePath: String) {
+        sourceFiles += projectRelativePath
+    }
+
+    fun teaches(concept: String) {
+        teachingConcepts += concept
+    }
+
+    internal fun build(generateMockIo: Boolean): SubsystemImplementationDocument {
+        val effectiveSimulation = if (
+            kind == SubsystemImplementationKind.GENERATED_STARTER &&
+            simulationSupport == SubsystemSimulationSupport.GENERATED_MOCK &&
+            !generateMockIo
+        ) {
+            SubsystemSimulationSupport.UNAVAILABLE
+        } else {
+            simulationSupport
+        }
+        return SubsystemImplementationDocument(
+            kind = kind,
+            ownership = ownership,
+            modulePath = modulePath,
+            sourceFiles = sourceFiles.toList(),
+            subsystemClassName = subsystemClassName,
+            ioContractClassName = ioContractClassName,
+            hardwareAdapterClassName = hardwareAdapterClassName,
+            simulation = SubsystemSimulationDocument(effectiveSimulation, simulationAdapterClassName),
+            teaching = SubsystemTeachingDocument(
+                level = teachingLevel,
+                summary = teachingSummary,
+                documentationPath = documentationPath,
+                concepts = teachingConcepts.toList(),
+            ),
+        )
     }
 }
 

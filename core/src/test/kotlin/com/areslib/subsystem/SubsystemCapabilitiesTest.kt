@@ -50,4 +50,54 @@ class SubsystemCapabilitiesTest {
         }
         assertTrue(error.message.orEmpty().contains("conflicts"))
     }
+
+    @Test
+    fun `hand-authored actions remain catalog-owned and must exist`() {
+        val indicator = handAuthoredIndicator()
+        val lightAction = ActionDescriptor(
+            "indicator.primary.green", "Primary light green", "Sets the primary light to green",
+        )
+        val catalog = CapabilityCatalogDocument(projectId = "robot", actions = listOf(lightAction))
+
+        val merged = mergeSubsystemCapabilities(catalog, listOf(indicator))
+        assertEquals(listOf("indicator.primary.green"), merged.actions.map { it.key })
+        assertTrue(subsystemTargetCapabilities(listOf(indicator)).isEmpty())
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            mergeSubsystemCapabilities(catalog.copy(actions = emptyList()), listOf(indicator))
+        }
+        assertTrue(error.message.orEmpty().contains("references missing catalog action"))
+    }
+
+    private fun handAuthoredIndicator() = subsystem(
+        "indicator",
+        "Indicator",
+        SubsystemPlatform.FTC,
+    ) {
+        generateMockIo = false
+        generateTest = false
+        capabilityAction("indicator.primary.green")
+        implementation.apply {
+            kind = SubsystemImplementationKind.HAND_AUTHORED
+            ownership = SubsystemSourceOwnership.USER_OWNED
+            modulePath = ":TeamCode"
+            sourceFile("TeamCode/src/main/java/example/IndicatorSubsystem.kt")
+            subsystemClassName = "example.IndicatorSubsystem"
+            ioContractClassName = "example.IndicatorIO"
+            hardwareAdapterClassName = "example.FtcIndicatorIO"
+            simulationSupport = SubsystemSimulationSupport.UNAVAILABLE
+            teachingLevel = SubsystemTeachingLevel.BEGINNER
+        }
+        val color = state.double(
+            "color", "Color", SubsystemFieldRole.TARGET, default = 0.0, minimum = 0.0, maximum = 1.0,
+        )
+        val servo = hardware.positionalServo("indicator", "Indicator") {
+            hardwareMapName = "indicator"
+            safeOutput = 0.0
+        }
+        control.servoPosition("color", "Color", servo, color) {
+            minimumOutput = 0.0
+            maximumOutput = 1.0
+        }
+    }
 }

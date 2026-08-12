@@ -68,10 +68,10 @@ The suite includes unit and regression coverage for reducers, controllers, pathi
 After a cross-repository library change:
 
 ```powershell
-.\gradlew.bat publishToMavenLocal
+.\gradlew.bat apiCheck publishReleaseValidation
 ```
 
-Then build and test the affected sibling repositories. Composite builds can mask or replace Maven Local resolution, so inspect the consumer's settings if results do not match the code just published.
+Then build and test each affected sibling with `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`. Normal builds resolve the pinned release from Maven Central; `-ParesUseSiblingLib=true` is the explicit source-substitution escape hatch.
 
 ## Common failures
 
@@ -85,10 +85,10 @@ Run `java -version` and `./gradlew --version`; the Gradle JVM should be JDK 17. 
 
 ### Consumer compiles against stale ARESLib
 
-1. Run `publishToMavenLocal`.
-2. Confirm the requested group/artifact/version matches the module publication.
-3. Check the consumer for `includeBuild` dependency substitution.
-4. Use Gradle dependency insight if two coordinates or versions are present.
+1. Confirm the consumer's `aresVersion` is the intended release.
+2. For unpublished changes, run `publishReleaseValidation` and pass its repository with `-ParesRepository`.
+3. Confirm `-ParesUseSiblingLib=true` was not supplied accidentally.
+4. Use Gradle dependency insight if two versions are present.
 
 ### Simulator starts but no OpMode runs
 

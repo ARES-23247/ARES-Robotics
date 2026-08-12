@@ -1,0 +1,254 @@
+public final class com/areslib/frc/FRCSwerveHardwareIO : com/areslib/hardware/drive/SwerveHardwareIO, java/lang/AutoCloseable {
+	public fun <init> (Lcom/ctre/phoenix6/swerve/SwerveDrivetrain;)V
+	public fun addVisionMeasurement (Lcom/areslib/math/geometry/Pose2d;D)V
+	public fun addVisionMeasurement (Lcom/areslib/math/geometry/Pose2d;DDDD)V
+	public fun close ()V
+	public fun getCurrentMeasurementsValid ()Z
+	public fun getCurrents ([D)V
+	public fun getCurrentsIfValid ([D)Z
+	public fun getEncoderPositions ([D)V
+	public fun getEncoderPositionsIfValid ([D)Z
+	public fun getEncoderPositionsValid ()Z
+	public fun getFaults ([I)V
+	public fun getModuleSpeeds ([D)V
+	public fun getPitchDegrees ()D
+	public fun getRawGyroYawDegrees ()D
+	public fun getRollDegrees ()D
+	public fun getSignalLatencyMs ()D
+	public fun getYawRateDegreesPerSecond ()D
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun read ()Lcom/areslib/state/DriveState;
+	public fun refresh ()V
+	public fun safe ()V
+	public fun samplePoseAt (D[D)Z
+	public fun seedPose (Lcom/areslib/math/geometry/Pose2d;)V
+	public fun write (Lcom/areslib/state/DriveState;D)V
+}
+
+public final class com/areslib/frc/FRCTelemetry : com/areslib/telemetry/ITelemetry {
+	public fun <init> ()V
+	public fun close ()V
+	public fun getBoolean (Ljava/lang/String;Z)Z
+	public fun getNumber (Ljava/lang/String;D)D
+	public fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public fun putBoolean (Ljava/lang/String;Z)V
+	public fun putDoubleArray (Ljava/lang/String;[D)V
+	public fun putNumber (Ljava/lang/String;D)V
+	public fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public fun update ()V
+}
+
+public abstract class com/areslib/frc/FrcBaseRobot : com/areslib/subsystem/AresRobot {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public final fun getBatteryVoltageSupplier ()Ljava/util/function/DoubleSupplier;
+	public final fun getBrownedOutSupplier ()Ljava/util/function/BooleanSupplier;
+	public final fun getBrownoutGuard ()Lcom/areslib/control/safety/BrownoutGuard;
+	public final fun getFatalUpdateFailure ()Ljava/lang/Throwable;
+	public fun getPowerManager ()Lcom/areslib/frc/power/FrcPowerManager;
+	public final fun getTelemetry ()Lcom/areslib/telemetry/ITelemetry;
+	public final fun getTelemetryManager ()Lcom/areslib/frc/telemetry/FrcTelemetryManager;
+	public final fun getTotalCurrentSupplier ()Ljava/util/function/DoubleSupplier;
+	public fun getVisionTracker ()Lcom/areslib/subsystem/VisionTracker;
+	public final fun publishHardwareTopology (Ljava/lang/String;)V
+	protected fun publishRobotTelemetry (J)V
+	public fun safeHardware ()V
+	public final fun setBatteryVoltageSupplier (Ljava/util/function/DoubleSupplier;)V
+	public final fun setBrownedOutSupplier (Ljava/util/function/BooleanSupplier;)V
+	public final fun setTotalCurrentSupplier (Ljava/util/function/DoubleSupplier;)V
+	public fun setVisionTracker (Lcom/areslib/subsystem/VisionTracker;)V
+	public final fun update (Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;)V
+	public static synthetic fun update$default (Lcom/areslib/frc/FrcBaseRobot;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;ILjava/lang/Object;)V
+	protected abstract fun updateHardwareInputs (J)V
+	protected abstract fun writeHardwareOutputs (DD)V
+}
+
+public final class com/areslib/frc/FrcLimelightIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
+	public static final field MAX_COMPANION_TIMESTAMP_DELTA_MICROS J
+	public static final field RAW_FIDUCIAL_START I
+	public static final field RAW_FIDUCIAL_STRIDE I
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;II[I)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;II[IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public fun getCameraPoses ()Ljava/util/List;
+	public final fun getDefaultPipeline ()I
+	public final fun getImuMode ()I
+	public final fun getTableName ()Ljava/lang/String;
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun setImuMode (I)V
+	public fun setOrientation (DDDDDDD)V
+	public fun updateInputs (Lcom/areslib/hardware/vision/VisionIOInputs;)V
+}
+
+public final class com/areslib/frc/FrcSwerveRobot : com/areslib/frc/FrcBaseRobot {
+	public static final field Companion Lcom/areslib/frc/FrcSwerveRobot$Companion;
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/hardware/drive/SwerveHardwareIO;Lcom/areslib/hardware/vision/VisionIO;ZLcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Ljava/io/File;Lkotlin/jvm/functions/Function3;)V
+	public synthetic fun <init> (Lcom/areslib/hardware/drive/SwerveHardwareIO;Lcom/areslib/hardware/vision/VisionIO;ZLcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Ljava/io/File;Lkotlin/jvm/functions/Function3;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getDrive ()Lcom/areslib/subsystem/DriveSubsystem;
+	public fun getPowerManager ()Lcom/areslib/frc/power/FrcPowerManager;
+	public final fun getSwerveDrive ()Lcom/areslib/subsystem/SwerveDriveFacade;
+	public final fun getSwerveDrivetrainIO ()Lcom/areslib/hardware/drive/SwerveHardwareIO;
+	public final fun isBeached ()Z
+	public final fun isLiveTuningEnabled ()Z
+	public final fun setLiveTuningEnabled (Z)V
+}
+
+public final class com/areslib/frc/FrcSwerveRobot$Companion {
+}
+
+public final class com/areslib/frc/XboxControllerExtKt {
+	public static final fun toState (Ledu/wpi/first/wpilibj/XboxController;)Lcom/areslib/telemetry/GamepadState;
+	public static final fun updateState (Ledu/wpi/first/wpilibj/XboxController;Lcom/areslib/telemetry/GamepadState;)V
+}
+
+public final class com/areslib/frc/drivetrain/SwerveCtreDrivetrainReader {
+	public fun <init> (Lcom/ctre/phoenix6/swerve/SwerveDrivetrain;)V
+	public final fun getCurrentMeasurementsValid ()Z
+	public final fun getCurrents ([D)V
+	public final fun getEncoderPositions ([D)V
+	public final fun getEncoderPositionsValid ()Z
+	public final fun getFaults ([I)V
+	public final fun getModuleSpeeds ([D)V
+	public final fun getPitchDegrees ()D
+	public final fun getRawGyroYawDegrees ()D
+	public final fun getRollDegrees ()D
+	public final fun getSignalLatencyMs ()D
+	public final fun getYawRateDegreesPerSecond ()D
+	public final fun read ()Lcom/areslib/state/DriveState;
+	public final fun refresh ()V
+}
+
+public final class com/areslib/frc/drivetrain/SwerveCtreSpeedRequestWriter {
+	public fun <init> (Lcom/ctre/phoenix6/swerve/SwerveDrivetrain;)V
+	public final fun safe ()V
+	public final fun write (Lcom/areslib/state/DriveState;D)V
+}
+
+public final class com/areslib/frc/hardware/TalonFXExtensionsKt {
+	public static final fun applyConfigChecked (Ljava/lang/Iterable;ILkotlin/jvm/functions/Function1;)Z
+	public static synthetic fun applyConfigChecked$default (Ljava/lang/Iterable;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Z
+	public static final fun setUpdateFrequencies (D[Lcom/ctre/phoenix6/BaseStatusSignal;)V
+}
+
+public final class com/areslib/frc/input/FrcButtonIndex {
+	public static final field COUNT_WITH_PRIMARY_POV I
+	public static final field INSTANCE Lcom/areslib/frc/input/FrcButtonIndex;
+	public static final field MAX_RAW_BUTTON_COUNT I
+	public static final field POV_DOWN I
+	public static final field POV_LEFT I
+	public static final field POV_RIGHT I
+	public static final field POV_UP I
+	public final fun fromWpilibRawButton (I)I
+}
+
+public abstract interface class com/areslib/frc/input/FrcHidSource {
+	public abstract fun axisCount ()I
+	public abstract fun buttonCount ()I
+	public abstract fun isConnected ()Z
+	public abstract fun pov (I)I
+	public abstract fun povCount ()I
+	public abstract fun rawAxis (I)D
+	public abstract fun rawButton (I)Z
+}
+
+public final class com/areslib/frc/input/FrcInputFrameAdapter {
+	public static final field POV_NOT_PRESSED I
+	public fun <init> (Lcom/areslib/frc/input/FrcHidSource;)V
+	public fun <init> (Ledu/wpi/first/wpilibj/GenericHID;)V
+	public final fun sampleInto (Lcom/areslib/input/InputFrame;J)V
+	public static synthetic fun sampleInto$default (Lcom/areslib/frc/input/FrcInputFrameAdapter;Lcom/areslib/input/InputFrame;JILjava/lang/Object;)V
+}
+
+public final class com/areslib/frc/input/WpilibGenericHidSource : com/areslib/frc/input/FrcHidSource {
+	public fun <init> (Ledu/wpi/first/wpilibj/GenericHID;)V
+	public fun axisCount ()I
+	public fun buttonCount ()I
+	public fun isConnected ()Z
+	public fun pov (I)I
+	public fun povCount ()I
+	public fun rawAxis (I)D
+	public fun rawButton (I)Z
+}
+
+public final class com/areslib/frc/power/FrcPowerManager : com/areslib/subsystem/PowerManager {
+	public static final field CURRENT_CRITICAL_AMPS D
+	public static final field CURRENT_HYSTERESIS_AMPS D
+	public static final field CURRENT_WARNING_AMPS D
+	public static final field MIN_CURRENT_POWER_SCALE D
+	public fun <init> ()V
+	public fun getBatteryVoltage ()D
+	public final fun getBatteryVoltageSupplier ()Ljava/util/function/DoubleSupplier;
+	public final fun getBrownedOutSupplier ()Ljava/util/function/BooleanSupplier;
+	public final fun getBrownoutGuard ()Lcom/areslib/control/safety/BrownoutGuard;
+	public fun getCurrentAmps ()D
+	public final fun getCurrentBudgetState ()Lcom/areslib/control/safety/CurrentBudgetState;
+	public final fun getCurrentMeasurementValid ()Z
+	public final fun getCurrentPowerScale ()D
+	public fun getPowerScale ()D
+	public final fun getTotalCurrentSupplier ()Ljava/util/function/DoubleSupplier;
+	public final fun isBrownedOut ()Z
+	public final fun setBatteryVoltageSupplier (Ljava/util/function/DoubleSupplier;)V
+	public final fun setBrownedOutSupplier (Ljava/util/function/BooleanSupplier;)V
+	public final fun setTotalCurrentSupplier (Ljava/util/function/DoubleSupplier;)V
+	public fun update (DJ)D
+}
+
+public class com/areslib/frc/telemetry/FrcTelemetryManager : com/areslib/telemetry/RobotTelemetryManager {
+	public static final field Companion Lcom/areslib/frc/telemetry/FrcTelemetryManager$Companion;
+	public fun <init> (Lcom/areslib/telemetry/ITelemetry;Lcom/areslib/Store;Lcom/areslib/hardware/drive/SwerveHardwareIO;)V
+	public synthetic fun <init> (Lcom/areslib/telemetry/ITelemetry;Lcom/areslib/Store;Lcom/areslib/hardware/drive/SwerveHardwareIO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public fun getCustomPublishers ()Ljava/util/List;
+	public fun getDataLoggingTelemetry ()Lcom/areslib/logging/DataLoggingTelemetry;
+	public final fun getPublisher ()Lcom/areslib/telemetry/ARESNetworkStatePublisher;
+	public final fun logBrownout (Lcom/areslib/control/safety/BrownoutGuard;D)V
+	public fun publish (Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DD)V
+}
+
+public final class com/areslib/frc/telemetry/FrcTelemetryManager$Companion {
+}
+
+public final class com/areslib/frc/vision/FrcLocalizationCalibrationSession : java/lang/AutoCloseable {
+	public fun <init> (Lcom/areslib/Store;Lcom/areslib/hardware/drive/SwerveHardwareIO;Lkotlin/jvm/functions/Function0;Ljava/io/File;)V
+	public synthetic fun <init> (Lcom/areslib/Store;Lcom/areslib/hardware/drive/SwerveHardwareIO;Lkotlin/jvm/functions/Function0;Ljava/io/File;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun adjustTruth (DDD)V
+	public static synthetic fun adjustTruth$default (Lcom/areslib/frc/vision/FrcLocalizationCalibrationSession;DDDILjava/lang/Object;)V
+	public fun close ()V
+	public final fun cycleTestType ()V
+	public final fun getContinuousRecording ()Z
+	public final fun getDroppedSampleCount ()J
+	public final fun getRunId ()I
+	public final fun getTestType ()Lcom/areslib/math/estimation/LocalizationCalibrationTestType;
+	public final fun getTruthHeading ()D
+	public final fun getTruthX ()D
+	public final fun getTruthY ()D
+	public final fun markEnd (J)V
+	public final fun markStart (J)V
+	public final fun periodic (J)V
+	public final fun seedPoseToTruth (J)V
+	public final fun toggleContinuousRecording ()V
+	public final fun zeroTruth ()V
+}
+
+public final class com/areslib/frc/vision/FrcVisionTracker : com/areslib/subsystem/VisionTracker {
+	public static final field DISABLED_IMU_MODE I
+	public static final field ENABLED_IMU_MODE I
+	public static final field MAX_NORMAL_FUSION_RESIDUAL_METERS D
+	public static final field MAX_TARGET_RANGE_METERS D
+	public static final field MIN_RECOVERY_CONSENSUS_MS J
+	public static final field MIN_VALID_TARGET_RANGE_METERS D
+	public fun <init> (Lcom/areslib/Store;Lcom/areslib/hardware/vision/VisionIO;Lcom/areslib/hardware/drive/SwerveHardwareIO;ZLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Lcom/areslib/Store;Lcom/areslib/hardware/vision/VisionIO;Lcom/areslib/hardware/drive/SwerveHardwareIO;ZLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getFusionEnabled ()Z
+	public fun getLastVisionStatus ()Ljava/lang/String;
+	public final fun getVisionIO ()Lcom/areslib/hardware/vision/VisionIO;
+	public final fun getVisionInputs ()Lcom/areslib/hardware/vision/VisionIOInputs;
+	public fun isConnected ()Z
+	public final fun setFusionEnabled (Z)V
+	public fun update (J)V
+}
+

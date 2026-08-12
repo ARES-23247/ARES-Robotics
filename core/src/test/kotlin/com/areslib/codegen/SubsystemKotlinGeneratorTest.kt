@@ -2,6 +2,11 @@ package com.areslib.codegen
 
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.subsystem.SubsystemFieldRole
+import com.areslib.subsystem.SubsystemImplementationDocument
+import com.areslib.subsystem.SubsystemImplementationKind
+import com.areslib.subsystem.SubsystemSimulationDocument
+import com.areslib.subsystem.SubsystemSimulationSupport
+import com.areslib.subsystem.SubsystemSourceOwnership
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
@@ -10,9 +15,46 @@ import com.areslib.subsystem.subsystem
 import com.areslib.subsystem.subsystemTargetCapabilities
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 
 class SubsystemKotlinGeneratorTest {
+    @Test
+    fun `hand-authored source is never emitted or guessed by code generation`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "prism",
+            name = "Prism",
+            platform = SubsystemPlatform.FTC,
+        ).copy(
+            generateMockIo = false,
+            generateTest = false,
+            implementation = SubsystemImplementationDocument(
+                kind = SubsystemImplementationKind.HAND_AUTHORED,
+                ownership = SubsystemSourceOwnership.USER_OWNED,
+                modulePath = ":TeamCode",
+                sourceFiles = listOf("TeamCode/src/main/java/example/PrismSubsystem.kt"),
+                subsystemClassName = "example.PrismSubsystem",
+                ioContractClassName = "example.PrismDriverIO",
+                hardwareAdapterClassName = "example.FtcPrismDriverIO",
+                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.UNAVAILABLE),
+            ),
+            capabilityActionKeys = listOf("prism.off"),
+        )
+        val target = SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems")
+
+        val error = assertThrows<IllegalArgumentException> { SubsystemKotlinGenerator.generate(document, target) }
+        assertTrue(error.message.orEmpty().contains("hand-authored USER-OWNED"))
+
+        val registry = SubsystemKotlinGenerator.generateRegistry(listOf(document), target).content
+        assertTrue(registry.contains("USER-OWNED hand-authored subsystems"))
+        assertTrue(registry.contains("prism: example.PrismSubsystem"))
+        assertTrue(!registry.contains("import example.PrismSubsystem"))
+        assertTrue(!registry.contains("FtcPrismIO"))
+        assertTrue(!registry.contains("PrismSubsystem("))
+        assertTrue(!registry.contains(document.implementation.sourceFiles.single()))
+    }
+
     @Test
     fun `generated suite exposes readable DSL typed runtime and safe cached IO`() {
         val document = subsystem("intake", "Intake", SubsystemPlatform.FTC) {

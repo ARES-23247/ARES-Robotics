@@ -7,6 +7,7 @@ import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemHardwareDocument
 import com.areslib.subsystem.SubsystemHardwareKind
+import com.areslib.subsystem.SubsystemImplementationKind
 import com.areslib.subsystem.SubsystemMeasurementSource
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemStateFieldDocument
@@ -50,6 +51,9 @@ object SubsystemKotlinGenerator {
     fun generate(document: SubsystemDocument, target: SubsystemKotlinCodegenTarget): List<GeneratedSubsystemFile> {
         val issues = validateSubsystemDocument(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
+        require(document.implementation.kind == SubsystemImplementationKind.GENERATED_STARTER) {
+            "Subsystem '${document.documentId}' is hand-authored USER-OWNED source; ARES will not generate or replace its Kotlin starters"
+        }
         require(document.platform == target.platform) {
             "Subsystem '${document.documentId}' targets ${document.platform}, not ${target.platform}"
         }
@@ -104,7 +108,13 @@ object SubsystemKotlinGenerator {
             }
             require(validateSubsystemDocument(document).isEmpty()) { "Subsystem '${document.documentId}' is invalid" }
         }
-        val imports = documents.sortedBy { it.documentId }.flatMap { document ->
+        val generatedDocuments = documents.filter {
+            it.implementation.kind == SubsystemImplementationKind.GENERATED_STARTER
+        }
+        val handAuthoredDocuments = documents.filter {
+            it.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED
+        }
+        val imports = generatedDocuments.sortedBy { it.documentId }.flatMap { document ->
             val segment = document.documentId.replace('-', '_')
             val pkg = "${target.basePackage}.$segment"
             buildList {
@@ -113,7 +123,7 @@ object SubsystemKotlinGenerator {
                 if (document.generateMockIo) add("$pkg.Mock${document.name}IO")
             }
         }.distinct().sorted()
-        val factories = documents.sortedBy { it.documentId }.joinToString("\n") { document ->
+        val factories = generatedDocuments.sortedBy { it.documentId }.joinToString("\n") { document ->
             val factory = when (target.platform) {
                 SubsystemPlatform.FTC ->
                     "${document.name}Subsystem(Ftc${document.name}IO(hardwareMap))"
@@ -125,7 +135,7 @@ object SubsystemKotlinGenerator {
             }
             "    install(${document.documentId.quoted()}, ${document.requiredAtStartup}) { $factory }"
         }
-        val actionCases = documents.sortedBy { it.documentId }.flatMap { document ->
+        val actionCases = generatedDocuments.sortedBy { it.documentId }.flatMap { document ->
             document.stateFields
                 .filter { it.role == SubsystemFieldRole.TARGET }
                 .sortedBy { it.fieldId }
@@ -140,7 +150,7 @@ $actionCases
     else -> null
 }"""
         }
-        val body = if (documents.isEmpty()) {
+        val body = if (generatedDocuments.isEmpty()) {
             val parameter = if (target.platform == SubsystemPlatform.FTC) "hardwareMap: HardwareMap" else "isReal: Boolean"
             """@Suppress("UNUSED_PARAMETER")
 fun createAll($parameter): List<Subsystem> = emptyList()"""
@@ -154,7 +164,7 @@ $factories
 }"""
             }
         }
-        val installHelper = if (documents.isEmpty()) "" else """
+        val installHelper = if (generatedDocuments.isEmpty()) "" else """
 
 private inline fun MutableList<Subsystem>.install(
     documentId: String,
@@ -185,6 +195,12 @@ private inline fun MutableList<Subsystem>.install(
             imports.forEach { append("import $it\n") }
             append("\n/** Generated composition root. The season shell registers every returned subsystem. */\n")
             append("object GeneratedSubsystemRegistry {\n")
+            if (handAuthoredDocuments.isNotEmpty()) {
+                append("    // USER-OWNED hand-authored subsystems are registered by the season composition root:\n")
+                handAuthoredDocuments.sortedBy { it.documentId }.forEach { document ->
+                    append("    // - ${document.documentId}: ${document.implementation.subsystemClassName}\n")
+                }
+            }
             append(body.prependIndent("    "))
             append("\n\n")
             append(actionFactory.prependIndent("    "))
@@ -197,7 +213,7 @@ private inline fun MutableList<Subsystem>.install(
             source,
             SubsystemArtifact.REGISTRY,
             SubsystemArtifactGroup.GENERATED_PLUMBING,
-            "Mechanical composition and autonomous-action registration for every subsystem.",
+            "Mechanical composition for generated starters, with explicit hand-authored registration reminders.",
         )
     }
 
@@ -1436,12 +1452,16 @@ private fun SubsystemStateFieldDocument.optionalStateArguments(): String {
     }
 }
 
-private fun SubsystemStateFieldDocument.clampedExpression(expression: String): String = when {
-    minimum != null && maximum != null ->
-        "($expression).coerceIn(${minimum.kotlinDouble()}, ${maximum.kotlinDouble()})"
-    minimum != null -> "($expression).coerceAtLeast(${minimum.kotlinDouble()})"
-    maximum != null -> "($expression).coerceAtMost(${maximum.kotlinDouble()})"
-    else -> expression
+private fun SubsystemStateFieldDocument.clampedExpression(expression: String): String {
+    val lowerBound = minimum
+    val upperBound = maximum
+    return when {
+        lowerBound != null && upperBound != null ->
+            "($expression).coerceIn(${lowerBound.kotlinDouble()}, ${upperBound.kotlinDouble()})"
+        lowerBound != null -> "($expression).coerceAtLeast(${lowerBound.kotlinDouble()})"
+        upperBound != null -> "($expression).coerceAtMost(${upperBound.kotlinDouble()})"
+        else -> expression
+    }
 }
 
 private fun registryActionCase(

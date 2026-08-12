@@ -81,4 +81,105 @@ class SubsystemDocumentTest {
         assertEquals(setOf("position", "currentAmps"), document.hardware.first().measurements.map { it.fieldId }.toSet())
         assertEquals("homeSwitch", document.safety.homingSensorId)
     }
+
+    @Test
+    fun `hand-authored descriptor records user ownership without scanning source`() {
+        val document = handAuthoredPrismDocument()
+
+        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
+        assertEquals(SubsystemSourceOwnership.USER_OWNED, document.implementation.ownership)
+        assertEquals(SubsystemTeachingLevel.BEGINNER, document.implementation.teaching.level)
+        assertEquals(listOf("prism.setEffect", "prism.off"), document.capabilityActionKeys)
+    }
+
+    @Test
+    fun `hand-authored descriptor fails closed when source ownership is ambiguous`() {
+        val implementation = handAuthoredPrismDocument().implementation.copy(
+            ownership = SubsystemSourceOwnership.GENERATED_STARTER,
+            sourceFiles = listOf("../PrismSubsystem.kt"),
+            subsystemClassName = "PrismSubsystem",
+        )
+        val issues = validateSubsystemDocument(handAuthoredPrismDocument().copy(implementation = implementation))
+
+        assertTrue(issues.any { it.path == "implementation.ownership" })
+        assertTrue(issues.any { it.path == "implementation.sourceFiles[0]" })
+        assertTrue(issues.any { it.path == "implementation.subsystemClassName" })
+    }
+
+    @Test
+    fun `codec requires explicit version five implementation metadata`() {
+        val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
+
+        val oldSchema = assertThrows(IllegalArgumentException::class.java) {
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 5", "\"schemaVersion\": 4"))
+        }
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 4"))
+
+        val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
+            SubsystemDocumentCodec.decode(
+                """{"schemaVersion":5,"documentId":"prism","name":"Prism","platform":"FTC"}"""
+            )
+        }
+        assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))
+    }
+
+    private fun handAuthoredPrismDocument() = SubsystemDocument(
+        documentId = "prism",
+        name = "Prism",
+        description = "Controls the goBILDA Prism light",
+        platform = SubsystemPlatform.FTC,
+        hardware = listOf(
+            SubsystemHardwareDocument(
+                hardwareId = "prism",
+                displayName = "Prism",
+                kind = SubsystemHardwareKind.POSITIONAL_SERVO,
+                connection = SubsystemHardwareConnection(hardwareMapName = "prism"),
+                safeOutput = 0.0,
+            )
+        ),
+        stateFields = listOf(
+            SubsystemStateFieldDocument(
+                fieldId = "effect",
+                displayName = "Effect",
+                type = SubsystemValueType.DOUBLE,
+                role = SubsystemFieldRole.TARGET,
+                defaultNumber = 0.0,
+                minimum = 0.0,
+                maximum = 1.0,
+            )
+        ),
+        controlLoops = listOf(
+            SubsystemControlLoopDocument(
+                loopId = "effect",
+                displayName = "Effect",
+                strategy = SubsystemControlStrategy.SERVO_POSITION,
+                actuatorId = "prism",
+                targetFieldId = "effect",
+                minimumOutput = 0.0,
+                maximumOutput = 1.0,
+            )
+        ),
+        implementation = SubsystemImplementationDocument(
+            kind = SubsystemImplementationKind.HAND_AUTHORED,
+            ownership = SubsystemSourceOwnership.USER_OWNED,
+            modulePath = ":TeamCode",
+            sourceFiles = listOf(
+                "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/subsystems/PrismSubsystem.kt"
+            ),
+            subsystemClassName = "org.firstinspires.ftc.teamcode.subsystems.PrismSubsystem",
+            ioContractClassName = "com.areslib.hardware.PrismIO",
+            hardwareAdapterClassName = "com.areslib.ftc.hardware.FtcPrismDriverIO",
+            simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.UNAVAILABLE),
+            teaching = SubsystemTeachingDocument(
+                level = SubsystemTeachingLevel.BEGINNER,
+                summary = "A small output-only subsystem example.",
+                documentationPath = "docs/examples/prism-subsystem.md",
+                concepts = listOf("safe neutral", "vendor adapter"),
+            ),
+        ),
+        capabilityActionKeys = listOf("prism.setEffect", "prism.off"),
+        generateMockIo = false,
+        generateTest = false,
+    )
 }

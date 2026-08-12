@@ -1,17 +1,22 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
 import java.io.File
 
 plugins {
     kotlin("jvm")
     id("edu.wpi.first.GradleRIO") version "2026.2.1"
-    `maven-publish`
+    id("com.vanniktech.maven.publish")
 }
 
-group = "com.areslib"
-version = "1.0-SNAPSHOT"
+mavenPublishing {
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
+}
+
+description = "FRC WPILib and Phoenix hardware adapters and robot foundations for ARES season projects."
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":core"))
+    api(project(":core"))
 
     // WPILib dependencies list iteration for Kotlin DSL
     wpi.java.deps.wpilib().forEach { dep ->
@@ -38,17 +43,6 @@ dependencies {
 
 kotlin {
     jvmToolchain(17)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            groupId = "com.areslib"
-            artifactId = "frc-hardware"
-            version = "1.0-SNAPSHOT"
-        }
-    }
 }
 
 val extractTestNatives by tasks.registering(Copy::class) {

@@ -25,6 +25,9 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
         require(validateSubsystemDocument(document).isEmpty()) {
             "Subsystem '${document.documentId}' must be valid before deriving actions"
         }
+        if (document.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED) {
+            return@flatMap emptyList()
+        }
         document.stateFields
             .filter { it.role == SubsystemFieldRole.TARGET }
             .sortedBy { it.fieldId }
@@ -57,6 +60,15 @@ fun mergeSubsystemCapabilities(
 ): CapabilityCatalogDocument {
     val derived = subsystemTargetCapabilities(documents)
     val existing = catalog.actions.associateBy { it.key }
+    documents.filter { it.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED }
+        .sortedBy { it.documentId }
+        .forEach { document ->
+            document.capabilityActionKeys.sorted().forEach { actionKey ->
+                require(actionKey in existing) {
+                    "Hand-authored subsystem '${document.documentId}' references missing catalog action '$actionKey'"
+                }
+            }
+        }
     derived.forEach { capability ->
         val collision = existing[capability.descriptor.key]
         require(collision == null || collision == capability.descriptor) {

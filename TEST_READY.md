@@ -11,9 +11,9 @@ The test sources are checked in and runnable through the Gradle Wrapper. This fi
 For a change to published ARESLib behavior, also run:
 
 ```powershell
-.\gradlew.bat publishToMavenLocal
+.\gradlew.bat apiCheck publishReleaseValidation
 ```
 
-Then test every affected sibling repository. See [TEST_INFRA.md](TEST_INFRA.md) for module commands, coverage areas, E2E scope, JNI notes, and port-owning tests.
+Then test every affected sibling repository against `build/release-repository`. See [TEST_INFRA.md](TEST_INFRA.md) for module commands, coverage areas, E2E scope, JNI notes, and port-owning tests.
 
 A green historical run is not evidence for an untested working tree. Record the exact command and current result in the change or PR description rather than editing a permanent pass count into this file.
