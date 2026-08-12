@@ -49,7 +49,7 @@ interface FlywheelIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /** Gets the measured stator current of the flywheel motors in Amperes */
     override val currentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 
     /** Gets the temperature of the master motor in Celsius */
     val tempCelsius: Double
@@ -97,7 +97,7 @@ interface CowlIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /** Gets the stator current draw in Amperes */
     override val currentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 }
 
 /**
@@ -144,15 +144,15 @@ interface IntakeIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /** Gets the measured current of the pivot motor in Amperes */
     val pivotCurrentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 
     /** Gets the measured current of the roller motor in Amperes */
     val rollerCurrentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 
     /** True only when [rollerCurrentAmps] is a fresh, trustworthy observation. */
     val rollerCurrentValid: Boolean
-        get() = true
+        get() = false
 
     /** Aggregate pivot and roller current used by the system power budget. */
     override val currentAmps: Double
@@ -203,7 +203,7 @@ interface FeederIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /** Gets the stator current draw in Amperes */
     override val currentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 }
 
 /**
@@ -240,7 +240,7 @@ interface ClimberIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /** Gets the stator current draw in Amperes */
     override val currentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 }
 
 /**
@@ -265,5 +265,5 @@ interface FloorIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /** Gets the stator current draw in Amperes */
     override val currentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
 }

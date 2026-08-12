@@ -137,8 +137,10 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         powerScale = scale
         
         // Dynamically distribute final powerScale to all registered motors
-        for (m in motors) {
-            m.powerScale = scale
+        var motorIndex = 0
+        while (motorIndex < motors.size) {
+            motors[motorIndex].powerScale = scale
+            motorIndex++
         }
         
         return scale
@@ -148,8 +150,11 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         val manager = currentBudgetManager ?: CurrentBudgetManager.ftcDefaults().also {
             currentBudgetManager = it
         }
-        for (motor in motors) {
+        var motorIndex = 0
+        while (motorIndex < motors.size) {
+            val motor = motors[motorIndex]
             if (!manager.isRegistered(motor)) manager.register(motor)
+            motorIndex++
         }
         val currentSources = com.areslib.hardware.HardwareRegistry.getRegisteredCurrentSources()
         currentSourceSampler.sample(currentSources, includeMotorSources = false)
@@ -160,10 +165,13 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
             val source = currentSourceSampler.sourceAt(index)
             if (source is MotorIO) continue
             nonMotorMeasuredAmps += currentSourceSampler.readingAt(index)
-            for (motor in motors) {
+            motorIndex = 0
+            while (motorIndex < motors.size) {
+                val motor = motors[motorIndex]
                 if (currentSourceSampler.includes(source, motor)) {
                     coveredModeledMotorAmps += manager.estimateMotorAmps(motor, batteryVoltage)
                 }
+                motorIndex++
             }
         }
         val additionalMeasuredAmps = (nonMotorMeasuredAmps - coveredModeledMotorAmps).coerceAtLeast(0.0)

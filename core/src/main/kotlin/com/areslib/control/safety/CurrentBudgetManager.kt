@@ -98,9 +98,18 @@ class CurrentBudgetManager(
 
         val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
 
+        // Keep the optional measured contribution primitive. Generic takeIf boxes Double on every
+        // invocation, which made the 50 Hz safety path allocate twice whenever calibration ran.
+        val safeAdditionalMeasuredAmps = if (
+            additionalMeasuredCurrentAmps.isFinite() && additionalMeasuredCurrentAmps >= 0.0
+        ) {
+            additionalMeasuredCurrentAmps
+        } else {
+            0.0
+        }
+
         // 1. Estimate current for each motor from the DC motor model + learned calibrationOffset
-        var totalAmps = additionalMeasuredCurrentAmps
-            .takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
+        var totalAmps = safeAdditionalMeasuredAmps
         for (i in slots.indices) {
             val slot = slots[i]
             val rawEstimate = estimateRawCurrent(slot, vBat)
@@ -138,8 +147,7 @@ class CurrentBudgetManager(
                         slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
                     }
                     
-                    totalAmps = additionalMeasuredCurrentAmps
-                        .takeIf { it.isFinite() && it >= 0.0 } ?: 0.0
+                    totalAmps = safeAdditionalMeasuredAmps
                     for (i in slots.indices) totalAmps += slots[i].estimatedAmps
                 }
             } catch (_: Exception) {

@@ -1,6 +1,5 @@
 package com.areslib.sim.infra
 
-import com.areslib.math.geometry.ChassisSpeeds
 import java.awt.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
@@ -15,59 +14,13 @@ import javax.swing.JPanel
  * properties delegate directly to [SimGamepadManager]. Construct only in graphical simulation; the
  * headless launcher does not require this window.
  */
-class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener {
-
-    private val gamepadManager = SimGamepadManager()
-    private val opModeController = SimOpModeController()
-    private val networkPublisher = SimNetworkPublisher()
-
-    // Mode toggles delegated to gamepadManager
-    var isTeleopMode: Boolean
-        get() = gamepadManager.isTeleopMode
-        set(value) { gamepadManager.isTeleopMode = value }
-    var isFieldCentric: Boolean
-        get() = gamepadManager.isFieldCentric
-        set(value) { gamepadManager.isFieldCentric = value }
-    var isRedAlliance: Boolean
-        get() = gamepadManager.isRedAlliance
-        set(value) { gamepadManager.isRedAlliance = value }
-
-    // FSM Toggles delegated
-    var isIntaking: Boolean
-        get() = gamepadManager.isIntaking
-        set(value) { gamepadManager.isIntaking = value }
-    var isFlywheelOn: Boolean
-        get() = gamepadManager.isFlywheelOn
-        set(value) { gamepadManager.isFlywheelOn = value }
-    var isTransferring: Boolean
-        get() = gamepadManager.isTransferring
-        set(value) { gamepadManager.isTransferring = value }
-    var isPoseReset: Boolean
-        get() = gamepadManager.isPoseReset
-        set(value) { gamepadManager.isPoseReset = value }
-    var isButtonAPressed: Boolean
-        get() = gamepadManager.isButtonAPressed
-        set(value) { gamepadManager.isButtonAPressed = value }
-    var isButtonBPressed: Boolean
-        get() = gamepadManager.isButtonBPressed
-        set(value) { gamepadManager.isButtonBPressed = value }
-    var isButtonXPressed: Boolean
-        get() = gamepadManager.isButtonXPressed
-        set(value) { gamepadManager.isButtonXPressed = value }
-
-    // Web inputs delegated
-    var webVx: Double
-        get() = gamepadManager.webVx
-        set(value) { gamepadManager.webVx = value }
-    var webVy: Double
-        get() = gamepadManager.webVy
-        set(value) { gamepadManager.webVy = value }
-    var webOmega: Double
-        get() = gamepadManager.webOmega
-        set(value) { gamepadManager.webOmega = value }
+class VirtualDriverStation(
+    private val gamepadManager: SimGamepadManager,
+    private val onClose: () -> Unit
+) : JFrame("ARES Virtual Driver Station"), KeyListener {
 
     init {
-        defaultCloseOperation = EXIT_ON_CLOSE
+        defaultCloseOperation = DISPOSE_ON_CLOSE
         preferredSize = Dimension(500, 380)
         isResizable = false
         
@@ -83,14 +36,14 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
 
                 // Status Labels
                 g2d.font = Font("Segoe UI", Font.BOLD, 14)
-                g2d.color = if (isTeleopMode) Color(50, 200, 50) else Color(200, 50, 50)
-                g2d.drawString("MODE: ${if (isTeleopMode) "TELEOP" else "AUTO (Path)"}", 20, 25)
+                g2d.color = if (gamepadManager.effectiveIsTeleopMode) Color(50, 200, 50) else Color(200, 50, 50)
+                g2d.drawString("MODE: ${if (gamepadManager.effectiveIsTeleopMode) "TELEOP" else "AUTO (Path)"}", 20, 25)
                 
-                g2d.color = if (isFieldCentric) Color(100, 200, 255) else Color(255, 200, 100)
-                g2d.drawString("DRIVE: ${if (isFieldCentric) "FIELD-CENTRIC" else "ROBOT-CENTRIC"}", 200, 25)
+                g2d.color = if (gamepadManager.appliedIsFieldCentric) Color(100, 200, 255) else Color(255, 200, 100)
+                g2d.drawString("DRIVE: ${if (gamepadManager.appliedIsFieldCentric) "FIELD-CENTRIC" else "ROBOT-CENTRIC"}", 200, 25)
 
-                g2d.color = if (isRedAlliance) Color(255, 100, 100) else Color(100, 150, 255)
-                g2d.drawString("ALLIANCE: ${if (isRedAlliance) "RED" else "BLUE"}", 380, 25)
+                g2d.color = if (gamepadManager.effectiveIsRedAlliance) Color(255, 100, 100) else Color(100, 150, 255)
+                g2d.drawString("ALLIANCE: ${if (gamepadManager.effectiveIsRedAlliance) "RED" else "BLUE"}", 380, 25)
 
                 g2d.color = Color(150, 150, 150)
                 g2d.font = Font("Segoe UI", Font.PLAIN, 11)
@@ -114,7 +67,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.fillRoundRect(cx + 80, cy - 20, 100, 120, 50, 50)  // Right handle
 
                 // Left Bumper (Intake) - SHIFT / LB
-                val isLbActive = isIntaking
+                val isLbActive = gamepadManager.appliedIsIntaking
                 g2d.color = if (isLbActive) Color(100, 200, 255) else Color(30, 30, 35)
                 g2d.fillRoundRect(cx - 140, cy - 100, 80, 30, 15, 15)
                 g2d.color = if (isLbActive) Color.BLACK else Color.WHITE
@@ -123,7 +76,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.drawString("INTAKE", cx - 120, cy - 110)
 
                 // Right Bumper (Flywheel) - F / RB
-                val isRbActive = isFlywheelOn
+                val isRbActive = gamepadManager.appliedIsFlywheelOn
                 g2d.color = if (isRbActive) Color(255, 200, 50) else Color(30, 30, 35)
                 g2d.fillRoundRect(cx + 60, cy - 100, 80, 30, 15, 15)
                 g2d.color = if (isRbActive) Color.BLACK else Color.WHITE
@@ -131,7 +84,7 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
                 g2d.drawString("FLYWHEEL", cx + 70, cy - 110)
 
                 // Right Trigger (Transfer/Shoot) - ENTER / RT
-                val isRtActive = isTransferring
+                val isRtActive = gamepadManager.effectiveIsTransferring
                 g2d.color = if (isRtActive) Color(255, 100, 100) else Color(30, 30, 35)
                 g2d.fillRoundRect(cx + 60, cy - 140, 80, 35, 15, 15)
                 g2d.color = if (isRtActive) Color.BLACK else Color.WHITE
@@ -189,6 +142,9 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
             override fun windowLostFocus(e: java.awt.event.WindowEvent?) {
                 gamepadManager.pressedKeys.clear()
             }
+            override fun windowClosing(e: java.awt.event.WindowEvent?) {
+                onClose()
+            }
         })
 
         addFocusListener(object : java.awt.event.FocusAdapter() {
@@ -213,27 +169,4 @@ class VirtualDriverStation : JFrame("ARES Virtual Driver Station"), KeyListener 
         e?.let { gamepadManager.handleKeyReleased(it.keyCode) { repaint() } }
     }
 
-    /**
-     * Calculates requested chassis speeds based on active key presses and gamepad axes.
-     */
-    fun getChassisSpeeds(): ChassisSpeeds {
-        return gamepadManager.getChassisSpeeds()
-    }
-
-    // Lifecycle facade retained for callers that previously addressed the driver station directly.
-    /** Delegates OpMode initialization to the lifecycle controller. */
-    fun initOpMode() = opModeController.initOpMode()
-    /** Delegates OpMode start to the lifecycle controller. */
-    fun startOpMode() = opModeController.startOpMode()
-    /** Delegates OpMode stop to the lifecycle controller. */
-    fun stopOpMode() = opModeController.stopOpMode()
-    /** Advances lifecycle state and publishes the current virtual station snapshot. */
-    fun update() {
-        opModeController.update()
-        networkPublisher.publishState()
-    }
-    /** Compatibility no-op; gamepad state is already owned and polled by [SimGamepadManager]. */
-    fun setGamepad() {
-        // Encapsulate setGamepad behavior
-    }
 }

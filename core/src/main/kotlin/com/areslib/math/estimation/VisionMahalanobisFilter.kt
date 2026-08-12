@@ -38,8 +38,6 @@ import com.areslib.math.wrapAngle
  * @see EKFStatePropagator
  */
 object VisionMahalanobisFilter {
-    private val kalmanGainPool = Array(16) { DoubleArray(9) }
-    private var kalmanGainPoolIndex = 0
 
 
     /**
@@ -401,16 +399,14 @@ object VisionMahalanobisFilter {
 
         scratchHistory.copyInto(state.history)
 
-        val kg = kalmanGainPool[kalmanGainPoolIndex]
+        val kg = state.lastKalmanGain
         kg[0] = scratchK.m00; kg[1] = scratchK.m01; kg[2] = scratchK.m02
         kg[3] = scratchK.m10; kg[4] = scratchK.m11; kg[5] = scratchK.m12
         kg[6] = scratchK.m20; kg[7] = scratchK.m21; kg[8] = scratchK.m22
-        kalmanGainPoolIndex = (kalmanGainPoolIndex + 1) % 16
 
         state.lastInnovationX = yX
         state.lastInnovationY = yY
         state.lastInnovationTheta = yZ
-        state.lastKalmanGain = kg
         state.lastMeasurementAccepted = true
         state.lastRejectionReason = null
 

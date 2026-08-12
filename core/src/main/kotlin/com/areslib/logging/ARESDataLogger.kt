@@ -2,11 +2,15 @@ package com.areslib.logging
 
 import java.io.BufferedWriter
 import java.io.File
-import java.io.FileWriter
 import java.io.IOException
+import java.nio.charset.StandardCharsets
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -73,13 +77,16 @@ class ARESDataLogger(
                 throw java.io.IOException("Could not create log directory: ${logDirectory.absolutePath}")
             }
 
-            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault()).format(Date())
-            val finalFile = File(logDirectory, "ares_log_${timestamp}_$mode.csv")
-            val logFile = File(logDirectory, "${finalFile.name}.active")
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault())
+                .format(Date(com.areslib.util.RobotClock.currentTimeMillis()))
+            val safeMode = mode.map { character ->
+                if (character.isLetterOrDigit() || character == '-' || character == '_') character else '_'
+            }.joinToString("").ifBlank { "Unknown" }
+            val reserved = reserveUniqueLog(timestamp, safeMode)
 
-            activeLogFile = logFile
-            completedLogFile = finalFile
-            writer = BufferedWriter(FileWriter(logFile))
+            activeLogFile = reserved.active
+            completedLogFile = reserved.completed
+            writer = reserved.writer
             isRunning = true
             startLoggingLoop()
         } catch (e: Exception) {
@@ -353,17 +360,68 @@ class ARESDataLogger(
 
     private fun finalizeLogFile() {
         val active = activeLogFile ?: return
-        val completed = completedLogFile ?: return
+        var completed = completedLogFile ?: return
         if (!active.exists()) return
-        if (completed.exists() && !completed.delete()) {
-            System.err.println("ARESDataLogger: Could not replace existing completed log ${completed.absolutePath}")
-            return
+
+        repeat(MAX_FILE_RESERVATION_ATTEMPTS) { attempt ->
+            try {
+                moveWithoutReplacement(active, completed)
+                completedLogFile = completed
+                activeLogFile = null
+                return
+            } catch (_: FileAlreadyExistsException) {
+                completed = collisionTarget(completed, attempt)
+            } catch (failure: IOException) {
+                if (completed.exists()) {
+                    completed = collisionTarget(completed, attempt)
+                    return@repeat
+                }
+                System.err.println("ARESDataLogger: Could not finalize active log ${active.absolutePath}: ${failure.message}")
+                return
+            }
         }
-        if (!active.renameTo(completed)) {
-            System.err.println("ARESDataLogger: Could not finalize active log ${active.absolutePath}")
-            return
+        System.err.println("ARESDataLogger: Could not reserve a collision-free completed log for ${active.absolutePath}")
+    }
+
+    private fun reserveUniqueLog(timestamp: String, safeMode: String): ReservedLog {
+        repeat(MAX_FILE_RESERVATION_ATTEMPTS) { attempt ->
+            val suffix = if (attempt == 0) "" else "_${UUID.randomUUID()}"
+            val completed = File(logDirectory, "ares_log_${timestamp}_${safeMode}${suffix}.csv")
+            if (completed.exists()) return@repeat
+            val active = File(logDirectory, "${completed.name}.active")
+            try {
+                val writer = Files.newBufferedWriter(
+                    active.toPath(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.WRITE
+                )
+                // A completed file could have appeared between the existence check and active-file
+                // reservation. Do not let this logger later replace it; retry with a unique suffix.
+                if (completed.exists()) {
+                    writer.close()
+                    Files.deleteIfExists(active.toPath())
+                    return@repeat
+                }
+                return ReservedLog(active, completed, writer)
+            } catch (_: FileAlreadyExistsException) {
+                // Another logger reserved the same millisecond/mode name. Try a UUID suffix.
+            }
         }
-        activeLogFile = null
+        throw IOException("Could not reserve a unique ARES telemetry log file")
+    }
+
+    private fun collisionTarget(original: File, attempt: Int): File {
+        val baseName = original.name.removeSuffix(".csv")
+        return File(original.parentFile, "${baseName}_${attempt}_${UUID.randomUUID()}.csv")
+    }
+
+    private fun moveWithoutReplacement(active: File, completed: File) {
+        // Do not request ATOMIC_MOVE here: the JDK permits providers to replace an existing target
+        // when that option is used, even without REPLACE_EXISTING. A same-directory move without
+        // replacement preserves every completed log and fails cleanly if another writer wins the
+        // final-name race.
+        Files.move(active.toPath(), completed.toPath())
     }
 
     /**
@@ -389,5 +447,12 @@ class ARESDataLogger(
 
     companion object {
         const val EXTRA_FIELDS_COLUMN = "_ExtraFieldsJson"
+        private const val MAX_FILE_RESERVATION_ATTEMPTS = 32
     }
+
+    private data class ReservedLog(
+        val active: File,
+        val completed: File,
+        val writer: BufferedWriter
+    )
 }

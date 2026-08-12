@@ -47,7 +47,13 @@ object VisionMeasurementController {
             }
         }
 
-        var currentEstimator = state.drive.poseEstimator
+        // The estimator mutates its working state to remain allocation-free. Clone once at the
+        // Redux boundary so no array or history entry reachable from a retained snapshot changes.
+        var currentEstimator = if (action.fuseIntoPoseEstimator && validMeasurements.isNotEmpty()) {
+            state.drive.poseEstimator.deepCopy()
+        } else {
+            state.drive.poseEstimator
+        }
         val stdDevs = action.customVisionStdDevs ?: DEFAULT_STD_DEVS
         var acceptedCountDelta = 0
         var rejectedCountDelta = measurements.size - validMeasurements.size
@@ -104,10 +110,10 @@ object VisionMeasurementController {
                 if (lastAccepted) {
                     acceptedCountDelta++
                     if (lastCovBefore == null) {
-                        lastCovBefore = state.vision.covarianceBeforeUpdate ?: DoubleArray(9)
+                        lastCovBefore = DoubleArray(9)
                     }
                     if (lastCovAfter == null) {
-                        lastCovAfter = state.vision.covarianceAfterUpdate ?: DoubleArray(9)
+                        lastCovAfter = DoubleArray(9)
                     }
 
                     System.arraycopy(sb, 0, lastCovBefore, 0, 9)

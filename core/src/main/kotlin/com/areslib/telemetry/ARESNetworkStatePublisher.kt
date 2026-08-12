@@ -21,9 +21,11 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     private var commandCatalogJson = "[]"
 
     /**
-     * Publishes one immutable state snapshot and flushes the telemetry backend.
+     * Publishes one immutable state snapshot and optionally flushes the telemetry backend.
      * Reusable pose and covariance arrays avoid the largest avoidable per-frame buffers; topic
-     * formatting and the backend may still allocate.
+     * formatting and the backend may still allocate. Platform telemetry managers that append
+     * topics after this shared publisher must pass [flush] as `false` and explicitly flush once
+     * after their complete frame has been assembled.
      */
     fun publish(
         state: RobotState,
@@ -31,7 +33,8 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         gamepad2: GamepadState? = null,
         dtSeconds: Double? = null,
         batteryVoltage: Double? = null,
-        brownoutGuard: BrownoutGuard? = null
+        brownoutGuard: BrownoutGuard? = null,
+        flush: Boolean = true
     ) {
         // ── Drive ──
         // Raw Pinpoint Odometry
@@ -185,16 +188,13 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             telemetry.putNumber("Superstructure/IndicatorLight/${i.key}", i.value)
         }
         
-        // Trigger batch flush of the telemetry values published in this frame
-        telemetry.update()
+        if (flush) telemetry.update()
     }
 
-    /**
-     * Publishes the hardware topology JSON and flushes it immediately.
-     */
-    fun publishTopology(topologyJson: String) {
+    /** Publishes hardware topology JSON, optionally joining it to the caller-owned frame. */
+    fun publishTopology(topologyJson: String, flush: Boolean = true) {
         telemetry.putString("Topology/HardwareMap", topologyJson)
-        telemetry.update()
+        if (flush) telemetry.update()
     }
 
     /** Publishes the robot's actual auto capabilities for the guided Analytics editor. */

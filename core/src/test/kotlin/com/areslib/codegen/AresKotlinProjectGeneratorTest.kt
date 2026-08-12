@@ -50,7 +50,7 @@ class AresKotlinProjectGeneratorTest {
         )
         val golden = result.source
             .substringAfter("/** Typed robot implementations for every capability in the generated catalog. */\n")
-            .substringBefore("\n\n/** Robot scheduler boundary")
+            .substringBefore("\n\n/** Generated from the project's checked-in ARES documents.")
 
         assertEquals(
             """interface GeneratedAresProjectCapabilities {
@@ -65,6 +65,22 @@ class AresKotlinProjectGeneratorTest {
 }""",
             golden
         )
+    }
+
+    @Test
+    fun `project without control schemes omits unusable controller runtime surface`() {
+        val source = generate(
+            catalog = catalog(actions = listOf(action("intake.stop"))),
+            routines = listOf(simpleRoutine("stop", RoutineStep.action("intake.stop")))
+        ).source
+
+        assertFalse(source.contains("GeneratedAresProjectControlTaskSink"))
+        assertFalse(source.contains("knownControlSchemeIds"))
+        assertFalse(source.contains("createControllerRuntimes"))
+        assertFalse(source.contains("ControllerBindingRuntime"))
+        assertFalse(source.contains("com.areslib.input.AnalogBinding"))
+        assertFalse(source.contains("com.areslib.input.DigitalBinding"))
+        assertFalse(source.contains("com.areslib.routine.RoutineManager"))
     }
 
     @Test

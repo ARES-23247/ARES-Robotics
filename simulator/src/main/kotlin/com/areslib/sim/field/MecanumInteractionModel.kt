@@ -1,7 +1,6 @@
 package com.areslib.sim.field
 
 import com.areslib.sim.SimInteractionModel
-import com.areslib.sim.infra.VirtualDriverStation
 import org.dyn4j.dynamics.Body
 import org.dyn4j.dynamics.BodyFixture
 import org.dyn4j.geometry.Geometry
@@ -19,35 +18,34 @@ import kotlin.math.sin
 class MecanumInteractionModel : SimInteractionModel {
     private val intakeRange = 0.35 // Meters from robot center
     private val shootForce = 8.0 // Linear impulse
+    private var transferWasApplied = false
 
     override fun update(
         world: World<Body>,
         robotBody: Body,
         gamePieces: MutableList<Body>,
-        driverStation: VirtualDriverStation,
+        intakeApplied: Boolean,
+        flywheelApplied: Boolean,
+        transferApplied: Boolean,
         currentInventoryCount: Int,
         robotHeading: Double,
         robotX: Double,
         robotY: Double
     ): Int {
         var newInventory = currentInventoryCount
-        val intakeActive = driverStation.isIntaking
-        val shooterActive = driverStation.isFlywheelOn
-
         // Calculate front of robot vector
         val frontX = robotX + cos(robotHeading) * intakeRange
         val frontY = robotY + sin(robotHeading) * intakeRange
-        val frontVec = Vector2(frontX, frontY)
 
         // 1. INTAKE LOGIC
-        if (intakeActive && newInventory < 3) {
-            val iterator = gamePieces.iterator()
-            while (iterator.hasNext()) {
-                val piece = iterator.next()
-                val dist = piece.transform.translation.distance(frontVec)
-                if (dist < 0.12) {
+        if (intakeApplied && newInventory < 3) {
+            for (index in gamePieces.indices) {
+                val piece = gamePieces[index]
+                val dx = piece.transform.translationX - frontX
+                val dy = piece.transform.translationY - frontY
+                if (dx * dx + dy * dy < INTAKE_RADIUS_SQUARED) {
                     world.removeBody(piece)
-                    iterator.remove()
+                    gamePieces.removeAt(index)
                     newInventory++
                     break // Intake one at a time
                 }
@@ -55,8 +53,7 @@ class MecanumInteractionModel : SimInteractionModel {
         }
 
         // 2. SHOOTING LOGIC
-        val isTransferring = driverStation.isTransferring
-        if (isTransferring && shooterActive && newInventory > 0) {
+        if (transferApplied && !transferWasApplied && flywheelApplied && newInventory > 0) {
             // Spawn a new ball
             val newBall = Body()
             val shape = Geometry.createCircle(0.075) // 0.15 diameter Note
@@ -83,10 +80,18 @@ class MecanumInteractionModel : SimInteractionModel {
             gamePieces.add(newBall)
             newInventory--
             
-            // Consume the transfer button so it doesn't shoot 50 balls per second
-            driverStation.isTransferring = false
         }
 
+        transferWasApplied = transferApplied
+
         return newInventory
+    }
+
+    override fun reset() {
+        transferWasApplied = false
+    }
+
+    private companion object {
+        const val INTAKE_RADIUS_SQUARED = 0.12 * 0.12
     }
 }

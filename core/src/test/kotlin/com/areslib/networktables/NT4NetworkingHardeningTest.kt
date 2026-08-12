@@ -26,10 +26,11 @@ class NT4NetworkingHardeningTest {
     @AfterEach
     fun resetTopics() {
         NT4Server.resetSharedState()
+        com.areslib.util.RobotClock.useSystemTime()
     }
 
     @Test
-    fun oversizedArrayIsTruncatedWithoutDesynchronizingFollowingFrame() {
+    fun boundedArrayIsFullyDecodedWithoutDesynchronizingFollowingFrame() {
         val output = ByteArrayOutputStream()
         val packer = MessagePack.newDefaultPacker(output)
         packer.packArrayHeader(4)
@@ -50,8 +51,8 @@ class NT4NetworkingHardeningTest {
 
         assertEquals(2, messages.size)
         val retained = messages[0].value as List<*>
-        assertEquals(256, retained.size)
-        assertEquals(255L, retained.last())
+        assertEquals(300, retained.size)
+        assertEquals(299L, retained.last())
         assertEquals(11L, messages[1].topicId)
         assertEquals(42.5, messages[1].value)
     }
@@ -227,23 +228,121 @@ class NT4NetworkingHardeningTest {
 
         server.onMessage(connectionA, publish("Client/A", 2000, "double"))
         server.onMessage(connectionB, publish("Client/B", 2000, "double"))
-        server.onMessage(connectionA, server.encodeNT4Message(1L, 2000L, 0L, 1, 1.25))
-        server.onMessage(connectionB, server.encodeNT4Message(2L, 2000L, 0L, 1, 2.5))
+        server.onMessage(connectionA, server.encodeNT4Message(0L, 2000L, 0L, 1, 1.25))
+        server.onMessage(connectionB, server.encodeNT4Message(0L, 2000L, 0L, 1, 2.5))
 
         assertEquals(1.25, server.getTopicEntry("Client/A")?.value?.getAsObject())
         assertEquals(2.5, server.getTopicEntry("Client/B")?.value?.getAsObject())
 
         server.onMessage(connectionA, """{"method":"unpublish","params":{"pubuid":2000}}""")
-        server.onMessage(connectionA, server.encodeNT4Message(3L, 2000L, 0L, 1, 9.0))
+        server.onMessage(connectionA, server.encodeNT4Message(0L, 2000L, 0L, 1, 9.0))
         assertEquals(null, server.getTopicEntry("Client/A"))
 
         server.onClose(connectionA, 1000, "test", false)
-        server.onMessage(connectionB, server.encodeNT4Message(4L, 2000L, 0L, 1, 3.5))
+        server.onMessage(connectionB, server.encodeNT4Message(0L, 2000L, 0L, 1, 3.5))
         assertEquals(3.5, server.getTopicEntry("Client/B")?.value?.getAsObject())
 
         val serverOwned = server.putTopic("Server/Owned", 4.0)
-        server.onMessage(connectionB, server.encodeNT4Message(5L, serverOwned.id.toLong(), 0L, 1, 99.0))
+        server.onMessage(connectionB, publish("Server/Owned", 3000, "double"))
+        server.onMessage(connectionB, server.encodeNT4Message(0L, 3000L, 0L, 1, 99.0))
         assertEquals(4.0, server.getTopicEntry("Server/Owned")?.value?.getAsObject())
+
+        // A server write also revokes mutation through a client publisher that existed first.
+        server.putTopic("Client/B", 7.0)
+        server.onMessage(connectionB, server.encodeNT4Message(0L, 2000L, 0L, 1, 8.0))
+        assertEquals(7.0, server.getTopicEntry("Client/B")?.value?.getAsObject())
+    }
+
+    @Test
+    fun clientTimestampsMustBeZeroOrWithinServerReceiptBounds() {
+        com.areslib.util.RobotClock.useMockTime(10_000L)
+        try {
+            val server = newServer()
+            val connection = webSocketProxy()
+            val handshake = proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) }
+            server.onOpen(connection, handshake)
+            server.onMessage(connection, publish("Client/Time", 77, "double"))
+
+            server.onMessage(connection, server.encodeNT4Message(10_000_000L, 77L, 0L, 1, 1.0))
+            assertEquals(1.0, server.getTopicEntry("Client/Time")?.value?.getAsObject())
+
+            server.onMessage(connection, server.encodeNT4Message(70_000_001L, 77L, 0L, 1, 2.0))
+            assertEquals(1.0, server.getTopicEntry("Client/Time")?.value?.getAsObject())
+
+            server.onMessage(connection, server.encodeNT4Message(0L, 77L, 0L, 1, 3.0))
+            assertEquals(3.0, server.getTopicEntry("Client/Time")?.value?.getAsObject())
+        } finally {
+            com.areslib.util.RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
+    fun serverClaimOverwritesClientFutureTimestampAndRevokesPublisher() {
+        com.areslib.util.RobotClock.useMockTime(10_000L)
+        val server = newServer()
+        val connection = webSocketProxy()
+        server.onOpen(connection, proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) })
+        server.onMessage(connection, publish("Claim/Future", 91, "double"))
+        server.onMessage(connection, server.encodeNT4Message(70_000_000L, 91L, 0L, 1, 99.0))
+
+        val claimed = server.putTopic("Claim/Future", 4.0)
+        server.onMessage(connection, server.encodeNT4Message(0L, 91L, 0L, 1, 123.0))
+
+        assertEquals(4.0, claimed.value.getAsObject())
+        assertEquals(10_000_000L, claimed.timestampUs)
+        assertTrue(server.getTopicEntry("Claim/Future") === claimed)
+    }
+
+    @Test
+    fun serverClaimReplacesWrongTypeClientSquatWithFreshAnnouncementIdentity() {
+        val server = newServer()
+        val connection = webSocketProxy()
+        server.onOpen(connection, proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) })
+        server.onMessage(connection, publish("Claim/Typed", 92, "string"))
+        server.onMessage(connection, server.encodeNT4Message(0L, 92L, 0L, 4, "squat"))
+        val clientEntry = requireNotNull(server.getTopicEntry("Claim/Typed"))
+
+        val claimed = server.putTopic("Claim/Typed", 8.5)
+        server.onMessage(connection, server.encodeNT4Message(0L, 92L, 0L, 4, "resurrect"))
+
+        assertFalse(claimed === clientEntry)
+        assertTrue(claimed.id != clientEntry.id)
+        assertEquals("double", claimed.value.typeString)
+        assertEquals(8.5, claimed.value.getAsObject())
+    }
+
+    @Test
+    fun concurrentClientUpdatesCannotWinServerOwnershipClaim() {
+        com.areslib.util.RobotClock.useMockTime(20_000L)
+        val server = newServer()
+        val connection = webSocketProxy()
+        server.onOpen(connection, proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) })
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(2)
+        val client = pool.submit {
+            start.await()
+            repeat(500) { value ->
+                server.onMessage(connection, publish("Claim/Race", 93, "double"))
+                server.onMessage(
+                    connection,
+                    server.encodeNT4Message(80_000_000L, 93L, 0L, 1, value.toDouble())
+                )
+            }
+        }
+        val owner = pool.submit {
+            start.await()
+            repeat(500) { server.putTopic("Claim/Race", -it.toDouble()) }
+        }
+
+        start.countDown()
+        client.get()
+        owner.get()
+        val authoritative = server.putTopic("Claim/Race", 42.0)
+        pool.shutdown()
+
+        assertEquals(42.0, authoritative.value.getAsObject())
+        assertEquals("double", authoritative.value.typeString)
+        assertTrue(server.getTopicEntry("Claim/Race") === authoritative)
     }
 
     @Test
@@ -305,17 +404,17 @@ class NT4NetworkingHardeningTest {
         assertTrue(server.getTopicEntry("////Canonical/Value") === first)
 
         val mismatched = server.putTopic("Canonical/Value", 5L)
-        assertTrue(mismatched === first)
-        assertEquals("double", first.value.typeString)
-        assertEquals(2.0, first.value.getAsObject())
+        assertFalse(mismatched === first)
+        assertEquals("int", mismatched.value.typeString)
+        assertEquals(5L, mismatched.value.getAsObject())
 
         val connection = webSocketProxy()
         server.onOpen(connection, proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) })
         server.onMessage(connection, publish("/Canonical/Value", 42, "int"))
         server.onMessage(connection, server.encodeNT4Message(1L, 42L, 0L, 2, 99L))
 
-        assertEquals("double", first.value.typeString)
-        assertEquals(2.0, first.value.getAsObject())
+        assertEquals("int", mismatched.value.typeString)
+        assertEquals(5L, mismatched.value.getAsObject())
     }
 
     @Test
@@ -366,6 +465,43 @@ class NT4NetworkingHardeningTest {
         }
 
         assertTrue(NT4WireProtocol.unpackMessageFrames(output.toByteArray()).isEmpty())
+    }
+
+    @Test
+    fun analyticsWireDecoderBoundsFrameCountArraysBlobsAndNestingBeforeAllocation() {
+        fun tupleWith(writeValue: (org.msgpack.core.MessagePacker) -> Unit): ByteArray {
+            val output = ByteArrayOutputStream()
+            MessagePack.newDefaultPacker(output).use { packer ->
+                packer.packArrayHeader(4)
+                packer.packLong(1L)
+                packer.packLong(10L)
+                packer.packInt(5)
+                writeValue(packer)
+            }
+            return output.toByteArray()
+        }
+
+        val oversizedArray = tupleWith { it.packArrayHeader(NT4WireProtocol.MAX_ARRAY_ELEMENTS + 1) }
+        val oversizedBlob = tupleWith { it.packBinaryHeader(NT4WireProtocol.MAX_BINARY_BYTES + 1) }
+        val excessiveNesting = tupleWith { packer ->
+            repeat(NT4WireProtocol.MAX_VALUE_NESTING_DEPTH + 2) { packer.packArrayHeader(1) }
+            packer.packNil()
+        }
+        assertTrue(NT4WireProtocol.unpackMessageFrames(oversizedArray).isEmpty())
+        assertTrue(NT4WireProtocol.unpackMessageFrames(oversizedBlob).isEmpty())
+        assertTrue(NT4WireProtocol.unpackMessageFrames(excessiveNesting).isEmpty())
+
+        val tooManyMessages = ByteArrayOutputStream()
+        MessagePack.newDefaultPacker(tooManyMessages).use { packer ->
+            repeat(NT4WireProtocol.MAX_MESSAGES_PER_FRAME + 1) {
+                packer.packArrayHeader(4)
+                packer.packLong(it.toLong())
+                packer.packLong(10L)
+                packer.packInt(0)
+                packer.packNil()
+            }
+        }
+        assertTrue(NT4WireProtocol.unpackMessageFrames(tooManyMessages.toByteArray()).isEmpty())
     }
 
     @Test
@@ -432,6 +568,7 @@ class NT4NetworkingHardeningTest {
 
     @Test
     fun firstDefaultValuedUpdateIsPublishedAndOlderUpdatesCannotRollBackState() {
+        com.areslib.util.RobotClock.useMockTime(10_000L)
         val server = newServer()
         val publisher = webSocketProxy()
         val subscriberBinary = mutableListOf<ByteArray>()
@@ -442,11 +579,11 @@ class NT4NetworkingHardeningTest {
         server.onMessage(subscriber, subscribe(1, listOf("/Timestamped"), prefix = false))
         server.onMessage(publisher, publish("Timestamped", 7, "double"))
 
-        server.onMessage(publisher, server.encodeNT4Message(100L, 7L, 0L, 1, 0.0))
+        server.onMessage(publisher, server.encodeNT4Message(10_000_100L, 7L, 0L, 1, 0.0))
         server.flush()
         assertEquals(0.0, server.decodeNT4Messages(ByteBuffer.wrap(subscriberBinary.single())).single().dataValue)
 
-        server.onMessage(publisher, server.encodeNT4Message(90L, 7L, 0L, 1, 5.0))
+        server.onMessage(publisher, server.encodeNT4Message(10_000_090L, 7L, 0L, 1, 5.0))
         server.flush()
         assertEquals(1, subscriberBinary.size)
         assertEquals(0.0, server.getTopicEntry("Timestamped")?.value?.getAsObject())

@@ -32,9 +32,8 @@ Robot repositories keep human-edited inputs under `.ares/`:
 
 These files are portable JSON and require neither a connected robot nor internet access. The
 project metadata is mandatory: generation and field-boundary validation fail closed rather than
-guessing a season, origin, or robot size. Legacy
-`.aresauto` files are import-only migration inputs; new work should use `.aresroutine` plus the
-autonomous catalog.
+guessing a season, origin, or robot size. The retired `.aresauto` format is unsupported; routines
+use `.aresroutine` plus the autonomous catalog exclusively.
 
 The action catalog is authoritative. Analytics automatically loads it when a project is selected,
 so students do not edit action names by hand or rely on Kotlin source scanning. Adding a new robot

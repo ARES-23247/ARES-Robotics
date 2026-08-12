@@ -17,7 +17,8 @@ import java.security.MessageDigest
  * [RobotLogEnvironment.logDirectory] or its `synced` child after canonical-path validation. Read
  * endpoints remain available on the robot LAN, while destructive deletion is disabled until a
  * shared token is explicitly configured through [configureDeleteToken], `ares.log.deleteToken`,
- * or `ARES_LOG_DELETE_TOKEN`.
+ * or `ARES_LOG_DELETE_TOKEN`. Files ending in `.active` are live writer-owned reservations and are
+ * never listed, downloaded, or deleted, regardless of their modification time.
  *
  * Requests are limited per remote IP by a ten-token bucket refilled at ten requests per second.
  * Startup failure is logged and leaves the singleton inactive rather than aborting robot startup.
@@ -107,12 +108,12 @@ object LogManagerServer : NanoHTTPD(5002) {
         val allFiles = mutableListOf<LogFileInfo>()
         
         // Unsynced logs
-        logDir.listFiles { file -> file.isFile }?.forEach {
+        logDir.listFiles { file -> isCompletedLogFile(file) }?.forEach {
             allFiles.add(createLogFileInfo(it, synced = false))
         }
         
         // Synced logs
-        syncedDir.listFiles { file -> file.isFile }?.forEach {
+        syncedDir.listFiles { file -> isCompletedLogFile(file) }?.forEach {
             allFiles.add(createLogFileInfo(it, synced = true))
         }
 
@@ -124,6 +125,9 @@ object LogManagerServer : NanoHTTPD(5002) {
     private fun handleApiDownload(session: IHTTPSession): Response {
         val fileName = session.parameters["file"]?.firstOrNull()
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Missing file parameter")
+        if (!isSafeCompletedLogRequest(fileName)) {
+            return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
+        }
 
         val file = File(logDir, fileName)
         if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
@@ -165,6 +169,9 @@ object LogManagerServer : NanoHTTPD(5002) {
         session.parseBody(HashMap())
         val fileName = session.parameters["file"]?.firstOrNull()
             ?: return newFixedLengthResponse(Response.Status.BAD_REQUEST, "application/json", """{"error": "Missing file parameter"}""")
+        if (!isSafeCompletedLogRequest(fileName)) {
+            return newFixedLengthResponse(Response.Status.FORBIDDEN, "application/json", """{"error":"Access denied"}""")
+        }
 
         val file = File(logDir, fileName)
         if (!java.nio.file.Path.of(file.canonicalPath).startsWith(java.nio.file.Path.of(logDirCanonical))) return newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "Access denied")
@@ -217,8 +224,6 @@ object LogManagerServer : NanoHTTPD(5002) {
 
     private fun createLogFileInfo(file: File, synced: Boolean): LogFileInfo {
         val lastMod = file.lastModified()
-        val diff = RobotClock.currentTimeMillis() - lastMod
-        val isActive = diff in 0L..5000L
         val fmt = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(lastMod))
         return LogFileInfo(
             name = file.name,
@@ -226,9 +231,28 @@ object LogManagerServer : NanoHTTPD(5002) {
             lastModifiedMs = lastMod,
             lastModifiedFmt = fmt,
             synced = synced,
-            isActive = isActive
+            isActive = false
         )
     }
+
+    /** True only for regular files whose writer has atomically removed the `.active` reservation. */
+    private fun isCompletedLogFile(file: File): Boolean =
+        file.isFile && !isActiveLogName(file.name)
+
+    /**
+     * Endpoint requests use one basename and let the server search the unsynced and synced roots.
+     * Rejecting separators, NTFS stream syntax, and trailing aliases prevents alternate spellings
+     * from resolving an active file after the raw suffix check.
+     */
+    private fun isSafeCompletedLogRequest(fileName: String): Boolean {
+        if (fileName.isBlank() || fileName != fileName.trim()) return false
+        if (fileName.indexOf('/') >= 0 || fileName.indexOf('\\') >= 0 || fileName.indexOf(':') >= 0) return false
+        if (fileName.endsWith('.') || fileName.endsWith(' ')) return false
+        return !isActiveLogName(fileName)
+    }
+
+    private fun isActiveLogName(fileName: String): Boolean =
+        fileName.trimEnd(' ', '.').endsWith(ACTIVE_LOG_SUFFIX, ignoreCase = true)
 
     /**
      * Class implementation for Log File Info.
@@ -476,4 +500,5 @@ object LogManagerServer : NanoHTTPD(5002) {
     }
 
     private const val MIN_DELETE_TOKEN_LENGTH = 16
+    private const val ACTIVE_LOG_SUFFIX = ".active"
 }

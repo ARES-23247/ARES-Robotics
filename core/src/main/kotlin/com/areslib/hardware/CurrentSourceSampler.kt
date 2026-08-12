@@ -14,6 +14,12 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
     private var sources: List<CurrentSourceIO> = emptyList()
 
     val size: Int get() = sources.size
+    var validSelectedSourceCount: Int = 0
+        private set
+    val hasValidReading: Boolean get() = validSelectedSourceCount > 0
+    /** True when every registered leaf source is valid or represented by a valid aggregate. */
+    var hasCompleteCoverage: Boolean = false
+        private set
 
     fun sample(currentSources: List<CurrentSourceIO>, includeMotorSources: Boolean = true): Double {
         ensureCapacity(currentSources.size)
@@ -37,13 +43,25 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
             selected[index] = false
         }
 
+        hasCompleteCoverage = currentSources.isNotEmpty()
+        if (hasCompleteCoverage) {
+            for (index in currentSources.indices) {
+                if (!valid[index] && !isCoveredByAnotherValidSource(index) && !isAggregateSource(index)) {
+                    hasCompleteCoverage = false
+                    break
+                }
+            }
+        }
+
         var total = 0.0
+        validSelectedSourceCount = 0
         for (index in currentSources.indices) {
             if (!valid[index] || isCoveredByAnotherValidSource(index)) continue
             selected[index] = true
+            validSelectedSourceCount++
             total += readings[index]
         }
-        return total
+        return if (hasValidReading) total else Double.NaN
     }
 
     fun sourceAt(index: Int): CurrentSourceIO = sources[index]
@@ -64,6 +82,15 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
         for (candidateIndex in sources.indices) {
             if (candidateIndex == index || !valid[candidateIndex]) continue
             if (includes(sources[candidateIndex], source)) return true
+        }
+        return false
+    }
+
+    /** An invalid aggregate is optional when its registered constituents remain independently observable. */
+    private fun isAggregateSource(index: Int): Boolean {
+        val candidate = sources[index]
+        for (otherIndex in sources.indices) {
+            if (otherIndex != index && includes(candidate, sources[otherIndex])) return true
         }
         return false
     }

@@ -80,6 +80,32 @@ class PathPlannerParserTest {
     }
 
     @Test
+    fun `schema rejects nonnumeric nonfinite nonpositive and incomplete motion data`() {
+        val invalidPaths = listOf(
+            """{"waypoints":[{"anchor":{"x":"0","y":0}},{"anchor":{"x":1,"y":0}}]}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"globalConstraints":{"maxVelocity":0,"maxAcceleration":1}}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"globalConstraints":{"maxVelocity":2}}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"idealStartingState":{"velocity":3,"rotation":0},"globalConstraints":{"maxVelocity":2,"maxAcceleration":1}}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"rotationTargets":[{"waypointRelativePos":2,"rotationDegrees":0}]}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"constraintZones":[{"minWaypointRelativePos":0,"maxWaypointRelativePos":1,"constraints":{"maxVelocity":1,"maxAcceleration":-1}}]}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"eventMarkers":[{"waypointRelativePos":0.5,"command":{}}]}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"eventMarkers":[{"command":{"type":"named","name":"go"}}]}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"eventMarkers":[{"waypointRelativePos":0.5,"command":{"type":"legacy","name":"go"}}]}""",
+            """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}],"globalConstraints":{"maxVelocity":2,"maxAcceleration":1,"maxAngularVelocity":0}}"""
+        )
+        invalidPaths.forEach { json ->
+            assertFailsWith<IllegalArgumentException> { PathPlannerParser.parsePath(json) }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            PathPlannerJsonParser.parse(
+                """{"waypoints":[{"anchor":{"x":0,"y":0}},{"anchor":{"x":1,"y":0}}]}""",
+                fallbackMaxVel = Double.NaN,
+                fallbackMaxAccel = 1.0
+            )
+        }
+    }
+
+    @Test
     fun `dynamic loader rejects traversal before searching filesystem or classpath`() {
         assertFailsWith<IllegalArgumentException> { DynamicPathLoader.loadPath("../secret") }
         assertFailsWith<IllegalArgumentException> { DynamicPathLoader.loadPath("nested/path") }

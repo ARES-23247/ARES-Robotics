@@ -34,7 +34,7 @@ object DriveReducer {
 
                 val dtSeconds = observationDtSeconds(state, action.timestampMs) ?: return state
                 val updatedEstimator = PoseEstimator.addOdometryObservationDirect(
-                    state = state.poseEstimator,
+                    state = state.poseEstimator.deepCopy(),
                     timestampMs = action.timestampMs,
                     deltaX = action.deltaX,
                     deltaY = action.deltaY,
@@ -67,12 +67,38 @@ object DriveReducer {
                     return state
                 }
 
+                val motionMeasurementsValid = action.motionMeasurementsValid &&
+                    action.xVelocityMetersPerSecond.isFinite() &&
+                    action.yVelocityMetersPerSecond.isFinite() &&
+                    action.angularVelocityRadiansPerSecond.isFinite()
+                val measuredFieldXVelocity = if (motionMeasurementsValid) {
+                    action.xVelocityMetersPerSecond
+                } else 0.0
+                val measuredFieldYVelocity = if (motionMeasurementsValid) {
+                    action.yVelocityMetersPerSecond
+                } else 0.0
+                val measuredAngularVelocity = if (motionMeasurementsValid) {
+                    action.angularVelocityRadiansPerSecond
+                } else 0.0
+                val imuMeasurementsValid = action.imuMeasurementsValid &&
+                    action.pitchDegrees.isFinite() && action.rollDegrees.isFinite() &&
+                    action.pitchVelocityDegPerSec.isFinite() && action.rollVelocityDegPerSec.isFinite() &&
+                    action.xAccelerationG.isFinite() && action.yAccelerationG.isFinite() &&
+                    action.zAccelerationG.isFinite()
+                val pitchDegrees = if (imuMeasurementsValid) action.pitchDegrees else 0.0
+                val rollDegrees = if (imuMeasurementsValid) action.rollDegrees else 0.0
+                val pitchVelocityDegPerSec = if (imuMeasurementsValid) action.pitchVelocityDegPerSec else 0.0
+                val rollVelocityDegPerSec = if (imuMeasurementsValid) action.rollVelocityDegPerSec else 0.0
+                val xAccelerationG = if (imuMeasurementsValid) action.xAccelerationG else 0.0
+                val yAccelerationG = if (imuMeasurementsValid) action.yAccelerationG else 0.0
+                val zAccelerationG = if (imuMeasurementsValid) action.zAccelerationG else 0.0
+
                 val updatedEstimator = if (action.isReset) {
                     val newPose = Pose2d(action.xMeters, action.yMeters, Rotation2d(action.headingRadians))
                     val newHistory = HistoryBuffer(150)
                     newHistory.addEntry(action.timestampMs, newPose, Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01), 1.0)
                     
-                    state.poseEstimator.copy(
+                    state.poseEstimator.deepCopy().copy(
                         estimatedPoseX = newPose.x,
                         estimatedPoseY = newPose.y,
                         estimatedPoseHeading = newPose.heading.radians,
@@ -83,7 +109,7 @@ object DriveReducer {
                     )
                 } else if (action.isExternalEstimate) {
                     PoseEstimator.acceptExternalEstimate(
-                        state = state.poseEstimator,
+                        state = state.poseEstimator.deepCopy(),
                         timestampMs = action.timestampMs,
                         xMeters = action.xMeters,
                         yMeters = action.yMeters,
@@ -117,16 +143,16 @@ object DriveReducer {
                         twistY = (-c * bodyArcX + s * bodyArcY) / determinant
                     }
                     PoseEstimator.addOdometryObservationDirect(
-                        state = state.poseEstimator,
+                        state = state.poseEstimator.deepCopy(),
                         timestampMs = action.timestampMs,
                         deltaX = twistX,
                         deltaY = twistY,
                         deltaHeadingRad = deltaHeading,
-                        pitchDegrees = action.pitchDegrees,
-                        rollDegrees = action.rollDegrees,
-                        pitchVelocityDegPerSec = action.pitchVelocityDegPerSec,
-                        rollVelocityDegPerSec = action.rollVelocityDegPerSec,
-                        gyroRateRadPerSec = action.angularVelocityRadiansPerSecond,
+                        pitchDegrees = pitchDegrees,
+                        rollDegrees = rollDegrees,
+                        pitchVelocityDegPerSec = pitchVelocityDegPerSec,
+                        rollVelocityDegPerSec = rollVelocityDegPerSec,
+                        gyroRateRadPerSec = measuredAngularVelocity,
                         dtSeconds = dtSeconds,
                         applyGyroBiasCorrection = action.applyControlHubGyroCorrection
                     )
@@ -137,14 +163,16 @@ object DriveReducer {
                     odometryY = action.yMeters,
                     odometryHeading = action.headingRadians,
                     poseEstimateIsExternal = action.isExternalEstimate && !action.isReset,
-                    measuredFieldXVelocityMetersPerSecond = action.xVelocityMetersPerSecond,
-                    measuredFieldYVelocityMetersPerSecond = action.yVelocityMetersPerSecond,
-                    measuredAngularVelocityRadiansPerSecond = action.angularVelocityRadiansPerSecond,
-                    pitchDegrees = action.pitchDegrees,
-                    rollDegrees = action.rollDegrees,
-                    xAccelerationG = action.xAccelerationG,
-                    yAccelerationG = action.yAccelerationG,
-                    zAccelerationG = action.zAccelerationG,
+                    measuredFieldXVelocityMetersPerSecond = measuredFieldXVelocity,
+                    measuredFieldYVelocityMetersPerSecond = measuredFieldYVelocity,
+                    measuredAngularVelocityRadiansPerSecond = measuredAngularVelocity,
+                    measuredMotionValid = motionMeasurementsValid,
+                    pitchDegrees = pitchDegrees,
+                    rollDegrees = rollDegrees,
+                    imuMeasurementsValid = imuMeasurementsValid,
+                    xAccelerationG = xAccelerationG,
+                    yAccelerationG = yAccelerationG,
+                    zAccelerationG = zAccelerationG,
                     headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians,
                     positionLockX = if (action.isReset) null else state.positionLockX,
                     positionLockY = if (action.isReset) null else state.positionLockY

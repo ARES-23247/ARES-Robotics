@@ -55,6 +55,23 @@ class NT4Entry(
         return changed
     }
 
+    /**
+     * Replaces the retained value without applying client timestamp ordering.
+     *
+     * This is used only when the server claims a lazily-created topic. A client may have supplied
+     * a timestamp ahead of the server clock, so an ordinary [update] could otherwise preserve the
+     * client value after ownership has changed. Listener dispatch is intentionally left to the
+     * caller so the surrounding ownership transaction can be completed first.
+     */
+    @Synchronized
+    internal fun replaceAuthoritatively(newValue: NT4Value, timestampUs: Long): Boolean {
+        val changed = !hasValue || value != newValue
+        value = newValue
+        this.timestampUs = timestampUs
+        hasValue = true
+        return changed
+    }
+
     /** Adds [listener]; duplicate registrations receive duplicate callbacks. */
     fun addListener(listener: NT4EventListener) {
         listeners.add(listener)

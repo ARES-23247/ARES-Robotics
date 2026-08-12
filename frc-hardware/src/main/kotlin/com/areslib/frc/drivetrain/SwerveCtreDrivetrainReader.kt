@@ -1,14 +1,16 @@
 package com.areslib.frc.drivetrain
 
 import com.areslib.state.DriveState
-import com.ctre.phoenix6.BaseStatusSignal
+import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
 /**
  * Telemetry reader for CTRE Phoenix 6 [SwerveDrivetrain] hardware platforms.
  *
  * Configures CANivore CAN-FD signal update frequencies ($50\text{Hz}$ CANcoder absolute positions, $20\text{Hz}$ motor current draws,
- * $20\text{Hz}$ Pigeon2 pitch/roll, $4\text{Hz}$ hardware fault diagnostics) and synchronizes signals via [BaseStatusSignal.refreshAll].
+ * $20\text{Hz}$ Pigeon2 pitch/roll, and $4\text{Hz}$ hardware fault diagnostics). Phoenix's public
+ * grouped-refresh overload allocates a JNI array internally on every call, so [refresh] advances a
+ * prebuilt signal array individually to preserve the 50 Hz zero-GC contract.
  *
  * ### Physical Units & Conventions:
  * - Motor Current: Amperes ($A$).
@@ -24,13 +26,17 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
  * @param drivetrain Physical CTRE [SwerveDrivetrain] instance.
  *
  * @see SwerveDrivetrain
- * @see BaseStatusSignal
+ * @see StatusSignal
  * @see DriveState
  */
 class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, *>) {
 
     /** True only when the most recent grouped CTRE refresh completed successfully. */
     var encoderPositionsValid: Boolean = false
+        private set
+    var currentMeasurementsValid: Boolean = false
+        private set
+    var signalLatencyMs: Double = Double.POSITIVE_INFINITY
         private set
 
     private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
@@ -55,6 +61,17 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
     private val rollSignal = pigeon.roll
     private val yawSignal = pigeon.yaw
     private val yawRateSignal = pigeon.angularVelocityZWorld
+    private val refreshSignals: Array<StatusSignal<*>> = arrayOf(
+        currentDraw1, currentDraw2, currentDraw3, currentDraw4,
+        absEnc1, absEnc2, absEnc3, absEnc4,
+        pitchSignal, rollSignal, yawSignal, yawRateSignal,
+        faultHardware[0], faultHardware[1], faultHardware[2], faultHardware[3],
+        faultBrownout[0], faultBrownout[1], faultBrownout[2], faultBrownout[3],
+        faultTemp[0], faultTemp[1], faultTemp[2], faultTemp[3],
+        steerFaultHardware[0], steerFaultHardware[1], steerFaultHardware[2], steerFaultHardware[3],
+        steerFaultBrownout[0], steerFaultBrownout[1], steerFaultBrownout[2], steerFaultBrownout[3],
+        steerFaultTemp[0], steerFaultTemp[1], steerFaultTemp[2], steerFaultTemp[3],
+    )
 
     init {
         for (i in 0..3) {
@@ -79,18 +96,26 @@ class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, 
      * Zero-GC allocation.
      */
     fun refresh() {
-        val refreshStatus = BaseStatusSignal.refreshAll(
-            currentDraw1, currentDraw2, currentDraw3, currentDraw4,
-            absEnc1, absEnc2, absEnc3, absEnc4,
-            pitchSignal, rollSignal, yawSignal, yawRateSignal,
-            faultHardware[0], faultHardware[1], faultHardware[2], faultHardware[3],
-            faultBrownout[0], faultBrownout[1], faultBrownout[2], faultBrownout[3],
-            faultTemp[0], faultTemp[1], faultTemp[2], faultTemp[3],
-            steerFaultHardware[0], steerFaultHardware[1], steerFaultHardware[2], steerFaultHardware[3],
-            steerFaultBrownout[0], steerFaultBrownout[1], steerFaultBrownout[2], steerFaultBrownout[3],
-            steerFaultTemp[0], steerFaultTemp[1], steerFaultTemp[2], steerFaultTemp[3]
-        )
-        encoderPositionsValid = refreshStatus.isOK
+        var allSignalsValid = true
+        var index = 0
+        while (index < refreshSignals.size) {
+            val signal = refreshSignals[index]
+            signal.refresh()
+            if (!signal.status.isOK) allSignalsValid = false
+            index++
+        }
+        encoderPositionsValid = allSignalsValid
+        currentMeasurementsValid = allSignalsValid
+        signalLatencyMs = if (allSignalsValid) {
+            maxOf(
+                absEnc1.timestamp.latency,
+                absEnc2.timestamp.latency,
+                absEnc3.timestamp.latency,
+                absEnc4.timestamp.latency
+            ) * 1_000.0
+        } else {
+            Double.POSITIVE_INFINITY
+        }
     }
 
     /**

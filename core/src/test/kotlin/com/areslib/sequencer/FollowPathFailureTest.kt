@@ -5,16 +5,26 @@ import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.HolonomicPathFollower
+import com.areslib.pathing.CommandKey
+import com.areslib.pathing.NamedCommands
 import com.areslib.pathing.Path
+import com.areslib.pathing.PathEvent
 import com.areslib.pathing.PathPoint
 import com.areslib.state.RobotState
 import com.areslib.subsystem.DrivetrainSubsystem
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class FollowPathFailureTest {
+    @AfterEach
+    fun resetNamedCommandsAndClock() {
+        NamedCommands.clear()
+        com.areslib.util.RobotClock.useSystemTime()
+    }
+
     private class RecordingDrivetrain : DrivetrainSubsystem {
         var stopCalls = 0
 
@@ -89,5 +99,82 @@ class FollowPathFailureTest {
         assertFalse(queuedAfterPath.initialized)
         assertEquals(0, executor.size)
         assertTrue(drivetrain.stopCalls > 0, "timed-out path must be interrupted and stopped")
+    }
+
+    @Test
+    fun `interrupted velocity-hold path always stops follower output`() {
+        val drivetrain = RecordingDrivetrain()
+        val path = Path(
+            listOf(
+                PathPoint(Pose2d(), 0.0, distanceMeters = 0.0),
+                PathPoint(Pose2d(1.0, 0.0, Rotation2d()), 1.0, distanceMeters = 1.0)
+            )
+        )
+        val task = FollowPathTask(
+            follower = HolonomicPathFollower(drivetrain),
+            path = path,
+            mirrorForAlliance = false,
+            holdVelocity = true
+        )
+        task.initialize(RobotState())
+
+        task.end(RobotState(), interrupted = true)
+
+        assertTrue(drivetrain.stopCalls > 0)
+        assertEquals(TaskStatus.CANCELLED, TaskStateMachine.getStatus(task))
+        task.reset()
+    }
+
+    @Test
+    fun `failed path event invokes child cleanup once and fails the path`() {
+        class FailingEventTask : Task {
+            override val name = "failing-event"
+            var endCalls = 0
+            override fun isCompleted(state: RobotState, elapsedMs: Long) = false
+            override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+                TaskStateMachine.markFailed(this)
+                return emptyList()
+            }
+            override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+                endCalls++
+                return super.end(state, interrupted)
+            }
+        }
+
+        var eventTask: FailingEventTask? = null
+        var failureCallbacks = 0
+        NamedCommands.register(CommandKey("event.fail"), "Fails for regression coverage") {
+            FailingEventTask().also { created ->
+                eventTask = created
+                created.onFail { failureCallbacks++ }
+            }
+        }
+        val drivetrain = RecordingDrivetrain()
+        val path = Path(
+            points = listOf(
+                PathPoint(Pose2d(), 0.0, distanceMeters = 0.0),
+                PathPoint(Pose2d(1.0, 0.0, Rotation2d()), 1.0, distanceMeters = 1.0)
+            ),
+            events = listOf(PathEvent("event.fail", 0.0))
+        )
+        val pathTask = FollowPathTask(
+            follower = HolonomicPathFollower(drivetrain),
+            path = path,
+            mirrorForAlliance = false
+        )
+        val executor = TaskExecutor()
+        executor.addTask(pathTask)
+        com.areslib.util.RobotClock.useMockTime(1_000L)
+
+        executor.update(RobotState(), 1_000L)
+        com.areslib.util.RobotClock.useMockTime(1_020L)
+        executor.update(RobotState(), 1_020L)
+
+        assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(pathTask))
+        assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(requireNotNull(eventTask)))
+        assertEquals(1, failureCallbacks)
+        assertEquals(1, requireNotNull(eventTask).endCalls)
+        assertEquals(0, executor.size)
+        assertTrue(drivetrain.stopCalls > 0)
     }
 }

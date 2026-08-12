@@ -49,6 +49,15 @@ object PathPlannerParser {
         maxVelocityMps: Double = 2.0,
         maxAccelerationMps2: Double = 1.5
     ): Path {
+        require(maxVelocityMps.isFinite() && maxVelocityMps > 0.0) { "Maximum velocity must be finite and positive" }
+        require(maxAccelerationMps2.isFinite() && maxAccelerationMps2 > 0.0) { "Maximum acceleration must be finite and positive" }
+        require(points.size >= 2) { "A generated path requires at least two points" }
+        require(points.size <= 512) { "A generated path may contain at most 512 points" }
+        require(points.all {
+            it.x.isFinite() && it.y.isFinite() &&
+                kotlin.math.abs(it.x) <= 1_000.0 && kotlin.math.abs(it.y) <= 1_000.0
+        }) { "Generated path coordinates must be finite and within +/-1000 m" }
+        require(startHeading.radians.isFinite() && endHeading.radians.isFinite()) { "Generated path headings must be finite" }
 
         return SplineMotionProfiler.generateHermitePath(
             points = points,

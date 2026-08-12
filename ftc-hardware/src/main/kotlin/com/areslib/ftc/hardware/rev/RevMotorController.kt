@@ -36,7 +36,9 @@ class RevMotorController(
     private var encoderOffset = 0.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
-    private var cachedAmps = 0.0
+    private var cachedAmps = Double.NaN
+    private var lastCurrentSampleMs = 0L
+    private var hasCurrentSample = false
     private val currentLock = Any()
 
     init {
@@ -125,9 +127,21 @@ class RevMotorController(
             }
             val amps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
             synchronized(currentLock) {
-                cachedAmps = amps
+                if (amps.isFinite() && amps >= 0.0) {
+                    cachedAmps = amps
+                    lastCurrentSampleMs = com.areslib.util.RobotClock.currentTimeMillis()
+                    hasCurrentSample = true
+                } else {
+                    cachedAmps = Double.NaN
+                    hasCurrentSample = false
+                }
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            synchronized(currentLock) {
+                cachedAmps = Double.NaN
+                hasCurrentSample = false
+            }
+        }
     }
 
     /** Refreshes motor input values. */
@@ -142,7 +156,10 @@ class RevMotorController(
         get() = cachedPosition
 
     override val currentAmps: Double
-        get() = synchronized(currentLock) { cachedAmps }
+        get() = synchronized(currentLock) {
+            val ageMs = com.areslib.util.RobotClock.currentTimeMillis() - lastCurrentSampleMs
+            if (hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
+        }
 
     /** Resets the physical encoder count position to zero. */
     override fun resetEncoder() {
@@ -155,6 +172,14 @@ class RevMotorController(
     /** Unregisters motor from background current polling thread. */
     override fun close() {
         RevBulkDataReader.unregisterMotor(this)
+        synchronized(currentLock) {
+            cachedAmps = Double.NaN
+            hasCurrentSample = false
+        }
+    }
+
+    private companion object {
+        const val MAX_CURRENT_SAMPLE_AGE_MS = 1_000L
     }
 }
 
@@ -337,16 +362,13 @@ class RevServoController(
     }
 
     override var position: Double
-        get() = try {
-            servo.position
-        } catch (_: Exception) {
-            0.0
-        }
+        get() = if (lastSentPosition.isFinite()) lastSentPosition else 0.0
         set(value) {
+            val safePosition = if (value.isFinite()) value.coerceIn(0.0, 1.0) else return
             try {
-                if (lastSentPosition.isNaN() || kotlin.math.abs(value - lastSentPosition) > 0.001) {
-                    servo.position = value
-                    lastSentPosition = value
+                if (lastSentPosition.isNaN() || kotlin.math.abs(safePosition - lastSentPosition) > 0.001) {
+                    servo.position = safePosition
+                    lastSentPosition = safePosition
                 }
             } catch (_: Exception) {}
         }

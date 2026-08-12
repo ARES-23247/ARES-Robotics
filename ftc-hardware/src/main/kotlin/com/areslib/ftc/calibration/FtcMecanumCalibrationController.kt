@@ -13,7 +13,6 @@ import com.areslib.util.RobotClock
 import com.areslib.hardware.actuator.FlywheelIO
 import com.areslib.control.assist.FlywheelSysIdAdapter
 import com.areslib.control.assist.SysIdMechanismIO
-import com.areslib.state.MechanismTuningState
 
 /**
  * Subsystem controller managing System Identification (SysId) routines and physical calibration workflows for FTC Mecanum drivetrains.
@@ -51,12 +50,22 @@ class FtcMecanumCalibrationController {
         set(value) {
             field = value
             flywheelSysIdAdapter = value?.let(::FlywheelSysIdAdapter)
-            lastFlywheelTuning = null
         }
     private var flywheelSysIdAdapter: SysIdMechanismIO? = null
-    private var lastFlywheelTuning: MechanismTuningState? = null
-
     private var lastCommandProcessed = ""
+    private var enableToken = ""
+    private var neutralizedDuringInputPass = false
+
+    /** True only after a calibration-specific OpMode explicitly opts in locally. */
+    var modeEnabled = false
+        private set
+
+    /**
+     * True only after the dashboard presents a fresh enable token while commanding STOP.
+     * A retained command/token from an earlier run can therefore never energize hardware.
+     */
+    var networkArmed = false
+        private set
 
     /** Identifier name of the currently active physical calibration routine (`"NONE"`, `"PINPOINT_SPIN"`, `"TRACK_WIDTH_SPIN"`, etc.). */
     var activeCalibration = "NONE"
@@ -68,6 +77,48 @@ class FtcMecanumCalibrationController {
     private val trackWidthData = DoubleArray(6)
     private val visionData = DoubleArray(5)
     private val linearData = DoubleArray(5)
+
+    /**
+     * Enables the calibration control surface for this OpMode only.
+     *
+     * The caller must subsequently publish a new non-blank `SysId/EnableToken` while
+     * `SysId/Command` is `STOP`. The token present at the instant this method is called is
+     * deliberately treated as retained/stale and cannot arm the controller.
+     */
+    fun enableMode(telemetryManager: FtcTelemetryManager, mecanumIO: MecanumHardwareIO) {
+        stopAndNeutral(mecanumIO)
+        modeEnabled = true
+        networkArmed = false
+        neutralizedDuringInputPass = false
+        enableToken = telemetryManager.nt4.getString(ENABLE_TOKEN_TOPIC, "")
+        lastCommandProcessed = ""
+        telemetryManager.nt4.putBoolean("SysId/ModeEnabled", true)
+        telemetryManager.nt4.putBoolean("SysId/Armed", false)
+    }
+
+    /** Disarms calibration immediately and returns every owned output to neutral. */
+    fun disableMode(telemetryManager: FtcTelemetryManager, mecanumIO: MecanumHardwareIO) {
+        // Revoke ownership before touching hardware so even a failed stop cannot leave the
+        // controller logically armed for a later loop.
+        modeEnabled = false
+        networkArmed = false
+        neutralizedDuringInputPass = false
+        enableToken = ""
+        lastCommandProcessed = ""
+        var firstFailure: Throwable? = null
+        try {
+            stopAndNeutral(mecanumIO)
+        } catch (failure: Throwable) {
+            firstFailure = failure
+        }
+        try {
+            telemetryManager.nt4.putBoolean("SysId/ModeEnabled", false)
+            telemetryManager.nt4.putBoolean("SysId/Armed", false)
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        firstFailure?.let { throw it }
+    }
 
     /**
      * Polls NetworkTables (`"SysId/Command"`) for active calibration triggers and initializes routine state machines.
@@ -85,12 +136,43 @@ class FtcMecanumCalibrationController {
         pinpointIO: PinpointIO?,
         onResetTuning: () -> Unit
     ) {
-        val flywheelTuning = store.state.tuning.subsystem.flywheel
-        if (flywheelTuning != lastFlywheelTuning) {
-            flywheelIO?.configureVelocityController(flywheelTuning.velocityGains, flywheelTuning.feedforward)
-            lastFlywheelTuning = flywheelTuning
+        if (!modeEnabled) {
+            return
         }
-        val command = telemetryManager.nt4.getString("SysId/Command", "")
+
+        val command = telemetryManager.nt4.getString(COMMAND_TOPIC, "").trim()
+        val observedToken = telemetryManager.nt4.getString(ENABLE_TOKEN_TOPIC, "").trim()
+        if (!networkArmed) {
+            val hasFreshToken = observedToken.isNotEmpty() &&
+                observedToken.length <= MAX_ENABLE_TOKEN_LENGTH &&
+                observedToken != enableToken
+            if (hasFreshToken && command == STOP_COMMAND) {
+                enableToken = observedToken
+                networkArmed = true
+                lastCommandProcessed = STOP_COMMAND
+                stopAndNeutral(mecanumIO)
+                neutralizedDuringInputPass = true
+                onResetTuning()
+                telemetryManager.nt4.putString("SysId/Error", "")
+                telemetryManager.nt4.putBoolean("SysId/Armed", true)
+            }
+            // enableMode() already performed the one-shot neutral required at this safety
+            // boundary. While waiting for a fresh handshake, calibration does not own the
+            // drivetrain; repeatedly neutralizing here would erase the tuning OpMode's manual
+            // repositioning command later in the same frame.
+            return
+        }
+
+        // Once armed, changing or clearing the token is a session boundary and fails closed.
+        if (observedToken != enableToken) {
+            networkArmed = false
+            stopAndNeutral(mecanumIO)
+            neutralizedDuringInputPass = true
+            telemetryManager.nt4.putBoolean("SysId/Armed", false)
+            telemetryManager.nt4.putString("SysId/Error", "ENABLE_TOKEN_CHANGED")
+            return
+        }
+
         if (command != lastCommandProcessed) {
             lastCommandProcessed = command
             if (command.isNotBlank()) {
@@ -101,8 +183,9 @@ class FtcMecanumCalibrationController {
             flywheelSysIdAdapter?.stop()
 
             when {
-                command == "STOP" -> {
-                    mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                command == STOP_COMMAND -> {
+                    stopAndNeutral(mecanumIO)
+                    neutralizedDuringInputPass = true
                     onResetTuning()
                 }
                 command == "START_PINPOINT_SPIN" -> {
@@ -127,29 +210,41 @@ class FtcMecanumCalibrationController {
                     if (parts.size >= 2) {
                         val mechStr = parts[0]
                         val routineStr = command.removePrefix("START_${mechStr}_")
-
-                        val mechanism = try {
-                            SysIdMechanism.valueOf(mechStr)
-                        } catch (_: Exception) {
-                            SysIdMechanism.LINEAR
+                        val mechanism = enumValues<SysIdMechanism>().firstOrNull { it.name == mechStr }
+                        val routine = enumValues<SysIdRoutine>().firstOrNull {
+                            it.name == routineStr && it != SysIdRoutine.NONE
                         }
-
-                        val routine = try {
-                            SysIdRoutine.valueOf(routineStr)
-                        } catch (_: Exception) {
-                            SysIdRoutine.NONE
+                        if (mechanism == null || routine == null) {
+                            networkArmed = false
+                            stopAndNeutral(mecanumIO)
+                            neutralizedDuringInputPass = true
+                            telemetryManager.nt4.putBoolean("SysId/Armed", false)
+                            telemetryManager.nt4.putString("SysId/Error", "INVALID_COMMAND")
+                        } else {
+                            val pose = store.state.drive.poseEstimator.estimatedPose
+                            sysIdManager.start(
+                                mechanism = mechanism,
+                                routine = routine,
+                                timestampMs = RobotClock.currentTimeMillis(),
+                                x = pose.x,
+                                y = pose.y,
+                                heading = pose.heading.radians
+                            )
                         }
-
-                        val pose = store.state.drive.poseEstimator.estimatedPose
-                        sysIdManager.start(
-                            mechanism = mechanism,
-                            routine = routine,
-                            timestampMs = RobotClock.currentTimeMillis(),
-                            x = pose.x,
-                            y = pose.y,
-                            heading = pose.heading.radians
-                        )
+                    } else {
+                        networkArmed = false
+                        stopAndNeutral(mecanumIO)
+                        neutralizedDuringInputPass = true
+                        telemetryManager.nt4.putBoolean("SysId/Armed", false)
+                        telemetryManager.nt4.putString("SysId/Error", "INVALID_COMMAND")
                     }
+                }
+                else -> {
+                    networkArmed = false
+                    stopAndNeutral(mecanumIO)
+                    neutralizedDuringInputPass = true
+                    telemetryManager.nt4.putBoolean("SysId/Armed", false)
+                    telemetryManager.nt4.putString("SysId/Error", "INVALID_COMMAND")
                 }
             }
         }
@@ -172,6 +267,19 @@ class FtcMecanumCalibrationController {
         telemetryManager: FtcTelemetryManager,
         onResetTuning: () -> Unit
     ): Boolean {
+        if (neutralizedDuringInputPass) {
+            // Do not let normal kinematics overwrite a STOP/token/fault neutral in the same robot
+            // frame. Ownership is released immediately after this single output pass.
+            neutralizedDuringInputPass = false
+            return true
+        }
+        if (!modeEnabled || !networkArmed) {
+            // Enabled-but-unarmed is an observation state, not output ownership. Safety
+            // transitions (enable, token change, STOP, fault, and disable) neutral exactly once;
+            // normal kinematics regains authority on the following frame.
+            return false
+        }
+
         val pose = store.state.drive.poseEstimator.estimatedPose
         val timestamp = RobotClock.currentTimeMillis()
 
@@ -215,9 +323,10 @@ class FtcMecanumCalibrationController {
             val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
 
             if (elapsedSec > timeoutSec) {
-                activeCalibration = "NONE"
-                telemetryManager.nt4.putString("SysId/Command", "STOP")
-                mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                stopAndNeutral(mecanumIO)
+                // SysId/Command is dashboard-owned input. Publishing a local STOP here would
+                // claim the topic on the custom NT4 server and reject every later client command.
+                telemetryManager.nt4.putString(STATUS_TOPIC, "NONE")
                 onResetTuning()
             } else {
                 when (activeCalibration) {
@@ -234,7 +343,10 @@ class FtcMecanumCalibrationController {
             }
             return true
         }
-        return false
+        // Reaching this point means the calibration session is armed but intentionally idle
+        // (normally after STOP). Keep output ownership without issuing another hardware write so
+        // a persistent pre-arm Redux drive command cannot be reapplied by normal kinematics.
+        return true
     }
 
     /**
@@ -257,6 +369,8 @@ class FtcMecanumCalibrationController {
         ticksPerMeterSetting: Double,
         defaultTicksPerMeter: Double
     ) {
+        telemetryManager.nt4.putBoolean("SysId/ModeEnabled", modeEnabled)
+        telemetryManager.nt4.putBoolean("SysId/Armed", networkArmed)
         val dataLogging = telemetryManager.dataLoggingTelemetry
         if (sysIdManager.isActive()) {
             dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
@@ -362,6 +476,35 @@ class FtcMecanumCalibrationController {
         }
         // Calibration streams are safety/control feedback and must not wait for telemetry throttling.
         telemetryManager.nt4.update()
+    }
+
+    private fun stopAndNeutral(mecanumIO: MecanumHardwareIO) {
+        activeCalibration = "NONE"
+        var firstFailure: Throwable? = null
+        try {
+            sysIdManager.stop()
+        } catch (failure: Throwable) {
+            firstFailure = failure
+        }
+        try {
+            flywheelSysIdAdapter?.stop()
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        try {
+            mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        firstFailure?.let { throw it }
+    }
+
+    private companion object {
+        const val COMMAND_TOPIC = "SysId/Command"
+        const val STATUS_TOPIC = "SysId/Status"
+        const val ENABLE_TOKEN_TOPIC = "SysId/EnableToken"
+        const val STOP_COMMAND = "STOP"
+        const val MAX_ENABLE_TOKEN_LENGTH = 128
     }
 }
 

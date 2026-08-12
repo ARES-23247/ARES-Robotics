@@ -123,6 +123,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     ),
     reducer = reducer
 ) {
+    /** Optional simulator-only view of cached, post-safety season mechanism outputs. */
+    @Volatile
+    var simMechanismOutputProvider: com.areslib.hardware.SimMechanismOutputProvider? = null
+
 
     private val lifecycleController = FtcOpModeLifecycleController()
     private val hardwareInitializer = FtcHardwareInitializer(
@@ -134,7 +138,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     init {
         com.areslib.hardware.HardwareRegistry.clear()
         lifecycleController.init(hardwareMap)
-        activeInstance = this
         com.areslib.telemetry.RobotStatusTracker.odometrySource = FtcOdometrySource.UNINITIALIZED.name
         com.areslib.telemetry.RobotStatusTracker.odometryStatus = "UNKNOWN"
 
@@ -144,6 +147,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     companion object {
+        private const val IMU_MAX_SAMPLE_AGE_MS = 100L
         /**
          * Evaluates whether the current runtime environment is an Android OS target (Control Hub / Driver Station).
          */
@@ -200,6 +204,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /** Cached independent Control Hub IMU sample used by drivetrain fallback odometry. */
     protected val cachedImuInputs = ImuInputs()
+    private val imuSampleBuffer = ImuInputs()
+
+    /** First fatal loop failure. A robot instance remains inhibited after this is set. */
+    @Volatile
+    var fatalUpdateFailure: Throwable? = null
+        private set
 
     /** Source currently responsible for advancing the FTC EKF process model. */
     val activeOdometrySource: FtcOdometrySource
@@ -220,7 +230,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     fun readSensors() {
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
-
+        try {
         val s0 = com.areslib.util.RobotClock.nanoTime()
         com.areslib.ftc.hardware.FtcPerformanceManager.clearBulkCaches()
         val s1 = com.areslib.util.RobotClock.nanoTime()
@@ -288,7 +298,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         poseUpdate.pitchVelocityDegPerSec = Math.toDegrees(cachedImuInputs.pitchVelocityRadPerSec)
         poseUpdate.rollVelocityDegPerSec = Math.toDegrees(cachedImuInputs.rollVelocityRadPerSec)
         poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
-        poseUpdate.applyControlHubGyroCorrection = selectedSource == FtcOdometrySource.DRIVETRAIN_FALLBACK
+        poseUpdate.applyControlHubGyroCorrection =
+            selectedSource == FtcOdometrySource.DRIVETRAIN_FALLBACK && cachedImuInputs.timestampMs > 0L
         store.dispatch(poseUpdate)
 
         visionTracker.update(timestamp)
@@ -301,6 +312,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             visionMs = (s4 - s3) / 1_000_000.0
         )
         profiler.publishSensorsProfiling(telemetryManager)
+        } catch (failure: Throwable) {
+            hasReadSensorsThisFrame = false
+            throw failure
+        }
     }
 
     /**
@@ -340,23 +355,43 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             cachedImuInputs.pitchRadians = 0.0
             cachedImuInputs.rollRadians = 0.0
             cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = timestampMs
+            cachedImuInputs.pitchVelocityRadPerSec = 0.0
+            cachedImuInputs.rollVelocityRadPerSec = 0.0
+            cachedImuInputs.timestampMs = 0L
             return
         }
 
         try {
-            imu.updateInputs(cachedImuInputs)
-            if (!cachedImuInputs.headingRadians.isFinite() ||
-                !cachedImuInputs.yawVelocityRadPerSec.isFinite()) {
-                cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-                cachedImuInputs.yawVelocityRadPerSec = 0.0
+            imu.updateInputs(imuSampleBuffer)
+            val sampleAgeMs = timestampMs - imuSampleBuffer.timestampMs
+            val valid = imuSampleBuffer.timestampMs > 0L && sampleAgeMs in 0..IMU_MAX_SAMPLE_AGE_MS &&
+                imuSampleBuffer.headingRadians.isFinite() && imuSampleBuffer.pitchRadians.isFinite() &&
+                imuSampleBuffer.rollRadians.isFinite() && imuSampleBuffer.yawVelocityRadPerSec.isFinite() &&
+                imuSampleBuffer.pitchVelocityRadPerSec.isFinite() && imuSampleBuffer.rollVelocityRadPerSec.isFinite()
+            if (!valid) {
+                invalidateCachedImu()
+                return
             }
-            cachedImuInputs.timestampMs = timestampMs
+            cachedImuInputs.headingRadians = imuSampleBuffer.headingRadians
+            cachedImuInputs.pitchRadians = imuSampleBuffer.pitchRadians
+            cachedImuInputs.rollRadians = imuSampleBuffer.rollRadians
+            cachedImuInputs.yawVelocityRadPerSec = imuSampleBuffer.yawVelocityRadPerSec
+            cachedImuInputs.pitchVelocityRadPerSec = imuSampleBuffer.pitchVelocityRadPerSec
+            cachedImuInputs.rollVelocityRadPerSec = imuSampleBuffer.rollVelocityRadPerSec
+            cachedImuInputs.timestampMs = imuSampleBuffer.timestampMs
         } catch (_: Throwable) {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = timestampMs
+            invalidateCachedImu()
         }
+    }
+
+    private fun invalidateCachedImu() {
+            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
+            cachedImuInputs.pitchRadians = 0.0
+            cachedImuInputs.rollRadians = 0.0
+            cachedImuInputs.yawVelocityRadPerSec = 0.0
+            cachedImuInputs.pitchVelocityRadPerSec = 0.0
+            cachedImuInputs.rollVelocityRadPerSec = 0.0
+            cachedImuInputs.timestampMs = 0L
     }
 
     private fun reseedOdometrySources(pose: Pose2d) {
@@ -364,7 +399,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         prepareFallbackOdometry(pose, cachedImuInputs.headingRadians)
     }
 
-    private var lastWallTime: Long = 0L
+    init {
+        // Linear OpModes construct robots on their worker thread while the simulator loop reads
+        // this global. Publish only after every FtcBaseRobot field is initialized; publishing in
+        // the earlier hardware-init block exposed null JVM backing fields such as profiler.
+        activeInstance = this
+    }
 
     /**
      * Executes one complete iteration of the robot control loop (50Hz–100Hz frequency).
@@ -376,18 +416,23 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad2 Telemetry snapshot of Driver 2 gamepad inputs.
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
-        lifecycleController.sleepForTargetDt(lastWallTime, isAndroid)
-        lastWallTime = com.areslib.util.RobotClock.currentTimeMillis()
-        lifecycleController.update()
-
+        fatalUpdateFailure?.let { failure ->
+            runCatching { safeHardware() }
+            throw failure
+        }
         try {
+            lifecycleController.update()
+
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
             val dtSeconds = if (lastUpdateTime == 0L || timestamp == lastUpdateTime) 0.02 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
             val t0 = com.areslib.util.RobotClock.nanoTime()
-            readSensors()
-            hasReadSensorsThisFrame = false
+            try {
+                readSensors()
+            } finally {
+                hasReadSensorsThisFrame = false
+            }
             val t1 = com.areslib.util.RobotClock.nanoTime()
 
             val effectiveScale = powerManager.update(dtSeconds, timestamp)
@@ -413,18 +458,22 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
             profiler.recordAndPublishLoopDiagnostics(telemetryManager, t0, t1, t2, t3, t4)
             lifecycleController.sleepRemaining(timestamp, isAndroid)
-
         } catch (e: Throwable) {
             if (e is InterruptedException || e.cause is InterruptedException) {
                 Thread.currentThread().interrupt()
-                return
             }
+            fatalUpdateFailure = e
             System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
             e.printStackTrace()
-            safeHardware()
+            try {
+                safeHardware()
+            } catch (safetyFailure: Throwable) {
+                e.addSuppressed(safetyFailure)
+            }
             try {
                 telemetryManager.dataLoggingTelemetry.putString("Robot/Error", "FATAL CRASH: ${e.message}")
             } catch (_: Throwable) {}
+            throw e
         }
     }
 
@@ -497,10 +546,25 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * Releases active hardware resources, background HTTP/NT4 threads, and closes telemetry channels.
      */
     open fun close() {
-        activeInstance = null
-        safeHardware()
-        lifecycleController.close()
-        telemetryManager.close()
-        hardwareInitializer.close()
+        if (activeInstance === this) activeInstance = null
+        closeBestEffort(
+            { safeHardware() },
+            { lifecycleController.close() },
+            { telemetryManager.close() },
+            { hardwareInitializer.close() }
+        )
     }
+
+    private fun closeBestEffort(vararg actions: () -> Unit) {
+        var firstFailure: Throwable? = null
+        for (action in actions) {
+            try {
+                action()
+            } catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
+    }
+
 }

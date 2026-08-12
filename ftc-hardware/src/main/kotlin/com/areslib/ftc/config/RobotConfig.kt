@@ -1,12 +1,12 @@
 package com.areslib.ftc.config
 
 import com.qualcomm.robotcore.hardware.HardwareMap
-import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
 import com.areslib.hardware.vision.VisionIO
-import com.areslib.hardware.vision.CompositeVisionIO
+import com.areslib.ftc.vision.FtcLimelightFactory
 import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.ftc.vision.FtcVisionPortalIO
+import com.areslib.hardware.vision.CompositeVisionIO
 
 /**
  * Central hardware dependency injector and factory for FTC target platforms.
@@ -34,17 +34,8 @@ class RobotConfig(private val hardwareMap: HardwareMap) {
      */
     fun getLimelight(deviceName: String = "limelight"): VisionIO {
         val names = deviceName.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-        return if (names.size > 1) {
-            val ios = names.map { name ->
-                val ll = hardwareMap.get(Limelight3A::class.java, name)
-                FtcLimelightIO(ll, sourceId = name)
-            }
-            CompositeVisionIO(ios)
-        } else {
-            val name = names.firstOrNull() ?: "limelight"
-            val ll = hardwareMap.get(Limelight3A::class.java, name)
-            FtcLimelightIO(ll, sourceId = name)
-        }
+        val finalNames = names.ifEmpty { listOf("limelight") }
+        return requireNotNull(FtcLimelightFactory.create(hardwareMap, finalNames))
     }
     
     /**

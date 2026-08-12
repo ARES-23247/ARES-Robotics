@@ -27,9 +27,10 @@ interface SwerveHardwareIO : SubsystemIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
         val curr = scratchCurrents.get()!!
         val enc = scratchEncoderPositions.get()!!
-        getCurrents(curr)
+        val currentsValid = getCurrentsIfValid(curr)
         val encodersValid = getEncoderPositionsIfValid(enc)
         telemetry.putDoubleArray("$prefix/Currents", curr)
+        telemetry.putBoolean("$prefix/CurrentsValid", currentsValid)
         telemetry.putDoubleArray("$prefix/EncoderPositions", enc)
         telemetry.putBoolean("$prefix/EncoderPositionsValid", encodersValid)
         val faults = scratchFaults.get()!!
@@ -46,11 +47,28 @@ interface SwerveHardwareIO : SubsystemIO {
     /** Reads the drive state from the hardware. */
     fun read(): DriveState
 
-    /** Writes target speeds back to the hardware. */
-    fun write(driveState: DriveState)
+    /**
+     * Writes target speeds back to hardware with the current safety power scale applied at the
+     * mutable request boundary. Implementations must not copy [driveState] in the periodic path.
+     */
+    fun write(driveState: DriveState, powerScale: Double)
 
     /** Gets measured motor supply currents. */
     fun getCurrents(out: DoubleArray) {}
+
+    /** Whether the last hardware refresh produced a fresh current snapshot. */
+    val currentMeasurementsValid: Boolean
+        get() = false
+
+    /** Checked cached-current read; invalid hardware must not be represented as a healthy zero. */
+    fun getCurrentsIfValid(out: DoubleArray): Boolean {
+        if (!currentMeasurementsValid) {
+            out.fill(Double.NaN)
+            return false
+        }
+        getCurrents(out)
+        return true
+    }
 
     /** Gets measured absolute encoder positions. */
     fun getEncoderPositions(out: DoubleArray) {}
@@ -125,5 +143,5 @@ interface SwerveHardwareIO : SubsystemIO {
 
     /** Gets the signal latency in milliseconds of the swerve sensors. */
     val signalLatencyMs: Double
-        get() = 0.0
+        get() = Double.POSITIVE_INFINITY
 }

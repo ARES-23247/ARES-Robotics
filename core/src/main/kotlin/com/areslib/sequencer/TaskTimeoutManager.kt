@@ -9,8 +9,9 @@ import java.util.concurrent.ScheduledExecutorService
  * Process-wide timeout registry with both executor-driven and watchdog detection.
  *
  * [isTimedOut] compares executor-supplied elapsed time. A single daemon watchdog also checks
- * configured tasks every 50 ms against [RobotClock], marks them failed, and invokes their failure
- * callback. Timeout comparison is strict (`elapsed > timeout`). Weak keys and terminal cleanup keep
+ * configured tasks every 50 ms against [RobotClock] and marks them failed. The owning
+ * [TaskExecutor] observes that state and invokes failure callbacks on its control-loop thread.
+ * Timeout comparison is strict (`elapsed > timeout`). Weak keys and terminal cleanup keep
  * completed tasks from being retained for the life of the process.
  */
 object TaskTimeoutManager {
@@ -21,33 +22,40 @@ object TaskTimeoutManager {
     )
 
     private val states = WeakIdentityMap<Task, TimeoutState>()
-    private val timedOutScratch = ArrayList<Task>()
+    private val timedOutScratch = ArrayList<Task>(16)
+    private var watchdogNowMs = 0L
+    private val watchdogVisitor = object : WeakIdentityMap.EntryVisitor<Task, TimeoutState> {
+        override fun visit(task: Task, state: TimeoutState) {
+            val start = state.startTimeMs ?: return
+            if (state.elapsedBeforePauseMs + watchdogNowMs - start > state.timeoutMs) {
+                timedOutScratch.add(task)
+            }
+        }
+    }
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "TaskTimeoutManager-Watchdog").apply { isDaemon = true }
     }
 
     init {
-        executor.scheduleAtFixedRate({
-            val now = RobotClock.currentTimeMillis()
-            synchronized(this) {
-                timedOutScratch.clear()
-                for ((task, state) in states.entriesSnapshot()) {
-                    val start = state.startTimeMs ?: continue
-                    if (state.elapsedBeforePauseMs + now - start > state.timeoutMs) {
-                        timedOutScratch.add(task)
-                    }
-                }
-            }
-            for (task in timedOutScratch) {
-                if (TaskStateMachine.markFailed(task)) {
-                    try {
-                        TaskCallbacks.invokeFail(task)
-                    } catch (exception: Exception) {
-                        System.err.println("TaskTimeoutManager: failure callback for ${task.name} threw: ${exception.message}")
-                    }
-                }
-            }
-        }, 50, 50, TimeUnit.MILLISECONDS)
+        executor.scheduleAtFixedRate(
+            { runWatchdogCheck(RobotClock.currentTimeMillis()) },
+            50,
+            50,
+            TimeUnit.MILLISECONDS
+        )
+    }
+
+    /** Marks expired tasks only; callbacks and cleanup remain owned by the control-loop executor. */
+    @Synchronized
+    internal fun runWatchdogCheck(nowMs: Long = RobotClock.currentTimeMillis()) {
+        timedOutScratch.clear()
+        watchdogNowMs = nowMs
+        states.forEachLive(watchdogVisitor)
+        var index = 0
+        while (index < timedOutScratch.size) {
+            TaskStateMachine.markFailed(timedOutScratch[index])
+            index++
+        }
     }
 
     /** Sets/replaces [task]'s timeout duration in milliseconds. */

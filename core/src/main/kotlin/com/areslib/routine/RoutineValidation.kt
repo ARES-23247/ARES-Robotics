@@ -33,17 +33,38 @@ fun validateRoutine(
     context: RoutineValidationContext = RoutineValidationContext()
 ): List<RoutineValidationIssue> {
     val issues = mutableListOf<RoutineValidationIssue>()
-    validateDocumentHeader(routine, issues)
-    if (routine.steps.isEmpty()) {
-        issues += routine.error("steps", "empty_routine", "Add at least one action, wait, or drive goal")
-    }
-    validateSteps(routine, routine.steps, "steps", 0, context, issues)
-
     val documents = if (context.documents.containsKey(routine.documentId)) {
         context.documents
     } else {
         context.documents + (routine.documentId to routine)
     }
+    validateDocumentHeader(routine, issues)
+    if (routine.steps.isEmpty()) {
+        issues += routine.error("steps", "empty_routine", "Add at least one action, wait, or drive goal")
+    }
+    val sourceStepCount = countSourceSteps(routine.steps, MAX_SOURCE_STEPS + 1)
+    if (sourceStepCount > MAX_SOURCE_STEPS) {
+        issues += routine.error("steps", "routine_too_large", "Routine source may contain at most $MAX_SOURCE_STEPS steps")
+    }
+    val expandedStepCount = if (sourceStepCount > MAX_SOURCE_STEPS || hasExcessiveSourceDepth(routine.steps)) {
+        // validateSteps emits the precise nesting diagnostic without walking deeper than the cap.
+        0L
+    } else {
+        estimateExpandedSteps(
+            routine.steps,
+            documents,
+            mutableSetOf(routine.documentId),
+            MAX_EXPANDED_STEPS + 1L
+        )
+    }
+    if (expandedStepCount > MAX_EXPANDED_STEPS) {
+        issues += routine.error(
+            "steps",
+            "routine_expansion_too_large",
+            "Calls and repeats may expand to at most $MAX_EXPANDED_STEPS executable steps"
+        )
+    }
+    validateSteps(routine, routine.steps, "steps", 0, context, issues)
     findCallCycle(routine.documentId, documents)?.let { cycle ->
         issues += routine.error(
             "steps",
@@ -105,6 +126,15 @@ private fun validateDocumentHeader(
     }
     if (routine.name.isBlank()) {
         issues += routine.error("name", "missing_name", "Routine name must not be blank")
+    } else if (routine.name.length > MAX_ROUTINE_NAME_LENGTH) {
+        issues += routine.error("name", "name_too_long", "Routine name exceeds $MAX_ROUTINE_NAME_LENGTH characters")
+    }
+    if (routine.description != null && routine.description.length > MAX_ROUTINE_DESCRIPTION_LENGTH) {
+        issues += routine.error(
+            "description",
+            "description_too_long",
+            "Routine description exceeds $MAX_ROUTINE_DESCRIPTION_LENGTH characters"
+        )
     }
 }
 
@@ -258,6 +288,11 @@ private fun validateDrive(
         }
         validateActionReference(routine, marker.actionKey, "$path.drive.markers[$markerIndex]", context, issues)
     }
+    if (drive.markers.size > MAX_DRIVE_REFERENCES ||
+        drive.duringActionKeys.size > MAX_DRIVE_REFERENCES ||
+        drive.arrivalActionKeys.size > MAX_DRIVE_REFERENCES) {
+        issues += routine.error(path, "too_many_drive_references", "Drive lists may contain at most $MAX_DRIVE_REFERENCES entries each")
+    }
     drive.duringActionKeys.forEachIndexed { index, key ->
         validateActionReference(routine, key, "$path.drive.duringActionKeys[$index]", context, issues)
     }
@@ -300,7 +335,12 @@ private fun validateArguments(
     path: String,
     issues: MutableList<RoutineValidationIssue>
 ) {
+    if (arguments.size > MAX_ARGUMENT_COUNT) {
+        issues += routine.error(path, "too_many_arguments", "A step may contain at most $MAX_ARGUMENT_COUNT arguments")
+    }
+    var totalLength = 0L
     arguments.forEach { (key, value) ->
+        totalLength += key.length.toLong() + value.length.toLong()
         if (!key.matches(ARGUMENT_KEY_REGEX)) {
             issues += routine.error(path, "invalid_argument_key", "Argument '$key' is not a stable identifier")
         }
@@ -308,6 +348,90 @@ private fun validateArguments(
             issues += routine.error(path, "argument_too_long", "Argument '$key' exceeds $MAX_ARGUMENT_LENGTH characters")
         }
     }
+    if (totalLength > MAX_TOTAL_ARGUMENT_LENGTH) {
+        issues += routine.error(path, "arguments_too_large", "Step arguments exceed $MAX_TOTAL_ARGUMENT_LENGTH total characters")
+    }
+}
+
+private fun countSourceSteps(steps: List<RoutineStep>, limit: Int): Int {
+    var count = 0
+    val remaining = java.util.ArrayDeque<RoutineStep>()
+    for (index in steps.indices.reversed()) remaining.addLast(steps[index])
+    while (remaining.isNotEmpty() && count <= limit) {
+        val step = remaining.removeLast()
+        count++
+        step.deadline?.let(remaining::addLast)
+        step.children.forEach(remaining::addLast)
+        step.elseChildren.forEach(remaining::addLast)
+    }
+    return count
+}
+
+private fun hasExcessiveSourceDepth(steps: List<RoutineStep>): Boolean {
+    data class Pending(val step: RoutineStep, val depth: Int)
+    val remaining = java.util.ArrayDeque<Pending>()
+    steps.forEach { remaining.addLast(Pending(it, 0)) }
+    while (remaining.isNotEmpty()) {
+        val (step, depth) = remaining.removeLast()
+        if (depth > MAX_ROUTINE_DEPTH) return true
+        val childDepth = depth + 1
+        step.deadline?.let { remaining.addLast(Pending(it, childDepth)) }
+        step.children.forEach { remaining.addLast(Pending(it, childDepth)) }
+        step.elseChildren.forEach { remaining.addLast(Pending(it, childDepth)) }
+    }
+    return false
+}
+
+private fun estimateExpandedSteps(
+    steps: List<RoutineStep>,
+    documents: Map<String, RoutineDocument>,
+    callStack: MutableSet<String>,
+    limit: Long
+): Long {
+    fun saturatedAdd(left: Long, right: Long): Long =
+        if (left >= limit || right >= limit || left > limit - right) limit else left + right
+    fun saturatedMultiply(left: Long, right: Long): Long =
+        if (left == 0L || right == 0L) 0L else if (left >= limit || right >= limit || left > limit / right) limit else left * right
+
+    lateinit var estimateStep: (RoutineStep) -> Long
+
+    fun estimateList(children: List<RoutineStep>): Long {
+        var total = 0L
+        for (child in children) {
+            total = saturatedAdd(total, estimateStep(child))
+            if (total >= limit) break
+        }
+        return total
+    }
+
+    fun estimateCalled(id: String?): Long {
+        val called = id?.let(documents::get) ?: return 0L
+        if (!callStack.add(id)) return limit
+        return try {
+            estimateList(called.steps)
+        } finally {
+            callStack.remove(id)
+        }
+    }
+
+    estimateStep = { step ->
+        val nested = when (step.kind) {
+            RoutineStepKind.CALL -> estimateCalled(step.routineId)
+            RoutineStepKind.REPEAT -> saturatedMultiply(
+                (step.repeatCount ?: 0).coerceAtLeast(0).toLong(),
+                estimateList(step.children)
+            )
+            else -> {
+                var count = estimateList(step.children)
+                count = saturatedAdd(count, estimateList(step.elseChildren))
+                step.deadline?.let { count = saturatedAdd(count, estimateStep(it)) }
+                count
+            }
+        }
+        saturatedAdd(1L, nested)
+    }
+
+    return estimateList(steps)
 }
 
 private fun validateNonEmptyChildren(
@@ -458,5 +582,12 @@ private val ARGUMENT_KEY_REGEX = Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")
 private val SHA_256_REGEX = Regex("[a-f0-9]{64}")
 private const val MAX_ROUTINE_DEPTH = 64
 private const val MAX_REPEAT_COUNT = 1_000
+private const val MAX_SOURCE_STEPS = 10_000
+private const val MAX_EXPANDED_STEPS = 10_000L
+private const val MAX_ARGUMENT_COUNT = 64
+private const val MAX_TOTAL_ARGUMENT_LENGTH = 65_536L
+private const val MAX_DRIVE_REFERENCES = 256
+private const val MAX_ROUTINE_NAME_LENGTH = 256
+private const val MAX_ROUTINE_DESCRIPTION_LENGTH = 65_536
 private const val MAX_ARGUMENT_LENGTH = 4_096
 private const val MAX_SECONDS = Long.MAX_VALUE / 1_000.0

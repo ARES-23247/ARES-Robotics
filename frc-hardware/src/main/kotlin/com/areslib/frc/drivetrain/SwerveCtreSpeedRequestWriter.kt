@@ -4,6 +4,7 @@ import com.areslib.state.DriveState
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 import com.ctre.phoenix6.swerve.SwerveRequest
 import edu.wpi.first.math.kinematics.ChassisSpeeds
+import java.util.function.Consumer
 
 /**
  * Actuation writer for CTRE Phoenix 6 [SwerveDrivetrain] hardware platforms.
@@ -25,7 +26,13 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
  * @see SwerveRequest
  * @see DriveState
  */
-class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *, *>) {
+class SwerveCtreSpeedRequestWriter internal constructor(
+    private val setControl: Consumer<SwerveRequest>
+) {
+
+    constructor(drivetrain: SwerveDrivetrain<*, *, *>) : this(Consumer { request ->
+        drivetrain.setControl(request)
+    })
 
     private val fieldCentricRequest = SwerveRequest.FieldCentric()
         .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity)
@@ -35,14 +42,21 @@ class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *
         .withDesaturateWheelSpeeds(true)
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
         .withDesaturateWheelSpeeds(true)
+    private val brakeRequest = SwerveRequest.SwerveDriveBrake()
+        .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity)
+        .withSteerRequestType(com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType.Position)
     private val scratchSpeeds = ChassisSpeeds()
 
     /**
-     * Safes the drivetrain by commanding zero velocity.
+     * Safes the drivetrain with CTRE's physical X-brake request.
+     *
+     * A zero-speed request leaves the modules at their prior steering targets and can overwrite an
+     * already-commanded X lock when [com.areslib.hardware.HardwareRegistry.safeAll] runs. The brake
+     * request is therefore the fail-safe primitive as well as the operator-facing X-brake command.
      * Zero-GC allocation.
      */
     fun safe() {
-        write(DriveState())
+        setControl.accept(brakeRequest)
     }
 
     /**
@@ -51,18 +65,24 @@ class SwerveCtreSpeedRequestWriter(private val drivetrain: SwerveDrivetrain<*, *
      * 
      * @param state The target [DriveState] containing $m/s$ and $rad/s$ requests.
      */
-    fun write(state: DriveState) {
-        if (state.isFieldCentric) {
-            fieldCentricRequest.VelocityX = state.xVelocityMetersPerSecond
-            fieldCentricRequest.VelocityY = state.yVelocityMetersPerSecond
-            fieldCentricRequest.RotationalRate = state.angularVelocityRadiansPerSecond
-            drivetrain.setControl(fieldCentricRequest)
+    fun write(state: DriveState, powerScale: Double) {
+        if (!powerScale.isFinite()) {
+            throw IllegalArgumentException("Swerve power scale must be finite")
+        }
+        val appliedScale = powerScale.coerceIn(0.0, 1.0)
+        if (state.isXLock || state.driveMode == com.areslib.state.DriveMode.X_BRAKE) {
+            setControl.accept(brakeRequest)
+        } else if (state.isFieldCentric) {
+            fieldCentricRequest.VelocityX = state.xVelocityMetersPerSecond * appliedScale
+            fieldCentricRequest.VelocityY = state.yVelocityMetersPerSecond * appliedScale
+            fieldCentricRequest.RotationalRate = state.angularVelocityRadiansPerSecond * appliedScale
+            setControl.accept(fieldCentricRequest)
         } else {
-            scratchSpeeds.vxMetersPerSecond = state.xVelocityMetersPerSecond
-            scratchSpeeds.vyMetersPerSecond = state.yVelocityMetersPerSecond
-            scratchSpeeds.omegaRadiansPerSecond = state.angularVelocityRadiansPerSecond
+            scratchSpeeds.vxMetersPerSecond = state.xVelocityMetersPerSecond * appliedScale
+            scratchSpeeds.vyMetersPerSecond = state.yVelocityMetersPerSecond * appliedScale
+            scratchSpeeds.omegaRadiansPerSecond = state.angularVelocityRadiansPerSecond * appliedScale
             robotSpeedsRequest.Speeds = scratchSpeeds
-            drivetrain.setControl(robotSpeedsRequest)
+            setControl.accept(robotSpeedsRequest)
         }
     }
 }

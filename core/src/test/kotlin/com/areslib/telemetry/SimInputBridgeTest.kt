@@ -6,9 +6,16 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class SimInputBridgeTest {
+    @BeforeEach
+    fun startRegistry() {
+        SimInputBridge.reset()
+        NT4Server.createInstance("127.0.0.1", 0)
+    }
+
     @AfterEach
     fun resetBridgeAndClock() {
         SimInputBridge.reset()
@@ -18,152 +25,139 @@ class SimInputBridgeTest {
     }
 
     @Test
-    fun `valid frame swaps atomically and expires to neutral`() {
-        RobotClock.useMockTime(1_000L)
-        val accepted = SimInputBridge.submitFrame(frame(vx = 2.0, vy = -1.0, omega = 0.5, receivedAtMs = 1_000L))
+    fun `session requires neutral first then accepts exact v2 frame until receiver lease expires`() {
+        publish(session = 41, sequence = 0, clientTime = 1_000, vx = 2.0)
+        assertNeutral(SimInputBridge.pollNetworkFrame(10_000))
 
-        assertTrue(accepted)
-        assertEquals(2.0, SimInputBridge.currentFrame(1_499L).vx)
-        val expired = SimInputBridge.currentFrame(1_501L)
-        assertEquals(0.0, expired.vx)
-        assertEquals(0.0, expired.vy)
-        assertEquals(0.0, expired.omega)
-        assertFalse(expired.isIntaking)
+        publish(session = 41, sequence = 1, clientTime = 1_001, flags = MODE_FLAGS)
+        val handshake = SimInputBridge.pollNetworkFrame(10_010)
+        assertEquals(true, handshake.isTeleopMode)
+        assertEquals(true, handshake.isFieldCentric)
+        assertEquals(true, handshake.isRedAlliance)
+
+        publish(session = 41, sequence = 2, clientTime = 1_002, vx = 2.0, vy = -1.0,
+            omega = 0.5, flags = MODE_FLAGS or INTAKE_FLAG)
+        assertEquals(2.0, SimInputBridge.pollNetworkFrame(10_020).vx)
+        assertEquals(2.0, SimInputBridge.currentFrame(10_520).vx)
+        assertNeutral(SimInputBridge.currentFrame(10_521))
     }
 
     @Test
-    fun `one invalid field rejects the entire command frame`() {
-        SimInputBridge.submitFrame(frame(vx = 1.0, vy = 2.0, omega = 3.0, receivedAtMs = 100L))
+    fun `retained duplicate cannot renew lease and same-sequence mutation disarms`() {
+        publish(session = 7, sequence = 0, clientTime = 100)
+        SimInputBridge.pollNetworkFrame(1_000)
+        publish(session = 7, sequence = 1, clientTime = 101, vx = 1.0)
+        SimInputBridge.pollNetworkFrame(1_020)
 
-        assertFalse(SimInputBridge.submitFrame(frame(vx = Double.NaN, vy = 7.0, omega = 8.0, receivedAtMs = 110L)))
-        val retained = SimInputBridge.currentFrame(120L)
-        assertEquals(1.0, retained.vx)
-        assertEquals(2.0, retained.vy)
-        assertEquals(3.0, retained.omega)
+        assertEquals(1.0, SimInputBridge.pollNetworkFrame(1_500).vx)
+        assertNeutral(SimInputBridge.pollNetworkFrame(1_521))
+
+        publish(session = 7, sequence = 2, clientTime = 102)
+        SimInputBridge.pollNetworkFrame(1_530)
+        publish(session = 7, sequence = 3, clientTime = 103, vx = 2.0)
+        SimInputBridge.pollNetworkFrame(1_540)
+        publish(session = 7, sequence = 3, clientTime = 103, vx = 3.0)
+        assertNeutral(SimInputBridge.pollNetworkFrame(1_550))
     }
 
     @Test
-    fun `atomic drive session requires neutral first frame and increasing sequence`() {
-        NT4Server.createInstance("127.0.0.1", 0)
+    fun `malformed stale or out-of-order input fully neutralizes and requires another handshake`() {
+        publish(session = 9, sequence = 5, clientTime = 500)
+        SimInputBridge.pollNetworkFrame(100)
+        publish(session = 9, sequence = 6, clientTime = 501, vx = 2.0, flags = ALL_FLAGS)
+        assertEquals(2.0, SimInputBridge.pollNetworkFrame(120).vx)
 
-        publishDriveFrame(session = 41L, sequence = 0L, timestampMs = 1_000L, vx = 2.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(1_000L).vx)
+        publish(session = 9, sequence = 7, clientTime = 499, vx = 3.0, flags = ALL_FLAGS)
+        assertNeutral(SimInputBridge.pollNetworkFrame(130))
+        publish(session = 9, sequence = 8, clientTime = 502, vx = 3.0)
+        assertNeutral(SimInputBridge.pollNetworkFrame(140))
+        publish(session = 9, sequence = 9, clientTime = 503)
+        assertNeutral(SimInputBridge.pollNetworkFrame(150))
+        publish(session = 9, sequence = 10, clientTime = 504, vx = 3.0)
+        assertEquals(3.0, SimInputBridge.pollNetworkFrame(160).vx)
 
-        // Once an atomic publisher is observed, legacy scalars cannot bypass its handshake.
-        NT4Server.publishTopic("ARES/Input/vx", 3.0)
-        NT4Server.publishTopic("ARES/Input/heartbeat", 1L)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(1_010L).vx)
-
-        publishDriveFrame(session = 41L, sequence = 1L, timestampMs = 1_020L, vx = 0.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(1_020L).vx)
-
-        publishDriveFrame(session = 41L, sequence = 2L, timestampMs = 1_040L, vx = 2.0)
-        assertEquals(2.0, SimInputBridge.pollNetworkFrame(1_040L).vx)
-
-        // A retained/replayed sequence never refreshes the command lease.
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(1_541L).vx)
+        publishRaw(doubleArrayOf(2.0, 9.0, 11.0, 505.0, Double.NaN, 0.0, 0.0, 0.0))
+        assertNeutral(SimInputBridge.pollNetworkFrame(170))
     }
 
     @Test
-    fun `new atomic session fails neutral until its own neutral handshake`() {
-        NT4Server.createInstance("127.0.0.1", 0)
-        publishDriveFrame(session = 1L, sequence = 0L, timestampMs = 100L, vx = 0.0)
-        SimInputBridge.pollNetworkFrame(100L)
-        publishDriveFrame(session = 1L, sequence = 1L, timestampMs = 120L, vx = 1.0)
-        assertEquals(1.0, SimInputBridge.pollNetworkFrame(120L).vx)
+    fun `new session must independently neutral handshake and flags are strict integral bitset`() {
+        publish(session = 1, sequence = 0, clientTime = 0)
+        SimInputBridge.pollNetworkFrame(100)
+        publish(session = 1, sequence = 1, clientTime = 1, vx = 1.0)
+        assertEquals(1.0, SimInputBridge.pollNetworkFrame(110).vx)
 
-        publishDriveFrame(session = 2L, sequence = 0L, timestampMs = 130L, vx = 4.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(130L).vx)
-        publishDriveFrame(session = 2L, sequence = 1L, timestampMs = 140L, vx = 0.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(140L).vx)
-        publishDriveFrame(session = 2L, sequence = 2L, timestampMs = 160L, vx = 4.0)
-        assertEquals(4.0, SimInputBridge.pollNetworkFrame(160L).vx)
+        publish(session = 2, sequence = 0, clientTime = 0, vx = 4.0)
+        assertNeutral(SimInputBridge.pollNetworkFrame(120))
+        publish(session = 2, sequence = 1, clientTime = 1, flags = MODE_FLAGS)
+        SimInputBridge.pollNetworkFrame(130)
+        publish(session = 2, sequence = 2, clientTime = 2, flags = ALL_FLAGS)
+        val decoded = SimInputBridge.pollNetworkFrame(140)
+        assertTrue(decoded.isIntaking)
+        assertTrue(decoded.isFlywheelOn)
+        assertTrue(decoded.isTransferring)
+        assertTrue(decoded.isButtonAPressed)
+        assertTrue(decoded.isButtonBPressed)
+        assertTrue(decoded.isButtonXPressed)
+        assertTrue(decoded.isPoseReset)
+
+        publishRaw(doubleArrayOf(2.0, 2.0, 3.0, 3.0, 0.0, 0.0, 0.0, 1.5))
+        assertNeutral(SimInputBridge.pollNetworkFrame(150))
+        publishRaw(doubleArrayOf(2.0, 2.0, 4.0, 4.0, 0.0, 0.0, 0.0, 1024.0))
+        assertNeutral(SimInputBridge.pollNetworkFrame(160))
     }
 
     @Test
-    fun `expired same session requires a higher sequence neutral handshake before motion`() {
-        NT4Server.createInstance("127.0.0.1", 0)
-        publishDriveFrame(session = 7L, sequence = 0L, timestampMs = 100L, vx = 0.0)
-        SimInputBridge.pollNetworkFrame(100L)
-        publishDriveFrame(session = 7L, sequence = 1L, timestampMs = 120L, vx = 2.0)
-        assertEquals(2.0, SimInputBridge.pollNetworkFrame(120L).vx)
-
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(621L).vx)
-        publishDriveFrame(session = 7L, sequence = 2L, timestampMs = 640L, vx = 3.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(640L).vx)
-        publishDriveFrame(session = 7L, sequence = 3L, timestampMs = 660L, vx = 0.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(660L).vx)
-        publishDriveFrame(session = 7L, sequence = 4L, timestampMs = 680L, vx = 3.0)
-        assertEquals(3.0, SimInputBridge.pollNetworkFrame(680L).vx)
-    }
-
-    @Test
-    fun `malformed atomic frame disarms until a later neutral handshake`() {
-        NT4Server.createInstance("127.0.0.1", 0)
-        publishDriveFrame(session = 8L, sequence = 0L, timestampMs = 100L, vx = 0.0)
-        SimInputBridge.pollNetworkFrame(100L)
-        publishDriveFrame(session = 8L, sequence = 1L, timestampMs = 120L, vx = 2.0)
-        assertEquals(2.0, SimInputBridge.pollNetworkFrame(120L).vx)
-
-        NT4Server.publishTopic(
-            TelemetryTopicConstants.DRIVE_INPUT_FRAME,
-            doubleArrayOf(1.0, 8.0, 2.0, 130.0, 4.0, 0.0)
+    fun `wrong version length nonce sequence and axis bounds are rejected`() {
+        val badFrames = listOf(
+            doubleArrayOf(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            doubleArrayOf(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            doubleArrayOf(2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            doubleArrayOf(2.0, 1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            doubleArrayOf(2.0, 1.0, 0.0, 0.0, 8.01, 0.0, 0.0, 0.0),
+            doubleArrayOf(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 4.0 * Math.PI + 0.01, 0.0)
         )
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(130L).vx)
-        publishDriveFrame(session = 8L, sequence = 2L, timestampMs = 140L, vx = 4.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(140L).vx)
-        publishDriveFrame(session = 8L, sequence = 3L, timestampMs = 160L, vx = 0.0)
-        SimInputBridge.pollNetworkFrame(160L)
-        publishDriveFrame(session = 8L, sequence = 4L, timestampMs = 180L, vx = 4.0)
-        assertEquals(4.0, SimInputBridge.pollNetworkFrame(180L).vx)
+        for (bad in badFrames) {
+            publishRaw(bad)
+            assertNeutral(SimInputBridge.pollNetworkFrame(100))
+        }
     }
 
-    @Test
-    fun `out of order atomic frame disarms until a higher sequence neutral handshake`() {
-        NT4Server.createInstance("127.0.0.1", 0)
-        publishDriveFrame(session = 9L, sequence = 5L, timestampMs = 100L, vx = 0.0)
-        SimInputBridge.pollNetworkFrame(100L)
-        publishDriveFrame(session = 9L, sequence = 6L, timestampMs = 120L, vx = 2.0)
-        assertEquals(2.0, SimInputBridge.pollNetworkFrame(120L).vx)
-
-        publishDriveFrame(session = 9L, sequence = 4L, timestampMs = 130L, vx = 2.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(130L).vx)
-        publishDriveFrame(session = 9L, sequence = 7L, timestampMs = 140L, vx = 3.0)
-        assertEquals(0.0, SimInputBridge.pollNetworkFrame(140L).vx)
-        publishDriveFrame(session = 9L, sequence = 8L, timestampMs = 160L, vx = 0.0)
-        SimInputBridge.pollNetworkFrame(160L)
-        publishDriveFrame(session = 9L, sequence = 9L, timestampMs = 180L, vx = 3.0)
-        assertEquals(3.0, SimInputBridge.pollNetworkFrame(180L).vx)
-    }
-
-    private fun publishDriveFrame(
+    private fun publish(
         session: Long,
         sequence: Long,
-        timestampMs: Long,
-        vx: Double
-    ) {
-        NT4Server.publishTopic(
-            TelemetryTopicConstants.DRIVE_INPUT_FRAME,
-            doubleArrayOf(1.0, session.toDouble(), sequence.toDouble(), timestampMs.toDouble(), vx, 0.0, 0.0)
-        )
+        clientTime: Long,
+        vx: Double = 0.0,
+        vy: Double = 0.0,
+        omega: Double = 0.0,
+        flags: Long = 0L
+    ) = publishRaw(
+        doubleArrayOf(2.0, session.toDouble(), sequence.toDouble(), clientTime.toDouble(), vx, vy, omega, flags.toDouble())
+    )
+
+    private fun publishRaw(values: DoubleArray) {
+        NT4Server.publishTopic(TelemetryTopicConstants.DRIVE_INPUT_FRAME, values)
     }
 
-    private fun frame(vx: Double, vy: Double, omega: Double, receivedAtMs: Long) =
-        SimInputBridge.CommandFrame(
-            vx = vx,
-            vy = vy,
-            omega = omega,
-            isIntaking = true,
-            isFlywheelOn = false,
-            isTransferring = false,
-            isTeleopMode = true,
-            isFieldCentric = true,
-            isRedAlliance = true,
-            isButtonAPressed = false,
-            isButtonBPressed = false,
-            isButtonXPressed = false,
-            isPoseReset = false,
-            heartbeat = 1L,
-            receivedAtMs = receivedAtMs
-        )
+    private fun assertNeutral(frame: SimInputBridge.CommandFrame) {
+        assertEquals(0.0, frame.vx)
+        assertEquals(0.0, frame.vy)
+        assertEquals(0.0, frame.omega)
+        assertFalse(frame.isIntaking)
+        assertFalse(frame.isFlywheelOn)
+        assertFalse(frame.isTransferring)
+        assertFalse(frame.isTeleopMode)
+        assertFalse(frame.isFieldCentric)
+        assertFalse(frame.isRedAlliance)
+        assertFalse(frame.isButtonAPressed)
+        assertFalse(frame.isButtonBPressed)
+        assertFalse(frame.isButtonXPressed)
+        assertFalse(frame.isPoseReset)
+    }
+
+    private companion object {
+        const val INTAKE_FLAG = 1L shl 0
+        const val MODE_FLAGS = (1L shl 3) or (1L shl 4) or (1L shl 5)
+        const val ALL_FLAGS = (1L shl 10) - 1L
+    }
 }

@@ -9,6 +9,33 @@ import kotlin.test.assertEquals
 class ARESDataLoggerTest {
 
     @Test
+    fun `two loggers created in the same millisecond retain distinct completed files`() {
+        val directory = kotlin.io.path.createTempDirectory("ares-data-logger-collision").toFile()
+        com.areslib.util.RobotClock.useMockTime(1_234_567L)
+        try {
+            val first = ARESDataLogger("Teleop/Unsafe Name", directory)
+            val second = ARESDataLogger("Teleop/Unsafe Name", directory)
+            first.logFrame(hashMapOf("TimestampMs" to 1L, "Logger" to "first"))
+            second.logFrame(hashMapOf("TimestampMs" to 2L, "Logger" to "second"))
+
+            first.stop()
+            second.stop()
+
+            val completed = directory.listFiles { file -> file.extension == "csv" }.orEmpty()
+            assertEquals(2, completed.size)
+            assertEquals(2, completed.map(File::getName).distinct().size)
+            assertTrue(completed.all { it.name.contains("Teleop_Unsafe_Name") })
+            val contents = completed.map(File::readText)
+            assertTrue(contents.any { it.contains("first") })
+            assertTrue(contents.any { it.contains("second") })
+            assertTrue(directory.listFiles { file -> file.name.endsWith(".active") }.orEmpty().isEmpty())
+        } finally {
+            com.areslib.util.RobotClock.useSystemTime()
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `log becomes importable only after clean shutdown`() {
         val mode = "ActiveMarker_${System.nanoTime()}"
         val logger = ARESDataLogger(mode)

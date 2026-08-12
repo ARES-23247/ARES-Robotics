@@ -39,7 +39,7 @@ object HardwareRegistry {
     private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
     private val pollingFailureCounts = ConcurrentHashMap<SyncPolledDevice, Long>()
     
-    @Volatile private var pollingRunning = false
+    @Volatile private var pollingGeneration = 0L
     private var pollingThread: Thread? = null
     @Volatile private var pollingIntervalMs: Long = 50L
 
@@ -81,12 +81,13 @@ object HardwareRegistry {
 
     @Synchronized
     private fun startPollingThreadIfNeeded() {
-        if (pollingThread == null || !(pollingThread!!.isAlive)) {
-            pollingRunning = true
-            pollingThread = Thread {
+        if (pollingThread?.isAlive == true) return
+        val generation = ++pollingGeneration
+        val worker = Thread {
+            try {
                 var index = 0
                 var roundRobinIndex = 0
-                while (pollingRunning) {
+                while (pollingGeneration == generation) {
                     var polledAny = false
                     if (syncPolledDevices.isNotEmpty()) {
                         val idx = index % syncPolledDevices.size
@@ -106,12 +107,17 @@ object HardwareRegistry {
                         try { Thread.sleep(50L) } catch (_: InterruptedException) { break }
                     }
                 }
-            }.apply {
-                isDaemon = true
-                name = "ARES-HardwarePolling-Thread"
-                start()
+            } finally {
+                synchronized(this@HardwareRegistry) {
+                    if (pollingThread === Thread.currentThread()) pollingThread = null
+                }
             }
+        }.apply {
+            isDaemon = true
+            name = "ARES-HardwarePolling-Thread-$generation"
         }
+        pollingThread = worker
+        worker.start()
     }
 
     private fun pollSafely(device: SyncPolledDevice) {
@@ -331,8 +337,10 @@ object HardwareRegistry {
      * teardown; a resource registered in both ownership lists may receive more than one close call.
      */
     fun closeAll() {
-        pollingRunning = false
-        val thread = pollingThread
+        val thread = synchronized(this) {
+            pollingGeneration++
+            pollingThread.also { pollingThread = null }
+        }
         if (thread != null) {
             thread.interrupt()
             try {
@@ -340,7 +348,6 @@ object HardwareRegistry {
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
             }
-            pollingThread = null
         }
         syncPolledDevices.clear()
         roundRobinDevices.clear()

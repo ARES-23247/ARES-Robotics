@@ -31,7 +31,9 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     override var powerScale: Double = 1.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
-    private var cachedAmps = 0.0
+    @Volatile private var cachedAmps = Double.NaN
+    @Volatile private var lastCurrentSampleMs = 0L
+    @Volatile private var hasCurrentSample = false
 
     private var lastPosition = 0.0
     private var lastTime = 0L
@@ -41,8 +43,17 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
      */
     override fun pollSync() {
         try {
-            cachedAmps = motor.getCurrent(CurrentUnit.AMPS)
-        } catch (_: Exception) {}
+            val amps = motor.getCurrent(CurrentUnit.AMPS)
+            if (amps.isFinite() && amps >= 0.0) {
+                cachedAmps = amps
+                lastCurrentSampleMs = RobotClock.currentTimeMillis()
+                hasCurrentSample = true
+            } else {
+                invalidateCurrentSample()
+            }
+        } catch (_: Exception) {
+            invalidateCurrentSample()
+        }
     }
 
     /**
@@ -77,7 +88,15 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
 
     /** Measured electrical current draw in Amperes ($A$). */
     override val currentAmps: Double
-        get() = cachedAmps
+        get() {
+            val ageMs = RobotClock.currentTimeMillis() - lastCurrentSampleMs
+            return if (hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
+        }
+
+    private fun invalidateCurrentSample() {
+        cachedAmps = Double.NaN
+        hasCurrentSample = false
+    }
 
     /** Resets the local motor encoder zero reference (no-op to preserve cached estimates). */
     override fun resetEncoder() {
@@ -86,6 +105,11 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
 
     /** Releases hardware resources upon OpMode termination. */
     override fun close() {
+        invalidateCurrentSample()
+    }
+
+    private companion object {
+        const val MAX_CURRENT_SAMPLE_AGE_MS = 1_000L
     }
 }
 

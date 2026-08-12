@@ -31,6 +31,7 @@ object LimelightProxyAutoStart {
     /**
      * Starts active Limelight HTTP proxy stream tunnels if not already running.
      */
+    @Synchronized
     fun start() {
         if (proxy == null) {
             val p = LimelightProxy()
@@ -43,10 +44,10 @@ object LimelightProxyAutoStart {
     /**
      * Terminates active Limelight HTTP proxy stream tunnels.
      */
+    @Synchronized
     fun stop() {
         proxy?.stop()
         proxy = null
         System.out.println("LimelightProxyAutoStart: Stopped Limelight Proxy tunnels.")
     }
 }
-

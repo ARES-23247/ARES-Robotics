@@ -97,7 +97,6 @@ One-time initialization, file parsing, and explicit operator actions may allocat
 
 - Custom/simulator NT4 listens on port `5810`.
 - `LogManagerServer` listens on port `5002`.
-- `RobotWebServer` defaults to port `8082`.
 - NT4 topics are canonicalized without a leading slash.
 - An announced NT4 topic keeps one type for its lifetime.
 - Keep publisher/subscriber topic spelling, units, types, and heading signs consistent across all four repositories.

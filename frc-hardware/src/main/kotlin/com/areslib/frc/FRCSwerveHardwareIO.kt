@@ -34,12 +34,16 @@ import edu.wpi.first.math.numbers.N3
  * @see SwerveCtreDrivetrainReader
  * @see SwerveCtreSpeedRequestWriter
  */
-class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO {
+class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveHardwareIO, AutoCloseable {
 
 
     private val reader = SwerveCtreDrivetrainReader(drivetrain)
     private val writer = SwerveCtreSpeedRequestWriter(drivetrain)
     private val visionStdDevs = Matrix<N3, N1>(Nat.N3(), Nat.N1())
+
+    init {
+        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
+    }
 
     /** Synchronously refreshes cached CAN signals across motor currents, encoders, and IMU status signals. */
     override fun refresh() = reader.refresh()
@@ -53,6 +57,9 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      */
     override fun getCurrents(out: DoubleArray) = reader.getCurrents(out)
 
+    override val currentMeasurementsValid: Boolean
+        get() = reader.currentMeasurementsValid
+
     /**
      * Reads absolute CANcoder module positions in rotations into [out].
      * @param out 4-element output array.
@@ -61,6 +68,9 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
 
     override val encoderPositionsValid: Boolean
         get() = reader.encoderPositionsValid
+
+    override val signalLatencyMs: Double
+        get() = reader.signalLatencyMs
 
     override fun getFaults(out: IntArray) = reader.getFaults(out)
 
@@ -96,7 +106,7 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      *
      * @param driveState Immutable [DriveState] containing target velocities and field-centric flags.
      */
-    override fun write(driveState: DriveState) = writer.write(driveState)
+    override fun write(driveState: DriveState, powerScale: Double) = writer.write(driveState, powerScale)
 
     override fun addVisionMeasurement(pose: com.areslib.math.geometry.Pose2d, timestampSeconds: Double) {
         drivetrain.addVisionMeasurement(
@@ -155,5 +165,20 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
      */
     override fun seedPose(pose: com.areslib.math.geometry.Pose2d) {
         drivetrain.resetPose(edu.wpi.first.math.geometry.Pose2d(pose.x, pose.y, edu.wpi.first.math.geometry.Rotation2d(pose.heading.radians)))
+    }
+
+    override fun close() {
+        var failure: Throwable? = null
+        try {
+            safe()
+        } catch (error: Throwable) {
+            failure = error
+        }
+        try {
+            drivetrain.close()
+        } catch (error: Throwable) {
+            if (failure == null) failure = error else failure.addSuppressed(error)
+        }
+        failure?.let { throw it }
     }
 }

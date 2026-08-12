@@ -3,7 +3,7 @@ package com.areslib.sim.network
 import com.areslib.networktables.NT4Server
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
-import com.areslib.sim.infra.VirtualDriverStation
+import com.areslib.sim.infra.SimGamepadManager
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
 import edu.wpi.first.wpilibj.DataLogManager
@@ -53,26 +53,6 @@ object TelemetryPublisher {
     private var lastObstaclesJson = ""
     private var lastFieldConfigJson = ""
 
-    fun getWebVx(): Double {
-        return com.areslib.telemetry.SimInputBridge.currentFrame().vx
-    }
-    fun getWebVy(): Double {
-        return com.areslib.telemetry.SimInputBridge.currentFrame().vy
-    }
-    fun getWebOmega(): Double {
-        return com.areslib.telemetry.SimInputBridge.currentFrame().omega
-    }
-
-    fun getWebIsIntaking(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isIntaking
-    fun getWebIsFlywheelOn(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isFlywheelOn
-    fun getWebIsTransferring(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isTransferring
-    fun getWebIsTeleopMode(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isTeleopMode
-    fun getWebIsFieldCentric(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isFieldCentric
-    fun getWebIsRedAlliance(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isRedAlliance
-    fun getWebIsButtonAPressed(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isButtonAPressed
-    fun getWebIsButtonBPressed(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isButtonBPressed
-    fun getWebIsButtonXPressed(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isButtonXPressed
-    fun getWebIsPoseReset(): Boolean = com.areslib.telemetry.SimInputBridge.currentFrame().isPoseReset
     fun getWebObstacles(): String = NT4Server.getString("ARES/Input/obstacles", "")
     fun getWebFieldConfig(): String = NT4Server.getString("ARES/Input/fieldConfig", "")
 
@@ -125,9 +105,14 @@ object TelemetryPublisher {
      * @param pose The field-relative target pose.
      */
     fun publishTargetPose(pose: com.areslib.math.geometry.Pose2d) {
-        targetPoseBuf[0] = pose.x
-        targetPoseBuf[1] = pose.y
-        targetPoseBuf[2] = pose.heading.radians
+        publishTargetPose(pose.x, pose.y, pose.heading.radians)
+    }
+
+    /** Allocation-free primitive pose publication for the simulator hot loop. */
+    fun publishTargetPose(x: Double, y: Double, headingRadians: Double) {
+        targetPoseBuf[0] = x
+        targetPoseBuf[1] = y
+        targetPoseBuf[2] = headingRadians
         targetPosePublisher.set(targetPoseBuf)
         NT4Server.publishTopic("ARES/TargetPose", targetPoseBuf)
         ntInst.flush()
@@ -143,17 +128,22 @@ object TelemetryPublisher {
      * @param pose The field-relative estimated pose.
      */
     fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
-        estimatedPoseBuf[0] = pose.x
-        estimatedPoseBuf[1] = pose.y
-        estimatedPoseBuf[2] = pose.heading.radians
+        publishEstimatedPose(pose.x, pose.y, pose.heading.radians)
+    }
+
+    /** Allocation-free primitive pose publication for the simulator hot loop. */
+    fun publishEstimatedPose(x: Double, y: Double, headingRadians: Double) {
+        estimatedPoseBuf[0] = x
+        estimatedPoseBuf[1] = y
+        estimatedPoseBuf[2] = headingRadians
         estimatedPosePublisher.set(estimatedPoseBuf)
         NT4Server.publishTopic("ARES/EstimatedPose", estimatedPoseBuf)
-        NT4Server.publishTopic("ARES/EstimatedPose/0", pose.x)
-        NT4Server.publishTopic("ARES/EstimatedPose/1", pose.y)
-        NT4Server.publishTopic("ARES/EstimatedPose/2", pose.heading.radians)
-        NT4Server.publishTopic("Drive/Pose_X", pose.x)
-        NT4Server.publishTopic("Drive/Pose_Y", pose.y)
-        NT4Server.publishTopic("Drive/Pose_Heading", pose.heading.radians)
+        NT4Server.publishTopic("ARES/EstimatedPose/0", x)
+        NT4Server.publishTopic("ARES/EstimatedPose/1", y)
+        NT4Server.publishTopic("ARES/EstimatedPose/2", headingRadians)
+        NT4Server.publishTopic("Drive/Pose_X", x)
+        NT4Server.publishTopic("Drive/Pose_Y", y)
+        NT4Server.publishTopic("Drive/Pose_Heading", headingRadians)
         ntInst.flush()
     }
 
@@ -163,14 +153,19 @@ object TelemetryPublisher {
      * @param pose The true field-relative physics pose.
      */
     fun publishTruePose(pose: com.areslib.math.geometry.Pose2d) {
-        truePoseBuf[0] = pose.x
-        truePoseBuf[1] = pose.y
-        truePoseBuf[2] = pose.heading.radians
+        publishTruePose(pose.x, pose.y, pose.heading.radians)
+    }
+
+    /** Allocation-free primitive pose publication for the simulator hot loop. */
+    fun publishTruePose(x: Double, y: Double, headingRadians: Double) {
+        truePoseBuf[0] = x
+        truePoseBuf[1] = y
+        truePoseBuf[2] = headingRadians
         truePosePublisher.set(truePoseBuf)
         NT4Server.publishTopic("ARES/TruePose", truePoseBuf)
-        NT4Server.publishTopic("ARES/TruePose/0", pose.x)
-        NT4Server.publishTopic("ARES/TruePose/1", pose.y)
-        NT4Server.publishTopic("ARES/TruePose/2", pose.heading.radians)
+        NT4Server.publishTopic("ARES/TruePose/0", x)
+        NT4Server.publishTopic("ARES/TruePose/1", y)
+        NT4Server.publishTopic("ARES/TruePose/2", headingRadians)
         ntInst.flush()
     }
 
@@ -245,39 +240,30 @@ object TelemetryPublisher {
 
     /**
      * Polls canonical topics under `ARES/Input/` from the custom NT4 server and copies them into
-     * [driverStation]. Alliance changes are also dispatched to the active FTC robot store.
+     * [driverStation]. A live atomic lease temporarily owns all command fields; when it expires,
+     * untouched local keyboard/gamepad state resumes. Alliance changes are dispatched to the
+     * active FTC robot store from that effective authority.
      *
      * @return A changed, non-blank obstacle JSON payload, otherwise `null`. Other input values are
-     * applied on every call rather than freshness-gated.
+     * applied only while the atomic receiver lease is valid.
      *
      * @param driverStation Target virtual driver station to synchronize.
      */
-    fun pollWebInputs(driverStation: VirtualDriverStation): String? {
+    fun pollWebInputs(driverStation: SimGamepadManager): String? {
         val command = com.areslib.telemetry.SimInputBridge.pollNetworkFrame()
-        driverStation.webVx = command.vx
-        driverStation.webVy = command.vy
-        driverStation.webOmega = command.omega
+        if (command.sessionNonce > 0L && command.receivedAtMs >= 0L) {
+            driverStation.applyRemoteCommand(command)
+        } else {
+            driverStation.clearRemoteCommand()
+        }
 
-        // Dashboard clients connect to ARESLib's custom NT4 server. Read every web input from
-        // that same registry; WPILib's process-local instance is a separate server and otherwise
-        // leaves boolean/mode values stuck at their subscriber defaults.
-        driverStation.isIntaking = command.isIntaking
-        driverStation.isFlywheelOn = command.isFlywheelOn
-        driverStation.isTransferring = command.isTransferring
-        driverStation.isTeleopMode = command.isTeleopMode
-        driverStation.isFieldCentric = command.isFieldCentric
-        val newRedAlliance = command.isRedAlliance
-        if (driverStation.isRedAlliance != newRedAlliance) {
-            driverStation.isRedAlliance = newRedAlliance
-            com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
-                val allianceEnum = if (newRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+        val effectiveRedAlliance = driverStation.effectiveIsRedAlliance
+        com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
+            val allianceEnum = if (effectiveRedAlliance) com.areslib.state.Alliance.RED else com.areslib.state.Alliance.BLUE
+            if (robot.store.state.drive.alliance != allianceEnum) {
                 robot.store.dispatch(com.areslib.action.RobotAction.SetAlliance(allianceEnum))
             }
         }
-        driverStation.isButtonAPressed = command.isButtonAPressed
-        driverStation.isButtonBPressed = command.isButtonBPressed
-        driverStation.isButtonXPressed = command.isButtonXPressed
-        driverStation.isPoseReset = command.isPoseReset
         val obstaclesJson = getWebObstacles()
         return if (obstaclesJson.isNotBlank() && obstaclesJson != lastObstaclesJson) {
             lastObstaclesJson = obstaclesJson

@@ -42,10 +42,11 @@ interface MotorIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /**
      * Estimated or measured current draw of this motor in Amperes (Amps).
-     * Defaults to 0.0 in simulations or when current monitoring is unsupported.
+     * Defaults to NaN when current monitoring is unsupported so an unknown source is never
+     * misclassified as a fresh zero-amp observation.
      */
     override val currentAmps: Double
-        get() = 0.0
+        get() = Double.NaN
     
     /**
      * Current motor velocity in ticks per second

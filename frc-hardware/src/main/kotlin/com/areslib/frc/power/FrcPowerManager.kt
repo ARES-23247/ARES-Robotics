@@ -3,6 +3,8 @@ package com.areslib.frc.power
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.control.safety.CurrentBudgetState
 import com.areslib.subsystem.PowerManager
+import java.util.function.BooleanSupplier
+import java.util.function.DoubleSupplier
 
 /**
  * FRC battery voltage manager and power scaling controller.
@@ -25,12 +27,14 @@ class FrcPowerManager : PowerManager {
     /** FRC brownout protection guard instance. */
     val brownoutGuard = BrownoutGuard.frcDefaults()
 
-    /** Configurable battery voltage supplier lambda. */
-    var batteryVoltageSupplier: () -> Double = { 12.6 }
+    /** Configurable primitive battery voltage supplier. */
+    var batteryVoltageSupplier: DoubleSupplier = DoubleSupplier { 12.6 }
     /** Total battery current supplier, normally WPILib PowerDistribution.getTotalCurrent(). */
-    var totalCurrentSupplier: () -> Double = { registeredCurrentFallback() }
+    // Production installs the PDH supplier explicitly. NaN selects the registered-source fallback
+    // once inside update(), avoiding duplicate hardware-cache reads when no PDH is configured.
+    var totalCurrentSupplier: DoubleSupplier = DoubleSupplier { Double.NaN }
     /** roboRIO brownout-state supplier, normally RobotController.isBrownedOut(). */
-    var brownedOutSupplier: () -> Boolean = { false }
+    var brownedOutSupplier: BooleanSupplier = BooleanSupplier { false }
 
     /** Latest measured battery voltage in Volts ($V$). */
     override var batteryVoltage = 12.6
@@ -41,6 +45,10 @@ class FrcPowerManager : PowerManager {
 
     /** Total current draw in Amperes ($A$) calculated across all registered motors in [com.areslib.hardware.HardwareRegistry]. */
     override var currentAmps: Double = 0.0
+        private set
+
+    /** False when neither PowerDistribution nor any fresh cached branch source was available. */
+    var currentMeasurementValid: Boolean = false
         private set
 
     /** Current-only effort scale layered with voltage brownout protection. */
@@ -66,15 +74,16 @@ class FrcPowerManager : PowerManager {
      */
     override fun update(dtSeconds: Double, timestampMs: Long): Double {
         batteryVoltage = try {
-            batteryVoltageSupplier()
+            batteryVoltageSupplier.asDouble
         } catch (_: Exception) {
             0.0
         }
-        val suppliedCurrent = try { totalCurrentSupplier() } catch (_: Exception) { Double.NaN }
-        currentAmps = suppliedCurrent.takeIf { it.isFinite() && it >= 0.0 }
-            ?: registeredCurrentFallback()
+        val suppliedCurrent = try { totalCurrentSupplier.asDouble } catch (_: Exception) { Double.NaN }
+        val fallbackCurrent = if (suppliedCurrent.isFinite() && suppliedCurrent >= 0.0) suppliedCurrent else registeredCurrentFallback()
+        currentMeasurementValid = fallbackCurrent.isFinite() && fallbackCurrent >= 0.0
+        currentAmps = if (currentMeasurementValid) fallbackCurrent else Double.NaN
         isBrownedOut = try {
-            brownedOutSupplier()
+            brownedOutSupplier.asBoolean
         } catch (_: Exception) {
             true
         }
@@ -85,14 +94,21 @@ class FrcPowerManager : PowerManager {
 
         // Dynamically distribute powerScale to all registered motors
         val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
-        for (m in motors) {
-            m.powerScale = powerScale
+        var motorIndex = 0
+        while (motorIndex < motors.size) {
+            motors[motorIndex].powerScale = powerScale
+            motorIndex++
         }
 
         return powerScale
     }
 
     private fun updateCurrentBudget(totalAmps: Double) {
+        if (!totalAmps.isFinite() || totalAmps < 0.0) {
+            currentBudgetState = CurrentBudgetState.CRITICAL
+            currentPowerScale = MIN_CURRENT_POWER_SCALE
+            return
+        }
         currentBudgetState = when (currentBudgetState) {
             CurrentBudgetState.HEALTHY -> when {
                 totalAmps >= CURRENT_CRITICAL_AMPS -> CurrentBudgetState.CRITICAL
@@ -123,7 +139,8 @@ class FrcPowerManager : PowerManager {
 
     private fun registeredCurrentFallback(): Double {
         val sources = com.areslib.hardware.HardwareRegistry.getRegisteredCurrentSources()
-        return currentSourceSampler.sample(sources)
+        val total = currentSourceSampler.sample(sources)
+        return if (currentSourceSampler.hasCompleteCoverage) total else Double.NaN
     }
 
     private companion object {

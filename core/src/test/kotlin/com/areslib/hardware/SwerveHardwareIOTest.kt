@@ -28,7 +28,7 @@ class SwerveHardwareIOTest {
                 out[0] = 0x01; out[1] = 0x12; out[2] = 0x24; out[3] = 0x3f
             }
             override fun read() = DriveState()
-            override fun write(driveState: DriveState) = Unit
+            override fun write(driveState: DriveState, powerScale: Double) = Unit
             override fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) = Unit
         }
 

@@ -20,10 +20,6 @@ import edu.wpi.first.wpilibj.DriverStation
  * @see TalonFX
  * @see TalonFXConfiguration
  */
-fun Iterable<TalonFX>.applyConfig(block: TalonFXConfiguration.() -> Unit) {
-    applyConfigChecked(block = block)
-}
-
 /**
  * Applies one configuration to every motor and returns `true` only when every device reports an
  * OK status within [maxAttempts]. Mechanism initialization can use this checked variant to inhibit

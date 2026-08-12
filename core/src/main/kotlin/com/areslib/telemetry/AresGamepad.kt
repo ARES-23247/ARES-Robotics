@@ -109,6 +109,13 @@ class AresGamepad {
             val wasPressed = button.stateSelector(previousState)
             val isPressed = button.stateSelector(currentState)
             button.isPressed = isPressed
+
+            // Inputs held during INIT are deliberately quarantined until they are released. This
+            // prevents both edge and level bindings from energizing hardware as Play is pressed.
+            if (button.suppressedUntilRelease) {
+                if (!isPressed) button.suppressedUntilRelease = false
+                continue
+            }
             
             when {
                 isPressed && !wasPressed -> button.firePress()
@@ -121,10 +128,36 @@ class AresGamepad {
         }
     }
 
+    /**
+     * Samples controls without invoking bindings.
+     *
+     * A pressed button is suppressed until a later release, so a control held through the FTC
+     * INIT-to-START transition cannot become either an `onPress` or `whilePressed` command.
+     */
+    fun prime(newState: GamepadState) {
+        previousState.copyFrom(newState)
+        currentState.copyFrom(newState)
+        leftStick.updateValue(newState)
+        rightStick.updateValue(newState)
+        leftStickX.updateValue(newState)
+        leftStickY.updateValue(newState)
+        rightStickX.updateValue(newState)
+        rightStickY.updateValue(newState)
+        leftTrigger.updateValue(newState)
+        rightTrigger.updateValue(newState)
+        for (i in allButtons.indices) {
+            val button = allButtons[i]
+            val isPressed = button.stateSelector(newState)
+            button.isPressed = isPressed
+            button.suppressedUntilRelease = isPressed
+        }
+    }
+
     /** A digital input with edge- and level-triggered bindings. */
     class BindableButton(val stateSelector: (GamepadState) -> Boolean) {
         var isPressed: Boolean = false
             internal set
+        internal var suppressedUntilRelease: Boolean = false
         private var onPressAction: (() -> Unit)? = null
         private var onReleaseAction: (() -> Unit)? = null
         private var whilePressedAction: (() -> Unit)? = null

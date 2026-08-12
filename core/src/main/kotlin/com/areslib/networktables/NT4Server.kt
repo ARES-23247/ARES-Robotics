@@ -165,7 +165,9 @@ class NT4Server(
         sendStateByConnection.remove(conn)
         clientSubscriptions.remove(conn)
 
-        val publishers = clientPublishers.remove(conn)?.values?.toSet().orEmpty()
+        val publishers = synchronized(topicMutationLock) {
+            clientPublishers.remove(conn)?.values?.toSet().orEmpty()
+        }
         for (entry in publishers) {
             handleLastClientPublisherRemoved(entry)
         }
@@ -204,11 +206,25 @@ class NT4Server(
                 if (decoded.id == -1L) {
                     heartbeat(conn, (decoded.dataValue as? Number)?.toLong() ?: com.areslib.util.RobotClock.currentTimeMillis())
                 } else {
-                    val entry = getEntryForId(conn, decoded.id)
-                    if (entry != null && decoded.dataValue != null) {
-                        val newValue = NT4Value.fromObject(decoded.dataValue)
-                        if (newValue.typeString == entry.value.typeString && entry.update(newValue, decoded.timestamp)) {
-                            markDirty(entry)
+                    if (decoded.dataValue != null) {
+                        synchronized(topicMutationLock) {
+                            val entry = getEntryForId(conn, decoded.id)
+                            if (
+                                entry != null &&
+                                entries[entry.topic] === entry &&
+                                !serverOwnedTopics.contains(entry.topic)
+                            ) {
+                                val receivedAtUs = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
+                                val normalizedTimestamp = normalizeClientTimestamp(decoded.timestamp, receivedAtUs)
+                                    ?: return@synchronized
+                                val newValue = NT4Value.fromObject(decoded.dataValue)
+                                if (
+                                    newValue.typeString == entry.value.typeString &&
+                                    entry.update(newValue, normalizedTimestamp)
+                                ) {
+                                    markDirty(entry)
+                                }
+                            }
                         }
                     }
                 }
@@ -241,38 +257,47 @@ class NT4Server(
         if (pubUID < 0 || topic.length > MAX_TOPIC_NAME_CHARS || topic.startsWith('$')) return
         val type = msg.type ?: "string"
         if (type !in SUPPORTED_TOPIC_TYPES) return
-
-        val publishers = clientPublishers.computeIfAbsent(conn) { ConcurrentHashMap() }
-        if (!publishers.containsKey(pubUID.toLong()) && publishers.size >= MAX_PUBLISHERS_PER_CLIENT) return
-
         var isNew = false
-        var typeMatches = true
-        val entry = entries.compute(topic) { _, existing ->
-            if (existing != null) {
-                typeMatches = existing.value.typeString == type
-                return@compute existing
-            }
-            if (entries.size >= MAX_TOPICS) return@compute null
-            isNew = true
-            val defaultValue: Any = when (type) {
-                "boolean" -> false
-                "double" -> 0.0
-                "float" -> 0.0f
-                "int" -> 0L
-                "boolean[]" -> BooleanArray(0)
-                "double[]" -> DoubleArray(0)
-                "float[]" -> FloatArray(0)
-                "int[]" -> LongArray(0)
-                "string[]" -> emptyArray<String>()
-                else -> "" // Guarded by SUPPORTED_TOPIC_TYPES.
-            }
-            val id = nextTopicId.getAndIncrement()
-            NT4Entry(id, topic, NT4Value.fromObject(defaultValue), hasValue = false)
-        } ?: return
-        if (!typeMatches) return
+        var previous: NT4Entry? = null
+        lateinit var entry: NT4Entry
+        synchronized(topicMutationLock) {
+            if (serverOwnedTopics.contains(topic)) return
+            val publishers = clientPublishers.computeIfAbsent(conn) { ConcurrentHashMap() }
+            if (!publishers.containsKey(pubUID.toLong()) && publishers.size >= MAX_PUBLISHERS_PER_CLIENT) return
 
-        val previous = publishers.put(pubUID.toLong(), entry)
-        if (previous != null && previous !== entry) handleLastClientPublisherRemoved(previous)
+            val existing = entries[topic]
+            if (existing != null) {
+                if (existing.value.typeString != type) return
+                entry = existing
+            } else {
+                if (entries.size >= MAX_TOPICS) return
+                isNew = true
+                val defaultValue: Any = when (type) {
+                    "boolean" -> false
+                    "double" -> 0.0
+                    "float" -> 0.0f
+                    "int" -> 0L
+                    "boolean[]" -> BooleanArray(0)
+                    "double[]" -> DoubleArray(0)
+                    "float[]" -> FloatArray(0)
+                    "int[]" -> LongArray(0)
+                    "string[]" -> emptyArray<String>()
+                    else -> "" // Guarded by SUPPORTED_TOPIC_TYPES.
+                }
+                entry = NT4Entry(
+                    nextTopicId.getAndIncrement(),
+                    topic,
+                    NT4Value.fromObject(defaultValue),
+                    hasValue = false
+                )
+                entries[topic] = entry
+            }
+            previous = publishers.put(pubUID.toLong(), entry)
+        }
+        val displacedEntry = previous
+        if (displacedEntry != null && displacedEntry !== entry) {
+            handleLastClientPublisherRemoved(displacedEntry)
+        }
 
         // A publish request always receives an acknowledgement announcement containing the
         // caller's connection-local publisher UID. Other subscribers must not see that UID.
@@ -285,9 +310,12 @@ class NT4Server(
 
     private fun handleUnpublish(conn: WebSocket, msg: NT4Json.ParsedMessage) {
         val pubUID = msg.pubUid ?: return
-        val publishers = clientPublishers[conn] ?: return
-        val entry = publishers.remove(pubUID.toLong()) ?: return
-        if (publishers.isEmpty()) clientPublishers.remove(conn, publishers)
+        lateinit var entry: NT4Entry
+        synchronized(topicMutationLock) {
+            val publishers = clientPublishers[conn] ?: return
+            entry = publishers.remove(pubUID.toLong()) ?: return
+            if (publishers.isEmpty()) clientPublishers.remove(conn, publishers)
+        }
         handleLastClientPublisherRemoved(entry)
     }
 
@@ -296,8 +324,10 @@ class NT4Server(
     }
 
     private fun handleLastClientPublisherRemoved(entry: NT4Entry) {
-        if (isPublishedByAnyClient(entry) || serverOwnedTopics.contains(entry.topic)) return
-        if (!entries.remove(entry.topic, entry)) return
+        synchronized(topicMutationLock) {
+            if (isPublishedByAnyClient(entry) || serverOwnedTopics.contains(entry.topic)) return
+            if (!entries.remove(entry.topic, entry)) return
+        }
         synchronized(dirtyEntriesLock) {
             dirtyEntries.remove(entry)
         }
@@ -418,6 +448,7 @@ class NT4Server(
         return encodeNT4Messages(timestamp, entries, 0, entries.size)
     }
 
+    @Synchronized
     private fun encodeNT4Messages(
         timestamp: Long,
         entries: List<NT4Entry>,
@@ -649,40 +680,79 @@ class NT4Server(
             "NT4 topic exceeds $MAX_TOPIC_NAME_CHARS characters"
         }
         require(!normalizedTopic.startsWith('$')) { "NT4 topics beginning with '$' are server-reserved" }
+        val serverTimestampUs = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
         var isNew = false
         var updated = false
-        var typeMatches = true
-        val entry = entries.compute(normalizedTopic) { _, existing ->
-            if (existing != null) {
-                // NT4 topic types are immutable for the lifetime of an announcement.
-                // Preserve the existing value when a caller attempts a type change.
-                if (existing.value.typeString == value.typeString) {
-                    updated = existing.update(value)
-                } else {
-                    typeMatches = false
-                }
-                return@compute existing
+        var replacedEntry: NT4Entry? = null
+        lateinit var entry: NT4Entry
+        synchronized(topicMutationLock) {
+            val existing = entries[normalizedTopic]
+            if (existing == null) {
+                require(entries.size < MAX_TOPICS) { "NT4 topic limit of $MAX_TOPICS reached" }
             }
-            require(entries.size < MAX_TOPICS) { "NT4 topic limit of $MAX_TOPICS reached" }
-            isNew = true
-            val id = nextTopicId.getAndIncrement()
-            NT4Entry(
-                id,
-                normalizedTopic,
-                value,
-                hasValue = true,
-                timestampUs = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
-            )
-        } ?: error("ConcurrentHashMap.compute returned null")
-        if (typeMatches) serverOwnedTopics.add(normalizedTopic)
-        if (isNew || updated) {
-            markDirty(entry)
+            serverOwnedTopics.add(normalizedTopic)
+            revokeClientPublishersLocked(normalizedTopic)
+            when {
+                existing == null -> {
+                    isNew = true
+                    entry = NT4Entry(
+                        nextTopicId.getAndIncrement(),
+                        normalizedTopic,
+                        value,
+                        hasValue = true,
+                        timestampUs = serverTimestampUs
+                    )
+                    entries[normalizedTopic] = entry
+                }
+                existing.value.typeString == value.typeString -> {
+                    entry = existing
+                    updated = existing.replaceAuthoritatively(value, serverTimestampUs)
+                }
+                else -> {
+                    // NT4 types are immutable for one announcement lifetime. End the client-owned
+                    // announcement and create a fresh server-owned topic with a new topic id.
+                    replacedEntry = existing
+                    entry = NT4Entry(
+                        nextTopicId.getAndIncrement(),
+                        normalizedTopic,
+                        value,
+                        hasValue = true,
+                        timestampUs = serverTimestampUs
+                    )
+                    entries[normalizedTopic] = entry
+                    isNew = true
+                }
+            }
         }
+
+        replacedEntry?.let { oldEntry ->
+            synchronized(dirtyEntriesLock) { dirtyEntries.remove(oldEntry) }
+            for (pending in pendingEntriesByConnection.values) pending.remove(oldEntry)
+            unannounceDeletedEntry(oldEntry)
+            oldEntry.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, oldEntry.value)
+        }
+        if (isNew || updated) markDirty(entry)
 
         if (isNew) {
             announceEntryToSubscribers(entry)
+            entry.notifyListeners(NT4EventType.TOPIC_PUBLISHED, entry.value)
+        } else if (updated) {
+            entry.notifyListeners(NT4EventType.TOPIC_UPDATED, entry.value)
         }
         return entry
+    }
+
+    /** Must be called with [topicMutationLock] held. */
+    private fun revokeClientPublishersLocked(topic: String) {
+        val emptyConnections = ArrayList<WebSocket>()
+        for ((connection, publishers) in clientPublishers) {
+            publishers.entries.removeIf { it.value.topic == topic }
+            if (publishers.isEmpty()) emptyConnections.add(connection)
+        }
+        for (connection in emptyConnections) {
+            val publishers = clientPublishers[connection] ?: continue
+            if (publishers.isEmpty()) clientPublishers.remove(connection, publishers)
+        }
     }
 
     private fun markDirty(entry: NT4Entry) {
@@ -760,6 +830,13 @@ class NT4Server(
         }
     }
 
+    private fun normalizeClientTimestamp(timestampUs: Long, receivedAtUs: Long): Long? {
+        if (timestampUs == 0L) return receivedAtUs
+        val minimum = receivedAtUs - MAX_CLIENT_TIMESTAMP_SKEW_US
+        val maximum = receivedAtUs + MAX_CLIENT_TIMESTAMP_SKEW_US
+        return timestampUs.takeIf { it in minimum..maximum }
+    }
+
     /** Diagnostic used by allocation regressions; includes initial and growth backing arrays. */
     internal fun ownedSendBufferAllocationCount(): Long = ownedSendBufferAllocations.get()
 
@@ -795,6 +872,7 @@ class NT4Server(
         internal const val MAX_PUBLISHERS_PER_CLIENT = 4_096
         internal const val MAX_SUBSCRIPTIONS_PER_CLIENT = 1_024
         internal const val MAX_ENTRIES_PER_SEND = 128
+        internal const val MAX_CLIENT_TIMESTAMP_SKEW_US = 60_000_000L
         private const val INITIAL_OWNED_SEND_CAPACITY = 8_192
         private val SUPPORTED_TOPIC_TYPES = setOf(
             "boolean", "double", "int", "float", "string",
@@ -805,6 +883,7 @@ class NT4Server(
         private var shutdownHookAdded = false
         private val entries = ConcurrentHashMap<String, NT4Entry>()
         private val serverOwnedTopics = ConcurrentHashMap.newKeySet<String>()
+        private val topicMutationLock = Any()
         private val nextTopicId = java.util.concurrent.atomic.AtomicInteger(1)
 
         @JvmStatic
@@ -856,9 +935,11 @@ class NT4Server(
         @Synchronized
         @JvmStatic
         fun resetSharedState() {
-            entries.clear()
-            serverOwnedTopics.clear()
-            nextTopicId.set(1)
+            synchronized(topicMutationLock) {
+                entries.clear()
+                serverOwnedTopics.clear()
+                nextTopicId.set(1)
+            }
         }
 
         @JvmStatic

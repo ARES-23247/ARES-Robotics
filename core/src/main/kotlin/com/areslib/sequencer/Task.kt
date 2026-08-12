@@ -433,18 +433,51 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             val cmdTask = activeEventTasks[i]
             val startTime = taskStartTimes[cmdTask] ?: currentTimestamp
             val cmdElapsed = currentTimestamp - startTime
-            val failed = TaskStateMachine.getStatus(cmdTask) == TaskStatus.FAILED
-            if (failed || cmdTask.isCompleted(state, cmdElapsed)) {
-                actionsList.addAll(cmdTask.end(state, interrupted = failed))
-                cmdTask.releaseRuntimeState()
-                activeEventTasks.removeAt(i)
-                taskStartTimes.remove(cmdTask)
+            if (consumeFailedEvent(i, cmdTask, state)) break
+            val completed = cmdTask.isCompleted(state, cmdElapsed)
+            if (consumeFailedEvent(i, cmdTask, state)) break
+            if (completed) {
+                try {
+                    actionsList.addAll(cmdTask.end(state, interrupted = false))
+                } finally {
+                    cmdTask.releaseRuntimeState()
+                    activeEventTasks.removeAt(i)
+                    taskStartTimes.remove(cmdTask)
+                }
             } else {
                 actionsList.addAll(cmdTask.execute(state, cmdElapsed))
+                if (consumeFailedEvent(i, cmdTask, state)) break
             }
         }
 
         return actionsList
+    }
+
+    /** Ends a failed/cancelled marker command exactly once and makes the path fail closed. */
+    private fun consumeFailedEvent(index: Int, eventTask: Task, state: RobotState): Boolean {
+        val status = TaskStateMachine.getStatus(eventTask)
+        if (status != TaskStatus.FAILED && status != TaskStatus.CANCELLED) return false
+
+        if (status == TaskStatus.FAILED) {
+            try {
+                TaskCallbacks.invokeFail(eventTask)
+            } catch (failure: Throwable) {
+                System.err.println(
+                    "FollowPathTask: Exception in failure callback for event ${eventTask.name}: ${failure.message}"
+                )
+            }
+        }
+        try {
+            actionsList.addAll(eventTask.end(state, interrupted = true))
+        } catch (failure: Throwable) {
+            System.err.println("FollowPathTask: failed to clean event ${eventTask.name}: ${failure.message}")
+        } finally {
+            eventTask.releaseRuntimeState()
+            activeEventTasks.removeAt(index)
+            taskStartTimes.remove(eventTask)
+        }
+        fail("path event '${eventTask.name}' ${status.name.lowercase()}")
+        return true
     }
 
     /** Stops controller output while a higher-priority task owns the drivetrain. */
@@ -453,19 +486,35 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return emptyList()
     }
 
-    /** Stops the follower unless velocity hold was requested and interrupts all active event tasks. */
+    /** Stops on every interrupted exit; successful velocity-hold exits may retain the final command. */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        super.end(state, interrupted)
-        if (!holdVelocity) {
-            follower.stop()
+        var firstFailure: Throwable? = null
+        if (interrupted || !holdVelocity) {
+            try {
+                follower.stop()
+            } catch (failure: Throwable) {
+                firstFailure = failure
+            }
         }
         val actions = mutableListOf<RobotAction>()
         for (cmdTask in activeEventTasks) {
-            actions.addAll(cmdTask.end(state, interrupted = true))
-            cmdTask.releaseRuntimeState()
+            try {
+                actions.addAll(cmdTask.end(state, interrupted = true))
+            } catch (failure: Throwable) {
+                System.err.println("FollowPathTask: failed to stop event ${cmdTask.name}: ${failure.message}")
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            } finally {
+                cmdTask.releaseRuntimeState()
+            }
         }
         activeEventTasks.clear()
         taskStartTimes.clear()
+        try {
+            actions.addAll(super.end(state, interrupted))
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        firstFailure?.let { throw it }
         return actions
     }
 }

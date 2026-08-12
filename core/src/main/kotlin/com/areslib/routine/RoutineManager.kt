@@ -55,10 +55,24 @@ class RoutineManager(
         val executor: TaskExecutor
     )
 
+    private data class DetachedExecution(
+        val executionId: Long,
+        val routineId: String,
+        val task: Task,
+        val executor: TaskExecutor?
+    )
+
+    private data class UpdateOutcome(
+        val execution: ActiveExecution,
+        val actions: List<RobotAction>,
+        val terminalStatus: TaskStatus?
+    )
+
     private val documents = LinkedHashMap<String, RoutineDocument>()
     private val pending = ArrayDeque<PendingExecution>()
     private val active = LinkedHashMap<Long, ActiveExecution>()
-    private val finishedIds = mutableListOf<Long>()
+    private val dispatchQueue = ArrayDeque<RobotAction>()
+    private var dispatching = false
     private var nextExecutionId = 1L
 
     /** Replaces one document for subsequent invocations; active runs retain their compiled task. */
@@ -100,137 +114,133 @@ class RoutineManager(
     )
 
     /** Requests a routine using the restart/queue/concurrency behavior selected by its trigger. */
-    @Synchronized
     fun request(
         routineId: String,
         policy: RoutineStartPolicy = RoutineStartPolicy.RESTART_EXISTING
     ): RoutineRequestResult {
-        if (policy == RoutineStartPolicy.IGNORE_IF_RUNNING) {
-            findExecution(routineId)?.let { return RoutineRequestResult.AlreadyRunning(it) }
-        }
+        val now = RobotClock.currentTimeMillis()
+        val detached = mutableListOf<DetachedExecution>()
+        val tailActions = mutableListOf<RobotAction>()
+        lateinit var requestedAction: RobotAction.RoutineRequested
+        lateinit var result: RoutineRequestResult
 
-        val executionId = nextExecutionId++
-        val compilation = RoutineCompiler(documents.toMap(), bindings).compile(routineId, executionId)
-        dispatch(RobotAction.RoutineRequested(executionId, routineId, RobotClock.currentTimeMillis()))
-        if (!compilation.isSuccess) {
-            dispatch(
-                RobotAction.RoutineFailed(
-                    executionId,
-                    routineId,
-                    compilation.issues.joinToString(separator = "; ") { it.message },
-                    RobotClock.currentTimeMillis()
+        synchronized(this) {
+            if (policy == RoutineStartPolicy.IGNORE_IF_RUNNING) {
+                findExecution(routineId)?.let { return RoutineRequestResult.AlreadyRunning(it) }
+            }
+
+            val executionId = nextExecutionId++
+            requestedAction = RobotAction.RoutineRequested(executionId, routineId, now)
+            val compilation = RoutineCompiler(documents.toMap(), bindings).compile(routineId, executionId)
+            if (!compilation.isSuccess) {
+                tailActions.add(
+                    RobotAction.RoutineFailed(
+                        executionId,
+                        routineId,
+                        compilation.issues.joinToString(separator = "; ") { it.message },
+                        now
+                    )
                 )
+                result = RoutineRequestResult.Rejected(compilation.issues)
+                return@synchronized
+            }
+
+            if (policy == RoutineStartPolicy.RESTART_EXISTING) {
+                detachMatchingLocked({ it == routineId }, detached)
+            }
+            val pendingExecution = PendingExecution(
+                executionId,
+                routineId,
+                requireNotNull(compilation.task),
+                compilation.resourceKeys
             )
-            return RoutineRequestResult.Rejected(compilation.issues)
+            if (policy == RoutineStartPolicy.QUEUE && active.isNotEmpty()) {
+                pending.addLast(pendingExecution)
+                result = RoutineRequestResult.Accepted(executionId, queued = true)
+                return@synchronized
+            }
+
+            val conflict = findResourceConflict(pendingExecution.resourceKeys)
+            if (conflict != null) {
+                val issue = compileConflict(routineId, conflict)
+                pendingExecution.task.releaseRuntimeState()
+                tailActions.add(RobotAction.RoutineFailed(executionId, routineId, issue.message, now))
+                result = RoutineRequestResult.Rejected(listOf(issue))
+                return@synchronized
+            }
+            tailActions.add(startLocked(pendingExecution, now))
+            result = RoutineRequestResult.Accepted(executionId, queued = false)
         }
 
-        if (policy == RoutineStartPolicy.RESTART_EXISTING) {
-            cancelRoutine(routineId, "Restarted by a new request")
-        }
-        val pendingExecution = PendingExecution(
-            executionId,
-            routineId,
-            requireNotNull(compilation.task),
-            compilation.resourceKeys
-        )
-        if (policy == RoutineStartPolicy.QUEUE && active.isNotEmpty()) {
-            pending.addLast(pendingExecution)
-            return RoutineRequestResult.Accepted(executionId, queued = true)
-        }
-
-        val conflict = findResourceConflict(pendingExecution.resourceKeys)
-        if (conflict != null) {
-            val issue = compileConflict(routineId, conflict)
-            dispatch(RobotAction.RoutineFailed(executionId, routineId, issue.message, RobotClock.currentTimeMillis()))
-            return RoutineRequestResult.Rejected(listOf(issue))
-        }
-        start(pendingExecution)
-        return RoutineRequestResult.Accepted(executionId, queued = false)
+        val actions = mutableListOf<RobotAction>(requestedAction)
+        appendCancellationActions(detached, "Restarted by a new request", now, actions)
+        actions.addAll(tailActions)
+        emit(actions)
+        return result
     }
 
     /** Advances active tasks and starts the next queued invocation when the manager becomes idle. */
-    @Synchronized
     fun update() {
         val now = RobotClock.currentTimeMillis()
-        finishedIds.clear()
-        active.values.forEach { execution ->
-            execution.executor.update(stateProvider(), now).forEach(dispatch)
-            if (execution.executor.size == 0) {
-                val status = TaskStateMachine.getStatus(execution.task)
-                if (status == TaskStatus.FAILED) {
-                    dispatch(
-                        RobotAction.RoutineFailed(
-                            execution.executionId,
-                            execution.routineId,
-                            "Routine task '${execution.task.name}' failed",
-                            now
-                        )
-                    )
-                } else {
-                    dispatch(RobotAction.RoutineCompleted(execution.executionId, execution.routineId, now))
-                }
-                finishedIds += execution.executionId
+        val snapshot = synchronized(this) { active.values.toList() }
+        val outcomes = snapshot.map { execution ->
+            val actions = execution.executor.update(stateProvider(), now).toList()
+            val terminalStatus = if (execution.executor.size == 0) {
+                TaskStateMachine.getStatus(execution.task)
+            } else {
+                null
+            }
+            UpdateOutcome(execution, actions, terminalStatus)
+        }
+
+        val emissions = mutableListOf<RobotAction>()
+        synchronized(this) {
+            for (outcome in outcomes) {
+                val execution = outcome.execution
+                if (active[execution.executionId] !== execution) continue
+                emissions.addAll(outcome.actions)
+                val status = outcome.terminalStatus ?: continue
+                active.remove(execution.executionId)
+                emissions.add(terminalAction(execution, status, now))
+            }
+            if (active.isEmpty() && pending.isNotEmpty()) {
+                emissions.add(startLocked(pending.removeFirst(), now))
             }
         }
-        finishedIds.forEach(active::remove)
-        if (active.isEmpty() && pending.isNotEmpty()) {
-            start(pending.removeFirst())
-        }
+        emit(emissions)
     }
 
     /** Cancels one running or queued invocation and dispatches safe task cleanup first. */
-    @Synchronized
     fun cancel(executionId: Long, reason: String = "Cancelled by operator"): Boolean {
-        val running = active.remove(executionId)
-        if (running != null) {
-            running.executor.cancelAll(stateProvider()).forEach(dispatch)
-            dispatch(
-                RobotAction.RoutineCancelled(
-                    running.executionId,
-                    running.routineId,
-                    reason,
-                    RobotClock.currentTimeMillis()
-                )
-            )
-            return true
-        }
-        val iterator = pending.iterator()
-        while (iterator.hasNext()) {
-            val queued = iterator.next()
-            if (queued.executionId == executionId) {
-                iterator.remove()
-                queued.task.releaseRuntimeState()
-                dispatch(
-                    RobotAction.RoutineCancelled(
-                        queued.executionId,
-                        queued.routineId,
-                        reason,
-                        RobotClock.currentTimeMillis()
-                    )
-                )
-                return true
-            }
-        }
-        return false
+        val detached = synchronized(this) { detachExecutionLocked(executionId) } ?: return false
+        val actions = mutableListOf<RobotAction>()
+        appendCancellationActions(listOf(detached), reason, RobotClock.currentTimeMillis(), actions)
+        emit(actions)
+        return true
     }
 
     /** Cancels every invocation of [routineId], returning the number cancelled. */
-    @Synchronized
     fun cancelRoutine(routineId: String, reason: String = "Cancelled by operator"): Int {
-        val ids = buildList {
-            active.values.forEach { if (it.routineId == routineId) add(it.executionId) }
-            pending.forEach { if (it.routineId == routineId) add(it.executionId) }
+        val detached = mutableListOf<DetachedExecution>()
+        synchronized(this) {
+            detachMatchingLocked({ it == routineId }, detached)
         }
-        ids.forEach { cancel(it, reason) }
-        return ids.size
+        val actions = mutableListOf<RobotAction>()
+        appendCancellationActions(detached, reason, RobotClock.currentTimeMillis(), actions)
+        emit(actions)
+        return detached.size
     }
 
     /** Disable/disconnect safety hook. No queued routine survives this call. */
-    @Synchronized
     fun cancelAll(reason: String = "Robot disabled"): Int {
-        val ids = active.keys.toList() + pending.map { it.executionId }
-        ids.forEach { cancel(it, reason) }
-        return ids.size
+        val detached = mutableListOf<DetachedExecution>()
+        synchronized(this) {
+            detachMatchingLocked({ true }, detached)
+        }
+        val actions = mutableListOf<RobotAction>()
+        appendCancellationActions(detached, reason, RobotClock.currentTimeMillis(), actions)
+        emit(actions)
+        return detached.size
     }
 
     val activeCount: Int
@@ -239,7 +249,7 @@ class RoutineManager(
     val queuedCount: Int
         @Synchronized get() = pending.size
 
-    private fun start(execution: PendingExecution) {
+    private fun startLocked(execution: PendingExecution, timestampMs: Long): RobotAction.RoutineStarted {
         val executor = TaskExecutor().also { it.addTask(execution.task) }
         active[execution.executionId] = ActiveExecution(
             execution.executionId,
@@ -248,13 +258,147 @@ class RoutineManager(
             execution.resourceKeys,
             executor
         )
-        dispatch(
-            RobotAction.RoutineStarted(
+        return RobotAction.RoutineStarted(
+            execution.executionId,
+            execution.routineId,
+            timestampMs
+        )
+    }
+
+    private fun terminalAction(
+        execution: ActiveExecution,
+        status: TaskStatus,
+        timestampMs: Long
+    ): RobotAction = when (status) {
+        TaskStatus.FAILED -> RobotAction.RoutineFailed(
+            execution.executionId,
+            execution.routineId,
+            "Routine task '${execution.task.name}' failed",
+            timestampMs
+        )
+        TaskStatus.CANCELLED -> RobotAction.RoutineCancelled(
+            execution.executionId,
+            execution.routineId,
+            "Routine task '${execution.task.name}' cancelled",
+            timestampMs
+        )
+        else -> RobotAction.RoutineCompleted(execution.executionId, execution.routineId, timestampMs)
+    }
+
+    /** Removes matching state under the manager lock without invoking task or subscriber code. */
+    private fun detachMatchingLocked(
+        matchesRoutineId: (String) -> Boolean,
+        destination: MutableList<DetachedExecution>
+    ) {
+        val activeIterator = active.entries.iterator()
+        while (activeIterator.hasNext()) {
+            val execution = activeIterator.next().value
+            if (matchesRoutineId(execution.routineId)) {
+                activeIterator.remove()
+                destination.add(
+                    DetachedExecution(
+                        execution.executionId,
+                        execution.routineId,
+                        execution.task,
+                        execution.executor
+                    )
+                )
+            }
+        }
+        val pendingIterator = pending.iterator()
+        while (pendingIterator.hasNext()) {
+            val execution = pendingIterator.next()
+            if (matchesRoutineId(execution.routineId)) {
+                pendingIterator.remove()
+                destination.add(
+                    DetachedExecution(execution.executionId, execution.routineId, execution.task, executor = null)
+                )
+            }
+        }
+    }
+
+    private fun detachExecutionLocked(executionId: Long): DetachedExecution? {
+        active.remove(executionId)?.let { execution ->
+            return DetachedExecution(
                 execution.executionId,
                 execution.routineId,
-                RobotClock.currentTimeMillis()
+                execution.task,
+                execution.executor
             )
-        )
+        }
+        val iterator = pending.iterator()
+        while (iterator.hasNext()) {
+            val execution = iterator.next()
+            if (execution.executionId == executionId) {
+                iterator.remove()
+                return DetachedExecution(execution.executionId, execution.routineId, execution.task, executor = null)
+            }
+        }
+        return null
+    }
+
+    private fun appendCancellationActions(
+        executions: Collection<DetachedExecution>,
+        reason: String,
+        timestampMs: Long,
+        destination: MutableList<RobotAction>
+    ) {
+        for (execution in executions) {
+            if (execution.executor != null) {
+                destination.addAll(execution.executor.cancelAll(stateProvider()))
+            } else {
+                execution.task.releaseRuntimeState()
+            }
+            destination.add(
+                RobotAction.RoutineCancelled(
+                    execution.executionId,
+                    execution.routineId,
+                    reason,
+                    timestampMs
+                )
+            )
+        }
+    }
+
+    /**
+     * Serializes subscriber delivery without holding the manager monitor.
+     *
+     * A synchronous Store subscriber may call back into this manager. Nested emissions append to
+     * the queue and are delivered after the already-committed snapshot, preventing recursive map
+     * iteration and duplicate terminal transitions.
+     */
+    private fun emit(actions: Collection<RobotAction>) {
+        if (actions.isEmpty()) return
+        val shouldDrain = synchronized(this) {
+            dispatchQueue.addAll(actions)
+            if (dispatching) {
+                false
+            } else {
+                dispatching = true
+                true
+            }
+        }
+        if (!shouldDrain) return
+
+        try {
+            while (true) {
+                val action = synchronized(this) {
+                    if (dispatchQueue.isEmpty()) {
+                        dispatching = false
+                        null
+                    } else {
+                        dispatchQueue.removeFirst()
+                    }
+                } ?: break
+                dispatch(action)
+            }
+        } catch (failure: Throwable) {
+            synchronized(this) {
+                dispatchQueue.clear()
+                dispatching = false
+            }
+            throw failure
+        }
     }
 
     private fun findExecution(routineId: String): Long? =

@@ -1,14 +1,9 @@
 package com.areslib.routine
 
-import com.areslib.auto.autonomous
-import com.areslib.auto.degrees
-import com.areslib.auto.meters
-import com.areslib.pathing.CommandKey
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.milliseconds
 
 class RoutineDocumentTest {
     @Test
@@ -50,27 +45,6 @@ class RoutineDocumentTest {
     }
 
     @Test
-    fun `legacy auto migration separates autonomous starting pose without losing steps`() {
-        val legacy = autonomous("Left Auto") {
-            startAt(1.0.meters, 2.0.meters, 90.degrees)
-            run(CommandKey("intake.collect"))
-            together {
-                waitFor(250.milliseconds)
-                run(CommandKey("shooter.prepare"))
-            }
-        }
-
-        val migration = migrateAutoRoutine(legacy)
-
-        assertEquals("left-auto", migration.document.documentId)
-        assertEquals(1.0, migration.entryPoint.startingPose.xMeters)
-        assertEquals(2.0, migration.entryPoint.startingPose.yMeters)
-        assertEquals(Math.PI / 2.0, migration.entryPoint.startingPose.headingRadians, 1e-9)
-        assertEquals(RoutineStepKind.ACTION, migration.document.steps.first().kind)
-        assertEquals(RoutineStepKind.TOGETHER, migration.document.steps.last().kind)
-    }
-
-    @Test
     fun `project validation detects call cycles and parallel resource conflicts`() {
         val first = RoutineDocument(
             documentId = "first",
@@ -101,5 +75,43 @@ class RoutineDocumentTest {
 
         assertTrue(issues.any { it.code == "recursive_routine_call" })
         assertTrue(issues.any { it.code == "parallel_resource_conflict" })
+    }
+
+    @Test
+    fun `validation caps source expansion arguments and input envelope`() {
+        val expansionBomb = RoutineDocument(
+            documentId = "expansion-bomb",
+            name = "Expansion Bomb",
+            steps = listOf(
+                RoutineStep.repeat(
+                    101,
+                    listOf(RoutineStep.repeat(101, listOf(RoutineStep.action("safe.action"))))
+                )
+            )
+        )
+        assertTrue(validateRoutine(expansionBomb).any { it.code == "routine_expansion_too_large" })
+
+        val tooManySourceSteps = RoutineDocument(
+            documentId = "too-many",
+            name = "Too Many",
+            steps = List(10_001) { RoutineStep.action("safe.action") }
+        )
+        assertTrue(validateRoutine(tooManySourceSteps).any { it.code == "routine_too_large" })
+
+        val tooManyArguments = RoutineDocument(
+            documentId = "argument-bomb",
+            name = "Argument Bomb",
+            steps = listOf(
+                RoutineStep.action("safe.action", (0..64).associate { "key$it" to "value" })
+            )
+        )
+        assertTrue(validateRoutine(tooManyArguments).any { it.code == "too_many_arguments" })
+
+        assertThrows(IllegalArgumentException::class.java) {
+            AresRoutineCodec.decode(" ".repeat(AresRoutineCodec.MAX_ROUTINE_JSON_CHARACTERS + 1))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AresRoutineCodec.decode("{".repeat(201))
+        }
     }
 }

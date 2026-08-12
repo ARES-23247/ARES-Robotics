@@ -20,7 +20,7 @@ object TelemetryTopicConstants {
     const val ESTIMATED_POSE_Y = "ARES/EstimatedPose/1"
     const val ESTIMATED_POSE_HEADING = "ARES/EstimatedPose/2"
 
-    /** Atomic remote-drive command: version, session, sequence, client time, vx, vy, omega. */
+    /** Atomic v2 command: version, session, sequence, client monotonic ms, vx, vy, omega, flags. */
     const val DRIVE_INPUT_FRAME = "ARES/Input/driveFrame"
 
     /** Packed seven-double records; consumers must honor [GAME_PIECES_COUNT]. */

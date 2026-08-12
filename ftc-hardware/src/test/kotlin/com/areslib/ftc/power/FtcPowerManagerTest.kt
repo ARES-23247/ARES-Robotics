@@ -9,7 +9,20 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class MockVoltageSensor(override var voltage: Double = 12.0) : VoltageSensor
+class MockVoltageSensor(initialVoltage: Double = 12.0) : VoltageSensor {
+    private var storedVoltage = initialVoltage
+    var readCount = 0
+        private set
+
+    override var voltage: Double
+        get() {
+            readCount++
+            return storedVoltage
+        }
+        set(value) {
+            storedVoltage = value
+        }
+}
 
 class MockMotorCurrentIO(override var currentAmps: Double = 0.0) : MotorIO {
     override var power: Double = 0.0
@@ -19,6 +32,29 @@ class MockMotorCurrentIO(override var currentAmps: Double = 0.0) : MotorIO {
 }
 
 class FtcPowerManagerTest {
+    @Test
+    fun `cached power manager is the sole voltage read owner at fifty hertz`() {
+        val sensor = MockVoltageSensor(12.0)
+        val hardwareMap = object : HardwareMap() {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> getAll(classOrType: Class<out T>): List<T> = listOf(sensor as T)
+        }
+        val powerManager = FtcPowerManager(hardwareMap)
+
+        powerManager.update(0.02, 100L)
+        assertEquals(1, sensor.readCount)
+        repeat(10) {
+            powerManager.batteryVoltage
+            powerManager.powerScale
+            powerManager.currentAmps
+        }
+        assertEquals(1, sensor.readCount)
+        powerManager.update(0.01, 110L)
+        assertEquals(1, sensor.readCount)
+        powerManager.update(0.01, 120L)
+        assertEquals(2, sensor.readCount)
+    }
+
     @Test
     fun `test voltage filter sag compensation and rate limiting`() {
         val mockSensor = MockVoltageSensor(12.0)

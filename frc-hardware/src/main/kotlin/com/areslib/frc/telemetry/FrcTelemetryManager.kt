@@ -29,11 +29,13 @@ import com.ctre.phoenix6.CANBus
  * @see DataLoggingTelemetry
  * @see ARESNetworkStatePublisher
  */
-class FrcTelemetryManager(
+open class FrcTelemetryManager(
     baseTelemetry: ITelemetry,
     private val store: Store,
     private val swerveIO: SwerveHardwareIO? = null
 ) : RobotTelemetryManager {
+
+    private var closed = false
 
     // Unified telemetry pipeline: base telemetry → CSV wrapper → publisher
     override val dataLoggingTelemetry = DataLoggingTelemetry(baseTelemetry)
@@ -68,7 +70,9 @@ class FrcTelemetryManager(
     private var activeBrownoutGuard: BrownoutGuard? = null
 
     /**
-     * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization topics.
+     * Publishes core robot state, custom sub-state publishers, and AdvantageScope 3D visualization
+     * topics into the current frame. [com.areslib.frc.FrcBaseRobot] owns the single flush after its
+     * power, registry, and platform-specific topics have also been appended.
      *
      * @param state The current immutable robot state snapshot.
      * @param gamepad1 Driver 1 gamepad input state (or `null`).
@@ -84,7 +88,15 @@ class FrcTelemetryManager(
         dtSeconds: Double,
         batteryVoltage: Double
     ) {
-        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, activeBrownoutGuard)
+        publisher.publish(
+            state,
+            gamepad1,
+            gamepad2,
+            dtSeconds,
+            batteryVoltage,
+            activeBrownoutGuard,
+            flush = false
+        )
 
         // Invoke all registered custom publishers (season-specific subsystem dashboards)
         for (i in 0 until customPublishers.size) {
@@ -130,8 +142,6 @@ class FrcTelemetryManager(
         } catch (_: Throwable) {
             // Graceful fallback if CANBus API fails (e.g. in simulation)
         }
-
-        dataLoggingTelemetry.update()
     }
 
     /**
@@ -149,6 +159,8 @@ class FrcTelemetryManager(
      * Gracefully closes telemetry log files and output streams.
      */
     override fun close() {
+        if (closed) return
+        closed = true
         dataLoggingTelemetry.close()
     }
 
