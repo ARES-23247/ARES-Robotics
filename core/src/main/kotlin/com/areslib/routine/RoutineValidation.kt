@@ -83,8 +83,8 @@ private fun validateStepIds(
     seen: MutableSet<String>,
     issues: MutableList<RoutineValidationIssue>
 ) {
-    steps.forEachIndexed { index, step ->
-        val path = "$parentPath[$index]"
+    steps.forEach { step ->
+        val path = "$parentPath/${step.stepId}"
         when {
             !step.stepId.matches(DOCUMENT_ID_REGEX) -> issues += routine.error(
                 "$path.stepId",

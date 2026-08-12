@@ -25,8 +25,8 @@ class RoutineBuilder internal constructor() {
     }
 
     /** Runs one project action. Arguments are validated against the generated capability catalog. */
-    fun action(key: String, vararg arguments: Pair<String, Any>) {
-        steps += RoutineStep.action(key, arguments.toRoutineArguments())
+    fun action(key: String, block: RoutineArgumentsBuilder.() -> Unit = {}) {
+        steps += RoutineStep.action(key, RoutineArgumentsBuilder().apply(block).build())
     }
 
     /** Drives to an exact CCW-positive field pose. Degrees are accepted only at this UI boundary. */
@@ -46,8 +46,16 @@ class RoutineBuilder internal constructor() {
     }
 
     /** Waits for a named Redux condition, with a mandatory fail-safe timeout. */
-    fun waitUntil(condition: String, timeoutSeconds: Double, vararg arguments: Pair<String, Any>) {
-        steps += RoutineStep.waitUntil(condition, timeoutSeconds, arguments.toRoutineArguments())
+    fun waitUntil(
+        condition: String,
+        timeoutSeconds: Double,
+        arguments: RoutineArgumentsBuilder.() -> Unit = {}
+    ) {
+        steps += RoutineStep.waitUntil(
+            condition,
+            timeoutSeconds,
+            RoutineArgumentsBuilder().apply(arguments).build()
+        )
     }
 
     /** Runs all children and completes only after every child completes. */
@@ -80,7 +88,7 @@ class RoutineBuilder internal constructor() {
     /** Selects one branch from the state observed when this node begins. */
     fun branch(
         condition: String,
-        vararg arguments: Pair<String, Any>,
+        arguments: RoutineArgumentsBuilder.() -> Unit = {},
         block: RoutineBranchBuilder.() -> Unit
     ) {
         val branch = RoutineBranchBuilder().apply(block)
@@ -88,7 +96,7 @@ class RoutineBuilder internal constructor() {
             condition,
             branch.trueSteps(),
             branch.falseSteps(),
-            arguments.toRoutineArguments()
+            RoutineArgumentsBuilder().apply(arguments).build()
         )
     }
 
@@ -105,6 +113,37 @@ class RoutineBuilder internal constructor() {
             val errors = validateRoutine(document).filter { it.severity == RoutineValidationSeverity.ERROR }
             require(errors.isEmpty()) { errors.joinToString(separator = "; ") { it.message } }
         }
+}
+/** Strongly typed argument payload shared by action, condition, and branch DSL nodes. */
+@AresRoutineDsl
+class RoutineArgumentsBuilder internal constructor() {
+    private val values = linkedMapOf<String, String>()
+
+    fun number(key: String, value: Double) {
+        require(value.isFinite()) { "Argument '$key' must be finite" }
+        put(key, value.toString())
+    }
+
+    fun integer(key: String, value: Long) = put(key, value.toString())
+
+    fun boolean(key: String, value: Boolean) = put(key, value.toString())
+
+    fun text(key: String, value: String) = put(key, value)
+
+    fun option(key: String, value: Enum<*>) = put(key, value.name)
+
+    fun option(key: String, value: String) = put(key, value)
+
+    private fun put(key: String, value: String) {
+        require(key.matches(ARGUMENT_KEY)) { "Argument '$key' is not a stable key" }
+        check(values.putIfAbsent(key, value) == null) { "Argument '$key' was already declared" }
+    }
+
+    internal fun build(): Map<String, String> = values.toMap()
+
+    private companion object {
+        val ARGUMENT_KEY = Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")
+    }
 }
 
 @AresRoutineDsl
@@ -166,13 +205,4 @@ class RoutineBranchBuilder internal constructor() {
 
     internal fun trueSteps(): List<RoutineStep> = requireNotNull(whenTrue) { "branch requires then { }" }
     internal fun falseSteps(): List<RoutineStep> = whenFalse
-}
-
-private fun Array<out Pair<String, Any>>.toRoutineArguments(): Map<String, String> = associate { (key, value) ->
-    key to when (value) {
-        is Double -> require(value.isFinite()) { "Argument '$key' must be finite" }.let { value.toString() }
-        is Float -> require(value.isFinite()) { "Argument '$key' must be finite" }.let { value.toString() }
-        is Number, is Boolean, is String, is Enum<*> -> value.toString()
-        else -> error("Argument '$key' must be a number, Boolean, String, or enum")
-    }
 }
