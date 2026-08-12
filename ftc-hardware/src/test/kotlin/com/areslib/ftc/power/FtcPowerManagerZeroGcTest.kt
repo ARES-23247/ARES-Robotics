@@ -32,13 +32,22 @@ class FtcPowerManagerZeroGcTest {
 
         repeat(2_000) { manager.update(0.02, 100L + it * 20L) }
         val threadId = Thread.currentThread().id
-        val before = allocationBean.getThreadAllocatedBytes(threadId)
+        val profilingBefore = allocationBean.getThreadAllocatedBytes(threadId)
         repeat(10_000) { manager.update(0.02, 100_000L + it * 20L) }
-        val allocatedBytes = allocationBean.getThreadAllocatedBytes(threadId) - before
+        val profilingBytes = allocationBean.getThreadAllocatedBytes(threadId) - profilingBefore
+        val steadyStateBefore = allocationBean.getThreadAllocatedBytes(threadId)
+        repeat(10_000) { manager.update(0.02, 300_000L + it * 20L) }
+        val steadyStateBytes = allocationBean.getThreadAllocatedBytes(threadId) - steadyStateBefore
 
         assertTrue(
-            allocatedBytes <= 256L,
-            "FTC power updates must not allocate registry iterators (allocated $allocatedBytes bytes)",
+            profilingBytes <= 64L * 1024L,
+            "FTC power profiling must have bounded one-time JVM overhead " +
+                "(profiling=$profilingBytes bytes)",
+        )
+        assertTrue(
+            steadyStateBytes == 0L,
+            "FTC power updates must allocate zero bytes after profiling stabilization " +
+                "(profiling=$profilingBytes, steady-state=$steadyStateBytes)",
         )
     }
 
