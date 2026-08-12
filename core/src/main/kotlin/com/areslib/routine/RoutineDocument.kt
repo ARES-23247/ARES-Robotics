@@ -1,7 +1,12 @@
 package com.areslib.routine
 
+import java.util.UUID
+
 /** Current on-disk schema for `.aresroutine` documents. */
-const val ARES_ROUTINE_SCHEMA_VERSION: Int = 1
+const val ARES_ROUTINE_SCHEMA_VERSION: Int = 2
+
+/** Creates a persistent authoring identity for one routine node. */
+fun newRoutineStepId(): String = "step-${UUID.randomUUID()}"
 
 /**
  * A versioned, trigger-neutral robot routine.
@@ -71,6 +76,7 @@ data class RoutineDriveStep(
  */
 data class RoutineStep(
     val kind: RoutineStepKind,
+    val stepId: String = newRoutineStepId(),
     val actionKey: String? = null,
     val arguments: Map<String, String> = emptyMap(),
     val drive: RoutineDriveStep? = null,
@@ -84,48 +90,71 @@ data class RoutineStep(
     val elseChildren: List<RoutineStep> = emptyList()
 ) {
     companion object {
-        fun action(key: String, arguments: Map<String, String> = emptyMap()): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.ACTION, actionKey = key, arguments = arguments)
+        fun action(
+            key: String,
+            arguments: Map<String, String> = emptyMap(),
+            stepId: String = newRoutineStepId()
+        ): RoutineStep = RoutineStep(kind = RoutineStepKind.ACTION, stepId = stepId, actionKey = key, arguments = arguments)
 
-        fun driveTo(drive: RoutineDriveStep): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.DRIVE_TO, drive = drive)
+        fun driveTo(drive: RoutineDriveStep, stepId: String = newRoutineStepId()): RoutineStep =
+            RoutineStep(kind = RoutineStepKind.DRIVE_TO, stepId = stepId, drive = drive)
 
-        fun wait(seconds: Double): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.WAIT, durationSeconds = seconds)
+        fun wait(seconds: Double, stepId: String = newRoutineStepId()): RoutineStep =
+            RoutineStep(kind = RoutineStepKind.WAIT, stepId = stepId, durationSeconds = seconds)
 
         fun waitUntil(
             conditionKey: String,
             timeoutSeconds: Double,
-            arguments: Map<String, String> = emptyMap()
+            arguments: Map<String, String> = emptyMap(),
+            stepId: String = newRoutineStepId()
         ): RoutineStep = RoutineStep(
             kind = RoutineStepKind.WAIT_UNTIL,
+            stepId = stepId,
             conditionKey = conditionKey,
             timeoutSeconds = timeoutSeconds,
             arguments = arguments
         )
 
-        fun together(children: List<RoutineStep>): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.TOGETHER, children = children)
+        fun together(children: List<RoutineStep>, stepId: String = newRoutineStepId()): RoutineStep =
+            RoutineStep(kind = RoutineStepKind.TOGETHER, stepId = stepId, children = children)
 
-        fun firstToFinish(children: List<RoutineStep>): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.FIRST_TO_FINISH, children = children)
+        fun firstToFinish(children: List<RoutineStep>, stepId: String = newRoutineStepId()): RoutineStep =
+            RoutineStep(kind = RoutineStepKind.FIRST_TO_FINISH, stepId = stepId, children = children)
 
-        fun deadline(deadline: RoutineStep, companions: List<RoutineStep>): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.DEADLINE, deadline = deadline, children = companions)
+        fun deadline(
+            deadline: RoutineStep,
+            companions: List<RoutineStep>,
+            stepId: String = newRoutineStepId()
+        ): RoutineStep = RoutineStep(
+            kind = RoutineStepKind.DEADLINE,
+            stepId = stepId,
+            deadline = deadline,
+            children = companions
+        )
 
-        fun call(routineId: String): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.CALL, routineId = routineId)
+        fun call(routineId: String, stepId: String = newRoutineStepId()): RoutineStep =
+            RoutineStep(kind = RoutineStepKind.CALL, stepId = stepId, routineId = routineId)
 
-        fun repeat(count: Int, children: List<RoutineStep>): RoutineStep =
-            RoutineStep(kind = RoutineStepKind.REPEAT, repeatCount = count, children = children)
+        fun repeat(
+            count: Int,
+            children: List<RoutineStep>,
+            stepId: String = newRoutineStepId()
+        ): RoutineStep = RoutineStep(
+            kind = RoutineStepKind.REPEAT,
+            stepId = stepId,
+            repeatCount = count,
+            children = children
+        )
 
         fun branch(
             conditionKey: String,
             whenTrue: List<RoutineStep>,
             whenFalse: List<RoutineStep> = emptyList(),
-            arguments: Map<String, String> = emptyMap()
+            arguments: Map<String, String> = emptyMap(),
+            stepId: String = newRoutineStepId()
         ): RoutineStep = RoutineStep(
             kind = RoutineStepKind.BRANCH,
+            stepId = stepId,
             conditionKey = conditionKey,
             arguments = arguments,
             children = whenTrue,

@@ -83,8 +83,8 @@ class RoutineCompiler(
         callStack: MutableSet<String>,
         issues: MutableList<RoutineValidationIssue>
     ): Task {
-        val tasks = steps.mapIndexedNotNull { index, step ->
-            compileStep(owner, step, "$parentPath[$index]", executionId, callStack, issues)
+        val tasks = steps.mapNotNull { step ->
+            compileStep(owner, step, "$parentPath/${step.stepId}", executionId, callStack, issues)
         }
         return SequentialTaskGroup(tasks)
     }
@@ -142,7 +142,7 @@ class RoutineCompiler(
                     return null
                 }
                 try {
-                    compileSteps(called, called.steps, "$path.call[$calledId].steps", executionId, callStack, issues)
+                    compileSteps(called, called.steps, "routine/$calledId/steps", executionId, callStack, issues)
                 } finally {
                     callStack.remove(calledId)
                 }
@@ -192,8 +192,8 @@ class RoutineCompiler(
         executionId: Long,
         callStack: MutableSet<String>,
         issues: MutableList<RoutineValidationIssue>
-    ): List<Task> = children.mapIndexedNotNull { index, child ->
-        compileStep(owner, child, "$parentPath[$index]", executionId, callStack, issues)
+    ): List<Task> = children.mapNotNull { child ->
+        compileStep(owner, child, "$parentPath/${child.stepId}", executionId, callStack, issues)
     }
 
     private fun resolveCondition(

@@ -45,7 +45,7 @@ class RoutineCodecStrictTest {
             {
               "documentId":"strict-action",
               "name":"Strict Action",
-              "steps":[{"kind":"ACTION","actionKey":"intake.start","arguments":{"speed":"fast"}}]
+              "steps":[{"kind":"ACTION","stepId":"step-action","actionKey":"intake.start","arguments":{"speed":"fast"}}]
             }
         """.trimIndent()
         val malformed = listOf(
@@ -58,19 +58,31 @@ class RoutineCodecStrictTest {
         malformed.forEach(::assertRejected)
     }
 
+    @Test
+    fun `strict codec requires unique stable step identities`() {
+        val valid = validDriveDocument()
+
+        assertRejected(valid.replace("\"stepId\":\"step-drive\",", ""))
+        assertRejected(valid.replace("\"step-drive\"", "\"INVALID STEP\""))
+        val duplicate = AresRoutineCodec.decode(valid)
+        val repeated = duplicate.copy(steps = listOf(duplicate.steps.single(), duplicate.steps.single()))
+        assertThrows(IllegalArgumentException::class.java) { AresRoutineCodec.encode(repeated) }
+    }
+
     private fun assertRejected(json: String) {
         assertThrows(IllegalArgumentException::class.java) { AresRoutineCodec.decode(json) }
     }
 
     private fun validDriveDocument(): String = """
         {
-          "schemaVersion":1,
+          "schemaVersion":2,
           "documentId":"strict-drive",
           "revision":1,
           "name":"Strict Drive",
           "steps":[
             {
               "kind":"DRIVE_TO",
+              "stepId":"step-drive",
               "arguments":{},
               "drive":{
                 "target":{"xMeters":1.25,"yMeters":2.5,"headingRadians":0.5},
