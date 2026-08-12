@@ -110,7 +110,10 @@ class TelemetryUpdateE2ETest {
             it.start()
         }
 
-        val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":0.5,"centerY":0.25,"width":0.4,"height":0.2,"rotation":0.0}]"""
+        // Keep the field-contract fixture clear of the positive-X drive path. Putting this wall at
+        // x=0.5 made the physics assertion depend on whether the robot moved before the obstacle
+        // update reached the simulator.
+        val obstacleJson = """[{"id":"dashboard-wall","name":"Dashboard Wall","type":"Rectangle","centerX":-1.0,"centerY":1.0,"width":0.4,"height":0.2,"rotation":0.0}]"""
         NT4Server.publishTopic("ARES/Input/obstacles", obstacleJson)
         assertEquals(obstacleJson, com.areslib.sim.network.TelemetryPublisher.getWebObstacles())
         Thread.sleep(100)
@@ -119,14 +122,31 @@ class TelemetryUpdateE2ETest {
             com.areslib.state.RobotFieldManager.activeConfig.obstacles.any { it.id == "dashboard-wall" }
         )
 
-        // Wait for sim loop to step, publish motor state, and build up velocity
-        Thread.sleep(1500)
+        // Wait for the sim loop to step, publish motor state, and build up velocity. CI runs all
+        // Gradle module tests concurrently, so a fixed sleep cannot guarantee that the simulator
+        // thread has received enough CPU time.
+        Thread.sleep(500)
 
         // 4. Verify canonical FTC Motor Powers (fl, fr, rl, rr)
-        val flPower = NT4Server.getDouble("Hardware/Motors/fl/Power", 0.0)
-        val frPower = NT4Server.getDouble("Hardware/Motors/fr/Power", 0.0)
-        val rlPower = NT4Server.getDouble("Hardware/Motors/rl/Power", 0.0)
-        val rrPower = NT4Server.getDouble("Hardware/Motors/rr/Power", 0.0)
+        var flPower = NT4Server.getDouble("Hardware/Motors/fl/Power", 0.0)
+        var frPower = NT4Server.getDouble("Hardware/Motors/fr/Power", 0.0)
+        var rlPower = NT4Server.getDouble("Hardware/Motors/rl/Power", 0.0)
+        var rrPower = NT4Server.getDouble("Hardware/Motors/rr/Power", 0.0)
+        var motorPollsRemaining = 150
+        while (
+            (kotlin.math.abs(flPower) <= 0.05 ||
+                kotlin.math.abs(frPower) <= 0.05 ||
+                kotlin.math.abs(rlPower) <= 0.05 ||
+                kotlin.math.abs(rrPower) <= 0.05) &&
+            motorPollsRemaining > 0
+        ) {
+            Thread.sleep(20L)
+            flPower = NT4Server.getDouble("Hardware/Motors/fl/Power", 0.0)
+            frPower = NT4Server.getDouble("Hardware/Motors/fr/Power", 0.0)
+            rlPower = NT4Server.getDouble("Hardware/Motors/rl/Power", 0.0)
+            rrPower = NT4Server.getDouble("Hardware/Motors/rr/Power", 0.0)
+            motorPollsRemaining--
+        }
 
         println("[Telemetry E2E Test] Motor Powers -> FL: $flPower, FR: $frPower, RL: $rlPower, RR: $rrPower")
         // This test owns the telemetry transport contract, not the controller's transient wheel
@@ -176,7 +196,16 @@ class TelemetryUpdateE2ETest {
         val estHeading = NT4Server.getDouble("ARES/EstimatedPose/2", 0.0)
         println("[Telemetry E2E Test] Estimated Pose -> X: $estX, Y: $estY, Heading: $estHeading rad")
 
-        val trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
+        // Linux CI can schedule the simulator behind the publisher while the other module test
+        // workers are busy. Wait on the behavior we care about instead of sampling the pose once
+        // at an arbitrary wall-clock instant. The input lease remains refreshed by the publisher.
+        var trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
+        var posePollsRemaining = 100
+        while (trueX <= 0.05 && posePollsRemaining > 0) {
+            Thread.sleep(20L)
+            trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
+            posePollsRemaining--
+        }
         val trueY = NT4Server.getDouble("ARES/TruePose/1", 0.0)
         println("[Telemetry E2E Test] True Physics Pose -> X: $trueX, Y: $trueY")
         assertTrue("Robot field X should advance under positive field-vx input (X=$trueX, Y=$trueY)", trueX > 0.05)

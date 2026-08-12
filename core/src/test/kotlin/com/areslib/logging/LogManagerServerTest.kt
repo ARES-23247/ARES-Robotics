@@ -94,10 +94,16 @@ class LogManagerServerTest {
             )
             LogManagerServer.configureDeleteToken(token)
 
-            val listConnection = URL("http://localhost:5002/api/logs").openConnection() as HttpURLConnection
-            assertEquals(200, listConnection.responseCode)
-            val listing = listConnection.inputStream.bufferedReader().use { it.readText() }
-            listConnection.disconnect()
+            var listing = ""
+            var listingPollsRemaining = 50
+            while (!listing.contains(completed.name) && listingPollsRemaining > 0) {
+                val listConnection = URL("http://localhost:5002/api/logs").openConnection() as HttpURLConnection
+                assertEquals(200, listConnection.responseCode)
+                listing = listConnection.inputStream.bufferedReader().use { it.readText() }
+                listConnection.disconnect()
+                if (!listing.contains(completed.name)) Thread.sleep(20L)
+                listingPollsRemaining--
+            }
             assertFalse(listing.contains(active.name), "Writer-owned .active file must never be listed")
             assertTrue(listing.contains(completed.name), "Completed sibling must remain discoverable")
 

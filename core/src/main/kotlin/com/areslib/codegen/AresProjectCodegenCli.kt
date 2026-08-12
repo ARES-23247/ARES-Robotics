@@ -64,7 +64,10 @@ object AresProjectCodegenCli {
             )
         )
 
-        if (options.checkOnly) {
+        if (options.subsystemsOnly) {
+            // The caller requested only subsystem reconciliation/materialization. The canonical
+            // project source remains untouched and retains its independent checked-in verification.
+        } else if (options.checkOnly) {
             require(Files.isRegularFile(output)) {
                 "Generated source is missing at $output. Run the ARES generation task."
             }
@@ -84,16 +87,11 @@ object AresProjectCodegenCli {
         subsystems: List<com.areslib.subsystem.SubsystemDocument>,
         options: CliOptions,
     ) {
-        if (subsystems.isEmpty() && options.subsystemsOutput == null && options.subsystemsTestOutput == null) return
-        val mainRoot = requireNotNull(options.subsystemsOutput) {
-            "--subsystems-output is required when .ares/subsystems contains documents"
-        }.toAbsolutePath().normalize()
-        val testRoot = requireNotNull(options.subsystemsTestOutput) {
-            "--subsystems-test-output is required when generated subsystem tests are enabled"
-        }.toAbsolutePath().normalize()
-        require(mainRoot.startsWith(projectRoot) && testRoot.startsWith(projectRoot)) {
-            "Generated subsystem output must stay inside the selected project"
-        }
+        if (subsystems.isEmpty() &&
+            options.subsystemsOutput == null && options.subsystemsTestOutput == null &&
+            options.subsystemsGeneratedOutput == null && options.subsystemsGeneratedTestOutput == null &&
+            options.subsystemsStarterOutput == null
+        ) return
         val platform = when (options.platform) {
             ControllerInputPlatform.FTC -> SubsystemPlatform.FTC
             ControllerInputPlatform.FRC -> SubsystemPlatform.FRC
@@ -108,6 +106,58 @@ object AresProjectCodegenCli {
         } + SubsystemKotlinGenerator.generateRegistry(subsystems, target)
         val duplicate = files.groupBy { it.sourceSet to it.relativePath }.filterValues { it.size > 1 }.keys
         require(duplicate.isEmpty()) { "Generated subsystem paths collide: ${duplicate.joinToString()}" }
+        if (options.subsystemsStarterOutput != null) {
+            val starterRoot = options.subsystemsStarterOutput.toAbsolutePath().normalize()
+            require(starterRoot.startsWith(projectRoot)) { "Subsystem starter output must stay inside the selected project" }
+            val plan = SubsystemStarterReconciler.plan(starterRoot, files)
+            if (options.previewSubsystemStarters) {
+                println(plan.render())
+                return
+            }
+            if (options.applySubsystemStarters) {
+                println(SubsystemStarterReconciler.apply(starterRoot, files, options.subsystemConfirmationToken).render())
+            } else {
+                SubsystemStarterReconciler.requirePresent(starterRoot, files)
+            }
+            val generatedRoot = requireNotNull(options.subsystemsGeneratedOutput) {
+                "--subsystems-generated-output is required with --subsystems-starter-output"
+            }.toAbsolutePath().normalize()
+            val generatedTestRoot = requireNotNull(options.subsystemsGeneratedTestOutput) {
+                "--subsystems-generated-test-output is required with --subsystems-starter-output"
+            }.toAbsolutePath().normalize()
+            require(generatedRoot.startsWith(projectRoot) && generatedTestRoot.startsWith(projectRoot)) {
+                "Generated subsystem output must stay inside the selected project"
+            }
+            syncSourceSet(
+                generatedRoot,
+                files.filter {
+                    it.sourceSet == GeneratedSubsystemSourceSet.MAIN &&
+                        it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
+                },
+                options.checkOnly,
+            )
+            syncSourceSet(
+                generatedTestRoot,
+                files.filter {
+                    it.sourceSet == GeneratedSubsystemSourceSet.TEST &&
+                        it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
+                },
+                options.checkOnly,
+            )
+            return
+        }
+
+        // Checked-in legacy layout remains only for live consumers that have not opted into the
+        // explicit starter/generated split. New integrations must use --subsystems-starter-output.
+        val mainRoot = requireNotNull(options.subsystemsOutput) {
+            "--subsystems-output is required when .ares/subsystems contains documents"
+        }.toAbsolutePath().normalize()
+        val testRoot = requireNotNull(options.subsystemsTestOutput) {
+            "--subsystems-test-output is required when generated subsystem tests are enabled"
+        }.toAbsolutePath().normalize()
+        require(mainRoot.startsWith(projectRoot) && testRoot.startsWith(projectRoot)) {
+            "Generated subsystem output must stay inside the selected project"
+        }
         syncSourceSet(
             mainRoot,
             files.filter { it.sourceSet == GeneratedSubsystemSourceSet.MAIN },
@@ -211,17 +261,32 @@ object AresProjectCodegenCli {
         val subsystemsOutput: Path?,
         val subsystemsTestOutput: Path?,
         val subsystemsPackage: String?,
-        val checkOnly: Boolean
+        val checkOnly: Boolean,
+        val subsystemsOnly: Boolean,
+        val previewSubsystemStarters: Boolean,
+        val applySubsystemStarters: Boolean,
+        val subsystemsStarterOutput: Path?,
+        val subsystemsGeneratedOutput: Path?,
+        val subsystemsGeneratedTestOutput: Path?,
+        val subsystemConfirmationToken: String?,
     ) {
         companion object {
             fun parse(args: Array<String>): CliOptions {
                 val values = linkedMapOf<String, String>()
                 var checkOnly = false
+                var subsystemsOnly = false
+                var previewSubsystemStarters = false
+                var applySubsystemStarters = false
                 var index = 0
                 while (index < args.size) {
                     val key = args[index]
-                    if (key == "--check") {
-                        checkOnly = true
+                    if (key in FLAG_OPTIONS) {
+                        when (key) {
+                            "--check" -> checkOnly = true
+                            "--subsystems-only" -> subsystemsOnly = true
+                            "--preview-subsystem-starters" -> previewSubsystemStarters = true
+                            "--apply-subsystem-starters" -> applySubsystemStarters = true
+                        }
                         index++
                         continue
                     }
@@ -250,12 +315,24 @@ object AresProjectCodegenCli {
                     values["--subsystems-test-output"]?.let(Path::of),
                     values["--subsystems-package"],
                     checkOnly,
+                    subsystemsOnly,
+                    previewSubsystemStarters,
+                    applySubsystemStarters,
+                    values["--subsystems-starter-output"]?.let(Path::of),
+                    values["--subsystems-generated-output"]?.let(Path::of),
+                    values["--subsystems-generated-test-output"]?.let(Path::of),
+                    values["--subsystems-confirmation-token"],
                 )
             }
 
             private val VALUE_OPTIONS = setOf(
                 "--project", "--output", "--package", "--object", "--registry", "--platform",
                 "--subsystems-output", "--subsystems-test-output", "--subsystems-package"
+                , "--subsystems-starter-output", "--subsystems-generated-output",
+                "--subsystems-generated-test-output", "--subsystems-confirmation-token"
+            )
+            private val FLAG_OPTIONS = setOf(
+                "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters"
             )
         }
     }

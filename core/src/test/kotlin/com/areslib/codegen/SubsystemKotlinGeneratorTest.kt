@@ -3,6 +3,8 @@ package com.areslib.codegen
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemPlatform
+import com.areslib.subsystem.SubsystemTemplate
+import com.areslib.subsystem.SubsystemTemplates
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystem
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -39,10 +41,19 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(definition.contains("val document = subsystem("))
         assertTrue(definition.contains("Student \\\"intake\\\"\\nwith notes"))
         assertTrue(io.contains("value.takeIf(Double::isFinite) ?: 0.0"))
-        assertTrue(!io.contains("catch (_: Exception) { safe() }"))
+        assertTrue(io.contains("HardwareRegistry.registerDevice"))
+        assertTrue(io.contains("outputFaultLatched"))
+        assertTrue(io.contains("recoverWithNeutral"))
+        assertTrue(io.contains("configurationHealthy"))
         assertTrue(subsystem.contains("UpdateNamedSubsystemState"))
+        assertTrue(!subsystem.contains("io.refresh()"))
+        assertTrue(subsystem.contains("snapshotAgeMs"))
         assertTrue(controller.contains("takeIf(Double::isFinite) ?: 0.0"))
         assertTrue(files.any { it.sourceSet == GeneratedSubsystemSourceSet.TEST })
+        assertTrue(files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
+            .all { it.content.startsWith("// ARES OWNERSHIP: GENERATED STARTER") })
+        assertTrue(files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT }
+            .all { it.content.startsWith("// ARES OWNERSHIP: GENERATED - DO NOT EDIT") })
 
         val registry = SubsystemKotlinGenerator.generateRegistry(
             listOf(document),
@@ -53,6 +64,46 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(registry.contains("current.copy(power = typedValue)"))
         assertTrue(registry.contains("install(\"intake\", false)"))
         assertTrue(registry.contains("Optional generated subsystem"))
+    }
+
+    @Test
+    fun `homed prototype keeps boundaries and generates its complete safety contract`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.HOMED_MECHANISM,
+            documentId = "prototype-elevator",
+            name = "PrototypeElevator",
+            platform = SubsystemPlatform.FTC,
+        )
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        )
+
+        assertEquals(8, files.size)
+        assertEquals(6, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER })
+        assertEquals(2, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT })
+        assertEquals(1, files.count { it.group == SubsystemArtifactGroup.DOMAIN })
+        assertEquals(2, files.count { it.group == SubsystemArtifactGroup.CONTROL })
+        assertEquals(2, files.count { it.group == SubsystemArtifactGroup.HARDWARE })
+        assertEquals(1, files.count { it.group == SubsystemArtifactGroup.SIMULATION })
+        assertEquals(1, files.count { it.group == SubsystemArtifactGroup.GENERATED_PLUMBING })
+        assertEquals(1, files.count { it.group == SubsystemArtifactGroup.VERIFICATION })
+
+        val state = files.single { it.artifact == SubsystemArtifact.STATE }.content
+        val io = files.single { it.artifact == SubsystemArtifact.IO_CONTRACT }.content
+        val physical = files.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        val mock = files.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
+        val test = files.single { it.artifact == SubsystemArtifact.CONTRACT_TEST }.content
+        assertTrue(state.contains("val homed: Boolean = false"))
+        assertTrue(state.contains("val currentReadingValid: Boolean = false"))
+        assertTrue(io.contains("Cached hardware boundary"))
+        assertTrue(physical.contains("if (cachedHomeSwitchActive == true) homed = true"))
+        assertTrue(physical.contains("feedbackTimestampMs = RobotClock.currentTimeMillis()"))
+        assertTrue(physical.contains("if (!applyNeutral()) outputFaultLatched = true"))
+        assertTrue(mock.contains("failNextRefresh"))
+        assertTrue(mock.contains("failNextWrite"))
+        assertTrue(test.contains("failed writes latch and require explicit neutral recovery"))
+        assertTrue(test.contains("invalid feedback and cleanup fail closed"))
     }
 
     @Test

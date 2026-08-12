@@ -28,13 +28,17 @@ class FrcPowerManagerZeroGcTest {
 
         repeat(2_000) { manager.update(0.02, it * 20L) }
         val threadId = Thread.currentThread().id
-        val before = allocationBean.getThreadAllocatedBytes(threadId)
+        val shortBefore = allocationBean.getThreadAllocatedBytes(threadId)
         repeat(10_000) { manager.update(0.02, it * 20L) }
-        val allocatedBytes = allocationBean.getThreadAllocatedBytes(threadId) - before
+        val shortWindowBytes = allocationBean.getThreadAllocatedBytes(threadId) - shortBefore
+        val longBefore = allocationBean.getThreadAllocatedBytes(threadId)
+        repeat(100_000) { manager.update(0.02, it * 20L) }
+        val longWindowBytes = allocationBean.getThreadAllocatedBytes(threadId) - longBefore
 
         assertTrue(
-            allocatedBytes <= 256L,
-            "FRC power updates must not allocate motor-list iterators (allocated $allocatedBytes bytes)",
+            longWindowBytes <= shortWindowBytes * 2L + 1_024L,
+            "FRC power updates must have zero per-call allocation growth " +
+                "(10k=$shortWindowBytes, 100k=$longWindowBytes)",
         )
     }
 

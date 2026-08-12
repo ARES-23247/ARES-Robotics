@@ -34,13 +34,16 @@ class SubsystemBuilder internal constructor(
     private val platform: SubsystemPlatform,
 ) {
     var description: String = ""
+    var template: SubsystemTemplate = SubsystemTemplate.ADVANCED_CUSTOM
     var requiredAtStartup: Boolean = true
     var generateMockIo: Boolean = true
     var generateTest: Boolean = true
+    var autonomousResourceKey: String? = null
 
     val state = SubsystemStateBuilder()
     val hardware = SubsystemHardwareBuilder(platform)
     val control = SubsystemControlBuilder()
+    val safety = SubsystemSafetyBuilder()
 
     internal fun build(): SubsystemDocument {
         val document = SubsystemDocument(
@@ -48,9 +51,12 @@ class SubsystemBuilder internal constructor(
             name = name,
             description = description,
             platform = platform,
+            template = template,
             hardware = hardware.entries.toList(),
             stateFields = state.entries.toList(),
             controlLoops = control.entries.toList(),
+            safety = safety.build(),
+            autonomousResourceKey = autonomousResourceKey,
             requiredAtStartup = requiredAtStartup,
             generateMockIo = generateMockIo,
             generateTest = generateTest,
@@ -59,6 +65,34 @@ class SubsystemBuilder internal constructor(
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
         return document
     }
+}
+
+/** Declarative fail-closed requirements used by codegen, preview warnings, and verification. */
+@AresSubsystemDsl
+class SubsystemSafetyBuilder internal constructor() {
+    var feedbackTimeoutMs: Long? = 250L
+    var requiresHoming: Boolean = false
+    var homingSensorId: String? = null
+    var requiresCalibration: Boolean = false
+    var requiresConfigurationHealth: Boolean = true
+    var requiresCurrentMonitoring: Boolean = false
+    var latchOutputFaults: Boolean = true
+    var requiresExplicitNeutralRecovery: Boolean = true
+    var telemetryEnabled: Boolean = true
+    var zeroAllocationPeriodic: Boolean = true
+
+    internal fun build() = SubsystemSafetyDocument(
+        feedbackTimeoutMs = feedbackTimeoutMs,
+        requiresHoming = requiresHoming,
+        homingSensorId = homingSensorId,
+        requiresCalibration = requiresCalibration,
+        requiresConfigurationHealth = requiresConfigurationHealth,
+        requiresCurrentMonitoring = requiresCurrentMonitoring,
+        latchOutputFaults = latchOutputFaults,
+        requiresExplicitNeutralRecovery = requiresExplicitNeutralRecovery,
+        telemetryEnabled = telemetryEnabled,
+        zeroAllocationPeriodic = zeroAllocationPeriodic,
+    )
 }
 
 @AresSubsystemDsl
@@ -184,12 +218,20 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
             ),
             required = builder.required,
             inverted = builder.inverted,
-            measurementFieldId = builder.measurement?.id,
-            measurementSource = builder.measurementSource
-                ?: builder.measurement?.let { kind.compatibleMeasurementSources().firstOrNull() },
-            measurementScale = builder.measurementScale,
-            measurementOffset = builder.measurementOffset,
+            measurements = builder.measurements.map { measurement ->
+                SubsystemMeasurementDocument(
+                    measurement.field.id,
+                    measurement.source ?: kind.compatibleMeasurementSources().first(),
+                    measurement.scale,
+                    measurement.offset,
+                )
+            },
             currentLimitAmps = builder.currentLimitAmps,
+            safeOutput = builder.safeOutput ?: when (kind) {
+                SubsystemHardwareKind.MOTOR, SubsystemHardwareKind.CONTINUOUS_SERVO -> 0.0
+                SubsystemHardwareKind.POSITIONAL_SERVO -> 0.5
+                else -> null
+            },
         )
         return SubsystemHardwareRef(id)
     }
@@ -204,10 +246,8 @@ class HardwareDeviceBuilder internal constructor(platform: SubsystemPlatform) {
     var required: Boolean = true
     var inverted: Boolean = false
     var currentLimitAmps: Double? = null
-    internal var measurement: SubsystemFieldRef? = null
-    internal var measurementSource: SubsystemMeasurementSource? = null
-    internal var measurementScale: Double = 1.0
-    internal var measurementOffset: Double = 0.0
+    var safeOutput: Double? = null
+    internal val measurements = mutableListOf<MeasurementBuilderValue>()
 
     init {
         if (platform == SubsystemPlatform.FRC) hardwareMapName = null
@@ -219,12 +259,16 @@ class HardwareDeviceBuilder internal constructor(platform: SubsystemPlatform) {
         scale: Double = 1.0,
         offset: Double = 0.0,
     ) {
-        measurement = field
-        measurementSource = source
-        measurementScale = scale
-        measurementOffset = offset
+        measurements += MeasurementBuilderValue(field, source, scale, offset)
     }
 }
+
+internal data class MeasurementBuilderValue(
+    val field: SubsystemFieldRef,
+    val source: SubsystemMeasurementSource?,
+    val scale: Double,
+    val offset: Double,
+)
 
 @AresSubsystemDsl
 class SubsystemControlBuilder internal constructor() {

@@ -16,10 +16,28 @@ import com.areslib.subsystem.validateSubsystemDocument
 
 enum class GeneratedSubsystemSourceSet { MAIN, TEST }
 
+enum class SubsystemArtifactGroup { DOMAIN, CONTROL, HARDWARE, SIMULATION, GENERATED_PLUMBING, VERIFICATION }
+enum class SubsystemArtifactOwnership { USER_OWNED, GENERATED_STARTER, GENERATED_DO_NOT_EDIT }
+enum class SubsystemArtifact {
+    DEFINITION,
+    STATE,
+    IO_CONTRACT,
+    CONTROLLER,
+    SUBSYSTEM_LIFECYCLE,
+    PLATFORM_IO,
+    MOCK_IO,
+    CONTRACT_TEST,
+    REGISTRY,
+}
+
 data class GeneratedSubsystemFile(
     val relativePath: String,
     val content: String,
     val sourceSet: GeneratedSubsystemSourceSet = GeneratedSubsystemSourceSet.MAIN,
+    val artifact: SubsystemArtifact,
+    val group: SubsystemArtifactGroup,
+    val ownership: SubsystemArtifactOwnership,
+    val description: String,
 )
 
 data class SubsystemKotlinCodegenTarget(
@@ -43,20 +61,32 @@ object SubsystemKotlinGenerator {
         val pkg = "${target.basePackage}.$packageSegment"
         val directory = packageSegment
         val files = mutableListOf(
-            GeneratedSubsystemFile("$directory/${document.name}Definition.kt", definitionSource(document, pkg)),
-            GeneratedSubsystemFile("$directory/${document.name}State.kt", stateSource(document, pkg)),
-            GeneratedSubsystemFile("$directory/${document.name}IO.kt", ioSource(document, pkg)),
-            GeneratedSubsystemFile("$directory/${document.name}Controller.kt", controllerSource(document, pkg)),
-            GeneratedSubsystemFile("$directory/${document.name}Subsystem.kt", subsystemSource(document, pkg)),
-            GeneratedSubsystemFile("$directory/${platformPrefix(document.platform)}${document.name}IO.kt", hardwareIoSource(document, pkg)),
+            generated("$directory/${document.name}Definition.kt", definitionSource(document, pkg), SubsystemArtifact.DEFINITION,
+                SubsystemArtifactGroup.GENERATED_PLUMBING, "Declarative DSL mirror used for review and content hashing."),
+            starter("$directory/${document.name}State.kt", stateSource(document, pkg), SubsystemArtifact.STATE,
+                SubsystemArtifactGroup.DOMAIN, "Immutable Redux state and safety observations owned by the subsystem."),
+            starter("$directory/${document.name}IO.kt", ioSource(document, pkg), SubsystemArtifact.IO_CONTRACT,
+                SubsystemArtifactGroup.HARDWARE, "Cached, fail-closed boundary shared by physical and simulated adapters."),
+            starter("$directory/${document.name}Controller.kt", controllerSource(document, pkg), SubsystemArtifact.CONTROLLER,
+                SubsystemArtifactGroup.CONTROL, "Allocation-free policy that converts immutable state into safe IO commands."),
+            starter("$directory/${document.name}Subsystem.kt", subsystemSource(document, pkg), SubsystemArtifact.SUBSYSTEM_LIFECYCLE,
+                SubsystemArtifactGroup.CONTROL, "Lifecycle bridge that separates cached reads, Redux updates, and output writes."),
+            starter("$directory/${platformPrefix(document.platform)}${document.name}IO.kt", hardwareIoSource(document, pkg),
+                SubsystemArtifact.PLATFORM_IO, SubsystemArtifactGroup.HARDWARE,
+                "Platform adapter that owns devices, cached reads, configuration, and output faults."),
         )
         if (document.generateMockIo) {
-            files += GeneratedSubsystemFile("$directory/Mock${document.name}IO.kt", mockIoSource(document, pkg))
+            files += starter("$directory/Mock${document.name}IO.kt", mockIoSource(document, pkg),
+                SubsystemArtifact.MOCK_IO, SubsystemArtifactGroup.SIMULATION,
+                "Deterministic simulator adapter with the same safety and recovery semantics as hardware.")
         }
         if (document.generateTest) {
-            files += GeneratedSubsystemFile(
+            files += generated(
                 "$directory/${document.name}GeneratedTest.kt",
                 testSource(document, pkg),
+                SubsystemArtifact.CONTRACT_TEST,
+                SubsystemArtifactGroup.VERIFICATION,
+                "Generated contract suite for startup, faults, recovery, parity, cleanup, and hot paths.",
                 GeneratedSubsystemSourceSet.TEST,
             )
         }
@@ -162,7 +192,56 @@ private inline fun MutableList<Subsystem>.install(
             append(installHelper)
             if (installHelper.isNotEmpty()) append('\n')
         }
-        return GeneratedSubsystemFile("GeneratedSubsystemRegistry.kt", source)
+        return generated(
+            "GeneratedSubsystemRegistry.kt",
+            source,
+            SubsystemArtifact.REGISTRY,
+            SubsystemArtifactGroup.GENERATED_PLUMBING,
+            "Mechanical composition and autonomous-action registration for every subsystem.",
+        )
+    }
+
+    private fun starter(
+        path: String,
+        source: String,
+        artifact: SubsystemArtifact,
+        group: SubsystemArtifactGroup,
+        description: String,
+    ) = GeneratedSubsystemFile(
+        path,
+        ownershipHeader(SubsystemArtifactOwnership.GENERATED_STARTER, description) + source,
+        artifact = artifact,
+        group = group,
+        ownership = SubsystemArtifactOwnership.GENERATED_STARTER,
+        description = description,
+    )
+
+    private fun generated(
+        path: String,
+        source: String,
+        artifact: SubsystemArtifact,
+        group: SubsystemArtifactGroup,
+        description: String,
+        sourceSet: GeneratedSubsystemSourceSet = GeneratedSubsystemSourceSet.MAIN,
+    ) = GeneratedSubsystemFile(
+        path,
+        ownershipHeader(SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT, description) + source,
+        sourceSet,
+        artifact,
+        group,
+        SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT,
+        description,
+    )
+
+    private fun ownershipHeader(ownership: SubsystemArtifactOwnership, description: String): String = when (ownership) {
+        SubsystemArtifactOwnership.USER_OWNED ->
+            "// ARES OWNERSHIP: USER-OWNED\n// $description\n"
+        SubsystemArtifactOwnership.GENERATED_STARTER ->
+            "// ARES OWNERSHIP: GENERATED STARTER\n// $description\n" +
+                "// Review and customize this file. Regeneration never replaces it without an explicit diff confirmation.\n"
+        SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT ->
+            "// ARES OWNERSHIP: GENERATED - DO NOT EDIT\n// $description\n" +
+                "// Edit the .aressubsystem document and regenerate instead.\n"
     }
 
     private fun definitionSource(document: SubsystemDocument, pkg: String): String {
@@ -185,12 +264,14 @@ private inline fun MutableList<Subsystem>.install(
                 if (!device.required) add("required = false")
                 if (device.inverted) add("inverted = true")
                 device.currentLimitAmps?.let { add("currentLimitAmps = ${it.kotlinDouble()}") }
-                device.measurementFieldId?.let { fieldId ->
+                device.safeOutput?.let { add("safeOutput = ${it.kotlinDouble()}") }
+                device.measurements.forEach { measurement ->
+                    val fieldId = measurement.fieldId
                     val arguments = buildList {
                         add(fieldId)
-                        add("SubsystemMeasurementSource.${requireNotNull(device.measurementSource)}")
-                        if (device.measurementScale != 1.0) add("scale = ${device.measurementScale.kotlinDouble()}")
-                        if (device.measurementOffset != 0.0) add("offset = ${device.measurementOffset.kotlinDouble()}")
+                        add("SubsystemMeasurementSource.${measurement.source}")
+                        if (measurement.scale != 1.0) add("scale = ${measurement.scale.kotlinDouble()}")
+                        if (measurement.offset != 0.0) add("offset = ${measurement.offset.kotlinDouble()}")
                     }
                     add("measurement(${arguments.joinToString()})")
                 }
@@ -219,6 +300,19 @@ private inline fun MutableList<Subsystem>.install(
         val mockLine = if (!document.generateMockIo) "        generateMockIo = false\n" else ""
         val testLine = if (!document.generateTest) "        generateTest = false\n" else ""
         val requiredLine = if (!document.requiredAtStartup) "        requiredAtStartup = false\n" else ""
+        val resourceLine = document.autonomousResourceKey?.let { "        autonomousResourceKey = ${it.quoted()}\n" }.orEmpty()
+        val safetyLines = buildList {
+            add("            feedbackTimeoutMs = ${document.safety.feedbackTimeoutMs?.let { "${it}L" } ?: "null"}")
+            if (document.safety.requiresHoming) add("            requiresHoming = true")
+            document.safety.homingSensorId?.let { add("            homingSensorId = ${it.quoted()}") }
+            if (document.safety.requiresCalibration) add("            requiresCalibration = true")
+            if (!document.safety.requiresConfigurationHealth) add("            requiresConfigurationHealth = false")
+            if (document.safety.requiresCurrentMonitoring) add("            requiresCurrentMonitoring = true")
+            if (!document.safety.latchOutputFaults) add("            latchOutputFaults = false")
+            if (!document.safety.requiresExplicitNeutralRecovery) add("            requiresExplicitNeutralRecovery = false")
+            if (!document.safety.telemetryEnabled) add("            telemetryEnabled = false")
+            if (!document.safety.zeroAllocationPeriodic) add("            zeroAllocationPeriodic = false")
+        }.joinToString("\n")
         val hash = SubsystemDocumentCodec.contentHash(document)
         return """
             package $pkg
@@ -226,6 +320,7 @@ private inline fun MutableList<Subsystem>.install(
             import com.areslib.subsystem.SubsystemFieldRole
             import com.areslib.subsystem.SubsystemMeasurementSource
             import com.areslib.subsystem.SubsystemPlatform
+            import com.areslib.subsystem.SubsystemTemplate
             import com.areslib.subsystem.subsystem
 
             /** Generated from `.ares/subsystems/${document.documentId}.aressubsystem`; safe to read and learn from. */
@@ -233,7 +328,11 @@ private inline fun MutableList<Subsystem>.install(
                 const val CONTENT_SHA256: String = "$hash"
 
                 val document = subsystem(${document.documentId.quoted()}, ${document.name.quoted()}, SubsystemPlatform.${document.platform}) {
-            $descriptionLine$requiredLine$mockLine$testLine$fieldLines
+                    template = SubsystemTemplate.${document.template}
+            $descriptionLine$requiredLine$mockLine$testLine$resourceLine                    safety.apply {
+$safetyLines
+                    }
+$fieldLines
 
             $hardwareLines
 
@@ -245,8 +344,13 @@ private inline fun MutableList<Subsystem>.install(
 
     private fun stateSource(document: SubsystemDocument, pkg: String): String {
         val fields = document.stateFields.joinToString(",\n") { field ->
-            "    val ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
+            val bounds = listOfNotNull(field.minimum?.let { "min=$it" }, field.maximum?.let { "max=$it" })
+                .joinToString(", ").takeIf(String::isNotBlank)?.let { "; $it" }.orEmpty()
+            val unit = field.unit?.let { " in $it" }.orEmpty()
+            "    /** ${field.displayName}: ${field.role.name.lowercase()}$unit$bounds. */\n" +
+                "    val ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
         }
+        val separator = if (fields.isBlank()) "" else ",\n"
         return """
             package $pkg
 
@@ -254,18 +358,38 @@ private inline fun MutableList<Subsystem>.install(
 
             /** Immutable state owned by the ${document.name} subsystem. */
             data class ${document.name}State(
-            $fields
+            $fields$separator    /** True only when every required cached control sample is fresh and finite. */
+                val feedbackValid: Boolean = false,
+                /** Receiver timestamp of the newest complete cached input snapshot. */
+                val feedbackTimestampMs: Long = 0L,
+                /** True only after every required device configuration has succeeded. */
+                val configurationHealthy: Boolean = ${(!document.safety.requiresConfigurationHealth)},
+                /** True after the configured homing reference has been established. */
+                val homed: Boolean = ${(!document.safety.requiresHoming)},
+                /** True after mechanism calibration has been explicitly established. */
+                val calibrated: Boolean = ${(!document.safety.requiresCalibration)},
+                /** True only when required cached current samples are finite and fresh. */
+                val currentReadingValid: Boolean = ${(!document.safety.requiresCurrentMonitoring)},
+                /** Latched after a failed output write until an explicit successful neutral recovery. */
+                val outputFaultLatched: Boolean = false,
             ) : SubsystemState
         """.trimIndent() + "\n"
     }
 
     private fun ioSource(document: SubsystemDocument, pkg: String): String {
-        val measurements = document.hardware.mapNotNull { device ->
-            val field = document.field(device.measurementFieldId) ?: return@mapNotNull null
-            "    val ${field.fieldId}: ${field.kotlinType()}"
-        }.distinct()
+        val measurements = document.hardware.flatMap { device ->
+            device.measurements.mapNotNull { measurement ->
+                document.field(measurement.fieldId)?.let { field -> measurement to field }
+            }
+        }.distinctBy { it.second.fieldId }.map { (measurement, field) ->
+            val unit = field.unit?.let { " Unit: $it." }.orEmpty()
+            "    /** Cached ${field.displayName} from ${measurement.source.name.lowercase()}.$unit */\n" +
+                "    val ${field.fieldId}: ${field.kotlinType()}"
+        }
         val commands = document.hardware.filter { it.kind.isActuator() }.map { device ->
-            "    fun ${device.commandName()}(value: Double)"
+            val safe = requireNotNull(device.safeOutput)
+            "    /** Commands ${device.displayName}; non-finite values fail neutral. Declared neutral: $safe. */\n" +
+                "    fun ${device.commandName()}(value: Double)"
         }
         val members = (measurements + commands).joinToString("\n")
         return """
@@ -273,9 +397,31 @@ private inline fun MutableList<Subsystem>.install(
 
             import com.areslib.hardware.SubsystemIO
 
-            /** Cached hardware boundary. Getters never perform direct device reads. */
+            /**
+             * Cached hardware boundary shared by physical and simulated adapters.
+             * Getters never perform direct device reads; [refresh] owns one complete input snapshot.
+             */
             interface ${document.name}IO : SubsystemIO, AutoCloseable {
+                /** Complete cached snapshot validity; false on any failed or non-finite required read. */
+                val feedbackValid: Boolean
+                /** Receiver timestamp for the complete cached snapshot, using RobotClock. */
+                val feedbackTimestampMs: Long
+                /** Required device configuration health. */
+                val configurationHealthy: Boolean
+                /** Homing-reference validity; always true when homing is not required. */
+                val homed: Boolean
+                /** Calibration validity; always true when calibration is not required. */
+                val calibrated: Boolean
+                /** Cached current validity; always true when current monitoring is not required. */
+                val currentReadingValid: Boolean
+                /** Failed-write latch. Non-neutral commands are rejected while true. */
+                val outputFaultLatched: Boolean
             $members
+
+                /** Applies every declared neutral and clears the fault latch only after complete success. */
+                fun recoverWithNeutral(): Boolean
+                /** Marks an explicitly completed calibration; generated code never infers calibration. */
+                fun establishCalibration()
             }
         """.trimIndent() + "\n"
     }
@@ -306,8 +452,14 @@ private inline fun MutableList<Subsystem>.install(
                 private var lastTimestampMs = 0L
             $stateFields
 
+                /**
+                 * Applies one allocation-free control step from immutable [state]. [scale] is the
+                 * current brownout/current-budget multiplier; invalid or unsafe input commands neutral.
+                 */
                 fun update(state: ${document.name}State, scale: Double) {
-                    if (!scale.isFinite() || scale <= 0.0) {
+                    val safetyPermit = state.feedbackValid && state.configurationHealthy && state.homed &&
+                        state.calibrated && state.currentReadingValid && !state.outputFaultLatched
+                    if (!scale.isFinite() || scale <= 0.0 || !safetyPermit) {
                         reset()
                         io.safe()
                         return
@@ -319,6 +471,7 @@ private inline fun MutableList<Subsystem>.install(
             $loopBodies
                 }
 
+                /** Clears controller history; callers must still command IO neutral. */
                 fun reset() {
                     lastTimestampMs = 0L
             $reset
@@ -385,8 +538,8 @@ private inline fun MutableList<Subsystem>.install(
     }
 
     private fun subsystemSource(document: SubsystemDocument, pkg: String): String {
-        val copies = document.hardware.mapNotNull { device ->
-            val field = document.field(device.measurementFieldId) ?: return@mapNotNull null
+        val copies = document.hardware.flatMap { it.measurements }.mapNotNull { measurement ->
+            val field = document.field(measurement.fieldId) ?: return@mapNotNull null
             "            ${field.fieldId} = io.${field.fieldId}"
         }.distinct().joinToString(",\n")
         val setters = document.stateFields.filter { it.role == SubsystemFieldRole.TARGET }.joinToString("\n\n") { field ->
@@ -396,6 +549,7 @@ private inline fun MutableList<Subsystem>.install(
         store.dispatch(RobotAction.UpdateNamedSubsystemState(ID, current.copy(${field.fieldId} = value)))
     }"""
         }
+        val feedbackTimeoutMs = document.safety.feedbackTimeoutMs ?: Long.MAX_VALUE
         return """
             package $pkg
 
@@ -404,24 +558,38 @@ private inline fun MutableList<Subsystem>.install(
             import com.areslib.state.RobotState
             import com.areslib.subsystem.Subsystem
 
-            /** Robot-loop host. Hardware reads and output writes remain separated and cached. */
+            /** Robot-loop host. Hardware reads, Redux updates, and output writes remain separated. */
             class ${document.name}Subsystem(private val io: ${document.name}IO) : Subsystem {
                 private val controller = ${document.name}Controller(io)
 
+                /** Copies the already-refreshed hardware snapshot into immutable Redux state. */
                 override fun readSensors(store: Store, timestampMs: Long) {
-                    io.refresh()
+                    val snapshotAgeMs = if (timestampMs >= io.feedbackTimestampMs) {
+                        timestampMs - io.feedbackTimestampMs
+                    } else {
+                        Long.MAX_VALUE
+                    }
                     val updated = state(store.state).copy(
-            $copies
+            $copies${if (copies.isBlank()) "" else ","}
+                        feedbackValid = io.feedbackValid && snapshotAgeMs <= ${feedbackTimeoutMs}L,
+                        feedbackTimestampMs = io.feedbackTimestampMs,
+                        configurationHealthy = io.configurationHealthy,
+                        homed = io.homed,
+                        calibrated = io.calibrated,
+                        currentReadingValid = io.currentReadingValid,
+                        outputFaultLatched = io.outputFaultLatched,
                     )
                     store.dispatch(RobotAction.UpdateNamedSubsystemState(ID, updated, timestampMs))
                 }
 
+                /** Applies immutable state to IO through the safety-gated controller. */
                 override fun writeOutputs(state: RobotState, scale: Double) {
                     controller.update(state(state), scale)
                 }
 
             $setters
 
+                /** Resets controller history, commands neutral, and releases owned IO idempotently. */
                 override fun close() {
                     controller.reset()
                     io.safe()
@@ -444,7 +612,11 @@ private inline fun MutableList<Subsystem>.install(
     }
 
     private fun ftcIoSource(document: SubsystemDocument, pkg: String): String {
-        val imports = linkedSetOf("com.qualcomm.robotcore.hardware.HardwareMap")
+        val imports = linkedSetOf(
+            "com.areslib.hardware.HardwareRegistry",
+            "com.areslib.util.RobotClock",
+            "com.qualcomm.robotcore.hardware.HardwareMap",
+        )
         document.hardware.forEach { device ->
             imports += when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "com.qualcomm.robotcore.hardware.DcMotorEx"
@@ -458,7 +630,7 @@ private inline fun MutableList<Subsystem>.install(
         if (document.hardware.any { it.kind == SubsystemHardwareKind.MOTOR && it.inverted }) {
             imports += "com.qualcomm.robotcore.hardware.DcMotorSimple"
         }
-        if (document.hardware.any { it.measurementSource == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }) {
+        if (document.hardware.any { device -> device.measurements.any { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS } }) {
             imports += "org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit"
         }
         val fields = document.hardware.joinToString("\n") { device ->
@@ -471,23 +643,23 @@ private inline fun MutableList<Subsystem>.install(
             }
             "    private val ${device.hardwareId}: $type? = $initializer"
         }
-        val cached = document.hardware.mapNotNull { device ->
-            val field = document.field(device.measurementFieldId) ?: return@mapNotNull null
+        val cached = document.hardware.flatMap { it.measurements }.mapNotNull { measurement ->
+            val field = document.field(measurement.fieldId) ?: return@mapNotNull null
             "    private var cached${field.fieldId.pascalCase()}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}\n" +
                 "    override val ${field.fieldId}: ${field.kotlinType()} get() = cached${field.fieldId.pascalCase()}"
         }.distinct().joinToString("\n")
-        val init = document.hardware.mapNotNull { device ->
+        val configure = document.hardware.mapNotNull { device ->
             when {
                 device.kind == SubsystemHardwareKind.MOTOR && device.inverted ->
-                    "        ${device.hardwareId}?.direction = DcMotorSimple.Direction.REVERSE"
+                    "            ${device.hardwareId}?.direction = DcMotorSimple.Direction.REVERSE"
                 device.kind == SubsystemHardwareKind.DIGITAL_INPUT ->
-                    "        ${device.hardwareId}?.mode = DigitalChannel.Mode.INPUT"
+                    "            ${device.hardwareId}?.mode = DigitalChannel.Mode.INPUT"
                 else -> null
             }
-        }.joinToString("\n").ifBlank { "        // No one-time device configuration is required." }
-        val refresh = document.hardware.mapNotNull { device ->
-            val field = document.field(device.measurementFieldId) ?: return@mapNotNull null
-            val read = when (requireNotNull(device.measurementSource)) {
+        }.joinToString("\n").ifBlank { "            // No one-time device configuration is required." }
+        val readings = document.hardware.flatMap { device -> device.measurements.map { device to it } }.mapNotNull { (device, measurement) ->
+            val field = document.field(measurement.fieldId) ?: return@mapNotNull null
+            val read = when (measurement.source) {
                 SubsystemMeasurementSource.MOTOR_POSITION_NATIVE ->
                     "${device.hardwareId}?.currentPosition?.toDouble() ?: 0.0"
                 SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND ->
@@ -499,63 +671,159 @@ private inline fun MutableList<Subsystem>.install(
                 SubsystemMeasurementSource.COLOR_ARGB -> "${device.hardwareId}?.argb() ?: 0"
             }
             val converted = if (field.type == SubsystemValueType.DOUBLE) {
-                "($read) * ${device.measurementScale.kotlinDouble()} + ${device.measurementOffset.kotlinDouble()}"
+                "($read) * ${measurement.scale.kotlinDouble()} + ${measurement.offset.kotlinDouble()}"
             } else read
-            "        cached${field.fieldId.pascalCase()} = try { $converted } catch (_: Exception) { ${field.defaultKotlinLiteral()} }"
-        }.joinToString("\n").ifBlank { "        // This subsystem has no readable sensors." }
+            val next = "next${field.fieldId.pascalCase()}"
+            val finiteCheck = if (field.type == SubsystemValueType.DOUBLE) {
+                "\n            require($next.isFinite()) { ${("Non-finite ${field.displayName}").quoted()} }"
+            } else ""
+            "            val $next = $converted$finiteCheck"
+        }.distinct().joinToString("\n").ifBlank { "            // This subsystem has no readable sensors." }
+        val commitReadings = document.hardware.flatMap { it.measurements }.mapNotNull { measurement ->
+            document.field(measurement.fieldId)?.let { field ->
+                "            cached${field.fieldId.pascalCase()} = next${field.fieldId.pascalCase()}"
+            }
+        }.distinct().joinToString("\n")
+        val homeField = document.safety.homingSensorId?.let { sensorId ->
+            document.hardware.firstOrNull { it.hardwareId == sensorId }?.measurements?.firstOrNull()?.fieldId
+        }
+        val establishHome = homeField?.let { fieldId ->
+            "\n            if (cached${fieldId.pascalCase()} == true) homed = true"
+        }.orEmpty()
+        val currentFields = document.hardware.flatMap { device ->
+            device.measurements.filter { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
+        }.map { it.fieldId }.distinct()
+        val currentValidity = if (document.safety.requiresCurrentMonitoring) {
+            currentFields.joinToString(" && ") {
+                "cached${it.pascalCase()}.isFinite() && cached${it.pascalCase()} >= 0.0"
+            }.ifBlank { "false" }
+        } else "true"
+        val telemetry = telemetryBody(document)
         val commands = document.hardware.filter { it.kind.isActuator() }.joinToString("\n\n") { device ->
+            val neutral = requireNotNull(device.safeOutput).kotlinDouble()
             val assignment = when (device.kind) {
-                SubsystemHardwareKind.MOTOR -> "${device.hardwareId}?.power = (safeValue / 12.0).coerceIn(-1.0, 1.0)"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}?.position = safeValue.coerceIn(0.0, 1.0)"
-                SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}?.power = safeValue.coerceIn(-1.0, 1.0)"
+                SubsystemHardwareKind.MOTOR -> "requireNotNull(${device.hardwareId}) { ${("Missing ${device.displayName}").quoted()} }.power = (requested / 12.0).coerceIn(-1.0, 1.0)"
+                SubsystemHardwareKind.POSITIONAL_SERVO -> "requireNotNull(${device.hardwareId}) { ${("Missing ${device.displayName}").quoted()} }.position = requested.coerceIn(0.0, 1.0)"
+                SubsystemHardwareKind.CONTINUOUS_SERVO -> "requireNotNull(${device.hardwareId}) { ${("Missing ${device.displayName}").quoted()} }.power = requested.coerceIn(-1.0, 1.0)"
                 else -> error("Not an actuator")
             }
             """    override fun ${device.commandName()}(value: Double) {
-        val safeValue = value.takeIf(Double::isFinite) ?: 0.0
-        $assignment
+        val requested = value.takeIf(Double::isFinite) ?: $neutral
+        if (outputFaultLatched && requested != $neutral) return
+        if (requested != $neutral && (!configurationHealthy || !homed || !calibrated ||
+                !feedbackValid || !currentReadingValid)) return
+        try {
+            $assignment
+        } catch (_: Exception) {
+                    outputFaultLatched = ${document.safety.latchOutputFaults}
+            safe()
+        }
     }"""
         }
-        val safe = document.hardware.filter { it.kind == SubsystemHardwareKind.MOTOR || it.kind == SubsystemHardwareKind.CONTINUOUS_SERVO }
+        val neutralWrites = document.hardware.filter { it.kind.isActuator() }
             .joinToString("\n") { device ->
+                val neutral = requireNotNull(device.safeOutput).kotlinDouble()
                 val assignment = when (device.kind) {
-                    SubsystemHardwareKind.MOTOR -> "${device.hardwareId}?.power = 0.0"
-                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}?.power = 0.0"
-                    else -> error("Not a stop-capable FTC actuator")
+                    SubsystemHardwareKind.MOTOR -> "${device.hardwareId}?.power = ($neutral / 12.0).coerceIn(-1.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}?.position = $neutral.coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}?.power = $neutral.coerceIn(-1.0, 1.0)"
+                    else -> error("Not an FTC actuator")
                 }
-                "        try { $assignment } catch (_: Exception) { /* Continue stopping other devices. */ }"
+                "        try { $assignment } catch (_: Exception) { succeeded = false }"
             }
-            .ifBlank { "        // Positional servos retain their last safe position." }
+            .ifBlank { "        // Sensor-only subsystem: neutral is already satisfied." }
         return """
             package $pkg
 
             ${imports.sorted().joinToString("\n") { "import $it" }}
 
-            /** FTC SDK adapter generated from the subsystem DSL. */
+            /**
+             * FTC adapter starter. All SDK reads occur in [refresh], all getters are cached, and
+             * failed writes latch until [recoverWithNeutral] successfully applies every neutral.
+             */
             class Ftc${document.name}IO(hardwareMap: HardwareMap) : ${document.name}IO {
             $fields
             $cached
+                override var feedbackValid: Boolean = false
+                    private set
+                override var feedbackTimestampMs: Long = 0L
+                    private set
+                override var configurationHealthy: Boolean = false
+                    private set
+                override var homed: Boolean = ${(!document.safety.requiresHoming)}
+                    private set
+                override var calibrated: Boolean = ${(!document.safety.requiresCalibration)}
+                    private set
+                override var currentReadingValid: Boolean = ${(!document.safety.requiresCurrentMonitoring)}
+                    private set
+                override var outputFaultLatched: Boolean = false
+                    private set
+                private var closed = false
 
                 init {
-            $init
+                    configurationHealthy = try {
+            $configure
+                        true
+                    } catch (_: Exception) {
+                        false
+                    }
+                    HardwareRegistry.registerDevice(${("Subsystems/${document.documentId}").quoted()}, this)
                 }
 
                 override fun refresh() {
-            $refresh
+                    if (closed) return
+                    try {
+            $readings
+            $commitReadings
+                        feedbackTimestampMs = RobotClock.currentTimeMillis()
+                        feedbackValid = true
+                        currentReadingValid = $currentValidity$establishHome
+                    } catch (_: Exception) {
+                        feedbackValid = false
+                        currentReadingValid = ${(!document.safety.requiresCurrentMonitoring)}
+                    }
                 }
 
             $commands
 
                 override fun safe() {
-            $safe
+                    if (!applyNeutral()) outputFaultLatched = ${document.safety.latchOutputFaults}
                 }
 
-                override fun close() = safe()
+                override fun recoverWithNeutral(): Boolean {
+                    val recovered = applyNeutral()
+                    if (recovered) outputFaultLatched = false
+                    return recovered
+                }
+
+                override fun establishCalibration() {
+                    if (configurationHealthy) calibrated = true
+                }
+
+                private fun applyNeutral(): Boolean {
+                    var succeeded = true
+            $neutralWrites
+                    return succeeded
+                }
+
+                override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
+$telemetry
+                }
+
+                override fun close() {
+                    if (closed) return
+                    closed = true
+                    safe()
+                }
             }
         """.trimIndent() + "\n"
     }
 
     private fun frcIoSource(document: SubsystemDocument, pkg: String): String {
-        val imports = linkedSetOf<String>()
+        val imports = linkedSetOf(
+            "com.areslib.hardware.HardwareRegistry",
+            "com.areslib.util.RobotClock",
+        )
         document.hardware.forEach { device ->
             imports += when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "com.ctre.phoenix6.hardware.TalonFX"
@@ -580,8 +848,8 @@ private inline fun MutableList<Subsystem>.install(
             }
             "    private val ${device.hardwareId} = $constructor"
         }
-        val cached = document.hardware.mapNotNull { device ->
-            val field = document.field(device.measurementFieldId) ?: return@mapNotNull null
+        val cached = document.hardware.flatMap { it.measurements }.mapNotNull { measurement ->
+            val field = document.field(measurement.fieldId) ?: return@mapNotNull null
             "    private var cached${field.fieldId.pascalCase()}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}\n" +
                 "    override val ${field.fieldId}: ${field.kotlinType()} get() = cached${field.fieldId.pascalCase()}"
         }.distinct().joinToString("\n")
@@ -597,14 +865,14 @@ private inline fun MutableList<Subsystem>.install(
                         append("        $configName.CurrentLimits.SupplyCurrentLimitEnable = true\n")
                         append("        $configName.CurrentLimits.SupplyCurrentLimit = ${limit.kotlinDouble()}\n")
                     }
-                    append("        ${device.hardwareId}.configurator.apply($configName)\n")
-                    append("        ${device.hardwareId}.optimizeBusUtilization()")
+                    append("            check(${device.hardwareId}.configurator.apply($configName).isOK) { ${("Failed to configure ${device.displayName}").quoted()} }\n")
+                    append("            ${device.hardwareId}.optimizeBusUtilization()")
                 }
             }
-            .ifBlank { "        // No TalonFX configuration is required." }
-        val refresh = document.hardware.mapNotNull { device ->
-            val field = document.field(device.measurementFieldId) ?: return@mapNotNull null
-            val read = when (requireNotNull(device.measurementSource)) {
+            .ifBlank { "            // No TalonFX configuration is required." }
+        val readings = document.hardware.flatMap { device -> device.measurements.map { device to it } }.mapNotNull { (device, measurement) ->
+            val field = document.field(measurement.fieldId) ?: return@mapNotNull null
+            val read = when (measurement.source) {
                 SubsystemMeasurementSource.MOTOR_POSITION_NATIVE -> "${device.hardwareId}.position.valueAsDouble"
                 SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND -> "${device.hardwareId}.velocity.valueAsDouble"
                 SubsystemMeasurementSource.MOTOR_CURRENT_AMPS -> "${device.hardwareId}.statorCurrent.valueAsDouble"
@@ -613,32 +881,67 @@ private inline fun MutableList<Subsystem>.install(
                 SubsystemMeasurementSource.COLOR_ARGB -> error("FRC color sensors are rejected by validation")
             }
             val converted = if (field.type == SubsystemValueType.DOUBLE) {
-                "($read) * ${device.measurementScale.kotlinDouble()} + ${device.measurementOffset.kotlinDouble()}"
+                "($read) * ${measurement.scale.kotlinDouble()} + ${measurement.offset.kotlinDouble()}"
             } else read
-            "        cached${field.fieldId.pascalCase()} = $converted"
-        }.joinToString("\n").ifBlank { "        // This subsystem has no readable sensors." }
+            val next = "next${field.fieldId.pascalCase()}"
+            val finiteCheck = if (field.type == SubsystemValueType.DOUBLE) {
+                "\n            require($next.isFinite()) { ${("Non-finite ${field.displayName}").quoted()} }"
+            } else ""
+            "            val $next = $converted$finiteCheck"
+        }.distinct().joinToString("\n").ifBlank { "            // This subsystem has no readable sensors." }
+        val commitReadings = document.hardware.flatMap { it.measurements }.mapNotNull { measurement ->
+            document.field(measurement.fieldId)?.let { field ->
+                "            cached${field.fieldId.pascalCase()} = next${field.fieldId.pascalCase()}"
+            }
+        }.distinct().joinToString("\n")
+        val homeField = document.safety.homingSensorId?.let { sensorId ->
+            document.hardware.firstOrNull { it.hardwareId == sensorId }?.measurements?.firstOrNull()?.fieldId
+        }
+        val establishHome = homeField?.let { fieldId ->
+            "\n            if (cached${fieldId.pascalCase()} == true) homed = true"
+        }.orEmpty()
+        val currentFields = document.hardware.flatMap { device ->
+            device.measurements.filter { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
+        }.map { it.fieldId }.distinct()
+        val currentValidity = if (document.safety.requiresCurrentMonitoring) {
+            currentFields.joinToString(" && ") {
+                "cached${it.pascalCase()}.isFinite() && cached${it.pascalCase()} >= 0.0"
+            }.ifBlank { "false" }
+        } else "true"
+        val telemetry = telemetryBody(document)
         val commands = document.hardware.filter { it.kind.isActuator() }.joinToString("\n\n") { device ->
+            val neutral = requireNotNull(device.safeOutput).kotlinDouble()
             val command = when (device.kind) {
-                SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage(safeValue.coerceIn(-12.0, 12.0))"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}.set(safeValue.coerceIn(0.0, 1.0))"
-                SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set(safeValue.coerceIn(-1.0, 1.0))"
+                SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage(requested.coerceIn(-12.0, 12.0))"
+                SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}.set(requested.coerceIn(0.0, 1.0))"
+                SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set(requested.coerceIn(-1.0, 1.0))"
                 else -> error("Not actuator")
             }
             """    override fun ${device.commandName()}(value: Double) {
-        val safeValue = value.takeIf(Double::isFinite) ?: 0.0
-        $command
+        val requested = value.takeIf(Double::isFinite) ?: $neutral
+        if (outputFaultLatched && requested != $neutral) return
+        if (requested != $neutral && (!configurationHealthy || !homed || !calibrated ||
+                !feedbackValid || !currentReadingValid)) return
+        try {
+            $command
+        } catch (_: Exception) {
+            outputFaultLatched = ${document.safety.latchOutputFaults}
+            safe()
+        }
     }"""
         }
-        val safe = document.hardware.filter { it.kind == SubsystemHardwareKind.MOTOR || it.kind == SubsystemHardwareKind.CONTINUOUS_SERVO }
+        val neutralWrites = document.hardware.filter { it.kind.isActuator() }
             .joinToString("\n") { device ->
+                val neutral = requireNotNull(device.safeOutput).kotlinDouble()
                 val command = when (device.kind) {
-                    SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage(0.0)"
-                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set(0.0)"
-                    else -> error("Not a stop-capable FRC actuator")
+                    SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage($neutral.coerceIn(-12.0, 12.0))"
+                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}.set($neutral.coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set($neutral.coerceIn(-1.0, 1.0))"
+                    else -> error("Not an FRC actuator")
                 }
-                "        try { $command } catch (_: Exception) { /* Continue stopping other devices. */ }"
+                "        try { $command } catch (_: Exception) { succeeded = false }"
             }
-            .ifBlank { "        // Positional servos retain their last safe position." }
+            .ifBlank { "        // Sensor-only subsystem: neutral is already satisfied." }
         val close = document.hardware.joinToString("\n") { device ->
             when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
@@ -654,26 +957,82 @@ private inline fun MutableList<Subsystem>.install(
 
             ${imports.sorted().joinToString("\n") { "import $it" }}
 
-            /** FRC hardware adapter generated from the subsystem DSL. */
+            /**
+             * FRC adapter starter. All device reads occur in [refresh], configuration is checked,
+             * and failed writes latch until [recoverWithNeutral] applies every declared neutral.
+             */
             class Frc${document.name}IO : ${document.name}IO {
             $fields
             $cached
+                override var feedbackValid: Boolean = false
+                    private set
+                override var feedbackTimestampMs: Long = 0L
+                    private set
+                override var configurationHealthy: Boolean = false
+                    private set
+                override var homed: Boolean = ${(!document.safety.requiresHoming)}
+                    private set
+                override var calibrated: Boolean = ${(!document.safety.requiresCalibration)}
+                    private set
+                override var currentReadingValid: Boolean = ${(!document.safety.requiresCurrentMonitoring)}
+                    private set
+                override var outputFaultLatched: Boolean = false
+                    private set
+                private var closed = false
 
                 init {
+                    configurationHealthy = try {
             $init
+                        true
+                    } catch (_: Exception) {
+                        false
+                    }
+                    HardwareRegistry.registerDevice(${("Subsystems/${document.documentId}").quoted()}, this)
                 }
 
                 override fun refresh() {
-            $refresh
+                    if (closed) return
+                    try {
+            $readings
+            $commitReadings
+                        feedbackTimestampMs = RobotClock.currentTimeMillis()
+                        feedbackValid = true
+                        currentReadingValid = $currentValidity$establishHome
+                    } catch (_: Exception) {
+                        feedbackValid = false
+                        currentReadingValid = ${(!document.safety.requiresCurrentMonitoring)}
+                    }
                 }
 
             $commands
 
                 override fun safe() {
-            $safe
+                    if (!applyNeutral()) outputFaultLatched = ${document.safety.latchOutputFaults}
+                }
+
+                override fun recoverWithNeutral(): Boolean {
+                    val recovered = applyNeutral()
+                    if (recovered) outputFaultLatched = false
+                    return recovered
+                }
+
+                override fun establishCalibration() {
+                    if (configurationHealthy) calibrated = true
+                }
+
+                private fun applyNeutral(): Boolean {
+                    var succeeded = true
+            $neutralWrites
+                    return succeeded
+                }
+
+                override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
+$telemetry
                 }
 
                 override fun close() {
+                    if (closed) return
+                    closed = true
                     safe()
             $close
                 }
@@ -682,30 +1041,88 @@ private inline fun MutableList<Subsystem>.install(
     }
 
     private fun mockIoSource(document: SubsystemDocument, pkg: String): String {
-        val measurements = document.hardware.mapNotNull { document.field(it.measurementFieldId) }.distinctBy { it.fieldId }
+        val measurements = document.hardware.flatMap { it.measurements }.mapNotNull { document.field(it.fieldId) }.distinctBy { it.fieldId }
         val fields = measurements.joinToString("\n") { field ->
             "    override var ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
         }
         val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
-            "    var ${device.hardwareId}Command: Double = 0.0\n        private set"
+            "    var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}\n        private set"
         }
         val commands = document.hardware.filter { it.kind.isActuator() }.joinToString("\n\n") { device ->
+            val neutral = requireNotNull(device.safeOutput).kotlinDouble()
+            val bounded = when (device.kind) {
+                SubsystemHardwareKind.MOTOR -> "requested.coerceIn(-12.0, 12.0)"
+                SubsystemHardwareKind.POSITIONAL_SERVO -> "requested.coerceIn(0.0, 1.0)"
+                SubsystemHardwareKind.CONTINUOUS_SERVO -> "requested.coerceIn(-1.0, 1.0)"
+                else -> error("Not an actuator")
+            }
             """    override fun ${device.commandName()}(value: Double) {
-        ${device.hardwareId}Command = value.takeIf(Double::isFinite) ?: 0.0
+        val requested = value.takeIf(Double::isFinite) ?: $neutral
+        if (outputFaultLatched && requested != $neutral) return
+        if (requested != $neutral && (!configurationHealthy || !homed || !calibrated ||
+                !feedbackValid || !currentReadingValid)) return
+        if (failNextWrite) {
+            failNextWrite = false
+            outputFaultLatched = ${document.safety.latchOutputFaults}
+            safe()
+            return
+        }
+        ${device.hardwareId}Command = $bounded
     }"""
         }
         val safe = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") {
-            "        ${it.hardwareId}Command = 0.0"
+            "        ${it.hardwareId}Command = ${requireNotNull(it.safeOutput).kotlinDouble()}"
         }
+        val currentFields = document.hardware.flatMap { device ->
+            device.measurements.filter { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
+        }.map { it.fieldId }.distinct()
+        val currentValidity = if (document.safety.requiresCurrentMonitoring) {
+            currentFields.joinToString(" && ") { "$it.isFinite() && $it >= 0.0" }.ifBlank { "false" }
+        } else "true"
+        val telemetry = telemetryBody(document)
+        val mockHomeField = document.safety.homingSensorId?.let { sensorId ->
+            document.hardware.firstOrNull { it.hardwareId == sensorId }?.measurements?.firstOrNull()?.fieldId
+        }
+        val mockEstablishHome = mockHomeField?.let { "\n                    if ($it == true) homed = true" }.orEmpty()
         return """
             package $pkg
 
-            /** Deterministic desktop/test adapter; tests may assign cached sensor properties directly. */
+            import com.areslib.util.RobotClock
+
+            /**
+             * Deterministic desktop adapter with hardware-parity fault, freshness, homing,
+             * calibration, configuration-health, neutral-recovery, and cleanup controls.
+             */
             class Mock${document.name}IO : ${document.name}IO {
             $fields
             $commandFields
+                override var feedbackValid: Boolean = false
+                override var feedbackTimestampMs: Long = 0L
+                override var configurationHealthy: Boolean = ${(!document.safety.requiresConfigurationHealth)}
+                override var homed: Boolean = ${(!document.safety.requiresHoming)}
+                override var calibrated: Boolean = ${(!document.safety.requiresCalibration)}
+                override var currentReadingValid: Boolean = ${(!document.safety.requiresCurrentMonitoring)}
+                override var outputFaultLatched: Boolean = false
+                /** Makes the next snapshot invalid without changing its retained cached values. */
+                var failNextRefresh: Boolean = false
+                /** Makes the next output/neutral attempt fail and exercise latch behavior. */
+                var failNextWrite: Boolean = false
+                /** True after idempotent resource cleanup. */
+                var closed: Boolean = false
+                    private set
 
-                override fun refresh() = Unit
+                override fun refresh() {
+                    if (closed) return
+                    if (failNextRefresh) {
+                        failNextRefresh = false
+                        feedbackValid = false
+                        currentReadingValid = ${(!document.safety.requiresCurrentMonitoring)}
+                        return
+                    }
+                    feedbackTimestampMs = RobotClock.currentTimeMillis()
+                    feedbackValid = true
+                    currentReadingValid = $currentValidity$mockEstablishHome
+                }
 
             $commands
 
@@ -713,7 +1130,30 @@ private inline fun MutableList<Subsystem>.install(
             $safe
                 }
 
-                override fun close() = safe()
+                override fun recoverWithNeutral(): Boolean {
+                    if (failNextWrite) {
+                        failNextWrite = false
+                        outputFaultLatched = ${document.safety.latchOutputFaults}
+                        return false
+                    }
+                    safe()
+                    outputFaultLatched = false
+                    return true
+                }
+
+                override fun establishCalibration() {
+                    if (configurationHealthy) calibrated = true
+                }
+
+                override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
+$telemetry
+                }
+
+                override fun close() {
+                    if (closed) return
+                    safe()
+                    closed = true
+                }
             }
         """.trimIndent() + "\n"
     }
@@ -721,19 +1161,90 @@ private inline fun MutableList<Subsystem>.install(
     private fun testSource(document: SubsystemDocument, pkg: String): String {
         val firstTarget = document.stateFields.firstOrNull { it.role == SubsystemFieldRole.TARGET }
         val assertion = firstTarget?.let {
-            "assertEquals(${it.defaultKotlinLiteral()}, state.${it.fieldId})"
+            if (it.type == SubsystemValueType.DOUBLE) {
+                "assertEquals(${it.defaultKotlinLiteral()}, state.${it.fieldId}, 0.0)"
+            } else {
+                "assertEquals(${it.defaultKotlinLiteral()}, state.${it.fieldId})"
+            }
         } ?: "assertNotNull(state)"
         val imports = when (document.platform) {
             SubsystemPlatform.FTC -> """import org.junit.Assert.assertEquals
+            import org.junit.Assert.assertFalse
             import org.junit.Assert.assertNotNull
+            import org.junit.Assert.assertTrue
             import org.junit.Test"""
             SubsystemPlatform.FRC -> """import org.junit.jupiter.api.Assertions.assertEquals
+            import org.junit.jupiter.api.Assertions.assertFalse
             import org.junit.jupiter.api.Assertions.assertNotNull
+            import org.junit.jupiter.api.Assertions.assertTrue
             import org.junit.jupiter.api.Test"""
         }
+        val firstActuator = document.hardware.firstOrNull { it.kind.isActuator() }
+        val actuatorAssertions = firstActuator?.let { device ->
+            val command = "io.${device.commandName()}"
+            val observed = "io.${device.hardwareId}Command"
+            val neutral = requireNotNull(device.safeOutput).kotlinDouble()
+            val validCommand = when (device.kind) {
+                SubsystemHardwareKind.MOTOR -> 6.0
+                SubsystemHardwareKind.POSITIONAL_SERVO -> 0.75
+                SubsystemHardwareKind.CONTINUOUS_SERVO -> 0.5
+                else -> error("Not actuator")
+            }.kotlinDouble()
+            """
+                    $command($validCommand)
+                    assertEquals($validCommand, $observed, 0.0)
+                    io.failNextWrite = true
+                    $command(4.0)
+                    assertTrue(io.outputFaultLatched)
+                    assertEquals($neutral, $observed, 0.0)
+                    $command(3.0)
+                    assertEquals($neutral, $observed, 0.0)
+                    assertTrue(io.recoverWithNeutral())
+                    assertFalse(io.outputFaultLatched)
+            """.trimIndent()
+        }.orEmpty()
+        val homingAssertions = if (document.safety.requiresHoming) {
+            val homeMeasurement = document.safety.homingSensorId?.let { sensorId ->
+                document.hardware.firstOrNull { it.hardwareId == sensorId }?.measurements?.firstOrNull()?.fieldId
+            }
+            """
+                    assertFalse(io.homed)
+                    io.configurationHealthy = true
+                    io.calibrated = true
+                    io.refresh()
+                    assertFalse(io.homed)
+                    ${homeMeasurement?.let { "io.$it = true" } ?: "io.homed = true"}
+                    io.refresh()
+                    assertTrue(io.homed)
+            """.trimIndent()
+        } else "        assertTrue(io.homed)"
+        val currentField = document.hardware.flatMap { it.measurements }
+            .firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
+            ?.fieldId
+        val currentAssertions = currentField?.let { fieldId ->
+            """
+                    io.$fieldId = -1.0
+                    io.refresh()
+                    assertFalse(io.currentReadingValid)
+            """.trimIndent()
+        } ?: "        assertTrue(io.currentReadingValid)"
+        val firstTargetOverride = firstTarget?.let { field ->
+            when (field.type) {
+                SubsystemValueType.DOUBLE -> "${field.fieldId} = ${(field.maximum ?: 1.0).kotlinDouble()},"
+                SubsystemValueType.INT -> "${field.fieldId} = ${(field.maximum?.toInt() ?: 1)},"
+                SubsystemValueType.BOOLEAN -> "${field.fieldId} = true,"
+                SubsystemValueType.STRING -> "${field.fieldId} = \"active\","
+            }
+        }.orEmpty()
+        val controllerNeutralAssertion = firstActuator?.let { device ->
+            "assertEquals(${requireNotNull(device.safeOutput).kotlinDouble()}, io.${device.hardwareId}Command, 0.0)"
+        } ?: "assertNotNull(controller)"
         return """
             package $pkg
 
+            import com.areslib.Store
+            import com.areslib.state.RobotState
+            import com.areslib.state.SuperstructureState
             $imports
 
             class ${document.name}GeneratedTest {
@@ -743,9 +1254,107 @@ private inline fun MutableList<Subsystem>.install(
                     val io = Mock${document.name}IO()
                     $assertion
                     io.safe()
+                    assertFalse(io.outputFaultLatched)
+                }
+
+                @Test
+                fun `failed writes latch and require explicit neutral recovery`() {
+                    val io = Mock${document.name}IO()
+                    io.configurationHealthy = true
+                    io.homed = true
+                    io.calibrated = true
+                    io.refresh()
+            $actuatorAssertions
+                }
+
+                @Test
+                fun `homing and current validity are independent safety permits`() {
+                    val io = Mock${document.name}IO()
+            $homingAssertions
+            $currentAssertions
+                }
+
+                @Test
+                fun `stale feedback is rejected by the immutable state contract`() {
+                    val io = Mock${document.name}IO()
+                    val subsystem = ${document.name}Subsystem(io)
+                    val store = Store(RobotState(superstructure = SuperstructureState(
+                        subsystems = mapOf(${document.name}Subsystem.ID to ${document.name}State())
+                    )))
+                    io.configurationHealthy = true
+                    io.homed = true
+                    io.calibrated = true
+                    io.refresh()
+                    subsystem.readSensors(store, io.feedbackTimestampMs + ${(document.safety.feedbackTimeoutMs ?: 250L) + 1L}L)
+                    assertFalse(${document.name}Subsystem.state(store.state).feedbackValid)
+                    val controller = ${document.name}Controller(io)
+                    controller.update(${document.name}State(
+                        feedbackValid = false,
+                        configurationHealthy = true,
+                        homed = true,
+                        calibrated = true,
+                        currentReadingValid = true,
+                        $firstTargetOverride
+                    ), 1.0)
+                    $controllerNeutralAssertion
+                }
+
+                @Test
+                fun `zero scale models disabled and commands neutral`() {
+                    val io = Mock${document.name}IO()
+                    io.configurationHealthy = true
+                    io.homed = true
+                    io.calibrated = true
+                    io.refresh()
+                    val controller = ${document.name}Controller(io)
+                    controller.update(${document.name}State(
+                        feedbackValid = true,
+                        configurationHealthy = true,
+                        homed = true,
+                        calibrated = true,
+                        currentReadingValid = true,
+                        $firstTargetOverride
+                    ), 0.0)
+                    $controllerNeutralAssertion
+                }
+
+                @Test
+                fun `invalid feedback and cleanup fail closed`() {
+                    val io = Mock${document.name}IO()
+                    io.failNextRefresh = true
+                    io.refresh()
+                    assertFalse(io.feedbackValid)
+                    io.close()
+                    assertTrue(io.closed)
+                    io.close()
+                    assertTrue(io.closed)
                 }
             }
         """.trimIndent() + "\n"
+    }
+
+    private fun telemetryBody(document: SubsystemDocument): String {
+        if (!document.safety.telemetryEnabled) return "        // Telemetry is disabled by the subsystem safety document."
+        val measurements = document.hardware.flatMap { it.measurements }
+            .mapNotNull { document.field(it.fieldId) }
+            .distinctBy { it.fieldId }
+            .joinToString("\n") { field ->
+                when (field.type) {
+                    SubsystemValueType.DOUBLE -> "        telemetry.putNumber(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId})"
+                    SubsystemValueType.BOOLEAN -> "        telemetry.putBoolean(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId})"
+                    SubsystemValueType.INT -> "        telemetry.putNumber(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId}.toDouble())"
+                    SubsystemValueType.STRING -> "        telemetry.putString(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId})"
+                }
+            }
+        val safety = """
+        telemetry.putBoolean("${'$'}prefix/FeedbackValid", feedbackValid)
+        telemetry.putBoolean("${'$'}prefix/ConfigurationHealthy", configurationHealthy)
+        telemetry.putBoolean("${'$'}prefix/Homed", homed)
+        telemetry.putBoolean("${'$'}prefix/Calibrated", calibrated)
+        telemetry.putBoolean("${'$'}prefix/CurrentReadingValid", currentReadingValid)
+        telemetry.putBoolean("${'$'}prefix/OutputFaultLatched", outputFaultLatched)
+        """.trimIndent()
+        return listOf(measurements, safety).filter(String::isNotBlank).joinToString("\n")
     }
 }
 

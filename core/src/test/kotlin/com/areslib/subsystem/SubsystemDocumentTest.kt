@@ -25,7 +25,7 @@ class SubsystemDocumentTest {
 
         assertTrue(validateSubsystemDocument(document).isEmpty())
         assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
-        assertEquals(0.01, document.hardware.single().measurementScale)
+        assertEquals(0.01, document.hardware.single().measurements.single().scale)
         assertEquals(64, SubsystemDocumentCodec.contentHash(document).length)
         assertTrue(
             validateSubsystemDocument(document.copy(documentId = "when"))
@@ -43,6 +43,7 @@ class SubsystemDocumentTest {
                 SubsystemHardwareDocument(
                     "leader", "Leader", SubsystemHardwareKind.MOTOR,
                     SubsystemHardwareConnection(hardwareMapName = "wrong-platform"),
+                    safeOutput = 0.0,
                 )
             ),
             stateFields = listOf(
@@ -63,5 +64,21 @@ class SubsystemDocumentTest {
         assertTrue(issues.any { it.contains("CAN ID") })
         assertTrue(issues.any { it.contains("requires a measurement") })
         assertThrows(IllegalArgumentException::class.java) { SubsystemDocumentCodec.encode(document) }
+    }
+
+    @Test
+    fun `homed template declares every safety input including current`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.HOMED_MECHANISM,
+            "prototype-lift",
+            "PrototypeLift",
+            SubsystemPlatform.FTC,
+        )
+
+        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(document.safety.requiresHoming)
+        assertTrue(document.safety.requiresCurrentMonitoring)
+        assertEquals(setOf("position", "currentAmps"), document.hardware.first().measurements.map { it.fieldId }.toSet())
+        assertEquals("homeSwitch", document.safety.homingSensorId)
     }
 }

@@ -3,7 +3,7 @@ package com.areslib.subsystem
 import com.google.gson.GsonBuilder
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 3
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 4
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -41,12 +41,58 @@ enum class SubsystemControlStrategy {
     SERVO_POSITION,
 }
 
+/** Capability-first starting points. Templates configure safety; they never collapse boundaries. */
+enum class SubsystemTemplate {
+    SIMPLE_ACTUATOR,
+    POSITION_CONTROLLED_MECHANISM,
+    VELOCITY_CONTROLLED_MECHANISM,
+    SENSOR_ONLY_SUBSYSTEM,
+    HOMED_MECHANISM,
+    COMPOSITE_MECHANISM,
+    ADVANCED_CUSTOM,
+}
+
+/**
+ * Cross-platform safety requirements consumed by generated starters and verification.
+ *
+ * These values describe a contract, not an implementation shortcut. A custom adapter may use
+ * vendor-specific mechanisms, but it must preserve the same observable fail-closed behavior.
+ */
+data class SubsystemSafetyDocument(
+    /** Maximum accepted age for control feedback. Null is permitted only for sensor-free control. */
+    val feedbackTimeoutMs: Long? = 250L,
+    /** A homing sensor must prove the mechanism reference before non-neutral output is accepted. */
+    val requiresHoming: Boolean = false,
+    val homingSensorId: String? = null,
+    /** Calibration must be explicitly established before non-neutral output is accepted. */
+    val requiresCalibration: Boolean = false,
+    /** Device configuration health participates in the output permit. */
+    val requiresConfigurationHealth: Boolean = true,
+    /** At least one finite, fresh current measurement is required for actuator mechanisms. */
+    val requiresCurrentMonitoring: Boolean = false,
+    /** Failed non-neutral and neutral writes latch a fault until an explicit successful neutral. */
+    val latchOutputFaults: Boolean = true,
+    val requiresExplicitNeutralRecovery: Boolean = true,
+    val telemetryEnabled: Boolean = true,
+    /** Periodic generated control/read/write paths must remain allocation-free after warmup. */
+    val zeroAllocationPeriodic: Boolean = true,
+)
+
 /** Platform connection data. Only the fields required by the selected platform are populated. */
 data class SubsystemHardwareConnection(
     val hardwareMapName: String? = null,
     val canId: Int? = null,
     val canBus: String = "rio",
     val channel: Int? = null,
+)
+
+/** One cached signal sampled from a device during the subsystem read phase. */
+data class SubsystemMeasurementDocument(
+    val fieldId: String,
+    val source: SubsystemMeasurementSource,
+    /** `stateValue = rawHardwareValue * scale + offset`. */
+    val scale: Double = 1.0,
+    val offset: Double = 0.0,
 )
 
 data class SubsystemHardwareDocument(
@@ -56,13 +102,11 @@ data class SubsystemHardwareDocument(
     val connection: SubsystemHardwareConnection = SubsystemHardwareConnection(),
     val required: Boolean = true,
     val inverted: Boolean = false,
-    /** State field populated by this device during the cached sensor-read phase. */
-    val measurementFieldId: String? = null,
-    val measurementSource: SubsystemMeasurementSource? = null,
-    /** `stateValue = rawHardwareValue * measurementScale + measurementOffset`. */
-    val measurementScale: Double = 1.0,
-    val measurementOffset: Double = 0.0,
+    /** State fields populated by this device during the single cached sensor-read phase. */
+    val measurements: List<SubsystemMeasurementDocument> = emptyList(),
     val currentLimitAmps: Double? = null,
+    /** Required neutral command for actuators. Sensors leave this null. */
+    val safeOutput: Double? = null,
 )
 
 /** A typed state value. Raw Kotlin expressions are deliberately not accepted. */
@@ -117,6 +161,10 @@ data class SubsystemDocument(
     val hardware: List<SubsystemHardwareDocument> = emptyList(),
     val stateFields: List<SubsystemStateFieldDocument> = emptyList(),
     val controlLoops: List<SubsystemControlLoopDocument> = emptyList(),
+    val template: SubsystemTemplate = SubsystemTemplate.ADVANCED_CUSTOM,
+    val safety: SubsystemSafetyDocument = SubsystemSafetyDocument(),
+    /** Stable resource owned while an autonomous action commands this subsystem. */
+    val autonomousResourceKey: String? = null,
     /** Required failures abort robot initialization; optional failures are reported and skipped. */
     val requiredAtStartup: Boolean = true,
     val generateMockIo: Boolean = true,
@@ -198,38 +246,50 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
             if (!limit.isFinite() || limit <= 0.0) issue("$path.currentLimitAmps", "Current limit must be finite and positive")
             if (device.kind != SubsystemHardwareKind.MOTOR) issue("$path.currentLimitAmps", "Only motors use a current limit")
         }
-        if (!device.measurementScale.isFinite() || !device.measurementOffset.isFinite()) {
-            issue("$path.measurementScale", "Measurement conversion must be finite")
+        if (device.kind in ACTUATOR_KINDS) {
+            val neutral = device.safeOutput
+            if (neutral == null || !neutral.isFinite()) {
+                issue("$path.safeOutput", "Actuators require a finite safe neutral output")
+            } else when (device.kind) {
+                SubsystemHardwareKind.MOTOR -> if (neutral !in -12.0..12.0) {
+                    issue("$path.safeOutput", "Motor neutral must be within -12 to 12 volts")
+                }
+                SubsystemHardwareKind.CONTINUOUS_SERVO -> if (neutral !in -1.0..1.0) {
+                    issue("$path.safeOutput", "Continuous-servo neutral must be within -1 to 1")
+                }
+                SubsystemHardwareKind.POSITIONAL_SERVO -> if (neutral !in 0.0..1.0) {
+                    issue("$path.safeOutput", "Positional-servo neutral must be within 0 to 1")
+                }
+                else -> Unit
+            }
+        } else if (device.safeOutput != null) {
+            issue("$path.safeOutput", "Sensors do not accept an output neutral")
         }
-        if (device.measurementFieldId == null && device.measurementSource != null) {
-            issue("$path.measurementSource", "A measurement source requires a cached state field")
+        duplicateIds(device.measurements.map { it.fieldId }).forEach {
+            issue("$path.measurements", "Cached field '$it' is sampled more than once from this device")
         }
-        if (device.measurementFieldId == null &&
-            (device.measurementScale != 1.0 || device.measurementOffset != 0.0)
-        ) {
-            issue("$path.measurementScale", "Measurement conversion requires a cached state field")
-        }
-        device.measurementFieldId?.let { fieldId ->
+        device.measurements.forEachIndexed { measurementIndex, measurement ->
+            val measurementPath = "$path.measurements[$measurementIndex]"
+            if (!measurement.scale.isFinite() || !measurement.offset.isFinite()) {
+                issue("$measurementPath.scale", "Measurement conversion must be finite")
+            }
+            val fieldId = measurement.fieldId
             val field = fieldsById[fieldId]
             if (field == null) {
-                issue("$path.measurementFieldId", "Unknown measurement field '$fieldId'")
-            } else if (device.measurementSource == null) {
-                issue("$path.measurementSource", "Choose the exact hardware signal stored in '$fieldId'")
+                issue("$measurementPath.fieldId", "Unknown measurement field '$fieldId'")
             } else if (field.role != SubsystemFieldRole.MEASUREMENT && field.role != SubsystemFieldRole.STATUS) {
-                issue("$path.measurementFieldId", "Hardware measurements must write a measurement or status field")
+                issue("$measurementPath.fieldId", "Hardware measurements must write a measurement or status field")
             } else {
-                val source = requireNotNull(device.measurementSource)
+                val source = measurement.source
                 if (source !in device.kind.compatibleMeasurementSources()) {
-                    issue("$path.measurementSource", "$source cannot be read from ${device.kind}")
+                    issue("$measurementPath.source", "$source cannot be read from ${device.kind}")
                 }
                 val requiredType = source.valueType()
                 if (field.type != requiredType) {
-                    issue("$path.measurementFieldId", "$source measurements require a ${requiredType.name} field")
+                    issue("$measurementPath.fieldId", "$source measurements require a ${requiredType.name} field")
                 }
-                if (requiredType != SubsystemValueType.DOUBLE &&
-                    (device.measurementScale != 1.0 || device.measurementOffset != 0.0)
-                ) {
-                    issue("$path.measurementScale", "Only numeric double measurements use scale and offset")
+                if (requiredType != SubsystemValueType.DOUBLE && (measurement.scale != 1.0 || measurement.offset != 0.0)) {
+                    issue("$measurementPath.scale", "Only numeric double measurements use scale and offset")
                 }
             }
         }
@@ -324,6 +384,39 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         if (document.controlLoops.none { it.actuatorId == actuator.hardwareId }) {
             issue("hardware.${actuator.hardwareId}", "Actuator '${actuator.displayName}' is not controlled by any loop")
         }
+    }
+    val hasActuators = document.hardware.any { it.kind in ACTUATOR_KINDS }
+    document.safety.feedbackTimeoutMs?.let {
+        if (it !in 20L..10_000L) issue("safety.feedbackTimeoutMs", "Feedback timeout must be from 20 to 10000 ms")
+    }
+    if (hasActuators && document.controlLoops.any { it.strategy in CLOSED_LOOP_STRATEGIES } &&
+        document.safety.feedbackTimeoutMs == null
+    ) {
+        issue("safety.feedbackTimeoutMs", "Closed-loop mechanisms require a feedback timeout")
+    }
+    if (document.safety.requiresHoming) {
+        val sensor = document.safety.homingSensorId?.let(hardwareById::get)
+        if (sensor == null) issue("safety.homingSensorId", "Homed mechanisms require a known homing sensor")
+        else if (sensor.kind != SubsystemHardwareKind.DIGITAL_INPUT) {
+            issue("safety.homingSensorId", "The homing sensor must be a digital input")
+        }
+    } else if (document.safety.homingSensorId != null) {
+        issue("safety.homingSensorId", "A homing sensor is only valid when homing is required")
+    }
+    if (document.safety.requiresExplicitNeutralRecovery && !document.safety.latchOutputFaults) {
+        issue("safety.requiresExplicitNeutralRecovery", "Explicit neutral recovery requires fault latching")
+    }
+    if (document.safety.requiresCurrentMonitoring && document.hardware.none { device ->
+            device.measurements.any { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
+        }
+    ) {
+        issue("safety.requiresCurrentMonitoring", "Current monitoring requires a cached motor-current measurement")
+    }
+    if (!hasActuators && (document.safety.requiresCurrentMonitoring || document.safety.latchOutputFaults)) {
+        issue("safety", "Sensor-only subsystems cannot require actuator current monitoring or output fault latching")
+    }
+    document.autonomousResourceKey?.let {
+        if (!it.matches(STABLE_ID)) issue("autonomousResourceKey", "Autonomous resource key must be a stable lowercase key")
     }
 }
 
