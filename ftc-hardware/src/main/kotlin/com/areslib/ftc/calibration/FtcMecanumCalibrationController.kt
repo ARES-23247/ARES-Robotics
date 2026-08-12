@@ -66,6 +66,8 @@ class FtcMecanumCalibrationController {
      */
     var networkArmed = false
         private set
+    private var enableLeaseSequence = INVALID_LEASE_SEQUENCE
+    private var lastEnableLeaseAtMs = 0L
 
     /** Identifier name of the currently active physical calibration routine (`"NONE"`, `"PINPOINT_SPIN"`, `"TRACK_WIDTH_SPIN"`, etc.). */
     var activeCalibration = "NONE"
@@ -91,6 +93,9 @@ class FtcMecanumCalibrationController {
         networkArmed = false
         neutralizedDuringInputPass = false
         enableToken = telemetryManager.nt4.getString(ENABLE_TOKEN_TOPIC, "")
+        enableLeaseSequence = telemetryManager.nt4.getNumber(ENABLE_LEASE_TOPIC, INVALID_LEASE_SEQUENCE)
+            .takeIf(::isValidLeaseSequence) ?: INVALID_LEASE_SEQUENCE
+        lastEnableLeaseAtMs = 0L
         lastCommandProcessed = ""
         telemetryManager.nt4.putBoolean("SysId/ModeEnabled", true)
         telemetryManager.nt4.putBoolean("SysId/Armed", false)
@@ -104,6 +109,8 @@ class FtcMecanumCalibrationController {
         networkArmed = false
         neutralizedDuringInputPass = false
         enableToken = ""
+        enableLeaseSequence = INVALID_LEASE_SEQUENCE
+        lastEnableLeaseAtMs = 0L
         lastCommandProcessed = ""
         var firstFailure: Throwable? = null
         try {
@@ -142,12 +149,17 @@ class FtcMecanumCalibrationController {
 
         val command = telemetryManager.nt4.getString(COMMAND_TOPIC, "").trim()
         val observedToken = telemetryManager.nt4.getString(ENABLE_TOKEN_TOPIC, "").trim()
+        val observedLease = telemetryManager.nt4.getNumber(ENABLE_LEASE_TOPIC, INVALID_LEASE_SEQUENCE)
+        val nowMs = RobotClock.currentTimeMillis()
         if (!networkArmed) {
             val hasFreshToken = observedToken.isNotEmpty() &&
                 observedToken.length <= MAX_ENABLE_TOKEN_LENGTH &&
                 observedToken != enableToken
-            if (hasFreshToken && command == STOP_COMMAND) {
+            val hasFreshLease = isValidLeaseSequence(observedLease) && observedLease != enableLeaseSequence
+            if (hasFreshToken && hasFreshLease && command == STOP_COMMAND) {
                 enableToken = observedToken
+                enableLeaseSequence = observedLease
+                lastEnableLeaseAtMs = nowMs
                 networkArmed = true
                 lastCommandProcessed = STOP_COMMAND
                 stopAndNeutral(mecanumIO)
@@ -165,11 +177,20 @@ class FtcMecanumCalibrationController {
 
         // Once armed, changing or clearing the token is a session boundary and fails closed.
         if (observedToken != enableToken) {
-            networkArmed = false
-            stopAndNeutral(mecanumIO)
-            neutralizedDuringInputPass = true
-            telemetryManager.nt4.putBoolean("SysId/Armed", false)
-            telemetryManager.nt4.putString("SysId/Error", "ENABLE_TOKEN_CHANGED")
+            disarmForInputFault(telemetryManager, mecanumIO, "ENABLE_TOKEN_CHANGED")
+            return
+        }
+
+        if (!isValidLeaseSequence(observedLease) || observedLease < enableLeaseSequence) {
+            disarmForInputFault(telemetryManager, mecanumIO, "ENABLE_LEASE_INVALID")
+            return
+        }
+        if (observedLease > enableLeaseSequence) {
+            enableLeaseSequence = observedLease
+            lastEnableLeaseAtMs = nowMs
+        }
+        if (nowMs < lastEnableLeaseAtMs || nowMs - lastEnableLeaseAtMs > ENABLE_LEASE_TIMEOUT_MS) {
+            disarmForInputFault(telemetryManager, mecanumIO, "ENABLE_LEASE_EXPIRED")
             return
         }
 
@@ -499,12 +520,32 @@ class FtcMecanumCalibrationController {
         firstFailure?.let { throw it }
     }
 
+    private fun disarmForInputFault(
+        telemetryManager: FtcTelemetryManager,
+        mecanumIO: MecanumHardwareIO,
+        reason: String
+    ) {
+        networkArmed = false
+        lastEnableLeaseAtMs = 0L
+        stopAndNeutral(mecanumIO)
+        neutralizedDuringInputPass = true
+        telemetryManager.nt4.putBoolean("SysId/Armed", false)
+        telemetryManager.nt4.putString("SysId/Error", reason)
+    }
+
+    private fun isValidLeaseSequence(value: Double): Boolean =
+        value.isFinite() && value >= 0.0 && value <= MAX_SAFE_INTEGER && value == kotlin.math.floor(value)
+
     private companion object {
         const val COMMAND_TOPIC = "SysId/Command"
         const val STATUS_TOPIC = "SysId/Status"
         const val ENABLE_TOKEN_TOPIC = "SysId/EnableToken"
+        const val ENABLE_LEASE_TOPIC = "SysId/EnableLease"
         const val STOP_COMMAND = "STOP"
         const val MAX_ENABLE_TOKEN_LENGTH = 128
+        const val ENABLE_LEASE_TIMEOUT_MS = 500L
+        const val INVALID_LEASE_SEQUENCE = -1.0
+        const val MAX_SAFE_INTEGER = 9_007_199_254_740_991.0
     }
 }
 
