@@ -11,18 +11,19 @@ object SubsystemTemplates {
     fun create(
         template: SubsystemTemplate,
         documentId: String,
-        name: String,
+        kotlinTypeName: String,
         platform: SubsystemPlatform,
+        displayName: String = kotlinTypeName.toDisplayWords(),
     ): SubsystemDocument = when (template) {
-        SubsystemTemplate.SIMPLE_ACTUATOR -> actuator(documentId, name, platform, SubsystemControlStrategy.DIRECT)
+        SubsystemTemplate.SIMPLE_ACTUATOR -> actuator(documentId, displayName, kotlinTypeName, platform, SubsystemControlStrategy.DIRECT)
         SubsystemTemplate.POSITION_CONTROLLED_MECHANISM ->
-            actuator(documentId, name, platform, SubsystemControlStrategy.POSITION_PID)
+            actuator(documentId, displayName, kotlinTypeName, platform, SubsystemControlStrategy.POSITION_PID)
         SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM ->
-            actuator(documentId, name, platform, SubsystemControlStrategy.VELOCITY_PID)
-        SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM -> sensorOnly(documentId, name, platform)
-        SubsystemTemplate.HOMED_MECHANISM -> homed(documentId, name, platform)
-        SubsystemTemplate.COMPOSITE_MECHANISM -> composite(documentId, name, platform)
-        SubsystemTemplate.ADVANCED_CUSTOM -> advanced(documentId, name, platform)
+            actuator(documentId, displayName, kotlinTypeName, platform, SubsystemControlStrategy.VELOCITY_PID)
+        SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM -> sensorOnly(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.HOMED_MECHANISM -> homed(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.COMPOSITE_MECHANISM -> composite(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.ADVANCED_CUSTOM -> advanced(documentId, displayName, kotlinTypeName, platform)
     }
 
     private fun motorConnection(platform: SubsystemPlatform, name: String, canId: Int = 1) =
@@ -35,18 +36,17 @@ object SubsystemTemplates {
 
     private fun actuator(
         id: String,
-        name: String,
+        displayName: String,
+        kotlinTypeName: String,
         platform: SubsystemPlatform,
         strategy: SubsystemControlStrategy,
     ): SubsystemDocument {
         val closedLoop = strategy == SubsystemControlStrategy.POSITION_PID || strategy == SubsystemControlStrategy.VELOCITY_PID
         val measurementId = if (strategy == SubsystemControlStrategy.VELOCITY_PID) "velocity" else "position"
-        val source = if (strategy == SubsystemControlStrategy.VELOCITY_PID) {
-            SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND
-        } else SubsystemMeasurementSource.MOTOR_POSITION_NATIVE
         return SubsystemDocument(
             documentId = id,
-            name = name,
+            displayName = displayName,
+            kotlinTypeName = kotlinTypeName,
             description = "${templateLabel(strategy)} with cached inputs and fail-closed output handling.",
             platform = platform,
             template = when (strategy) {
@@ -57,18 +57,22 @@ object SubsystemTemplates {
             hardware = listOf(
                 SubsystemHardwareDocument(
                     "motor", "Motor", SubsystemHardwareKind.MOTOR, motorConnection(platform, "motor"),
-                    measurements = buildList {
-                        if (closedLoop) add(SubsystemMeasurementDocument(measurementId, source))
-                        add(SubsystemMeasurementDocument("currentAmps", SubsystemMeasurementSource.MOTOR_CURRENT_AMPS))
-                    },
+                    measurements = listOf(
+                        SubsystemMeasurementDocument("position", SubsystemMeasurementSource.MOTOR_POSITION_NATIVE),
+                        SubsystemMeasurementDocument("velocity", SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND),
+                        SubsystemMeasurementDocument(
+                            "currentAmps",
+                            SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
+                            validMinimum = 0.0,
+                        ),
+                    ),
                     safeOutput = 0.0,
                 )
             ),
             stateFields = buildList {
                 add(SubsystemStateFieldDocument("target", "Target", SubsystemValueType.DOUBLE, SubsystemFieldRole.TARGET, defaultNumber = 0.0))
-                if (closedLoop) add(
-                    SubsystemStateFieldDocument(measurementId, measurementId.replaceFirstChar(Char::uppercase), SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0)
-                )
+                add(SubsystemStateFieldDocument("position", "Position", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0))
+                add(SubsystemStateFieldDocument("velocity", "Velocity", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0))
                 add(SubsystemStateFieldDocument("currentAmps", "Current", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, unit = "A", defaultNumber = 0.0, minimum = 0.0))
             },
             controlLoops = listOf(
@@ -79,16 +83,17 @@ object SubsystemTemplates {
                 )
             ),
             safety = SubsystemSafetyDocument(
-                feedbackTimeoutMs = 250L.takeIf { closedLoop },
+                feedbackTimeoutMs = 250L,
                 requiresCurrentMonitoring = true,
             ),
             autonomousResourceKey = id,
         )
     }
 
-    private fun sensorOnly(id: String, name: String, platform: SubsystemPlatform) = SubsystemDocument(
+    private fun sensorOnly(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform) = SubsystemDocument(
         documentId = id,
-        name = name,
+        displayName = displayName,
+        kotlinTypeName = kotlinTypeName,
         description = "Read-only cached sensor subsystem with no actuator output path.",
         platform = platform,
         template = SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM,
@@ -110,8 +115,8 @@ object SubsystemTemplates {
         ),
     )
 
-    private fun homed(id: String, name: String, platform: SubsystemPlatform): SubsystemDocument {
-        val base = actuator(id, name, platform, SubsystemControlStrategy.POSITION_PID)
+    private fun homed(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform): SubsystemDocument {
+        val base = actuator(id, displayName, kotlinTypeName, platform, SubsystemControlStrategy.POSITION_PID)
         return base.copy(
             description = "Homed position mechanism with soft limits and explicit neutral recovery.",
             template = SubsystemTemplate.HOMED_MECHANISM,
@@ -130,12 +135,24 @@ object SubsystemTemplates {
                 "homeSwitchActive", "Home switch active", SubsystemValueType.BOOLEAN,
                 SubsystemFieldRole.MEASUREMENT, defaultBoolean = false,
             ),
-            safety = base.safety.copy(requiresHoming = true, homingSensorId = "homeSwitch"),
+            safety = base.safety.copy(
+                homing = SubsystemHomingDocument(
+                    method = SubsystemHomingMethod.DIGITAL_SENSOR,
+                    actuatorId = "motor",
+                    searchOutput = -2.0,
+                    evidence = listOf(
+                        SubsystemHomingEvidenceDocument(
+                            "homeSwitchActive",
+                            SubsystemHomingComparison.TRUE,
+                        )
+                    ),
+                )
+            ),
         )
     }
 
-    private fun composite(id: String, name: String, platform: SubsystemPlatform): SubsystemDocument {
-        val base = actuator(id, name, platform, SubsystemControlStrategy.DIRECT)
+    private fun composite(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform): SubsystemDocument {
+        val base = actuator(id, displayName, kotlinTypeName, platform, SubsystemControlStrategy.DIRECT)
         val follower = SubsystemHardwareDocument(
             "secondaryMotor", "Secondary motor", SubsystemHardwareKind.MOTOR,
             motorConnection(platform, "secondary_motor", 2), safeOutput = 0.0,
@@ -151,8 +168,8 @@ object SubsystemTemplates {
         )
     }
 
-    private fun advanced(id: String, name: String, platform: SubsystemPlatform) =
-        actuator(id, name, platform, SubsystemControlStrategy.DIRECT).copy(
+    private fun advanced(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform) =
+        actuator(id, displayName, kotlinTypeName, platform, SubsystemControlStrategy.DIRECT).copy(
             description = "Advanced starter: review every capability and customize each explicit boundary.",
             template = SubsystemTemplate.ADVANCED_CUSTOM,
         )
@@ -163,4 +180,7 @@ object SubsystemTemplates {
         SubsystemControlStrategy.VELOCITY_PID -> "Velocity-controlled mechanism"
         else -> "Controlled mechanism"
     }
+
+    private fun String.toDisplayWords(): String =
+        replace(Regex("(?<=[a-z0-9])(?=[A-Z])"), " ").trim().ifBlank { this }
 }

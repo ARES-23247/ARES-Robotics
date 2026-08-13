@@ -22,17 +22,18 @@ data class SubsystemHardwareRef internal constructor(val id: String)
  */
 fun subsystem(
     documentId: String,
-    name: String,
+    kotlinTypeName: String,
     platform: SubsystemPlatform,
     block: SubsystemBuilder.() -> Unit,
-): SubsystemDocument = SubsystemBuilder(documentId, name, platform).apply(block).build()
+): SubsystemDocument = SubsystemBuilder(documentId, kotlinTypeName, platform).apply(block).build()
 
 @AresSubsystemDsl
 class SubsystemBuilder internal constructor(
     private val documentId: String,
-    private val name: String,
+    private val kotlinTypeName: String,
     private val platform: SubsystemPlatform,
 ) {
+    var displayName: String = kotlinTypeName.replace(Regex("(?<=[a-z0-9])(?=[A-Z])"), " ")
     var description: String = ""
     var template: SubsystemTemplate = SubsystemTemplate.ADVANCED_CUSTOM
     var requiredAtStartup: Boolean = true
@@ -50,7 +51,8 @@ class SubsystemBuilder internal constructor(
     internal fun build(): SubsystemDocument {
         val document = SubsystemDocument(
             documentId = documentId,
-            name = name,
+            displayName = displayName,
+            kotlinTypeName = kotlinTypeName,
             description = description,
             platform = platform,
             template = template,
@@ -134,8 +136,7 @@ class SubsystemImplementationBuilder internal constructor() {
 @AresSubsystemDsl
 class SubsystemSafetyBuilder internal constructor() {
     var feedbackTimeoutMs: Long? = 250L
-    var requiresHoming: Boolean = false
-    var homingSensorId: String? = null
+    val homing = SubsystemHomingBuilder()
     var requiresCalibration: Boolean = false
     var requiresConfigurationHealth: Boolean = true
     var requiresCurrentMonitoring: Boolean = false
@@ -146,8 +147,7 @@ class SubsystemSafetyBuilder internal constructor() {
 
     internal fun build() = SubsystemSafetyDocument(
         feedbackTimeoutMs = feedbackTimeoutMs,
-        requiresHoming = requiresHoming,
-        homingSensorId = homingSensorId,
+        homing = homing.build(),
         requiresCalibration = requiresCalibration,
         requiresConfigurationHealth = requiresConfigurationHealth,
         requiresCurrentMonitoring = requiresCurrentMonitoring,
@@ -156,6 +156,137 @@ class SubsystemSafetyBuilder internal constructor() {
         telemetryEnabled = telemetryEnabled,
         zeroAllocationPeriodic = zeroAllocationPeriodic,
     )
+}
+
+/** Typed homing recipes; stall methods always include bounded effort, dwell, and timeout. */
+@AresSubsystemDsl
+class SubsystemHomingBuilder internal constructor() {
+    private var document = SubsystemHomingDocument()
+
+    fun none() {
+        document = SubsystemHomingDocument()
+    }
+
+    fun digitalSensor(
+        actuator: SubsystemHardwareRef,
+        sensor: SubsystemFieldRef,
+        searchOutput: Double,
+        activeWhen: Boolean = true,
+        dwellMs: Long = 80L,
+        timeoutMs: Long = 3_000L,
+        zeroPosition: Double = 0.0,
+    ) {
+        document = SubsystemHomingDocument(
+            method = SubsystemHomingMethod.DIGITAL_SENSOR,
+            actuatorId = actuator.id,
+            searchOutput = searchOutput,
+            evidence = listOf(
+                SubsystemHomingEvidenceDocument(
+                    sensor.id,
+                    if (activeWhen) SubsystemHomingComparison.TRUE else SubsystemHomingComparison.FALSE,
+                )
+            ),
+            dwellMs = dwellMs,
+            timeoutMs = timeoutMs,
+            zeroPosition = zeroPosition,
+        )
+    }
+
+    fun currentStall(
+        actuator: SubsystemHardwareRef,
+        current: SubsystemFieldRef,
+        searchOutput: Double,
+        minimumCurrentAmps: Double,
+        dwellMs: Long = 250L,
+        timeoutMs: Long = 3_000L,
+        zeroPosition: Double = 0.0,
+    ) {
+        document = stallDocument(
+            SubsystemHomingMethod.CURRENT_STALL,
+            actuator,
+            searchOutput,
+            listOf(SubsystemHomingEvidenceDocument(current.id, SubsystemHomingComparison.AT_OR_ABOVE, minimumCurrentAmps)),
+            dwellMs,
+            timeoutMs,
+            zeroPosition,
+        )
+    }
+
+    fun velocityStall(
+        actuator: SubsystemHardwareRef,
+        velocity: SubsystemFieldRef,
+        searchOutput: Double,
+        maximumAbsoluteVelocity: Double,
+        dwellMs: Long = 250L,
+        timeoutMs: Long = 3_000L,
+        zeroPosition: Double = 0.0,
+    ) {
+        document = stallDocument(
+            SubsystemHomingMethod.VELOCITY_STALL,
+            actuator,
+            searchOutput,
+            listOf(SubsystemHomingEvidenceDocument(velocity.id, SubsystemHomingComparison.ABS_AT_OR_BELOW, maximumAbsoluteVelocity)),
+            dwellMs,
+            timeoutMs,
+            zeroPosition,
+        )
+    }
+
+    fun currentAndVelocityStall(
+        actuator: SubsystemHardwareRef,
+        current: SubsystemFieldRef,
+        velocity: SubsystemFieldRef,
+        searchOutput: Double,
+        minimumCurrentAmps: Double,
+        maximumAbsoluteVelocity: Double,
+        dwellMs: Long = 250L,
+        timeoutMs: Long = 3_000L,
+        zeroPosition: Double = 0.0,
+    ) {
+        document = stallDocument(
+            SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL,
+            actuator,
+            searchOutput,
+            listOf(
+                SubsystemHomingEvidenceDocument(current.id, SubsystemHomingComparison.AT_OR_ABOVE, minimumCurrentAmps),
+                SubsystemHomingEvidenceDocument(velocity.id, SubsystemHomingComparison.ABS_AT_OR_BELOW, maximumAbsoluteVelocity),
+            ),
+            dwellMs,
+            timeoutMs,
+            zeroPosition,
+        )
+    }
+
+    fun custom(
+        actuator: SubsystemHardwareRef,
+        searchOutput: Double,
+        evidence: List<SubsystemHomingEvidenceDocument>,
+        dwellMs: Long = 250L,
+        timeoutMs: Long = 3_000L,
+        zeroPosition: Double = 0.0,
+    ) {
+        document = stallDocument(
+            SubsystemHomingMethod.CUSTOM_MEASUREMENT,
+            actuator,
+            searchOutput,
+            evidence,
+            dwellMs,
+            timeoutMs,
+            zeroPosition,
+        )
+    }
+
+    internal fun build(): SubsystemHomingDocument = document
+
+    private fun stallDocument(
+        method: SubsystemHomingMethod,
+        actuator: SubsystemHardwareRef,
+        searchOutput: Double,
+        evidence: List<SubsystemHomingEvidenceDocument>,
+        dwellMs: Long,
+        timeoutMs: Long,
+        zeroPosition: Double,
+    ) = SubsystemHomingDocument(method, actuator.id, searchOutput, evidence, dwellMs, timeoutMs, zeroPosition)
 }
 
 @AresSubsystemDsl
@@ -287,6 +418,9 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
                     measurement.source ?: kind.compatibleMeasurementSources().first(),
                     measurement.scale,
                     measurement.offset,
+                    measurement.maxAgeMs,
+                    measurement.validMinimum,
+                    measurement.validMaximum,
                 )
             },
             currentLimitAmps = builder.currentLimitAmps,
@@ -295,6 +429,7 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
                 SubsystemHardwareKind.POSITIONAL_SERVO -> 0.5
                 else -> null
             },
+            following = builder.following,
         )
         return SubsystemHardwareRef(id)
     }
@@ -310,6 +445,7 @@ class HardwareDeviceBuilder internal constructor(platform: SubsystemPlatform) {
     var inverted: Boolean = false
     var currentLimitAmps: Double? = null
     var safeOutput: Double? = null
+    internal var following: SubsystemFollowerDocument? = null
     internal val measurements = mutableListOf<MeasurementBuilderValue>()
 
     init {
@@ -321,8 +457,19 @@ class HardwareDeviceBuilder internal constructor(platform: SubsystemPlatform) {
         source: SubsystemMeasurementSource? = null,
         scale: Double = 1.0,
         offset: Double = 0.0,
+        maxAgeMs: Long? = null,
+        validMinimum: Double? = null,
+        validMaximum: Double? = null,
     ) {
-        measurements += MeasurementBuilderValue(field, source, scale, offset)
+        measurements += MeasurementBuilderValue(field, source, scale, offset, maxAgeMs, validMinimum, validMaximum)
+    }
+
+    /** Routes this actuator from [leader] instead of creating a second competing control loop. */
+    fun follow(
+        leader: SubsystemHardwareRef,
+        transform: SubsystemFollowerTransform = SubsystemFollowerTransform.SAME_DIRECTION,
+    ) {
+        following = SubsystemFollowerDocument(leader.id, transform)
     }
 }
 
@@ -331,6 +478,9 @@ internal data class MeasurementBuilderValue(
     val source: SubsystemMeasurementSource?,
     val scale: Double,
     val offset: Double,
+    val maxAgeMs: Long?,
+    val validMinimum: Double?,
+    val validMaximum: Double?,
 )
 
 @AresSubsystemDsl
@@ -400,8 +550,7 @@ class SubsystemControlBuilder internal constructor() {
             kP = builder.kP,
             kI = builder.kI,
             kD = builder.kD,
-            kS = builder.kS,
-            kV = builder.kV,
+            feedforward = builder.feedforward.build(),
             derivativeFilterTimeConstantSeconds = builder.derivativeFilterTimeConstantSeconds,
             tolerance = builder.tolerance,
             minimumOutput = builder.minimumOutput,
@@ -415,10 +564,33 @@ class ControlLoopBuilder internal constructor() {
     var kP: Double = 0.0
     var kI: Double = 0.0
     var kD: Double = 0.0
-    var kS: Double = 0.0
-    var kV: Double = 0.0
+    val feedforward = SubsystemFeedforwardBuilder()
     var derivativeFilterTimeConstantSeconds: Double = 0.02
     var tolerance: Double = 0.0
     var minimumOutput: Double = -12.0
     var maximumOutput: Double = 12.0
+}
+
+/** Unit-aware feedforward configuration; use NONE when feedback alone is intentional. */
+@AresSubsystemDsl
+class SubsystemFeedforwardBuilder internal constructor() {
+    var kind: SubsystemFeedforwardKind = SubsystemFeedforwardKind.NONE
+    var kS: Double = 0.0
+    var kV: Double = 0.0
+    var kA: Double = 0.0
+    var kG: Double = 0.0
+    var velocityField: SubsystemFieldRef? = null
+    var accelerationField: SubsystemFieldRef? = null
+    var gravityAngleField: SubsystemFieldRef? = null
+
+    internal fun build() = SubsystemFeedforwardDocument(
+        kind = kind,
+        kS = kS,
+        kV = kV,
+        kA = kA,
+        kG = kG,
+        velocityFieldId = velocityField?.id,
+        accelerationFieldId = accelerationField?.id,
+        gravityAngleFieldId = gravityAngleField?.id,
+    )
 }

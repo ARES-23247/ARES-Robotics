@@ -8,6 +8,11 @@ so students can move between them without rewriting the robot architecture.
 Open **Robot -> Subsystem Builder** in ARES Analytics. Select the robot project, add hardware,
 state values, and control rules, then choose **Save & Generate**.
 
+Adding hardware creates explicit normal state rather than hiding inferred behavior. A motor adds
+cached position, velocity, and current plus its target/controller; a servo adds its normal command
+state; a sensor adds its typed reading. These fields remain ordinary editable descriptor entries,
+and teams can add mechanism-specific status/configuration values beside them.
+
 The editor stores a versioned `.ares/subsystems/<id>.aressubsystem` document and generates:
 
 - a readable `subsystem { ... }` definition;
@@ -49,12 +54,40 @@ val elevator = subsystem("elevator", "Elevator", SubsystemPlatform.FTC) {
     }
     control.positionPid("position", "Position", leader, target, position) {
         kP = 8.0
+        feedforward.kind = SubsystemFeedforwardKind.ELEVATOR
+        feedforward.kS = 0.2
+        feedforward.kV = 1.1
+        feedforward.kG = 0.35
+        feedforward.velocityField = target
         derivativeFilterTimeConstantSeconds = 0.02
         minimumOutput = -4.0
         maximumOutput = 10.0
     }
 }
 ```
+
+Follower devices share a leader command and do not own a second control loop:
+
+```kotlin
+val leader = hardware.motor("leader", "Leader") { hardwareMapName = "leftFlywheel" }
+hardware.motor("follower", "Follower") {
+    hardwareMapName = "rightFlywheel"
+    follow(leader, SubsystemFollowerTransform.INVERTED)
+}
+```
+
+For positional servos, use `MIRRORED_POSITION` to apply `1.0 - leaderPosition`. Motor and
+continuous-servo followers support `SAME_DIRECTION` and `INVERTED`. The generated physical and mock
+adapters command the entire group inside the same guarded write and safe the group on failure.
+Set a device's `inverted = true` separately when its physical mounting is reversed. ARES applies the
+follower relationship first and the device mounting inversion second, so selecting both is an
+intentional double reversal rather than an ambiguous alias.
+
+Homing is a generated state machine rather than an adapter side effect. The DSL supports digital
+sensor, current-stall, velocity-stall, combined current-and-velocity stall, and custom cached
+evidence. Every active method declares a bounded search output, evidence dwell, attempt timeout, and
+assigned zero. Combined stall evidence is preferred for sensorless homing because high current alone
+can also mean mechanism drag, while low velocity alone can mean a disconnected encoder.
 
 Students may use the same DSL in handwritten utilities, tests, and custom generators. Managed files
 carry a content hash and are overwritten on generation, so they must not be edited in place. A
@@ -95,9 +128,10 @@ Example JSON shape:
 
 ```json
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "documentId": "prism",
-  "name": "Prism",
+  "displayName": "Prism lights",
+  "kotlinTypeName": "Prism",
   "platform": "FTC",
   "implementation": {
     "kind": "HAND_AUTHORED",
@@ -126,8 +160,9 @@ were omitted from this example only to keep the ownership metadata readable.
 
 Generated PID loops reject non-finite sensor/target data, filter derivative noise, and use
 conditional integration to prevent windup while saturated. Target limits are enforced both in the
-catalog arguments and at the controller boundary. `kS` is output effort, while `kV` is output effort
-per target unit; keep the target and measurement units identical.
+catalog arguments and at the controller boundary. Feedforward is typed as `NONE`, `SIMPLE_MOTOR`,
+`ELEVATOR`, or `ARM`; it supports `kS`, `kV`, `kA`, and `kG` plus explicit desired velocity,
+acceleration, and arm-angle fields. Keep target, measurement, and feedforward field units coherent.
 
 Hardware signals are never relabeled implicitly. Select native position, native velocity, current
 amps, digital state, analog volts, or color ARGB explicitly, then provide scale and offset when

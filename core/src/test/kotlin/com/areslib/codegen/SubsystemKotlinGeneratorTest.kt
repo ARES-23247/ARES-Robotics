@@ -4,6 +4,8 @@ import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemImplementationDocument
 import com.areslib.subsystem.SubsystemImplementationKind
+import com.areslib.subsystem.SubsystemFeedforwardKind
+import com.areslib.subsystem.SubsystemFollowerTransform
 import com.areslib.subsystem.SubsystemSimulationDocument
 import com.areslib.subsystem.SubsystemSimulationSupport
 import com.areslib.subsystem.SubsystemSourceOwnership
@@ -24,7 +26,7 @@ class SubsystemKotlinGeneratorTest {
         val document = SubsystemTemplates.create(
             SubsystemTemplate.SIMPLE_ACTUATOR,
             documentId = "prism",
-            name = "Prism",
+            kotlinTypeName = "Prism",
             platform = SubsystemPlatform.FTC,
         ).copy(
             generateMockIo = false,
@@ -113,7 +115,7 @@ class SubsystemKotlinGeneratorTest {
         val document = SubsystemTemplates.create(
             SubsystemTemplate.HOMED_MECHANISM,
             documentId = "prototype-elevator",
-            name = "PrototypeElevator",
+            kotlinTypeName = "PrototypeElevator",
             platform = SubsystemPlatform.FTC,
         )
         val files = SubsystemKotlinGenerator.generate(
@@ -139,13 +141,28 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(state.contains("val homed: Boolean = false"))
         assertTrue(state.contains("val currentReadingValid: Boolean = false"))
         assertTrue(io.contains("Cached hardware boundary"))
-        assertTrue(physical.contains("if (cachedHomeSwitchActive == true) homed = true"))
+        assertTrue(physical.contains("override var homingConditionMet"))
+        assertTrue(physical.contains("override fun commandHoming"))
+        assertTrue(physical.contains("override fun establishHome"))
         assertTrue(physical.contains("feedbackTimestampMs = RobotClock.currentTimeMillis()"))
         assertTrue(physical.contains("if (!applyNeutral()) outputFaultLatched = true"))
         assertTrue(mock.contains("failNextRefresh"))
         assertTrue(mock.contains("failNextWrite"))
         assertTrue(test.contains("failed writes latch and require explicit neutral recovery"))
         assertTrue(test.contains("invalid feedback and cleanup fail closed"))
+        assertTrue(test.contains("homing evidence must dwell before home is established"))
+
+        val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+        assertTrue(controller.contains("homingStartedAtMs"))
+        assertTrue(controller.contains("homingEvidenceSinceMs"))
+        assertTrue(controller.contains("io.failHoming()"))
+        assertTrue(controller.contains("io.establishHome"))
+
+        val capabilities = subsystemTargetCapabilities(listOf(document))
+        assertTrue(capabilities.any {
+            it.descriptor.key == "subsystem.prototype-elevator.set.homingRequested" &&
+                it.operation.name == "SET_HOMING_REQUEST"
+        })
     }
 
     @Test
@@ -196,6 +213,115 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(controller.contains("Unclamped =="))
         assertTrue(controller.contains("!positionTarget.isFinite()"))
         assertTrue(controller.contains("coerceIn(0.0, 1.2)"))
+    }
+
+    @Test
+    fun `leader command drives inverted follower in physical and mock adapters`() {
+        val document = subsystem("dual-motor", "DualMotor", SubsystemPlatform.FTC) {
+            val volts = state.double("volts", "Voltage", SubsystemFieldRole.TARGET, 0.0, "V", -12.0, 12.0)
+            val leader = hardware.motor("leader", "Leader") {
+                hardwareMapName = "leader"
+                inverted = true
+            }
+            hardware.motor("follower", "Follower") {
+                hardwareMapName = "follower"
+                inverted = true
+                follow(leader, SubsystemFollowerTransform.INVERTED)
+            }
+            control.direct("motor", "Motor voltage", leader, volts)
+        }
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        )
+        val definition = files.single { it.artifact == SubsystemArtifact.DEFINITION }.content
+        val io = files.single { it.artifact == SubsystemArtifact.IO_CONTRACT }.content
+        val physical = files.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        val mock = files.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
+
+        assertTrue(definition.contains("follow(leader, com.areslib.subsystem.SubsystemFollowerTransform.INVERTED)"))
+        assertTrue(io.contains("fun setLeaderVoltage(value: Double)"))
+        assertTrue(!io.contains("fun setFollowerVoltage"))
+        assertTrue(physical.contains("leader?.direction = DcMotorSimple.Direction.REVERSE"))
+        assertTrue(physical.contains("follower?.direction = DcMotorSimple.Direction.REVERSE"))
+        assertTrue(physical.contains("follower").and(physical.contains("-(requested)")))
+        assertTrue(mock.contains("leaderCommand = (-(requested)).coerceIn(-12.0, 12.0)"))
+        assertTrue(mock.contains("followerCommand = (-(-(requested))).coerceIn(-12.0, 12.0)"))
+    }
+
+    @Test
+    fun `servo inversion is explicit in FTC FRC and mock adapters`() {
+        fun document(platform: SubsystemPlatform) = subsystem("servo-pair", "ServoPair", platform) {
+            val position = state.double("position", "Position", SubsystemFieldRole.TARGET, 0.5, null, 0.0, 1.0)
+            val power = state.double("power", "Power", SubsystemFieldRole.TARGET, 0.0, null, -1.0, 1.0)
+            val positional = hardware.positionalServo("arm", "Arm servo") {
+                hardwareMapName = if (platform == SubsystemPlatform.FTC) "arm" else null
+                channel = if (platform == SubsystemPlatform.FRC) 0 else null
+                inverted = true
+            }
+            val continuous = hardware.continuousServo("roller", "Roller servo") {
+                hardwareMapName = if (platform == SubsystemPlatform.FTC) "roller" else null
+                channel = if (platform == SubsystemPlatform.FRC) 1 else null
+                inverted = true
+            }
+            control.servoPosition("arm", "Arm position", positional, position)
+            control.direct("roller", "Roller power", continuous, power)
+        }
+
+        val ftc = SubsystemKotlinGenerator.generate(
+            document(SubsystemPlatform.FTC),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        )
+        val frc = SubsystemKotlinGenerator.generate(
+            document(SubsystemPlatform.FRC),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FRC, "org.example.generated.subsystems"),
+        )
+
+        val ftcPhysical = ftc.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        assertTrue(ftcPhysical.contains("arm?.direction = Servo.Direction.REVERSE"))
+        assertTrue(ftcPhysical.contains("roller?.direction = DcMotorSimple.Direction.REVERSE"))
+
+        val frcPhysical = frc.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        assertTrue(frcPhysical.contains("roller.setInverted(true)"))
+        assertTrue(frcPhysical.contains("arm.set((1.0 - (requested)).coerceIn(0.0, 1.0))"))
+
+        val mock = ftc.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
+        assertTrue(mock.contains("armCommand = (1.0 - (requested)).coerceIn(0.0, 1.0)"))
+        assertTrue(mock.contains("rollerCommand = (-(requested)).coerceIn(-1.0, 1.0)"))
+    }
+
+    @Test
+    fun `velocity controller emits explicit simple motor feedforward`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM,
+            documentId = "shooter",
+            kotlinTypeName = "Shooter",
+            platform = SubsystemPlatform.FTC,
+        ).let { source ->
+            val loop = source.controlLoops.single().copy(
+                feedforward = source.controlLoops.single().feedforward.copy(
+                    kind = SubsystemFeedforwardKind.SIMPLE_MOTOR,
+                    kS = 0.25,
+                    kV = 0.12,
+                    kA = 0.01,
+                    velocityFieldId = "target",
+                ),
+            )
+            source.copy(controlLoops = listOf(loop))
+        }
+
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        )
+        val definition = files.single { it.artifact == SubsystemArtifact.DEFINITION }.content
+        val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+
+        assertTrue(definition.contains("feedforward.kind = com.areslib.subsystem.SubsystemFeedforwardKind.SIMPLE_MOTOR"))
+        assertTrue(definition.contains("feedforward.kS = 0.25"))
+        assertTrue(controller.contains("primaryStatic"))
+        assertTrue(controller.contains("primaryFeedforward"))
+        assertTrue(controller.contains("0.01 * primaryDesiredAcceleration"))
     }
 
     @Test

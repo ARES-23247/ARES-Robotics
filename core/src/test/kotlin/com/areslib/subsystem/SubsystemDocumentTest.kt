@@ -37,7 +37,8 @@ class SubsystemDocumentTest {
     fun `validation rejects dangling controller links and platform wiring mistakes`() {
         val document = SubsystemDocument(
             documentId = "arm",
-            name = "Arm",
+            displayName = "Arm",
+            kotlinTypeName = "Arm",
             platform = SubsystemPlatform.FRC,
             hardware = listOf(
                 SubsystemHardwareDocument(
@@ -76,10 +77,98 @@ class SubsystemDocumentTest {
         )
 
         assertTrue(validateSubsystemDocument(document).isEmpty())
-        assertTrue(document.safety.requiresHoming)
+        assertEquals(SubsystemHomingMethod.DIGITAL_SENSOR, document.safety.homing.method)
         assertTrue(document.safety.requiresCurrentMonitoring)
-        assertEquals(setOf("position", "currentAmps"), document.hardware.first().measurements.map { it.fieldId }.toSet())
-        assertEquals("homeSwitch", document.safety.homingSensorId)
+        assertEquals(setOf("position", "velocity", "currentAmps"), document.hardware.first().measurements.map { it.fieldId }.toSet())
+        assertEquals("homeSwitchActive", document.safety.homing.evidence.single().fieldId)
+    }
+
+    @Test
+    fun `stall homing requires fresh bounded evidence dwell and timeout`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.HOMED_MECHANISM,
+            "stall-lift",
+            "StallLift",
+            SubsystemPlatform.FTC,
+        )
+        val document = base.copy(
+            safety = base.safety.copy(
+                homing = SubsystemHomingDocument(
+                    method = SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL,
+                    actuatorId = "motor",
+                    searchOutput = -2.0,
+                    evidence = listOf(
+                        SubsystemHomingEvidenceDocument(
+                            "currentAmps",
+                            SubsystemHomingComparison.AT_OR_ABOVE,
+                            7.0,
+                        ),
+                        SubsystemHomingEvidenceDocument(
+                            "velocity",
+                            SubsystemHomingComparison.ABS_AT_OR_BELOW,
+                            0.5,
+                        ),
+                    ),
+                    dwellMs = 300L,
+                    timeoutMs = 4_000L,
+                )
+            )
+        )
+
+        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(
+            validateSubsystemDocument(
+                document.copy(safety = document.safety.copy(
+                    homing = document.safety.homing.copy(searchOutput = 8.0, timeoutMs = 100L)
+                ))
+            ).any { it.path == "safety.homing.searchOutput" }
+        )
+    }
+
+    @Test
+    fun `follower actuator shares one controller and rejects competing or incompatible leaders`() {
+        val document = subsystem("dual-flywheel", "DualFlywheel", SubsystemPlatform.FTC) {
+            val volts = state.double("volts", "Voltage", SubsystemFieldRole.TARGET, 0.0, "V", -12.0, 12.0)
+            val leader = hardware.motor("leader", "Leader motor") { hardwareMapName = "leader" }
+            hardware.motor("follower", "Follower motor") {
+                hardwareMapName = "follower"
+                follow(leader, SubsystemFollowerTransform.INVERTED)
+            }
+            control.direct("flywheel", "Flywheel", leader, volts)
+        }
+
+        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertEquals("leader", document.hardware.single { it.hardwareId == "follower" }.following?.leaderId)
+
+        val competing = document.copy(
+            controlLoops = document.controlLoops + document.controlLoops.single().copy(
+                loopId = "competing",
+                uid = "competing",
+                actuatorId = "follower",
+            )
+        )
+        assertTrue(validateSubsystemDocument(competing).any { it.message.contains("follower cannot own", ignoreCase = true) })
+
+        val mirroredMotor = document.copy(hardware = document.hardware.map {
+            if (it.hardwareId == "follower") it.copy(
+                following = it.following?.copy(transform = SubsystemFollowerTransform.MIRRORED_POSITION)
+            ) else it
+        })
+        assertTrue(validateSubsystemDocument(mirroredMotor).any { it.message.contains("positional servos") })
+
+        val signedPositionalFollower = document.copy(hardware = document.hardware.map {
+            it.copy(kind = SubsystemHardwareKind.POSITIONAL_SERVO, safeOutput = 0.5)
+        })
+        assertTrue(
+            validateSubsystemDocument(signedPositionalFollower)
+                .any { it.message.contains("mirrored position rather than signed inversion") }
+        )
+
+        val invertedSensor = document.copy(hardware = document.hardware.mapIndexed { index, device ->
+            if (index == 0) device.copy(kind = SubsystemHardwareKind.DIGITAL_INPUT, inverted = true, safeOutput = null)
+            else device
+        })
+        assertTrue(validateSubsystemDocument(invertedSensor).any { it.path == "hardware[0].inverted" })
     }
 
     @Test
@@ -108,17 +197,17 @@ class SubsystemDocumentTest {
     }
 
     @Test
-    fun `codec requires explicit version five implementation metadata`() {
+    fun `codec requires explicit version six implementation and homing metadata`() {
         val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
 
         val oldSchema = assertThrows(IllegalArgumentException::class.java) {
-            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 5", "\"schemaVersion\": 4"))
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 6", "\"schemaVersion\": 5"))
         }
-        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 4"))
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 5"))
 
         val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
             SubsystemDocumentCodec.decode(
-                """{"schemaVersion":5,"documentId":"prism","name":"Prism","platform":"FTC"}"""
+                """{"schemaVersion":6,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
             )
         }
         assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))
@@ -126,7 +215,8 @@ class SubsystemDocumentTest {
 
     private fun handAuthoredPrismDocument() = SubsystemDocument(
         documentId = "prism",
-        name = "Prism",
+        displayName = "Prism lights",
+        kotlinTypeName = "Prism",
         description = "Controls the goBILDA Prism light",
         platform = SubsystemPlatform.FTC,
         hardware = listOf(

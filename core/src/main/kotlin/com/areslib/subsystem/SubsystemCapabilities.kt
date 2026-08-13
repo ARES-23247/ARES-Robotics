@@ -12,8 +12,11 @@ data class SubsystemTargetCapability(
     val subsystemId: String,
     val fieldId: String,
     val valueType: SubsystemValueType,
+    val operation: SubsystemCapabilityOperation = SubsystemCapabilityOperation.SET_FIELD,
     val descriptor: ActionDescriptor,
 )
+
+enum class SubsystemCapabilityOperation { SET_FIELD, SET_HOMING_REQUEST }
 
 /** Stable action key shared by the subsystem builder, controls editor, routines, and codegen. */
 fun subsystemTargetActionKey(subsystemId: String, fieldId: String): String =
@@ -28,7 +31,7 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
         if (document.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED) {
             return@flatMap emptyList()
         }
-        document.stateFields
+        val targets = document.stateFields
             .filter { it.role == SubsystemFieldRole.TARGET }
             .sortedBy { it.fieldId }
             .map { field ->
@@ -39,15 +42,44 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                     valueType = field.type,
                     descriptor = ActionDescriptor(
                         key = key,
-                        displayName = "Set ${document.name} ${field.displayName}",
-                        description = "Sets ${field.displayName.lowercase()} on the ${document.name} subsystem.",
-                        category = document.name,
+                        displayName = "Set ${document.displayName} ${field.displayName}",
+                        description = "Sets ${field.displayName.lowercase()} on the ${document.displayName} subsystem.",
+                        category = document.displayName,
                         parameters = listOf(field.asCapabilityParameter()),
                         resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
                         allowedContexts = CapabilityContext.entries,
                     ),
                 )
             }
+        val homing = if (document.safety.homing.method != SubsystemHomingMethod.NONE) {
+            val key = subsystemTargetActionKey(document.documentId, "homingRequested")
+            listOf(
+                SubsystemTargetCapability(
+                    subsystemId = document.documentId,
+                    fieldId = "homingRequested",
+                    valueType = SubsystemValueType.BOOLEAN,
+                    operation = SubsystemCapabilityOperation.SET_HOMING_REQUEST,
+                    descriptor = ActionDescriptor(
+                        key = key,
+                        displayName = "Run ${document.displayName} homing",
+                        description = "Starts or cancels the bounded ${document.displayName.lowercase()} homing sequence.",
+                        category = document.displayName,
+                        parameters = listOf(
+                            CapabilityParameterDescriptor(
+                                key = "value",
+                                displayName = "Run homing",
+                                description = "True starts homing; false cancels and commands neutral.",
+                                type = CapabilityParameterType.BOOLEAN,
+                                defaultBoolean = false,
+                            )
+                        ),
+                        resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
+                        allowedContexts = CapabilityContext.entries,
+                    ),
+                )
+            )
+        } else emptyList()
+        targets + homing
     }
 
 /**
