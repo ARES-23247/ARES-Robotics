@@ -4,7 +4,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 5
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 6
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -101,6 +101,80 @@ enum class SubsystemTemplate {
     ADVANCED_CUSTOM,
 }
 
+/** Unit-aware feedforward model combined with feedback before output clamping. */
+enum class SubsystemFeedforwardKind {
+    NONE,
+    SIMPLE_MOTOR,
+    ELEVATOR,
+    ARM,
+}
+
+data class SubsystemFeedforwardDocument(
+    val kind: SubsystemFeedforwardKind = SubsystemFeedforwardKind.NONE,
+    /** Static friction compensation in output volts. */
+    val kS: Double = 0.0,
+    /** Velocity gain in output volts per selected velocity unit/second. */
+    val kV: Double = 0.0,
+    /** Acceleration gain in output volts per selected velocity unit/second². */
+    val kA: Double = 0.0,
+    /** Elevator constant or arm cosine gravity compensation in output volts. */
+    val kG: Double = 0.0,
+    /** Desired velocity; null uses the loop target for velocity-control loops and zero otherwise. */
+    val velocityFieldId: String? = null,
+    /** Desired acceleration; null means zero acceleration feedforward. */
+    val accelerationFieldId: String? = null,
+    /** Arm angle measurement in radians; required for ARM gravity compensation. */
+    val gravityAngleFieldId: String? = null,
+)
+
+/**
+ * How a mechanism establishes its physical reference.
+ *
+ * Stall methods are intentionally distinct from passive sensors: they require an explicit homing
+ * request, bounded search output, fresh evidence for a dwell period, and a hard timeout.
+ */
+enum class SubsystemHomingMethod {
+    NONE,
+    DIGITAL_SENSOR,
+    CURRENT_STALL,
+    VELOCITY_STALL,
+    CURRENT_AND_VELOCITY_STALL,
+    CUSTOM_MEASUREMENT,
+}
+
+/** Comparison applied to one cached, typed measurement while establishing home. */
+enum class SubsystemHomingComparison {
+    TRUE,
+    FALSE,
+    AT_OR_ABOVE,
+    AT_OR_BELOW,
+    ABS_AT_OR_ABOVE,
+    ABS_AT_OR_BELOW,
+}
+
+/** One item of independently cached evidence; every item must remain true for [dwellMs]. */
+data class SubsystemHomingEvidenceDocument(
+    val fieldId: String,
+    val comparison: SubsystemHomingComparison,
+    val threshold: Double? = null,
+)
+
+/**
+ * Declarative homing state-machine contract shared by physical and mock adapters.
+ *
+ * [searchOutput] uses the selected actuator's command unit (volts for a motor). Every item of
+ * [evidence] must remain true for [dwellMs]; [timeoutMs] stops and faults an unsuccessful attempt.
+ */
+data class SubsystemHomingDocument(
+    val method: SubsystemHomingMethod = SubsystemHomingMethod.NONE,
+    val actuatorId: String? = null,
+    val searchOutput: Double? = null,
+    val evidence: List<SubsystemHomingEvidenceDocument> = emptyList(),
+    val dwellMs: Long = 250L,
+    val timeoutMs: Long = 3_000L,
+    val zeroPosition: Double = 0.0,
+)
+
 /**
  * Cross-platform safety requirements consumed by generated starters and verification.
  *
@@ -110,9 +184,8 @@ enum class SubsystemTemplate {
 data class SubsystemSafetyDocument(
     /** Maximum accepted age for control feedback. Null is permitted only for sensor-free control. */
     val feedbackTimeoutMs: Long? = 250L,
-    /** A homing sensor must prove the mechanism reference before non-neutral output is accepted. */
-    val requiresHoming: Boolean = false,
-    val homingSensorId: String? = null,
+    /** Physical-reference strategy. NONE means the mechanism does not require homing. */
+    val homing: SubsystemHomingDocument = SubsystemHomingDocument(),
     /** Calibration must be explicitly established before non-neutral output is accepted. */
     val requiresCalibration: Boolean = false,
     /** Device configuration health participates in the output permit. */
@@ -142,7 +215,28 @@ data class SubsystemMeasurementDocument(
     /** `stateValue = rawHardwareValue * scale + offset`. */
     val scale: Double = 1.0,
     val offset: Double = 0.0,
+    /** Optional per-signal freshness lease; null inherits the subsystem feedback timeout. */
+    val maxAgeMs: Long? = null,
+    /** Optional validity bounds checked after scale/offset conversion. */
+    val validMinimum: Double? = null,
+    val validMaximum: Double? = null,
 )
+
+/**
+ * One actuator that receives the command of another actuator instead of owning a controller.
+ * This relationship is explicit so physical IO, mocks, simulation, and verification cannot drift.
+ */
+data class SubsystemFollowerDocument(
+    val leaderId: String,
+    val transform: SubsystemFollowerTransform = SubsystemFollowerTransform.SAME_DIRECTION,
+)
+
+enum class SubsystemFollowerTransform {
+    SAME_DIRECTION,
+    INVERTED,
+    /** Positional-servo mirror: follower = 1 - leader. */
+    MIRRORED_POSITION,
+}
 
 data class SubsystemHardwareDocument(
     val hardwareId: String,
@@ -156,6 +250,11 @@ data class SubsystemHardwareDocument(
     val currentLimitAmps: Double? = null,
     /** Required neutral command for actuators. Sensors leave this null. */
     val safeOutput: Double? = null,
+    val description: String = "",
+    /** Immutable editor identity; code ID renames do not change this value. */
+    val uid: String = hardwareId,
+    /** Null means independently controlled; otherwise this actuator follows exactly one leader. */
+    val following: SubsystemFollowerDocument? = null,
 )
 
 /** A typed state value. Raw Kotlin expressions are deliberately not accepted. */
@@ -171,6 +270,9 @@ data class SubsystemStateFieldDocument(
     val defaultText: String? = null,
     val minimum: Double? = null,
     val maximum: Double? = null,
+    val description: String = "",
+    /** Immutable editor identity; code ID renames do not change this value. */
+    val uid: String = fieldId,
 )
 
 data class SubsystemControlLoopDocument(
@@ -183,13 +285,16 @@ data class SubsystemControlLoopDocument(
     val kP: Double = 0.0,
     val kI: Double = 0.0,
     val kD: Double = 0.0,
-    val kS: Double = 0.0,
-    val kV: Double = 0.0,
+    /** Typed feedforward combined with feedback; NONE disables feedforward. */
+    val feedforward: SubsystemFeedforwardDocument = SubsystemFeedforwardDocument(),
     /** First-order derivative filter time constant; zero disables filtering. */
     val derivativeFilterTimeConstantSeconds: Double = 0.02,
     val tolerance: Double = 0.0,
     val minimumOutput: Double = -12.0,
     val maximumOutput: Double = 12.0,
+    val description: String = "",
+    /** Immutable editor identity; code ID renames do not change this value. */
+    val uid: String = loopId,
 )
 
 /**
@@ -202,7 +307,10 @@ data class SubsystemControlLoopDocument(
 data class SubsystemDocument(
     val schemaVersion: Int = ARES_SUBSYSTEM_SCHEMA_VERSION,
     val documentId: String,
-    val name: String,
+    /** Friendly name shown to students; it may contain spaces and does not affect Kotlin symbols. */
+    val displayName: String,
+    /** PascalCase root used for generated Kotlin types and filenames. */
+    val kotlinTypeName: String,
     val description: String = "",
     val platform: SubsystemPlatform,
     val revision: Int = 1,
@@ -221,6 +329,8 @@ data class SubsystemDocument(
     val requiredAtStartup: Boolean = true,
     val generateMockIo: Boolean = true,
     val generateTest: Boolean = true,
+    /** Immutable editor identity; document ID/Kotlin renames do not change this value. */
+    val uid: String = documentId,
 )
 
 data class SubsystemValidationIssue(val path: String, val message: String)
@@ -238,9 +348,11 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     } else if (!document.documentId.replace('-', '_').isUsableKotlinIdentifier()) {
         issue("documentId", "Document ID would create a Kotlin keyword package")
     }
-    if (!document.name.matches(PASCAL_CASE)) {
-        issue("name", "Subsystem class name must use PascalCase")
+    if (document.displayName.isBlank()) issue("displayName", "Subsystem display name is required")
+    if (!document.kotlinTypeName.matches(PASCAL_CASE)) {
+        issue("kotlinTypeName", "Kotlin type name must use PascalCase")
     }
+    if (document.uid.isBlank()) issue("uid", "Subsystem UID is required")
     if (document.revision < 1) issue("revision", "Revision must be positive")
     if (document.parentContentHash != null && !document.parentContentHash.matches(SHA_256)) {
         issue("parentContentHash", "Parent content hash must be SHA-256")
@@ -261,6 +373,9 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     duplicateIds(document.controlLoops.map { it.loopId }).forEach {
         issue("controlLoops", "Control loop ID '$it' is duplicated")
     }
+    duplicateIds(document.hardware.map { it.uid }).forEach { issue("hardware", "Hardware UID '$it' is duplicated") }
+    duplicateIds(document.stateFields.map { it.uid }).forEach { issue("stateFields", "State UID '$it' is duplicated") }
+    duplicateIds(document.controlLoops.map { it.uid }).forEach { issue("controlLoops", "Control UID '$it' is duplicated") }
 
     val hardwareById = document.hardware.associateBy { it.hardwareId }
     val fieldsById = document.stateFields.associateBy { it.fieldId }
@@ -268,6 +383,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     document.hardware.forEachIndexed { index, device ->
         val path = "hardware[$index]"
         if (!device.hardwareId.isUsableKotlinIdentifier()) issue("$path.hardwareId", "Hardware ID must be a Kotlin identifier, not a keyword")
+        if (device.uid.isBlank()) issue("$path.uid", "Hardware UID is required")
         if (device.displayName.isBlank()) issue("$path.displayName", "Hardware display name is required")
         when (document.platform) {
             SubsystemPlatform.FTC -> {
@@ -318,6 +434,30 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         } else if (device.safeOutput != null) {
             issue("$path.safeOutput", "Sensors do not accept an output neutral")
         }
+        if (device.inverted && device.kind !in ACTUATOR_KINDS) {
+            issue("$path.inverted", "Only motors and servos have a reversible hardware direction")
+        }
+        device.following?.let { follower ->
+            val relationPath = "$path.following"
+            val leader = hardwareById[follower.leaderId]
+            when {
+                device.kind !in ACTUATOR_KINDS -> issue(relationPath, "Only actuators can follow another actuator")
+                follower.leaderId == device.hardwareId -> issue("$relationPath.leaderId", "An actuator cannot follow itself")
+                leader == null -> issue("$relationPath.leaderId", "Unknown leader '${follower.leaderId}'")
+                leader.kind != device.kind -> issue("$relationPath.leaderId", "Leader and follower must use the same actuator kind")
+                leader.following != null -> issue("$relationPath.leaderId", "Follower chains are not supported; select an independent leader")
+            }
+            if (follower.transform == SubsystemFollowerTransform.MIRRORED_POSITION &&
+                device.kind != SubsystemHardwareKind.POSITIONAL_SERVO
+            ) {
+                issue("$relationPath.transform", "Mirrored position is only valid for positional servos")
+            }
+            if (follower.transform == SubsystemFollowerTransform.INVERTED &&
+                device.kind == SubsystemHardwareKind.POSITIONAL_SERVO
+            ) {
+                issue("$relationPath.transform", "Positional-servo followers use mirrored position rather than signed inversion")
+            }
+        }
         duplicateIds(device.measurements.map { it.fieldId }).forEach {
             issue("$path.measurements", "Cached field '$it' is sampled more than once from this device")
         }
@@ -325,6 +465,20 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
             val measurementPath = "$path.measurements[$measurementIndex]"
             if (!measurement.scale.isFinite() || !measurement.offset.isFinite()) {
                 issue("$measurementPath.scale", "Measurement conversion must be finite")
+            }
+            measurement.maxAgeMs?.let {
+                if (it !in 20L..10_000L) issue("$measurementPath.maxAgeMs", "Measurement freshness must be from 20 to 10000 ms")
+            }
+            measurement.validMinimum?.let {
+                if (!it.isFinite()) issue("$measurementPath.validMinimum", "Measurement minimum must be finite")
+            }
+            measurement.validMaximum?.let {
+                if (!it.isFinite()) issue("$measurementPath.validMaximum", "Measurement maximum must be finite")
+            }
+            if (measurement.validMinimum != null && measurement.validMaximum != null &&
+                measurement.validMinimum > measurement.validMaximum
+            ) {
+                issue(measurementPath, "Measurement validity minimum cannot exceed its maximum")
             }
             val fieldId = measurement.fieldId
             val field = fieldsById[fieldId]
@@ -351,6 +505,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     document.stateFields.forEachIndexed { index, field ->
         val path = "stateFields[$index]"
         if (!field.fieldId.isUsableKotlinIdentifier()) issue("$path.fieldId", "State field ID must be a Kotlin identifier, not a keyword")
+        if (field.uid.isBlank()) issue("$path.uid", "State field UID is required")
         if (field.displayName.isBlank()) issue("$path.displayName", "State field display name is required")
         if (field.unit?.isBlank() == true) issue("$path.unit", "Unit must be omitted or non-blank")
         field.minimum?.let { if (!it.isFinite()) issue("$path.minimum", "Minimum must be finite") }
@@ -388,12 +543,15 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     document.controlLoops.forEachIndexed { index, loop ->
         val path = "controlLoops[$index]"
         if (!loop.loopId.isUsableKotlinIdentifier()) issue("$path.loopId", "Control loop ID must be a Kotlin identifier, not a keyword")
+        if (loop.uid.isBlank()) issue("$path.uid", "Control loop UID is required")
         if (loop.displayName.isBlank()) issue("$path.displayName", "Control loop display name is required")
         val actuator = hardwareById[loop.actuatorId]
         if (actuator == null) {
             issue("$path.actuatorId", "Unknown actuator '${loop.actuatorId}'")
         } else if (actuator.kind !in ACTUATOR_KINDS) {
             issue("$path.actuatorId", "Selected hardware is a sensor, not an actuator")
+        } else if (actuator.following != null) {
+            issue("$path.actuatorId", "A follower cannot own a controller; control its leader instead")
         }
         val target = fieldsById[loop.targetFieldId]
         if (target == null) {
@@ -418,8 +576,10 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
             loop.kP,
             loop.kI,
             loop.kD,
-            loop.kS,
-            loop.kV,
+            loop.feedforward.kS,
+            loop.feedforward.kV,
+            loop.feedforward.kA,
+            loop.feedforward.kG,
             loop.derivativeFilterTimeConstantSeconds,
             loop.tolerance,
             loop.minimumOutput,
@@ -431,9 +591,10 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         }
         if (loop.tolerance < 0.0) issue("$path.tolerance", "Tolerance cannot be negative")
         if (loop.minimumOutput >= loop.maximumOutput) issue(path, "Minimum output must be below maximum output")
+        validateFeedforward(loop, fieldsById, path, ::issue)
     }
 
-    document.hardware.filter { it.kind in ACTUATOR_KINDS }.forEach { actuator ->
+    document.hardware.filter { it.kind in ACTUATOR_KINDS && it.following == null }.forEach { actuator ->
         if (document.controlLoops.none { it.actuatorId == actuator.hardwareId }) {
             issue("hardware.${actuator.hardwareId}", "Actuator '${actuator.displayName}' is not controlled by any loop")
         }
@@ -447,15 +608,7 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     ) {
         issue("safety.feedbackTimeoutMs", "Closed-loop mechanisms require a feedback timeout")
     }
-    if (document.safety.requiresHoming) {
-        val sensor = document.safety.homingSensorId?.let(hardwareById::get)
-        if (sensor == null) issue("safety.homingSensorId", "Homed mechanisms require a known homing sensor")
-        else if (sensor.kind != SubsystemHardwareKind.DIGITAL_INPUT) {
-            issue("safety.homingSensorId", "The homing sensor must be a digital input")
-        }
-    } else if (document.safety.homingSensorId != null) {
-        issue("safety.homingSensorId", "A homing sensor is only valid when homing is required")
-    }
+    validateHoming(document, hardwareById, fieldsById, ::issue)
     if (document.safety.requiresExplicitNeutralRecovery && !document.safety.latchOutputFaults) {
         issue("safety.requiresExplicitNeutralRecovery", "Explicit neutral recovery requires fault latching")
     }
@@ -470,6 +623,142 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     }
     document.autonomousResourceKey?.let {
         if (!it.matches(STABLE_ID)) issue("autonomousResourceKey", "Autonomous resource key must be a stable lowercase key")
+    }
+}
+
+private fun validateFeedforward(
+    loop: SubsystemControlLoopDocument,
+    fieldsById: Map<String, SubsystemStateFieldDocument>,
+    path: String,
+    issue: (path: String, message: String) -> Unit,
+) {
+    val feedforward = loop.feedforward
+    if (feedforward.kind == SubsystemFeedforwardKind.NONE) {
+        if (feedforward.kS != 0.0 || feedforward.kV != 0.0 || feedforward.kA != 0.0 || feedforward.kG != 0.0 ||
+            feedforward.velocityFieldId != null || feedforward.accelerationFieldId != null ||
+            feedforward.gravityAngleFieldId != null
+        ) {
+            issue("$path.feedforward", "Select a feedforward model before configuring its gains or fields")
+        }
+        return
+    }
+    if (loop.strategy == SubsystemControlStrategy.SERVO_POSITION) {
+        issue("$path.feedforward", "Generated positional-servo control does not use voltage feedforward")
+    }
+    listOf(
+        "velocityFieldId" to feedforward.velocityFieldId,
+        "accelerationFieldId" to feedforward.accelerationFieldId,
+        "gravityAngleFieldId" to feedforward.gravityAngleFieldId,
+    ).forEach { (name, id) ->
+        if (id != null && fieldsById[id]?.type !in NUMERIC_TYPES) {
+            issue("$path.feedforward.$name", "Feedforward fields must reference numeric state values")
+        }
+    }
+    if (feedforward.kind == SubsystemFeedforwardKind.ARM && feedforward.gravityAngleFieldId == null) {
+        issue("$path.feedforward.gravityAngleFieldId", "Arm feedforward requires an angle measurement in radians")
+    }
+    if (feedforward.kind != SubsystemFeedforwardKind.ARM && feedforward.gravityAngleFieldId != null) {
+        issue("$path.feedforward.gravityAngleFieldId", "Only arm feedforward uses a gravity angle field")
+    }
+}
+
+private fun validateHoming(
+    document: SubsystemDocument,
+    hardwareById: Map<String, SubsystemHardwareDocument>,
+    fieldsById: Map<String, SubsystemStateFieldDocument>,
+    issue: (path: String, message: String) -> Unit,
+) {
+    val homing = document.safety.homing
+    if (homing.method == SubsystemHomingMethod.NONE) {
+        if (homing.actuatorId != null || homing.searchOutput != null || homing.evidence.isNotEmpty()) {
+            issue("safety.homing", "A mechanism without homing cannot declare a homing actuator, output, or evidence")
+        }
+        return
+    }
+
+    val actuator = homing.actuatorId?.let(hardwareById::get)
+    if (actuator == null) {
+        issue("safety.homing.actuatorId", "Homing requires a known actuator")
+    } else if (actuator.kind != SubsystemHardwareKind.MOTOR) {
+        issue("safety.homing.actuatorId", "Generated homing currently requires a motor actuator")
+    } else if (actuator.following != null) {
+        issue("safety.homing.actuatorId", "A follower cannot own a homing sequence; home its leader")
+    }
+    val output = homing.searchOutput
+    if (output == null || !output.isFinite() || output == 0.0) {
+        issue("safety.homing.searchOutput", "Homing requires a finite, non-zero search output")
+    } else if (output !in -4.0..4.0) {
+        issue("safety.homing.searchOutput", "Generated motor homing is limited to -4 to 4 volts")
+    }
+    if (homing.dwellMs !in 40L..2_000L) {
+        issue("safety.homing.dwellMs", "Homing evidence dwell must be from 40 to 2000 ms")
+    }
+    if (homing.timeoutMs !in 250L..15_000L || homing.timeoutMs <= homing.dwellMs) {
+        issue("safety.homing.timeoutMs", "Homing timeout must exceed dwell and be from 250 to 15000 ms")
+    }
+    if (!homing.zeroPosition.isFinite()) issue("safety.homing.zeroPosition", "Home position must be finite")
+    if (homing.evidence.isEmpty()) issue("safety.homing.evidence", "Homing requires at least one cached measurement")
+    duplicateIds(homing.evidence.map { it.fieldId }).forEach {
+        issue("safety.homing.evidence", "Homing evidence '$it' is duplicated")
+    }
+
+    val measurementSources = document.hardware.flatMap { device ->
+        device.measurements.map { it.fieldId to it.source }
+    }.toMap()
+    homing.evidence.forEachIndexed { index, evidence ->
+        val path = "safety.homing.evidence[$index]"
+        val field = fieldsById[evidence.fieldId]
+        val source = measurementSources[evidence.fieldId]
+        if (field == null || source == null) {
+            issue("$path.fieldId", "Homing evidence must reference a cached hardware measurement")
+            return@forEachIndexed
+        }
+        val booleanComparison = evidence.comparison == SubsystemHomingComparison.TRUE ||
+            evidence.comparison == SubsystemHomingComparison.FALSE
+        if (booleanComparison && field.type != SubsystemValueType.BOOLEAN) {
+            issue("$path.comparison", "TRUE/FALSE homing evidence requires a Boolean measurement")
+        }
+        if (!booleanComparison && field.type !in NUMERIC_TYPES) {
+            issue("$path.comparison", "Threshold homing evidence requires a numeric measurement")
+        }
+        if (booleanComparison && evidence.threshold != null) {
+            issue("$path.threshold", "Boolean homing evidence does not use a threshold")
+        }
+        if (!booleanComparison && (evidence.threshold == null || !evidence.threshold.isFinite())) {
+            issue("$path.threshold", "Numeric homing evidence requires a finite threshold")
+        }
+        when (homing.method) {
+            SubsystemHomingMethod.DIGITAL_SENSOR -> if (source != SubsystemMeasurementSource.DIGITAL_STATE) {
+                issue("$path.fieldId", "Digital-sensor homing requires a digital-state measurement")
+            }
+            SubsystemHomingMethod.CURRENT_STALL -> if (source != SubsystemMeasurementSource.MOTOR_CURRENT_AMPS) {
+                issue("$path.fieldId", "Current-stall homing requires a motor-current measurement")
+            }
+            SubsystemHomingMethod.VELOCITY_STALL -> if (source != SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND) {
+                issue("$path.fieldId", "Velocity-stall homing requires a motor-velocity measurement")
+            }
+            SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL -> Unit
+            SubsystemHomingMethod.CUSTOM_MEASUREMENT -> Unit
+            SubsystemHomingMethod.NONE -> Unit
+        }
+    }
+    if (homing.method == SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL) {
+        val sources = homing.evidence.mapNotNull { measurementSources[it.fieldId] }.toSet()
+        if (SubsystemMeasurementSource.MOTOR_CURRENT_AMPS !in sources ||
+            SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND !in sources
+        ) {
+            issue("safety.homing.evidence", "Combined stall homing requires both current and velocity evidence")
+        }
+    }
+    if (homing.method == SubsystemHomingMethod.CURRENT_STALL ||
+        homing.method == SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL
+    ) {
+        if (!document.safety.requiresCurrentMonitoring) {
+            issue("safety.requiresCurrentMonitoring", "Current-based homing requires current monitoring")
+        }
+    }
+    if (document.safety.feedbackTimeoutMs == null) {
+        issue("safety.feedbackTimeoutMs", "Homing requires a feedback timeout")
     }
 }
 
@@ -611,6 +900,14 @@ object SubsystemDocumentCodec {
             }
             require(root.get("implementation")?.isJsonObject == true) {
                 "Subsystem implementation metadata is required"
+            }
+            require(root.get("displayName")?.isJsonPrimitive == true &&
+                root.get("kotlinTypeName")?.isJsonPrimitive == true
+            ) {
+                "Subsystem displayName and kotlinTypeName are required"
+            }
+            require(root.getAsJsonObject("safety")?.get("homing")?.isJsonObject == true) {
+                "Subsystem homing metadata is required"
             }
             val implementation = root.getAsJsonObject("implementation")
             require(implementation.has("kind") && implementation.has("ownership")) {
