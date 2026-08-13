@@ -24,7 +24,6 @@ import com.areslib.tuning.TuningManager
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
-import java.io.File
 
 /** Reference frame applied to normal FTC TeleOp translation commands. */
 enum class FtcTeleopDriveFrame {
@@ -142,6 +141,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     // Vision Filtering Constants
     visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
     visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
+    initialTuningState: com.areslib.state.TuningState = com.areslib.state.TuningState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) : FtcBaseRobot(
     hardwareMap = hardwareMap,
@@ -160,6 +160,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     pinpointIsCcwPositive = pinpointIsCcwPositive,
     visionStdDevs = visionStdDevs,
     visionFilterConfig = visionFilterConfig,
+    initialTuningState = initialTuningState,
     reducer = reducer
 ) {
 
@@ -180,11 +181,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
-    private val tuningManager = TuningManager(
-        store = store,
-        telemetry = telemetryManager.dataLoggingTelemetry,
-        saveFile = File(if (isAndroid) "/sdcard/FIRST/ares_tuning.json" else "ares_tuning.json")
-    )
+    /** Optional declaration-driven tuning transport installed by the season composition root. */
+    var tuningManager: TuningManager? = null
 
     init {
         if (isAndroid) LimelightProxyAutoStart.start()
@@ -264,7 +262,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
         if (isLiveTuningEnabled) {
-            tuningManager.update()
+            tuningManager?.update()
         }
         calibrationController.updateHardwareInputs(
             store = store,
@@ -289,20 +287,21 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             trajectoryFollower.updateTuning(currentTuning)
 
             visionTracker.setStdDevs(
-                currentTuning.visionStdDevsX,
-                currentTuning.visionStdDevsY,
-                currentTuning.visionStdDevsHeading
+                currentTuning.vision.stdDevsX,
+                currentTuning.vision.stdDevsY,
+                currentTuning.vision.stdDevsHeading
             )
-            com.areslib.math.estimation.PoseEstimator.qX = currentTuning.odomQx
-            com.areslib.math.estimation.PoseEstimator.qY = currentTuning.odomQy
-            com.areslib.math.estimation.PoseEstimator.qTheta = currentTuning.odomQtheta
+            com.areslib.math.estimation.PoseEstimator.qX = currentTuning.localization.ekfNoise.qX
+            com.areslib.math.estimation.PoseEstimator.qY = currentTuning.localization.ekfNoise.qY
+            com.areslib.math.estimation.PoseEstimator.qTheta = currentTuning.localization.ekfNoise.qTheta
 
             pinpointIO?.let {
-                if (currentTuning.pinpointXOffsetMm != 0.0 || currentTuning.pinpointYOffsetMm != 0.0) {
-                    it.setOffsets(currentTuning.pinpointXOffsetMm, currentTuning.pinpointYOffsetMm)
+                val pinpoint = currentTuning.localization.ftcPinpoint
+                if (pinpoint.xOffsetMm != 0.0 || pinpoint.yOffsetMm != 0.0) {
+                    it.setOffsets(pinpoint.xOffsetMm, pinpoint.yOffsetMm)
                 }
-                if (currentTuning.pinpointEncoderResolution != 0.0) {
-                    it.setEncoderResolution(currentTuning.pinpointEncoderResolution)
+                if (pinpoint.encoderResolution != 0.0) {
+                    it.setEncoderResolution(pinpoint.encoderResolution)
                 }
             }
             lastTuning = currentTuning
@@ -439,7 +438,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun getFallbackPoseUpdate(timestampMs: Long): RobotAction.PoseUpdate {
         return fallbackOdometry.getFallbackPoseUpdate(
             timestampMs, mecanumIO.flIO.position, mecanumIO.frIO.position, mecanumIO.rlIO.position, mecanumIO.rrIO.position,
-            store.state.tuning.ticksPerMeter, ticksPerMeter,
+            store.state.tuning.drive.ftc.ticksPerMeter, ticksPerMeter,
             cachedImuInputs.headingRadians,
             cachedImuInputs.yawVelocityRadPerSec
         )

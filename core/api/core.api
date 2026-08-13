@@ -862,6 +862,26 @@ public final class com/areslib/codegen/CapabilityArgumentReader {
 	public static synthetic fun requiredText$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
 }
 
+public final class com/areslib/codegen/DrivetrainKotlinGenerator {
+	public static final field INSTANCE Lcom/areslib/codegen/DrivetrainKotlinGenerator;
+	public final fun generate (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public static synthetic fun generate$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public final fun generateProjectTuning (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+}
+
+public final class com/areslib/codegen/GeneratedDrivebaseFile {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/GeneratedDrivebaseFile;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/areslib/control/assist/Action {
 	public abstract fun end (Z)V
 	public abstract fun isFinished ()Z
@@ -1923,6 +1943,389 @@ public final class com/areslib/controls/RoutineInvocationPolicy : java/lang/Enum
 	public static fun values ()[Lcom/areslib/controls/RoutineInvocationPolicy;
 }
 
+public final class com/areslib/drivetrain/CalibrationProvenanceDocument {
+	public fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/CalibrationProvenanceKind;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lcom/areslib/drivetrain/CalibrationProvenanceKind;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/CalibrationProvenanceDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/CalibrationProvenanceDocument;Ljava/lang/String;Lcom/areslib/drivetrain/CalibrationProvenanceKind;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/CalibrationProvenanceDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvidencePath ()Ljava/lang/String;
+	public final fun getEvidenceSha256 ()Ljava/lang/String;
+	public final fun getKind ()Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public final fun getNotes ()Ljava/lang/String;
+	public final fun getParameterUids ()Ljava/util/List;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/CalibrationProvenanceKind : java/lang/Enum {
+	public static final field MANUFACTURER Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public static final field MEASURED Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public static final field REVIEWED_MANUAL Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public static final field SYSID Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public static final field VENDOR_GENERATED Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+	public static fun values ()[Lcom/areslib/drivetrain/CalibrationProvenanceKind;
+}
+
+public final class com/areslib/drivetrain/CtreSwerveImportDocument {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/VendorSourceOwnership;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/VendorSourceOwnership;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Lcom/areslib/drivetrain/VendorSourceOwnership;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/VendorSourceOwnership;)Lcom/areslib/drivetrain/CtreSwerveImportDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/CtreSwerveImportDocument;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/VendorSourceOwnership;ILjava/lang/Object;)Lcom/areslib/drivetrain/CtreSwerveImportDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCanBusName ()Ljava/lang/String;
+	public final fun getDrivetrainConstantsClassName ()Ljava/lang/String;
+	public final fun getGeneratorName ()Ljava/lang/String;
+	public final fun getGeneratorVersion ()Ljava/lang/String;
+	public final fun getOwnership ()Lcom/areslib/drivetrain/VendorSourceOwnership;
+	public final fun getSourceSha256 ()Ljava/lang/String;
+	public final fun getVendorSourcePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DisabledDrivePolicy : java/lang/Enum {
+	public static final field FORCE_NEUTRAL_BRAKE Lcom/areslib/drivetrain/DisabledDrivePolicy;
+	public static final field FORCE_NEUTRAL_COAST Lcom/areslib/drivetrain/DisabledDrivePolicy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DisabledDrivePolicy;
+	public static fun values ()[Lcom/areslib/drivetrain/DisabledDrivePolicy;
+}
+
+public final class com/areslib/drivetrain/DrivetrainComponentDocument {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/lang/Double;
+	public final fun component11 ()Ljava/lang/Double;
+	public final fun component12 ()Ljava/lang/Double;
+	public final fun component13 ()Z
+	public final fun component14 ()Z
+	public final fun component15 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Z
+	public final fun component9 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainComponentDocument;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getControllerModel ()Ljava/lang/String;
+	public final fun getCurrentLimitAmps ()Ljava/lang/Double;
+	public final fun getCurrentMeasurementAvailable ()Z
+	public final fun getCurrentMeasurementRequired ()Z
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getEncoderModel ()Ljava/lang/String;
+	public final fun getHardwareId ()Ljava/lang/String;
+	public final fun getInverted ()Z
+	public final fun getLeaderUid ()Ljava/lang/String;
+	public final fun getModuleUid ()Ljava/lang/String;
+	public final fun getRequired ()Z
+	public final fun getRole ()Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public final fun getUid ()Ljava/lang/String;
+	public final fun getXMeters ()Ljava/lang/Double;
+	public final fun getYMeters ()Ljava/lang/Double;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainComponentRole : java/lang/Enum {
+	public static final field ABSOLUTE_ENCODER Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static final field DRIVE_MOTOR Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static final field GYRO Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static final field ODOMETRY_SENSOR Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static final field OTHER Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static final field STEER_MOTOR Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static final field WHEEL_MODULE Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public static fun values ()[Lcom/areslib/drivetrain/DrivetrainComponentRole;
+}
+
+public final class com/areslib/drivetrain/DrivetrainControlDocument {
+	public fun <init> (Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainControlKind;Z)V
+	public synthetic fun <init> (Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainControlKind;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainControlKind;Z)Lcom/areslib/drivetrain/DrivetrainControlDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainControlDocument;Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainControlKind;ZILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainControlDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefaultControl ()Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public final fun getFieldCentric ()Z
+	public final fun getSupported ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainControlKind : java/lang/Enum {
+	public static final field CHASSIS_VELOCITY Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public static final field OPEN_LOOP Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public static final field TRAJECTORY Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public static final field WHEEL_VELOCITY Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainControlKind;
+	public static fun values ()[Lcom/areslib/drivetrain/DrivetrainControlKind;
+}
+
+public final class com/areslib/drivetrain/DrivetrainDocument {
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainKind;Lcom/areslib/drivetrain/DrivetrainPlatform;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainGeometryDocument;Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;Lcom/areslib/drivetrain/DrivetrainControlDocument;Lcom/areslib/drivetrain/DrivetrainSafetyDocument;Lcom/areslib/drivetrain/DrivetrainSimulationDocument;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/CtreSwerveImportDocument;Ljava/lang/String;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainKind;Lcom/areslib/drivetrain/DrivetrainPlatform;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainGeometryDocument;Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;Lcom/areslib/drivetrain/DrivetrainControlDocument;Lcom/areslib/drivetrain/DrivetrainSafetyDocument;Lcom/areslib/drivetrain/DrivetrainSimulationDocument;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/CtreSwerveImportDocument;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component10 ()Lcom/areslib/drivetrain/DrivetrainGeometryDocument;
+	public final fun component11 ()Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;
+	public final fun component12 ()Lcom/areslib/drivetrain/DrivetrainControlDocument;
+	public final fun component13 ()Lcom/areslib/drivetrain/DrivetrainSafetyDocument;
+	public final fun component14 ()Lcom/areslib/drivetrain/DrivetrainSimulationDocument;
+	public final fun component15 ()Ljava/util/List;
+	public final fun component16 ()Ljava/util/List;
+	public final fun component17 ()Lcom/areslib/drivetrain/CtreSwerveImportDocument;
+	public final fun component18 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Lcom/areslib/drivetrain/DrivetrainKind;
+	public final fun component7 ()Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public final fun component8 ()Ljava/util/List;
+	public final fun component9 ()Ljava/util/List;
+	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainKind;Lcom/areslib/drivetrain/DrivetrainPlatform;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainGeometryDocument;Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;Lcom/areslib/drivetrain/DrivetrainControlDocument;Lcom/areslib/drivetrain/DrivetrainSafetyDocument;Lcom/areslib/drivetrain/DrivetrainSimulationDocument;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/CtreSwerveImportDocument;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainDocument;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainKind;Lcom/areslib/drivetrain/DrivetrainPlatform;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/DrivetrainGeometryDocument;Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;Lcom/areslib/drivetrain/DrivetrainControlDocument;Lcom/areslib/drivetrain/DrivetrainSafetyDocument;Lcom/areslib/drivetrain/DrivetrainSimulationDocument;Ljava/util/List;Ljava/util/List;Lcom/areslib/drivetrain/CtreSwerveImportDocument;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCalibrationProvenance ()Ljava/util/List;
+	public final fun getCanonicalProfileUid ()Ljava/lang/String;
+	public final fun getComponents ()Ljava/util/List;
+	public final fun getControl ()Lcom/areslib/drivetrain/DrivetrainControlDocument;
+	public final fun getCtreImport ()Lcom/areslib/drivetrain/CtreSwerveImportDocument;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getDrivebaseId ()Ljava/lang/String;
+	public final fun getGeometry ()Lcom/areslib/drivetrain/DrivetrainGeometryDocument;
+	public final fun getKind ()Lcom/areslib/drivetrain/DrivetrainKind;
+	public final fun getLocalization ()Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;
+	public final fun getModules ()Ljava/util/List;
+	public final fun getParameters ()Ljava/util/List;
+	public final fun getPlatform ()Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public final fun getSafety ()Lcom/areslib/drivetrain/DrivetrainSafetyDocument;
+	public final fun getSchemaVersion ()I
+	public final fun getSimulation ()Lcom/areslib/drivetrain/DrivetrainSimulationDocument;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainDocumentCodec {
+	public static final field INSTANCE Lcom/areslib/drivetrain/DrivetrainDocumentCodec;
+	public final fun contentHash (Lcom/areslib/drivetrain/DrivetrainDocument;)Ljava/lang/String;
+	public final fun decode (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun encode (Lcom/areslib/drivetrain/DrivetrainDocument;)Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainDocumentKt {
+	public static final field ARES_DRIVETRAIN_SCHEMA_VERSION I
+	public static final fun validateDrivetrainDocument (Lcom/areslib/drivetrain/DrivetrainDocument;)Ljava/util/List;
+}
+
+public final class com/areslib/drivetrain/DrivetrainGeometryDocument {
+	public fun <init> (DDDDLjava/lang/Double;DD)V
+	public synthetic fun <init> (DDDDLjava/lang/Double;DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun component5 ()Ljava/lang/Double;
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun copy (DDDDLjava/lang/Double;DD)Lcom/areslib/drivetrain/DrivetrainGeometryDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainGeometryDocument;DDDDLjava/lang/Double;DDILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainGeometryDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDriveGearRatio ()D
+	public final fun getMaxAngularSpeedRadiansPerSecond ()D
+	public final fun getMaxLinearSpeedMetersPerSecond ()D
+	public final fun getSteerGearRatio ()Ljava/lang/Double;
+	public final fun getTrackWidthMeters ()D
+	public final fun getWheelBaseMeters ()D
+	public final fun getWheelDiameterMeters ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainKind : java/lang/Enum {
+	public static final field ADVANCED_CUSTOM Lcom/areslib/drivetrain/DrivetrainKind;
+	public static final field DIFFERENTIAL Lcom/areslib/drivetrain/DrivetrainKind;
+	public static final field FRC_CTRE_SWERVE Lcom/areslib/drivetrain/DrivetrainKind;
+	public static final field FTC_MECANUM Lcom/areslib/drivetrain/DrivetrainKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainKind;
+	public static fun values ()[Lcom/areslib/drivetrain/DrivetrainKind;
+}
+
+public final class com/areslib/drivetrain/DrivetrainLocalizationDocument {
+	public fun <init> (Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Ljava/util/List;ZZ)V
+	public synthetic fun <init> (Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Ljava/util/List;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun copy (Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Ljava/util/List;ZZ)Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Ljava/util/List;ZZILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainLocalizationDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCachedInputsRequired ()Z
+	public final fun getHeadingCcwPositive ()Z
+	public final fun getHeadingSourceUid ()Ljava/lang/String;
+	public final fun getPrimaryOdometry ()Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
+	public final fun getVisionFusion ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainLocalizationSourceDocument {
+	public fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getComponentUids ()Ljava/util/List;
+	public final fun getImplementationClassName ()Ljava/lang/String;
+	public final fun getSource ()Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainModuleDocument {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;DD)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()D
+	public final fun component5 ()D
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;DD)Lcom/areslib/drivetrain/DrivetrainModuleDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainModuleDocument;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;DDILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainModuleDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getComponentUids ()Ljava/util/List;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getUid ()Ljava/lang/String;
+	public final fun getXMeters ()D
+	public final fun getYMeters ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainNeutralMode : java/lang/Enum {
+	public static final field BRAKE Lcom/areslib/drivetrain/DrivetrainNeutralMode;
+	public static final field COAST Lcom/areslib/drivetrain/DrivetrainNeutralMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainNeutralMode;
+	public static fun values ()[Lcom/areslib/drivetrain/DrivetrainNeutralMode;
+}
+
+public final class com/areslib/drivetrain/DrivetrainPlatform : java/lang/Enum {
+	public static final field FRC Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public static final field FTC Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public static fun values ()[Lcom/areslib/drivetrain/DrivetrainPlatform;
+}
+
+public final class com/areslib/drivetrain/DrivetrainSafetyDocument {
+	public fun <init> ()V
+	public fun <init> (ZZJZZZZLcom/areslib/drivetrain/DrivetrainNeutralMode;Lcom/areslib/drivetrain/DisabledDrivePolicy;Z)V
+	public synthetic fun <init> (ZZJZZZZLcom/areslib/drivetrain/DrivetrainNeutralMode;Lcom/areslib/drivetrain/DisabledDrivePolicy;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component10 ()Z
+	public final fun component2 ()Z
+	public final fun component3 ()J
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun component6 ()Z
+	public final fun component7 ()Z
+	public final fun component8 ()Lcom/areslib/drivetrain/DrivetrainNeutralMode;
+	public final fun component9 ()Lcom/areslib/drivetrain/DisabledDrivePolicy;
+	public final fun copy (ZZJZZZZLcom/areslib/drivetrain/DrivetrainNeutralMode;Lcom/areslib/drivetrain/DisabledDrivePolicy;Z)Lcom/areslib/drivetrain/DrivetrainSafetyDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainSafetyDocument;ZZJZZZZLcom/areslib/drivetrain/DrivetrainNeutralMode;Lcom/areslib/drivetrain/DisabledDrivePolicy;ZILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainSafetyDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConfigurationHealthRequired ()Z
+	public final fun getCurrentValidityRequired ()Z
+	public final fun getDisabledOutputIsNeutral ()Z
+	public final fun getDisabledPolicy ()Lcom/areslib/drivetrain/DisabledDrivePolicy;
+	public final fun getEnabledNeutralMode ()Lcom/areslib/drivetrain/DrivetrainNeutralMode;
+	public final fun getExplicitNeutralRecoveryRequired ()Z
+	public final fun getFaultLatchingRequired ()Z
+	public final fun getSafeNeutralRequired ()Z
+	public final fun getStaleFeedbackTimeoutMs ()J
+	public final fun getZeroAllocationPeriodicRequired ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainSimulationDocument {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZZZ)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZZZ)Lcom/areslib/drivetrain/DrivetrainSimulationDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainSimulationDocument;Ljava/lang/String;Ljava/lang/String;ZZZILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainSimulationDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAdapterClassName ()Ljava/lang/String;
+	public final fun getBehavioralParityRequired ()Z
+	public final fun getModelClassName ()Ljava/lang/String;
+	public final fun getUsesCanonicalProfile ()Z
+	public final fun getUsesPhysicalGeometry ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/DrivetrainValidationIssue {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainValidationIssue;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainValidationIssue;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainValidationIssue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getPath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/drivetrain/LocalizationSourceKind : java/lang/Enum {
+	public static final field CTRE_VENDOR Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static final field CUSTOM Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static final field EXTERNAL Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static final field PINPOINT Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static final field WHEEL_ENCODERS_IMU Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static fun values ()[Lcom/areslib/drivetrain/LocalizationSourceKind;
+}
+
 public final class com/areslib/drivetrain/SwerveConstants {
 	public fun <init> ()V
 	public fun <init> (DDDDDLcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/drivetrain/SwerveModuleConfig;Lcom/areslib/drivetrain/SwerveModuleConfig;Lcom/areslib/drivetrain/SwerveModuleConfig;Lcom/areslib/drivetrain/SwerveModuleConfig;)V
@@ -2026,6 +2429,13 @@ public final class com/areslib/drivetrain/SwerveOffsetManager {
 	public static synthetic fun loadOffsets$default (Lcom/areslib/drivetrain/SwerveOffsetManager;Lcom/areslib/drivetrain/SwerveOffsetData;ILjava/lang/Object;)Lcom/areslib/drivetrain/SwerveOffsetData;
 	public final fun saveRuntimeOffsets (Lcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/telemetry/ITelemetry;)V
 	public static synthetic fun saveRuntimeOffsets$default (Lcom/areslib/drivetrain/SwerveOffsetManager;Lcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/telemetry/ITelemetry;ILjava/lang/Object;)V
+}
+
+public final class com/areslib/drivetrain/VendorSourceOwnership : java/lang/Enum {
+	public static final field READ_ONLY_VENDOR Lcom/areslib/drivetrain/VendorSourceOwnership;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/VendorSourceOwnership;
+	public static fun values ()[Lcom/areslib/drivetrain/VendorSourceOwnership;
 }
 
 public abstract interface class com/areslib/hardware/CurrentSourceIO {
@@ -6636,7 +7046,6 @@ public final class com/areslib/state/DriveTuningState {
 	public final fun getHeadingDeadzoneDeg ()D
 	public final fun getHeadingGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
 	public final fun getHeadingMaxOutputLimit ()D
-	public final fun getMotorGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
 	public final fun getPathAccelerationLimit ()D
 	public final fun getPathRotationGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
 	public final fun getPathTranslationGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
@@ -6645,7 +7054,6 @@ public final class com/areslib/state/DriveTuningState {
 	public final fun getPositionHoldGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
 	public final fun getPositionHoldMaxOutputLimit ()D
 	public final fun getTeleOpTurnScale ()D
-	public final fun getTicksPerMeter ()D
 	public final fun getTrackWidthMeters ()D
 	public final fun getWheelBaseMeters ()D
 	public fun hashCode ()I
@@ -6770,12 +7178,6 @@ public final class com/areslib/state/LocalizationTuningState {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEkfNoise ()Lcom/areslib/state/EkfProcessNoiseTuningState;
 	public final fun getFtcPinpoint ()Lcom/areslib/state/FtcPinpointTuningState;
-	public final fun getOdomQtheta ()D
-	public final fun getOdomQx ()D
-	public final fun getOdomQy ()D
-	public final fun getPinpointEncoderResolution ()D
-	public final fun getPinpointXOffsetMm ()D
-	public final fun getPinpointYOffsetMm ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -7203,9 +7605,7 @@ public final class com/areslib/state/SubsystemTuningState {
 	public static synthetic fun copy$default (Lcom/areslib/state/SubsystemTuningState;Lcom/areslib/state/FtcSubsystemTuningState;Lcom/areslib/state/MechanismTuningState;ILjava/lang/Object;)Lcom/areslib/state/SubsystemTuningState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFlywheel ()Lcom/areslib/state/MechanismTuningState;
-	public final fun getFlywheelTargetRpmPreset ()D
 	public final fun getFtc ()Lcom/areslib/state/FtcSubsystemTuningState;
-	public final fun getIntakeNominalVoltage ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -7259,71 +7659,14 @@ public final class com/areslib/state/TuningState {
 	public final fun copy (Lcom/areslib/state/DriveTuningState;Lcom/areslib/state/VisionTuningState;Lcom/areslib/state/VisionAlignTuningState;Lcom/areslib/state/LocalizationTuningState;Lcom/areslib/state/DriverTuningState;Lcom/areslib/state/RecoveryTuningState;Lcom/areslib/state/TelemetryTuningState;Lcom/areslib/state/SubsystemTuningState;)Lcom/areslib/state/TuningState;
 	public static synthetic fun copy$default (Lcom/areslib/state/TuningState;Lcom/areslib/state/DriveTuningState;Lcom/areslib/state/VisionTuningState;Lcom/areslib/state/VisionAlignTuningState;Lcom/areslib/state/LocalizationTuningState;Lcom/areslib/state/DriverTuningState;Lcom/areslib/state/RecoveryTuningState;Lcom/areslib/state/TelemetryTuningState;Lcom/areslib/state/SubsystemTuningState;ILjava/lang/Object;)Lcom/areslib/state/TuningState;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAngularFeedforward ()Lcom/areslib/control/tuning/SimpleFeedforwardCoeffs;
 	public final fun getDrive ()Lcom/areslib/state/DriveTuningState;
-	public final fun getDriveFeedforward ()Lcom/areslib/control/tuning/SimpleFeedforwardCoeffs;
-	public final fun getDriveSlewRateLimit ()Ljava/lang/Double;
 	public final fun getDriver ()Lcom/areslib/state/DriverTuningState;
-	public final fun getDriverDeadbandExponent ()D
-	public final fun getDriverSlewRateLimit ()D
-	public final fun getDriverTriggerThreshold ()D
-	public final fun getFlywheelTargetRpmPreset ()D
-	public final fun getFlywheelTuning ()Lcom/areslib/state/MechanismTuningState;
-	public final fun getHeadingDeadzoneDeg ()D
-	public final fun getHeadingGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
-	public final fun getHeadingMaxOutputLimit ()D
-	public final fun getIntakeNominalVoltage ()D
 	public final fun getLocalization ()Lcom/areslib/state/LocalizationTuningState;
-	public final fun getMotorCurrentPollingIntervalMs ()J
-	public final fun getMotorGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
-	public final fun getOdomQtheta ()D
-	public final fun getOdomQx ()D
-	public final fun getOdomQy ()D
-	public final fun getPathAccelerationLimit ()D
-	public final fun getPathRotationGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
-	public final fun getPathTranslationGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
-	public final fun getPathVelocityScale ()D
-	public final fun getPinpointEncoderResolution ()D
-	public final fun getPinpointXOffsetMm ()D
-	public final fun getPinpointYOffsetMm ()D
-	public final fun getPositionHoldDeadzoneMeters ()D
-	public final fun getPositionHoldGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
-	public final fun getPositionHoldMaxOutputLimit ()D
 	public final fun getRecovery ()Lcom/areslib/state/RecoveryTuningState;
-	public final fun getStolenRobotAngularVelocityThreshold ()D
-	public final fun getStolenRobotRejectionThreshold ()D
-	public final fun getStolenRobotVelocityThreshold ()D
 	public final fun getSubsystem ()Lcom/areslib/state/SubsystemTuningState;
-	public final fun getTeleOpTurnScale ()D
 	public final fun getTelemetry ()Lcom/areslib/state/TelemetryTuningState;
-	public final fun getTelemetryRateDivisor ()I
-	public final fun getTicksPerMeter ()D
-	public final fun getTrackWidthMeters ()D
 	public final fun getVision ()Lcom/areslib/state/VisionTuningState;
 	public final fun getVisionAlign ()Lcom/areslib/state/VisionAlignTuningState;
-	public final fun getVisionAlignAlphaHeading ()D
-	public final fun getVisionAlignAlphaTranslation ()D
-	public final fun getVisionAlignClampRotation ()D
-	public final fun getVisionAlignClampTranslationX ()D
-	public final fun getVisionAlignClampTranslationY ()D
-	public final fun getVisionAlignHeadingErrorDeadband ()D
-	public final fun getVisionAlignKdRotation ()D
-	public final fun getVisionAlignKpRotation ()D
-	public final fun getVisionAlignKpTranslation ()D
-	public final fun getVisionAlignKsRotational ()D
-	public final fun getVisionAlignMaxHeadingChangeRad ()D
-	public final fun getVisionAlignSearchFirstSweepMs ()J
-	public final fun getVisionAlignSearchSecondSweepMs ()J
-	public final fun getVisionAlignSearchSpeed ()D
-	public final fun getVisionAlignTargetDistance ()D
-	public final fun getVisionAlignTranslationDeadband ()D
-	public final fun getVisionMahalanobisThreshold ()D
-	public final fun getVisionMaxAmbiguity ()D
-	public final fun getVisionMaxDistanceMeters ()D
-	public final fun getVisionStdDevsHeading ()D
-	public final fun getVisionStdDevsX ()D
-	public final fun getVisionStdDevsY ()D
-	public final fun getWheelBaseMeters ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -7810,21 +8153,22 @@ public abstract class com/areslib/subsystem/SubsystemControllerBase {
 }
 
 public final class com/areslib/subsystem/SubsystemDocument {
-	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component10 ()Ljava/util/List;
 	public final fun component11 ()Ljava/util/List;
-	public final fun component12 ()Lcom/areslib/subsystem/SubsystemTemplate;
-	public final fun component13 ()Lcom/areslib/subsystem/SubsystemImplementationDocument;
-	public final fun component14 ()Ljava/util/List;
-	public final fun component15 ()Lcom/areslib/subsystem/SubsystemSafetyDocument;
-	public final fun component16 ()Ljava/lang/String;
-	public final fun component17 ()Z
+	public final fun component12 ()Ljava/util/List;
+	public final fun component13 ()Lcom/areslib/subsystem/SubsystemTemplate;
+	public final fun component14 ()Lcom/areslib/subsystem/SubsystemImplementationDocument;
+	public final fun component15 ()Ljava/util/List;
+	public final fun component16 ()Lcom/areslib/subsystem/SubsystemSafetyDocument;
+	public final fun component17 ()Ljava/lang/String;
 	public final fun component18 ()Z
 	public final fun component19 ()Z
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component20 ()Ljava/lang/String;
+	public final fun component20 ()Z
+	public final fun component21 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
@@ -7832,8 +8176,8 @@ public final class com/areslib/subsystem/SubsystemDocument {
 	public final fun component7 ()I
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Ljava/util/List;
-	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;)Lcom/areslib/subsystem/SubsystemDocument;
-	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemDocument;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;)Lcom/areslib/subsystem/SubsystemDocument;
+	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemDocument;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemPlatform;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemImplementationDocument;Ljava/util/List;Lcom/areslib/subsystem/SubsystemSafetyDocument;Ljava/lang/String;ZZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAutonomousResourceKey ()Ljava/lang/String;
 	public final fun getCapabilityActionKeys ()Ljava/util/List;
@@ -7854,6 +8198,7 @@ public final class com/areslib/subsystem/SubsystemDocument {
 	public final fun getSchemaVersion ()I
 	public final fun getStateFields ()Ljava/util/List;
 	public final fun getTemplate ()Lcom/areslib/subsystem/SubsystemTemplate;
+	public final fun getTuningParameters ()Ljava/util/List;
 	public final fun getUid ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -8849,52 +9194,297 @@ public final class com/areslib/telemetry/web/LogArchivePackager {
 	public final fun streamLogFile (Ljava/io/File;Ljava/lang/String;Ljava/io/OutputStream;)V
 }
 
+public final class com/areslib/tuning/LocalTuningOverlayStore {
+	public static final field INSTANCE Lcom/areslib/tuning/LocalTuningOverlayStore;
+	public final fun writeAtomically (Ljava/nio/file/Path;Ljava/nio/file/Path;Lcom/areslib/tuning/TuningProfileDocument;)V
+}
+
+public final class com/areslib/tuning/TuningApplyContext {
+	public fun <init> (ZZLjava/util/Set;)V
+	public synthetic fun <init> (ZZLjava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Z
+	public final fun component3 ()Ljava/util/Set;
+	public final fun copy (ZZLjava/util/Set;)Lcom/areslib/tuning/TuningApplyContext;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningApplyContext;ZZLjava/util/Set;ILjava/lang/Object;)Lcom/areslib/tuning/TuningApplyContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCalibrationParameterUids ()Ljava/util/Set;
+	public final fun getRobotDisabled ()Z
+	public final fun getSessionArmed ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningApplyPolicy : java/lang/Enum {
+	public static final field CALIBRATION_ONLY Lcom/areslib/tuning/TuningApplyPolicy;
+	public static final field DISABLED_ONLY Lcom/areslib/tuning/TuningApplyPolicy;
+	public static final field LIVE_SAFE Lcom/areslib/tuning/TuningApplyPolicy;
+	public static final field READ_ONLY_VENDOR Lcom/areslib/tuning/TuningApplyPolicy;
+	public static final field REBUILD_REQUIRED Lcom/areslib/tuning/TuningApplyPolicy;
+	public static final field RESTART_REQUIRED Lcom/areslib/tuning/TuningApplyPolicy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/tuning/TuningApplyPolicy;
+	public static fun values ()[Lcom/areslib/tuning/TuningApplyPolicy;
+}
+
+public final class com/areslib/tuning/TuningAssignment {
+	public fun <init> (Ljava/lang/String;Lcom/areslib/tuning/TuningValue;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/tuning/TuningValue;
+	public final fun copy (Ljava/lang/String;Lcom/areslib/tuning/TuningValue;)Lcom/areslib/tuning/TuningAssignment;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningAssignment;Ljava/lang/String;Lcom/areslib/tuning/TuningValue;ILjava/lang/Object;)Lcom/areslib/tuning/TuningAssignment;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getParameterUid ()Ljava/lang/String;
+	public final fun getValue ()Lcom/areslib/tuning/TuningValue;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningComponentDocument {
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/tuning/TuningComponentDocument;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningComponentDocument;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/tuning/TuningComponentDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getParameters ()Ljava/util/List;
+	public final fun getProjectUid ()Ljava/lang/String;
+	public final fun getSchemaVersion ()I
+	public final fun getUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningComponentDocumentCodec {
+	public static final field INSTANCE Lcom/areslib/tuning/TuningComponentDocumentCodec;
+	public final fun decode (Ljava/lang/String;)Lcom/areslib/tuning/TuningComponentDocument;
+	public final fun encode (Lcom/areslib/tuning/TuningComponentDocument;)Ljava/lang/String;
+}
+
 public final class com/areslib/tuning/TuningManager {
-	public fun <init> (Lcom/areslib/Store;Lcom/areslib/telemetry/ITelemetry;Ljava/io/File;)V
-	public final fun publishInitialState ()V
+	public static final field MAX_SAFE_DOUBLE_INTEGER D
+	public fun <init> (Lcom/areslib/tuning/TypedTuningRuntime;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;Ljava/nio/file/Path;Ljava/nio/file/Path;)V
+	public synthetic fun <init> (Lcom/areslib/tuning/TypedTuningRuntime;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;Ljava/nio/file/Path;Ljava/nio/file/Path;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun publishMetadataAndValues ()V
 	public final fun update (J)V
 	public static synthetic fun update$default (Lcom/areslib/tuning/TuningManager;JILjava/lang/Object;)V
 }
 
+public final class com/areslib/tuning/TuningMetadataSnapshot {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)Lcom/areslib/tuning/TuningMetadataSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningMetadataSnapshot;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/tuning/TuningMetadataSnapshot;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCanonicalProfileUid ()Ljava/lang/String;
+	public final fun getDeclarations ()Ljava/util/List;
+	public final fun getDrivebaseUid ()Ljava/lang/String;
+	public final fun getProfileUids ()Ljava/util/List;
+	public final fun getProjectUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningParameterDeclaration {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningParameterType;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningValue;Ljava/util/List;Lcom/areslib/tuning/TuningApplyPolicy;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningParameterType;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningValue;Ljava/util/List;Lcom/areslib/tuning/TuningApplyPolicy;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Lcom/areslib/tuning/TuningValue;
+	public final fun component11 ()Ljava/util/List;
+	public final fun component12 ()Lcom/areslib/tuning/TuningApplyPolicy;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Lcom/areslib/tuning/TuningParameterType;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Ljava/lang/Double;
+	public final fun component9 ()Ljava/lang/Double;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningParameterType;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningValue;Ljava/util/List;Lcom/areslib/tuning/TuningApplyPolicy;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningParameterDeclaration;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningParameterType;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Lcom/areslib/tuning/TuningValue;Ljava/util/List;Lcom/areslib/tuning/TuningApplyPolicy;ILjava/lang/Object;)Lcom/areslib/tuning/TuningParameterDeclaration;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApplyPolicy ()Lcom/areslib/tuning/TuningApplyPolicy;
+	public final fun getComponentUid ()Ljava/lang/String;
+	public final fun getDefaultValue ()Lcom/areslib/tuning/TuningValue;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getEnumOptions ()Ljava/util/List;
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getMaximum ()Ljava/lang/Double;
+	public final fun getMinimum ()Ljava/lang/Double;
+	public final fun getType ()Lcom/areslib/tuning/TuningParameterType;
+	public final fun getUid ()Ljava/lang/String;
+	public final fun getUnit ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningParameterType : java/lang/Enum {
+	public static final field BOOLEAN Lcom/areslib/tuning/TuningParameterType;
+	public static final field DOUBLE Lcom/areslib/tuning/TuningParameterType;
+	public static final field ENUM Lcom/areslib/tuning/TuningParameterType;
+	public static final field INT Lcom/areslib/tuning/TuningParameterType;
+	public static final field TEXT Lcom/areslib/tuning/TuningParameterType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/tuning/TuningParameterType;
+	public static fun values ()[Lcom/areslib/tuning/TuningParameterType;
+}
+
+public final class com/areslib/tuning/TuningProfileAuthority : java/lang/Enum {
+	public static final field CANONICAL_CHECKED_IN Lcom/areslib/tuning/TuningProfileAuthority;
+	public static final field LOCAL_EXPERIMENTAL Lcom/areslib/tuning/TuningProfileAuthority;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/tuning/TuningProfileAuthority;
+	public static fun values ()[Lcom/areslib/tuning/TuningProfileAuthority;
+}
+
+public final class com/areslib/tuning/TuningProfileDocument {
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/util/List;Lcom/areslib/tuning/TuningPromotionData;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/util/List;Lcom/areslib/tuning/TuningPromotionData;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component10 ()Ljava/util/List;
+	public final fun component11 ()Lcom/areslib/tuning/TuningPromotionData;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Lcom/areslib/tuning/TuningProfileAuthority;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/util/List;Lcom/areslib/tuning/TuningPromotionData;)Lcom/areslib/tuning/TuningProfileDocument;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningProfileDocument;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/tuning/TuningProfileAuthority;Ljava/lang/String;Ljava/util/List;Lcom/areslib/tuning/TuningPromotionData;ILjava/lang/Object;)Lcom/areslib/tuning/TuningProfileDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthority ()Lcom/areslib/tuning/TuningProfileAuthority;
+	public final fun getBaseProfileUid ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getDrivebaseUid ()Ljava/lang/String;
+	public final fun getProfileId ()Ljava/lang/String;
+	public final fun getProjectUid ()Ljava/lang/String;
+	public final fun getPromotion ()Lcom/areslib/tuning/TuningPromotionData;
+	public final fun getSchemaVersion ()I
+	public final fun getUid ()Ljava/lang/String;
+	public final fun getValues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningProfileDocumentCodec {
+	public static final field INSTANCE Lcom/areslib/tuning/TuningProfileDocumentCodec;
+	public final fun contentHash (Lcom/areslib/tuning/TuningProfileDocument;Ljava/util/Collection;)Ljava/lang/String;
+	public final fun decode (Ljava/lang/String;Ljava/util/Collection;)Lcom/areslib/tuning/TuningProfileDocument;
+	public final fun encode (Lcom/areslib/tuning/TuningProfileDocument;Ljava/util/Collection;)Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningProfileDocumentKt {
+	public static final field ARES_TUNING_COMPONENT_SCHEMA_VERSION I
+	public static final field ARES_TUNING_PROFILE_SCHEMA_VERSION I
+	public static final fun resolveTuningProfiles (Ljava/util/Collection;Ljava/util/Collection;)Ljava/util/Map;
+	public static final fun validateTuningParameterDeclarations (Ljava/util/List;)Ljava/util/List;
+	public static final fun validateTuningProfileDocument (Lcom/areslib/tuning/TuningProfileDocument;Ljava/util/Collection;)Ljava/util/List;
+}
+
+public final class com/areslib/tuning/TuningPromotionData {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/tuning/TuningPromotionData;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningPromotionData;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/tuning/TuningPromotionData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvidencePaths ()Ljava/util/List;
+	public final fun getEvidenceSha256 ()Ljava/util/List;
+	public final fun getReviewSummary ()Ljava/lang/String;
+	public final fun getReviewedBy ()Ljava/lang/String;
+	public final fun getSourceContentSha256 ()Ljava/lang/String;
+	public final fun getSourceLocalProfileUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/tuning/TuningTopics {
-	public static final field DRIVER_DEADBAND_EXPONENT Ljava/lang/String;
-	public static final field DRIVER_SLEW_RATE_LIMIT Ljava/lang/String;
-	public static final field DRIVE_ANGULAR_FEEDFORWARD_KA Ljava/lang/String;
-	public static final field DRIVE_ANGULAR_FEEDFORWARD_KS Ljava/lang/String;
-	public static final field DRIVE_ANGULAR_FEEDFORWARD_KV Ljava/lang/String;
-	public static final field DRIVE_FEEDFORWARD_KA Ljava/lang/String;
-	public static final field DRIVE_FEEDFORWARD_KS Ljava/lang/String;
-	public static final field DRIVE_FEEDFORWARD_KV Ljava/lang/String;
-	public static final field DRIVE_ROTATION_KD Ljava/lang/String;
-	public static final field DRIVE_ROTATION_KF Ljava/lang/String;
-	public static final field DRIVE_ROTATION_KI Ljava/lang/String;
-	public static final field DRIVE_ROTATION_KP Ljava/lang/String;
-	public static final field DRIVE_TRACK_WIDTH Ljava/lang/String;
-	public static final field DRIVE_TRANSLATION_KD Ljava/lang/String;
-	public static final field DRIVE_TRANSLATION_KF Ljava/lang/String;
-	public static final field DRIVE_TRANSLATION_KI Ljava/lang/String;
-	public static final field DRIVE_TRANSLATION_KP Ljava/lang/String;
-	public static final field DRIVE_WHEEL_BASE Ljava/lang/String;
-	public static final field FLYWHEEL_FEEDFORWARD_KA Ljava/lang/String;
-	public static final field FLYWHEEL_FEEDFORWARD_KS Ljava/lang/String;
-	public static final field FLYWHEEL_FEEDFORWARD_KV Ljava/lang/String;
-	public static final field FLYWHEEL_VELOCITY_KD Ljava/lang/String;
-	public static final field FLYWHEEL_VELOCITY_KF Ljava/lang/String;
-	public static final field FLYWHEEL_VELOCITY_KI Ljava/lang/String;
-	public static final field FLYWHEEL_VELOCITY_KP Ljava/lang/String;
-	public static final field FTC_TICKS_PER_METER Ljava/lang/String;
 	public static final field INSTANCE Lcom/areslib/tuning/TuningTopics;
-	public static final field PINPOINT_ENCODER_RESOLUTION Ljava/lang/String;
-	public static final field PINPOINT_X_OFFSET Ljava/lang/String;
-	public static final field PINPOINT_Y_OFFSET Ljava/lang/String;
 	public static final field ROOT Ljava/lang/String;
 	public static final field SCHEMA_VERSION I
 	public static final field SCHEMA_VERSION_TOPIC Ljava/lang/String;
-	public static final field VISION_STD_DEVS_HEADING Ljava/lang/String;
-	public static final field VISION_STD_DEVS_X Ljava/lang/String;
-	public static final field VISION_STD_DEVS_Y Ljava/lang/String;
 	public final fun canonicalize (Ljava/lang/String;)Ljava/lang/String;
-	public final fun statePath (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningUpdateResult : java/lang/Enum {
+	public static final field APPLIED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field APPLY_CALLBACK_FAILED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field CALIBRATION_SESSION_REQUIRED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field CONSUMER_REJECTED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field INVALID_VALUE Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field READ_ONLY_VENDOR Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field REBUILD_REQUIRED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field RESTART_REQUIRED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field ROBOT_MUST_BE_DISABLED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field SESSION_NOT_ARMED Lcom/areslib/tuning/TuningUpdateResult;
+	public static final field UNKNOWN_PARAMETER Lcom/areslib/tuning/TuningUpdateResult;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/tuning/TuningUpdateResult;
+	public static fun values ()[Lcom/areslib/tuning/TuningUpdateResult;
+}
+
+public final class com/areslib/tuning/TuningValidationIssue {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/tuning/TuningValidationIssue;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningValidationIssue;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/tuning/TuningValidationIssue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getPath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TuningValue {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Double;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()Ljava/lang/Boolean;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/String;)Lcom/areslib/tuning/TuningValue;
+	public static synthetic fun copy$default (Lcom/areslib/tuning/TuningValue;Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/tuning/TuningValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBooleanValue ()Ljava/lang/Boolean;
+	public final fun getDoubleValue ()Ljava/lang/Double;
+	public final fun getIntValue ()Ljava/lang/Integer;
+	public final fun getTextValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/tuning/TypedTuningRuntime {
+	public fun <init> (Ljava/util/List;Ljava/util/Map;Lcom/areslib/tuning/TuningMetadataSnapshot;)V
+	public final fun apply (Ljava/lang/String;Lcom/areslib/tuning/TuningValue;Lcom/areslib/tuning/TuningApplyContext;)Lcom/areslib/tuning/TuningUpdateResult;
+	public final fun boolean (Ljava/lang/String;)Z
+	public final fun canonicalValue (Ljava/lang/String;)Lcom/areslib/tuning/TuningValue;
+	public final fun double (Ljava/lang/String;)D
+	public final fun getMetadata ()Lcom/areslib/tuning/TuningMetadataSnapshot;
+	public final fun int (Ljava/lang/String;)I
+	public final fun localOverlay (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/tuning/TuningProfileDocument;
+	public final fun text (Ljava/lang/String;)Ljava/lang/String;
+	public final fun value (Ljava/lang/String;)Lcom/areslib/tuning/TuningValue;
 }
 
 public final class com/areslib/util/PoseStorage {

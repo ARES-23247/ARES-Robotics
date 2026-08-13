@@ -1,279 +1,146 @@
 package com.areslib.tuning
 
-import com.areslib.action.RobotAction
-import com.areslib.Store
-import com.areslib.state.TuningState
 import com.areslib.telemetry.ITelemetry
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import com.areslib.util.RobotClock
+import java.nio.file.Path
 
 /**
- * Manages dynamically tunable variables for the robot.
- * Synchronizes the Redux [TuningState] with an external dashboard over NetworkTables,
- * and automatically persists changes to a local JSON file (with backup/rollbacks).
+ * Declaration-driven tuning transport.
+ *
+ * It publishes only known typed parameters, applies policy through [TypedTuningRuntime], and may
+ * persist only an explicitly robot-local experimental overlay. It never reflects over Redux state,
+ * writes canonical project profiles, or accepts unknown topic paths.
  */
 class TuningManager(
-    private val store: Store,
+    private val runtime: TypedTuningRuntime,
     private val telemetry: ITelemetry,
-    private val saveFile: File
+    private val contextProvider: () -> TuningApplyContext,
+    /** Returns true only after the robot consumer committed the value to its Redux/control boundary. */
+    private val onApplied: (parameterUid: String, value: TuningValue) -> Boolean,
+    private val localProjectRoot: Path? = null,
+    private val localOverlayFile: Path? = null,
 ) {
-    private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
+    private var lastUpdateTimestamp = 0L
+    private var overlayDirty = false
+    private val lastRequestNonce = LongArray(runtime.metadata.declarations.size) { -1L }
 
     init {
-        val backupFile = backupFile()
-        val loadedState = loadTuningState(saveFile) ?: loadTuningState(backupFile)
-        if (loadedState != null) {
-            store.dispatch(RobotAction.UpdateTuningState(withDefaultFeedforward(loadedState)))
-        } else if (saveFile.exists() || backupFile.exists()) {
-            System.err.println("TuningManager: No valid tuning config found at ${saveFile.absolutePath} or its backup")
+        require((localProjectRoot == null) == (localOverlayFile == null)) {
+            "Local overlay project root and file must be supplied together"
         }
-
-        // Publish current constants once on startup so dashboard populates immediately
-        publishInitialState()
+        publishMetadataAndValues()
     }
 
-    /**
-     * Deeply merges incoming JSON properties into the default target JSON object.
-     */
-    private fun mergeJsonObjects(target: JsonObject, source: JsonObject) {
-        for ((key, element) in source.entrySet()) {
-            val existing = target.get(key) ?: continue
-            when {
-                element.isJsonObject && existing.isJsonObject ->
-                    mergeJsonObjects(existing.asJsonObject, element.asJsonObject)
-                existing.isJsonNull && isSafeJsonValue(element) -> target.add(key, element)
-                element.isJsonNull -> target.add(key, element)
-                element.isJsonPrimitive && existing.isJsonPrimitive &&
-                    element.asJsonPrimitive.isNumber && existing.asJsonPrimitive.isNumber -> {
-                    val number = element.asDouble
-                    if (number.isFinite()) target.addProperty(key, number)
-                }
-            }
-        }
-    }
-
-    private fun isSafeJsonValue(element: JsonElement): Boolean = when {
-        element.isJsonNull -> true
-        element.isJsonPrimitive -> element.asJsonPrimitive.let { !it.isNumber || it.asDouble.isFinite() }
-        element.isJsonObject -> element.asJsonObject.entrySet().all { isSafeJsonValue(it.value) }
-        else -> false
-    }
-
-    /**
-     * Publishes all tuning constants recursively over NT4.
-     */
-    fun publishInitialState() {
+    fun publishMetadataAndValues() {
         telemetry.putNumber(TuningTopics.SCHEMA_VERSION_TOPIC, TuningTopics.SCHEMA_VERSION.toDouble())
-        val stateJson = gson.toJsonTree(store.state.tuning).asJsonObject
-        publishJsonObject("", stateJson)
-    }
-
-    private fun publishJsonObject(prefix: String, obj: JsonObject) {
-        for ((key, element) in obj.entrySet()) {
-            val currentPrefix = if (prefix.isEmpty()) key else "$prefix/$key"
-            when {
-                element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
-                    telemetry.putNumber("Tuning/$currentPrefix", element.asDouble)
-                }
-                element.isJsonObject -> {
-                    publishJsonObject(currentPrefix, element.asJsonObject)
-                }
-            }
+        telemetry.putString("${TuningTopics.ROOT}/ProjectUid", runtime.metadata.projectUid)
+        telemetry.putString("${TuningTopics.ROOT}/DrivebaseUid", runtime.metadata.drivebaseUid.orEmpty())
+        telemetry.putString("${TuningTopics.ROOT}/CanonicalProfileUid", runtime.metadata.canonicalProfileUid)
+        runtime.metadata.declarations.forEach { declaration ->
+            val root = parameterRoot(declaration.uid)
+            telemetry.putString("$root/Key", declaration.key)
+            telemetry.putString("$root/ComponentUid", declaration.componentUid)
+            telemetry.putString("$root/DisplayName", declaration.displayName)
+            telemetry.putString("$root/Description", declaration.description)
+            telemetry.putString("$root/Type", declaration.type.name)
+            telemetry.putString("$root/Unit", declaration.unit.orEmpty())
+            telemetry.putString("$root/ApplyPolicy", declaration.applyPolicy.name)
+            telemetry.putNumber("$root/Minimum", declaration.minimum ?: Double.NaN)
+            telemetry.putNumber("$root/Maximum", declaration.maximum ?: Double.NaN)
+            telemetry.putString("$root/EnumOptions", declaration.enumOptions.joinToString("\u001f"))
+            publishValue("$root/Default", declaration.defaultValue)
+            publishValue("$root/Canonical", requireNotNull(runtime.canonicalValue(declaration.uid)))
+            val current = requireNotNull(runtime.value(declaration.uid))
+            publishValue("$root/Current", current)
+            publishValue("$root/Requested", current)
+            telemetry.putNumber("$root/RequestNonce", -1.0)
+            telemetry.putNumber("$root/ProcessedNonce", -1.0)
+            telemetry.putString("$root/LastResult", "IDLE")
         }
     }
 
-    private var lastUpdateTimestamp = 0L
-
-    /**
-     * Call this in the periodic robot update loop.
-     * Polls NT4 for any tuning changes and dispatches them to the store.
-     */
-    fun update(timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()) {
+    /** Polls declared values only. Unknown topics are never enumerated or dispatched. */
+    fun update(timestampMs: Long = RobotClock.currentTimeMillis()) {
         if (timestampMs - lastUpdateTimestamp < 500L) return
         lastUpdateTimestamp = timestampMs
-
-        val currentState = store.state.tuning
-        val stateJson = gson.toJsonTree(currentState).asJsonObject
-
-        val (updatedJson, changed) = pollJsonObject("", stateJson)
-
-        if (changed) {
-            val newState = gson.fromJson(updatedJson, TuningState::class.java)
-            if (newState != null) {
-                store.dispatch(RobotAction.UpdateTuningState(newState))
-                saveToDisk(newState)
-            }
-        }
-    }
-
-    private fun pollJsonObject(prefix: String, obj: JsonObject): Pair<JsonObject, Boolean> {
-        val result = JsonObject()
-        var changed = false
-
-        for ((key, element) in obj.entrySet()) {
-            val currentPrefix = if (prefix.isEmpty()) key else "$prefix/$key"
-            when {
-                element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
-                    val ntKey = "Tuning/$currentPrefix"
-                    val currentValue = element.asDouble.let { if (it.isFinite()) it else 0.0 }
-
-                    var ntValue = telemetry.getNumber(ntKey, currentValue)
-                    if (!ntValue.isFinite()) ntValue = currentValue
-
-                    if (ntValue != currentValue) {
-                        changed = true
-                    }
-                    result.addProperty(key, ntValue)
-                    telemetry.putNumber(ntKey, ntValue)
-                }
-                element.isJsonObject -> {
-                    val (nestedResult, nestedChanged) = pollJsonObject(currentPrefix, element.asJsonObject)
-                    if (nestedChanged) changed = true
-                    result.add(key, nestedResult)
-                }
-                else -> {
-                    result.add(key, element)
-                }
-            }
-        }
-        return Pair(result, changed)
-    }
-
-    private fun saveToDisk(state: TuningState) {
-        var tempFile: File? = null
-        try {
-            val parent = saveFile.absoluteFile.parentFile
-            parent?.mkdirs()
-
-            if (saveFile.exists()) {
-                val backup = backupFile()
-                val backupTemp = File.createTempFile("${saveFile.nameWithoutExtension}-backup-", ".tmp", parent)
-                try {
-                    saveFile.inputStream().use { input ->
-                        FileOutputStream(backupTemp).use { output ->
-                            input.copyTo(output)
-                            output.fd.sync()
+        val context = contextProvider()
+        runtime.metadata.declarations.forEachIndexed { index, declaration ->
+            val current = requireNotNull(runtime.value(declaration.uid))
+            val root = parameterRoot(declaration.uid)
+            val nonceValue = telemetry.getNumber("$root/RequestNonce", lastRequestNonce[index].toDouble())
+            // NT4 carries numbers as doubles. Restrict nonces to the exactly representable integer
+            // range so reconnect/replay ordering can never alias two distinct Long values.
+            val nonce = nonceValue.takeIf {
+                it.isFinite() && it % 1.0 == 0.0 && it in 0.0..MAX_SAFE_DOUBLE_INTEGER
+            }?.toLong()
+            if (nonce != null && nonce > lastRequestNonce[index]) {
+                lastRequestNonce[index] = nonce
+                val candidate = readValue("$root/Requested", declaration.type, current)
+                val result = runtime.apply(declaration.uid, candidate, context)
+                if (result == TuningUpdateResult.APPLIED) {
+                    try {
+                        if (onApplied(declaration.uid, candidate)) {
+                            overlayDirty = true
+                            telemetry.putString("$root/LastResult", result.name)
+                        } else {
+                            runtime.restoreAfterFailedApply(declaration.uid, current)
+                            telemetry.putString("$root/LastResult", TuningUpdateResult.CONSUMER_REJECTED.name)
                         }
+                    } catch (failure: Exception) {
+                        runtime.restoreAfterFailedApply(declaration.uid, current)
+                        telemetry.putString("$root/LastResult", TuningUpdateResult.APPLY_CALLBACK_FAILED.name)
+                        publishValue("$root/Current", current)
+                        telemetry.putNumber("$root/ProcessedNonce", nonce.toDouble())
+                        throw failure
                     }
-                    atomicReplace(backupTemp, backup)
-                } finally {
-                    backupTemp.delete()
+                } else {
+                    telemetry.putString("$root/LastResult", result.name)
                 }
-            }
-
-            tempFile = File.createTempFile("${saveFile.nameWithoutExtension}-", ".tmp", parent)
-            FileOutputStream(tempFile).use { output ->
-                val persisted = gson.toJsonTree(state).asJsonObject
-                persisted.addProperty("_schemaVersion", TuningTopics.SCHEMA_VERSION)
-                output.write(gson.toJson(persisted).toByteArray(Charsets.UTF_8))
-                output.fd.sync()
-            }
-            atomicReplace(tempFile, saveFile)
-        } catch (e: Exception) {
-            System.err.println("TuningManager: Failed to save tuning config: ${e.message}")
-        } finally {
-            tempFile?.delete()
-        }
-    }
-
-    private fun loadTuningState(file: File): TuningState? {
-        if (!file.isFile) return null
-        return try {
-            val loadedJson = gson.fromJson(file.readText(), JsonObject::class.java) ?: return null
-            val schemaVersion = loadedJson.get("_schemaVersion")
-                ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
-                ?.asInt
-            if (schemaVersion != TuningTopics.SCHEMA_VERSION) return null
-            val merged = gson.toJsonTree(store.state.tuning).asJsonObject
-            mergeCanonicalNumbers(merged, loadedJson)
-            gson.fromJson(merged, TuningState::class.java)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    /** Flattens schema-v2 input and merges only known finite numeric leaves. */
-    private fun mergeCanonicalNumbers(target: JsonObject, source: JsonObject) {
-        val flattened = LinkedHashMap<String, Double>()
-        flattenNumbers(source, "", flattened)
-        for ((path, value) in flattened) {
-            if (!value.isFinite() || path == "_schemaVersion") continue
-            setCanonicalNumber(target, TuningTopics.statePath("Tuning/$path"), value)
-        }
-    }
-
-    private fun flattenNumbers(source: JsonObject, prefix: String, out: MutableMap<String, Double>) {
-        for ((key, element) in source.entrySet()) {
-            val path = if (prefix.isEmpty()) key else "$prefix/$key"
-            when {
-                element.isJsonObject -> flattenNumbers(element.asJsonObject, path, out)
-                element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> {
-                    val value = element.asDouble
-                    if (value.isFinite()) out[path] = value
-                }
+                publishValue("$root/Current", requireNotNull(runtime.value(declaration.uid)))
+                // Publish this last: dashboards treat the matching processed nonce as the atomic
+                // acknowledgement that Current and LastResult belong to their request.
+                telemetry.putNumber("$root/ProcessedNonce", nonce.toDouble())
             }
         }
+        if (overlayDirty) persistLocalOverlay()
     }
 
-    private fun setCanonicalNumber(target: JsonObject, path: String, value: Double) {
-        val parts = path.split('/')
-        var cursor = target
-        var materializedOptionalObject = false
-        for (i in 0 until parts.lastIndex) {
-            val key = parts[i]
-            val existing = cursor.get(key) ?: return
-            cursor = when {
-                existing.isJsonObject -> existing.asJsonObject
-                existing.isJsonNull -> JsonObject().also {
-                    cursor.add(key, it)
-                    materializedOptionalObject = true
-                }
-                else -> return
-            }
-        }
-        val leaf = parts.lastOrNull() ?: return
-        val existingLeaf = cursor.get(leaf)
-        val optionalPidLeaf = path.startsWith("drive/ftc/motorGains/") && leaf in setOf("kP", "kI", "kD", "kF")
-        if (existingLeaf == null && (materializedOptionalObject || optionalPidLeaf) && optionalPidLeaf) {
-            cursor.addProperty(leaf, value)
-            return
-        }
-        existingLeaf ?: return
-        if (existingLeaf.isJsonPrimitive && existingLeaf.asJsonPrimitive.isNumber) {
-            cursor.addProperty(leaf, value)
-        }
-    }
-
-    private fun withDefaultFeedforward(state: TuningState): TuningState {
-        val feedforward = state.driveFeedforward
-        if (feedforward.kS != 0.0 || feedforward.kV != 0.0 || feedforward.kA != 0.0) return state
-        return state.copy(
-            drive = state.drive.copy(
-                driveFeedforward = com.areslib.control.tuning.SimpleFeedforwardCoeffs(0.05, 0.638, 0.02)
-            )
+    private fun persistLocalOverlay() {
+        val projectRoot = localProjectRoot ?: return
+        val output = localOverlayFile ?: return
+        val overlay = runtime.localOverlay(
+            uid = "local.${runtime.metadata.projectUid}.runtime",
+            profileId = "runtime-experiment",
+            displayName = "Runtime experiment",
         )
+        LocalTuningOverlayStore.writeAtomically(projectRoot, output, overlay)
+        overlayDirty = false
     }
 
-    private fun backupFile(): File =
-        File(saveFile.absoluteFile.parentFile, saveFile.nameWithoutExtension + ".backup.json")
-
-    private fun atomicReplace(source: File, target: File) {
-        try {
-            Files.move(
-                source.toPath(),
-                target.toPath(),
-                StandardCopyOption.ATOMIC_MOVE,
-                StandardCopyOption.REPLACE_EXISTING
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    private fun readValue(topic: String, type: TuningParameterType, current: TuningValue): TuningValue = when (type) {
+        TuningParameterType.DOUBLE -> TuningValue(doubleValue = telemetry.getNumber(topic, requireNotNull(current.doubleValue)))
+        TuningParameterType.INT -> {
+            val currentValue = requireNotNull(current.intValue)
+            val value = telemetry.getNumber(topic, currentValue.toDouble())
+            if (!value.isFinite() || value % 1.0 != 0.0 || value !in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) current
+            else TuningValue(intValue = value.toInt())
         }
+        TuningParameterType.BOOLEAN -> TuningValue(booleanValue = telemetry.getBoolean(topic, requireNotNull(current.booleanValue)))
+        TuningParameterType.TEXT, TuningParameterType.ENUM -> TuningValue(textValue = telemetry.getString(topic, requireNotNull(current.textValue)))
+    }
+
+    private fun publishValue(topic: String, value: TuningValue) {
+        when {
+            value.doubleValue != null -> telemetry.putNumber(topic, value.doubleValue)
+            value.intValue != null -> telemetry.putNumber(topic, value.intValue.toDouble())
+            value.booleanValue != null -> telemetry.putBoolean(topic, value.booleanValue)
+            value.textValue != null -> telemetry.putString(topic, value.textValue)
+        }
+    }
+
+    private fun parameterRoot(uid: String): String = "${TuningTopics.ROOT}/Parameters/$uid"
+
+    private companion object {
+        const val MAX_SAFE_DOUBLE_INTEGER: Double = 9_007_199_254_740_991.0
     }
 }

@@ -2,9 +2,11 @@ package com.areslib.subsystem
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.validateTuningParameterDeclarations
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 6
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 7
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -318,6 +320,8 @@ data class SubsystemDocument(
     val hardware: List<SubsystemHardwareDocument> = emptyList(),
     val stateFields: List<SubsystemStateFieldDocument> = emptyList(),
     val controlLoops: List<SubsystemControlLoopDocument> = emptyList(),
+    /** Component-owned typed tuning declarations resolved by robot-owned named profiles. */
+    val tuningParameters: List<TuningParameterDeclaration> = emptyList(),
     val template: SubsystemTemplate = SubsystemTemplate.ADVANCED_CUSTOM,
     val implementation: SubsystemImplementationDocument = SubsystemImplementationDocument(),
     /** Existing catalog actions exposed by a hand-authored implementation. */
@@ -363,6 +367,14 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         issue("generateTest", "Generated starter tests require mock IO")
     }
     validateImplementation(document, ::issue)
+    validateTuningParameterDeclarations(document.tuningParameters).forEach {
+        issue("tuningParameters.${it.path}", it.message)
+    }
+    val tuningOwners = document.hardware.map { it.uid }.toSet() +
+        document.controlLoops.map { it.uid }.toSet() + document.uid
+    document.tuningParameters.filterNot { it.componentUid in tuningOwners }.forEach {
+        issue("tuningParameters.componentUid", "Unknown subsystem component '${it.componentUid}'")
+    }
 
     duplicateIds(document.hardware.map { it.hardwareId }).forEach {
         issue("hardware", "Hardware ID '$it' is duplicated")
@@ -908,6 +920,9 @@ object SubsystemDocumentCodec {
             }
             require(root.getAsJsonObject("safety")?.get("homing")?.isJsonObject == true) {
                 "Subsystem homing metadata is required"
+            }
+            require(root.get("tuningParameters")?.isJsonArray == true) {
+                "Subsystem tuningParameters are required (use an empty array when none are declared)"
             }
             val implementation = root.getAsJsonObject("implementation")
             require(implementation.has("kind") && implementation.has("ownership")) {

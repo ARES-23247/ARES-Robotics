@@ -4,6 +4,7 @@ import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.controls.ControlSchemeCodec
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.ControllerProfileCodec
+import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.project.AresProjectMetadataCodec
@@ -11,6 +12,9 @@ import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystemTargetCapabilities
+import com.areslib.tuning.TuningProfileAuthority
+import com.areslib.tuning.TuningComponentDocumentCodec
+import com.areslib.tuning.TuningProfileDocumentCodec
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -44,6 +48,30 @@ object AresProjectCodegenCli {
         val subsystems = readDocuments(aresRoot.resolve("subsystems"), "aressubsystem") {
             SubsystemDocumentCodec.decode(it)
         }
+        val drivetrains = readDocuments(aresRoot.resolve("drivetrains"), "aresdrivetrain") {
+            DrivetrainDocumentCodec.decode(it)
+        }
+        require(drivetrains.size <= 1) { "A robot project may declare at most one drivebase contract" }
+        val tuningComponents = readDocuments(aresRoot.resolve("tuning-components"), "arestuningcomponent") {
+            TuningComponentDocumentCodec.decode(it)
+        }
+        val declarations = drivetrains.flatMap { it.parameters } +
+            subsystems.flatMap { it.tuningParameters } + tuningComponents.flatMap { it.parameters }
+        require(declarations.map { it.uid }.distinct().size == declarations.size) {
+            "Typed tuning parameter UIDs must be unique across drivebase, subsystem, and project components"
+        }
+        require(declarations.map { it.key }.distinct().size == declarations.size) {
+            "Typed tuning parameter keys must be unique across drivebase, subsystem, and project components"
+        }
+        val tuningProfiles = if (declarations.isNotEmpty()) {
+            readDocuments(aresRoot.resolve("tuning"), "arestuning") {
+                TuningProfileDocumentCodec.decode(it, declarations)
+            }.also { loadedProfiles ->
+                require(loadedProfiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
+                    "Build generation accepts only CANONICAL_CHECKED_IN profiles from .ares/tuning; local overlays belong in .ares/local/tuning"
+                }
+            }
+        } else emptyList()
         val subsystemActions = subsystemTargetCapabilities(subsystems)
         val catalog = mergeSubsystemCapabilities(baseCatalog, subsystems)
 
@@ -79,7 +107,84 @@ object AresProjectCodegenCli {
             writeAtomically(output, generated.source)
         }
         syncSubsystemSources(projectRoot, subsystems, options)
+        syncDrivebaseSources(projectRoot, drivetrains, tuningProfiles, declarations, options)
         return generated
+    }
+
+    private fun syncDrivebaseSources(
+        projectRoot: Path,
+        drivetrains: List<com.areslib.drivetrain.DrivetrainDocument>,
+        profiles: List<com.areslib.tuning.TuningProfileDocument>,
+        declarations: List<com.areslib.tuning.TuningParameterDeclaration>,
+        options: CliOptions,
+    ) {
+        if (drivetrains.isEmpty() && declarations.isEmpty() && options.drivebaseOutput == null) return
+        val root = requireNotNull(options.drivebaseOutput) {
+            "--drivebase-output is required when drivetrain or typed tuning documents exist"
+        }.toAbsolutePath().normalize()
+        require(root.startsWith(projectRoot)) { "Generated drivebase output must stay inside the selected project" }
+        val files = drivetrains.singleOrNull()?.let { drivetrain ->
+            val packageName = requireNotNull(options.drivebasePackage) {
+                "--drivebase-package is required when generating drivebase plumbing"
+            }
+            val projectUid = requireNotNull(profiles.firstOrNull()?.projectUid) {
+                "Drivebase '${drivetrain.uid}' requires at least one checked-in canonical profile in .ares/tuning"
+            }
+            val additional = declarations.filterNot { candidate -> drivetrain.parameters.any { it.uid == candidate.uid } }
+            listOf(
+                DrivetrainKotlinGenerator.generate(drivetrain, profiles, packageName, additional),
+                DrivetrainKotlinGenerator.generateProjectTuning(
+                    projectUid = projectUid,
+                    canonicalProfileUid = drivetrain.canonicalProfileUid,
+                    drivebaseUid = drivetrain.uid,
+                    declarations = declarations,
+                    profiles = profiles,
+                    packageName = packageName,
+                ),
+            )
+        } ?: if (declarations.isNotEmpty()) {
+            val packageName = requireNotNull(options.drivebasePackage) {
+                "--drivebase-package is required when generating typed tuning plumbing"
+            }
+            val canonicalProfile = profiles.singleOrNull { it.baseProfileUid == null }
+                ?: error("A project without a drivebase requires exactly one root canonical tuning profile")
+            listOf(
+                DrivetrainKotlinGenerator.generateProjectTuning(
+                    projectUid = canonicalProfile.projectUid,
+                    canonicalProfileUid = canonicalProfile.uid,
+                    drivebaseUid = null,
+                    declarations = declarations,
+                    profiles = profiles,
+                    packageName = packageName,
+                ),
+            )
+        } else emptyList()
+        val manifest = root.resolve(".ares-drivebase-manifest")
+        val expected = files.associate { it.relativePath to it.content }
+        val expectedManifest = expected.keys.sorted().joinToString("\n", postfix = if (expected.isEmpty()) "" else "\n")
+        if (options.checkOnly) {
+            val actual = if (Files.isRegularFile(manifest)) Files.readString(manifest) else ""
+            require(actual == expectedManifest) { "Generated drivebase file list is stale at $root" }
+            expected.forEach { (relative, content) ->
+                val path = safeGeneratedPath(root, relative)
+                require(Files.isRegularFile(path) && Files.readString(path) == content) {
+                    "Generated drivebase source is stale at $path"
+                }
+            }
+            return
+        }
+        val previous = if (Files.isRegularFile(manifest)) Files.readAllLines(manifest).filter(String::isNotBlank) else emptyList()
+        previous.filterNot(expected::containsKey).forEach { Files.deleteIfExists(safeGeneratedPath(root, it)) }
+        expected.forEach { (relative, content) ->
+            val path = safeGeneratedPath(root, relative)
+            val exists = Files.exists(path)
+            require(!exists || Files.isRegularFile(path)) { "Generated drivebase output collides with a non-file at $path" }
+            require(!exists || relative in previous || Files.readString(path) == content) {
+                "Refusing to overwrite unowned drivebase output at $path; remove or relocate it explicitly"
+            }
+            if (!exists || Files.readString(path) != content) writeAtomically(path, content)
+        }
+        if (expected.isEmpty()) Files.deleteIfExists(manifest) else writeAtomically(manifest, expectedManifest)
     }
 
     private fun syncSubsystemSources(
@@ -88,7 +193,6 @@ object AresProjectCodegenCli {
         options: CliOptions,
     ) {
         if (subsystems.isEmpty() &&
-            options.subsystemsOutput == null && options.subsystemsTestOutput == null &&
             options.subsystemsGeneratedOutput == null && options.subsystemsGeneratedTestOutput == null &&
             options.subsystemsStarterOutput == null
         ) return
@@ -149,27 +253,7 @@ object AresProjectCodegenCli {
             return
         }
 
-        // Checked-in legacy layout remains only for live consumers that have not opted into the
-        // explicit starter/generated split. New integrations must use --subsystems-starter-output.
-        val mainRoot = requireNotNull(options.subsystemsOutput) {
-            "--subsystems-output is required when .ares/subsystems contains documents"
-        }.toAbsolutePath().normalize()
-        val testRoot = requireNotNull(options.subsystemsTestOutput) {
-            "--subsystems-test-output is required when generated subsystem tests are enabled"
-        }.toAbsolutePath().normalize()
-        require(mainRoot.startsWith(projectRoot) && testRoot.startsWith(projectRoot)) {
-            "Generated subsystem output must stay inside the selected project"
-        }
-        syncSourceSet(
-            mainRoot,
-            files.filter { it.sourceSet == GeneratedSubsystemSourceSet.MAIN },
-            options.checkOnly,
-        )
-        syncSourceSet(
-            testRoot,
-            files.filter { it.sourceSet == GeneratedSubsystemSourceSet.TEST },
-            options.checkOnly,
-        )
+        error("Subsystem generation requires --subsystems-starter-output and split generated-source outputs")
     }
 
     private fun syncSourceSet(root: Path, files: List<GeneratedSubsystemFile>, checkOnly: Boolean) {
@@ -260,8 +344,6 @@ object AresProjectCodegenCli {
         val objectName: String,
         val registryInterfaceName: String,
         val platform: ControllerInputPlatform?,
-        val subsystemsOutput: Path?,
-        val subsystemsTestOutput: Path?,
         val subsystemsPackage: String?,
         val checkOnly: Boolean,
         val subsystemsOnly: Boolean,
@@ -271,6 +353,8 @@ object AresProjectCodegenCli {
         val subsystemsGeneratedOutput: Path?,
         val subsystemsGeneratedTestOutput: Path?,
         val subsystemConfirmationToken: String?,
+        val drivebaseOutput: Path?,
+        val drivebasePackage: String?,
     ) {
         companion object {
             fun parse(args: Array<String>): CliOptions {
@@ -313,8 +397,6 @@ object AresProjectCodegenCli {
                     objectName,
                     registryName,
                     platform,
-                    values["--subsystems-output"]?.let(Path::of),
-                    values["--subsystems-test-output"]?.let(Path::of),
                     values["--subsystems-package"],
                     checkOnly,
                     subsystemsOnly,
@@ -324,14 +406,16 @@ object AresProjectCodegenCli {
                     values["--subsystems-generated-output"]?.let(Path::of),
                     values["--subsystems-generated-test-output"]?.let(Path::of),
                     values["--subsystems-confirmation-token"],
+                    values["--drivebase-output"]?.let(Path::of),
+                    values["--drivebase-package"],
                 )
             }
 
             private val VALUE_OPTIONS = setOf(
                 "--project", "--output", "--package", "--object", "--registry", "--platform",
-                "--subsystems-output", "--subsystems-test-output", "--subsystems-package"
-                , "--subsystems-starter-output", "--subsystems-generated-output",
-                "--subsystems-generated-test-output", "--subsystems-confirmation-token"
+                "--subsystems-package", "--subsystems-starter-output", "--subsystems-generated-output",
+                "--subsystems-generated-test-output", "--subsystems-confirmation-token",
+                "--drivebase-output", "--drivebase-package",
             )
             private val FLAG_OPTIONS = setOf(
                 "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters"

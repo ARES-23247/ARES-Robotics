@@ -20,9 +20,9 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
         }
         is RobotAction.UpdateTuningState -> {
             val filterConfig = state.vision.filterConfig.copy(
-                maxDistanceMeters = action.tuning.visionMaxDistanceMeters,
-                maxAmbiguity = action.tuning.visionMaxAmbiguity,
-                mahalanobisThreshold = action.tuning.visionMahalanobisThreshold
+                maxDistanceMeters = action.tuning.vision.maxDistanceMeters,
+                maxAmbiguity = action.tuning.vision.maxAmbiguity,
+                mahalanobisThreshold = action.tuning.vision.mahalanobisThreshold
             )
             val updatedVision = state.vision.copy(filterConfig = filterConfig)
             

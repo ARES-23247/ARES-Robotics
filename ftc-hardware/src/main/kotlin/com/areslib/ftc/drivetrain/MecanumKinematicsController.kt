@@ -49,16 +49,17 @@ class MecanumKinematicsController(
      * @param currentTuning Desired tuning parameters snapshot from Redux state.
      */
     fun updateTuning(currentTuning: TuningState) {
-        kinematics = MecanumKinematics(currentTuning.trackWidthMeters, currentTuning.wheelBaseMeters)
-        mecanumIO.kS = currentTuning.driveFeedforward.kS
-        mecanumIO.kV = currentTuning.driveFeedforward.kV
-        mecanumIO.kA = currentTuning.driveFeedforward.kA
-        mecanumIO.slewRateLimit = currentTuning.driveSlewRateLimit
-        mecanumIO.ticksPerMeter = currentTuning.ticksPerMeter
-        if (currentTuning.driveFeedforward.kV > 1e-4) {
-            mecanumIO.maxWheelSpeedMetersPerSecond = 1.0 / currentTuning.driveFeedforward.kV
+        val driveTuning = currentTuning.drive
+        kinematics = MecanumKinematics(driveTuning.trackWidthMeters, driveTuning.wheelBaseMeters)
+        mecanumIO.kS = driveTuning.driveFeedforward.kS
+        mecanumIO.kV = driveTuning.driveFeedforward.kV
+        mecanumIO.kA = driveTuning.driveFeedforward.kA
+        mecanumIO.slewRateLimit = driveTuning.driveSlewRateLimit
+        mecanumIO.ticksPerMeter = driveTuning.ftc.ticksPerMeter
+        if (driveTuning.driveFeedforward.kV > 1e-4) {
+            mecanumIO.maxWheelSpeedMetersPerSecond = 1.0 / driveTuning.driveFeedforward.kV
         }
-        val gains = currentTuning.motorGains
+        val gains = driveTuning.ftc.motorGains
         if (gains != null) {
             mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD)
         }
@@ -100,4 +101,3 @@ class MecanumKinematicsController(
         }
     }
 }
-

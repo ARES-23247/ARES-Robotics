@@ -83,8 +83,8 @@ class MecanumTrajectoryFollower(
                     targetPose = targetPose,
                     follower = pathfindFollower,
                     costmap = costmap,
-                    maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * store.state.tuning.pathVelocityScale,
-                    maxAccelerationMps2 = store.state.tuning.pathAccelerationLimit,
+                    maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * store.state.tuning.drive.pathVelocityScale,
+                    maxAccelerationMps2 = store.state.tuning.drive.pathAccelerationLimit,
                     mirrorForAlliance = mirrorForAlliance,
                     symmetry = config.allianceSymmetry,
                     authoredAlliance = com.areslib.state.Alliance.RED
@@ -153,15 +153,15 @@ class MecanumTrajectoryFollower(
      */
     fun updateTuning(currentTuning: TuningState) {
         if (wasPathfindRequested || activePathfindTask != null) {
-            pathfindFollower.xController.p = currentTuning.pathTranslationGains.kP
-            pathfindFollower.xController.i = currentTuning.pathTranslationGains.kI
-            pathfindFollower.xController.d = currentTuning.pathTranslationGains.kD
-            pathfindFollower.yController.p = currentTuning.pathTranslationGains.kP
-            pathfindFollower.yController.i = currentTuning.pathTranslationGains.kI
-            pathfindFollower.yController.d = currentTuning.pathTranslationGains.kD
-            pathfindFollower.thetaController.p = currentTuning.pathRotationGains.kP
-            pathfindFollower.thetaController.i = currentTuning.pathRotationGains.kI
-            pathfindFollower.thetaController.d = currentTuning.pathRotationGains.kD
+            pathfindFollower.xController.p = currentTuning.drive.pathTranslationGains.kP
+            pathfindFollower.xController.i = currentTuning.drive.pathTranslationGains.kI
+            pathfindFollower.xController.d = currentTuning.drive.pathTranslationGains.kD
+            pathfindFollower.yController.p = currentTuning.drive.pathTranslationGains.kP
+            pathfindFollower.yController.i = currentTuning.drive.pathTranslationGains.kI
+            pathfindFollower.yController.d = currentTuning.drive.pathTranslationGains.kD
+            pathfindFollower.thetaController.p = currentTuning.drive.pathRotationGains.kP
+            pathfindFollower.thetaController.i = currentTuning.drive.pathRotationGains.kI
+            pathfindFollower.thetaController.d = currentTuning.drive.pathRotationGains.kD
         }
     }
 }

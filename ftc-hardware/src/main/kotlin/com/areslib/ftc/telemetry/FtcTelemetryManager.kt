@@ -188,7 +188,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         // Throttle NT4 network writes dynamically if enabled.
         // Disk logging still runs every frame via currentFrame accumulation.
         telemetryFrameCounter++
-        val divisor = kotlin.math.max(1, state.tuning.telemetryRateDivisor)
+        val divisor = kotlin.math.max(1, state.tuning.telemetry.telemetryRateDivisor)
         val isNtFrame = enableNetworkStreaming && (telemetryFrameCounter % divisor == 0)
         dataLoggingTelemetry.ntEnabled = isNtFrame
 

@@ -63,10 +63,7 @@ data class DriveTuningState(
     val pathVelocityScale: Double = 0.85,
     val pathAccelerationLimit: Double = 3.0,
     val ftc: FtcDriveTuningState = FtcDriveTuningState()
-) {
-    val ticksPerMeter: Double get() = ftc.ticksPerMeter
-    val motorGains: PIDFCoefficients? get() = ftc.motorGains
-}
+)
 
 /**
  * Shared Vision measurement noise standard deviations and outlier rejection thresholds.
@@ -108,14 +105,7 @@ data class VisionAlignTuningState(
 data class LocalizationTuningState(
     val ekfNoise: EkfProcessNoiseTuningState = EkfProcessNoiseTuningState(),
     val ftcPinpoint: FtcPinpointTuningState = FtcPinpointTuningState()
-) {
-    val odomQx: Double get() = ekfNoise.qX
-    val odomQy: Double get() = ekfNoise.qY
-    val odomQtheta: Double get() = ekfNoise.qTheta
-    val pinpointXOffsetMm: Double get() = ftcPinpoint.xOffsetMm
-    val pinpointYOffsetMm: Double get() = ftcPinpoint.yOffsetMm
-    val pinpointEncoderResolution: Double get() = ftcPinpoint.encoderResolution
-}
+)
 
 /**
  * Shared Driver profile exponential curves and rate limits.
@@ -149,10 +139,7 @@ data class TelemetryTuningState(
 data class SubsystemTuningState(
     val ftc: FtcSubsystemTuningState = FtcSubsystemTuningState(),
     val flywheel: MechanismTuningState = MechanismTuningState()
-) {
-    val intakeNominalVoltage: Double get() = ftc.intakeNominalVoltage
-    val flywheelTargetRpmPreset: Double get() = ftc.flywheelTargetRpmPreset
-}
+)
 
 /** Shared identified plant and feedback parameters for a velocity-controlled mechanism. */
 data class MechanismTuningState(
@@ -173,80 +160,4 @@ data class TuningState(
     val recovery: RecoveryTuningState = RecoveryTuningState(),
     val telemetry: TelemetryTuningState = TelemetryTuningState(),
     val subsystem: SubsystemTuningState = SubsystemTuningState()
-) {
-
-    // ── Legacy / Flat Delegator Getters for 100% Backward Compatibility ──
-
-    // Drivetrain
-    val trackWidthMeters: Double get() = drive.trackWidthMeters
-    val wheelBaseMeters: Double get() = drive.wheelBaseMeters
-    val pathTranslationGains: PIDFCoefficients get() = drive.pathTranslationGains
-    val pathRotationGains: PIDFCoefficients get() = drive.pathRotationGains
-    val headingGains: PIDFCoefficients get() = drive.headingGains
-    val headingDeadzoneDeg: Double get() = drive.headingDeadzoneDeg
-    val headingMaxOutputLimit: Double get() = drive.headingMaxOutputLimit
-    val positionHoldGains: PIDFCoefficients get() = drive.positionHoldGains
-    val positionHoldDeadzoneMeters: Double get() = drive.positionHoldDeadzoneMeters
-    val positionHoldMaxOutputLimit: Double get() = drive.positionHoldMaxOutputLimit
-    val teleOpTurnScale: Double get() = drive.teleOpTurnScale
-    val driveFeedforward: SimpleFeedforwardCoeffs get() = drive.driveFeedforward
-    val angularFeedforward: SimpleFeedforwardCoeffs get() = drive.angularFeedforward
-    val driveSlewRateLimit: Double? get() = drive.driveSlewRateLimit
-    val motorGains: PIDFCoefficients? get() = drive.motorGains
-    val ticksPerMeter: Double get() = drive.ticksPerMeter
-    val pathVelocityScale: Double get() = drive.pathVelocityScale
-    val pathAccelerationLimit: Double get() = drive.pathAccelerationLimit
-
-    // Vision
-    val visionStdDevsX: Double get() = vision.stdDevsX
-    val visionStdDevsY: Double get() = vision.stdDevsY
-    val visionStdDevsHeading: Double get() = vision.stdDevsHeading
-    val visionMaxDistanceMeters: Double get() = vision.maxDistanceMeters
-    val visionMaxAmbiguity: Double get() = vision.maxAmbiguity
-    val visionMahalanobisThreshold: Double get() = vision.mahalanobisThreshold
-
-    // Vision Align
-    val visionAlignTargetDistance: Double get() = visionAlign.targetDistanceMeters
-    val visionAlignMaxHeadingChangeRad: Double get() = visionAlign.maxHeadingChangeRad
-    val visionAlignAlphaTranslation: Double get() = visionAlign.alphaTranslation
-    val visionAlignAlphaHeading: Double get() = visionAlign.alphaHeading
-    val visionAlignKpTranslation: Double get() = visionAlign.kpTranslation
-    val visionAlignKpRotation: Double get() = visionAlign.kpRotation
-    val visionAlignKdRotation: Double get() = visionAlign.kdRotation
-    val visionAlignKsRotational: Double get() = visionAlign.ksRotational
-    val visionAlignTranslationDeadband: Double get() = visionAlign.translationDeadbandMeters
-    val visionAlignHeadingErrorDeadband: Double get() = visionAlign.headingErrorDeadbandRad
-    val visionAlignClampTranslationX: Double get() = visionAlign.clampTranslationX
-    val visionAlignClampTranslationY: Double get() = visionAlign.clampTranslationY
-    val visionAlignClampRotation: Double get() = visionAlign.clampRotation
-    val visionAlignSearchFirstSweepMs: Long get() = visionAlign.searchFirstSweepMs
-    val visionAlignSearchSecondSweepMs: Long get() = visionAlign.searchSecondSweepMs
-    val visionAlignSearchSpeed: Double get() = visionAlign.searchSpeed
-
-    // Localization
-    val odomQx: Double get() = localization.odomQx
-    val odomQy: Double get() = localization.odomQy
-    val odomQtheta: Double get() = localization.odomQtheta
-    val pinpointXOffsetMm: Double get() = localization.pinpointXOffsetMm
-    val pinpointYOffsetMm: Double get() = localization.pinpointYOffsetMm
-    val pinpointEncoderResolution: Double get() = localization.pinpointEncoderResolution
-
-    // Driver
-    val driverDeadbandExponent: Double get() = driver.deadbandExponent
-    val driverSlewRateLimit: Double get() = driver.slewRateLimit
-    val driverTriggerThreshold: Double get() = driver.triggerThreshold
-
-    // Recovery
-    val stolenRobotRejectionThreshold: Double get() = recovery.stolenRobotRejectionThreshold
-    val stolenRobotVelocityThreshold: Double get() = recovery.stolenRobotVelocityThreshold
-    val stolenRobotAngularVelocityThreshold: Double get() = recovery.stolenRobotAngularVelocityThreshold
-
-    // Telemetry
-    val telemetryRateDivisor: Int get() = telemetry.telemetryRateDivisor
-    val motorCurrentPollingIntervalMs: Long get() = telemetry.motorCurrentPollingIntervalMs
-
-    // Subsystem
-    val intakeNominalVoltage: Double get() = subsystem.intakeNominalVoltage
-    val flywheelTargetRpmPreset: Double get() = subsystem.flywheelTargetRpmPreset
-    val flywheelTuning: MechanismTuningState get() = subsystem.flywheel
-}
+)

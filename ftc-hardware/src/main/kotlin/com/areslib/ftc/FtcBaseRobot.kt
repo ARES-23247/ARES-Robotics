@@ -104,14 +104,16 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     // Vision Configuration
     val visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
     val visionFilterConfig: VisionFilterConfig = VisionFilterConfig.ftcDefaults(),
+    /** Canonical generated tuning state used before any controller or tuning transport initializes. */
+    initialTuningState: com.areslib.state.TuningState = com.areslib.state.TuningState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) : AresRobot(
     initialState = RobotState(
         vision = VisionState(
             filterConfig = visionFilterConfig
         ),
-        tuning = com.areslib.state.TuningState(
-            localization = com.areslib.state.LocalizationTuningState(
+        tuning = initialTuningState.copy(
+            localization = initialTuningState.localization.copy(
                 ftcPinpoint = com.areslib.state.FtcPinpointTuningState(
                     xOffsetMm = pinpointXOffsetMm,
                     yOffsetMm = pinpointYOffsetMm,

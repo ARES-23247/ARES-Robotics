@@ -200,7 +200,7 @@ class TelemetryUpdateE2ETest {
         // workers are busy. Wait on the behavior we care about instead of sampling the pose once
         // at an arbitrary wall-clock instant. The input lease remains refreshed by the publisher.
         var trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
-        var posePollsRemaining = 100
+        var posePollsRemaining = 500
         while (trueX <= 0.05 && posePollsRemaining > 0) {
             Thread.sleep(20L)
             trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)

@@ -128,7 +128,7 @@ Example JSON shape:
 
 ```json
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "documentId": "prism",
   "displayName": "Prism lights",
   "kotlinTypeName": "Prism",
@@ -150,6 +150,7 @@ Example JSON shape:
     }
   },
   "capabilityActionKeys": ["prism.setEffect", "prism.off"],
+  "tuningParameters": [],
   "generateMockIo": false,
   "generateTest": false
 }

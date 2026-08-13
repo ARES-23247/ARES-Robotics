@@ -106,7 +106,7 @@ class VisionAlignController {
             // second time using robot IMU pitch. Y is Limelight-down and is intentionally
             // irrelevant to planar ground-robot alignment.
             val distanceZ = abs(rawZ)
-            val targetDistanceMeters = tuning.visionAlignTargetDistance.finiteNonNegative()
+            val targetDistanceMeters = tuning.visionAlign.targetDistanceMeters.finiteNonNegative()
             val errorForwardT = distanceZ - targetDistanceMeters
             val errorLeftT = robotPoseTargetSpace.x
             
@@ -117,7 +117,7 @@ class VisionAlignController {
             val wrappedYaw = wrapAngle(robotYaw)
             
             // 1. Yaw rate-of-change sanity check (reject PnP flips/jumps)
-            val maxHeadingChange = tuning.visionAlignMaxHeadingChangeRad.finiteNonNegative()
+            val maxHeadingChange = tuning.visionAlign.maxHeadingChangeRad.finiteNonNegative()
             val sanitizedYaw = if (hasPrevFiltered) {
                 val diff = wrapAngle(wrappedYaw - prevRawYaw)
                 if (abs(diff) > maxHeadingChange) prevRawYaw else wrappedYaw
@@ -136,8 +136,8 @@ class VisionAlignController {
             val errHeading = wrapAngle(pointingTarget - phi)
             
             // 2. Low-pass filters to smooth out high-frequency vision noise
-            val alphaTranslation = tuning.visionAlignAlphaTranslation.finiteUnitInterval()
-            val alphaHeading = tuning.visionAlignAlphaHeading.finiteUnitInterval()
+            val alphaTranslation = tuning.visionAlign.alphaTranslation.finiteUnitInterval()
+            val alphaHeading = tuning.visionAlign.alphaHeading.finiteUnitInterval()
             
             val hadPreviousMeasurement = hasPrevFiltered
             val errXFiltered = if (hadPreviousMeasurement) alphaTranslation * errX + (1.0 - alphaTranslation) * prevErrX else errX
@@ -154,13 +154,13 @@ class VisionAlignController {
             prevErrY = errYFiltered
             prevErrHeading = errHeadingFiltered
             
-            val kP_translation = tuning.visionAlignKpTranslation.finiteOrZero()
-            val kP_rotation = tuning.visionAlignKpRotation.finiteOrZero()
-            val kD_rotation = tuning.visionAlignKdRotation.finiteOrZero()
+            val kP_translation = tuning.visionAlign.kpTranslation.finiteOrZero()
+            val kP_rotation = tuning.visionAlign.kpRotation.finiteOrZero()
+            val kD_rotation = tuning.visionAlign.kdRotation.finiteOrZero()
             
             // 3. Apply deadbands to prevent limit-cycle oscillations (jittering)
-            val translationDeadband = tuning.visionAlignTranslationDeadband.finiteNonNegative()
-            val headingErrorDeadband = tuning.visionAlignHeadingErrorDeadband.finiteNonNegative()
+            val translationDeadband = tuning.visionAlign.translationDeadbandMeters.finiteNonNegative()
+            val headingErrorDeadband = tuning.visionAlign.headingErrorDeadbandRad.finiteNonNegative()
             
             // Speed-limit translation commands to keep the tag in the camera's FOV
             var ctrlX = if (abs(errXFiltered) > translationDeadband) {
@@ -171,7 +171,7 @@ class VisionAlignController {
                 errYFiltered * kP_translation
             } else 0.0
 
-            val maxClamp = tuning.visionAlignClampTranslationX.finiteNonNegative()
+            val maxClamp = tuning.visionAlign.clampTranslationX.finiteNonNegative()
             val magnitude = kotlin.math.hypot(ctrlX, ctrlY)
             if (magnitude > maxClamp) {
                 val scale = maxClamp / magnitude
@@ -179,7 +179,7 @@ class VisionAlignController {
                 ctrlY *= scale
             }
             
-            val kS_rotational = tuning.visionAlignKsRotational.finiteOrZero()
+            val kS_rotational = tuning.visionAlign.ksRotational.finiteOrZero()
             
             // Compute derivative term: rate of heading error change
             val dtSec = ((now - prevLoopTimeMs).coerceIn(1, 200)) / 1000.0
@@ -200,7 +200,7 @@ class VisionAlignController {
                 val pTerm = activeErr * kP_rotation
                 val iTerm = (kP_rotation * 0.1) * integralAccum
                 val dTerm = headingErrorRate * kD_rotation
-                val rotationClamp = tuning.visionAlignClampRotation.finiteNonNegative()
+                val rotationClamp = tuning.visionAlign.clampRotation.finiteNonNegative()
                 (pTerm + iTerm + dTerm + currentSign * kS_rotational).coerceIn(-rotationClamp, rotationClamp)
             } else {
                 integralAccum = 0.0
@@ -232,11 +232,11 @@ class VisionAlignController {
                 if (!wasTrackingTag) lastKnownSearchDirection = -1.0 // start CW
             }
             
-            val firstSweepMs = tuning.visionAlignSearchFirstSweepMs.coerceAtLeast(0L)
-            val secondSweepMs = tuning.visionAlignSearchSecondSweepMs.coerceAtLeast(0L)
+            val firstSweepMs = tuning.visionAlign.searchFirstSweepMs.coerceAtLeast(0L)
+            val secondSweepMs = tuning.visionAlign.searchSecondSweepMs.coerceAtLeast(0L)
             val totalSearchMs = if (Long.MAX_VALUE - firstSweepMs < secondSweepMs) Long.MAX_VALUE else firstSweepMs + secondSweepMs
             val timeSinceLost = RobotClock.currentTimeMillis() - tagLostTimestampMs
-            val searchSpeed = tuning.visionAlignSearchSpeed.finiteOrZero()
+            val searchSpeed = tuning.visionAlign.searchSpeed.finiteOrZero()
             
             if (timeSinceLost < totalSearchMs) {
                 // Active search

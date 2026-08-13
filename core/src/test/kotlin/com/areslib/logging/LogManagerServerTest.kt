@@ -35,20 +35,35 @@ class LogManagerServerTest {
         }
 
         // Test root endpoint (Dashboard)
-        val url = URL("http://localhost:5002/")
-        val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = "GET"
+        val conn = awaitGet("/")
         assertEquals(200, conn.responseCode)
         val text = conn.inputStream.bufferedReader().use { it.readText() }
         assertTrue(text.contains("ARES Telemetry Log Portal") || text.contains("Log"), "Response should be a dashboard page")
 
         // Test API Logs endpoint
-        val apiLogsUrl = URL("http://localhost:5002/api/logs")
-        val apiConn = apiLogsUrl.openConnection() as HttpURLConnection
-        apiConn.requestMethod = "GET"
+        val apiConn = awaitGet("/api/logs")
         assertEquals(200, apiConn.responseCode)
         val apiText = apiConn.inputStream.bufferedReader().use { it.readText() }
         assertTrue(apiText.startsWith("["), "Response should be a JSON array")
+    }
+
+    private fun awaitGet(path: String): HttpURLConnection {
+        var lastFailure: Exception? = null
+        repeat(100) {
+            val connection = URL("http://127.0.0.1:5002$path").openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 250
+            connection.readTimeout = 1_000
+            try {
+                connection.responseCode
+                return connection
+            } catch (failure: Exception) {
+                lastFailure = failure
+                connection.disconnect()
+                Thread.sleep(20L)
+            }
+        }
+        throw AssertionError("LogManagerServer did not become reachable at $path", lastFailure)
     }
 
     @Test

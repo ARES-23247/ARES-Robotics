@@ -191,8 +191,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val isAccepted = lastVisionStatus == "ACCEPTED"
 
         val tuning = store.state.tuning
-        val velThreshold = tuning.stolenRobotVelocityThreshold
-        val angularThreshold = tuning.stolenRobotAngularVelocityThreshold
+        val velThreshold = tuning.recovery.stolenRobotVelocityThreshold
+        val angularThreshold = tuning.recovery.stolenRobotAngularVelocityThreshold
         val isStationary = kotlin.math.abs(store.state.drive.measuredFieldXVelocityMetersPerSecond) < velThreshold &&
                            kotlin.math.abs(store.state.drive.measuredFieldYVelocityMetersPerSecond) < velThreshold &&
                            kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
@@ -251,7 +251,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                 accumCos += kotlin.math.cos(p2d.heading.radians)
                 consecutiveVisionRejections++
 
-                val reqThreshold = tuning.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
+                val reqThreshold = tuning.recovery.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
                 if (consecutiveVisionRejections >= reqThreshold) {
                     val avgX = accumX / consecutiveVisionRejections
                     val avgY = accumY / consecutiveVisionRejections

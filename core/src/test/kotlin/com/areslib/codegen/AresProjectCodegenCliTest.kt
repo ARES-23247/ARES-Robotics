@@ -11,6 +11,7 @@ import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -87,5 +88,42 @@ class AresProjectCodegenCliTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `zero drivebase documents clear stale generated manifest output`() {
+        Files.createDirectories(temporary.resolve(".ares"))
+        Files.writeString(
+            temporary.resolve(".ares/action-catalog.json"),
+            CapabilityCatalogCodec.encode(CapabilityCatalogDocument(projectId = "test")),
+        )
+        Files.writeString(
+            temporary.resolve(".ares/project.json"),
+            AresProjectMetadataCodec.encode(
+                AresProjectMetadataDocument(
+                    projectId = "test", league = AresLeague.FTC,
+                    coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
+                    robotLengthMeters = 0.45, robotWidthMeters = 0.45,
+                    fieldLengthMeters = 3.6576, fieldWidthMeters = 3.6576,
+                )
+            ),
+        )
+        val generatedRoot = Files.createDirectories(temporary.resolve("build/generated/drivebase"))
+        val stale = generatedRoot.resolve("GeneratedAresDrivebaseConfig.kt")
+        Files.writeString(stale, "// stale")
+        Files.writeString(generatedRoot.resolve(".ares-drivebase-manifest"), "GeneratedAresDrivebaseConfig.kt\n")
+
+        AresProjectCodegenCli.run(
+            arrayOf(
+                "--project", temporary.toString(),
+                "--output", temporary.resolve("build/generated/project/GeneratedAresProject.kt").toString(),
+                "--package", "example.generated",
+                "--drivebase-output", generatedRoot.toString(),
+                "--drivebase-package", "example.generated",
+            )
+        )
+
+        assertFalse(Files.exists(stale))
+        assertFalse(Files.exists(generatedRoot.resolve(".ares-drivebase-manifest")))
     }
 }

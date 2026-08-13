@@ -180,13 +180,13 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             }
             useHeadingLock && !isRotating && target != null -> {
                 val tuning = store.state.tuning
-                headingPID.p = tuning.headingGains.kP
-                headingPID.i = tuning.headingGains.kI
-                headingPID.d = tuning.headingGains.kD
-                headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
+                headingPID.p = tuning.drive.headingGains.kP
+                headingPID.i = tuning.drive.headingGains.kI
+                headingPID.d = tuning.drive.headingGains.kD
+                headingPID.deadzone = Math.toRadians(tuning.drive.headingDeadzoneDeg)
 
                 // Clamp heading hold correction effort to max power to prevent oscillation and snapping
-                val maxEffort = maxAngularSpeedRps * tuning.headingMaxOutputLimit
+                val maxEffort = maxAngularSpeedRps * tuning.drive.headingMaxOutputLimit
                 headingPID.setOutputLimits(-maxEffort, maxEffort)
 
                 // Compute PID correction using real loop dtSeconds
@@ -225,17 +225,17 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             usePositionHold && !hasLinearInput && posLockX != null -> {
                 // Actively correct back to locked position
                 val tuning = store.state.tuning
-                positionPidX.p = tuning.positionHoldGains.kP
-                positionPidX.i = tuning.positionHoldGains.kI
-                positionPidX.d = tuning.positionHoldGains.kD
-                positionPidX.deadzone = tuning.positionHoldDeadzoneMeters
-                positionPidY.p = tuning.positionHoldGains.kP
-                positionPidY.i = tuning.positionHoldGains.kI
-                positionPidY.d = tuning.positionHoldGains.kD
-                positionPidY.deadzone = tuning.positionHoldDeadzoneMeters
+                positionPidX.p = tuning.drive.positionHoldGains.kP
+                positionPidX.i = tuning.drive.positionHoldGains.kI
+                positionPidX.d = tuning.drive.positionHoldGains.kD
+                positionPidX.deadzone = tuning.drive.positionHoldDeadzoneMeters
+                positionPidY.p = tuning.drive.positionHoldGains.kP
+                positionPidY.i = tuning.drive.positionHoldGains.kI
+                positionPidY.d = tuning.drive.positionHoldGains.kD
+                positionPidY.deadzone = tuning.drive.positionHoldDeadzoneMeters
 
                 // Clamp correction to max position hold speed limit
-                val maxCorrection = maxSpeedMps * tuning.positionHoldMaxOutputLimit
+                val maxCorrection = maxSpeedMps * tuning.drive.positionHoldMaxOutputLimit
                 positionPidX.setOutputLimits(-maxCorrection, maxCorrection)
                 positionPidY.setOutputLimits(-maxCorrection, maxCorrection)
 
@@ -243,13 +243,13 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
                 val errY = posLockY!! - pose.y
                 val distError = kotlin.math.hypot(errX, errY)
 
-                if (distError > tuning.positionHoldDeadzoneMeters) {
+                if (distError > tuning.drive.positionHoldDeadzoneMeters) {
                     val rawCorrVx = positionPidX.calculate(pose.x, posLockX, dtSeconds)
                     val rawCorrVy = positionPidY.calculate(pose.y, posLockY, dtSeconds)
 
                     // Apply minimum static friction feedforward from tuning state (tuning.driveFeedforward.kS)
                     // so small position errors overcome wheel breakout friction and drive the robot back
-                    val kS = tuning.driveFeedforward.kS
+                    val kS = tuning.drive.driveFeedforward.kS
                     val normX = errX / distError
                     val normY = errY / distError
 
@@ -306,7 +306,7 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         val turnScale = when {
             isTurbo -> 0.85
             isSlow -> 0.30
-            else -> store.state.tuning.teleOpTurnScale
+            else -> store.state.tuning.drive.teleOpTurnScale
         }
 
         val joystickForward = -driver.leftStickY.value.toDouble() * speedMult

@@ -24,7 +24,7 @@ class VisionAlignControllerTest {
     fun `first vision sample does not apply derivative kick from zero`() {
         RobotClock.useMockTime(1_000L)
         val controller = VisionAlignController()
-        val distance = RobotState().tuning.visionAlignTargetDistance
+        val distance = RobotState().tuning.visionAlign.targetDistanceMeters
         val measurement = VisionMeasurement(
             timestampMs = 1_000L,
             tagId = 7,

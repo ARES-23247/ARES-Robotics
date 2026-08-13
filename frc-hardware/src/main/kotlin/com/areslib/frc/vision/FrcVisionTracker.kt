@@ -122,9 +122,9 @@ class FrcVisionTracker(
                     drive.measuredFieldXVelocityMetersPerSecond,
                     drive.measuredFieldYVelocityMetersPerSecond
                 )
-                val stationary = measuredLinearSpeed < store.state.tuning.stolenRobotVelocityThreshold &&
+                val stationary = measuredLinearSpeed < store.state.tuning.recovery.stolenRobotVelocityThreshold &&
                     kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <
-                    store.state.tuning.stolenRobotAngularVelocityThreshold
+                    store.state.tuning.recovery.stolenRobotAngularVelocityThreshold
                 stationarySinceMs = when {
                     !stationary -> 0L
                     stationarySinceMs == 0L -> timestampMs
@@ -315,7 +315,7 @@ class FrcVisionTracker(
         recoveryCos += kotlin.math.cos(candidate3d.rotation.z)
         if (recoveryCount == 0) recoveryStartedMs = timestampMs
         recoveryCount++
-        val baseRequired = store.state.tuning.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
+        val baseRequired = store.state.tuning.recovery.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
         val required = if (measurement.tagCount >= 2) baseRequired else baseRequired * 2
         if (recoveryCount < required || timestampMs - recoveryStartedMs < MIN_RECOVERY_CONSENSUS_MS) return false
 

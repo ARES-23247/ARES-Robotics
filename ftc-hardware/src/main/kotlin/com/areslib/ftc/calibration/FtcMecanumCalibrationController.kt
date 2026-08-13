@@ -435,7 +435,7 @@ class FtcMecanumCalibrationController {
                     telemetryManager.nt4.putDoubleArray("SysId/Data", pinpointData)
                 }
                 "TRACK_WIDTH_SPIN" -> {
-                    val currentTicks = store.state.tuning.ticksPerMeter
+                    val currentTicks = store.state.tuning.drive.ftc.ticksPerMeter
                     val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
 
                     val flPosMeters = mecanumIO.flIO.position / ticks
@@ -467,7 +467,7 @@ class FtcMecanumCalibrationController {
                     telemetryManager.nt4.putDoubleArray("SysId/Data", visionData)
                 }
                 "LINEAR_DRIVE" -> {
-                    val currentTicks = store.state.tuning.ticksPerMeter
+                    val currentTicks = store.state.tuning.drive.ftc.ticksPerMeter
                     val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
 
                     val flPosMeters = mecanumIO.flIO.position / ticks
