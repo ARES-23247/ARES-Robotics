@@ -129,4 +129,31 @@ class PIDControllerTest {
         val outNegative = pid.calculate(10.0, 0.0, 0.02)
         assertEquals(-5.0, outNegative, 0.001)
     }
+
+    @Test
+    fun testIntegratorFreezesDuringOutputSaturation() {
+        val pid = PIDController(1.0, 1.0, 0.0)
+        pid.setOutputLimits(-5.0, 5.0)
+
+        // Error = 10.0, P term alone (10.0) saturates output limit (5.0).
+        // Since output is saturated in the direction of error, integrator must freeze (not accumulate excess windup).
+        for (step in 1..10) {
+            val out = pid.calculate(measurement = 0.0, setpoint = 10.0, dtSeconds = 1.0)
+            assertEquals(5.0, out, 0.001)
+        }
+
+        // When error becomes 0, because the integrator froze at 0.0 rather than winding up,
+        // the output should immediately drop to 0.0 without needing to unwind.
+        val outAtSetpoint = pid.calculate(measurement = 10.0, setpoint = 10.0, dtSeconds = 1.0)
+        assertEquals(0.0, outAtSetpoint, 0.001)
+
+        // Test negative saturation direction
+        for (step in 1..10) {
+            val out = pid.calculate(measurement = 10.0, setpoint = 0.0, dtSeconds = 1.0)
+            assertEquals(-5.0, out, 0.001)
+        }
+
+        val outAtSetpointNeg = pid.calculate(measurement = 0.0, setpoint = 0.0, dtSeconds = 1.0)
+        assertEquals(0.0, outAtSetpointNeg, 0.001)
+    }
 }

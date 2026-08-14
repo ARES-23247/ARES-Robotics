@@ -111,8 +111,12 @@ class LQRController(
      * @param tolerance Convergence tolerance threshold for $\|P_{k+1} - P_k\|_{\infty}$ (default: $10^{-6}$).
      */
     fun computeFeedbackGains(Q: Matrix, R: Matrix, maxIterations: Int = 1000, tolerance: Double = 1e-6) {
-        require(Q.rows == numStates && Q.cols == numStates)
-        require(R.rows == numInputs && R.cols == numInputs)
+        require(Q.rows == numStates && Q.cols == numStates) {
+            "Q matrix dimensions (${Q.rows}x${Q.cols}) must match ($numStates x $numStates)"
+        }
+        require(R.rows == numInputs && R.cols == numInputs) {
+            "R matrix dimensions (${R.rows}x${R.cols}) must match ($numInputs x $numInputs)"
+        }
 
         var P = Q.copy()
         val AT = A.transpose()
@@ -178,9 +182,9 @@ class LQRController(
         xRef: DoubleArray,
         dtSeconds: Double
     ): DoubleArray {
+        require(y.size == numOutputs) { "Measurement dimensions mismatch: expected $numOutputs, got ${y.size}" }
+        require(xRef.size == numStates) { "Reference state dimensions mismatch: expected $numStates, got ${xRef.size}" }
         try {
-            require(y.size == numOutputs) { "Measurement dimensions mismatch" }
-            require(xRef.size == numStates) { "Reference state dimensions mismatch" }
             var inputsValid = true
             for (index in y.indices) {
                 if (!y[index].isFinite()) {

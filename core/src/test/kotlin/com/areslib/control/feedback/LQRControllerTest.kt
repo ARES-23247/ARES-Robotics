@@ -90,6 +90,53 @@ class LQRControllerTest {
         assertTrue(ctrl.K.get(0, 0) > 0.0, "K should converge even with identity weights")
     }
 
+    @Test
+    fun `computeFeedbackGains throws IllegalArgumentException when Q dimensions do not match numStates x numStates`() {
+        val ctrl = LQRController(numStates = 2, numInputs = 1, numOutputs = 1)
+        val validR = LQRController.Matrix(1, 1, doubleArrayOf(1.0))
+
+        // Wrong rows and cols: 1x1 instead of 2x2
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(LQRController.Matrix(1, 1, doubleArrayOf(1.0)), validR)
+        }
+
+        // Wrong rows and cols: 3x3 instead of 2x2
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(LQRController.Matrix(3, 3), validR)
+        }
+
+        // Asymmetric dimensions: 2x1 instead of 2x2
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(LQRController.Matrix(2, 1, doubleArrayOf(1.0, 2.0)), validR)
+        }
+
+        // Asymmetric dimensions: 1x2 instead of 2x2
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(LQRController.Matrix(1, 2, doubleArrayOf(1.0, 2.0)), validR)
+        }
+    }
+
+    @Test
+    fun `computeFeedbackGains throws IllegalArgumentException when R dimensions do not match numInputs x numInputs`() {
+        val ctrl = LQRController(numStates = 2, numInputs = 1, numOutputs = 1)
+        val validQ = LQRController.Matrix(2, 2, doubleArrayOf(1.0, 0.0, 0.0, 1.0))
+
+        // Wrong rows and cols: 2x2 instead of 1x1
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(validQ, LQRController.Matrix(2, 2))
+        }
+
+        // Asymmetric dimensions: 1x2 instead of 1x1
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(validQ, LQRController.Matrix(1, 2, doubleArrayOf(1.0, 2.0)))
+        }
+
+        // Asymmetric dimensions: 2x1 instead of 1x1
+        assertThrows(IllegalArgumentException::class.java) {
+            ctrl.computeFeedbackGains(validQ, LQRController.Matrix(2, 1, doubleArrayOf(1.0, 2.0)))
+        }
+    }
+
     // ─── Closed-Loop Stability ──────────────────────────────────────────
 
     @Test
@@ -298,7 +345,64 @@ class LQRControllerTest {
         assertEquals(0.0, invalidDtOutput[0], 1e-12)
     }
 
-    // ─── Zero dt Rejection ──────────────────────────────────────────────
+    // ─── Input Dimension Validation ────────────────────────────────────
+
+    @Test
+    fun `calculate throws IllegalArgumentException when y array does not match numOutputs`() {
+        val validXRef = doubleArrayOf(1.0, 0.0)
+
+        // Empty array (size 0 instead of 1)
+        assertThrows(IllegalArgumentException::class.java) {
+            controller.calculate(
+                y = doubleArrayOf(),
+                xRef = validXRef,
+                dtSeconds = 0.02
+            )
+        }
+
+        // Too many outputs (size 2 instead of 1)
+        assertThrows(IllegalArgumentException::class.java) {
+            controller.calculate(
+                y = doubleArrayOf(1.0, 2.0),
+                xRef = validXRef,
+                dtSeconds = 0.02
+            )
+        }
+    }
+
+    @Test
+    fun `calculate throws IllegalArgumentException when xRef array does not match numStates`() {
+        val validY = doubleArrayOf(0.0)
+
+        // Empty array (size 0 instead of 2)
+        assertThrows(IllegalArgumentException::class.java) {
+            controller.calculate(
+                y = validY,
+                xRef = doubleArrayOf(),
+                dtSeconds = 0.02
+            )
+        }
+
+        // Too few states (size 1 instead of 2)
+        assertThrows(IllegalArgumentException::class.java) {
+            controller.calculate(
+                y = validY,
+                xRef = doubleArrayOf(1.0),
+                dtSeconds = 0.02
+            )
+        }
+
+        // Too many states (size 3 instead of 2)
+        assertThrows(IllegalArgumentException::class.java) {
+            controller.calculate(
+                y = validY,
+                xRef = doubleArrayOf(1.0, 2.0, 3.0),
+                dtSeconds = 0.02
+            )
+        }
+    }
+
+    // ─── Zero and Negative dt Rejection ─────────────────────────────────
 
     @Test
     fun `zero dt returns pre-allocated output without crashing`() {
@@ -312,6 +416,7 @@ class LQRControllerTest {
         assertNotNull(result)
         assertEquals(1, result.size)
         assertTrue(result[0].isFinite(), "Zero dt must not produce NaN/Inf")
+        assertEquals(0.0, result[0], 1e-12, "Zero dt should safely return 0.0")
     }
 
     @Test
@@ -325,6 +430,71 @@ class LQRControllerTest {
 
         assertNotNull(result)
         assertTrue(result[0].isFinite(), "Negative dt must not produce NaN/Inf")
+        assertEquals(0.0, result[0], 1e-12, "Negative dt should safely return 0.0")
+    }
+
+    @Test
+    fun `calculate with zero or negative dtSeconds zeros control effort output and safely returns zero`() {
+        // Prime controller with a valid non-zero control effort first
+        val primeOut = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(10.0, 0.0),
+            dtSeconds = 0.02
+        )
+        assertTrue(kotlin.math.abs(primeOut[0]) > 0.0, "Prime step should produce non-zero control effort")
+        assertTrue(kotlin.math.abs(controller.u.get(0, 0)) > 0.0, "Internal u should be non-zero after prime")
+
+        // 1. dtSeconds = 0.0 -> must zero output and return 0.0 safely
+        val zeroDtResult = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(10.0, 0.0),
+            dtSeconds = 0.0
+        )
+        assertEquals(1, zeroDtResult.size)
+        assertEquals(0.0, zeroDtResult[0], 1e-12, "Zero dt must return 0.0 control effort")
+        assertEquals(0.0, controller.u.get(0, 0), 1e-12, "Zero dt must zero internal u")
+
+        // Re-prime with non-zero output
+        controller.calculate(doubleArrayOf(0.0), doubleArrayOf(10.0, 0.0), 0.02)
+        assertTrue(kotlin.math.abs(controller.u.get(0, 0)) > 0.0)
+
+        // 2. dtSeconds = -0.02 -> must zero output and return 0.0 safely
+        val negDtResult = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(10.0, 0.0),
+            dtSeconds = -0.02
+        )
+        assertEquals(1, negDtResult.size)
+        assertEquals(0.0, negDtResult[0], 1e-12, "Negative dt must return 0.0 control effort")
+        assertEquals(0.0, controller.u.get(0, 0), 1e-12, "Negative dt must zero internal u")
+
+        // Re-prime with non-zero output
+        controller.calculate(doubleArrayOf(0.0), doubleArrayOf(10.0, 0.0), 0.02)
+        assertTrue(kotlin.math.abs(controller.u.get(0, 0)) > 0.0)
+
+        // 3. dtSeconds = Double.NaN -> must zero output and return 0.0 safely
+        val nanDtResult = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(10.0, 0.0),
+            dtSeconds = Double.NaN
+        )
+        assertEquals(1, nanDtResult.size)
+        assertEquals(0.0, nanDtResult[0], 1e-12, "NaN dt must return 0.0 control effort")
+        assertEquals(0.0, controller.u.get(0, 0), 1e-12, "NaN dt must zero internal u")
+
+        // Re-prime with non-zero output
+        controller.calculate(doubleArrayOf(0.0), doubleArrayOf(10.0, 0.0), 0.02)
+        assertTrue(kotlin.math.abs(controller.u.get(0, 0)) > 0.0)
+
+        // 4. dtSeconds = Double.NEGATIVE_INFINITY -> must zero output and return 0.0 safely
+        val infDtResult = controller.calculate(
+            y = doubleArrayOf(0.0),
+            xRef = doubleArrayOf(10.0, 0.0),
+            dtSeconds = Double.NEGATIVE_INFINITY
+        )
+        assertEquals(1, infDtResult.size)
+        assertEquals(0.0, infDtResult[0], 1e-12, "Negative infinity dt must return 0.0 control effort")
+        assertEquals(0.0, controller.u.get(0, 0), 1e-12, "Negative infinity dt must zero internal u")
     }
 
     // ─── State Reset ────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ package com.areslib.math.filter
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class MedianFilterTest {
@@ -28,6 +29,62 @@ class MedianFilterTest {
         assertEquals(3.5, filter.calculate(5.0), 1e-6) // [2, 5] -> median is 3.5
         assertEquals(5.0, filter.calculate(8.0), 1e-6) // [2, 5, 8] -> median is 5.0
         assertEquals(4.5, filter.calculate(4.0), 1e-6) // [2, 4, 5, 8] -> median is (4+5)/2 = 4.5
+    }
+
+    @Test
+    fun testWindowSizeOne() {
+        val filter = MedianFilter(1)
+
+        assertEquals(5.0, filter.calculate(5.0), 1e-6)
+        assertEquals(5.0, filter.value, 1e-6)
+
+        assertEquals(12.5, filter.calculate(12.5), 1e-6)
+        assertEquals(12.5, filter.value, 1e-6)
+
+        assertEquals(-3.2, filter.calculate(-3.2), 1e-6)
+        assertEquals(-3.2, filter.value, 1e-6)
+    }
+
+    @Test
+    fun testNonFiniteValuesRejected() {
+        val filter = MedianFilter(3)
+
+        // Non-finite values on initial empty buffer should return current value (0.0) without corrupting buffer
+        assertEquals(0.0, filter.calculate(Double.NaN), 1e-6)
+        assertEquals(0.0, filter.calculate(Double.POSITIVE_INFINITY), 1e-6)
+        assertEquals(0.0, filter.calculate(Double.NEGATIVE_INFINITY), 1e-6)
+        assertEquals(0.0, filter.value, 1e-6)
+
+        // Add valid measurements
+        assertEquals(10.0, filter.calculate(10.0), 1e-6)
+        assertEquals(15.0, filter.calculate(20.0), 1e-6) // [10.0, 20.0] -> 15.0
+
+        // Inject non-finite values; should safely return current median without modifying buffer
+        assertEquals(15.0, filter.calculate(Double.NaN), 1e-6)
+        assertEquals(15.0, filter.calculate(Double.POSITIVE_INFINITY), 1e-6)
+        assertEquals(15.0, filter.calculate(Double.NEGATIVE_INFINITY), 1e-6)
+        assertEquals(15.0, filter.value, 1e-6)
+
+        // Add next valid measurement to complete window of 3
+        assertEquals(20.0, filter.calculate(30.0), 1e-6) // [10.0, 20.0, 30.0] -> 20.0
+        assertEquals(20.0, filter.value, 1e-6)
+
+        // Inject non-finite value again on full window
+        assertEquals(20.0, filter.calculate(Double.NaN), 1e-6)
+        assertEquals(20.0, filter.value, 1e-6)
+
+        // Verify buffer rolls over normally: next valid measurement replaces oldest (10.0)
+        assertEquals(30.0, filter.calculate(40.0), 1e-6) // [40.0, 20.0, 30.0] -> sorted [20.0, 30.0, 40.0] -> 30.0
+    }
+
+    @Test
+    fun testInvalidWindowSize() {
+        assertFailsWith<IllegalArgumentException> {
+            MedianFilter(0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            MedianFilter(-1)
+        }
     }
 
     @Test

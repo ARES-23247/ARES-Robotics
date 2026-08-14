@@ -123,4 +123,60 @@ class FindClosestDistanceTest {
         val dist = path.findClosestDistance(1.0, 0.5)
         assertEquals(1.5, dist, 0.1, "Should project onto vertical segment")
     }
+
+    @Test
+    fun `U-shaped path finds closest on correct turnaround segment`() {
+        // 3-leg U-turn path: (0,0) -> (2,0) -> (2,2) -> (0,2)
+        val seg1 = (0..20).map { i ->
+            val t = i / 20.0
+            PathPoint(
+                pose = Pose2d(2.0 * t, 0.0, Rotation2d(0.0)),
+                velocityMps = 1.0,
+                distanceMeters = 2.0 * t,
+                curvature = 0.0,
+                tangentRadians = 0.0
+            )
+        }
+        val seg2 = (1..20).map { i ->
+            val t = i / 20.0
+            PathPoint(
+                pose = Pose2d(2.0, 2.0 * t, Rotation2d(kotlin.math.PI / 2)),
+                velocityMps = 1.0,
+                distanceMeters = 2.0 + 2.0 * t,
+                curvature = 0.0,
+                tangentRadians = kotlin.math.PI / 2
+            )
+        }
+        val seg3 = (1..20).map { i ->
+            val t = i / 20.0
+            PathPoint(
+                pose = Pose2d(2.0 - 2.0 * t, 2.0, Rotation2d(kotlin.math.PI)),
+                velocityMps = 1.0,
+                distanceMeters = 4.0 + 2.0 * t,
+                curvature = 0.0,
+                tangentRadians = kotlin.math.PI
+            )
+        }
+        val path = Path(seg1 + seg2 + seg3)
+
+        // Test on turnaround segment (leg 2: x=2, y in [0,2], dist in [2,4])
+        val turnaroundDist = path.findClosestDistance(2.0, 1.0)
+        assertEquals(3.0, turnaroundDist, 0.05, "Midpoint of turnaround leg should project to distance 3.0")
+
+        // Robot slightly outside the turnaround arc/leg at (2.2, 1.0)
+        val outsideTurnDist = path.findClosestDistance(2.2, 1.0)
+        assertEquals(3.0, outsideTurnDist, 0.05, "Point outside turnaround leg should project to distance 3.0")
+
+        // Test on return leg (leg 3: y=2, x in [0,2] going backwards, dist in [4,6])
+        val returnDist = path.findClosestDistance(1.0, 2.0)
+        assertEquals(5.0, returnDist, 0.05, "Midpoint of return leg (x=1.0, y=2.0) should project to distance 5.0")
+
+        // Robot closer to return leg than forward leg at (1.0, 1.8)
+        val nearReturnDist = path.findClosestDistance(1.0, 1.8)
+        assertEquals(5.0, nearReturnDist, 0.05, "Point near return leg should project to return leg (distance 5.0)")
+
+        // Robot closer to first leg at (1.0, 0.2)
+        val nearFirstDist = path.findClosestDistance(1.0, 0.2)
+        assertEquals(1.0, nearFirstDist, 0.05, "Point near first leg should project to first leg (distance 1.0)")
+    }
 }
