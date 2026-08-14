@@ -5,6 +5,7 @@ import com.areslib.controls.ControlSchemeCodec
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.ControllerProfileCodec
 import com.areslib.drivetrain.DrivetrainDocumentCodec
+import com.areslib.drivetrain.DrivetrainPlatform
 import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.project.AresProjectMetadataCodec
@@ -52,6 +53,7 @@ object AresProjectCodegenCli {
             DrivetrainDocumentCodec.decode(it)
         }
         require(drivetrains.size <= 1) { "A robot project may declare at most one drivebase contract" }
+        validateDrivebaseCodegenPlatform(drivetrains.singleOrNull()?.platform, options.platform)
         val tuningComponents = readDocuments(aresRoot.resolve("tuning-components"), "arestuningcomponent") {
             TuningComponentDocumentCodec.decode(it)
         }
@@ -421,5 +423,22 @@ object AresProjectCodegenCli {
                 "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters"
             )
         }
+    }
+}
+
+/** Fails before any generated source is written when a drivebase targets another robot platform. */
+internal fun validateDrivebaseCodegenPlatform(
+    declaredPlatform: DrivetrainPlatform?,
+    requestedPlatform: ControllerInputPlatform?,
+) {
+    if (declaredPlatform == null) return
+    val targetPlatform = when (requestedPlatform) {
+        ControllerInputPlatform.FTC -> DrivetrainPlatform.FTC
+        ControllerInputPlatform.FRC -> DrivetrainPlatform.FRC
+        ControllerInputPlatform.DESKTOP_GLFW, null ->
+            error("Drivebase generation requires --platform FTC or FRC")
+    }
+    require(declaredPlatform == targetPlatform) {
+        "Drivebase targets $declaredPlatform, not requested codegen platform $targetPlatform"
     }
 }

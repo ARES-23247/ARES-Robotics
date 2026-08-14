@@ -18,6 +18,8 @@ import com.areslib.subsystem.SubsystemMeasurementSource
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemStateFieldDocument
 import com.areslib.subsystem.SubsystemValueType
+import com.areslib.subsystem.subsystemCalibrationConfirmationActionKey
+import com.areslib.subsystem.subsystemNeutralRecoveryActionKey
 import com.areslib.subsystem.subsystemTargetActionKey
 import com.areslib.subsystem.subsystemTargetCapabilities
 import com.areslib.subsystem.validateSubsystemDocument
@@ -137,10 +139,10 @@ object SubsystemKotlinGenerator {
                 SubsystemPlatform.FRC -> if (document.generateMockIo) {
                     "${document.kotlinTypeName}Subsystem(if (isReal) Frc${document.kotlinTypeName}IO() else Mock${document.kotlinTypeName}IO())"
                 } else {
-                    "${document.kotlinTypeName}Subsystem(Frc${document.kotlinTypeName}IO()).takeIf { isReal }"
+                    "if (isReal) ${document.kotlinTypeName}Subsystem(Frc${document.kotlinTypeName}IO()) else null"
                 }
             }
-            "    install(${document.documentId.quoted()}, ${document.requiredAtStartup}) { $factory }"
+            "    GeneratedSubsystemRegistrySupport.install(this, ${document.documentId.quoted()}, ${document.requiredAtStartup}) { $factory }"
         }
         val actionCases = generatedDocuments.sortedBy { it.documentId }.flatMap { document ->
             subsystemTargetCapabilities(listOf(document)).map { capability ->
@@ -148,6 +150,10 @@ object SubsystemKotlinGenerator {
                     SubsystemCapabilityOperation.SET_FIELD ->
                         registryActionCase(document, requireNotNull(document.field(capability.fieldId)))
                     SubsystemCapabilityOperation.SET_HOMING_REQUEST -> registryHomingActionCase(document)
+                    SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY ->
+                        registryNeutralRecoveryActionCase(document)
+                    SubsystemCapabilityOperation.CONFIRM_CALIBRATION ->
+                        registryCalibrationConfirmationActionCase(document)
                 }
             }
         }.joinToString("\n")
@@ -174,23 +180,6 @@ $factories
 }"""
             }
         }
-        val installHelper = if (generatedDocuments.isEmpty()) "" else """
-
-private inline fun MutableList<Subsystem>.install(
-    documentId: String,
-    required: Boolean,
-    factory: () -> Subsystem?,
-) {
-    try {
-        factory()?.let(::add)
-    } catch (error: Exception) {
-        if (required) {
-            throw IllegalStateException("Required generated subsystem '${'$'}documentId' failed to initialize", error)
-        }
-        System.err.println("Optional generated subsystem '${'$'}documentId' was skipped: ${'$'}{error.message}")
-    }
-}
-""".trimEnd()
         val source = buildString {
             append("package ${target.basePackage}\n\n")
             if (actionCases.isNotBlank()) {
@@ -198,6 +187,7 @@ private inline fun MutableList<Subsystem>.install(
                 append("import com.areslib.sequencer.StateActionTask\n")
             }
             append("import com.areslib.sequencer.Task\n")
+            append("import com.areslib.subsystem.GeneratedSubsystemRegistrySupport\n")
             append("import com.areslib.subsystem.Subsystem\n")
             if (target.platform == SubsystemPlatform.FTC) {
                 append("import com.qualcomm.robotcore.hardware.HardwareMap\n")
@@ -215,8 +205,6 @@ private inline fun MutableList<Subsystem>.install(
             append("\n\n")
             append(actionFactory.prependIndent("    "))
             append("\n}\n")
-            append(installHelper)
-            if (installHelper.isNotEmpty()) append('\n')
         }
         return generated(
             "GeneratedSubsystemRegistry.kt",
@@ -395,6 +383,26 @@ $fieldLines
                 "    val ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
         }
         val separator = if (fields.isBlank()) "" else ",\n"
+        val safetyRequests = buildString {
+            if (document.hasSafetyRequestHandshake()) {
+                append(
+                    "\n    /** Advances for every explicit target command and releases a controller neutral hold. */\n" +
+                        "    val commandSequence: Long = 0L,"
+                )
+            }
+            if (document.safety.requiresExplicitNeutralRecovery) {
+                append(
+                    "\n    /** Explicit one-shot neutral request; success holds neutral until the next target command. */\n" +
+                        "    val neutralRecoveryRequestSequence: Long = 0L,"
+                )
+            }
+            if (document.safety.requiresCalibration) {
+                append(
+                    "\n    /** Explicit calibration confirmation; success holds neutral until the next target command. */\n" +
+                        "    val calibrationConfirmationRequestSequence: Long = 0L,"
+                )
+            }
+        }
         return """
             package $pkg
 
@@ -419,7 +427,7 @@ $fieldLines
                 /** True only when required cached current samples are finite and fresh. */
                 val currentReadingValid: Boolean = ${(!document.safety.requiresCurrentMonitoring)},
                 /** Latched after a failed output write until an explicit successful neutral recovery. */
-                val outputFaultLatched: Boolean = false,
+                val outputFaultLatched: Boolean = false,$safetyRequests
             ) : SubsystemState
         """.trimIndent() + "\n"
     }
@@ -500,6 +508,92 @@ $fieldLines
                 "        ${loop.loopId}Derivative = 0.0\n" +
                 "        ${loop.loopId}HasPreviousError = false"
         }.ifBlank { "        // This subsystem has no stateful PID loops." }
+        val requestState = buildString {
+            if (document.hasSafetyRequestHandshake()) {
+                append("    private var neutralHoldCommandSequence = Long.MIN_VALUE\n")
+            }
+            if (document.safety.requiresExplicitNeutralRecovery) {
+                append("    private var handledNeutralRecoveryRequestSequence = 0L\n")
+            }
+            if (document.safety.requiresCalibration) {
+                append("    private var handledCalibrationConfirmationRequestSequence = 0L\n")
+            }
+        }.trimEnd()
+        val requestHandling = buildString {
+            if (document.safety.requiresExplicitNeutralRecovery) {
+                append(
+                    """
+                    if (state.neutralRecoveryRequestSequence > 0L &&
+                        state.neutralRecoveryRequestSequence != handledNeutralRecoveryRequestSequence
+                    ) {
+                        handledNeutralRecoveryRequestSequence = state.neutralRecoveryRequestSequence
+                        reset()
+                        if (!safetyRequestPermitted(state, now)) {
+                            io.safe()
+                            return
+                        }
+                        // IO owns the latch: a failed neutral must never clear it.
+                        if (io.recoverWithNeutral()) neutralHoldCommandSequence = state.commandSequence
+                        return
+                    }
+
+                    """.trimIndent().prependIndent("        ")
+                )
+            }
+            if (document.safety.requiresCalibration) {
+                append(
+                    """
+                    if (state.calibrationConfirmationRequestSequence > 0L &&
+                        state.calibrationConfirmationRequestSequence != handledCalibrationConfirmationRequestSequence
+                    ) {
+                        handledCalibrationConfirmationRequestSequence = state.calibrationConfirmationRequestSequence
+                        reset()
+                        val mayCalibrate = safetyRequestPermitted(state, now) && !state.outputFaultLatched
+                        if (!mayCalibrate || !io.recoverWithNeutral()) {
+                            io.safe()
+                            return
+                        }
+                        io.establishCalibration()
+                        neutralHoldCommandSequence = state.commandSequence
+                        return
+                    }
+
+                    """.trimIndent().prependIndent("        ")
+                )
+            }
+        }.trimEnd()
+        val neutralHoldHandling = if (document.hasSafetyRequestHandshake()) {
+            """
+                    if (neutralHoldCommandSequence != Long.MIN_VALUE) {
+                        if (state.commandSequence == neutralHoldCommandSequence) {
+                            reset()
+                            io.safe()
+                            return
+                        }
+                        neutralHoldCommandSequence = Long.MIN_VALUE
+                    }
+            """.trimIndent()
+        } else ""
+        val safetyRequestHelper = if (
+            document.hasSafetyRequestHandshake()
+        ) {
+            val feedbackTimeoutMs = document.safety.feedbackTimeoutMs ?: Long.MAX_VALUE
+            """
+
+                private fun safetyRequestPermitted(
+                    state: ${document.kotlinTypeName}State,
+                    now: Long,
+                ): Boolean {
+                    val feedbackAgeMs = if (now >= state.feedbackTimestampMs) {
+                        now - state.feedbackTimestampMs
+                    } else {
+                        Long.MAX_VALUE
+                    }
+                    return state.feedbackValid && feedbackAgeMs <= ${feedbackTimeoutMs}L &&
+                        state.configurationHealthy && state.currentReadingValid
+                }
+            """.trimEnd()
+        } else ""
         return """
             package $pkg
 
@@ -512,6 +606,7 @@ $fieldLines
                 private var lastTimestampMs = 0L
                 private var homingStartedAtMs = Long.MIN_VALUE
                 private var homingEvidenceSinceMs = Long.MIN_VALUE
+            $requestState
             $stateFields
 
                 /**
@@ -520,6 +615,8 @@ $fieldLines
                  */
                 fun update(state: ${document.kotlinTypeName}State, scale: Double) {
                     val now = RobotClock.currentTimeMillis()
+            $requestHandling
+            $neutralHoldHandling
                     if (${document.requiresHoming()} && !state.homed) {
                         updateHoming(state, scale, now)
                         return
@@ -580,6 +677,7 @@ $fieldLines
                     homingStartedAtMs = Long.MIN_VALUE
                     homingEvidenceSinceMs = Long.MIN_VALUE
                 }
+            $safetyRequestHelper
             }
         """.trimIndent() + "\n"
     }
@@ -649,9 +747,20 @@ $feedforward
         }.distinct().joinToString(",\n")
         val setters = document.stateFields.filter { it.role == SubsystemFieldRole.TARGET }.joinToString("\n\n") { field ->
             val cap = field.fieldId.pascalCase()
+            val nextCommand = if (document.hasSafetyRequestHandshake()) {
+                """
+        val nextCommandSequence = if (current.commandSequence == Long.MAX_VALUE) 1L else current.commandSequence + 1L
+        store.dispatch(RobotAction.UpdateNamedSubsystemState(
+            ID,
+            current.copy(${field.fieldId} = value, commandSequence = nextCommandSequence),
+        ))
+                """.trimIndent()
+            } else {
+                "store.dispatch(RobotAction.UpdateNamedSubsystemState(ID, current.copy(${field.fieldId} = value)))"
+            }
             """    fun set$cap(store: Store, value: ${field.kotlinType()}) {
         val current = state(store.state)
-        store.dispatch(RobotAction.UpdateNamedSubsystemState(ID, current.copy(${field.fieldId} = value)))
+        $nextCommand
     }"""
         }
         val feedbackTimeoutMs = document.safety.feedbackTimeoutMs ?: Long.MAX_VALUE
@@ -1262,6 +1371,15 @@ $telemetry
                 var failNextRefresh: Boolean = false
                 /** Makes the next output/neutral attempt fail and exercise latch behavior. */
                 var failNextWrite: Boolean = false
+                /** Number of explicit neutral-recovery attempts, including failed writes. */
+                var neutralRecoveryAttempts: Int = 0
+                    private set
+                /** Number of explicit calibration-establishment attempts. */
+                var calibrationEstablishmentAttempts: Int = 0
+                    private set
+                /** Number of fail-closed neutral holds commanded through [safe]. */
+                var safeCalls: Int = 0
+                    private set
                 /** True after idempotent resource cleanup. */
                 var closed: Boolean = false
                     private set
@@ -1283,10 +1401,12 @@ $telemetry
             $commands
 
                 override fun safe() {
+                    safeCalls++
             $safe
                 }
 
                 override fun recoverWithNeutral(): Boolean {
+                    neutralRecoveryAttempts++
                     if (failNextWrite) {
                         failNextWrite = false
                         outputFaultLatched = ${document.safety.latchOutputFaults}
@@ -1298,6 +1418,7 @@ $telemetry
                 }
 
                 override fun establishCalibration() {
+                    calibrationEstablishmentAttempts++
                     if (configurationHealthy) calibrated = true
                 }
 
@@ -1577,9 +1698,169 @@ $evidenceAssignments
                 SubsystemValueType.STRING -> "${field.fieldId} = \"active\","
             }
         }.orEmpty()
+        val targetSetterSequenceTest = if (firstTarget != null && document.hasSafetyRequestHandshake()) {
+            val value = when (firstTarget.type) {
+                SubsystemValueType.DOUBLE -> (firstTarget.maximum ?: 1.0).kotlinDouble()
+                SubsystemValueType.INT -> (firstTarget.maximum?.toInt() ?: 1).toString()
+                SubsystemValueType.BOOLEAN -> "true"
+                SubsystemValueType.STRING -> "\"active\""
+            }
+            val setter = "set${firstTarget.fieldId.pascalCase()}"
+            val registry = "${pkg.substringBeforeLast('.')}.GeneratedSubsystemRegistry"
+            val key = subsystemTargetActionKey(document.documentId, firstTarget.fieldId)
+            """
+                @Test
+                fun `direct and registered target actions advance the command sequence`() {
+                    val subsystem = ${document.kotlinTypeName}Subsystem(Mock${document.kotlinTypeName}IO())
+                    val store = Store(RobotState(superstructure = SuperstructureState(
+                        subsystems = mapOf(${document.kotlinTypeName}Subsystem.ID to ${document.kotlinTypeName}State())
+                    )))
+                    subsystem.$setter(store, $value)
+                    assertEquals(1L, ${document.kotlinTypeName}Subsystem.state(store.state).commandSequence)
+
+                    val task = requireNotNull($registry.createActionTask(${key.quoted()}, $value))
+                    task.initialize(store.state).forEach { store.dispatch(it) }
+                    assertEquals(2L, ${document.kotlinTypeName}Subsystem.state(store.state).commandSequence)
+                }
+
+            """.trimIndent()
+        } else ""
         val controllerNeutralAssertion = firstActuator?.let { device ->
             "assertEquals(${requireNotNull(device.safeOutput).kotlinDouble()}, io.${device.hardwareId}Command, 0.0)"
         } ?: "assertNotNull(controller)"
+        val neutralRecoveryControllerTest = if (document.safety.requiresExplicitNeutralRecovery) {
+            """
+                @Test
+                fun `neutral recovery requests are consumed once and failed neutral stays latched`() {
+                    val io = Mock${document.kotlinTypeName}IO()
+                    val controller = ${document.kotlinTypeName}Controller(io)
+                    io.configurationHealthy = true
+                    RobotClock.useMockTime(1_000L)
+                    try {
+                        io.refresh()
+                        val firstRequest = ${document.kotlinTypeName}State(
+                            feedbackValid = true,
+                            feedbackTimestampMs = 1_000L,
+                            configurationHealthy = true,
+                            homed = true,
+                            calibrated = true,
+                            currentReadingValid = true,
+                            outputFaultLatched = true,
+                            commandSequence = 7L,
+                            neutralRecoveryRequestSequence = 1L,
+                        )
+                        controller.update(firstRequest, 1.0)
+                        assertEquals(1, io.neutralRecoveryAttempts)
+                        assertFalse(io.outputFaultLatched)
+                        val safeCallsAfterRecovery = io.safeCalls
+                        controller.update(firstRequest.copy(outputFaultLatched = false), 1.0)
+                        assertEquals(1, io.neutralRecoveryAttempts)
+                        assertTrue(io.safeCalls > safeCallsAfterRecovery)
+
+                        val safeCallsDuringHold = io.safeCalls
+                        controller.update(firstRequest.copy(
+                            outputFaultLatched = false,
+                            commandSequence = 8L,
+                            $firstTargetOverride
+                        ), 1.0)
+                        assertEquals(safeCallsDuringHold, io.safeCalls)
+
+                        io.outputFaultLatched = true
+                        io.failNextWrite = true
+                        controller.update(firstRequest.copy(
+                            outputFaultLatched = true,
+                            commandSequence = 8L,
+                            neutralRecoveryRequestSequence = 2L,
+                        ), 1.0)
+                        assertEquals(2, io.neutralRecoveryAttempts)
+                        assertTrue(io.outputFaultLatched)
+                        controller.update(firstRequest.copy(
+                            outputFaultLatched = true,
+                            commandSequence = 8L,
+                            neutralRecoveryRequestSequence = 2L,
+                        ), 1.0)
+                        assertEquals(2, io.neutralRecoveryAttempts)
+                        assertTrue(io.outputFaultLatched)
+                    } finally {
+                        RobotClock.useSystemTime()
+                    }
+                }
+
+            """.trimIndent()
+        } else ""
+        val calibrationControllerTest = if (document.safety.requiresCalibration) {
+            """
+                @Test
+                fun `calibration confirmation requires fresh healthy state and successful neutral`() {
+                    val io = Mock${document.kotlinTypeName}IO()
+                    val controller = ${document.kotlinTypeName}Controller(io)
+                    io.configurationHealthy = true
+                    RobotClock.useMockTime(1_000L)
+                    try {
+                        io.refresh()
+                        val staleRequest = ${document.kotlinTypeName}State(
+                            feedbackValid = false,
+                            feedbackTimestampMs = 1_000L,
+                            configurationHealthy = true,
+                            homed = true,
+                            calibrated = false,
+                            currentReadingValid = true,
+                            commandSequence = 5L,
+                            calibrationConfirmationRequestSequence = 1L,
+                        )
+                        controller.update(staleRequest, 1.0)
+                        assertEquals(0, io.calibrationEstablishmentAttempts)
+                        controller.update(staleRequest.copy(feedbackValid = true), 1.0)
+                        assertEquals(0, io.calibrationEstablishmentAttempts)
+
+                        controller.update(staleRequest.copy(
+                            feedbackValid = true,
+                            outputFaultLatched = true,
+                            calibrationConfirmationRequestSequence = 2L,
+                        ), 1.0)
+                        assertEquals(0, io.neutralRecoveryAttempts)
+                        assertEquals(0, io.calibrationEstablishmentAttempts)
+
+                        io.failNextWrite = true
+                        controller.update(staleRequest.copy(
+                            feedbackValid = true,
+                            calibrationConfirmationRequestSequence = 3L,
+                        ), 1.0)
+                        assertEquals(1, io.neutralRecoveryAttempts)
+                        assertEquals(0, io.calibrationEstablishmentAttempts)
+                        assertTrue(io.outputFaultLatched)
+
+                        assertTrue(io.recoverWithNeutral())
+                        controller.update(staleRequest.copy(
+                            feedbackValid = true,
+                            calibrationConfirmationRequestSequence = 4L,
+                        ), 1.0)
+                        assertEquals(3, io.neutralRecoveryAttempts)
+                        assertEquals(1, io.calibrationEstablishmentAttempts)
+                        assertTrue(io.calibrated)
+                        val safeCallsAfterCalibration = io.safeCalls
+                        controller.update(staleRequest.copy(
+                            feedbackValid = true,
+                            calibrated = true,
+                            calibrationConfirmationRequestSequence = 4L,
+                        ), 1.0)
+                        assertTrue(io.safeCalls > safeCallsAfterCalibration)
+                        val safeCallsDuringHold = io.safeCalls
+                        controller.update(staleRequest.copy(
+                            feedbackValid = true,
+                            calibrated = true,
+                            commandSequence = 6L,
+                            calibrationConfirmationRequestSequence = 4L,
+                            $firstTargetOverride
+                        ), 1.0)
+                        assertEquals(safeCallsDuringHold, io.safeCalls)
+                    } finally {
+                        RobotClock.useSystemTime()
+                    }
+                }
+
+            """.trimIndent()
+        } else ""
         return """
             package $pkg
 
@@ -1617,6 +1898,12 @@ $evidenceAssignments
                 }
 
             $homingControllerTest
+
+            $neutralRecoveryControllerTest
+
+            $calibrationControllerTest
+
+            $targetSetterSequenceTest
 
                 @Test
                 fun `stale feedback is rejected by the immutable state contract`() {
@@ -1718,6 +2005,9 @@ private fun String.sourceFor(document: SubsystemDocument): SubsystemMeasurementS
 
 private fun SubsystemDocument.requiresHoming(): Boolean =
     safety.homing.method != SubsystemHomingMethod.NONE
+
+private fun SubsystemDocument.hasSafetyRequestHandshake(): Boolean =
+    safety.requiresExplicitNeutralRecovery || safety.requiresCalibration
 
 private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardwareKind.MOTOR ||
     this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO
@@ -1910,13 +2200,26 @@ private fun registryActionCase(
         SubsystemValueType.BOOLEAN -> "value as? Boolean"
         SubsystemValueType.STRING -> "value as? String"
     }
-    return """    ${key.quoted()} -> $converted?.let { typedValue ->
-        StateActionTask(${("Set ${document.displayName} ${field.displayName}").quoted()}) { robotState ->
-            val current = ${document.kotlinTypeName}Subsystem.state(robotState)
+    val commandSequence = if (document.hasSafetyRequestHandshake()) {
+        """
+            val nextCommandSequence = if (current.commandSequence == Long.MAX_VALUE) 1L else current.commandSequence + 1L
+            RobotAction.UpdateNamedSubsystemState(
+                ${document.kotlinTypeName}Subsystem.ID,
+                current.copy(${field.fieldId} = typedValue, commandSequence = nextCommandSequence),
+            )
+        """.trimIndent()
+    } else {
+        """
             RobotAction.UpdateNamedSubsystemState(
                 ${document.kotlinTypeName}Subsystem.ID,
                 current.copy(${field.fieldId} = typedValue),
             )
+        """.trimIndent()
+    }
+    return """    ${key.quoted()} -> $converted?.let { typedValue ->
+        StateActionTask(${("Set ${document.displayName} ${field.displayName}").quoted()}) { robotState ->
+            val current = ${document.kotlinTypeName}Subsystem.state(robotState)
+            $commandSequence
         }
     }"""
 }
@@ -1933,6 +2236,38 @@ private fun registryHomingActionCase(document: SubsystemDocument): String {
         }
     }"""
 }
+
+private fun registryNeutralRecoveryActionCase(document: SubsystemDocument): String =
+    registryOneShotSafetyActionCase(
+        key = subsystemNeutralRecoveryActionKey(document.documentId),
+        taskName = "Recover ${document.displayName} with neutral",
+        document = document,
+        sequenceField = "neutralRecoveryRequestSequence",
+    )
+
+private fun registryCalibrationConfirmationActionCase(document: SubsystemDocument): String =
+    registryOneShotSafetyActionCase(
+        key = subsystemCalibrationConfirmationActionKey(document.documentId),
+        taskName = "Confirm ${document.displayName} calibration",
+        document = document,
+        sequenceField = "calibrationConfirmationRequestSequence",
+    )
+
+private fun registryOneShotSafetyActionCase(
+    key: String,
+    taskName: String,
+    document: SubsystemDocument,
+    sequenceField: String,
+): String = """    ${key.quoted()} -> (value as? Boolean)?.takeIf { it }?.let {
+        StateActionTask(${taskName.quoted()}) { robotState ->
+            val current = ${document.kotlinTypeName}Subsystem.state(robotState)
+            val nextSequence = if (current.$sequenceField == Long.MAX_VALUE) 1L else current.$sequenceField + 1L
+            RobotAction.UpdateNamedSubsystemState(
+                ${document.kotlinTypeName}Subsystem.ID,
+                current.copy($sequenceField = nextSequence),
+            )
+        }
+    }"""
 
 private fun String.pascalCase(): String = split(Regex("[^A-Za-z0-9]+"))
     .filter(String::isNotEmpty)

@@ -2,6 +2,7 @@ package com.areslib.subsystem
 
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogDocument
+import com.areslib.catalog.CapabilityContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -23,12 +24,62 @@ class SubsystemCapabilitiesTest {
             listOf(elevator),
         )
 
-        assertEquals(listOf("intake.stop", "subsystem.elevator.set.targetMeters"), merged.actions.map { it.key })
+        assertEquals(
+            listOf(
+                "intake.stop",
+                "subsystem.elevator.recover.neutral",
+                "subsystem.elevator.set.targetMeters",
+            ),
+            merged.actions.map { it.key },
+        )
         val generated = merged.actions.last()
         assertEquals("m", generated.parameters.single().unit)
         assertEquals(0.0, generated.parameters.single().minimum)
         assertEquals(1.5, generated.parameters.single().maximum)
         assertEquals("subsystem.elevator", generated.resources.single().resourceKey)
+    }
+
+    @Test
+    fun `safety handshakes are derived only when applicable and require explicit confirmation`() {
+        val mechanism = subsystem("arm", "Arm", SubsystemPlatform.FTC) {
+            safety.requiresCalibration = true
+            val power = state.double("power", "Power", SubsystemFieldRole.TARGET, 0.0)
+            val motor = hardware.motor("motor", "Motor") { hardwareMapName = "arm" }
+            control.direct("motor", "Motor", motor, power)
+        }
+        val capabilities = subsystemTargetCapabilities(listOf(mechanism))
+        val recovery = capabilities.single {
+            it.operation == SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY
+        }
+        val calibration = capabilities.single {
+            it.operation == SubsystemCapabilityOperation.CONFIRM_CALIBRATION
+        }
+
+        assertEquals("subsystem.arm.recover.neutral", recovery.descriptor.key)
+        assertEquals(
+            listOf(CapabilityContext.TELEOP, CapabilityContext.TEST),
+            recovery.descriptor.allowedContexts,
+        )
+        assertTrue(recovery.descriptor.parameters.single().required)
+        assertTrue(recovery.descriptor.parameters.single().defaultBoolean == null)
+        assertEquals("subsystem.arm.confirm.calibration", calibration.descriptor.key)
+        assertEquals(
+            listOf(CapabilityContext.TELEOP, CapabilityContext.TEST),
+            calibration.descriptor.allowedContexts,
+        )
+        assertTrue(calibration.descriptor.parameters.single().required)
+        assertTrue(calibration.descriptor.parameters.single().defaultBoolean == null)
+
+        val sensorOnly = SubsystemTemplates.create(
+            SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM,
+            documentId = "beam-break",
+            kotlinTypeName = "BeamBreak",
+            platform = SubsystemPlatform.FTC,
+        )
+        assertTrue(subsystemTargetCapabilities(listOf(sensorOnly)).none {
+            it.operation == SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY ||
+                it.operation == SubsystemCapabilityOperation.CONFIRM_CALIBRATION
+        })
     }
 
     @Test

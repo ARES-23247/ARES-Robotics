@@ -81,7 +81,9 @@ class SubsystemKotlinGeneratorTest {
         val definition = files.single { it.relativePath.endsWith("IntakeDefinition.kt") }.content
         val io = files.single { it.relativePath.endsWith("FtcIntakeIO.kt") }.content
         val subsystem = files.single { it.relativePath.endsWith("IntakeSubsystem.kt") }.content
+        val state = files.single { it.relativePath.endsWith("IntakeState.kt") }.content
         val controller = files.single { it.relativePath.endsWith("IntakeController.kt") }.content
+        val contractTest = files.single { it.relativePath.endsWith("IntakeGeneratedTest.kt") }.content
         assertTrue(definition.contains("val document = subsystem("))
         assertTrue(definition.contains("Student \\\"intake\\\"\\nwith notes"))
         assertTrue(io.contains("value.takeIf(Double::isFinite) ?: 0.0"))
@@ -92,7 +94,16 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(subsystem.contains("UpdateNamedSubsystemState"))
         assertTrue(!subsystem.contains("io.refresh()"))
         assertTrue(subsystem.contains("snapshotAgeMs"))
+        assertTrue(subsystem.contains("commandSequence = nextCommandSequence"))
+        assertTrue(state.contains("neutralRecoveryRequestSequence"))
+        assertTrue(state.contains("commandSequence"))
         assertTrue(controller.contains("takeIf(Double::isFinite) ?: 0.0"))
+        assertTrue(controller.contains("handledNeutralRecoveryRequestSequence"))
+        assertTrue(controller.contains("neutralHoldCommandSequence"))
+        assertTrue(controller.contains("if (io.recoverWithNeutral()) neutralHoldCommandSequence = state.commandSequence"))
+        assertTrue(controller.contains("feedbackAgeMs"))
+        assertTrue(contractTest.contains("requests are consumed once and failed neutral stays latched"))
+        assertTrue(contractTest.contains("direct and registered target actions advance the command sequence"))
         assertTrue(files.any { it.sourceSet == GeneratedSubsystemSourceSet.TEST })
         assertTrue(files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
             .all { it.content.startsWith("// ARES OWNERSHIP: GENERATED STARTER") })
@@ -104,10 +115,13 @@ class SubsystemKotlinGeneratorTest {
             SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
         ).content
         assertTrue(registry.contains("subsystem.intake.set.power"))
+        assertTrue(registry.contains("subsystem.intake.recover.neutral"))
         assertTrue(registry.contains("StateActionTask"))
-        assertTrue(registry.contains("current.copy(power = typedValue)"))
-        assertTrue(registry.contains("install(\"intake\", false)"))
-        assertTrue(registry.contains("Optional generated subsystem"))
+        assertTrue(registry.contains("current.copy(power = typedValue, commandSequence = nextCommandSequence)"))
+        assertTrue(registry.contains("current.copy(neutralRecoveryRequestSequence = nextSequence)"))
+        assertTrue(registry.contains("(value as? Boolean)?.takeIf { it }"))
+        assertTrue(registry.contains("GeneratedSubsystemRegistrySupport.install(this, \"intake\", false)"))
+        assertTrue(registry.contains("import com.areslib.subsystem.GeneratedSubsystemRegistrySupport"))
     }
 
     @Test
@@ -151,6 +165,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(test.contains("failed writes latch and require explicit neutral recovery"))
         assertTrue(test.contains("invalid feedback and cleanup fail closed"))
         assertTrue(test.contains("homing evidence must dwell before home is established"))
+        assertTrue(test.contains("neutral recovery requests are consumed once"))
 
         val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
         assertTrue(controller.contains("homingStartedAtMs"))
@@ -163,6 +178,33 @@ class SubsystemKotlinGeneratorTest {
             it.descriptor.key == "subsystem.prototype-elevator.set.homingRequested" &&
                 it.operation.name == "SET_HOMING_REQUEST"
         })
+    }
+
+    @Test
+    fun `calibration confirmation is a one-shot healthy neutral-gated request`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
+            documentId = "calibrated-arm",
+            kotlinTypeName = "CalibratedArm",
+            platform = SubsystemPlatform.FTC,
+        )
+        val document = base.copy(safety = base.safety.copy(requiresCalibration = true))
+        val target = SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems")
+        val files = SubsystemKotlinGenerator.generate(document, target)
+        val state = files.single { it.artifact == SubsystemArtifact.STATE }.content
+        val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+        val test = files.single { it.artifact == SubsystemArtifact.CONTRACT_TEST }.content
+        val registry = SubsystemKotlinGenerator.generateRegistry(listOf(document), target).content
+
+        assertTrue(state.contains("calibrationConfirmationRequestSequence"))
+        assertTrue(controller.contains("handledCalibrationConfirmationRequestSequence"))
+        assertTrue(controller.contains("safetyRequestPermitted(state, now) && !state.outputFaultLatched"))
+        assertTrue(controller.contains("if (!mayCalibrate || !io.recoverWithNeutral())"))
+        assertTrue(controller.contains("io.establishCalibration()"))
+        assertTrue(controller.contains("neutralHoldCommandSequence = state.commandSequence"))
+        assertTrue(test.contains("calibration confirmation requires fresh healthy state"))
+        assertTrue(registry.contains("subsystem.calibrated-arm.confirm.calibration"))
+        assertTrue(registry.contains("current.copy(calibrationConfirmationRequestSequence = nextSequence)"))
     }
 
     @Test

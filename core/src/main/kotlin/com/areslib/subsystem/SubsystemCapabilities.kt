@@ -7,7 +7,12 @@ import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.ResourceClaim
 
-/** One automatically exposed action for a writable generated subsystem target. */
+/**
+ * One automatically exposed generated-subsystem action.
+ *
+ * [fieldId] names either a writable domain target or the immutable request-sequence field used by
+ * a one-shot safety operation. Consumers must branch on [operation] before resolving a DSL field.
+ */
 data class SubsystemTargetCapability(
     val subsystemId: String,
     val fieldId: String,
@@ -16,11 +21,24 @@ data class SubsystemTargetCapability(
     val descriptor: ActionDescriptor,
 )
 
-enum class SubsystemCapabilityOperation { SET_FIELD, SET_HOMING_REQUEST }
+enum class SubsystemCapabilityOperation {
+    SET_FIELD,
+    SET_HOMING_REQUEST,
+    REQUEST_NEUTRAL_RECOVERY,
+    CONFIRM_CALIBRATION,
+}
 
 /** Stable action key shared by the subsystem builder, controls editor, routines, and codegen. */
 fun subsystemTargetActionKey(subsystemId: String, fieldId: String): String =
     "subsystem.$subsystemId.set.$fieldId"
+
+/** Stable action key for the explicit, one-shot neutral recovery handshake. */
+fun subsystemNeutralRecoveryActionKey(subsystemId: String): String =
+    "subsystem.$subsystemId.recover.neutral"
+
+/** Stable action key for the explicit, one-shot calibration confirmation handshake. */
+fun subsystemCalibrationConfirmationActionKey(subsystemId: String): String =
+    "subsystem.$subsystemId.confirm.calibration"
 
 /** Derives typed, novice-facing actions without duplicating them in `action-catalog.json`. */
 fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<SubsystemTargetCapability> =
@@ -79,7 +97,45 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                 )
             )
         } else emptyList()
-        targets + homing
+        val neutralRecovery = if (document.safety.requiresExplicitNeutralRecovery) {
+            listOf(
+                SubsystemTargetCapability(
+                    subsystemId = document.documentId,
+                    fieldId = "neutralRecoveryRequestSequence",
+                    valueType = SubsystemValueType.BOOLEAN,
+                    operation = SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY,
+                    descriptor = ActionDescriptor(
+                        key = subsystemNeutralRecoveryActionKey(document.documentId),
+                        displayName = "Recover ${document.displayName} with neutral",
+                        description = "Applies the declared safe neutral once, clears the output fault only if every write succeeds, and holds neutral until a later target command.",
+                        category = document.displayName,
+                        parameters = listOf(explicitConfirmationParameter("Recover with neutral")),
+                        resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
+                        allowedContexts = listOf(CapabilityContext.TELEOP, CapabilityContext.TEST),
+                    ),
+                )
+            )
+        } else emptyList()
+        val calibrationConfirmation = if (document.safety.requiresCalibration) {
+            listOf(
+                SubsystemTargetCapability(
+                    subsystemId = document.documentId,
+                    fieldId = "calibrationConfirmationRequestSequence",
+                    valueType = SubsystemValueType.BOOLEAN,
+                    operation = SubsystemCapabilityOperation.CONFIRM_CALIBRATION,
+                    descriptor = ActionDescriptor(
+                        key = subsystemCalibrationConfirmationActionKey(document.documentId),
+                        displayName = "Confirm ${document.displayName} calibration",
+                        description = "With fresh healthy feedback, applies safe neutral once before accepting calibration and holds neutral until a later target command.",
+                        category = document.displayName,
+                        parameters = listOf(explicitConfirmationParameter("Calibration is complete")),
+                        resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
+                        allowedContexts = listOf(CapabilityContext.TELEOP, CapabilityContext.TEST),
+                    ),
+                )
+            )
+        } else emptyList()
+        targets + homing + neutralRecovery + calibrationConfirmation
     }
 
 /**
@@ -134,4 +190,13 @@ private fun SubsystemStateFieldDocument.asCapabilityParameter(): CapabilityParam
         },
         defaultBoolean = defaultBoolean,
         defaultText = defaultText,
+    )
+
+private fun explicitConfirmationParameter(displayName: String): CapabilityParameterDescriptor =
+    CapabilityParameterDescriptor(
+        key = "value",
+        displayName = displayName,
+        description = "Must be explicitly checked for this one-shot safety request.",
+        type = CapabilityParameterType.BOOLEAN,
+        required = true,
     )

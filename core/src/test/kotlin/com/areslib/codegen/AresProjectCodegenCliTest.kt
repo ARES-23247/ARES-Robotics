@@ -3,6 +3,8 @@ package com.areslib.codegen
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.catalog.CapabilityCatalogDocument
+import com.areslib.controls.ControllerInputPlatform
+import com.areslib.drivetrain.DrivetrainPlatform
 import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineStep
@@ -21,6 +23,23 @@ import java.nio.file.Path
 class AresProjectCodegenCliTest {
     @TempDir
     lateinit var temporary: Path
+
+    @Test
+    fun `drivebase generation rejects cross-platform and desktop targets before writing`() {
+        validateDrivebaseCodegenPlatform(DrivetrainPlatform.FTC, ControllerInputPlatform.FTC)
+        validateDrivebaseCodegenPlatform(DrivetrainPlatform.FRC, ControllerInputPlatform.FRC)
+
+        val mismatch = assertThrows<IllegalArgumentException> {
+            validateDrivebaseCodegenPlatform(DrivetrainPlatform.FTC, ControllerInputPlatform.FRC)
+        }
+        assertTrue(mismatch.message.orEmpty().contains("targets FTC"))
+        assertThrows<IllegalStateException> {
+            validateDrivebaseCodegenPlatform(DrivetrainPlatform.FRC, ControllerInputPlatform.DESKTOP_GLFW)
+        }
+        assertThrows<IllegalStateException> {
+            validateDrivebaseCodegenPlatform(DrivetrainPlatform.FRC, null)
+        }
+    }
 
     @Test
     fun `generates checked in source and check mode detects stale edits`() {
