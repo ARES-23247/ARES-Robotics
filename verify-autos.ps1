@@ -82,16 +82,16 @@ if ($Full) {
     Invoke-AresGradle "ARES-Analytics" @(
         ":app:test",
         "--tests", "com.ares.analytics.viewmodel.project.ProjectDocumentRepositoriesTest",
-        "--tests", "com.ares.analytics.viewmodel.project.LegacyRoutineMigrationTest",
         "--tests", "com.ares.analytics.viewmodel.routine.RoutineEditorModelTest",
         "--tests", "com.ares.analytics.viewmodel.controls.ControlsEditorViewModelTest",
-        "--tests", "com.ares.analytics.viewmodel.pathing.AutoCapabilityScannerTest",
         "--console=plain"
     )
     Invoke-AresGradle "ARES-FTC" @(":TeamCode:verifyAresProject", "--console=plain")
     Invoke-AresGradle "ARES-FTC" @(
         ":TeamCode:testDebugUnitTest",
-        "--tests", "org.firstinspires.ftc.teamcode.AutoAssetContractTest",
+        "--tests", "org.firstinspires.ftc.teamcode.FtcFieldAssetContractTest",
+        "--tests", "org.firstinspires.ftc.teamcode.FtcAutoLifecycleTest",
+        "--tests", "org.firstinspires.ftc.teamcode.FtcGeneratedRuntimeTest",
         "--tests", "org.firstinspires.ftc.teamcode.FtcAutonomousSelectorTest",
         "--console=plain"
     )

@@ -22,26 +22,25 @@ This workspace (`C:\Users\david\dev\robotics\ares`) contains **4 interconnected 
        ARES-FTC       ARES-FRC                      ARES-Analytics
    (thin season       (thin season                 (desktop dashboard;
     shell over        shell over                     :shared depends on
-    ARESLib FTC)      ARESLib FRC)                   com.areslib:core)
+    ARESLib FTC)      ARESLib FRC)                   org.aresfirst.ares:core)
             │             │                                │
             └────── NT4 (NetworkTables 4) ─────────────────┘
                   bidirectional telemetry contract
 ```
 
-**Build order matters.** `ARESLib-Kotlin` MUST be published to local Maven before the others compile:
+**Release-validation order matters.** Normal consumers resolve immutable ARESLib binaries from Maven Central. After changing the library, publish its isolated validation repository before testing consumers:
 
 ```powershell
 # 1. Always do this FIRST after changing ARESLib-Kotlin:
-cd ARESLib-Kotlin ; .\gradlew.bat publishToMavenLocal
-# 2. Then build/consume projects. Core/FRC coordinates are
-#    com.areslib:{core,frc-hardware}:1.0-SNAPSHOT; FTC/simulator publications
-#    use com.github.ARES-23247.ARESLib-Kotlin:*:master-SNAPSHOT.
+cd ARESLib-Kotlin ; .\gradlew.bat apiCheck publishReleaseValidation
+# 2. Test consumers with -ParesRepository=<absolute path>/ARESLib-Kotlin/build/release-repository.
+#    Published coordinates use org.aresfirst.ares:<artifact>:<aresVersion>.
 ```
 
-**Dependency mechanisms (multiple, intentionally):**
-- **`ARES-Analytics` → ARESLib:** `mavenLocal()` artifact `com.areslib:core:1.0-SNAPSHOT` (`shared/build.gradle.kts`), with sibling composite substitution when `../ARESLib-Kotlin` exists.
-- **`ARES-FRC` → ARESLib:** BOTH composite build (`includeBuild("../ARESLib-Kotlin")` in `settings.gradle`) AND `mavenLocal()` artifacts for `core`, `simulator`, `frc-hardware`.
-- **`ARES-FTC` → ARESLib:** JitPack-style coordinates `com.github.ARES-23247.ARESLib-Kotlin:<module>:master-SNAPSHOT`, with composite build substitution when the sibling repo exists.
+**Dependency mechanisms:**
+- **Normal builds:** all consumers import `org.aresfirst.ares:ares-bom:<aresVersion>` and versionless module coordinates from Maven Central.
+- **Unpublished binary validation:** pass `-ParesRepository=<path>/build/release-repository` after running ARESLib's `publishReleaseValidation`.
+- **Focused source development:** pass `-ParesUseSiblingLib=true` to opt into the sibling composite build. This is never automatic.
 
 > **Gotcha:** The package `com.areslib.frc` is **split across two repos** — base classes (`FrcSwerveRobot`, `FrcBaseRobot`, `FRCSwerveHardwareIO`, `FrcTelemetryManager`, `FrcPowerManager`, `FrcLimelightIO`) live in **ARESLib-Kotlin**'s `frc-hardware/` module, while the season layer (`ARESRobot`, `Marvin*`) lives in **ARES-FRC** in the *same package*. Same for FTC: `FtcMecanumRobot`/`FtcBaseRobot` are in ARESLib; `AresRobot`/OpModes are in ARES-FTC.
 
@@ -64,26 +63,10 @@ The dashboard is a **passive NT4 WebSocket client**. Robots/simulator publish; d
 | Topic | Source | Meaning |
 |---|---|---|
 | `ARES/EstimatedPose/[0,1,2]` | sim `TelemetryPublisher` | Ground-truth pose (X, Y, heading rad) |
-| `Drive/Pose_X`, `Drive/Pose_Y`, `Drive/Drive_Heading` | robot `ARESNetworkStatePublisher` | EKF pose |
+| `Drive/Pose_X`, `Drive/Pose_Y`, `Drive/Pose_Heading` | robot `ARESNetworkStatePublisher` | EKF pose (`Drive/Drive_Heading` supported as alias) |
 | `Drive/Odom_*` | robot | Raw Pinpoint odometry |
-| `ARES/Input/{vx,vy,omega,isTeleopMode,isFieldCentric,isRedAlliance,heartbeat,obstacles,...}` | dashboard → sim | Teleop drive / mode control |
-| `Hardware/Motors/{name}/{Power,Velocity,CurrentAmps}` | robot | Per-motor data |
-| `Topology/HardwareMap` | robot (once at init) | Serialized `HardwareTopology` JSON |
-| `Superstructure/PackedState` | robot | Packed double-array subsystem state |
-
-**Dashboard variable mapping (NT4 → Compose):**
-| NT4 Topic | Dashboard Variable | Component |
-|---|---|---|
-| `ARES/EstimatedPose/0` | `robotX` | PoseViewerCard, FieldViewerViewModel |
-| `ARES/EstimatedPose/1` | `robotY` | PoseViewerCard, FieldViewerViewModel |
-| `ARES/EstimatedPose/2` | `robotHeading` | PoseViewerCard, FieldViewerViewModel |
-| `Drive/Pose_X` | `robotX` | PoseViewerCard, FieldViewerViewModel |
-| `Drive/Pose_Y` | `robotY` | PoseViewerCard, FieldViewerViewModel |
-| `Drive/Drive_Heading` | `robotHeading` | PoseViewerCard, FieldViewerViewModel |
-| `Drive/Odom_X` | `pinpointX` / `ekfX` | PoseViewerCard, FieldViewerViewModel |
-| `Drive/Odom_Y` | `pinpointY` / `ekfY` | PoseViewerCard, FieldViewerViewModel |
-| `Drive/Odom_Heading` | `pinpointHeading` / `ekfHeading` | PoseViewerCard, FieldViewerViewModel |
-| `Hardware/Motors/{name}/Power` | `velocities[i]` | MecanumVisualizer |
+| `ARES/Input/driveFrame` | dashboard → sim / FTC Remote Drive | Atomic leased v2 control frame (`double[8]`) |
+| `ARES/Input/{obstacles,fieldConfig}` | dashboard → sim | Non-control field configuration payloads |
 | `Hardware/Motors/{name}/Velocity` | `velocities[i]` | MecanumVisualizer |
 | `Hardware/Motors/{name}/CurrentAmps` | `currents[i]` | MecanumVisualizer |
 
@@ -149,7 +132,7 @@ The foundation. **5 Gradle modules** (`settings.gradle.kts`): `core` → (`ftc-m
   - `sequencer/` — `TaskExecutor`, `Task`, `RobotSequence` (NOT `auto/`)
   - `hardware/` — `HardwareRegistry` (self-registering devices + topology), `TopologyModels`, `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`
   - `logging/` — `LogManagerServer` (NanoHTTPD:5002), `ARESDataLogger`, `CloudExporter`, `DiagnosticRingBuffer`
-  - `telemetry/` — `ITelemetry`, `NT4Telemetry`, `ARESNetworkStatePublisher`, `RobotWebServer` (:8082), `AresGamepad`, `TelemetryTopicConstants`
+  - `telemetry/` — `ITelemetry`, `NT4Telemetry`, `ARESNetworkStatePublisher`, `RobotStatusTracker`, `AresGamepad`, `TelemetryTopicConstants`
   - `networktables/` — custom NT4 server (`NT4Server` :5810, Java-WebSocket + MessagePack) + `org/frcforftc/.../NT4Compatibility.kt`
   - `subsystem/` — `Subsystem`, `SubsystemControllerBase`, `AresRobot`, `DrivetrainSubsystem`, `MecanumDriveFacade`, `SwerveDriveFacade`, `PowerManager`, `VisionTracker`
   - `drivetrain/` (`SwerveOffsetManager`), `kinematics/`, `input/`, `util/` (`RobotClock`, `PoseStorage`), `tuning/`
@@ -158,7 +141,7 @@ The foundation. **5 Gradle modules** (`settings.gradle.kts`): `core` → (`ftc-m
 - **`ftc-mocks/`** — reimplements `com.qualcomm.*`, `org.firstinspires.ftc.*`, `android.*`, `com.acmerobotics.dashboard.*` so FTC code runs on desktop without Android.
 - **`simulator/`** — dyn4j 2D physics, headless mode, OpMode runner, `DesktopSimLauncher` (main class), `VerificationApp`, NT4 bridge, LWJGL gamepad.
 - **Docs:** `GEMINI.md` (canonical source of truth), `.planning/PROJECT.md` (roadmap), `docs/onboarding/` (4 guides), `TEST_INFRA.md`.
-- **Build/test:** `.\gradlew.bat compileKotlin compileTestKotlin`, `test`, `:core:test`, `:ftc-hardware:test`, `publishToMavenLocal`. Tests are JUnit 5 with tiered E2E suites (`e2e/tier1`, `e2e/tier2`, `ZeroGcRegressionTest`).
+- **Build/test:** `.\gradlew.bat compileKotlin compileTestKotlin`, `test`, `:core:test`, `:ftc-hardware:test`, `apiCheck`, `publishReleaseValidation`. Tests are JUnit 5 with tiered E2E suites (`e2e/tier1`, `e2e/tier2`, `ZeroGcRegressionTest`).
 
 ### ARES-FTC (`C:\Users\david\dev\robotics\ares\ARES-FTC`)
 FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `FtcRobotController/` module is upstream boilerplate — don't edit it).
@@ -169,7 +152,7 @@ FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `
   - `subsystems/` (`IntakeSubsystem`, `FlywheelSubsystem`, `PrismSubsystem`, `IndicatorLightSubsystem`)
   - `opmodes/` (`ARESMecanumTeleOp`, `IntakeShootTeleOp`, `ARESTuningTeleOp`, `ARESRemoteDriveOpOpMode`, `ARESAuto`, `TestAuto`, `NullOpMode`, `ARESMecanumDiagnostic`, `TeamStateStorage`) and `opmodes/robot/` (`AresRobot` facade, `AresDriveController`, `AresSuperstructureController`, `AresTelemetryHelper`)
   - `test/tools/SubsystemGenerator.kt` — interactive 6-file subsystem scaffolder following the Redux pattern
-- **PathPlanner assets:** `TeamCode/src/main/assets/pathplanner/{paths,autos}/` + `paths/` (obstacles/apriltags/game_pieces). `pushPaths` Gradle task ADB-pushes these to the RC.
+- **Canonical autonomous assets:** `.ares/routines/`, `.ares/autonomous-catalog.json`, `.ares/action-catalog.json`, and the generated project source. Loose PathPlanner/`.aresauto` deployment is unsupported.
 - **`simulator/` module** (desktop JVM, JDK 21): shares `TeamCode/src/main/java`, runs real OpModes against mocks. `runSim` → `DesktopSimLauncher --headless`; `CalibrationVerificationApp` exercises all SysId routines.
 - **`.ares-robot.json`** — team/season/robot identity. **`ares_tuning.json`** — live-tuning config.
 - **Build/deploy:** `.\gradlew.bat :TeamCode:assembleDebug`; deploy via `adb connect 192.168.43.1:5555` then `adb install -r`. Default FTC connection `192.168.43.1:5810`.
@@ -204,7 +187,7 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 ## 7. Working in This Workspace — Checklist
 
 - **Fresh checkout?** Run `.\setup.ps1` (Windows) or `./setup.sh` (macOS/Linux) to clone all four subprojects as siblings of this file. Idempotent — existing dirs are skipped.
-- **Changing ARESLib?** Run `publishToMavenLocal` in `ARESLib-Kotlin/` first, then rebuild consumers. For ARES-FRC/FTC the composite build will substitute automatically if the sibling repo exists.
+- **Changing ARESLib?** Run `apiCheck publishReleaseValidation` in `ARESLib-Kotlin/`, then rebuild consumers with `-ParesRepository=<absolute validation-repository path>`. Source substitution requires explicit `-ParesUseSiblingLib=true`.
 - **Telemetry mismatch in the dashboard?** Check the NT4 topic map and dashboard variable mapping (§4), confirm leading-`/` stripping, and verify CCW+ heading consistency.
 - **Heading/rotation looks wrong?** Re-read `GEMINI.md §5` and the negation rules in §5 above. Usual culprits: extra negation after `PinpointIO`, the `-90°` canvas offset, or Limelight `rotation.y` vs `.z`.
 - **Writing a hot-path (robot or sim)?** Zero allocations. Use buffers/pools, `RobotClock`, `when` over nested `if`.
