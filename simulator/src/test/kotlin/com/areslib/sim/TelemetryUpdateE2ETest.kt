@@ -71,6 +71,20 @@ class TelemetryUpdateE2ETest {
         NT4Server.publishTopic("ARES/DriverStation/Command", "START")
         Thread.sleep(500)
 
+        // Capture the simulator's published start pose before applying drive input. The absolute
+        // field X coordinate depends on the selected alliance/start pose, while this transport E2E
+        // contract only needs to prove that a leased command produces observable physical motion.
+        var initialTrueX = NT4Server.getDouble("ARES/TruePose/0", Double.NaN)
+        var initialTrueY = NT4Server.getDouble("ARES/TruePose/1", Double.NaN)
+        var initialPosePollsRemaining = 100
+        while ((!initialTrueX.isFinite() || !initialTrueY.isFinite()) && initialPosePollsRemaining > 0) {
+            Thread.sleep(20L)
+            initialTrueX = NT4Server.getDouble("ARES/TruePose/0", Double.NaN)
+            initialTrueY = NT4Server.getDouble("ARES/TruePose/1", Double.NaN)
+            initialPosePollsRemaining--
+        }
+        assertTrue("Simulator must publish a finite start pose", initialTrueX.isFinite() && initialTrueY.isFinite())
+
         // 3. Inject drive input (vx = 2.0 m/s)
         println("[Telemetry E2E Test] Injecting vx = 2.0 m/s drive input...")
         val driveSession = 23_247.0
@@ -199,16 +213,28 @@ class TelemetryUpdateE2ETest {
         // Linux CI can schedule the simulator behind the publisher while the other module test
         // workers are busy. Wait on the behavior we care about instead of sampling the pose once
         // at an arbitrary wall-clock instant. The input lease remains refreshed by the publisher.
-        var trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
+        // Use displacement rather than an absolute positive-X assertion: a valid positive field-X
+        // move can remain at a negative absolute X coordinate when the alliance start is on that side.
+        var trueX = NT4Server.getDouble("ARES/TruePose/0", Double.NaN)
+        var trueY = NT4Server.getDouble("ARES/TruePose/1", Double.NaN)
         var posePollsRemaining = 500
-        while (trueX <= 0.05 && posePollsRemaining > 0) {
+        var trueDisplacement = kotlin.math.hypot(trueX - initialTrueX, trueY - initialTrueY)
+        while ((!trueDisplacement.isFinite() || trueDisplacement <= 0.05) && posePollsRemaining > 0) {
             Thread.sleep(20L)
-            trueX = NT4Server.getDouble("ARES/TruePose/0", 0.0)
+            trueX = NT4Server.getDouble("ARES/TruePose/0", Double.NaN)
+            trueY = NT4Server.getDouble("ARES/TruePose/1", Double.NaN)
+            trueDisplacement = kotlin.math.hypot(trueX - initialTrueX, trueY - initialTrueY)
             posePollsRemaining--
         }
-        val trueY = NT4Server.getDouble("ARES/TruePose/1", 0.0)
-        println("[Telemetry E2E Test] True Physics Pose -> X: $trueX, Y: $trueY")
-        assertTrue("Robot field X should advance under positive field-vx input (X=$trueX, Y=$trueY)", trueX > 0.05)
+        println(
+            "[Telemetry E2E Test] True Physics Pose -> start=($initialTrueX, $initialTrueY), " +
+                "current=($trueX, $trueY), displacement=$trueDisplacement"
+        )
+        assertTrue(
+            "Robot should move at least 0.05 m under the leased drive input " +
+                "(start=($initialTrueX, $initialTrueY), current=($trueX, $trueY))",
+            trueDisplacement > 0.05,
+        )
 
         // 8. Verify simulator lifecycle publication without stealing dashboard MatchState.
         val matchState = NT4Server.getString("ARES/DriverStation/MatchState", "")
