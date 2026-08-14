@@ -92,7 +92,7 @@ data class Pose2d(
     val heading: Rotation2d = Rotation2d()
 ) {
     /** Extracts the translational component $(x, y)$ of the pose. */
-    val translation: Translation2d = Translation2d(x, y)
+    val translation: Translation2d get() = Translation2d(x, y)
 }
 
 /**

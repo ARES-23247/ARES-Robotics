@@ -1,10 +1,9 @@
 package com.areslib.hardware.vision
 
+import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
-import com.areslib.reducer.rootReducer
-import com.areslib.state.RobotState
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -35,7 +34,7 @@ class VisionNoiseRejectionTest {
 
     @Test
     fun `test EKF convergence under noise and latency`() {
-        var state = RobotState()
+        val store = Store()
         val simulator = VisionSimulator()
 
         val totalSteps = 100
@@ -50,8 +49,7 @@ class VisionNoiseRejectionTest {
             val simPose = Pose2d(trueXSpeed * (step * dt), 0.0, Rotation2d(0.0))
 
             // 1. Dispatch Odometry observation
-            state = rootReducer(
-                state,
+            store.dispatch(
                 RobotAction.DriveHardwareUpdate(
                     xVelocity = trueXSpeed,
                     yVelocity = 0.0,
@@ -72,14 +70,13 @@ class VisionNoiseRejectionTest {
                     outlierProbability = 0.0 // Verify pure noise convergence first
                 )
 
-                state = rootReducer(
-                    state,
+                store.dispatch(
                     RobotAction.VisionMeasurementsReceived(visionMeasurements, currentTimeMs)
                 )
             }
         }
 
-        val estimatedPose = state.drive.poseEstimator.estimatedPose
+        val estimatedPose = store.state.drive.poseEstimator.estimatedPose
         val finalTruePose = Pose2d(trueXSpeed * (totalSteps * dt), 0.0, Rotation2d(0.0))
 
         println("Final true pose: $finalTruePose")

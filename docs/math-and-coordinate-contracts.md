@@ -32,12 +32,14 @@ Invalid/non-finite motion or a non-positive `dtSeconds` leaves the estimator sta
 
 ## Delayed vision measurements
 
-The pose estimator stores a fixed history of timestamped pose/covariance snapshots. A valid delayed measurement is applied at the nearest historical state, after which later robot-local arcs and process noise are replayed to the present. Therefore:
+Each `Store` privately owns a fixed history of timestamped pose/covariance snapshots. The history is not copied into Redux and is never shared between robot, simulator, or replay stores. A valid delayed measurement is applied at the nearest historical state, after which later robot-local arcs and process noise are replayed to the present. Therefore:
 
 - Measurement timestamps must be capture timestamps, not receipt timestamps.
 - Camera latency must be subtracted once at the hardware boundary.
 - The history and measurement must use the same field frame.
 - A pose reset must reset the estimator/history coherently; do not splice a new pose into old history.
+- Drive and vision observations must go through `Store.dispatch`; a direct `rootReducer` call has no EKF runtime owner and intentionally performs only the stateless slice transition.
+- `PoseEstimatorState.history` is retained as an empty read-only compatibility view. Use the observable pose, covariance, diagnostics, and `lastObservationTimestampMs`; runtime history is not telemetry or application state.
 
 Vision input is rejected when required data is invalid, no tags are reported, ambiguity exceeds the configured maximum, the covariance cannot be inverted, the observation is outside the field/history contract, or its Mahalanobis innovation exceeds the configured threshold. `PoseEstimatorState.lastMeasurementAccepted` and `lastRejectionReason` are intended for diagnostics.
 

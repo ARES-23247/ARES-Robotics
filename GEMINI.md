@@ -39,7 +39,8 @@ The normal flow is input/observation -> `RobotAction` -> `Store` -> `rootReducer
 - Reducers are deterministic and contain no I/O, clock calls, logging, network work, or background jobs.
 - Season reducers compose with `rootReducer`; they do not bypass it.
 - Root/slice transitions normally use data-class `copy`.
-- Some EKF, diagnostic, and vision objects are deliberately mutable or pooled to satisfy steady-state allocation requirements. Do not retain or mutate these shared internals outside the owning pipeline, and do not describe them as deeply immutable.
+- Each `Store` owns its mutable, fixed-capacity EKF replay history. Drive and vision observations must be dispatched through that store; calling `rootReducer` directly performs only stateless Redux reduction. Published `PoseEstimatorState.history` is an empty read-only compatibility view, while current pose/covariance/diagnostics and `lastObservationTimestampMs` are independently owned snapshot values.
+- Some low-level EKF, diagnostic, and vision workspaces are deliberately mutable or pooled to satisfy steady-state allocation requirements. Do not retain or mutate these internals outside their owning store pipeline.
 - Dispatch control actions from the main robot loop. Do not create a second control loop in store listeners.
 
 ## Time and deterministic execution

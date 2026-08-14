@@ -1,11 +1,13 @@
 package com.areslib.reducer
 
+import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.state.RobotState
 import com.areslib.state.DriveState
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
+import kotlin.test.assertTrue
 
 /**
  * DriveReducerTest declaration.
@@ -29,7 +31,7 @@ class DriveReducerTest {
             timestampMs = 2000L
         )
         
-        val newState = rootReducer(initialState, action)
+        val newState = reduceThroughStore(initialState, action)
         
         assertNotSame(initialState, newState)
         assertEquals(0.05, newState.drive.odometryX)
@@ -50,7 +52,7 @@ class DriveReducerTest {
             isReset = false
         )
         
-        val newState = rootReducer(initialState, action)
+        val newState = reduceThroughStore(initialState, action)
         
         assertEquals(1.0, newState.drive.poseEstimator.estimatedPose.x, 1e-6)
         assertEquals(2.0, newState.drive.poseEstimator.estimatedPose.y, 1e-6)
@@ -60,7 +62,7 @@ class DriveReducerTest {
 
     @Test
     fun `absolute field odometry is not rotated twice at nonzero heading`() {
-        val initialized = rootReducer(
+        val initialized = reduceThroughStore(
             RobotState(),
             RobotAction.PoseUpdate(
                 xMeters = 0.0,
@@ -71,7 +73,7 @@ class DriveReducerTest {
             )
         )
 
-        val updated = rootReducer(
+        val updated = reduceThroughStore(
             initialized,
             RobotAction.PoseUpdate(
                 xMeters = 0.0,
@@ -88,7 +90,7 @@ class DriveReducerTest {
     @Test
     fun `absolute field pose recovers the matching finite turn twist`() {
         val quarterTurnArc = 2.0 / kotlin.math.PI
-        val updated = rootReducer(
+        val updated = reduceThroughStore(
             RobotState(),
             RobotAction.PoseUpdate(
                 xMeters = quarterTurnArc,
@@ -105,12 +107,12 @@ class DriveReducerTest {
 
     @Test
     fun `external pose estimate is mirrored without a second filter pass`() {
-        val initialized = rootReducer(
+        val initialized = reduceThroughStore(
             RobotState(),
             RobotAction.PoseUpdate(1.0, -2.0, 0.4, timestampMs = 0L, isReset = true)
         )
 
-        val updated = rootReducer(
+        val updated = reduceThroughStore(
             initialized,
             RobotAction.PoseUpdate(
                 xMeters = 4.25,
@@ -127,7 +129,8 @@ class DriveReducerTest {
         assertEquals(true, updated.drive.poseEstimateIsExternal)
         assertEquals(0.0, updated.drive.ekfDriftX, 0.0)
         assertEquals(0.0, updated.drive.ekfDriftY, 0.0)
-        assertEquals(0.0, updated.drive.poseEstimator.history.last().qScale, 0.0)
+        assertEquals(20L, updated.drive.poseEstimator.lastObservationTimestampMs)
+        assertTrue(updated.drive.poseEstimator.history.isEmpty())
     }
 
     @Test
@@ -323,5 +326,11 @@ class DriveReducerTest {
         assertEquals(initialState.vision, newState.vision)
         assertEquals(initialState.superstructure, newState.superstructure)
         assertEquals(initialState.pathState, newState.pathState)
+    }
+
+    private fun reduceThroughStore(initialState: RobotState, action: RobotAction): RobotState {
+        val store = Store(initialState)
+        store.dispatch(action)
+        return store.state
     }
 }

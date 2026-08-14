@@ -4478,6 +4478,7 @@ public final class com/areslib/math/estimation/PoseEstimatorState {
 	public final fun getLastKalmanGain ()[D
 	public final fun getLastMeasurementAccepted ()Z
 	public final fun getLastNormalizedInnovationSquared ()D
+	public final fun getLastObservationTimestampMs ()J
 	public final fun getLastRejectionReason ()Ljava/lang/String;
 	public final fun getLastUnbeachedTimeMs ()J
 	public final fun getStationarySinceMs ()J
@@ -4494,6 +4495,7 @@ public final class com/areslib/math/estimation/PoseEstimatorState {
 	public final fun setLastKalmanGain ([D)V
 	public final fun setLastMeasurementAccepted (Z)V
 	public final fun setLastNormalizedInnovationSquared (D)V
+	public final fun setLastObservationTimestampMs (J)V
 	public final fun setLastRejectionReason (Ljava/lang/String;)V
 	public final fun setLastUnbeachedTimeMs (J)V
 	public final fun setStationarySinceMs (J)V

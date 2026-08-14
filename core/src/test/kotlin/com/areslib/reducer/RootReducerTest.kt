@@ -1,5 +1,6 @@
 package com.areslib.reducer
 
+import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Rotation3d
@@ -41,15 +42,15 @@ class RootReducerTest {
 
     @Test
     fun `test vision measurements received filters outliers and fuses valid`() {
-        var state = RobotState()
+        val store = Store()
 
         // 1. Establish odometry history:
         // t=100 -> x=1.0
-        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 100L))
+        store.dispatch(RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 100L))
         // t=150 -> x=2.0
-        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 150L))
+        store.dispatch(RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 150L))
 
-        val poseBeforeVision = state.drive.poseEstimator.estimatedPose
+        val poseBeforeVision = store.state.drive.poseEstimator.estimatedPose
         assertEquals(2.0, poseBeforeVision.x, 1e-6)
 
         // 2. Dispatch an OUTLIER measurement (exceeds max distance: 9.0 - 2.0 = 7.0 meters > 6.0 meters)
@@ -59,7 +60,8 @@ class RootReducerTest {
             tagId = 3,
             ambiguity = 0.05
         )
-        val stateAfterOutlier = rootReducer(state, RobotAction.VisionMeasurementsReceived(listOf(outlierMeasurement), 160L))
+        store.dispatch(RobotAction.VisionMeasurementsReceived(listOf(outlierMeasurement), 160L))
+        val stateAfterOutlier = store.state
 
         // Ensure the outlier was completely discarded: pose and vision measurements are unchanged
         assertEquals(2.0, stateAfterOutlier.drive.poseEstimator.estimatedPose.x, 1e-6)
@@ -72,7 +74,8 @@ class RootReducerTest {
             tagId = 2,
             ambiguity = 0.01
         )
-        val stateAfterValid = rootReducer(state, RobotAction.VisionMeasurementsReceived(listOf(validMeasurement), 170L))
+        store.dispatch(RobotAction.VisionMeasurementsReceived(listOf(validMeasurement), 170L))
+        val stateAfterValid = store.state
 
         // Ensure the valid measurement was fused, pulling x forward retroactively
         val poseAfterValid = stateAfterValid.drive.poseEstimator.estimatedPose
@@ -133,16 +136,17 @@ class RootReducerTest {
 
     @Test
     fun `test pose update with reset completely overwrites EKF pose and clears history`() {
-        var state = RobotState()
+        val store = Store()
         
         // 1. Establish some history and non-zero pose
-        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 100L))
-        state = rootReducer(state, RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 200L))
+        store.dispatch(RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 100L))
+        store.dispatch(RobotAction.DriveHardwareUpdate(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 200L))
         
         // EKF pose is now around 2.0
-        val poseBefore = state.drive.poseEstimator.estimatedPose
+        val poseBefore = store.state.drive.poseEstimator.estimatedPose
         assertEquals(2.0, poseBefore.x, 0.1)
-        assertTrue(state.drive.poseEstimator.history.size >= 2)
+        assertEquals(200L, store.state.drive.poseEstimator.lastObservationTimestampMs)
+        assertTrue(store.state.drive.poseEstimator.history.isEmpty())
         
         // 2. Dispatch a PoseUpdate with isReset = true
         val resetAction = RobotAction.PoseUpdate(
@@ -153,16 +157,16 @@ class RootReducerTest {
             isReset = true
         )
         
-        val stateAfterReset = rootReducer(state, resetAction)
+        store.dispatch(resetAction)
+        val stateAfterReset = store.state
         
         val poseAfter = stateAfterReset.drive.poseEstimator.estimatedPose
         assertEquals(5.0, poseAfter.x, 1e-6)
         assertEquals(5.0, poseAfter.y, 1e-6)
         assertEquals(1.0, poseAfter.heading.radians, 1e-6)
         
-        // History should only contain the new state
-        assertEquals(1, stateAfterReset.drive.poseEstimator.history.size)
-        assertEquals(300L, stateAfterReset.drive.poseEstimator.history[0].timestampMs)
-        assertEquals(5.0, stateAfterReset.drive.poseEstimator.history[0].pose.x, 1e-6)
+        // Mutable replay history remains private; Redux exposes only its newest timestamp.
+        assertTrue(stateAfterReset.drive.poseEstimator.history.isEmpty())
+        assertEquals(300L, stateAfterReset.drive.poseEstimator.lastObservationTimestampMs)
     }
 }

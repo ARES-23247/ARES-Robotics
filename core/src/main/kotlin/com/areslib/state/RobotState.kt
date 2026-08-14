@@ -3,6 +3,7 @@ package com.areslib.state
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.deepCopy
 import com.areslib.math.estimation.PoseEstimatorState
+import com.areslib.math.estimation.HistoryBuffer
 
 /**
  * Stores the costmap update state.
@@ -57,7 +58,7 @@ data class DriveState(
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
     val odometryHeading: Double = 0.0,
-    val poseEstimator: PoseEstimatorState = PoseEstimatorState(),
+    val poseEstimator: PoseEstimatorState = PoseEstimatorState(history = HistoryBuffer.READ_ONLY_EMPTY),
     /** True when [poseEstimator] mirrors an upstream authoritative estimator (for example CTRE). */
     val poseEstimateIsExternal: Boolean = false,
     val pitchDegrees: Double = 0.0,
@@ -93,22 +94,11 @@ data class DriveState(
      * @return Corresponding output value or Unit.
      */
     fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
-        // Diagnostics are part of the published Redux snapshot and therefore must never reuse an
-        // array reachable from an older state.
-        val cov = DoubleArray(9)
-        cov[0] = updatedEstimator.covariance.m00
-        cov[1] = updatedEstimator.covariance.m01
-        cov[2] = updatedEstimator.covariance.m02
-        cov[3] = updatedEstimator.covariance.m10
-        cov[4] = updatedEstimator.covariance.m11
-        cov[5] = updatedEstimator.covariance.m12
-        cov[6] = updatedEstimator.covariance.m20
-        cov[7] = updatedEstimator.covariance.m21
-        cov[8] = updatedEstimator.covariance.m22
-
         return this.copy(
             poseEstimator = updatedEstimator,
-            covarianceMatrix = cov,
+            // These arrays are already unique to this published estimator snapshot. Sharing them
+            // within the same DriveState avoids two redundant 9-double allocations per frame.
+            covarianceMatrix = updatedEstimator.covarianceArray,
             ekfDriftX = odomX - updatedEstimator.estimatedPoseX,
             ekfDriftY = odomY - updatedEstimator.estimatedPoseY,
             rawOdometryX = odomX,
@@ -117,7 +107,7 @@ data class DriveState(
             lastInnovationX = updatedEstimator.lastInnovationX,
             lastInnovationY = updatedEstimator.lastInnovationY,
             lastInnovationTheta = updatedEstimator.lastInnovationTheta,
-            lastKalmanGain = updatedEstimator.lastKalmanGain.copyOf()
+            lastKalmanGain = updatedEstimator.lastKalmanGain
         )
     }
 }

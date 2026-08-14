@@ -1,6 +1,7 @@
 package com.areslib.reducer
 
 import com.areslib.action.RobotAction
+import com.areslib.math.estimation.ApplyPoseEstimatorRuntimeResult
 import com.areslib.state.VisionState
 
 /**
@@ -56,6 +57,19 @@ object VisionReducer {
                         measurements = newMeasurements
                     )
                 }
+            }
+            is ApplyPoseEstimatorRuntimeResult -> {
+                val diagnostics = action.visionDiagnostics ?: return state
+                state.copy(
+                    lastMeasurementAccepted = diagnostics.lastMeasurementAccepted,
+                    lastRejectionReason = diagnostics.lastRejectionReason,
+                    covarianceBeforeUpdate = diagnostics.covarianceBeforeUpdate
+                        ?: state.covarianceBeforeUpdate,
+                    covarianceAfterUpdate = diagnostics.covarianceAfterUpdate
+                        ?: state.covarianceAfterUpdate,
+                    measurementCount = state.measurementCount + diagnostics.acceptedCountDelta,
+                    rejectionCount = state.rejectionCount + diagnostics.rejectedCountDelta
+                )
             }
             else -> state
         }

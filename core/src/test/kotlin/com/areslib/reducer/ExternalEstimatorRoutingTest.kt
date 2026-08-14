@@ -1,5 +1,6 @@
 package com.areslib.reducer
 
+import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Rotation3d
@@ -14,8 +15,8 @@ class ExternalEstimatorRoutingTest {
 
     @Test
     fun `externally fused vision updates diagnostics without correcting ARES pose`() {
-        val initialized = rootReducer(
-            RobotState(),
+        val store = Store()
+        store.dispatch(
             RobotAction.PoseUpdate(
                 xMeters = 1.0,
                 yMeters = 1.0,
@@ -24,8 +25,8 @@ class ExternalEstimatorRoutingTest {
                 isReset = true
             )
         )
+        val initialized = store.state
         val estimatorBefore = initialized.drive.poseEstimator
-        val historySizeBefore = estimatorBefore.history.size
         val covarianceBefore = estimatorBefore.covarianceArray.copyOf()
 
         val measurement = VisionMeasurement(
@@ -42,21 +43,21 @@ class ExternalEstimatorRoutingTest {
             )
         )
 
-        val updated = rootReducer(
-            initialized,
+        store.dispatch(
             RobotAction.VisionMeasurementsReceived(
                 measurements = listOf(measurement),
                 timestampMs = 120L,
                 fuseIntoPoseEstimator = false
             )
         )
+        val updated = store.state
 
         assertTrue(updated.vision.hasTarget)
         assertEquals(1, updated.vision.measurementCount)
         assertTrue(updated.vision.lastMeasurementAccepted)
         assertEquals(1.0, updated.drive.poseEstimator.estimatedPoseX, 0.0)
         assertEquals(1.0, updated.drive.poseEstimator.estimatedPoseY, 0.0)
-        assertEquals(historySizeBefore, updated.drive.poseEstimator.history.size)
+        assertTrue(updated.drive.poseEstimator.history.isEmpty())
         assertTrue(covarianceBefore.contentEquals(updated.drive.poseEstimator.covarianceArray))
     }
 }

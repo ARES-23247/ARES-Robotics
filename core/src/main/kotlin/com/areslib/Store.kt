@@ -1,6 +1,7 @@
 package com.areslib
 
 import com.areslib.action.RobotAction
+import com.areslib.math.estimation.PoseEstimatorRuntime
 import com.areslib.state.RobotState
 import com.areslib.reducer.rootReducer
 
@@ -17,6 +18,10 @@ import com.areslib.reducer.rootReducer
  * Concurrent dispatches are safe from lost updates, but their ordering is whichever caller enters
  * the monitor first.
  *
+ * Each store also owns one fixed-capacity EKF runtime. Raw drive and vision actions are processed
+ * there before a private derived action carries only observable estimator output through [reducer].
+ * Mutable replay history is therefore neither global nor reachable from any published [state].
+ *
  * @param initialState State visible before the first dispatch.
  * @param reducer Pure transition function. It must not mutate [RobotState] or perform hardware IO.
  */
@@ -24,7 +29,13 @@ class Store(
     initialState: RobotState = RobotState(),
     private val reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) {
-    @Volatile var state: RobotState = initialState
+    private val poseEstimatorRuntime = PoseEstimatorRuntime(initialState.drive.poseEstimator)
+
+    @Volatile var state: RobotState = initialState.copy(
+        drive = initialState.drive.copy(
+            poseEstimator = initialState.drive.poseEstimator.reduxSnapshot()
+        )
+    )
         private set
 
     private val listeners = java.util.concurrent.CopyOnWriteArrayList<(RobotState) -> Unit>()
@@ -37,9 +48,9 @@ class Store(
     var actionListener: ((RobotAction) -> Unit)? = null
 
     /**
-     * Dispatches an action to the store, executing the root reducer synchronously
-     * on the caller's thread. All registered listeners are notified with the
-     * updated state after reduction completes.
+     * Dispatches an action to the store, executing estimator middleware and the configured reducer
+     * synchronously on the caller's thread. All registered listeners are notified with the updated
+     * state after the public and private-derived reductions complete atomically.
      *
      * Concurrent calls are serialized, although single-loop ownership is recommended for
      * deterministic ordering.
@@ -50,10 +61,13 @@ class Store(
         val currentState: RobotState
         synchronized(this) {
             actionListener?.invoke(action)
-            state = reducer(state, action)
+            state = reduceWithRuntime(state, action)
             currentState = state
         }
-        listeners.forEach { it(currentState) }
+        val listenerCount = listeners.size
+        for (i in 0 until listenerCount) {
+            listeners[i](currentState)
+        }
     }
 
     /**
@@ -66,11 +80,14 @@ class Store(
             val actionCount = actions.size
             for (i in 0 until actionCount) {
                 actionListener?.invoke(actions[i])
-                state = reducer(state, actions[i])
+                state = reduceWithRuntime(state, actions[i])
             }
             currentState = state
         }
-        listeners.forEach { it(currentState) }
+        val listenerCount = listeners.size
+        for (i in 0 until listenerCount) {
+            listeners[i](currentState)
+        }
     }
 
     /**
@@ -82,5 +99,15 @@ class Store(
     fun subscribe(listener: (RobotState) -> Unit): () -> Unit {
         listeners.add(listener)
         return { listeners.remove(listener) }
+    }
+
+    private fun reduceWithRuntime(currentState: RobotState, action: RobotAction): RobotState {
+        val prepared = poseEstimatorRuntime.prepare(currentState, action)
+        var reduced = reducer(currentState, prepared.publicAction)
+        val estimatorAction = prepared.estimatorAction
+        if (estimatorAction != null) {
+            reduced = reducer(reduced, estimatorAction)
+        }
+        return reduced
     }
 }

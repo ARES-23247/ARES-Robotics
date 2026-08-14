@@ -60,6 +60,12 @@ data class PoseHistoryEntry(
  * @param capacity Maximum number of historical frames to retain (default $50$, corresponding to $0.5$-$1.0\,\text{s}$ of history).
  */
 class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryEntry>() {
+    private var readOnly: Boolean = false
+
+    private constructor(capacity: Int, readOnly: Boolean) : this(capacity) {
+        this.readOnly = readOnly
+    }
+
     private val entries = Array(capacity) { PoseHistoryEntry() }
     private var head = 0
     private var count = 0
@@ -97,6 +103,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         hasMotion: Boolean,
         qHeadingScale: Double = qScale
     ): Int {
+        requireWritable()
         require(requestedIndex in 0..count)
         var insertionIndex = requestedIndex
         if (count == capacity) {
@@ -150,6 +157,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      * @param qScale Process noise scaling factor.
      */
     fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
+        requireWritable()
         val entry = entries[head]
         entry.timestampMs = timestampMs
         entry.pose = pose
@@ -187,6 +195,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         hasMotion: Boolean = false,
         qHeadingScale: Double = qScale
     ) {
+        requireWritable()
         val entry = entries[head]
         entry.timestampMs = timestampMs
         entry.x = x
@@ -209,6 +218,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      * @return Newly allocated or pooled copy of [HistoryBuffer].
      */
     fun deepCopy(): HistoryBuffer {
+        if (readOnly && count == 0) return READ_ONLY_EMPTY
         val newBuf = HistoryBuffer(capacity)
         for (i in 0 until capacity) {
             val src = entries[i]
@@ -236,6 +246,29 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      * @param destination Target pre-allocated [HistoryBuffer] instance.
      */
     fun copyInto(destination: HistoryBuffer) {
+        destination.requireWritable()
+        if (destination.capacity != capacity) {
+            destination.head = 0
+            destination.count = 0
+            val firstIndex = (count - destination.capacity).coerceAtLeast(0)
+            for (i in firstIndex until count) {
+                val source = get(i)
+                destination.addEntryDirect(
+                    source.timestampMs,
+                    source.x,
+                    source.y,
+                    source.headingRad,
+                    source.covariance,
+                    source.qScale,
+                    source.deltaXRobot,
+                    source.deltaYRobot,
+                    source.deltaHeadingRad,
+                    source.hasMotion,
+                    source.effectiveQHeadingScale
+                )
+            }
+            return
+        }
         destination.head = this.head
         destination.count = this.count
         for (i in 0 until capacity) {
@@ -265,6 +298,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
      * @param qScale Process noise scaling factor.
      */
     fun updateEntry(index: Int, timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
+        requireWritable()
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.pose = pose
@@ -294,6 +328,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         qScale: Double,
         qHeadingScale: Double = qScale
     ) {
+        requireWritable()
         val entry = get(index)
         entry.timestampMs = timestampMs
         entry.x = x
@@ -305,6 +340,9 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
     }
 
     companion object {
+        /** Shared immutable marker used by published Redux snapshots; EKF history is runtime-owned. */
+        internal val READ_ONLY_EMPTY = HistoryBuffer(0, true)
+
         private val pool = Array(256) { HistoryBuffer(150) }
         private val poolIndex = java.util.concurrent.atomic.AtomicInteger(0)
 
@@ -320,6 +358,10 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
             src.copyInto(dest)
             return dest
         }
+    }
+
+    private fun requireWritable() {
+        check(!readOnly) { "Published estimator history is read-only and runtime-owned" }
     }
 }
 
@@ -354,12 +396,33 @@ data class PoseEstimatorState(
     var lastMeasurementAccepted: Boolean = false,
     var lastRejectionReason: String? = null
 ) {
-    /** Creates an independently owned estimator snapshot suitable for reducer mutation. */
+    /** Timestamp of the newest accepted drive observation; history itself is runtime-owned. */
+    var lastObservationTimestampMs: Long = -1L
+    /**
+     * Creates an independently owned mutable estimator workspace.
+     *
+     * This is retained for direct estimator callers and tests. Redux reduction no longer invokes it
+     * per frame: each [com.areslib.Store] owns one [PoseEstimatorRuntime], and published snapshots
+     * contain the shared read-only empty-history marker instead of cloning the 150-frame buffer.
+     */
     fun deepCopy(): PoseEstimatorState = copy(
         covarianceArray = covarianceArray.copyOf(),
         history = history.deepCopy(),
         lastKalmanGain = lastKalmanGain.copyOf()
-    )
+    ).also { it.lastObservationTimestampMs = lastObservationTimestampMs }
+
+    /** Creates a Redux-safe observable snapshot without exposing mutable EKF replay history. */
+    internal fun reduxSnapshot(): PoseEstimatorState = copy(
+        covarianceArray = covarianceArray.copyOf(),
+        history = HistoryBuffer.READ_ONLY_EMPTY,
+        lastKalmanGain = lastKalmanGain.copyOf()
+    ).also { snapshot ->
+        snapshot.lastObservationTimestampMs = if (history.isEmpty()) {
+            lastObservationTimestampMs
+        } else {
+            history[history.size - 1].timestampMs
+        }
+    }
 
     val estimatedPose: Pose2d
         get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))

@@ -1,11 +1,10 @@
 package com.areslib.logging
 
 import com.areslib.action.RobotAction
+import com.areslib.Store
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Vector3
-import com.areslib.reducer.rootReducer
-import com.areslib.state.RobotState
 import com.google.gson.Gson
 import java.io.BufferedReader
 import java.io.File
@@ -71,8 +70,8 @@ object SensoryReplayRunner {
     ): ReplaySummary {
         val steps = mutableListOf<ReplayStepResult>()
         
-        var realState = RobotState()
-        var ghostState = RobotState()
+        val realStore = Store()
+        val ghostStore = Store()
 
         var prevFrame: RobotInputsFrame? = null
 
@@ -100,8 +99,8 @@ object SensoryReplayRunner {
                     )
 
                     // 1. Dispatch Drive update to both states
-                    realState = rootReducer(realState, driveAction)
-                    ghostState = rootReducer(ghostState, driveAction)
+                    realStore.dispatch(driveAction)
+                    ghostStore.dispatch(driveAction)
 
                     // 2. Map and dispatch Vision measurements if present
                     if (frame.visionInputs.measurements.isNotEmpty()) {
@@ -117,16 +116,16 @@ object SensoryReplayRunner {
                             customVisionStdDevs = ghostVisionStdDevs // Customized 'what-if' trust
                         )
 
-                        realState = rootReducer(realState, realVisionAction)
-                        ghostState = rootReducer(ghostState, ghostVisionAction)
+                        realStore.dispatch(realVisionAction)
+                        ghostStore.dispatch(ghostVisionAction)
                     }
 
                     // Save execution step result
                     steps.add(
                         ReplayStepResult(
                             timestampMs = frame.timestampMs,
-                            realPose = realState.drive.poseEstimator.estimatedPose,
-                            ghostPose = ghostState.drive.poseEstimator.estimatedPose,
+                            realPose = realStore.state.drive.poseEstimator.estimatedPose,
+                            ghostPose = ghostStore.state.drive.poseEstimator.estimatedPose,
                             cameraPoses = frame.visionInputs.cameraPoses
                         )
                     )
@@ -140,8 +139,8 @@ object SensoryReplayRunner {
 
         return ReplaySummary(
             steps = steps,
-            finalRealPose = realState.drive.poseEstimator.estimatedPose,
-            finalGhostPose = ghostState.drive.poseEstimator.estimatedPose
+            finalRealPose = realStore.state.drive.poseEstimator.estimatedPose,
+            finalGhostPose = ghostStore.state.drive.poseEstimator.estimatedPose
         )
     }
 }

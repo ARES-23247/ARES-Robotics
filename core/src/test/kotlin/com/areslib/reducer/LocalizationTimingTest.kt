@@ -1,5 +1,6 @@
 package com.areslib.reducer
 
+import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
 import com.areslib.state.RobotState
@@ -16,43 +17,43 @@ import org.junit.jupiter.api.Test
 
 class LocalizationTimingTest {
     @Test
-    fun `duplicate odometry timestamp is rejected`() {
-        var state = DriveReducer.reduce(
-            DriveState(),
-            RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true)
-        )
-        state = DriveReducer.reduce(
-            state,
-            RobotAction.PoseUpdate(0.1, 0.0, 0.0, timestampMs = 120L)
-        )
-        val duplicate = DriveReducer.reduce(
-            state,
-            RobotAction.PoseUpdate(0.2, 0.0, 0.0, timestampMs = 120L)
-        )
+    fun `timestamp zero is a real observation and duplicate zero is rejected`() {
+        val store = Store()
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 0L, isReset = true))
+        val reset = store.state
+        store.dispatch(RobotAction.PoseUpdate(1.0, 0.0, 0.0, timestampMs = 0L))
 
-        assertEquals(state.odometryX, duplicate.odometryX, 0.0)
-        assertEquals(state.poseEstimator.estimatedPoseX, duplicate.poseEstimator.estimatedPoseX, 0.0)
+        assertEquals(reset.drive.odometryX, store.state.drive.odometryX, 0.0)
+        assertEquals(0L, store.state.drive.poseEstimator.lastObservationTimestampMs)
+    }
+
+    @Test
+    fun `duplicate odometry timestamp is rejected`() {
+        val store = Store()
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true))
+        store.dispatch(RobotAction.PoseUpdate(0.1, 0.0, 0.0, timestampMs = 120L))
+        val state = store.state
+        store.dispatch(RobotAction.PoseUpdate(0.2, 0.0, 0.0, timestampMs = 120L))
+        val duplicate = store.state
+
+        assertEquals(state.drive.odometryX, duplicate.drive.odometryX, 0.0)
+        assertEquals(
+            state.drive.poseEstimator.estimatedPoseX,
+            duplicate.drive.poseEstimator.estimatedPoseX,
+            0.0
+        )
     }
 
     @Test
     fun `stationary process noise scales with measured interval`() {
-        val initialShort = DriveReducer.reduce(
-            DriveState(),
-            RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true)
-        )
-        val initialLong = DriveReducer.reduce(
-            DriveState(),
-            RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true)
-        )
-
-        val shortInterval = DriveReducer.reduce(
-            initialShort,
-            RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 120L)
-        )
-        val longInterval = DriveReducer.reduce(
-            initialLong,
-            RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 200L)
-        )
+        val shortStore = Store()
+        val longStore = Store()
+        shortStore.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true))
+        longStore.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true))
+        shortStore.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 120L))
+        longStore.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 200L))
+        val shortInterval = shortStore.state.drive
+        val longInterval = longStore.state.drive
 
         assertTrue(longInterval.poseEstimator.covarianceArray[0] > shortInterval.poseEstimator.covarianceArray[0])
     }
@@ -69,14 +70,9 @@ class LocalizationTimingTest {
             robotLengthMeters = 0.0,
             robotWidthMeters = 0.0
         )
-        var state = rootReducer(
-            RobotState(vision = VisionState(filterConfig = config)),
-            RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true)
-        )
-        state = rootReducer(
-            state,
-            RobotAction.PoseUpdate(1.0, 0.0, 0.0, timestampMs = 200L)
-        )
+        val store = Store(RobotState(vision = VisionState(filterConfig = config)))
+        store.dispatch(RobotAction.PoseUpdate(0.0, 0.0, 0.0, timestampMs = 100L, isReset = true))
+        store.dispatch(RobotAction.PoseUpdate(1.0, 0.0, 0.0, timestampMs = 200L))
         val delayed = VisionMeasurement(
             timestampMs = 100L,
             targetPose = Pose3d(Translation3d(0.1, 0.0, 0.0), Rotation3d()),
@@ -84,14 +80,14 @@ class LocalizationTimingTest {
             tagCount = 2
         )
 
-        state = rootReducer(
-            state,
+        store.dispatch(
             RobotAction.VisionMeasurementsReceived(
                 measurements = listOf(delayed),
                 timestampMs = 220L,
                 customVisionStdDevs = Vector3(0.2, 0.2, 0.5)
             )
         )
+        val state = store.state
 
         assertTrue(state.vision.lastRejectionReason != "prefilter_rejected")
         assertEquals(1, state.vision.measurementCount)

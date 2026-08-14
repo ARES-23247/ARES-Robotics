@@ -3,13 +3,7 @@ package com.areslib.reducer
 import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
 import com.areslib.state.DriveMode
-import com.areslib.math.wrapAngle
-import com.areslib.math.estimation.HistoryBuffer
-import com.areslib.math.geometry.Matrix3x3
-import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Translation2d
-import com.areslib.math.geometry.Rotation2d
-import com.areslib.math.estimation.PoseEstimator
+import com.areslib.math.estimation.ApplyPoseEstimatorRuntimeResult
 
 /**
  * Object implementation for Drive Reducer.
@@ -32,18 +26,7 @@ object DriveReducer {
                     return state
                 }
 
-                val dtSeconds = observationDtSeconds(state, action.timestampMs) ?: return state
-                val updatedEstimator = PoseEstimator.addOdometryObservationDirect(
-                    state = state.poseEstimator.deepCopy(),
-                    timestampMs = action.timestampMs,
-                    deltaX = action.deltaX,
-                    deltaY = action.deltaY,
-                    deltaHeadingRad = action.deltaHeading,
-                    pitchDegrees = action.pitchDegrees,
-                    rollDegrees = action.rollDegrees,
-                    gyroRateRadPerSec = action.angularVelocity,
-                    dtSeconds = dtSeconds
-                )
+                observationDtSeconds(state, action.timestampMs) ?: return state
                 val nextOdomX = state.odometryX + action.deltaX
                 val nextOdomY = state.odometryY + action.deltaY
                 val nextOdomHeading = state.odometryHeading + action.deltaHeading
@@ -59,7 +42,7 @@ object DriveReducer {
                     xAccelerationG = action.xAccelerationG,
                     yAccelerationG = action.yAccelerationG,
                     zAccelerationG = action.zAccelerationG
-                ).updateDiagnostics(nextOdomX, nextOdomY, nextOdomHeading, updatedEstimator)
+                )
             }
             is RobotAction.PoseUpdate -> {
                 if (!action.xMeters.isFinite() || !action.yMeters.isFinite() ||
@@ -87,75 +70,12 @@ object DriveReducer {
                     action.zAccelerationG.isFinite()
                 val pitchDegrees = if (imuMeasurementsValid) action.pitchDegrees else 0.0
                 val rollDegrees = if (imuMeasurementsValid) action.rollDegrees else 0.0
-                val pitchVelocityDegPerSec = if (imuMeasurementsValid) action.pitchVelocityDegPerSec else 0.0
-                val rollVelocityDegPerSec = if (imuMeasurementsValid) action.rollVelocityDegPerSec else 0.0
                 val xAccelerationG = if (imuMeasurementsValid) action.xAccelerationG else 0.0
                 val yAccelerationG = if (imuMeasurementsValid) action.yAccelerationG else 0.0
                 val zAccelerationG = if (imuMeasurementsValid) action.zAccelerationG else 0.0
 
-                val updatedEstimator = if (action.isReset) {
-                    val newPose = Pose2d(action.xMeters, action.yMeters, Rotation2d(action.headingRadians))
-                    val newHistory = HistoryBuffer(150)
-                    newHistory.addEntry(action.timestampMs, newPose, Matrix3x3(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01), 1.0)
-                    
-                    state.poseEstimator.deepCopy().copy(
-                        estimatedPoseX = newPose.x,
-                        estimatedPoseY = newPose.y,
-                        estimatedPoseHeading = newPose.heading.radians,
-                        covarianceArray = doubleArrayOf(0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01),
-                        history = newHistory,
-                        isBeached = false,
-                        lastUnbeachedTimeMs = action.timestampMs
-                    )
-                } else if (action.isExternalEstimate) {
-                    PoseEstimator.acceptExternalEstimate(
-                        state = state.poseEstimator.deepCopy(),
-                        timestampMs = action.timestampMs,
-                        xMeters = action.xMeters,
-                        yMeters = action.yMeters,
-                        headingRadians = action.headingRadians
-                    )
-                } else {
-                    val dtSeconds = observationDtSeconds(state, action.timestampMs) ?: return state
-                    val fieldDeltaX = action.xMeters - state.odometryX
-                    val fieldDeltaY = action.yMeters - state.odometryY
-                    val deltaHeading = wrapAngle(action.headingRadians - state.odometryHeading)
-
-                    // PoseUpdate contains absolute field-frame odometry. Convert the
-                    // relative field transform back into the robot-frame SE(2) twist
-                    // consumed by PoseEstimator. Passing the field delta through directly
-                    // rotates it a second time whenever the robot heading is non-zero.
-                    val cosStart = kotlin.math.cos(state.odometryHeading)
-                    val sinStart = kotlin.math.sin(state.odometryHeading)
-                    val bodyArcX = cosStart * fieldDeltaX + sinStart * fieldDeltaY
-                    val bodyArcY = -sinStart * fieldDeltaX + cosStart * fieldDeltaY
-
-                    val twistX: Double
-                    val twistY: Double
-                    if (kotlin.math.abs(deltaHeading) < 1e-6) {
-                        twistX = bodyArcX
-                        twistY = bodyArcY
-                    } else {
-                        val s = kotlin.math.sin(deltaHeading) / deltaHeading
-                        val c = (1.0 - kotlin.math.cos(deltaHeading)) / deltaHeading
-                        val determinant = s * s + c * c
-                        twistX = (s * bodyArcX + c * bodyArcY) / determinant
-                        twistY = (-c * bodyArcX + s * bodyArcY) / determinant
-                    }
-                    PoseEstimator.addOdometryObservationDirect(
-                        state = state.poseEstimator.deepCopy(),
-                        timestampMs = action.timestampMs,
-                        deltaX = twistX,
-                        deltaY = twistY,
-                        deltaHeadingRad = deltaHeading,
-                        pitchDegrees = pitchDegrees,
-                        rollDegrees = rollDegrees,
-                        pitchVelocityDegPerSec = pitchVelocityDegPerSec,
-                        rollVelocityDegPerSec = rollVelocityDegPerSec,
-                        gyroRateRadPerSec = measuredAngularVelocity,
-                        dtSeconds = dtSeconds,
-                        applyGyroBiasCorrection = action.applyControlHubGyroCorrection
-                    )
+                if (!action.isReset && !action.isExternalEstimate) {
+                    observationDtSeconds(state, action.timestampMs) ?: return state
                 }
 
                 state.copy(
@@ -176,7 +96,16 @@ object DriveReducer {
                     headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians,
                     positionLockX = if (action.isReset) null else state.positionLockX,
                     positionLockY = if (action.isReset) null else state.positionLockY
-                ).updateDiagnostics(action.xMeters, action.yMeters, action.headingRadians, updatedEstimator)
+                )
+            }
+            is ApplyPoseEstimatorRuntimeResult -> {
+                val updatedEstimator = action.estimatorState ?: return state
+                state.updateDiagnostics(
+                    state.odometryX,
+                    state.odometryY,
+                    state.odometryHeading,
+                    updatedEstimator
+                )
             }
             is RobotAction.SetDriveMode -> {
                 state.copy(driveMode = action.mode)
@@ -241,9 +170,9 @@ object DriveReducer {
      * cannot explode covariance or gyro-bias integration.
      */
     private fun observationDtSeconds(state: DriveState, timestampMs: Long): Double? {
-        val history = state.poseEstimator.history
-        if (history.isEmpty()) return 0.02
-        val deltaMs = timestampMs - history[history.size - 1].timestampMs
+        val lastTimestampMs = state.poseEstimator.lastObservationTimestampMs
+        if (lastTimestampMs < 0L) return 0.02
+        val deltaMs = timestampMs - lastTimestampMs
         if (deltaMs <= 0L) return null
         return (deltaMs / 1_000.0).coerceIn(0.001, 0.1)
     }
