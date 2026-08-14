@@ -54,4 +54,36 @@ class FilterTest {
         // Clearing should make the next input snap directly
         assertEquals(50.0, filter.calculate(50.0, 0.02), 1e-6)
     }
+
+    @Test
+    fun testLowPassFilterNonFiniteInputPreservesEstimate() {
+        val filter = LowPassFilter(0.1)
+        filter.calculate(10.0, 0.02)
+
+        // NaN or Infinity should return previous valid estimate
+        assertEquals(10.0, filter.calculate(Double.NaN, 0.02), 1e-6)
+        assertEquals(10.0, filter.calculate(Double.POSITIVE_INFINITY, 0.02), 1e-6)
+        assertEquals(10.0, filter.calculate(10.0, Double.NaN), 1e-6)
+    }
+
+    @Test
+    fun testLowPassFilterNonPositiveDtPreservesEstimate() {
+        val filter = LowPassFilter(0.1)
+        filter.calculate(10.0, 0.02)
+
+        // dt <= 0 should yield alpha = 0 -> lastEstimate preserved
+        val out = filter.calculate(20.0, 0.0)
+        assertEquals(10.0, out, 1e-6)
+        assertEquals(10.0, filter.calculate(20.0, -0.01), 1e-6)
+    }
+
+    @Test
+    fun testLowPassFilterSetTimeConstant() {
+        val filter = LowPassFilter(0.1)
+        filter.calculate(10.0, 0.02)
+
+        // Change time constant to 0.0 -> bypass filter
+        filter.setTimeConstant(0.0)
+        assertEquals(20.0, filter.calculate(20.0, 0.02), 1e-6)
+    }
 }

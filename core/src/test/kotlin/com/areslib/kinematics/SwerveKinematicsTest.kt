@@ -63,4 +63,38 @@ class SwerveKinematicsTest {
             kotlin.test.assertTrue(state.angle.radians > 0.0)
         }
     }
+
+    @Test
+    fun `test optimizeModuleState reverses direction when delta exceeds 90 degrees`() {
+        val kinematics = SwerveKinematics(
+            Translation2d(0.5, 0.5),
+            Translation2d(0.5, -0.5),
+            Translation2d(-0.5, 0.5),
+            Translation2d(-0.5, -0.5)
+        )
+        val desired = SwerveModuleState(2.0, com.areslib.math.geometry.Rotation2d(Math.PI))
+        val currentAngle = com.areslib.math.geometry.Rotation2d(0.0)
+        val optimized = kinematics.optimizeModuleState(desired, currentAngle)
+
+        assertEquals(-2.0, optimized.speedMetersPerSecond, 0.001)
+        assertEquals(0.0, optimized.angle.radians, 0.001)
+    }
+
+    @Test
+    fun `test desaturateWheelSpeeds scales speeds uniformly`() {
+        val kinematics = SwerveKinematics(
+            Translation2d(0.5, 0.5),
+            Translation2d(0.5, -0.5),
+            Translation2d(-0.5, 0.5),
+            Translation2d(-0.5, -0.5)
+        )
+        val states = arrayOf(
+            SwerveModuleState(4.0, com.areslib.math.geometry.Rotation2d(0.0)),
+            SwerveModuleState(2.0, com.areslib.math.geometry.Rotation2d(0.0))
+        )
+        kinematics.desaturateWheelSpeeds(states, maxSpeedMps = 2.0)
+
+        assertEquals(2.0, states[0].speedMetersPerSecond, 0.001)
+        assertEquals(1.0, states[1].speedMetersPerSecond, 0.001)
+    }
 }

@@ -77,4 +77,24 @@ class LinearADRCTest {
         assertEquals(2.0, adrc.xHat1, 1e-12)
         assertEquals(0.0, adrc.xHat2, 1e-12)
     }
+
+    @Test
+    fun `eso tracks external disturbance force over time`() {
+        val adrc = LinearADRC(b0 = 2.0, omegaC = 10.0, omegaO = 30.0)
+        adrc.reset(0.0)
+        var plantState = 0.0
+        val target = 1.0
+        val disturbance = 3.0 // Constant disturbance
+        val dt = 0.02
+
+        for (i in 0 until 50) {
+            val u = adrc.calculate(target, plantState, dt)
+            // Plant integration: dx = (b0 * u + disturbance) * dt
+            plantState += (2.0 * u + disturbance) * dt
+        }
+
+        // ESO should have observed and compensated for the disturbance
+        assertTrue(adrc.xHat2 > 0.0, "xHat2 should estimate positive disturbance: ${adrc.xHat2}")
+        assertTrue(kotlin.math.abs(plantState - target) < 0.2, "Plant state $plantState should converge near target $target")
+    }
 }

@@ -70,4 +70,28 @@ class RobotClockContractTest {
 
         assertFalse(sawTornInitialMock.get(), "Mock mode must never publish before its timestamp")
     }
+
+    @Test
+    fun `mock time can advance and rewind deterministically`() {
+        RobotClock.useMockTime(5_000L)
+        assertEquals(5_000L, RobotClock.currentTimeMillis())
+        assertEquals(5_000_000_000L, RobotClock.nanoTime())
+
+        RobotClock.useMockTime(1_000L)
+        assertEquals(1_000L, RobotClock.currentTimeMillis())
+        assertEquals(1_000_000_000L, RobotClock.nanoTime())
+    }
+
+    @Test
+    fun `system clock advances monotonically`() {
+        RobotClock.useSystemTime()
+        val t0 = RobotClock.nanoTime()
+        val m0 = RobotClock.currentTimeMillis()
+        Thread.sleep(10)
+        val t1 = RobotClock.nanoTime()
+        val m1 = RobotClock.currentTimeMillis()
+
+        assertTrue(t1 >= t0, "nanoTime must advance monotonically")
+        assertTrue(m1 >= m0, "currentTimeMillis must advance monotonically")
+    }
 }

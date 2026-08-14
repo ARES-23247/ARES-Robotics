@@ -79,4 +79,28 @@ class TrajectoryFollowerTest {
         assertTrue(speeds.vxMetersPerSecond > 0.0, "vx should be positive to drive forward towards target: ${speeds.vxMetersPerSecond}")
         assertTrue(speeds.vyMetersPerSecond > 0.0, "vy should be positive to drive upward towards target: ${speeds.vyMetersPerSecond}")
     }
+
+    @Test
+    fun testCrossTrackErrorRestoringForce() {
+        val driveController = HolonomicDriveController(
+            PIDController(4.0, 0.0, 0.1),
+            PIDController(4.0, 0.0, 0.1),
+            PIDController(3.0, 0.0, 0.0)
+        )
+
+        // Robot is perturbed at (2.0, 3.0) - off by +1.0m in Y from trajectory target at (3.0, 2.0)
+        val currentPose = Pose2d(2.0, 3.0, Rotation2d.fromDegrees(0.0))
+        val targetPose = Pose2d(3.0, 2.0, Rotation2d.fromDegrees(0.0))
+
+        val speeds = driveController.calculate(
+            currentPose = currentPose,
+            targetPose = targetPose,
+            targetVelocityMps = 1.0,
+            targetHeading = Rotation2d.fromDegrees(0.0),
+            dtSeconds = 0.02
+        )
+
+        assertTrue(speeds.vxMetersPerSecond > 0.0, "vx should push forward along X: ${speeds.vxMetersPerSecond}")
+        assertTrue(speeds.vyMetersPerSecond < 0.0, "vy should pull downward along Y towards line: ${speeds.vyMetersPerSecond}")
+    }
 }

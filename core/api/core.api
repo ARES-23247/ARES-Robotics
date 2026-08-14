@@ -9214,10 +9214,15 @@ public final class com/areslib/telemetry/TelemetryTopicConstants {
 	public static final field ESTIMATED_POSE_Y Ljava/lang/String;
 	public static final field GAME_PIECES Ljava/lang/String;
 	public static final field GAME_PIECES_COUNT Ljava/lang/String;
+	public static final field HARDWARE_MOTORS_PREFIX Ljava/lang/String;
 	public static final field INSTANCE Lcom/areslib/telemetry/TelemetryTopicConstants;
 	public static final field VISION_POSE_HEADING Ljava/lang/String;
 	public static final field VISION_POSE_X Ljava/lang/String;
 	public static final field VISION_POSE_Y Ljava/lang/String;
+	public final fun motorCurrentTopic (Ljava/lang/String;)Ljava/lang/String;
+	public final fun motorPositionTopic (Ljava/lang/String;)Ljava/lang/String;
+	public final fun motorPowerTopic (Ljava/lang/String;)Ljava/lang/String;
+	public final fun motorVelocityTopic (Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class com/areslib/telemetry/TelemetryTopicNormalizer {

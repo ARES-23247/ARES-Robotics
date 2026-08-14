@@ -106,4 +106,48 @@ class ZeroGcRegressionTest {
             "Store drive reduction must not clone EKF history (allocated $allocatedBytes bytes)"
         )
     }
+
+    @Test
+    fun testMatrix3x3InPlaceZeroGcExecution() {
+        val target = com.areslib.math.geometry.Matrix3x3()
+        val source = com.areslib.math.geometry.Matrix3x3(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0)
+        val allocationBean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
+        val threadId = Thread.currentThread().id
+
+        fun runMeasuredWindow(): Long {
+            val startBytes = allocationBean.getThreadAllocatedBytes(threadId)
+            repeat(10_000) {
+                target.setTo(source)
+                target.addInPlace(source)
+                target.multiplyInPlace(0.5)
+            }
+            return allocationBean.getThreadAllocatedBytes(threadId) - startBytes
+        }
+
+        // Warmup JIT
+        repeat(10_000) {
+            target.setTo(source)
+            target.addInPlace(source)
+            target.multiplyInPlace(0.5)
+        }
+
+        // The first measured window absorbs any final JVM profiling/OSR bookkeeping. The second
+        // window is the steady-state contract and must remain allocation-free.
+        val firstWindowBytes = runMeasuredWindow()
+        val steadyStateBytes = runMeasuredWindow()
+        println(
+            "[Matrix3x3 ZeroGC Test] first=$firstWindowBytes bytes, " +
+                "steady-state=$steadyStateBytes bytes over 10,000 in-place matrix ops"
+        )
+
+        assertTrue(
+            firstWindowBytes <= 4096L,
+            "JVM bookkeeping exceeded the bounded first-window allowance ($firstWindowBytes bytes)"
+        )
+        assertTrue(
+            steadyStateBytes == 0L,
+            "In-place matrix scratchpad operations must allocate zero steady-state bytes " +
+                "(was $steadyStateBytes bytes)"
+        )
+    }
 }

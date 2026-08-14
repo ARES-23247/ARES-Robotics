@@ -89,4 +89,33 @@ class PathingCorrectnessRegressionTest {
         )
         assertTrue(path.points.any { abs(it.curvature) > 1e-3 })
     }
+
+    @Test
+    fun `generated trajectory with zero displacement returns single point at target pose`() {
+        val targetPose = Pose2d(3.0, 4.0, Rotation2d.fromDegrees(45.0))
+        val path = TrajectoryGenerator.generateTrajectory(
+            targetPose,
+            targetPose,
+            TrajectoryGenerator.PathConstraints(1.5, 1.5)
+        )
+        assertEquals(1, path.points.size)
+        assertEquals(3.0, path.points[0].pose.x, 1e-6)
+        assertEquals(4.0, path.points[0].pose.y, 1e-6)
+        assertEquals(0.0, path.points[0].velocityMps, 1e-6)
+    }
+
+    @Test
+    fun `generated straight line trajectory maintains zero curvature`() {
+        val startPose = Pose2d(0.0, 0.0, Rotation2d(0.0))
+        val endPose = Pose2d(5.0, 0.0, Rotation2d(0.0))
+        val path = TrajectoryGenerator.generateTrajectory(
+            startPose,
+            endPose,
+            TrajectoryGenerator.PathConstraints(2.0, 2.0)
+        )
+        assertTrue(path.points.size > 10)
+        assertTrue(path.points.all { abs(it.curvature) < 1e-4 })
+        assertEquals(0.0, path.points.first().velocityMps, 1e-4)
+        assertEquals(0.0, path.points.last().velocityMps, 1e-4)
+    }
 }

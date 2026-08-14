@@ -26,4 +26,49 @@ class SimPhysicsWorldContractTest {
         assertEquals(blue.y, physics.robotBody.transform.translationY, 1e-12)
         assertEquals(blue.heading.radians, physics.robotBody.transform.rotationAngle, 1e-12)
     }
+
+    @Test
+    fun boundaryWallsContainChassisWithinFieldExtents() {
+        val physics = SimPhysicsWorld()
+        physics.setupSpawnPose(isRedAlliance = true)
+        physics.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(0.0, -10.0)
+
+        // Step physics forward 100 iterations (2.0 seconds at 20ms steps)
+        repeat(100) {
+            physics.world.step(1, 0.02)
+        }
+
+        // Robot must remain inside the field bounds (-1.825m to +1.825m)
+        org.junit.Assert.assertTrue("Robot should not tunnel through wall", physics.robotBody.transform.translationY >= -1.825)
+        org.junit.Assert.assertTrue("Robot velocity should be damped on collision", physics.robotBody.linearVelocity.y >= -1.0)
+    }
+
+    @Test
+    fun linearAndAngularDampingBringsUnforcedChassisToRest() {
+        val physics = SimPhysicsWorld()
+        physics.setupSpawnPose(isRedAlliance = true)
+        physics.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(2.0, 0.0)
+        physics.robotBody.angularVelocity = 4.0
+
+        repeat(150) {
+            physics.world.step(1, 0.02)
+        }
+
+        org.junit.Assert.assertTrue("Linear velocity should damp toward 0", physics.robotBody.linearVelocity.magnitude <= 0.1)
+        org.junit.Assert.assertTrue("Angular velocity should damp toward 0", kotlin.math.abs(physics.robotBody.angularVelocity) <= 0.1)
+    }
+
+    @Test
+    fun replaceObstaclesFromAnalyticsJsonDynamicallyUpdatesWorldBodies() {
+        val physics = SimPhysicsWorld()
+        val jsonPayload = """[{"id":"obs1","x":0.5,"y":0.5,"width":0.3,"height":0.3,"shape":"RECTANGLE"}]"""
+
+        val updated = physics.replaceObstaclesFromAnalyticsJson(jsonPayload)
+        org.junit.Assert.assertTrue(updated)
+        assertEquals(1, physics.activeObstacles.size)
+
+        val cleared = physics.replaceObstaclesFromAnalyticsJson("[]")
+        org.junit.Assert.assertTrue(cleared)
+        assertEquals(0, physics.activeObstacles.size)
+    }
 }

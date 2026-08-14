@@ -176,4 +176,24 @@ class CurrentBudgetManagerTest {
         assertEquals(CurrentBudgetState.CRITICAL, ftcManager.state)
         assertEquals(ftcManager.minPowerScale, ftcManager.powerScale, 1e-9)
     }
+
+    @Test
+    fun `estimateMotorAmps returns zero for unregistered motor`() {
+        val unregisteredMotor = MockMotor()
+        assertEquals(0.0, manager.estimateMotorAmps(unregisteredMotor, 12.0), 1e-9)
+    }
+
+    @Test
+    fun `isRegistered accurately checks motor presence and clear resets everything`() {
+        manager.register(motor1)
+        assertTrue(manager.isRegistered(motor1))
+        assertFalse(manager.isRegistered(motor2))
+        assertEquals(1, manager.motorCount)
+
+        manager.clear()
+        assertFalse(manager.isRegistered(motor1))
+        assertEquals(0, manager.motorCount)
+        assertEquals(CurrentBudgetState.HEALTHY, manager.state)
+        assertEquals(1.0, manager.powerScale, 1e-9)
+    }
 }

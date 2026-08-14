@@ -482,4 +482,20 @@ class LQRControllerTest {
         }
         assertTrue(isFinite)
     }
+
+    @Test
+    fun `reset with non-zero initial state sets estimated state xHat correctly`() {
+        val initialState = doubleArrayOf(2.5, -0.5)
+        controller.reset(initialState)
+
+        assertEquals(2.5, controller.xHat.get(0, 0), 1e-9)
+        assertEquals(-0.5, controller.xHat.get(1, 0), 1e-9)
+    }
+
+    @Test
+    fun `reset with mismatched dimension throws IllegalArgumentException`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            controller.reset(doubleArrayOf(1.0))
+        }
+    }
 }

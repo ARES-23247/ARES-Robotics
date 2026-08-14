@@ -56,4 +56,27 @@ class MecanumKinematicsTest {
         MecanumKinematics.normalize(arr3, Double.NaN)
         assertEquals(0.0, arr3[3], 0.001)
     }
+
+    @Test
+    fun `pure rotation gives opposite side wheel speeds`() {
+        val speeds = ChassisSpeeds(vxMetersPerSecond = 0.0, vyMetersPerSecond = 0.0, omegaRadiansPerSecond = 2.0)
+        val wheels = kinematics.toWheelSpeeds(speeds)
+
+        // For W=0.5, B=0.5: radius term = (0.5 + 0.5) / 2 = 0.5 -> 0.5 * 2.0 = 1.0 m/s
+        assertEquals(-1.0, wheels.frontLeftMetersPerSecond, 0.001)
+        assertEquals(1.0, wheels.frontRightMetersPerSecond, 0.001)
+        assertEquals(-1.0, wheels.backLeftMetersPerSecond, 0.001)
+        assertEquals(1.0, wheels.backRightMetersPerSecond, 0.001)
+    }
+
+    @Test
+    fun `wheel speeds within limit are not scaled down by normalize`() {
+        val wheels = MecanumWheelSpeeds(0.5, -0.4, 0.3, -0.2)
+        val normalized = wheels.normalize(1.0)
+
+        assertEquals(0.5, normalized.frontLeftMetersPerSecond, 0.001)
+        assertEquals(-0.4, normalized.frontRightMetersPerSecond, 0.001)
+        assertEquals(0.3, normalized.backLeftMetersPerSecond, 0.001)
+        assertEquals(-0.2, normalized.backRightMetersPerSecond, 0.001)
+    }
 }

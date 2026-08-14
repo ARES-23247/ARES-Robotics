@@ -46,11 +46,10 @@ interface ITelemetry {
  * No hardware reads should occur through [MotorIO] getters.
  */
 fun ITelemetry.logDriveMotor(name: String, motor: MotorIO) {
-    val prefix = "Hardware/Motors/$name"
-    putNumber("$prefix/Power", motor.power * motor.powerScale)
-    putNumber("$prefix/Position", motor.position)
-    putNumber("$prefix/Velocity", motor.velocity)
-    putNumber("$prefix/CurrentAmps", motor.currentAmps)
+    putNumber(TelemetryTopicConstants.motorPowerTopic(name), motor.power * motor.powerScale)
+    putNumber(TelemetryTopicConstants.motorPositionTopic(name), motor.position)
+    putNumber(TelemetryTopicConstants.motorVelocityTopic(name), motor.velocity)
+    putNumber(TelemetryTopicConstants.motorCurrentTopic(name), motor.currentAmps)
 }
 
 /**

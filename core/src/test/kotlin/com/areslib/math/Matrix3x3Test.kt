@@ -88,4 +88,26 @@ class Matrix3x3Test {
         assertEquals(ab_c.m11, a_bc.m11, 0.001)
         assertEquals(ab_c.m22, a_bc.m22, 0.001)
     }
+
+    @Test
+    fun testInPlaceOperations() {
+        val target = Matrix3x3()
+        val source = Matrix3x3(
+            1.0, 2.0, 3.0,
+            4.0, 5.0, 6.0,
+            7.0, 8.0, 9.0
+        )
+
+        target.setTo(source)
+        assertEquals(1.0, target.m00, 1e-6)
+        assertEquals(9.0, target.m22, 1e-6)
+
+        target.addInPlace(source)
+        assertEquals(2.0, target.m00, 1e-6)
+        assertEquals(18.0, target.m22, 1e-6)
+
+        target.multiplyInPlace(0.5)
+        assertEquals(1.0, target.m00, 1e-6)
+        assertEquals(9.0, target.m22, 1e-6)
+    }
 }

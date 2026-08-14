@@ -344,4 +344,24 @@ class SCurveTrajectoryParameterizerTest {
         )
         assertEquals(0.0, path.points.first().distanceMeters, 1e-9, "First point distance should be 0")
     }
+
+    @Test
+    fun `end velocity constraint specifies handover exit velocity`() {
+        val path = SCurveTrajectoryParameterizer.generateTrajectory(
+            waypoints = listOf(Translation2d(0.0, 0.0), Translation2d(5.0, 0.0)),
+            constraints = defaultConstraints,
+            endVelocityMps = 1.0
+        )
+        assertEquals(1.0, path.points.last().velocityMps, 0.05, "Last point velocity should equal requested exit handover velocity")
+    }
+
+    @Test
+    fun `start velocity constraint specifies initial entry velocity`() {
+        val path = SCurveTrajectoryParameterizer.generateTrajectory(
+            waypoints = listOf(Translation2d(0.0, 0.0), Translation2d(5.0, 0.0)),
+            constraints = defaultConstraints,
+            startVelocityMps = 1.5
+        )
+        assertEquals(1.5, path.points.first().velocityMps, 0.05, "First point velocity should equal requested start entry velocity")
+    }
 }

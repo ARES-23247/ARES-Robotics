@@ -102,4 +102,31 @@ class PIDControllerTest {
         val out = pid.calculate(10.0, 10.0, 1.0)
         assertEquals(0.0, out, 0.001)
     }
+
+    @Test
+    fun testContinuousInputShortestPath() {
+        val pid = PIDController(1.0, 0.0, 0.0)
+        pid.enableContinuousInput(-Math.PI, Math.PI)
+
+        // Measurement = 3.0 rad (~171.8 deg), Setpoint = -3.0 rad (~-171.8 deg)
+        // Direct error = -3.0 - 3.0 = -6.0 rad
+        // Shortest wrapped error = -6.0 + 2*PI ~= +0.28318 rad
+        val out = pid.calculate(measurement = 3.0, setpoint = -3.0, dtSeconds = 0.02)
+        val expectedWrappedError = -6.0 + 2.0 * Math.PI
+        assertEquals(expectedWrappedError, out, 0.001)
+    }
+
+    @Test
+    fun testOutputLimitsClamping() {
+        val pid = PIDController(2.0, 0.0, 0.0)
+        pid.setOutputLimits(-5.0, 5.0)
+
+        // Error = 10.0, P*error = 20.0 -> clamped to 5.0
+        val outPositive = pid.calculate(0.0, 10.0, 0.02)
+        assertEquals(5.0, outPositive, 0.001)
+
+        // Error = -10.0, P*error = -20.0 -> clamped to -5.0
+        val outNegative = pid.calculate(10.0, 0.0, 0.02)
+        assertEquals(-5.0, outNegative, 0.001)
+    }
 }

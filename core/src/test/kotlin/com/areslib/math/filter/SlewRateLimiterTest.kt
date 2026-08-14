@@ -79,4 +79,11 @@ class SlewRateLimiterTest {
         // Next call snaps directly to input
         assertEquals(100.0, limiter.calculate(100.0, 0.1), 1e-6)
     }
+
+    @Test
+    fun testZeroAndNegativeDtHandling() {
+        val limiter = SlewRateLimiter(2.0, initialValue = 5.0)
+        assertEquals(5.0, limiter.calculate(10.0, 0.0), 1e-6)
+        assertEquals(5.0, limiter.calculate(10.0, -0.5), 1e-6)
+    }
 }

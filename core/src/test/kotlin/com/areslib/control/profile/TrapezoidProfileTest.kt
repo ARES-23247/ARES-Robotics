@@ -174,4 +174,104 @@ class TrapezoidProfileTest {
         assertEquals(5.0, controller.pidController.i)
         assertEquals(6.0, controller.pidController.d)
     }
+
+    @Test
+    fun `test reverse motion trapezoid profile converges exactly to negative goal`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 1.0, maxAcceleration = 2.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 0.0)
+        val goal = TrapezoidProfile.State(position = -2.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+
+        val dt = 0.02
+        var current = start
+
+        for (i in 0..150) {
+            profile.calculate(dt, current, goal, constraints, outState)
+            assertTrue(kotlin.math.abs(outState.velocity) <= constraints.maxVelocity + 1e-9, "Velocity exceeded max constraint: ${outState.velocity}")
+            current = TrapezoidProfile.State(outState.position, outState.velocity)
+        }
+
+        assertEquals(goal.position, outState.position, 1e-4)
+        assertEquals(goal.velocity, outState.velocity, 1e-4)
+    }
+
+    @Test
+    fun `initial velocity at max velocity tracks cruise phase and decelerates without exceeding constraints`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 2.0, maxAcceleration = 1.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 2.0)
+        val goal = TrapezoidProfile.State(position = 10.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+
+        val dt = 0.02
+        var current = start
+        var cruisePhaseObserved = false
+        var decelerationPhaseObserved = false
+
+        for (i in 1..350) {
+            val prevVelocity = current.velocity
+            profile.calculate(dt, current, goal, constraints, outState)
+
+            assertTrue(
+                outState.velocity <= constraints.maxVelocity + 1e-9,
+                "Velocity ${outState.velocity} exceeded max velocity ${constraints.maxVelocity}"
+            )
+            assertTrue(
+                outState.velocity >= -1e-9,
+                "Velocity ${outState.velocity} went negative in forward profile"
+            )
+
+            val impliedAccel = kotlin.math.abs(outState.velocity - prevVelocity) / dt
+            assertTrue(
+                impliedAccel <= constraints.maxAcceleration + 1e-6,
+                "Acceleration $impliedAccel exceeded max acceleration ${constraints.maxAcceleration}"
+            )
+
+            if (kotlin.math.abs(outState.velocity - constraints.maxVelocity) < 1e-6 && outState.position < 7.0) {
+                cruisePhaseObserved = true
+            }
+            if (outState.velocity < constraints.maxVelocity - 1e-3 && outState.velocity > 1e-3) {
+                decelerationPhaseObserved = true
+            }
+
+            current = TrapezoidProfile.State(outState.position, outState.velocity)
+        }
+
+        assertTrue(cruisePhaseObserved, "Expected cruise phase at max velocity to be tracked")
+        assertTrue(decelerationPhaseObserved, "Expected deceleration phase to be observed")
+        assertEquals(goal.position, outState.position, 1e-4)
+        assertEquals(goal.velocity, outState.velocity, 1e-4)
+    }
+
+    @Test
+    fun `initial velocity at max velocity immediately decelerates when starting at braking distance`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 2.0, maxAcceleration = 1.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 2.0)
+        val goal = TrapezoidProfile.State(position = 2.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+
+        val dt = 0.02
+        profile.calculate(dt, start, goal, constraints, outState)
+
+        assertTrue(outState.velocity < constraints.maxVelocity, "Expected immediate deceleration below maxVelocity")
+        assertEquals(1.98, outState.velocity, 1e-6)
+        assertEquals(0.0398, outState.position, 1e-6)
+
+        var current = TrapezoidProfile.State(outState.position, outState.velocity)
+        for (i in 2..120) {
+            val prevVelocity = current.velocity
+            profile.calculate(dt, current, goal, constraints, outState)
+
+            assertTrue(outState.velocity <= constraints.maxVelocity + 1e-9)
+            val impliedAccel = kotlin.math.abs(outState.velocity - prevVelocity) / dt
+            assertTrue(impliedAccel <= constraints.maxAcceleration + 1e-6)
+
+            current = TrapezoidProfile.State(outState.position, outState.velocity)
+        }
+
+        assertEquals(goal.position, outState.position, 1e-4)
+        assertEquals(goal.velocity, outState.velocity, 1e-4)
+    }
 }

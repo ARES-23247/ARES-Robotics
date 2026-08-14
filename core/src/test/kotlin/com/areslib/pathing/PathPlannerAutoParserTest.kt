@@ -141,4 +141,66 @@ class PathPlannerAutoParserTest {
         assertTrue(compiledTask is SequentialTaskGroup)
         assertEquals("Sequential(TimeWait(500 ms), MockAction)", compiledTask.name)
     }
+
+    @Test
+    fun testParseAutoJsonWithStartingPose() {
+        val mockAutoJson = """
+            {
+              "version": 1.0,
+              "startingPose": {
+                "position": {
+                  "x": 1.5,
+                  "y": 2.5
+                },
+                "rotation": 90.0
+              },
+              "command": {
+                "type": "wait",
+                "data": {
+                  "waitTime": 1.0
+                }
+              }
+            }
+        """.trimIndent()
+
+        val startingPose = PathPlannerAutoParser.getStartingPose(mockAutoJson)
+        assertNotNull(startingPose)
+        assertEquals(1.5, startingPose!!.x, 1e-4)
+        assertEquals(2.5, startingPose.y, 1e-4)
+        assertEquals(Math.PI / 2.0, startingPose.heading.radians, 1e-4)
+    }
+
+    @Test
+    fun testParseAutoJsonWithParallelGroup() {
+        NamedCommands.clear()
+        NamedCommands.register(CommandKey("Action1"), "Action 1") { _ -> MockConditionTask("Action1", 1) }
+        NamedCommands.register(CommandKey("Action2"), "Action 2") { _ -> MockConditionTask("Action2", 1) }
+
+        val mockAutoJson = """
+            {
+              "version": 1.0,
+              "command": {
+                "type": "parallel",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "named",
+                      "data": { "name": "Action1" }
+                    },
+                    {
+                      "type": "named",
+                      "data": { "name": "Action2" }
+                    }
+                  ]
+                }
+              }
+            }
+        """.trimIndent()
+
+        val follower = createMockFollower()
+        val compiledTask = PathPlannerAutoParser.parseAuto(mockAutoJson, follower, 1000L)
+
+        assertNotNull(compiledTask)
+        assertTrue(compiledTask is ParallelTaskGroup)
+    }
 }

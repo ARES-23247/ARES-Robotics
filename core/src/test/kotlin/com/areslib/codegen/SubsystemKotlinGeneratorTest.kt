@@ -391,4 +391,37 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(source.contains("fun actionSubsystemIntakeSetPower(value: Double): Task = requireNotNull("))
         assertTrue(source.contains("GeneratedSubsystemRegistry.createActionTask(\"subsystem.intake.set.power\", value)"))
     }
+
+    @Test
+    fun `arm feedforward generates cosine gravity compensation and bounds velocity`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
+            documentId = "rotary-arm",
+            kotlinTypeName = "RotaryArm",
+            platform = SubsystemPlatform.FTC,
+        )
+        val loop = base.controlLoops.single().copy(
+            feedforward = com.areslib.subsystem.SubsystemFeedforwardDocument(
+                kind = SubsystemFeedforwardKind.ARM,
+                kS = 0.15,
+                kV = 1.20,
+                kA = 0.05,
+                kG = 0.60,
+                gravityAngleFieldId = "position",
+            )
+        )
+        val document = base.copy(controlLoops = listOf(loop))
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        )
+        val definition = files.single { it.artifact == SubsystemArtifact.DEFINITION }.content
+        val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+
+        assertTrue(definition.contains("feedforward.kind = com.areslib.subsystem.SubsystemFeedforwardKind.ARM"))
+        assertTrue(definition.contains("feedforward.kG = 0.6"))
+        assertTrue(controller.contains("0.6 * kotlin.math.cos(state.position.toDouble())"))
+        assertTrue(controller.contains("primaryStatic"))
+        assertTrue(controller.contains("primaryFeedforward"))
+    }
 }

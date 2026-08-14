@@ -76,4 +76,34 @@ class ThetaStarPlannerTest {
         // Acceptable behaviors vary, but let's assume it should handle it gracefully without crashing.
         assertNotNull(path)
     }
+
+    @Test
+    fun testCostmapInflationCreatesSafetyBuffer() {
+        val costmap = Costmap(10.0, 10.0, 0.1, Translation2d(0.0, 0.0))
+        costmap.setObstacle(5.0, 5.0, true)
+        costmap.inflate(0.3) // 30cm inflation radius
+
+        // Point at (5.2, 5.0) is 20cm away from the obstacle center, within the 30cm bumper inflation
+        assertFalse(costmap.isTraversable(5.2, 5.0), "Point within inflation buffer should not be traversable")
+
+        // Point at (5.5, 5.0) is 50cm away, outside the 30cm bumper inflation
+        assertTrue(costmap.isTraversable(5.5, 5.0), "Point outside inflation buffer should remain traversable")
+    }
+
+    @Test
+    fun testOutOfBoundsStartOrGoalReturnsEmptyPath() {
+        val costmap = Costmap(10.0, 10.0, 0.1, Translation2d(0.0, 0.0))
+
+        // Start outside costmap bounds
+        val startOutOfBounds = Translation2d(-2.0, 5.0)
+        val end = Translation2d(8.0, 8.0)
+        val path1 = ThetaStarPlanner.plan(costmap, startOutOfBounds, end)
+        assertTrue(path1.isEmpty(), "Planning from out-of-bounds start should return empty path")
+
+        // End outside costmap bounds
+        val start = Translation2d(1.0, 1.0)
+        val endOutOfBounds = Translation2d(15.0, 15.0)
+        val path2 = ThetaStarPlanner.plan(costmap, start, endOutOfBounds)
+        assertTrue(path2.isEmpty(), "Planning to out-of-bounds end should return empty path")
+    }
 }

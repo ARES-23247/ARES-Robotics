@@ -65,6 +65,33 @@ class MecanumInteractionModelTest {
         assertEquals(2, pieces.size)
     }
 
+    @Test
+    fun `shooting applies impulse aligned with robot heading`() {
+        val world = World<Body>()
+        val robot = dynamicCircle(0.20).also(world::addBody)
+        val pieces = mutableListOf<Body>()
+        val model = MecanumInteractionModel()
+
+        // Robot facing +Y (heading = PI/2)
+        model.update(
+            world, robot, pieces,
+            intakeApplied = false,
+            flywheelApplied = true,
+            transferApplied = true,
+            currentInventoryCount = 1,
+            robotHeading = Math.PI / 2.0,
+            robotX = 0.0,
+            robotY = 0.0
+        )
+
+        assertEquals(1, pieces.size)
+        val spawnedPiece = pieces.single()
+        assertEquals(0.0, spawnedPiece.transform.translationX, 1e-6)
+        assertEquals(0.4, spawnedPiece.transform.translationY, 1e-6)
+        assertEquals(0.0, spawnedPiece.linearVelocity.x, 1e-6)
+        org.junit.Assert.assertTrue("Piece should have positive Y velocity", spawnedPiece.linearVelocity.y > 0.0)
+    }
+
     private fun updateTransfer(
         model: MecanumInteractionModel,
         world: World<Body>,

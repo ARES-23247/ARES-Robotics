@@ -27,6 +27,12 @@ object TelemetryTopicConstants {
     const val GAME_PIECES = "ARES/GamePieces"
     /** Number of live records in [GAME_PIECES], including the explicit zero/removal state. */
     const val GAME_PIECES_COUNT = "ARES/GamePieces/Count"
+
+    const val HARDWARE_MOTORS_PREFIX = "Hardware/Motors"
+    fun motorVelocityTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Velocity"
+    fun motorPowerTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Power"
+    fun motorPositionTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Position"
+    fun motorCurrentTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/CurrentAmps"
 }
 
 /** Removes transport-only leading slashes from an ARES telemetry topic. */
