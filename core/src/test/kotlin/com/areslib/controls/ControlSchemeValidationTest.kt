@@ -20,7 +20,7 @@ class ControlSchemeValidationTest {
         val document = ControlSchemeDocument(
             documentId = "competition",
             name = "Competition controls",
-            controllers = listOf(ControllerAssignment("driver", "Driver", "vader5")),
+            controllers = listOf(ControllerAssignment("driver", "Driver", "vader5", devicePort = 0)),
             bindings = listOf(
                 ControlBindingDocument(
                     bindingId = "intake.chord",
@@ -82,7 +82,7 @@ class ControlSchemeValidationTest {
         val document = ControlSchemeDocument(
             documentId = "bad",
             name = "Bad",
-            controllers = listOf(ControllerAssignment("driver", "Driver", "vader5")),
+            controllers = listOf(ControllerAssignment("driver", "Driver", "vader5", devicePort = 0)),
             bindings = listOf(binding, binding.copy(bindingId = "bad.two"))
         )
         val issues = validateControlScheme(document, ControlValidationContext.fromCatalog(catalog, emptySet()))
@@ -90,5 +90,24 @@ class ControlSchemeValidationTest {
         assertTrue(issues.any { it.code == "invalid_hysteresis" })
         assertTrue(issues.any { it.code == "unknown_action" })
         assertTrue(issues.any { it.code == "ambiguous_binding" })
+    }
+
+    @Test
+    fun `requires explicit unique controller ports`() {
+        val document = ControlSchemeDocument(
+            documentId = "ports",
+            name = "Port validation",
+            controllers = listOf(
+                ControllerAssignment("driver", "Driver", "vader5", devicePort = null),
+                ControllerAssignment("operator", "Operator", "vader5", devicePort = 1),
+                ControllerAssignment("coach", "Coach", "vader5", devicePort = 1),
+            ),
+            bindings = emptyList(),
+        )
+
+        val issues = validateControlScheme(document)
+
+        assertTrue(issues.any { it.code == "missing_device_port" })
+        assertTrue(issues.any { it.code == "duplicate_device_port" })
     }
 }

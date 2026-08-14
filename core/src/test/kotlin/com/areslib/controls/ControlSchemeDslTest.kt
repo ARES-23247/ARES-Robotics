@@ -10,7 +10,7 @@ class ControlSchemeDslTest {
     @Test
     fun `novice DSL expresses buttons chords macros and analog triggers`() {
         val scheme = controlScheme("competition", "Competition controls") {
-            controller("driver", profile = "vader5-pro") {
+            controller("driver", profile = "vader5-pro", devicePort = 0) {
                 button("a").debounce(0.04).onPress { action("intake.collect") }
                 chord("left_bumper", "right_bumper")
                     .chordWindow(0.08)
@@ -26,6 +26,7 @@ class ControlSchemeDslTest {
         }
 
         assertEquals(4, scheme.bindings.size)
+        assertEquals(0, scheme.controllers.single().devicePort)
         assertTrue(scheme.bindings.first { it.source.kind == ControlSourceKind.CHORD }.suppressConstituentBindings)
         assertEquals(
             mapOf("rpm" to "4000.0", "mode" to "speaker"),

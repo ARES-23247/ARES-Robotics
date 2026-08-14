@@ -23,10 +23,11 @@ class ControlSchemeBuilder internal constructor() {
     fun controller(
         slot: String,
         profile: String,
+        devicePort: Int,
         displayName: String = slot.replaceFirstChar(Char::titlecase),
         block: ControllerControlsBuilder.() -> Unit
     ) {
-        controllers += ControllerAssignment(slot, displayName, profile)
+        controllers += ControllerAssignment(slot, displayName, profile, devicePort)
         ControllerControlsBuilder(slot, ::addBinding).apply(block)
     }
 

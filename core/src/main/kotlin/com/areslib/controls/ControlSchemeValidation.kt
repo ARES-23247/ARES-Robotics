@@ -55,6 +55,7 @@ fun validateControlScheme(
     }
 
     val slots = linkedSetOf<String>()
+    val devicePorts = linkedSetOf<Int>()
     val profileBySlot = linkedMapOf<String, String>()
     document.controllers.forEachIndexed { index, controller ->
         val path = "controllers[$index]"
@@ -66,6 +67,18 @@ fun validateControlScheme(
             issues += controlError(path, "missing_controller_name", "Controller display name is required")
         }
         validateStableKey(controller.profileId, "$path.profileId", issues)
+        val port = controller.devicePort
+        if (port == null) {
+            issues += controlError(path, "missing_device_port", "Controller port is required")
+        } else if (port !in 0..MAX_CONTROLLER_DEVICE_PORT) {
+            issues += controlError(
+                path,
+                "invalid_device_port",
+                "Controller port must be between 0 and $MAX_CONTROLLER_DEVICE_PORT",
+            )
+        } else if (!devicePorts.add(port)) {
+            issues += controlError(path, "duplicate_device_port", "Controller port $port is assigned more than once")
+        }
         profileBySlot[controller.slot] = controller.profileId
     }
 
@@ -317,6 +330,8 @@ private fun requireFiniteNonNegative(
 
 private fun controlError(path: String, code: String, message: String) =
     ControlValidationIssue(ControlValidationSeverity.ERROR, path, code, message)
+
+private const val MAX_CONTROLLER_DEVICE_PORT: Int = 15
 
 /** Deterministic JSON and SHA-256 codec for codegen, revision history, and Analytics. */
 object ControlSchemeCodec {

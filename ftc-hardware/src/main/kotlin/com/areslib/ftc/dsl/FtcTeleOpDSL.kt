@@ -104,6 +104,16 @@ abstract class FtcTeleOpBase<R> : OpMode() {
     abstract fun updateRobot(robot: R, g1: GamepadState, g2: GamepadState)
     abstract fun closeRobot(robot: R)
 
+    /**
+     * Runs generated project controls only during an active TeleOp frame, after hand-authored
+     * callbacks and before [updateRobot] writes outputs. Season shells may override this hook;
+     * INIT never invokes it, so controller input cannot arm a mechanism before Start.
+     */
+    open fun updateProjectControls(robot: R, g1: GamepadState, g2: GamepadState) = Unit
+
+    /** Cancels generated bindings/tasks before the robot is closed. */
+    open fun cancelProjectControls(robot: R) = Unit
+
     private var definition: FtcTeleOpBuilder<R>? = null
     private var robot: R? = null
     private var context: FtcTeleOpContext<R>? = null
@@ -165,6 +175,7 @@ abstract class FtcTeleOpBase<R> : OpMode() {
         driver.update(g1State)
         operator.update(g2State)
         definition?.everyLoopBlock?.invoke(activeContext)
+        updateProjectControls(activeRobot, g1State, g2State)
         updateRobot(activeRobot, g1State, g2State)
     }
 
@@ -174,7 +185,13 @@ abstract class FtcTeleOpBase<R> : OpMode() {
         closed = true
         val activeRobot = robot
         try {
-            if (activeRobot != null) closeRobot(activeRobot)
+            if (activeRobot != null) {
+                try {
+                    cancelProjectControls(activeRobot)
+                } finally {
+                    closeRobot(activeRobot)
+                }
+            }
         } finally {
             robot = null
             context = null

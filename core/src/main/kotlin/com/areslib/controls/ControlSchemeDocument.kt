@@ -1,13 +1,15 @@
 package com.areslib.controls
 
 /** Current schema written to project-local `.arescontrols` documents. */
-const val ARES_CONTROL_SCHEME_SCHEMA_VERSION: Int = 1
+const val ARES_CONTROL_SCHEME_SCHEMA_VERSION: Int = 2
 
 /** Stable logical controller roles. Projects may add roles beyond driver and operator. */
 data class ControllerAssignment(
     val slot: String,
     val displayName: String,
-    val profileId: String
+    val profileId: String,
+    /** Zero-based Driver Station/HID port. Required so generated runtimes never guess wiring. */
+    val devicePort: Int?,
 )
 
 /** Physical input shape used by one binding. */

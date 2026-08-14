@@ -46,7 +46,7 @@ import com.areslib.subsystem.SubsystemTargetCapability
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 5
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 6
 
 /** Complete, hermetic input to the Kotlin robot-project generator. */
 data class KotlinProjectCodegenRequest(
@@ -91,12 +91,14 @@ object AresKotlinProjectGenerator {
         val canonicalConditions = request.catalog.conditions.sortedBy { it.key }
         val actionMethods = assignMethodNames("action", canonicalActions.map { it.key })
         val conditionMethods = assignMethodNames("condition", canonicalConditions.map { it.key })
+        val subsystemActionKeys = request.subsystemActions.mapTo(linkedSetOf()) { it.descriptor.key }
         val continuousActionKeys = request.controlSchemes
             .asSequence()
             .flatMap { it.bindings.asSequence() }
             .filter { it.enabled && it.source.kind in ANALOG_SOURCE_KINDS }
             .filter { it.target.kind == ControlTargetKind.ACTION }
             .map { it.target.key }
+            .filterNot(subsystemActionKeys::contains)
             .distinct()
             .sorted()
             .toList()
@@ -115,8 +117,9 @@ object AresKotlinProjectGenerator {
             append("import com.areslib.routine.RoutineRuntimeBindings\n")
             append("import com.areslib.routine.RoutineStep\n")
             append("import com.areslib.routine.RoutineStepKind\n")
+            append("import com.areslib.routine.RoutineManager\n")
+            append("import com.areslib.input.ControllerBindingRuntime\n")
             if (request.controlSchemes.isNotEmpty()) {
-                append("import com.areslib.routine.RoutineManager\n")
                 append("import com.areslib.routine.RoutineStartPolicy\n")
                 append("import com.areslib.input.AnalogBinding\n")
                 append("import com.areslib.input.AnalogBindingListener\n")
@@ -128,7 +131,6 @@ object AresKotlinProjectGenerator {
                 append("import com.areslib.input.BindingReleaseReason\n")
                 append("import com.areslib.input.ButtonSuppressionState\n")
                 append("import com.areslib.input.ChordSource\n")
-                append("import com.areslib.input.ControllerBindingRuntime\n")
                 append("import com.areslib.input.DigitalBinding\n")
                 append("import com.areslib.input.DigitalBindingListener\n")
                 append("import com.areslib.input.DigitalBindingTiming\n")
@@ -149,12 +151,10 @@ object AresKotlinProjectGenerator {
                 request.subsystemActions.associateBy { it.descriptor.key },
             ))
             append('\n')
-            if (request.controlSchemes.isNotEmpty()) {
-                append("/** Robot scheduler boundary used by generated direct-action controller bindings. */\n")
-                append("fun interface ${request.objectName}ControlTaskSink {\n")
-                append("    fun submit(bindingId: String, task: Task)\n")
-                append("}\n\n")
-            }
+            append("/** Robot scheduler boundary used by generated direct-action controller bindings. */\n")
+            append("fun interface ${request.objectName}ControlTaskSink {\n")
+            append("    fun submit(bindingId: String, task: Task)\n")
+            append("}\n\n")
             append("/** Generated from the project's checked-in ARES documents. Do not edit by hand. */\n")
             append("object ${request.objectName} {\n")
             append("    const val GENERATOR_VERSION: Int = $ARES_KOTLIN_CODEGEN_VERSION\n")
@@ -311,16 +311,19 @@ object AresKotlinProjectGenerator {
         }
         validateControls(request, actions, routineIds)
         val subsystemActionKeySet = subsystemActionKeys.toSet()
-        val analogSubsystemActions = request.controlSchemes.asSequence()
+        val unsafeAnalogSubsystemBindings = request.controlSchemes.asSequence()
             .flatMap { it.bindings.asSequence() }
             .filter { it.enabled && it.source.kind in ANALOG_SOURCE_KINDS }
-            .map { it.target.key }
-            .filter(subsystemActionKeySet::contains)
-            .distinct()
+            .filter { it.target.kind == ControlTargetKind.ACTION && it.target.key in subsystemActionKeySet }
+            .filter { binding ->
+                val policy = binding.analogPolicy
+                policy == null || !policy.emitOnlyOnChange || policy.changeEpsilon <= 0.0
+            }
+            .map { it.bindingId }
             .toList()
-        require(analogSubsystemActions.isEmpty()) {
-            "Generated subsystem setters are discrete actions; use a button/chord or hand-code a continuous action: " +
-                analogSubsystemActions.joinToString()
+        require(unsafeAnalogSubsystemBindings.isEmpty()) {
+            "Generated subsystem analog bindings must emit only on meaningful changes so Redux tasks cannot flood the robot loop: " +
+                unsafeAnalogSubsystemBindings.joinToString()
         }
     }
 
@@ -574,25 +577,36 @@ object AresKotlinProjectGenerator {
         continuousActionMethods: Map<String, String>,
     ): String = buildString {
         val schemes = request.controlSchemes.sortedBy { it.documentId }
-        if (schemes.isEmpty()) return@buildString
         val profiles = request.controllerProfiles.associateBy { it.documentId }
         val platform = request.targetInputPlatform
         check(schemes.isEmpty() || platform != null)
         val actions = request.catalog.actions.associateBy { it.key }
         append("    val knownControlSchemeIds: Set<String> = ")
         append(renderStringSet(schemes.map { it.documentId }, 1))
+        append("\n")
+        append("    val DEFAULT_CONTROL_SCHEME_ID: String? = ")
+        append(renderNullableString(schemes.singleOrNull()?.documentId))
         append("\n\n")
         append("    /**\n")
-        append("     * Builds one allocation-free update runtime per controller slot. Suppressing chords are\n")
+        append("     * Builds one allocation-free update runtime per zero-based Driver Station port. Suppressing chords are\n")
         append("     * ordered before constituent buttons and raise their effective press debounce to the chord\n")
         append("     * window, preventing a near-simultaneous chord from leaking a single-button action.\n")
         append("     */\n")
+        append("    @Suppress(\"UNUSED_PARAMETER\")\n")
         append("    fun createControllerRuntimes(\n")
-        append("        schemeId: String,\n")
+        append("        schemeId: String?,\n")
         append("        registry: ${request.registryInterfaceName},\n")
         append("        routineManager: RoutineManager,\n")
         append("        taskSink: ${request.objectName}ControlTaskSink,\n")
-        append("    ): Map<String, ControllerBindingRuntime> = when (schemeId) {\n")
+        append("    ): Map<Int, ControllerBindingRuntime> {\n")
+        if (schemes.isEmpty()) {
+            append("        require(schemeId == null) { \"This project has no generated control scheme\" }\n")
+            append("        return emptyMap()\n")
+            append("    }\n")
+            return@buildString
+        }
+        append("        val activeSchemeId = requireNotNull(schemeId) { \"A generated control scheme is required\" }\n")
+        append("        return when (activeSchemeId) {\n")
         schemes.forEach { scheme ->
             val enabledBindings = scheme.bindings.filter { it.enabled }
             val suppressors = enabledBindings
@@ -603,7 +617,7 @@ object AresKotlinProjectGenerator {
             val suppressionStateNames = scheme.controllers.associate { controller ->
                 controller.slot to suppressionStateVariableName(controller.slot)
             }
-            scheme.controllers.sortedBy { it.slot }.forEach { controller ->
+            scheme.controllers.sortedWith(compareBy({ requireNotNull(it.devicePort) }, { it.slot })).forEach { controller ->
                 val profile = profiles.getValue(controller.profileId)
                 val maximumIndex = profile.controls.mapNotNull { control ->
                     control.mappings.firstOrNull { it.platform == platform }?.buttonIndex
@@ -625,7 +639,7 @@ object AresKotlinProjectGenerator {
             }
             if (suppressors.isNotEmpty()) append('\n')
             append("            linkedMapOf(\n")
-            scheme.controllers.sortedBy { it.slot }.forEach { controller ->
+            scheme.controllers.sortedWith(compareBy({ requireNotNull(it.devicePort) }, { it.slot })).forEach { controller ->
                 val profile = profiles.getValue(controller.profileId)
                 val bindings = enabledBindings
                     .filter { it.source.controllerSlot == controller.slot }
@@ -637,7 +651,7 @@ object AresKotlinProjectGenerator {
                 val digital = bindings.filter { it.source.kind in DIGITAL_SOURCE_KINDS }
                 val analog = bindings.filter { it.source.kind in ANALOG_SOURCE_KINDS }
                 val slotSuppressors = suppressors.filter { it.source.controllerSlot == controller.slot }
-                append("                ${stringLiteral(controller.slot)} to ControllerBindingRuntime(\n")
+                append("                ${requireNotNull(controller.devicePort)} to ControllerBindingRuntime(\n")
                 append("                    digitalBindings = ${renderDigitalBindingList(digital, slotSuppressors, suppressorNames, suppressionStateNames.getValue(controller.slot), profile, requireNotNull(platform), actions, actionMethods, 5)},\n")
                 append("                    analogBindings = ${renderAnalogBindingList(analog, profile, requireNotNull(platform), actions, actionMethods, continuousActionMethods, 5)},\n")
                 append("                ),\n")
@@ -645,7 +659,8 @@ object AresKotlinProjectGenerator {
             append("            )\n")
             append("        }\n")
         }
-        append("        else -> throw IllegalArgumentException(\"Unknown control scheme '\$schemeId'\")\n")
+        append("            else -> throw IllegalArgumentException(\"Unknown control scheme '\$activeSchemeId'\")\n")
+        append("        }\n")
         append("    }\n")
     }
 
@@ -1187,6 +1202,9 @@ object AresKotlinProjectGenerator {
         require(request.controlSchemes.isEmpty() || platform != null) {
             "A targetInputPlatform is required when generating controller bindings"
         }
+        require(request.controlSchemes.size <= 1) {
+            "Robot runtime requires exactly one active control scheme; keep one .arescontrols document until explicit scheme selection is configured"
+        }
         val profiles = linkedMapOf<String, ControllerProfileDocument>()
         request.controllerProfiles.forEach { profile ->
             require(profiles.putIfAbsent(profile.documentId, profile) == null) {
@@ -1216,6 +1234,21 @@ object AresKotlinProjectGenerator {
                         "Control scheme '${scheme.documentId}' references missing profile '${assignment.profileId}'"
                     )
                 assignment.slot to profile
+            }
+            scheme.controllers.forEach { assignment ->
+                val port = requireNotNull(assignment.devicePort) {
+                    "Control scheme '${scheme.documentId}' controller '${assignment.slot}' is missing its Driver Station port"
+                }
+                val supportedRange = when (platform) {
+                    ControllerInputPlatform.FTC -> 0..1
+                    ControllerInputPlatform.FRC -> 0..5
+                    ControllerInputPlatform.DESKTOP_GLFW -> 0..15
+                    null -> error("Controller platform is required")
+                }
+                require(port in supportedRange) {
+                    "Control scheme '${scheme.documentId}' controller '${assignment.slot}' uses port $port; " +
+                        "$platform supports ${supportedRange.first}..${supportedRange.last}"
+                }
             }
             scheme.bindings.filter { it.enabled }.forEach { binding ->
                 val profile = profileBySlot.getValue(binding.source.controllerSlot)

@@ -90,4 +90,53 @@ class FtcTeleOpDslTest {
         assertEquals(1, presses)
         assertTrue(whilePressed > 0)
     }
+
+    @Test
+    fun `generated project controls run only while active and cancel before close`() {
+        val events = mutableListOf<String>()
+        val opMode = object : FtcTeleOpBase<Unit>() {
+            override fun define() = teleOp<Unit> {
+                everyLoop { events += "student-callback" }
+            }
+
+            override fun buildRobot() = Unit
+            override fun getBaseRobot(robot: Unit) = null
+            override fun updateRobot(
+                robot: Unit,
+                g1: com.areslib.telemetry.GamepadState,
+                g2: com.areslib.telemetry.GamepadState,
+            ) {
+                events += "robot-update"
+            }
+
+            override fun updateProjectControls(
+                robot: Unit,
+                g1: com.areslib.telemetry.GamepadState,
+                g2: com.areslib.telemetry.GamepadState,
+            ) {
+                events += "generated-controls"
+            }
+
+            override fun cancelProjectControls(robot: Unit) {
+                events += "cancel-controls"
+            }
+
+            override fun closeRobot(robot: Unit) {
+                events += "close-robot"
+            }
+        }
+
+        opMode.init()
+        opMode.init_loop()
+        assertEquals(listOf("robot-update"), events)
+
+        events.clear()
+        opMode.start()
+        opMode.loop()
+        assertEquals(listOf("student-callback", "generated-controls", "robot-update"), events)
+
+        events.clear()
+        opMode.stop()
+        assertEquals(listOf("cancel-controls", "close-robot"), events)
+    }
 }

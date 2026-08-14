@@ -26,6 +26,8 @@ import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
+import com.areslib.subsystem.SubsystemTargetCapability
+import com.areslib.subsystem.SubsystemValueType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -50,7 +52,7 @@ class AresKotlinProjectGeneratorTest {
         )
         val golden = result.source
             .substringAfter("/** Typed robot implementations for every capability in the generated catalog. */\n")
-            .substringBefore("\n\n/** Generated from the project's checked-in ARES documents.")
+            .substringBefore("\n\n/** Robot scheduler boundary used by generated direct-action controller bindings. */")
 
         assertEquals(
             """interface GeneratedAresProjectCapabilities {
@@ -68,19 +70,21 @@ class AresKotlinProjectGeneratorTest {
     }
 
     @Test
-    fun `project without control schemes omits unusable controller runtime surface`() {
+    fun `project without control schemes emits a stable no-op controller runtime surface`() {
         val source = generate(
             catalog = catalog(actions = listOf(action("intake.stop"))),
             routines = listOf(simpleRoutine("stop", RoutineStep.action("intake.stop")))
         ).source
 
-        assertFalse(source.contains("GeneratedAresProjectControlTaskSink"))
-        assertFalse(source.contains("knownControlSchemeIds"))
-        assertFalse(source.contains("createControllerRuntimes"))
-        assertFalse(source.contains("ControllerBindingRuntime"))
+        assertTrue(source.contains("GeneratedAresProjectControlTaskSink"))
+        assertTrue(source.contains("knownControlSchemeIds: Set<String> = emptySet()"))
+        assertTrue(source.contains("DEFAULT_CONTROL_SCHEME_ID: String? = null"))
+        assertTrue(source.contains("createControllerRuntimes"))
+        assertTrue(source.contains("Map<Int, ControllerBindingRuntime>"))
+        assertTrue(source.contains("return emptyMap()"))
         assertFalse(source.contains("com.areslib.input.AnalogBinding"))
         assertFalse(source.contains("com.areslib.input.DigitalBinding"))
-        assertFalse(source.contains("com.areslib.routine.RoutineManager"))
+        assertTrue(source.contains("com.areslib.routine.RoutineManager"))
     }
 
     @Test
@@ -184,7 +188,7 @@ class AresKotlinProjectGeneratorTest {
         val controls = ControlSchemeDocument(
             documentId = "competition",
             name = "Competition",
-            controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId)),
+            controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId, devicePort = 0)),
             bindings = listOf(
                 ControlBindingDocument(
                     bindingId = "toggle_intake",
@@ -248,6 +252,8 @@ class AresKotlinProjectGeneratorTest {
         assertTrue(result.source.contains("buttonIndexes = intArrayOf(7, 19)"))
         assertFalse(result.source.contains("buttonIndex = 2"))
         assertTrue(result.source.contains("axisIndex = 3"))
+        assertTrue(result.source.contains("DEFAULT_CONTROL_SCHEME_ID: String? = \"competition\""))
+        assertTrue(result.source.contains("0 to ControllerBindingRuntime("))
         assertTrue(result.source.contains("SuppressingButtonChordSource("))
         assertTrue(result.source.contains("SuppressibleButtonSource("))
         assertTrue(result.source.contains("pressDebounceNanos = 80000000L"))
@@ -272,7 +278,7 @@ class AresKotlinProjectGeneratorTest {
         val controls = ControlSchemeDocument(
             documentId = "competition",
             name = "Competition",
-            controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId)),
+            controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId, devicePort = 0)),
             bindings = listOf(
                 ControlBindingDocument(
                     bindingId = "toggle",
@@ -295,6 +301,110 @@ class AresKotlinProjectGeneratorTest {
                     targetInputPlatform = ControllerInputPlatform.FTC
                 )
             )
+        }
+    }
+
+    @Test
+    fun `generation requires one active scheme and a platform-supported controller port`() {
+        val projectCatalog = catalog(actions = listOf(action("intake.toggle")))
+        val profile = ControllerProfileDocument(
+            documentId = "standard",
+            displayName = "Standard",
+            controls = listOf(control("a", ControllerControlTypeDocument.BUTTON, glfw = 0, ftc = 0)),
+        )
+        fun scheme(id: String, port: Int) = ControlSchemeDocument(
+            documentId = id,
+            name = id,
+            controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId, port)),
+            bindings = listOf(
+                ControlBindingDocument(
+                    bindingId = "$id.toggle",
+                    displayName = "Toggle",
+                    source = ControlSourceDocument(ControlSourceKind.BUTTON, "driver", listOf("a")),
+                    event = ControlEvent.PRESS,
+                    target = ControlTargetDocument(ControlTargetKind.ACTION, "intake.toggle"),
+                ),
+            ),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            AresKotlinProjectGenerator.generate(
+                KotlinProjectCodegenRequest(
+                    packageName = "org.example.generated",
+                    catalog = projectCatalog,
+                    routines = emptyList(),
+                    controlSchemes = listOf(scheme("primary", 0), scheme("practice", 1)),
+                    controllerProfiles = listOf(profile),
+                    targetInputPlatform = ControllerInputPlatform.FTC,
+                ),
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AresKotlinProjectGenerator.generate(
+                KotlinProjectCodegenRequest(
+                    packageName = "org.example.generated",
+                    catalog = projectCatalog,
+                    routines = emptyList(),
+                    controlSchemes = listOf(scheme("primary", 2)),
+                    controllerProfiles = listOf(profile),
+                    targetInputPlatform = ControllerInputPlatform.FTC,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `generated subsystem analog binding uses bounded task sink instead of an unimplemented continuous method`() {
+        val subsystemAction = action(
+            "subsystem.arm.set.power",
+            listOf(numberParameter("value", required = true)),
+        )
+        val target = SubsystemTargetCapability(
+            subsystemId = "arm",
+            fieldId = "power",
+            valueType = SubsystemValueType.DOUBLE,
+            descriptor = subsystemAction,
+        )
+        val profile = ControllerProfileDocument(
+            documentId = "standard",
+            displayName = "Standard",
+            controls = listOf(control("left_stick_y", ControllerControlTypeDocument.AXIS, glfw = 1, ftc = 1)),
+        )
+        fun request(policy: AnalogControlPolicyDocument) = KotlinProjectCodegenRequest(
+            packageName = "org.example.generated",
+            catalog = catalog(actions = listOf(subsystemAction)),
+            routines = emptyList(),
+            controlSchemes = listOf(
+                ControlSchemeDocument(
+                    documentId = "competition",
+                    name = "Competition",
+                    controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId, 0)),
+                    bindings = listOf(
+                        ControlBindingDocument(
+                            bindingId = "arm.power",
+                            displayName = "Arm power",
+                            source = ControlSourceDocument(ControlSourceKind.AXIS_VALUE, "driver", listOf("left_stick_y")),
+                            event = ControlEvent.VALUE,
+                            target = ControlTargetDocument(ControlTargetKind.ACTION, subsystemAction.key),
+                            analogPolicy = policy,
+                        ),
+                    ),
+                ),
+            ),
+            controllerProfiles = listOf(profile),
+            targetInputPlatform = ControllerInputPlatform.FTC,
+            subsystemActions = listOf(target),
+            subsystemRegistryFqn = "org.example.generated.subsystems.GeneratedSubsystemRegistry",
+        )
+
+        val source = AresKotlinProjectGenerator.generate(
+            request(AnalogControlPolicyDocument(emitOnlyOnChange = true, changeEpsilon = 0.01)),
+        ).source
+
+        assertFalse(source.contains("fun controlActionSubsystemArmSetPower"))
+        assertTrue(source.contains("task = registry.actionSubsystemArmSetPower("))
+        assertFailsWith<IllegalArgumentException> {
+            AresKotlinProjectGenerator.generate(request(AnalogControlPolicyDocument(emitOnlyOnChange = false)))
         }
     }
 

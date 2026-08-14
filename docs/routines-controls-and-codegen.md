@@ -47,6 +47,12 @@ A controller profile gives physical controls stable names such as `a`, `right_tr
 device with different raw indexes. Never copy a desktop raw index into FTC or FRC without using the
 editor's learn/verification flow on that platform.
 
+Each logical controller assignment also declares its zero-based Driver Station/HID `devicePort`.
+Labels such as `driver` and `operator` explain responsibility; they never imply wiring. Validation
+rejects missing or duplicate ports. Code generation additionally enforces FTC ports 0–1 and FRC
+ports 0–5. The current robot runtime installs exactly one checked-in competition scheme so it can
+never guess which of several schemes should control enabled hardware.
+
 Control schemes support:
 
 - press, release, held, hold-after-delay, and repeat events;
@@ -58,7 +64,11 @@ Control schemes support:
 
 The runtime snapshots input into preallocated `InputFrame` buffers. It uses `RobotClock`, cancels
 active bindings on disconnect or time rewind, and avoids reflection or hardware reads in binding
-evaluation.
+evaluation. Season controllers run first and generated bindings run second during active TeleOp,
+so an explicit generated binding is authoritative for that frame. Generated bindings are cancelled
+on disable, stop, and every mode transition; they do not run during INIT or autonomous. Analog
+bindings that create discrete subsystem tasks must use on-change emission with a positive epsilon
+so ordinary joystick noise cannot flood a task queue.
 
 ## Deterministic Kotlin generation
 

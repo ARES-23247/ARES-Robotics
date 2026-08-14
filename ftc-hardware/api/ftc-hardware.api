@@ -568,6 +568,7 @@ public abstract interface annotation class com/areslib/ftc/dsl/AresOpModeDsl : j
 public abstract class com/areslib/ftc/dsl/FtcTeleOpBase : com/qualcomm/robotcore/eventloop/opmode/OpMode {
 	public fun <init> ()V
 	public abstract fun buildRobot ()Ljava/lang/Object;
+	public fun cancelProjectControls (Ljava/lang/Object;)V
 	public abstract fun closeRobot (Ljava/lang/Object;)V
 	public abstract fun define ()Lcom/areslib/ftc/dsl/FtcTeleOpBuilder;
 	public abstract fun getBaseRobot (Ljava/lang/Object;)Lcom/areslib/ftc/FtcBaseRobot;
@@ -576,6 +577,7 @@ public abstract class com/areslib/ftc/dsl/FtcTeleOpBase : com/qualcomm/robotcore
 	public final fun loop ()V
 	public final fun start ()V
 	public final fun stop ()V
+	public fun updateProjectControls (Ljava/lang/Object;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;)V
 	public abstract fun updateRobot (Ljava/lang/Object;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;)V
 }
 
