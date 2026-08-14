@@ -7,8 +7,11 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
 import com.areslib.reducer.rootReducer
+import com.areslib.state.Alliance
 import com.areslib.state.DriveMode
 import com.areslib.state.RobotState
+import com.areslib.telemetry.AresGamepad
+import com.areslib.telemetry.GamepadState
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -82,6 +85,34 @@ class HolonomicDriveFacadeTest {
         facade.driveFieldRelativeNormalized(0.0, 0.0, 0.5, useHeadingLock = true)
         assertEquals(DriveMode.TELEOP, store.state.drive.driveMode)
         assertNull(store.state.drive.headingLockTargetRadians)
+    }
+
+    @Test
+    fun `standard gamepad drive consumes shaped stick values`() {
+        val actions = mutableListOf<RobotAction>()
+        val store = Store(RobotState()) { state, action ->
+            actions.add(action)
+            rootReducer(state, action)
+        }
+        val facade = MecanumDriveFacade(store)
+        store.dispatch(RobotAction.SetAlliance(Alliance.RED))
+        val driver = AresGamepad().apply {
+            leftStick.withDeadband(0.10)
+            rightStick.withExponentialCurve(2.0)
+        }
+        driver.update(
+            GamepadState(
+                leftStickY = 0.55f,
+                rightStickX = 0.50f
+            )
+        )
+
+        facade.driveWithGamepad(driver, useHeadingLock = false)
+
+        val intent = actions.filterIsInstance<RobotAction.JoystickDriveIntent>().last()
+        assertEquals(-0.50 * 0.65 * facade.maxSpeedMps, intent.targetXVelocity, 1e-6)
+        assertEquals(0.0, intent.targetYVelocity, 1e-6)
+        assertEquals(-0.25 * store.state.tuning.drive.teleOpTurnScale * facade.maxAngularSpeedRps, intent.targetAngularVelocity, 1e-6)
     }
 
     @Test

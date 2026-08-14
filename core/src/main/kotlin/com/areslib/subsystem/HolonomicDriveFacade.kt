@@ -8,6 +8,7 @@ import com.areslib.pathing.Path
 import com.areslib.math.wrapAngle
 import com.areslib.control.feedback.PIDController
 import com.areslib.control.tuning.PIDFCoefficients
+import com.areslib.telemetry.AresGamepad
 
 /**
  * Shared base class containing common mathematical algorithms and properties for holonomic drive facades.
@@ -287,13 +288,17 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
      * Executes field-relative drivetrain movement effort based on standard Gamepad input,
      * automatically handling field-centric coordinate inversion based on the robot's Alliance color.
      *
-     * @param driver The GamepadState object containing the driver's joystick inputs.
+     * Uses the shaped two-axis stick values, so [AresGamepad.BindableStick.withDeadband],
+     * [AresGamepad.BindableStick.withExponentialCurve], and
+     * [AresGamepad.BindableStick.withSlewRateLimit] apply directly to standard driving.
+     *
+     * @param driver The gamepad containing the driver's sampled and shaped joystick inputs.
      * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
      * @param usePositionHold Enables active EKF closed-loop position hold when joystick inputs are released.
      * @param dtSeconds Timestep delta duration in seconds.
      */
     @kotlin.jvm.JvmOverloads
-    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true, usePositionHold: Boolean = false, dtSeconds: Double = 0.02) {
+    fun driveWithGamepad(driver: AresGamepad, useHeadingLock: Boolean = true, usePositionHold: Boolean = false, dtSeconds: Double = 0.02) {
         val isTurbo = driver.rightBumper.isPressed
         val isSlow = driver.leftBumper.isPressed
 
@@ -309,9 +314,9 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
             else -> store.state.tuning.drive.teleOpTurnScale
         }
 
-        val joystickForward = -driver.leftStickY.value.toDouble() * speedMult
-        val joystickLeft = -driver.leftStickX.value.toDouble() * speedMult
-        val rotate = -driver.rightStickX.value.toDouble() * turnScale
+        val joystickForward = -driver.leftStick.shapedY * speedMult
+        val joystickLeft = -driver.leftStick.shapedX * speedMult
+        val rotate = -driver.rightStick.shapedX * turnScale
         
         val isBlueAlliance = store.state.drive.alliance == com.areslib.state.Alliance.BLUE
         val fieldVx = if (isBlueAlliance) -joystickForward else joystickForward

@@ -8904,27 +8904,55 @@ public final class com/areslib/telemetry/AresGamepad {
 	public final fun update (Lcom/areslib/telemetry/GamepadState;)V
 }
 
+public abstract interface class com/areslib/telemetry/AresGamepad$AxisConsumer {
+	public abstract fun accept (D)V
+}
+
 public final class com/areslib/telemetry/AresGamepad$BindableAxis {
 	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public final fun bindAxis (Lcom/areslib/telemetry/AresGamepad$AxisConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun getShapedValue ()D
 	public final fun getValue ()F
 	public final fun label (Ljava/lang/String;)V
+	public final fun withDeadband (D)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun withExponentialCurve (D)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
+	public final fun withSlewRateLimit (D)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 }
 
 public final class com/areslib/telemetry/AresGamepad$BindableButton {
 	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public final fun bindTo (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun bindTo$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 	public final fun getStateSelector ()Lkotlin/jvm/functions/Function1;
 	public final fun isPressed ()Z
 	public final fun label (Ljava/lang/String;)V
 	public final fun onPress (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun onPress$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 	public final fun onRelease (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun onRelease$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun toggle (Ljava/lang/String;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun toggle$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun whileHeld (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun whileHeld$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 	public final fun whilePressed (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun whilePressed$default (Lcom/areslib/telemetry/AresGamepad$BindableButton;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 }
 
 public final class com/areslib/telemetry/AresGamepad$BindableStick {
 	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public final fun bindStick (Lcom/areslib/telemetry/AresGamepad$StickConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableStick;
+	public final fun getShapedX ()D
+	public final fun getShapedY ()D
 	public final fun getX ()F
 	public final fun getY ()F
 	public final fun label (Ljava/lang/String;)V
+	public final fun withDeadband (D)Lcom/areslib/telemetry/AresGamepad$BindableStick;
+	public final fun withExponentialCurve (D)Lcom/areslib/telemetry/AresGamepad$BindableStick;
+	public final fun withSlewRateLimit (D)Lcom/areslib/telemetry/AresGamepad$BindableStick;
+}
+
+public abstract interface class com/areslib/telemetry/AresGamepad$StickConsumer {
+	public abstract fun accept (DD)V
 }
 
 public final class com/areslib/telemetry/GamepadState {
