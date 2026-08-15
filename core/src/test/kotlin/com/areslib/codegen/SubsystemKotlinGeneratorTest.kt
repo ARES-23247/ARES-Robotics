@@ -4,6 +4,15 @@ import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemImplementationDocument
 import com.areslib.subsystem.SubsystemImplementationKind
+import com.areslib.subsystem.InterlockComparison
+import com.areslib.subsystem.SubsystemInterlockDocument
+import com.areslib.subsystem.SubsystemLinkageDocument
+import com.areslib.subsystem.FaultRecoveryActionKind
+import com.areslib.subsystem.SubsystemDocument
+import com.areslib.subsystem.SubsystemFaultRecoveryDocument
+import com.areslib.subsystem.SubsystemHardwareScaffolding
+import com.areslib.subsystem.SubsystemHardwareKind
+import com.areslib.subsystem.SubsystemSafetyDocument
 import com.areslib.subsystem.SubsystemFeedforwardKind
 import com.areslib.subsystem.SubsystemFollowerTransform
 import com.areslib.subsystem.SubsystemSimulationDocument
@@ -21,6 +30,155 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 
 class SubsystemKotlinGeneratorTest {
+    @Test
+    fun `two joint linkage mock runs accepted outputs through deterministic plant`() {
+        val shoulder = SubsystemHardwareScaffolding.create(
+            SubsystemHardwareKind.MOTOR,
+            "shoulder",
+            "Shoulder",
+            SubsystemPlatform.FTC,
+        )
+        val elbow = SubsystemHardwareScaffolding.create(
+            SubsystemHardwareKind.MOTOR,
+            "elbow",
+            "Elbow",
+            SubsystemPlatform.FTC,
+        )
+        val document = SubsystemDocument(
+            documentId = "two-joint-arm",
+            displayName = "Two joint arm",
+            kotlinTypeName = "TwoJointArm",
+            platform = SubsystemPlatform.FTC,
+            hardware = listOf(shoulder.hardware, elbow.hardware),
+            stateFields = shoulder.stateFields + elbow.stateFields,
+            controlLoops = shoulder.controlLoops + elbow.controlLoops,
+            linkage = SubsystemLinkageDocument(
+                enabled = true,
+                link1LengthMeters = 0.4,
+                link2LengthMeters = 0.25,
+                link1MassKg = 1.1,
+                link2MassKg = 0.6,
+                joint1ActuatorId = "shoulder",
+                joint2ActuatorId = "elbow",
+                joint1AngleFieldId = "shoulderPosition",
+                joint2AngleFieldId = "elbowPosition",
+                joint1TorquePerVoltNm = 1.2,
+                joint2TorquePerVoltNm = 0.8,
+            ),
+        )
+
+        val mock = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        ).single { it.artifact == SubsystemArtifact.MOCK_IO }.content
+
+        assertTrue(mock.contains("TwoDofLinkagePlant("))
+        assertTrue(mock.contains("joint1TorquePerVoltNm = 1.2"))
+        assertTrue(mock.contains("linkagePlant.step("))
+        assertTrue(mock.contains("shoulderCommand,"))
+        assertTrue(mock.contains("elbowCommand,"))
+        assertTrue(mock.contains("shoulderPosition = linkagePlant.joint1PositionRad"))
+        assertTrue(mock.contains("elbowPosition = linkagePlant.joint2PositionRad"))
+    }
+
+    @Test
+    fun `automatic jam recovery is bounded current-gated and owned by generated IO`() {
+        val scaffold = SubsystemHardwareScaffolding.create(
+            SubsystemHardwareKind.MOTOR,
+            "roller",
+            "Roller",
+            SubsystemPlatform.FTC,
+        )
+        val currentField = scaffold.hardware.measurements.single {
+            it.source == com.areslib.subsystem.SubsystemMeasurementSource.MOTOR_CURRENT_AMPS
+        }.fieldId
+        val document = SubsystemDocument(
+            documentId = "jam-safe-intake",
+            displayName = "Jam-safe intake",
+            kotlinTypeName = "JamSafeIntake",
+            platform = SubsystemPlatform.FTC,
+            hardware = listOf(scaffold.hardware),
+            stateFields = scaffold.stateFields,
+            controlLoops = scaffold.controlLoops,
+            safety = SubsystemSafetyDocument(
+                requiresCurrentMonitoring = true,
+                faultRecovery = SubsystemFaultRecoveryDocument(
+                    enabled = true,
+                    actuatorId = scaffold.hardware.hardwareId,
+                    currentFieldId = currentField,
+                    currentThresholdAmps = 12.0,
+                    currentDurationMs = 200L,
+                    recoveryAction = FaultRecoveryActionKind.REVERSE_BRIEFLY,
+                    reverseDurationMs = 300L,
+                    reverseDutyCycle = -0.25,
+                    maxRetries = 2,
+                ),
+            ),
+        )
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        )
+        val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+        val io = files.single { it.artifact == SubsystemArtifact.IO_CONTRACT }.content
+        val physical = files.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
+        val mock = files.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
+
+        assertTrue(controller.contains("jamEvidenceSinceMs"))
+        assertTrue(controller.contains("recoveryCurrentAmps < 12.0"))
+        assertTrue(controller.contains("now - jamEvidenceSinceMs < 200L"))
+        assertTrue(controller.contains("automaticRecoveryRetries >= 2"))
+        assertTrue(controller.contains("io.commandAutomaticRecovery(-3.0)"))
+        assertTrue(io.contains("fun commandAutomaticRecovery(value: Double): Boolean"))
+        assertTrue(physical.contains("override fun latchOutputFault()"))
+        assertTrue(mock.contains("SimAppliedOutputRegistry.register"))
+    }
+
+    @Test
+    fun `cross-subsystem interlocks resolve before generation and fail closed in the registry`() {
+        val target = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "arm",
+            kotlinTypeName = "Arm",
+            platform = SubsystemPlatform.FTC,
+        )
+        val owner = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "intake",
+            kotlinTypeName = "Intake",
+            platform = SubsystemPlatform.FTC,
+        ).copy(
+            interlocks = listOf(
+                SubsystemInterlockDocument(
+                    interlockId = "arm-clear",
+                    targetSubsystemUid = target.uid,
+                    targetFieldId = target.stateFields.first().fieldId,
+                    comparison = InterlockComparison.GREATER_THAN,
+                    thresholdValue = 0.75,
+                    forbiddenZoneDescription = "Intake cannot move while the arm is extended",
+                ),
+            ),
+        )
+        val codegenTarget = SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems")
+        val registry = SubsystemKotlinGenerator.generateRegistry(listOf(owner, target), codegenTarget).content
+        val lifecycle = SubsystemKotlinGenerator.generate(owner, codegenTarget)
+            .single { it.artifact == SubsystemArtifact.SUBSYSTEM_LIFECYCLE }.content
+
+        assertTrue(registry.contains("fun interlocksPermitIntake(robotState: RobotState): Boolean"))
+        assertTrue(registry.contains("as? ArmState ?: return false"))
+        assertTrue(registry.contains("if (!interlockState0.feedbackValid"))
+        assertTrue(registry.contains("> 0.75) return false"))
+        assertTrue(lifecycle.contains("GeneratedSubsystemRegistry.interlocksPermitIntake(state)"))
+
+        val missingTarget = owner.copy(
+            interlocks = owner.interlocks.map { it.copy(targetSubsystemUid = "missing-subsystem") },
+        )
+        val error = assertThrows<IllegalArgumentException> {
+            SubsystemKotlinGenerator.generateRegistry(listOf(missingTarget, target), codegenTarget)
+        }
+        assertTrue(error.message.orEmpty().contains("does not resolve to exactly one subsystem"))
+    }
+
     @Test
     fun `hand-authored source is never emitted or guessed by code generation`() {
         val document = SubsystemTemplates.create(
@@ -100,7 +258,8 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(controller.contains("takeIf(Double::isFinite) ?: 0.0"))
         assertTrue(controller.contains("handledNeutralRecoveryRequestSequence"))
         assertTrue(controller.contains("neutralHoldCommandSequence"))
-        assertTrue(controller.contains("if (io.recoverWithNeutral()) neutralHoldCommandSequence = state.commandSequence"))
+        assertTrue(controller.contains("if (io.recoverWithNeutral())"))
+        assertTrue(controller.contains("neutralHoldCommandSequence = state.commandSequence"))
         assertTrue(controller.contains("feedbackAgeMs"))
         assertTrue(contractTest.contains("requests are consumed once and failed neutral stays latched"))
         assertTrue(contractTest.contains("direct and registered target actions advance the command sequence"))

@@ -83,6 +83,7 @@ public final class com/areslib/ftc/FtcKeyboardListener {
 }
 
 public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
+	public static final field DRIVE_RECOVERY_EPSILON D
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;)V
@@ -120,7 +121,9 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/TuningState;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/TuningState;Lkotlin/jvm/functions/Function2;)V
-	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/TuningState;Lkotlin/jvm/functions/Function2;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/TuningState;Lkotlin/jvm/functions/Function2;D)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/TuningState;Lkotlin/jvm/functions/Function2;DLcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
+	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/firstinspires/ftc/robotcore/external/Telemetry;DDLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/control/tuning/SimpleFeedforwardCoeffs;ZLjava/lang/Double;Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/PIDFCoefficients;DDDDDLjava/lang/Double;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;ZLcom/areslib/control/tuning/PIDFCoefficients;DLcom/areslib/math/geometry/Vector3;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/TuningState;Lkotlin/jvm/functions/Function2;DLcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun alignToTag (I)V
 	public fun close ()V
 	public final fun disableCalibrationMode ()V
@@ -139,9 +142,11 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 	public final fun getDrive ()Lcom/areslib/subsystem/DriveSubsystem;
 	public final fun getDriveFeedforward ()Lcom/areslib/control/tuning/SimpleFeedforwardCoeffs;
 	public final fun getDriveSlewRateLimit ()Ljava/lang/Double;
+	public final fun getDriveZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	protected fun getFallbackPoseUpdate (J)Lcom/areslib/action/RobotAction$PoseUpdate;
 	public final fun getHeadingDeadzoneDeg ()D
 	public final fun getHeadingGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
+	public final fun getMaxWheelSpeedMetersPerSecond ()D
 	public final fun getMecanumDrive ()Lcom/areslib/subsystem/MecanumDriveFacade;
 	public final fun getMecanumIO ()Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;
 	public final fun getMotorGains ()Lcom/areslib/control/tuning/PIDFCoefficients;
@@ -158,8 +163,10 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 	public final fun getWheelBaseMeters ()D
 	public final fun isCalibrationModeArmed ()Z
 	public final fun isCalibrationModeEnabled ()Z
+	public final fun isDriveOutputFaultLatched ()Z
 	protected fun prepareFallbackOdometry (Lcom/areslib/math/geometry/Pose2d;D)V
 	protected fun publishRobotTelemetry (J)V
+	public final fun recoverDriveOutputWithNeutral ()Z
 	public fun safeHardware ()V
 	public final fun setCustomSysIdVelocityProvider (Lkotlin/jvm/functions/Function0;)V
 	public final fun setSysIdFlywheelIO (Lcom/areslib/hardware/actuator/FlywheelIO;)V
@@ -174,22 +181,26 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 public final class com/areslib/ftc/FtcMecanumRobotBuilder {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;)V
 	public final fun build ()Lcom/areslib/ftc/FtcMecanumRobot;
+	public final fun getDriveZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public final fun getFrontLeftMotorDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
 	public final fun getFrontLeftMotorName ()Ljava/lang/String;
 	public final fun getFrontRightMotorDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
 	public final fun getFrontRightMotorName ()Ljava/lang/String;
 	public final fun getLimelightName ()Ljava/lang/String;
+	public final fun getMaxWheelSpeedMetersPerSecond ()D
 	public final fun getPinpointName ()Ljava/lang/String;
 	public final fun getRearLeftMotorDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
 	public final fun getRearLeftMotorName ()Ljava/lang/String;
 	public final fun getRearRightMotorDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
 	public final fun getRearRightMotorName ()Ljava/lang/String;
 	public final fun getTelemetry ()Lorg/firstinspires/ftc/robotcore/external/Telemetry;
+	public final fun setDriveZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
 	public final fun setFrontLeftMotorDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
 	public final fun setFrontLeftMotorName (Ljava/lang/String;)V
 	public final fun setFrontRightMotorDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
 	public final fun setFrontRightMotorName (Ljava/lang/String;)V
 	public final fun setLimelightName (Ljava/lang/String;)V
+	public final fun setMaxWheelSpeedMetersPerSecond (D)V
 	public final fun setPinpointName (Ljava/lang/String;)V
 	public final fun setRearLeftMotorDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
 	public final fun setRearLeftMotorName (Ljava/lang/String;)V
@@ -398,7 +409,8 @@ public final class com/areslib/ftc/drivetrain/MecanumHardwareIO : com/areslib/ha
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DLcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;DZDLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DLcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;DZDLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DLcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;DZDLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
-	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DLcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;DZDLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DLcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;DZDLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
+	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DLcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;DZDLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun apply (Lcom/areslib/kinematics/MecanumWheelSpeeds;)V
 	public final fun apply (Lcom/areslib/kinematics/MecanumWheelSpeeds;D)V
 	public final fun apply (Lcom/areslib/kinematics/MecanumWheelSpeeds;DD)V
@@ -431,6 +443,7 @@ public final class com/areslib/ftc/drivetrain/MecanumHardwareIO : com/areslib/ha
 	public final fun getMotorKf ()Ljava/lang/Double;
 	public final fun getMotorKi ()Ljava/lang/Double;
 	public final fun getMotorKp ()Ljava/lang/Double;
+	public final fun getOutputFaultLatched ()Z
 	public final fun getRearLeft ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRearRight ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRlDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
@@ -442,7 +455,9 @@ public final class com/areslib/ftc/drivetrain/MecanumHardwareIO : com/areslib/ha
 	public final fun getSlewRateLimit ()Ljava/lang/Double;
 	public final fun getTicksPerMeter ()D
 	public final fun getUseClosedLoopVelocity ()Z
+	public final fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public final fun recoverWithNeutral ()Z
 	public fun refresh ()V
 	public fun safe ()V
 	public final fun setEnableVoltageCompensatedSlew (Z)V
@@ -466,8 +481,8 @@ public final class com/areslib/ftc/drivetrain/MecanumKinematicsController {
 }
 
 public final class com/areslib/ftc/drivetrain/MecanumMotorCluster : java/lang/AutoCloseable {
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;ZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
-	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;ZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;ZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
+	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;ZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun applyPowerScale (D)V
 	public fun close ()V
 	public final fun getFlDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
@@ -483,6 +498,7 @@ public final class com/areslib/ftc/drivetrain/MecanumMotorCluster : java/lang/Au
 	public final fun getMotorKf ()Ljava/lang/Double;
 	public final fun getMotorKi ()Ljava/lang/Double;
 	public final fun getMotorKp ()Ljava/lang/Double;
+	public final fun getOutputFaultLatched ()Z
 	public final fun getRearLeft ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRearRight ()Lcom/qualcomm/robotcore/hardware/DcMotorEx;
 	public final fun getRlDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
@@ -492,6 +508,9 @@ public final class com/areslib/ftc/drivetrain/MecanumMotorCluster : java/lang/Au
 	public final fun getRrIO ()Lcom/areslib/ftc/drivetrain/EstimateMotorIO;
 	public final fun getRrName ()Ljava/lang/String;
 	public final fun getUseClosedLoopVelocity ()Z
+	public final fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public final fun latchOutputFault ()V
+	public final fun recoverWithNeutral ()Z
 	public final fun safe ()V
 	public final fun setMotorPowers (DDDD)V
 	public final fun updateInputs ()V
@@ -628,12 +647,14 @@ public final class com/areslib/ftc/hardware/CachedDcMotorEx : com/qualcomm/robot
 	public fun getPower ()D
 	public fun getVelocity ()D
 	public fun getVersion ()I
+	public fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public fun resetDeviceConfigurationForOpMode ()V
 	public fun setDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
 	public fun setMode (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)V
 	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
 	public fun setPower (D)V
 	public fun setVelocity (D)V
+	public fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
 }
 
 public final class com/areslib/ftc/hardware/CachedServo : com/qualcomm/robotcore/hardware/Servo {

@@ -88,6 +88,49 @@ class DrivetrainKotlinGeneratorTest {
     }
 
     @Test
+    fun `FTC zero-code runtime maps canonical physical identity tuning speed and neutral policy`() {
+        val drivetrain = runtimeReadyMecanumDocument()
+        val profile = canonicalProfile(drivetrain)
+
+        val generated = DrivetrainKotlinGenerator.generateFtcMecanumRuntime(
+            drivetrain,
+            listOf(profile),
+            "example.generated",
+        )
+
+        assertEquals("GeneratedAresFtcMecanumRuntimeConfig.kt", generated.relativePath)
+        assertTrue(generated.content.contains("fun createRobot(hardwareMap: HardwareMap"))
+        assertTrue(generated.content.contains("flName = GeneratedAresDrivebaseConfig.Components.DRIVE_MOTOR_FL.HARDWARE_ID"))
+        assertTrue(generated.content.contains("maxWheelSpeedMetersPerSecond = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND"))
+        assertTrue(generated.content.contains("val driveZeroPowerBehavior: DcMotor.ZeroPowerBehavior get() = DcMotor.ZeroPowerBehavior.BRAKE"))
+        assertTrue(generated.content.contains("val frontRightDirection: DcMotorSimple.Direction"))
+        assertTrue(generated.content.contains("hardwareMap.get(com.qualcomm.hardware.gobilda.GoBildaPinpointDriver::class.java"))
+        assertTrue(generated.content.contains("fun supportsRuntimeParameter"))
+        assertEquals(
+            generated,
+            DrivetrainKotlinGenerator.generateFtcMecanumRuntime(drivetrain, listOf(profile), "example.generated"),
+        )
+    }
+
+    @Test
+    fun `FTC zero-code runtime rejects incomplete mechanical tuning instead of guessing`() {
+        val drivetrain = runtimeReadyMecanumDocument().let { document ->
+            document.copy(parameters = document.parameters.filterNot { it.key == "drive.feedforwardKv" })
+        }
+        val profile = canonicalProfile(drivetrain)
+
+        val failure = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            DrivetrainKotlinGenerator.generateFtcMecanumRuntime(
+                drivetrain,
+                listOf(profile),
+                "example.generated",
+            )
+        }
+
+        assertTrue(failure.message.orEmpty().contains("drive.feedforwardKv"))
+    }
+
+    @Test
     fun `generated strings are escaped and Kotlin identifier collisions fail closed`() {
         val drivetrain = mecanumDocument()
         val escaped = drivetrain.parameters.single().copy(description = "Dollar ${'$'} and\nnext line")
@@ -170,4 +213,100 @@ class DrivetrainKotlinGeneratorTest {
             canonicalProfileUid = "profile.competition",
         )
     }
+
+    private fun runtimeReadyMecanumDocument(): DrivetrainDocument {
+        val base = mecanumDocument()
+        val positions = mapOf(
+            "fl" to (0.16 to 0.17),
+            "fr" to (0.16 to -0.17),
+            "rl" to (-0.16 to 0.17),
+            "rr" to (-0.16 to -0.17),
+        )
+        val components = base.components.map { component ->
+            if (component.role == DrivetrainComponentRole.DRIVE_MOTOR) {
+                val id = component.hardwareId
+                val position = positions.getValue(id)
+                component.copy(xMeters = position.first, yMeters = position.second, required = true)
+            } else {
+                component.copy(required = true)
+            }
+        }
+        val parameters = runtimeParameterTypes().map { (key, type) ->
+            TuningParameterDeclaration(
+                uid = "runtime.${key.replace(Regex("[^A-Za-z0-9]+"), "-").lowercase()}",
+                key = key,
+                componentUid = base.uid,
+                displayName = key,
+                description = "Canonical $key value",
+                type = type,
+                minimum = if (type == TuningParameterType.DOUBLE) 0.0 else null,
+                maximum = if (type == TuningParameterType.DOUBLE) 100_000.0 else null,
+                defaultValue = when (type) {
+                    TuningParameterType.BOOLEAN -> TuningValue(
+                        booleanValue = key == "localization.pinpointCcwPositive",
+                    )
+                    TuningParameterType.DOUBLE -> TuningValue(
+                        doubleValue = when (key) {
+                            "drive.feedforwardKv" -> 1.0
+                            "drive.ticksPerMeter" -> 2_000.0
+                            else -> 0.1
+                        },
+                    )
+                    else -> error("Unsupported test parameter type")
+                },
+                applyPolicy = TuningApplyPolicy.DISABLED_ONLY,
+            )
+        }
+        val k = (base.geometry.trackWidthMeters + base.geometry.wheelBaseMeters) * 0.5
+        return base.copy(
+            components = components,
+            geometry = base.geometry.copy(
+                maxAngularSpeedRadiansPerSecond = base.geometry.maxLinearSpeedMetersPerSecond / k,
+            ),
+            parameters = parameters,
+        )
+    }
+
+    private fun canonicalProfile(document: DrivetrainDocument): TuningProfileDocument =
+        TuningProfileDocument(
+            uid = document.canonicalProfileUid,
+            profileId = "competition",
+            displayName = "Competition",
+            description = "Canonical competition profile",
+            projectUid = "project.ftc",
+            drivebaseUid = document.uid,
+            authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+            values = document.parameters.map { TuningAssignment(it.uid, it.defaultValue) },
+        )
+
+    private fun runtimeParameterTypes(): Map<String, TuningParameterType> = linkedMapOf(
+        "drive.closedLoopVelocity" to TuningParameterType.BOOLEAN,
+        "drive.feedforwardKs" to TuningParameterType.DOUBLE,
+        "drive.feedforwardKv" to TuningParameterType.DOUBLE,
+        "drive.feedforwardKa" to TuningParameterType.DOUBLE,
+        "drive.motorKp" to TuningParameterType.DOUBLE,
+        "drive.motorKi" to TuningParameterType.DOUBLE,
+        "drive.motorKd" to TuningParameterType.DOUBLE,
+        "drive.motorKf" to TuningParameterType.DOUBLE,
+        "drive.headingKp" to TuningParameterType.DOUBLE,
+        "drive.headingKi" to TuningParameterType.DOUBLE,
+        "drive.headingKd" to TuningParameterType.DOUBLE,
+        "drive.headingDeadzoneDeg" to TuningParameterType.DOUBLE,
+        "drive.pathTranslationKp" to TuningParameterType.DOUBLE,
+        "drive.pathTranslationKd" to TuningParameterType.DOUBLE,
+        "drive.pathRotationKp" to TuningParameterType.DOUBLE,
+        "drive.pathRotationKd" to TuningParameterType.DOUBLE,
+        "drive.pathVelocityScale" to TuningParameterType.DOUBLE,
+        "drive.pathAccelerationLimit" to TuningParameterType.DOUBLE,
+        "drive.ticksPerMeter" to TuningParameterType.DOUBLE,
+        "localization.pinpointCcwPositive" to TuningParameterType.BOOLEAN,
+        "localization.pinpointXOffsetMm" to TuningParameterType.DOUBLE,
+        "localization.pinpointYOffsetMm" to TuningParameterType.DOUBLE,
+        "localization.pinpointEncoderResolution" to TuningParameterType.DOUBLE,
+        "localization.pinpointXReversed" to TuningParameterType.BOOLEAN,
+        "localization.pinpointYReversed" to TuningParameterType.BOOLEAN,
+        "localization.ekfQx" to TuningParameterType.DOUBLE,
+        "localization.ekfQy" to TuningParameterType.DOUBLE,
+        "localization.ekfQtheta" to TuningParameterType.DOUBLE,
+    )
 }

@@ -278,6 +278,7 @@ fun validateDrivetrainDocument(document: DrivetrainDocument): List<DrivetrainVal
             if (document.platform != DrivetrainPlatform.FTC || document.ctreImport != null) issue("kind", "FTC mecanum cannot use FRC/CTRE metadata")
             val driveMotors = document.components.filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR }
             if (driveMotors.size != 4) issue("components", "FTC mecanum requires exactly four drive motors")
+            if (driveMotors.any { !it.required }) issue("components", "Every FTC mecanum drive motor must be required at startup")
             if (document.modules.isNotEmpty()) issue("modules", "FTC mecanum wheel positions are defined by geometry, not swerve modules")
         }
         DrivetrainKind.FRC_CTRE_SWERVE -> {

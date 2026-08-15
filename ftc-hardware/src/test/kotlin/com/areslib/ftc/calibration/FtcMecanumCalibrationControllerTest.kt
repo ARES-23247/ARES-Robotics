@@ -243,6 +243,7 @@ class FtcMecanumCalibrationControllerTest {
         override var velocity: Double = 0.0
         override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
         override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+        override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
         override var power: Double = 0.0
         override fun getCurrent(unit: CurrentUnit): Double = 0.0
     }

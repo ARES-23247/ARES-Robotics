@@ -31,6 +31,7 @@ import com.areslib.util.RobotClock
  * @param frDirection Front-right motor direction polarity.
  * @param rlDirection Rear-left motor direction polarity.
  * @param rrDirection Rear-right motor direction polarity.
+ * @param zeroPowerBehavior FTC neutral behavior applied to all four motors during initialization.
  * @param useClosedLoopVelocity Configures motors in `RUN_USING_ENCODER` mode when `true`.
  * @param motorKp Optional PIDF proportional gain $K_p$.
  * @param motorKi Optional PIDF integral gain $K_i$.
@@ -54,7 +55,8 @@ class MecanumMotorCluster(
     val motorKp: Double? = null,
     val motorKi: Double? = null,
     val motorKd: Double? = null,
-    val motorKf: Double? = null
+    val motorKf: Double? = null,
+    val zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE,
 ) : AutoCloseable {
 
 
@@ -78,11 +80,20 @@ class MecanumMotorCluster(
 
     private var lastWarningTime = 0L
 
+    /** True after an invalid request or failed motor write until neutral succeeds explicitly. */
+    var outputFaultLatched: Boolean = false
+        private set
+
     init {
         frontLeft.direction = flDirection
         frontRight.direction = frDirection
         rearLeft.direction = rlDirection
         rearRight.direction = rrDirection
+
+        frontLeft.zeroPowerBehavior = zeroPowerBehavior
+        frontRight.zeroPowerBehavior = zeroPowerBehavior
+        rearLeft.zeroPowerBehavior = zeroPowerBehavior
+        rearRight.zeroPowerBehavior = zeroPowerBehavior
 
         HardwareRegistry.registerMotor(flName, flIO)
         HardwareRegistry.registerMotor(frName, frIO)
@@ -123,20 +134,29 @@ class MecanumMotorCluster(
      * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
+        if (outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite()) {
+            outputFaultLatched = true
+            setCachedPowers(0.0, 0.0, 0.0, 0.0)
+            applyNeutral()
+            return
+        }
         val safeFl = finitePower(fl)
         val safeFr = finitePower(fr)
         val safeRl = finitePower(rl)
         val safeRr = finitePower(rr)
 
-        flIO.power = safeFl
-        frIO.power = safeFr
-        rlIO.power = safeRl
-        rrIO.power = safeRr
+        setCachedPowers(safeFl, safeFr, safeRl, safeRr)
 
-        safeSetPower(frontLeft, safeFl * flIO.powerScale, "frontLeft")
-        safeSetPower(frontRight, safeFr * frIO.powerScale, "frontRight")
-        safeSetPower(rearLeft, safeRl * rlIO.powerScale, "rearLeft")
-        safeSetPower(rearRight, safeRr * rrIO.powerScale, "rearRight")
+        var succeeded = true
+        if (!safeSetPower(frontLeft, safeFl * flIO.powerScale, "frontLeft")) succeeded = false
+        if (!safeSetPower(frontRight, safeFr * frIO.powerScale, "frontRight")) succeeded = false
+        if (!safeSetPower(rearLeft, safeRl * rlIO.powerScale, "rearLeft")) succeeded = false
+        if (!safeSetPower(rearRight, safeRr * rrIO.powerScale, "rearRight")) succeeded = false
+        if (!succeeded) {
+            outputFaultLatched = true
+            setCachedPowers(0.0, 0.0, 0.0, 0.0)
+            applyNeutral()
+        }
     }
 
     /**
@@ -166,25 +186,52 @@ class MecanumMotorCluster(
      * Safely halts all 4 motors by setting their target power to 0.0.
      */
     fun safe() {
-        safeSetPower(frontLeft, 0.0, "frontLeft")
-        safeSetPower(frontRight, 0.0, "frontRight")
-        safeSetPower(rearLeft, 0.0, "rearLeft")
-        safeSetPower(rearRight, 0.0, "rearRight")
-        flIO.power = 0.0
-        frIO.power = 0.0
-        rlIO.power = 0.0
-        rrIO.power = 0.0
+        setCachedPowers(0.0, 0.0, 0.0, 0.0)
+        if (!applyNeutral()) outputFaultLatched = true
     }
 
-    private fun safeSetPower(motor: DcMotorEx, power: Double, name: String) {
+    /** Latches a caller-detected invalid command and immediately attempts neutral on every motor. */
+    fun latchOutputFault() {
+        outputFaultLatched = true
+        setCachedPowers(0.0, 0.0, 0.0, 0.0)
+        applyNeutral()
+    }
+
+    /** Clears the latch only after all four motors accept an explicit neutral command. */
+    fun recoverWithNeutral(): Boolean {
+        setCachedPowers(0.0, 0.0, 0.0, 0.0)
+        val recovered = applyNeutral()
+        outputFaultLatched = !recovered
+        return recovered
+    }
+
+    private fun applyNeutral(): Boolean {
+        var succeeded = true
+        if (!safeSetPower(frontLeft, 0.0, "frontLeft")) succeeded = false
+        if (!safeSetPower(frontRight, 0.0, "frontRight")) succeeded = false
+        if (!safeSetPower(rearLeft, 0.0, "rearLeft")) succeeded = false
+        if (!safeSetPower(rearRight, 0.0, "rearRight")) succeeded = false
+        return succeeded
+    }
+
+    private fun setCachedPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
+        flIO.power = fl
+        frIO.power = fr
+        rlIO.power = rl
+        rrIO.power = rr
+    }
+
+    private fun safeSetPower(motor: DcMotorEx, power: Double, name: String): Boolean {
         try {
             motor.power = finitePower(power)
+            return true
         } catch (e: Exception) {
             val now = RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("MecanumMotorCluster: Failed to set $name power. Error: ${e.message}")
                 lastWarningTime = now
             }
+            return false
         }
     }
 

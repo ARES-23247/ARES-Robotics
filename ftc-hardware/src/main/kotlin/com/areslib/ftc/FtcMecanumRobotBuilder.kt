@@ -1,6 +1,7 @@
 package com.areslib.ftc
 
 import com.qualcomm.robotcore.hardware.HardwareMap
+import com.qualcomm.robotcore.hardware.DcMotor
 import org.firstinspires.ftc.robotcore.external.Telemetry
 
 /**
@@ -50,6 +51,12 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
      */
     var telemetry: Telemetry? = null
 
+    /** Maximum wheel surface speed used to normalize drivetrain commands, in meters per second. */
+    var maxWheelSpeedMetersPerSecond: Double = 3.5
+
+    /** Neutral behavior applied to all four drive motors during construction. */
+    var driveZeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
+
 
     /**
      * Motor direction polarity for the Front Left motor. Defaults to [com.qualcomm.robotcore.hardware.DcMotorSimple.Direction.FORWARD].
@@ -88,7 +95,9 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
         flDirection = frontLeftMotorDirection,
         frDirection = frontRightMotorDirection,
         rlDirection = rearLeftMotorDirection,
-        rrDirection = rearRightMotorDirection
+        rrDirection = rearRightMotorDirection,
+        maxWheelSpeedMetersPerSecond = maxWheelSpeedMetersPerSecond,
+        driveZeroPowerBehavior = driveZeroPowerBehavior,
     )
 }
 

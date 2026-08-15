@@ -51,22 +51,47 @@ class AresKotlinProjectGeneratorTest {
             routines = listOf(simpleRoutine("simple", RoutineStep.action("arm.raise", mapOf("height" to "0.5"))))
         )
         val golden = result.source
-            .substringAfter("/** Typed robot implementations for every capability in the generated catalog. */\n")
+            .substringAfter("/** Stable robot boundary for capabilities referenced by generated project documents. */\n")
             .substringBefore("\n\n/** Robot scheduler boundary used by generated direct-action controller bindings. */")
 
         assertEquals(
             """interface GeneratedAresProjectCapabilities {
-    /** Implements action key arm.raise. */
-    fun actionArmRaise(height: Double): Task
+    /** Creates a hand-authored or season action by its catalog key, or null when unavailable. */
+    fun createActionTask(actionKey: String, arguments: Map<String, String>): Task? = null
 
-    /** Implements condition key arm.ready. */
-    fun conditionArmReady(): (RobotState) -> Boolean
+    /** Creates a hand-authored condition predicate by its catalog key, or null when unavailable. */
+    fun createCondition(conditionKey: String, arguments: Map<String, String>): ((RobotState) -> Boolean)? = null
 
     /** Platform trajectory adapter; returning null rejects a drive step safely. */
     fun createDriveTask(step: RoutineDriveStep): Task? = null
 }""",
             golden
         )
+    }
+
+    @Test
+    fun `hand authored catalog additions do not change the robot runtime interface`() {
+        fun interfaceSource(actions: List<ActionDescriptor>): String = generate(
+            catalog = catalog(actions = actions, conditions = listOf(condition("robot.ready"))),
+            routines = emptyList(),
+        ).source
+            .substringAfter("/** Stable robot boundary for capabilities referenced by generated project documents. */\n")
+            .substringBefore("\n\n/** Robot scheduler boundary used by generated direct-action controller bindings. */")
+
+        val oneAction = listOf(action("intake.stop"))
+        val twoActions = oneAction + action(
+            "arm.raise",
+            listOf(numberParameter("height", required = true)),
+        )
+        val source = generate(
+            catalog = catalog(actions = twoActions),
+            routines = listOf(simpleRoutine("raise", RoutineStep.action("arm.raise", mapOf("height" to "0.5")))),
+        ).source
+
+        assertEquals(interfaceSource(oneAction), interfaceSource(twoActions))
+        assertFalse(source.contains("fun actionArmRaise"))
+        assertTrue(source.contains("parsed.requiredNumber(\"height\""))
+        assertTrue(source.contains("registry.createActionTask(key, arguments)"))
     }
 
     @Test

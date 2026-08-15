@@ -73,6 +73,8 @@ enum class FtcTeleopDriveFrame {
  * @param localTelemetry FTC telemetry channel for Driver Station / Dashboard logging.
  * @param trackWidthMeters Lateral distance between left and right wheel centers ($m$).
  * @param wheelBaseMeters Longitudinal distance between front and rear wheel centers ($m$).
+ * @param maxWheelSpeedMetersPerSecond Canonical maximum wheel surface speed used for command normalization ($m/s$).
+ * @param driveZeroPowerBehavior FTC motor neutral behavior applied to all four drive motors during construction.
  * @param headingGains PIDF gain coefficients for heading stabilization controller.
  * @param headingDeadzoneDeg Angular deadzone for heading targeting ($deg$).
  * @param driveFeedforward Feedforward coefficients $(kS, kV, kA)$ for motor voltage feedforward calculations.
@@ -142,7 +144,10 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     visionStdDevs: Vector3 = Vector3(0.35, 0.35, 0.80),
     visionFilterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
     initialTuningState: com.areslib.state.TuningState = com.areslib.state.TuningState(),
-    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
+    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
+    val maxWheelSpeedMetersPerSecond: Double = 3.5,
+    val driveZeroPowerBehavior: com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior =
+        com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE,
 ) : FtcBaseRobot(
     hardwareMap = hardwareMap,
     pinpointName = pinpointName,
@@ -192,7 +197,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val mecanumIO = MecanumHardwareIO(
         hardwareMap = hardwareMap,
         flName = flName, frName = frName, rlName = rlName, rrName = rrName,
+        maxWheelSpeedMetersPerSecond = maxWheelSpeedMetersPerSecond,
         flDirection = flDirection, frDirection = frDirection, rlDirection = rlDirection, rrDirection = rrDirection,
+        zeroPowerBehavior = driveZeroPowerBehavior,
         initialKs = driveFeedforward.kS,
         useClosedLoopVelocity = useClosedLoopVelocity,
         ticksPerMeter = ticksPerMeter,
@@ -227,6 +234,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** True after the enabled OpMode receives a fresh neutral dashboard handshake. */
     val isCalibrationModeArmed: Boolean get() = calibrationController.networkArmed
 
+    /** True when drivetrain writes are blocked pending explicit neutral recovery. */
+    val isDriveOutputFaultLatched: Boolean get() = mecanumIO.outputFaultLatched
+
     /**
      * Enables calibration control for this OpMode. A fresh `SysId/EnableToken` with a `STOP`
      * command is still required before any calibration command can own hardware outputs.
@@ -238,6 +248,22 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** Immediately disarms calibration and neutrals drivetrain/flywheel characterization output. */
     fun disableCalibrationMode() {
         calibrationController.disableMode(telemetryManager, mecanumIO)
+    }
+
+    /**
+     * Clears a drivetrain output fault only while normal Redux drive intent is neutral and calibration
+     * does not own the motors. All four physical motors must accept neutral in the same attempt.
+     */
+    fun recoverDriveOutputWithNeutral(): Boolean {
+        val driveState = store.state.drive
+        val commandIsNeutral = kotlin.math.abs(driveState.xVelocityMetersPerSecond) <= DRIVE_RECOVERY_EPSILON &&
+            kotlin.math.abs(driveState.yVelocityMetersPerSecond) <= DRIVE_RECOVERY_EPSILON &&
+            kotlin.math.abs(driveState.angularVelocityRadiansPerSecond) <= DRIVE_RECOVERY_EPSILON
+        if (!commandIsNeutral || isCalibrationModeEnabled) {
+            mecanumIO.safe()
+            return false
+        }
+        return mecanumIO.recoverWithNeutral()
     }
 
     /** Autonomous trajectory builder providing high-level motion path generation. */
@@ -326,8 +352,15 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             } else {
                 String.format("%.1f A (Estimated)", powerManager.currentAmps)
             }
+            telemetryManager.customDriverStationText["Drive Output Safety"] = if (isDriveOutputFaultLatched) {
+                "FAULT LATCHED — release controls and run Recover drive after a fault"
+            } else {
+                "Ready — motor outputs permitted"
+            }
             lastLocalTelemetryUpdateMs = timestamp
         }
+
+        telemetryManager.dataLoggingTelemetry.putBoolean("Drive/OutputFaultLatched", isDriveOutputFaultLatched)
 
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fl", mecanumIO.flIO)
         telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
@@ -454,5 +487,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun close() {
         super.close()
         if (isAndroid) LimelightProxyAutoStart.start()
+    }
+
+    private companion object {
+        const val DRIVE_RECOVERY_EPSILON: Double = 1e-6
     }
 }

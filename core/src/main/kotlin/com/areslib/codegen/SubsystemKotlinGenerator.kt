@@ -9,11 +9,13 @@ import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemFeedforwardKind
 import com.areslib.subsystem.SubsystemFollowerDocument
 import com.areslib.subsystem.SubsystemFollowerTransform
+import com.areslib.subsystem.FaultRecoveryActionKind
 import com.areslib.subsystem.SubsystemHardwareDocument
 import com.areslib.subsystem.SubsystemHardwareKind
 import com.areslib.subsystem.SubsystemHomingComparison
 import com.areslib.subsystem.SubsystemHomingMethod
 import com.areslib.subsystem.SubsystemImplementationKind
+import com.areslib.subsystem.InterlockComparison
 import com.areslib.subsystem.SubsystemMeasurementSource
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemStateFieldDocument
@@ -23,6 +25,7 @@ import com.areslib.subsystem.subsystemNeutralRecoveryActionKey
 import com.areslib.subsystem.subsystemTargetActionKey
 import com.areslib.subsystem.subsystemTargetCapabilities
 import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.validateSubsystemDocuments
 
 enum class GeneratedSubsystemSourceSet { MAIN, TEST }
 
@@ -111,6 +114,10 @@ object SubsystemKotlinGenerator {
         documents: List<SubsystemDocument>,
         target: SubsystemKotlinCodegenTarget,
     ): GeneratedSubsystemFile {
+        val projectIssues = validateSubsystemDocuments(documents)
+        require(projectIssues.isEmpty()) {
+            projectIssues.joinToString("; ") { "${it.path}: ${it.message}" }
+        }
         documents.forEach { document ->
             require(document.platform == target.platform) {
                 "Subsystem '${document.documentId}' targets ${document.platform}, not ${target.platform}"
@@ -128,6 +135,7 @@ object SubsystemKotlinGenerator {
             val pkg = "${target.basePackage}.$segment"
             buildList {
                 add("$pkg.${document.kotlinTypeName}Subsystem")
+                add("$pkg.${document.kotlinTypeName}State")
                 add("$pkg.${platformPrefix(document.platform)}${document.kotlinTypeName}IO")
                 if (document.generateMockIo) add("$pkg.Mock${document.kotlinTypeName}IO")
             }
@@ -166,6 +174,9 @@ $actionCases
     else -> null
 }"""
         }
+        val interlockFunctions = generatedDocuments.filter { it.interlocks.isNotEmpty() }
+            .sortedBy { it.documentId }
+            .joinToString("\n\n") { document -> registryInterlockFunction(document, generatedDocuments) }
         val body = if (generatedDocuments.isEmpty()) {
             val parameter = if (target.platform == SubsystemPlatform.FTC) "hardwareMap: HardwareMap" else "isReal: Boolean"
             """@Suppress("UNUSED_PARAMETER")
@@ -186,6 +197,9 @@ $factories
                 append("import com.areslib.action.RobotAction\n")
                 append("import com.areslib.sequencer.StateActionTask\n")
             }
+            if (generatedDocuments.any { it.interlocks.isNotEmpty() }) {
+                append("import com.areslib.state.RobotState\n")
+            }
             append("import com.areslib.sequencer.Task\n")
             append("import com.areslib.subsystem.GeneratedSubsystemRegistrySupport\n")
             append("import com.areslib.subsystem.Subsystem\n")
@@ -204,6 +218,10 @@ $factories
             append(body.prependIndent("    "))
             append("\n\n")
             append(actionFactory.prependIndent("    "))
+            if (interlockFunctions.isNotBlank()) {
+                append("\n\n")
+                append(interlockFunctions.prependIndent("    "))
+            }
             append("\n}\n")
         }
         return generated(
@@ -213,6 +231,46 @@ $factories
             SubsystemArtifactGroup.GENERATED_PLUMBING,
             "Mechanical composition for generated starters, with explicit hand-authored registration reminders.",
         )
+    }
+
+    private fun registryInterlockFunction(
+        owner: SubsystemDocument,
+        documents: List<SubsystemDocument>,
+    ): String {
+        val checks = owner.interlocks.mapIndexed { index, interlock ->
+            val target = documents.single { it.uid == interlock.targetSubsystemUid }
+            val field = target.stateFields.single { it.fieldId == interlock.targetFieldId }
+            val snapshot = "interlockState$index"
+            val lockoutCondition = when (interlock.comparison) {
+                InterlockComparison.LESS_THAN -> "$snapshot.${field.fieldId}.toDouble() < ${interlock.thresholdValue.kotlinDouble()}"
+                InterlockComparison.GREATER_THAN -> "$snapshot.${field.fieldId}.toDouble() > ${interlock.thresholdValue.kotlinDouble()}"
+                InterlockComparison.EQUALS_STATE -> when (field.type) {
+                    SubsystemValueType.DOUBLE,
+                    SubsystemValueType.INT ->
+                        "kotlin.math.abs($snapshot.${field.fieldId}.toDouble() - ${interlock.thresholdValue.kotlinDouble()}) <= 1e-9"
+                    SubsystemValueType.BOOLEAN ->
+                        "$snapshot.${field.fieldId} == ${interlock.targetStateName!!.lowercase()}"
+                    SubsystemValueType.STRING ->
+                        "$snapshot.${field.fieldId} == ${interlock.targetStateName!!.quoted()}"
+                }
+                InterlockComparison.NOT_EQUALS_STATE -> when (field.type) {
+                    SubsystemValueType.DOUBLE,
+                    SubsystemValueType.INT ->
+                        "kotlin.math.abs($snapshot.${field.fieldId}.toDouble() - ${interlock.thresholdValue.kotlinDouble()}) > 1e-9"
+                    SubsystemValueType.BOOLEAN ->
+                        "$snapshot.${field.fieldId} != ${interlock.targetStateName!!.lowercase()}"
+                    SubsystemValueType.STRING ->
+                        "$snapshot.${field.fieldId} != ${interlock.targetStateName!!.quoted()}"
+                }
+            }
+            """val $snapshot = robotState.superstructure.subsystems[${target.documentId.quoted()}] as? ${target.kotlinTypeName}State ?: return false
+if (!$snapshot.feedbackValid || $lockoutCondition) return false"""
+        }.joinToString("\n")
+        return """/** Fails closed when a referenced subsystem snapshot is missing, stale, or inside a forbidden zone. */
+fun interlocksPermit${owner.kotlinTypeName}(robotState: RobotState): Boolean {
+${checks.prependIndent("    ")}
+    return true
+}"""
     }
 
     private fun starter(
@@ -313,6 +371,7 @@ $factories
                     loop.feedforward.velocityFieldId?.let { add("feedforward.velocityField = $it") }
                     loop.feedforward.accelerationFieldId?.let { add("feedforward.accelerationField = $it") }
                     loop.feedforward.gravityAngleFieldId?.let { add("feedforward.gravityAngleField = $it") }
+                    loop.feedforward.linkageJoint?.let { add("feedforward.linkageJoint = $it") }
                 }
                 if (loop.derivativeFilterTimeConstantSeconds != 0.02) {
                     add("derivativeFilterTimeConstantSeconds = ${loop.derivativeFilterTimeConstantSeconds.kotlinDouble()}")
@@ -480,6 +539,10 @@ $fieldLines
 
                 /** Applies every declared neutral and clears the fault latch only after complete success. */
                 fun recoverWithNeutral(): Boolean
+                /** Applies only the bounded descriptor-selected anti-jam output. */
+                fun commandAutomaticRecovery(value: Double): Boolean
+                /** Latches an exhausted/unsafe recovery and commands neutral. */
+                fun latchOutputFault()
                 /** Marks an explicitly completed calibration; generated code never infers calibration. */
                 fun establishCalibration()
                 /** Applies only the bounded generated homing output, bypassing the normal homed permit. */
@@ -518,6 +581,11 @@ $fieldLines
             if (document.safety.requiresCalibration) {
                 append("    private var handledCalibrationConfirmationRequestSequence = 0L\n")
             }
+            if (document.safety.faultRecovery.enabled) {
+                append("    private var jamEvidenceSinceMs = Long.MIN_VALUE\n")
+                append("    private var automaticRecoveryStartedAtMs = Long.MIN_VALUE\n")
+                append("    private var automaticRecoveryRetries = 0\n")
+            }
         }.trimEnd()
         val requestHandling = buildString {
             if (document.safety.requiresExplicitNeutralRecovery) {
@@ -533,7 +601,10 @@ $fieldLines
                             return
                         }
                         // IO owns the latch: a failed neutral must never clear it.
-                        if (io.recoverWithNeutral()) neutralHoldCommandSequence = state.commandSequence
+                        if (io.recoverWithNeutral()) {
+                            neutralHoldCommandSequence = state.commandSequence
+${if (document.safety.faultRecovery.enabled) "                            resetAutomaticRecovery()" else ""}
+                        }
                         return
                     }
 
@@ -574,6 +645,10 @@ $fieldLines
                     }
             """.trimIndent()
         } else ""
+        val automaticRecoveryHandling = if (document.safety.faultRecovery.enabled) {
+            "        if (handleAutomaticRecovery(state, scale, interlocksPermitted, now)) return"
+        } else ""
+        val automaticRecoveryHelper = automaticRecoveryControllerHelper(document)
         val safetyRequestHelper = if (
             document.hasSafetyRequestHandshake()
         ) {
@@ -613,7 +688,11 @@ $fieldLines
                  * Applies one allocation-free control step from immutable [state]. [scale] is the
                  * current brownout/current-budget multiplier; invalid or unsafe input commands neutral.
                  */
-                fun update(state: ${document.kotlinTypeName}State, scale: Double) {
+                fun update(
+                    state: ${document.kotlinTypeName}State,
+                    scale: Double,
+                    interlocksPermitted: Boolean = true,
+                ) {
                     val now = RobotClock.currentTimeMillis()
             $requestHandling
             $neutralHoldHandling
@@ -622,7 +701,8 @@ $fieldLines
                         return
                     }
                     resetHomingAttempt()
-                    val safetyPermit = state.feedbackValid && state.configurationHealthy && state.homed &&
+$automaticRecoveryHandling
+                    val safetyPermit = interlocksPermitted && state.feedbackValid && state.configurationHealthy && state.homed &&
                         state.calibrated && state.currentReadingValid && !state.outputFaultLatched
                     if (!scale.isFinite() || scale <= 0.0 || !safetyPermit) {
                         reset()
@@ -639,6 +719,7 @@ $fieldLines
                 fun reset() {
                     lastTimestampMs = 0L
                     resetHomingAttempt()
+${if (document.safety.faultRecovery.enabled) "                    resetAutomaticRecovery()" else ""}
             $reset
                 }
 
@@ -678,6 +759,7 @@ $fieldLines
                     homingEvidenceSinceMs = Long.MIN_VALUE
                 }
             $safetyRequestHelper
+            $automaticRecoveryHelper
             }
         """.trimIndent() + "\n"
     }
@@ -708,7 +790,7 @@ $fieldLines
             }
             SubsystemControlStrategy.POSITION_PID, SubsystemControlStrategy.VELOCITY_PID -> {
                 val measurement = "state.${requireNotNull(loop.measurementFieldId)}.toDouble()"
-                val feedforward = feedforwardExpression(loop)
+                val feedforward = feedforwardExpression(document, loop)
                 """        val ${loop.loopId}Target = $target
         val ${loop.loopId}Measurement = $measurement
         if (!${loop.loopId}Target.isFinite() || !${loop.loopId}Measurement.isFinite()) {
@@ -764,6 +846,12 @@ $feedforward
     }"""
         }
         val feedbackTimeoutMs = document.safety.feedbackTimeoutMs ?: Long.MAX_VALUE
+        val registryPackage = pkg.substringBeforeLast('.')
+        val interlockPermit = if (document.interlocks.isEmpty()) {
+            "true"
+        } else {
+            "GeneratedSubsystemRegistry.interlocksPermit${document.kotlinTypeName}(state)"
+        }
         return """
             package $pkg
 
@@ -771,6 +859,7 @@ $feedforward
             import com.areslib.action.RobotAction
             import com.areslib.state.RobotState
             import com.areslib.subsystem.Subsystem
+            import $registryPackage.GeneratedSubsystemRegistry
 
             /** Robot-loop host. Hardware reads, Redux updates, and output writes remain separated. */
             class ${document.kotlinTypeName}Subsystem(private val io: ${document.kotlinTypeName}IO) : Subsystem {
@@ -799,7 +888,7 @@ $feedforward
 
                 /** Applies immutable state to IO through the safety-gated controller. */
                 override fun writeOutputs(state: RobotState, scale: Double) {
-                    controller.update(state(state), scale)
+                    controller.update(state(state), scale, $interlockPermit)
                 }
 
             $setters
@@ -1025,6 +1114,8 @@ $feedforward
                     if (recovered) outputFaultLatched = false
                     return recovered
                 }
+
+${automaticRecoveryMethods(document)}
 
                 override fun establishCalibration() {
                     if (configurationHealthy) calibrated = true
@@ -1272,6 +1363,8 @@ $telemetry
                     return recovered
                 }
 
+${automaticRecoveryMethods(document)}
+
                 override fun establishCalibration() {
                     if (configurationHealthy) calibrated = true
                 }
@@ -1306,6 +1399,48 @@ $telemetry
         val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
             "    var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}\n        private set"
         }
+        val simSignalFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
+            "    private val ${device.hardwareId}SimSignal = com.areslib.simulation.SimAppliedOutputRegistry.register(${document.uid.quoted()}, ${device.hardwareId.quoted()})"
+        }
+        val linkagePlantFields = if (document.linkage.enabled) {
+            val linkage = document.linkage
+            """
+                /** Fixed deterministic step used by the generated desktop mechanism plant. */
+                var simulationStepSeconds: Double = 0.02
+                private val linkagePlant = com.areslib.math.kinematics.TwoDofLinkagePlant(
+                    com.areslib.math.kinematics.TwoDofLinkagePlantParameters(
+                        linkage = com.areslib.math.kinematics.TwoDofLinkageParameters(
+                            l1 = ${linkage.link1LengthMeters.kotlinDouble()},
+                            l2 = ${linkage.link2LengthMeters.kotlinDouble()},
+                            m1 = ${linkage.link1MassKg.kotlinDouble()},
+                            m2 = ${linkage.link2MassKg.kotlinDouble()},
+                            rc1 = ${linkage.link1CenterOfMassMeters.kotlinDouble()},
+                            rc2 = ${linkage.link2CenterOfMassMeters.kotlinDouble()},
+                        ),
+                        joint1TorquePerVoltNm = ${linkage.joint1TorquePerVoltNm.kotlinDouble()},
+                        joint2TorquePerVoltNm = ${linkage.joint2TorquePerVoltNm.kotlinDouble()},
+                        joint1ViscousDampingNmPerRadPerSec = ${linkage.joint1DampingNmPerRadPerSec.kotlinDouble()},
+                        joint2ViscousDampingNmPerRadPerSec = ${linkage.joint2DampingNmPerRadPerSec.kotlinDouble()},
+                        joint1MinimumRad = ${linkage.joint1MinRad.kotlinDouble()},
+                        joint1MaximumRad = ${linkage.joint1MaxRad.kotlinDouble()},
+                        joint2MinimumRad = ${linkage.joint2MinRad.kotlinDouble()},
+                        joint2MaximumRad = ${linkage.joint2MaxRad.kotlinDouble()},
+                    ),
+                )
+            """.trimIndent()
+        } else ""
+        val linkageRefresh = if (document.linkage.enabled) {
+            val linkage = document.linkage
+            """
+                linkagePlant.step(
+                    ${requireNotNull(linkage.joint1ActuatorId)}Command,
+                    ${requireNotNull(linkage.joint2ActuatorId)}Command,
+                    simulationStepSeconds,
+                )
+                ${requireNotNull(linkage.joint1AngleFieldId)} = linkagePlant.joint1PositionRad
+                ${requireNotNull(linkage.joint2AngleFieldId)} = linkagePlant.joint2PositionRad
+            """.trimIndent()
+        } else ""
         val commands = document.actuatorLeaders().joinToString("\n\n") { device ->
             val neutral = requireNotNull(device.safeOutput).kotlinDouble()
             val assignments = (listOf(device to "requested") + document.followersOf(device.hardwareId).map { follower ->
@@ -1318,7 +1453,7 @@ $telemetry
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "($applied).coerceIn(-1.0, 1.0)"
                     else -> error("Not an actuator")
                 }
-                "${target.hardwareId}Command = $bounded"
+                "${target.hardwareId}Command = $bounded\n        ${target.hardwareId}SimSignal.publish(${target.hardwareId}Command)"
             }
             """    override fun ${device.commandName()}(value: Double) {
         val requested = value.takeIf(Double::isFinite) ?: $neutral
@@ -1336,7 +1471,7 @@ $telemetry
         }
         val safe = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") {
             val neutral = requireNotNull(it.safeOutput).kotlinDouble()
-            "        ${it.hardwareId}Command = ${it.invertedExpression(neutral)}"
+            "        ${it.hardwareId}Command = ${it.invertedExpression(neutral)}\n        ${it.hardwareId}SimSignal.publish(${it.hardwareId}Command)"
         }
         val currentFields = document.hardware.flatMap { device ->
             device.measurements.filter { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
@@ -1358,6 +1493,8 @@ $telemetry
             class Mock${document.kotlinTypeName}IO : ${document.kotlinTypeName}IO {
             $fields
             $commandFields
+            $simSignalFields
+            ${linkagePlantFields.prependIndent("    ")}
                 override var feedbackValid: Boolean = false
                 override var feedbackTimestampMs: Long = 0L
                 override var configurationHealthy: Boolean = ${(!document.safety.requiresConfigurationHealth)}
@@ -1392,6 +1529,7 @@ $telemetry
                         currentReadingValid = ${(!document.safety.requiresCurrentMonitoring)}
                         return
                     }
+            ${linkageRefresh.prependIndent("        ")}
                     feedbackTimestampMs = RobotClock.currentTimeMillis()
                     feedbackValid = true
                     currentReadingValid = $currentValidity
@@ -1417,6 +1555,8 @@ $telemetry
                     return true
                 }
 
+${automaticRecoveryMethods(document)}
+
                 override fun establishCalibration() {
                     calibrationEstablishmentAttempts++
                     if (configurationHealthy) calibrated = true
@@ -1435,6 +1575,115 @@ $telemetry
                 }
             }
         """.trimIndent() + "\n"
+    }
+
+    private fun automaticRecoveryControllerHelper(document: SubsystemDocument): String {
+        val recovery = document.safety.faultRecovery
+        if (!recovery.enabled) return ""
+        val actuator = document.hardware.single { it.hardwareId == recovery.actuatorId }
+        val outputScale = if (actuator.kind == SubsystemHardwareKind.MOTOR) 12.0 else 1.0
+        val recoveryOutput = (recovery.reverseDutyCycle * outputScale).kotlinDouble()
+        val evidence = "state.${requireNotNull(recovery.currentFieldId)}.toDouble()"
+        val action = when (recovery.recoveryAction) {
+            FaultRecoveryActionKind.REVERSE_BRIEFLY -> """
+        if (automaticRecoveryRetries >= ${recovery.maxRetries}) {
+            io.latchOutputFault()
+            resetAutomaticRecovery()
+            return true
+        }
+        automaticRecoveryRetries++
+        automaticRecoveryStartedAtMs = now
+        jamEvidenceSinceMs = Long.MIN_VALUE
+        if (!io.commandAutomaticRecovery($recoveryOutput)) {
+            io.latchOutputFault()
+            resetAutomaticRecovery()
+        }
+        return true"""
+            FaultRecoveryActionKind.NEUTRAL_STOP -> """
+        io.latchOutputFault()
+        resetAutomaticRecovery()
+        return true"""
+            FaultRecoveryActionKind.NONE,
+            FaultRecoveryActionKind.HOLD_POSITION -> error("Unsupported generated automatic recovery action")
+        }
+        return """
+
+    private fun handleAutomaticRecovery(
+        state: ${document.kotlinTypeName}State,
+        scale: Double,
+        interlocksPermitted: Boolean,
+        now: Long,
+    ): Boolean {
+        val healthy = interlocksPermitted && scale.isFinite() && scale > 0.0 &&
+            state.feedbackValid && state.configurationHealthy && state.homed && state.calibrated &&
+            state.currentReadingValid && !state.outputFaultLatched
+        if (!healthy) {
+            resetAutomaticRecovery()
+            return false
+        }
+        if (automaticRecoveryStartedAtMs != Long.MIN_VALUE) {
+            if (now < automaticRecoveryStartedAtMs) {
+                io.safe()
+                resetAutomaticRecovery()
+                return true
+            }
+            if (now - automaticRecoveryStartedAtMs < ${recovery.reverseDurationMs}L) {
+                if (!io.commandAutomaticRecovery($recoveryOutput)) {
+                    io.latchOutputFault()
+                    resetAutomaticRecovery()
+                }
+                return true
+            }
+            io.safe()
+            automaticRecoveryStartedAtMs = Long.MIN_VALUE
+            jamEvidenceSinceMs = Long.MIN_VALUE
+            return true
+        }
+
+        val recoveryCurrentAmps = $evidence
+        if (!recoveryCurrentAmps.isFinite() || recoveryCurrentAmps < ${recovery.currentThresholdAmps.kotlinDouble()}) {
+            resetAutomaticRecovery()
+            return false
+        }
+        if (jamEvidenceSinceMs == Long.MIN_VALUE || now < jamEvidenceSinceMs) {
+            jamEvidenceSinceMs = now
+            return false
+        }
+        if (now - jamEvidenceSinceMs < ${recovery.currentDurationMs}L) return false
+$action
+    }
+
+    private fun resetAutomaticRecovery() {
+        jamEvidenceSinceMs = Long.MIN_VALUE
+        automaticRecoveryStartedAtMs = Long.MIN_VALUE
+        automaticRecoveryRetries = 0
+    }
+        """.trimEnd().prependIndent("            ")
+    }
+
+    private fun automaticRecoveryMethods(document: SubsystemDocument): String {
+        val recovery = document.safety.faultRecovery
+        val body = if (recovery.enabled) {
+            val actuator = document.hardware.single { it.hardwareId == recovery.actuatorId }
+            """override fun commandAutomaticRecovery(value: Double): Boolean {
+    if (outputFaultLatched || !value.isFinite()) return false
+    ${actuator.commandName()}(value)
+    return !outputFaultLatched
+}
+
+override fun latchOutputFault() {
+    outputFaultLatched = true
+    safe()
+}"""
+        } else {
+            """override fun commandAutomaticRecovery(value: Double): Boolean = false
+
+override fun latchOutputFault() {
+    outputFaultLatched = true
+    safe()
+}"""
+        }
+        return body.prependIndent("                ")
     }
 
     private fun homingConditionExpression(document: SubsystemDocument, prefix: String): String {
@@ -1637,13 +1886,14 @@ $evidenceAssignments
         val currentField = document.hardware.flatMap { it.measurements }
             .firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
             ?.fieldId
-        val currentAssertions = currentField?.let { fieldId ->
+        val currentAssertions = if (document.safety.requiresCurrentMonitoring) currentField?.let { fieldId ->
             """
                     io.$fieldId = -1.0
                     io.refresh()
                     assertFalse(io.currentReadingValid)
             """.trimIndent()
-        } ?: "        assertTrue(io.currentReadingValid)"
+        } ?: error("Validated current monitoring requires a current measurement")
+        else "        assertTrue(io.currentReadingValid)"
         val homingControllerTest = if (document.requiresHoming()) {
             val evidenceAssignments = document.safety.homing.evidence.joinToString("\n") { evidence ->
                 when (evidence.comparison) {
@@ -2129,7 +2379,7 @@ private fun homingDsl(document: SubsystemDocument): String {
         }
     }
 
-private fun feedforwardExpression(loop: SubsystemControlLoopDocument): String {
+private fun feedforwardExpression(document: SubsystemDocument, loop: SubsystemControlLoopDocument): String {
         val ff = loop.feedforward
         if (ff.kind == SubsystemFeedforwardKind.NONE) return "            val ${loop.loopId}Feedforward = 0.0"
         val velocity = ff.velocityFieldId?.let { "state.$it.toDouble()" }
@@ -2140,6 +2390,20 @@ private fun feedforwardExpression(loop: SubsystemControlLoopDocument): String {
             SubsystemFeedforwardKind.ELEVATOR -> ff.kG.kotlinDouble()
             SubsystemFeedforwardKind.ARM ->
                 "${ff.kG.kotlinDouble()} * kotlin.math.cos(state.${requireNotNull(ff.gravityAngleFieldId)}.toDouble())"
+            SubsystemFeedforwardKind.TWO_DOF_ARM -> {
+                val linkage = document.linkage
+                val theta1 = "state.${requireNotNull(linkage.joint1AngleFieldId)}.toDouble()"
+                val theta2 = "state.${requireNotNull(linkage.joint2AngleFieldId)}.toDouble()"
+                val sharedDistal = "(${linkage.link2MassKg.kotlinDouble()} * ${linkage.link2CenterOfMassMeters.kotlinDouble()} * 9.80665 * kotlin.math.cos($theta1 + $theta2))"
+                val torque = if (ff.linkageJoint == 1) {
+                    "((${linkage.link1MassKg.kotlinDouble()} * ${linkage.link1CenterOfMassMeters.kotlinDouble()} + ${linkage.link2MassKg.kotlinDouble()} * ${linkage.link1LengthMeters.kotlinDouble()}) * 9.80665 * kotlin.math.cos($theta1) + $sharedDistal)"
+                } else {
+                    sharedDistal
+                }
+                "${ff.kG.kotlinDouble()} * $torque"
+            }
+            SubsystemFeedforwardKind.FOUR_BAR_LINKAGE ->
+                error("Generated four-bar feedforward requires a closed-chain model and is intentionally unsupported")
         }
         return """            val ${loop.loopId}DesiredVelocity = $velocity
             val ${loop.loopId}DesiredAcceleration = $acceleration

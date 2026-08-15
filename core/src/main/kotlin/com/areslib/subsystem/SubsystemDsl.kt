@@ -582,6 +582,7 @@ class SubsystemFeedforwardBuilder internal constructor() {
     var velocityField: SubsystemFieldRef? = null
     var accelerationField: SubsystemFieldRef? = null
     var gravityAngleField: SubsystemFieldRef? = null
+    var linkageJoint: Int? = null
 
     internal fun build() = SubsystemFeedforwardDocument(
         kind = kind,
@@ -592,5 +593,6 @@ class SubsystemFeedforwardBuilder internal constructor() {
         velocityFieldId = velocityField?.id,
         accelerationFieldId = accelerationField?.id,
         gravityAngleFieldId = gravityAngleField?.id,
+        linkageJoint = linkageJoint,
     )
 }

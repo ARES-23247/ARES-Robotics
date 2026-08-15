@@ -197,17 +197,17 @@ class SubsystemDocumentTest {
     }
 
     @Test
-    fun `codec requires explicit version seven implementation and homing metadata`() {
+    fun `codec requires explicit current schema implementation and homing metadata`() {
         val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
 
         val oldSchema = assertThrows(IllegalArgumentException::class.java) {
-            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 7", "\"schemaVersion\": 6"))
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 8", "\"schemaVersion\": 7"))
         }
-        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 6"))
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 7"))
 
         val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
             SubsystemDocumentCodec.decode(
-                """{"schemaVersion":7,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
+                """{"schemaVersion":8,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
             )
         }
         assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))

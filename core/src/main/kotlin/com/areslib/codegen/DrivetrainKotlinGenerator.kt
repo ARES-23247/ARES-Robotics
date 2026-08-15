@@ -158,6 +158,259 @@ object DrivetrainKotlinGenerator {
         return GeneratedDrivebaseFile("GeneratedAresDrivebaseConfig.kt", source)
     }
 
+    /**
+     * Emits the mechanical FTC mecanum constructor/tuning adapter used by zero-code robot shells.
+     *
+     * Generation is intentionally narrower than the general drivetrain schema. Unsupported
+     * localization layouts or incomplete tuning documents fail before source is written rather
+     * than falling back to season constants or guessed hardware names.
+     */
+    fun generateFtcMecanumRuntime(
+        document: DrivetrainDocument,
+        profiles: List<TuningProfileDocument>,
+        packageName: String,
+        additionalDeclarations: List<TuningParameterDeclaration> = emptyList(),
+    ): GeneratedDrivebaseFile {
+        val issues = validateDrivetrainDocument(document)
+        require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
+        require(document.kind == com.areslib.drivetrain.DrivetrainKind.FTC_MECANUM &&
+            document.platform == com.areslib.drivetrain.DrivetrainPlatform.FTC
+        ) { "Generated FTC mecanum runtime requires an FTC_MECANUM drivetrain" }
+        require(packageName.matches(PACKAGE)) { "Invalid drivebase package '$packageName'" }
+        require(profiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
+            "FTC runtime generation accepts only checked-in canonical tuning profiles"
+        }
+
+        val declarations = document.parameters + additionalDeclarations
+        val declarationByKey = declarations.associateBy(TuningParameterDeclaration::key)
+        FTC_MECANUM_RUNTIME_PARAMETER_TYPES.forEach { (key, type) ->
+            val declaration = requireNotNull(declarationByKey[key]) {
+                "FTC zero-code runtime requires tuning parameter '$key'"
+            }
+            require(declaration.type == type) {
+                "FTC zero-code runtime parameter '$key' must be $type, not ${declaration.type}"
+            }
+        }
+        val canonical = requireNotNull(resolveTuningProfiles(profiles, declarations)[document.canonicalProfileUid]) {
+            "Missing canonical profile '${document.canonicalProfileUid}'"
+        }
+        FTC_MECANUM_RUNTIME_PARAMETER_TYPES.keys.forEach { key ->
+            val declaration = requireNotNull(declarationByKey[key])
+            require(canonical[declaration.uid] != null) { "Canonical profile has no value for '$key'" }
+        }
+
+        val driveMotors = document.components.filter {
+            it.role == com.areslib.drivetrain.DrivetrainComponentRole.DRIVE_MOTOR
+        }
+        fun quadrant(front: Boolean, left: Boolean): com.areslib.drivetrain.DrivetrainComponentDocument {
+            val matches = driveMotors.filter { motor ->
+                val x = motor.xMeters
+                val y = motor.yMeters
+                x != null && y != null && (x > 0.0) == front && (y > 0.0) == left
+            }
+            require(matches.size == 1) {
+                "FTC zero-code runtime requires exactly one required drive motor in each measured wheel quadrant"
+            }
+            return matches.single()
+        }
+        val frontLeft = quadrant(front = true, left = true)
+        val frontRight = quadrant(front = true, left = false)
+        val rearLeft = quadrant(front = false, left = true)
+        val rearRight = quadrant(front = false, left = false)
+        require(driveMotors.all { it.required }) { "FTC zero-code runtime requires all four drive motors at startup" }
+        require(driveMotors.none { it.currentLimitAmps != null }) {
+            "FTC drive motor currentLimitAmps cannot be claimed until the selected FTC adapter enforces it"
+        }
+
+        val primary = document.localization.primaryOdometry
+        val pinpoint = when (primary.source) {
+            com.areslib.drivetrain.LocalizationSourceKind.PINPOINT -> {
+                val components = primary.componentUids.map { uid -> document.components.single { it.uid == uid } }
+                require(components.size == 1 && components.single().role ==
+                    com.areslib.drivetrain.DrivetrainComponentRole.ODOMETRY_SENSOR
+                ) { "FTC Pinpoint localization requires exactly one odometry-sensor component" }
+                require(components.single().required) {
+                    "The primary FTC Pinpoint component must be required at startup"
+                }
+                components.single()
+            }
+            com.areslib.drivetrain.LocalizationSourceKind.WHEEL_ENCODERS_IMU -> null
+            else -> error("FTC zero-code runtime supports PINPOINT or WHEEL_ENCODERS_IMU primary localization")
+        }
+        val gyro = document.components.filter {
+            it.role == com.areslib.drivetrain.DrivetrainComponentRole.GYRO
+        }.also { require(it.size <= 1) { "FTC zero-code runtime supports at most one gyro component" } }.singleOrNull()
+        if (primary.source == com.areslib.drivetrain.LocalizationSourceKind.WHEEL_ENCODERS_IMU) {
+            require(gyro?.required == true) { "Wheel-encoder FTC localization requires one startup-required IMU" }
+        }
+        val visionComponents = document.localization.visionFusion.flatMap { source ->
+            require(source.source == com.areslib.drivetrain.LocalizationSourceKind.EXTERNAL &&
+                source.implementationClassName == "com.areslib.ftc.vision.FtcLimelightIO"
+            ) { "FTC zero-code runtime currently supports only FtcLimelightIO vision fusion" }
+            source.componentUids.map { uid -> document.components.single { it.uid == uid } }
+        }.distinctBy { it.uid }
+        require(visionComponents.size <= 1) { "FTC zero-code runtime currently supports at most one Limelight" }
+        val limelight = visionComponents.singleOrNull()
+
+        val expectedAngularSpeed = document.geometry.maxLinearSpeedMetersPerSecond /
+            ((document.geometry.trackWidthMeters + document.geometry.wheelBaseMeters) * 0.5)
+        require(kotlin.math.abs(expectedAngularSpeed - document.geometry.maxAngularSpeedRadiansPerSecond) <= 1e-9) {
+            "FTC mecanum maximum angular speed must equal maxLinearSpeed / ((trackWidth + wheelBase) / 2)"
+        }
+
+        fun constant(key: String): String = requireNotNull(declarationByKey[key]).key.constantName()
+        fun hardwareConstant(component: com.areslib.drivetrain.DrivetrainComponentDocument): String =
+            "GeneratedAresDrivebaseConfig.Components.${component.uid.constantName()}.HARDWARE_ID"
+        fun optionalHardware(component: com.areslib.drivetrain.DrivetrainComponentDocument?): String =
+            component?.let(::hardwareConstant) ?: "null"
+        val requiredPreflight = buildList {
+            pinpoint?.takeIf { it.required }?.let {
+                add("hardwareMap.get(com.qualcomm.hardware.gobilda.GoBildaPinpointDriver::class.java, ${hardwareConstant(it)})")
+            }
+            gyro?.takeIf { it.required }?.let {
+                add("hardwareMap.get(com.qualcomm.robotcore.hardware.IMU::class.java, ${hardwareConstant(it)})")
+            }
+            limelight?.takeIf { it.required }?.let {
+                add("hardwareMap.get(com.qualcomm.hardware.limelightvision.Limelight3A::class.java, ${hardwareConstant(it)})")
+            }
+        }.joinToString("\n") { "        $it" }
+        val reduxUids = FTC_MECANUM_RUNTIME_REDUX_KEYS.map { key ->
+            requireNotNull(declarationByKey[key]).uid
+        }.sorted()
+        val neutral = when (document.safety.enabledNeutralMode) {
+            com.areslib.drivetrain.DrivetrainNeutralMode.BRAKE -> "BRAKE"
+            com.areslib.drivetrain.DrivetrainNeutralMode.COAST -> "FLOAT"
+        }
+
+        val source = buildString {
+            appendLine("// ARES OWNERSHIP: GENERATED - DO NOT EDIT")
+            appendLine("// Hardware-neutral FTC mecanum construction from canonical .ares documents.")
+            appendLine("package $packageName")
+            appendLine()
+            appendLine("import com.areslib.control.tuning.PIDFCoefficients")
+            appendLine("import com.areslib.control.tuning.SimpleFeedforwardCoeffs")
+            appendLine("import com.areslib.ftc.FtcMecanumRobot")
+            appendLine("import com.areslib.state.*")
+            appendLine("import com.areslib.tuning.TypedTuningRuntime")
+            appendLine("import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver")
+            appendLine("import com.qualcomm.robotcore.hardware.DcMotor")
+            appendLine("import com.qualcomm.robotcore.hardware.DcMotorSimple")
+            appendLine("import com.qualcomm.robotcore.hardware.HardwareMap")
+            appendLine("import org.firstinspires.ftc.robotcore.external.Telemetry")
+            appendLine()
+            appendLine("/** Mechanical bridge from generated physical identity and tuning into ARESLib FTC runtime. */")
+            appendLine("object GeneratedAresFtcMecanumRuntimeConfig {")
+            appendLine("    private val values get() = GeneratedAresTuningConfig.Parameters")
+            appendLine()
+            appendLine("    /** Canonical motor direction for the front-left wheel. */")
+            appendLine("    val frontLeftDirection: DcMotorSimple.Direction get() = direction(GeneratedAresDrivebaseConfig.Components.${frontLeft.uid.constantName()}.INVERTED)")
+            appendLine("    /** Canonical motor direction for the front-right wheel. */")
+            appendLine("    val frontRightDirection: DcMotorSimple.Direction get() = direction(GeneratedAresDrivebaseConfig.Components.${frontRight.uid.constantName()}.INVERTED)")
+            appendLine("    /** Canonical motor direction for the rear-left wheel. */")
+            appendLine("    val rearLeftDirection: DcMotorSimple.Direction get() = direction(GeneratedAresDrivebaseConfig.Components.${rearLeft.uid.constantName()}.INVERTED)")
+            appendLine("    /** Canonical motor direction for the rear-right wheel. */")
+            appendLine("    val rearRightDirection: DcMotorSimple.Direction get() = direction(GeneratedAresDrivebaseConfig.Components.${rearRight.uid.constantName()}.INVERTED)")
+            appendLine("    /** Pinpoint X-pod direction derived from the checked-in tuning profile. */")
+            appendLine("    val pinpointXDirection: GoBildaPinpointDriver.EncoderDirection get() = encoderDirection(values.${constant("localization.pinpointXReversed")})")
+            appendLine("    /** Pinpoint Y-pod direction derived from the checked-in tuning profile. */")
+            appendLine("    val pinpointYDirection: GoBildaPinpointDriver.EncoderDirection get() = encoderDirection(values.${constant("localization.pinpointYReversed")})")
+            appendLine("    /** Neutral policy applied to every drive motor while output is zero. */")
+            appendLine("    val driveZeroPowerBehavior: DcMotor.ZeroPowerBehavior get() = DcMotor.ZeroPowerBehavior.$neutral")
+            appendLine()
+            appendLine("    /** Creates the shared FTC drivetrain. Required hardware lookups fail before the loop starts. */")
+            appendLine("    fun createRobot(hardwareMap: HardwareMap, localTelemetry: Telemetry? = null): FtcMecanumRobot {")
+            if (requiredPreflight.isNotEmpty()) appendLine(requiredPreflight)
+            appendLine("        val tuning = initialTuningState()")
+            appendLine("        return FtcMecanumRobot(")
+            appendLine("            hardwareMap = hardwareMap,")
+            appendLine("            flName = ${hardwareConstant(frontLeft)},")
+            appendLine("            frName = ${hardwareConstant(frontRight)},")
+            appendLine("            rlName = ${hardwareConstant(rearLeft)},")
+            appendLine("            rrName = ${hardwareConstant(rearRight)},")
+            appendLine("            flDirection = frontLeftDirection,")
+            appendLine("            frDirection = frontRightDirection,")
+            appendLine("            rlDirection = rearLeftDirection,")
+            appendLine("            rrDirection = rearRightDirection,")
+            appendLine("            pinpointName = ${optionalHardware(pinpoint)},")
+            appendLine("            limelightName = ${optionalHardware(limelight)},")
+            appendLine("            imuName = ${optionalHardware(gyro)},")
+            appendLine("            localTelemetry = localTelemetry,")
+            appendLine("            trackWidthMeters = GeneratedAresDrivebaseConfig.TRACK_WIDTH_METERS,")
+            appendLine("            wheelBaseMeters = GeneratedAresDrivebaseConfig.WHEEL_BASE_METERS,")
+            appendLine("            maxWheelSpeedMetersPerSecond = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND,")
+            appendLine("            driveZeroPowerBehavior = driveZeroPowerBehavior,")
+            appendLine("            headingGains = tuning.drive.headingGains,")
+            appendLine("            headingDeadzoneDeg = tuning.drive.headingDeadzoneDeg,")
+            appendLine("            driveFeedforward = tuning.drive.driveFeedforward,")
+            appendLine("            useClosedLoopVelocity = values.${constant("drive.closedLoopVelocity")},")
+            appendLine("            pathTranslationGains = tuning.drive.pathTranslationGains,")
+            appendLine("            pathRotationGains = tuning.drive.pathRotationGains,")
+            appendLine("            odomQx = tuning.localization.ekfNoise.qX,")
+            appendLine("            odomQy = tuning.localization.ekfNoise.qY,")
+            appendLine("            odomQtheta = tuning.localization.ekfNoise.qTheta,")
+            appendLine("            pinpointXOffsetMm = values.${constant("localization.pinpointXOffsetMm")},")
+            appendLine("            pinpointYOffsetMm = values.${constant("localization.pinpointYOffsetMm")},")
+            appendLine("            pinpointEncoderResolution = pinpointEncoderResolution,")
+            appendLine("            pinpointXDirection = pinpointXDirection,")
+            appendLine("            pinpointYDirection = pinpointYDirection,")
+            appendLine("            pinpointIsCcwPositive = values.${constant("localization.pinpointCcwPositive")},")
+            appendLine("            motorGains = tuning.drive.ftc.motorGains,")
+            appendLine("            ticksPerMeter = values.${constant("drive.ticksPerMeter")},")
+            appendLine("            initialTuningState = tuning,")
+            appendLine("        )")
+            appendLine("    }")
+            appendLine()
+            appendLine("    val pinpointEncoderResolution: Double?")
+            appendLine("        get() = values.${constant("localization.pinpointEncoderResolution")}.takeIf { it > 0.0 }")
+            appendLine()
+            appendLine("    /** True only when [withRuntimeValues] consumes the approved live value. */")
+            appendLine("    fun supportsRuntimeParameter(parameterUid: String): Boolean = parameterUid in reduxParameterUids")
+            appendLine()
+            appendLine("    fun initialTuningState(): TuningState = tuningState(TuningState(), null)")
+            appendLine()
+            appendLine("    fun withRuntimeValues(current: TuningState, runtime: TypedTuningRuntime): TuningState =")
+            appendLine("        tuningState(current, runtime)")
+            appendLine()
+            appendLine("    private fun tuningState(current: TuningState, runtime: TypedTuningRuntime?): TuningState {")
+            appendLine("        fun number(uid: String, canonical: Double): Double = runtime?.double(uid) ?: canonical")
+            appendLine("        val drive = current.drive.copy(")
+            appendLine("            trackWidthMeters = GeneratedAresDrivebaseConfig.TRACK_WIDTH_METERS,")
+            appendLine("            wheelBaseMeters = GeneratedAresDrivebaseConfig.WHEEL_BASE_METERS,")
+            appendLine("            pathTranslationGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.pathTranslationKp").uid.q()}, values.${constant("drive.pathTranslationKp")}), 0.0, number(${declarationByKey.getValue("drive.pathTranslationKd").uid.q()}, values.${constant("drive.pathTranslationKd")})),")
+            appendLine("            pathRotationGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.pathRotationKp").uid.q()}, values.${constant("drive.pathRotationKp")}), 0.0, number(${declarationByKey.getValue("drive.pathRotationKd").uid.q()}, values.${constant("drive.pathRotationKd")})),")
+            appendLine("            headingGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.headingKp").uid.q()}, values.${constant("drive.headingKp")}), number(${declarationByKey.getValue("drive.headingKi").uid.q()}, values.${constant("drive.headingKi")}), number(${declarationByKey.getValue("drive.headingKd").uid.q()}, values.${constant("drive.headingKd")})),")
+            appendLine("            headingDeadzoneDeg = number(${declarationByKey.getValue("drive.headingDeadzoneDeg").uid.q()}, values.${constant("drive.headingDeadzoneDeg")}),")
+            appendLine("            driveFeedforward = SimpleFeedforwardCoeffs(number(${declarationByKey.getValue("drive.feedforwardKs").uid.q()}, values.${constant("drive.feedforwardKs")}), number(${declarationByKey.getValue("drive.feedforwardKv").uid.q()}, values.${constant("drive.feedforwardKv")}), number(${declarationByKey.getValue("drive.feedforwardKa").uid.q()}, values.${constant("drive.feedforwardKa")})),")
+            appendLine("            pathVelocityScale = number(${declarationByKey.getValue("drive.pathVelocityScale").uid.q()}, values.${constant("drive.pathVelocityScale")}),")
+            appendLine("            pathAccelerationLimit = number(${declarationByKey.getValue("drive.pathAccelerationLimit").uid.q()}, values.${constant("drive.pathAccelerationLimit")}),")
+            appendLine("            ftc = FtcDriveTuningState(")
+            appendLine("                ticksPerMeter = number(${declarationByKey.getValue("drive.ticksPerMeter").uid.q()}, values.${constant("drive.ticksPerMeter")}),")
+            appendLine("                motorGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.motorKp").uid.q()}, values.${constant("drive.motorKp")}), number(${declarationByKey.getValue("drive.motorKi").uid.q()}, values.${constant("drive.motorKi")}), number(${declarationByKey.getValue("drive.motorKd").uid.q()}, values.${constant("drive.motorKd")}), number(${declarationByKey.getValue("drive.motorKf").uid.q()}, values.${constant("drive.motorKf")})),")
+            appendLine("            ),")
+            appendLine("        )")
+            appendLine("        val localization = LocalizationTuningState(")
+            appendLine("            ekfNoise = EkfProcessNoiseTuningState(number(${declarationByKey.getValue("localization.ekfQx").uid.q()}, values.${constant("localization.ekfQx")}), number(${declarationByKey.getValue("localization.ekfQy").uid.q()}, values.${constant("localization.ekfQy")}), number(${declarationByKey.getValue("localization.ekfQtheta").uid.q()}, values.${constant("localization.ekfQtheta")})),")
+            appendLine("            ftcPinpoint = FtcPinpointTuningState(number(${declarationByKey.getValue("localization.pinpointXOffsetMm").uid.q()}, values.${constant("localization.pinpointXOffsetMm")}), number(${declarationByKey.getValue("localization.pinpointYOffsetMm").uid.q()}, values.${constant("localization.pinpointYOffsetMm")}), number(${declarationByKey.getValue("localization.pinpointEncoderResolution").uid.q()}, values.${constant("localization.pinpointEncoderResolution")})),")
+            appendLine("        )")
+            appendLine("        return current.copy(drive = drive, localization = localization)")
+            appendLine("    }")
+            appendLine()
+            appendLine("    private fun direction(inverted: Boolean): DcMotorSimple.Direction =")
+            appendLine("        if (inverted) DcMotorSimple.Direction.REVERSE else DcMotorSimple.Direction.FORWARD")
+            appendLine()
+            appendLine("    private fun encoderDirection(reversed: Boolean): GoBildaPinpointDriver.EncoderDirection {")
+            appendLine("        val directions = GoBildaPinpointDriver.EncoderDirection.values()")
+            appendLine("        return if (reversed) directions.last() else directions.first()")
+            appendLine("    }")
+            appendLine()
+            appendLine("    private val reduxParameterUids: Set<String> = setOf(")
+            reduxUids.forEach { appendLine("        ${it.q()},") }
+            appendLine("    )")
+            appendLine("}")
+        }
+        return GeneratedDrivebaseFile("GeneratedAresFtcMecanumRuntimeConfig.kt", source)
+    }
+
     fun generateProjectTuning(
         projectUid: String,
         canonicalProfileUid: String,
@@ -238,6 +491,64 @@ private fun List<TuningProfileDocument>.singleProjectUid(): String {
     require(projectUids.size == 1) { "At least one canonical profile for exactly one robot project is required" }
     return projectUids.single()
 }
+
+private val FTC_MECANUM_RUNTIME_PARAMETER_TYPES: Map<String, TuningParameterType> = linkedMapOf(
+    "drive.closedLoopVelocity" to TuningParameterType.BOOLEAN,
+    "drive.feedforwardKs" to TuningParameterType.DOUBLE,
+    "drive.feedforwardKv" to TuningParameterType.DOUBLE,
+    "drive.feedforwardKa" to TuningParameterType.DOUBLE,
+    "drive.motorKp" to TuningParameterType.DOUBLE,
+    "drive.motorKi" to TuningParameterType.DOUBLE,
+    "drive.motorKd" to TuningParameterType.DOUBLE,
+    "drive.motorKf" to TuningParameterType.DOUBLE,
+    "drive.headingKp" to TuningParameterType.DOUBLE,
+    "drive.headingKi" to TuningParameterType.DOUBLE,
+    "drive.headingKd" to TuningParameterType.DOUBLE,
+    "drive.headingDeadzoneDeg" to TuningParameterType.DOUBLE,
+    "drive.pathTranslationKp" to TuningParameterType.DOUBLE,
+    "drive.pathTranslationKd" to TuningParameterType.DOUBLE,
+    "drive.pathRotationKp" to TuningParameterType.DOUBLE,
+    "drive.pathRotationKd" to TuningParameterType.DOUBLE,
+    "drive.pathVelocityScale" to TuningParameterType.DOUBLE,
+    "drive.pathAccelerationLimit" to TuningParameterType.DOUBLE,
+    "drive.ticksPerMeter" to TuningParameterType.DOUBLE,
+    "localization.pinpointCcwPositive" to TuningParameterType.BOOLEAN,
+    "localization.pinpointXOffsetMm" to TuningParameterType.DOUBLE,
+    "localization.pinpointYOffsetMm" to TuningParameterType.DOUBLE,
+    "localization.pinpointEncoderResolution" to TuningParameterType.DOUBLE,
+    "localization.pinpointXReversed" to TuningParameterType.BOOLEAN,
+    "localization.pinpointYReversed" to TuningParameterType.BOOLEAN,
+    "localization.ekfQx" to TuningParameterType.DOUBLE,
+    "localization.ekfQy" to TuningParameterType.DOUBLE,
+    "localization.ekfQtheta" to TuningParameterType.DOUBLE,
+)
+
+private val FTC_MECANUM_RUNTIME_REDUX_KEYS: Set<String> = setOf(
+    "drive.feedforwardKs",
+    "drive.feedforwardKv",
+    "drive.feedforwardKa",
+    "drive.motorKp",
+    "drive.motorKi",
+    "drive.motorKd",
+    "drive.motorKf",
+    "drive.headingKp",
+    "drive.headingKi",
+    "drive.headingKd",
+    "drive.headingDeadzoneDeg",
+    "drive.pathTranslationKp",
+    "drive.pathTranslationKd",
+    "drive.pathRotationKp",
+    "drive.pathRotationKd",
+    "drive.pathVelocityScale",
+    "drive.pathAccelerationLimit",
+    "drive.ticksPerMeter",
+    "localization.pinpointXOffsetMm",
+    "localization.pinpointYOffsetMm",
+    "localization.pinpointEncoderResolution",
+    "localization.ekfQx",
+    "localization.ekfQy",
+    "localization.ekfQtheta",
+)
 
 private val PACKAGE = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*")
 private fun String.q() = buildString {

@@ -25,6 +25,7 @@ import kotlin.math.abs
 class SimDcMotorEx : DcMotorEx {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     @Volatile override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+    @Volatile override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
     @Volatile private var _power: Double = 0.0
 
     override var power: Double

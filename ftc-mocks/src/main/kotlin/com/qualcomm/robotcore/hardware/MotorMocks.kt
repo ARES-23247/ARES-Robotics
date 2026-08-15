@@ -13,6 +13,11 @@ interface DcMotorSimple : HardwareDevice {
  * Mock representation of an FTC [DcMotor].
  */
 interface DcMotor : DcMotorSimple {
+    enum class ZeroPowerBehavior {
+        BRAKE,
+        FLOAT
+    }
+
     enum class RunMode {
         RUN_WITHOUT_ENCODER,
         RUN_USING_ENCODER,
@@ -20,6 +25,7 @@ interface DcMotor : DcMotorSimple {
         STOP_AND_RESET_ENCODER
     }
     var mode: RunMode
+    var zeroPowerBehavior: ZeroPowerBehavior
 }
 
 /**

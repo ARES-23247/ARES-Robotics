@@ -46,7 +46,7 @@ import com.areslib.subsystem.SubsystemTargetCapability
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 6
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 7
 
 /** Complete, hermetic input to the Kotlin robot-project generator. */
 data class KotlinProjectCodegenRequest(
@@ -89,9 +89,8 @@ object AresKotlinProjectGenerator {
         val canonicalRoutines = request.routines.sortedBy { it.documentId }
         val canonicalActions = request.catalog.actions.sortedBy { it.key }
         val canonicalConditions = request.catalog.conditions.sortedBy { it.key }
-        val actionMethods = assignMethodNames("action", canonicalActions.map { it.key })
-        val conditionMethods = assignMethodNames("condition", canonicalConditions.map { it.key })
         val subsystemActionKeys = request.subsystemActions.mapTo(linkedSetOf()) { it.descriptor.key }
+        val actionMethods = assignMethodNames("action", subsystemActionKeys.sorted())
         val continuousActionKeys = request.controlSchemes
             .asSequence()
             .flatMap { it.bindings.asSequence() }
@@ -144,9 +143,7 @@ object AresKotlinProjectGenerator {
             append(renderRegistryInterface(
                 request,
                 canonicalActions,
-                canonicalConditions,
                 actionMethods,
-                conditionMethods,
                 continuousActionMethods,
                 request.subsystemActions.associateBy { it.descriptor.key },
             ))
@@ -201,7 +198,7 @@ object AresKotlinProjectGenerator {
                 "    val DEFAULT_AUTONOMOUS_ENTRY_ID: String? = " +
                     "${renderNullableString(autonomousCatalog?.defaultEntryId)}\n\n"
             )
-            append(renderRuntimeBindings(request, canonicalActions, canonicalConditions, actionMethods, conditionMethods))
+            append(renderRuntimeBindings(request, canonicalActions, canonicalConditions, actionMethods))
             append('\n')
             append(renderControlRuntimes(request, actionMethods, continuousActionMethods))
             append("}\n")
@@ -448,15 +445,15 @@ object AresKotlinProjectGenerator {
     private fun renderRegistryInterface(
         request: KotlinProjectCodegenRequest,
         actions: List<ActionDescriptor>,
-        conditions: List<ConditionDescriptor>,
         actionMethods: Map<String, String>,
-        conditionMethods: Map<String, String>,
         continuousActionMethods: Map<String, String>,
         subsystemActions: Map<String, SubsystemTargetCapability>,
     ): String = buildString {
-        append("/** Typed robot implementations for every capability in the generated catalog. */\n")
+        append("/** Stable robot boundary for capabilities referenced by generated project documents. */\n")
         append("interface ${request.registryInterfaceName} {\n")
-        actions.forEach { descriptor ->
+        append("    /** Creates a hand-authored or season action by its catalog key, or null when unavailable. */\n")
+        append("    fun createActionTask(actionKey: String, arguments: Map<String, String>): Task? = null\n\n")
+        actions.filter { it.key in subsystemActions }.forEach { descriptor ->
             append("    /** Implements action key ${descriptor.key}. */\n")
             append("    fun ${actionMethods.getValue(descriptor.key)}(")
             append(renderSignatureParameters(descriptor.parameters))
@@ -478,12 +475,8 @@ object AresKotlinProjectGenerator {
             append(renderSignatureParameters(descriptor.parameters))
             append("): Unit\n\n")
         }
-        conditions.forEach { descriptor ->
-            append("    /** Implements condition key ${descriptor.key}. */\n")
-            append("    fun ${conditionMethods.getValue(descriptor.key)}(")
-            append(renderSignatureParameters(descriptor.parameters))
-            append("): (RobotState) -> Boolean\n\n")
-        }
+        append("    /** Creates a hand-authored condition predicate by its catalog key, or null when unavailable. */\n")
+        append("    fun createCondition(conditionKey: String, arguments: Map<String, String>): ((RobotState) -> Boolean)? = null\n\n")
         append("    /** Platform trajectory adapter; returning null rejects a drive step safely. */\n")
         append("    fun createDriveTask(step: RoutineDriveStep): Task? = null\n")
         append("}\n")
@@ -501,7 +494,6 @@ object AresKotlinProjectGenerator {
         actions: List<ActionDescriptor>,
         conditions: List<ConditionDescriptor>,
         actionMethods: Map<String, String>,
-        conditionMethods: Map<String, String>
     ): String = buildString {
         append("    fun runtimeBindings(registry: ${request.registryInterfaceName}): RoutineRuntimeBindings =\n")
         append("        RoutineRuntimeBindings(\n")
@@ -519,9 +511,16 @@ object AresKotlinProjectGenerator {
                 append("                            arguments = arguments,\n")
                 append("                            allowedKeys = ${renderStringSet(descriptor.parameters.map { it.key }, 7)},\n")
                 append("                        )\n")
-                append("                        registry.${actionMethods.getValue(descriptor.key)}(")
-                append(renderInvocationArguments(descriptor.parameters, 6))
-                append(")\n")
+                if (descriptor.key in actionMethods) {
+                    append("                        registry.${actionMethods.getValue(descriptor.key)}(")
+                    append(renderInvocationArguments(descriptor.parameters, 6))
+                    append(")\n")
+                } else {
+                    descriptor.parameters.sortedBy { it.key }.forEach { parameter ->
+                        append("                        ${renderArgumentRead(parameter)}\n")
+                    }
+                    append("                        registry.createActionTask(key, arguments)\n")
+                }
                 append("                    }\n")
             }
             append("                    else -> null\n")
@@ -542,9 +541,10 @@ object AresKotlinProjectGenerator {
                 append("                            arguments = arguments,\n")
                 append("                            allowedKeys = ${renderStringSet(descriptor.parameters.map { it.key }, 7)},\n")
                 append("                        )\n")
-                append("                        registry.${conditionMethods.getValue(descriptor.key)}(")
-                append(renderInvocationArguments(descriptor.parameters, 6))
-                append(")\n")
+                descriptor.parameters.sortedBy { it.key }.forEach { parameter ->
+                    append("                        ${renderArgumentRead(parameter)}\n")
+                }
+                append("                        registry.createCondition(key, arguments)\n")
                 append("                    }\n")
             }
             append("                    else -> null\n")
@@ -908,11 +908,24 @@ object AresKotlinProjectGenerator {
                         renderControlActionArguments(descriptor.parameters, target.arguments, dynamicKey, valueExpression, 0) +
                         ")"
                 } else {
+                    val taskExpression = if (target.key in actionMethods) {
+                        "registry.${actionMethods.getValue(target.key)}(" +
+                            renderControlActionArguments(
+                                descriptor.parameters,
+                                target.arguments,
+                                dynamicKey,
+                                valueExpression,
+                                2,
+                            ) +
+                            ")"
+                    } else {
+                        "requireNotNull(registry.createActionTask(" +
+                            "${stringLiteral(target.key)}, ${renderStringMap(target.arguments, 2)}" +
+                            ")) { ${stringLiteral("Generated action '${target.key}' is unavailable at runtime")} }"
+                    }
                     "taskSink.submit(\n" +
                         "    bindingId = ${stringLiteral(binding.bindingId)},\n" +
-                        "    task = registry.${actionMethods.getValue(target.key)}(" +
-                        renderControlActionArguments(descriptor.parameters, target.arguments, dynamicKey, valueExpression, 2) +
-                        "),\n" +
+                        "    task = $taskExpression,\n" +
                         ")"
                 }
             }

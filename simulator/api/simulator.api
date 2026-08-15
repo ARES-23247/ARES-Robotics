@@ -70,6 +70,31 @@ public final class com/areslib/sim/cli/SimCliParser {
 	public final fun parseArgs ([Ljava/lang/String;)Lcom/areslib/sim/cli/SimCliArgs;
 }
 
+public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel : com/areslib/sim/SimInteractionModel {
+	public static final field Companion Lcom/areslib/sim/field/ConfigurableGamePieceInteractionModel$Companion;
+	public fun <init> (IDDDDD)V
+	public synthetic fun <init> (IDDDDDD[Lcom/areslib/sim/field/DescriptorInteractionBinding;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (IDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getIntakeRadiusMeters ()D
+	public final fun getIntakeRangeMeters ()D
+	public final fun getLaunchElevationDeg ()D
+	public final fun getLaunchSpeedMps ()D
+	public final fun getMaxCapacity ()I
+	public final fun getPieceDiameterMeters ()D
+	public final fun getPieceMassKg ()D
+	public fun reset ()V
+	public fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
+}
+
+public final class com/areslib/sim/field/ConfigurableGamePieceInteractionModel$Companion {
+	public final fun fromSubsystems (Ljava/util/List;)Lcom/areslib/sim/field/ConfigurableGamePieceInteractionModel;
+}
+
+public final class com/areslib/sim/field/DescriptorSimInteractionLoader {
+	public static final field INSTANCE Lcom/areslib/sim/field/DescriptorSimInteractionLoader;
+	public final fun loadFrom (Ljava/nio/file/Path;)Lcom/areslib/sim/SimInteractionModel;
+}
+
 public final class com/areslib/sim/field/FieldElementLoader {
 	public static final field INSTANCE Lcom/areslib/sim/field/FieldElementLoader;
 	public final fun loadElements (Lorg/dyn4j/world/World;Ljava/lang/String;)Ljava/util/List;
@@ -262,6 +287,7 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public fun getPower ()D
 	public fun getVelocity ()D
 	public fun getVersion ()I
+	public fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public fun resetDeviceConfigurationForOpMode ()V
 	public fun setCurrentPosition (I)V
 	public fun setDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
@@ -269,6 +295,7 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
 	public fun setPower (D)V
 	public fun setVelocity (D)V
+	public fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
 }
 
 public final class com/areslib/sim/model/SimLLResult : com/qualcomm/hardware/limelightvision/LLResult {

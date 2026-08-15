@@ -70,6 +70,7 @@ class CachedHardwareContractTest {
 
         override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
         override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+        override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
         override val currentPosition: Int = 0
         override var velocity: Double = 0.0
         override fun getCurrent(unit: CurrentUnit): Double = 0.0

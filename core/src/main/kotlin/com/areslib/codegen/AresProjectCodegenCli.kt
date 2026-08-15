@@ -133,17 +133,34 @@ object AresProjectCodegenCli {
                 "Drivebase '${drivetrain.uid}' requires at least one checked-in canonical profile in .ares/tuning"
             }
             val additional = declarations.filterNot { candidate -> drivetrain.parameters.any { it.uid == candidate.uid } }
-            listOf(
-                DrivetrainKotlinGenerator.generate(drivetrain, profiles, packageName, additional),
-                DrivetrainKotlinGenerator.generateProjectTuning(
-                    projectUid = projectUid,
-                    canonicalProfileUid = drivetrain.canonicalProfileUid,
-                    drivebaseUid = drivetrain.uid,
-                    declarations = declarations,
-                    profiles = profiles,
-                    packageName = packageName,
-                ),
-            )
+            buildList {
+                add(
+                    DrivetrainKotlinGenerator.generate(drivetrain, profiles, packageName, additional),
+                )
+                add(
+                    DrivetrainKotlinGenerator.generateProjectTuning(
+                        projectUid = projectUid,
+                        canonicalProfileUid = drivetrain.canonicalProfileUid,
+                        drivebaseUid = drivetrain.uid,
+                        declarations = declarations,
+                        profiles = profiles,
+                        packageName = packageName,
+                    ),
+                )
+                if (options.ftcZeroCodeRuntime) {
+                    require(options.platform == ControllerInputPlatform.FTC) {
+                        "--ftc-zero-code-runtime requires --platform FTC"
+                    }
+                    add(
+                        DrivetrainKotlinGenerator.generateFtcMecanumRuntime(
+                            drivetrain,
+                            profiles,
+                            packageName,
+                            additional,
+                        ),
+                    )
+                }
+            }
         } ?: if (declarations.isNotEmpty()) {
             val packageName = requireNotNull(options.drivebasePackage) {
                 "--drivebase-package is required when generating typed tuning plumbing"
@@ -357,6 +374,7 @@ object AresProjectCodegenCli {
         val subsystemConfirmationToken: String?,
         val drivebaseOutput: Path?,
         val drivebasePackage: String?,
+        val ftcZeroCodeRuntime: Boolean,
     ) {
         companion object {
             fun parse(args: Array<String>): CliOptions {
@@ -365,6 +383,7 @@ object AresProjectCodegenCli {
                 var subsystemsOnly = false
                 var previewSubsystemStarters = false
                 var applySubsystemStarters = false
+                var ftcZeroCodeRuntime = false
                 var index = 0
                 while (index < args.size) {
                     val key = args[index]
@@ -374,6 +393,7 @@ object AresProjectCodegenCli {
                             "--subsystems-only" -> subsystemsOnly = true
                             "--preview-subsystem-starters" -> previewSubsystemStarters = true
                             "--apply-subsystem-starters" -> applySubsystemStarters = true
+                            "--ftc-zero-code-runtime" -> ftcZeroCodeRuntime = true
                         }
                         index++
                         continue
@@ -410,6 +430,7 @@ object AresProjectCodegenCli {
                     values["--subsystems-confirmation-token"],
                     values["--drivebase-output"]?.let(Path::of),
                     values["--drivebase-package"],
+                    ftcZeroCodeRuntime,
                 )
             }
 
@@ -420,7 +441,8 @@ object AresProjectCodegenCli {
                 "--drivebase-output", "--drivebase-package",
             )
             private val FLAG_OPTIONS = setOf(
-                "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters"
+                "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters",
+                "--ftc-zero-code-runtime",
             )
         }
     }

@@ -53,7 +53,10 @@ object DesktopSimLauncher {
     @JvmStatic
     fun main(args: Array<String>) {
         try {
-            launch(args, MecanumInteractionModel())
+            val interactionModel = com.areslib.sim.field.DescriptorSimInteractionLoader
+                .loadFrom(java.nio.file.Path.of(System.getProperty("user.dir")))
+                ?: MecanumInteractionModel()
+            launch(args, interactionModel)
         } catch (t: Throwable) {
             System.err.println("FATAL CRASH IN SIMULATOR:")
             t.printStackTrace()
@@ -74,6 +77,7 @@ object DesktopSimLauncher {
         println("Starting ARESLib Desktop Simulation...")
         RobotClock.useMockTime(0L)
         com.areslib.telemetry.SimInputBridge.reset()
+        com.areslib.simulation.SimAppliedOutputRegistry.reset()
         interactionModel.reset()
 
         sumSqErrorX = 0.0

@@ -21,6 +21,7 @@ class MockFtcMotorEx : DcMotorEx {
     var mockCurrentAmps: Double = 0.0
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+    override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
     var currentPower: Double = 0.0
     
     override var power: Double

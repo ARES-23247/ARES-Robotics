@@ -462,7 +462,9 @@ public final class com/qualcomm/robotcore/hardware/ColorSensor$DefaultImpls {
 
 public abstract interface class com/qualcomm/robotcore/hardware/DcMotor : com/qualcomm/robotcore/hardware/DcMotorSimple {
 	public abstract fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public abstract fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public abstract fun setMode (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)V
+	public abstract fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
 }
 
 public final class com/qualcomm/robotcore/hardware/DcMotor$DefaultImpls {
@@ -482,6 +484,14 @@ public final class com/qualcomm/robotcore/hardware/DcMotor$RunMode : java/lang/E
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
 	public static fun values ()[Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior : java/lang/Enum {
+	public static final field BRAKE Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public static final field FLOAT Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 }
 
 public abstract interface class com/qualcomm/robotcore/hardware/DcMotorEx : com/qualcomm/robotcore/hardware/DcMotor {
