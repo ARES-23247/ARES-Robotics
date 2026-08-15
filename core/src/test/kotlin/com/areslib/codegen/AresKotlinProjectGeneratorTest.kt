@@ -433,6 +433,40 @@ class AresKotlinProjectGeneratorTest {
         }
     }
 
+    @Test
+    fun `generated orchestration action delegates to its typed registry and affects the content hash`() {
+        val descriptor = action("machine.activate")
+        val projectCatalog = catalog(actions = listOf(descriptor))
+        val baseline = generate(projectCatalog, emptyList())
+        val generated = AresKotlinProjectGenerator.generate(
+            KotlinProjectCodegenRequest(
+                packageName = "org.example.generated",
+                catalog = projectCatalog,
+                routines = emptyList(),
+                generatedActionRegistryBindings = mapOf(
+                    descriptor.key to "org.example.generated.superstructure.GeneratedSuperstructureRegistry",
+                ),
+            ),
+        )
+
+        assertTrue(generated.source.contains("fun actionMachineActivate(): Task"))
+        assertTrue(generated.source.contains("GeneratedSuperstructureRegistry.createActionTask(\"machine.activate\")"))
+        assertNotEquals(baseline.contentHash, generated.contentHash)
+
+        assertFailsWith<IllegalArgumentException> {
+            AresKotlinProjectGenerator.generate(
+                KotlinProjectCodegenRequest(
+                    packageName = "org.example.generated",
+                    catalog = catalog(actions = listOf(action("machine.set", listOf(numberParameter("value", true))))),
+                    routines = emptyList(),
+                    generatedActionRegistryBindings = mapOf(
+                        "machine.set" to "org.example.generated.superstructure.GeneratedSuperstructureRegistry",
+                    ),
+                ),
+            )
+        }
+    }
+
     private fun generate(
         catalog: CapabilityCatalogDocument,
         routines: Collection<RoutineDocument>

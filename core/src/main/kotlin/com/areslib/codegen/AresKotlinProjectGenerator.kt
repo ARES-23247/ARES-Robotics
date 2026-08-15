@@ -46,7 +46,7 @@ import com.areslib.subsystem.SubsystemTargetCapability
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 7
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 8
 
 /** Complete, hermetic input to the Kotlin robot-project generator. */
 data class KotlinProjectCodegenRequest(
@@ -66,6 +66,8 @@ data class KotlinProjectCodegenRequest(
     val subsystemActions: Collection<SubsystemTargetCapability> = emptyList(),
     /** Fully-qualified generated registry that creates the corresponding Redux tasks. */
     val subsystemRegistryFqn: String? = null,
+    /** Parameterless action keys implemented by generated orchestration registries. */
+    val generatedActionRegistryBindings: Map<String, String> = emptyMap(),
 )
 
 /** Generated source and the hashes a build can use to detect stale checked-in output. */
@@ -90,7 +92,8 @@ object AresKotlinProjectGenerator {
         val canonicalActions = request.catalog.actions.sortedBy { it.key }
         val canonicalConditions = request.catalog.conditions.sortedBy { it.key }
         val subsystemActionKeys = request.subsystemActions.mapTo(linkedSetOf()) { it.descriptor.key }
-        val actionMethods = assignMethodNames("action", subsystemActionKeys.sorted())
+        val generatedActionKeys = request.generatedActionRegistryBindings.keys
+        val actionMethods = assignMethodNames("action", (subsystemActionKeys + generatedActionKeys).sorted())
         val continuousActionKeys = request.controlSchemes
             .asSequence()
             .flatMap { it.bindings.asSequence() }
@@ -267,6 +270,19 @@ object AresKotlinProjectGenerator {
                 "Subsystem action '${capability.descriptor.key}' is missing or differs in the merged catalog"
             }
         }
+        require(request.generatedActionRegistryBindings.keys.intersect(subsystemActionKeys.toSet()).isEmpty()) {
+            "An action cannot be implemented by both subsystem and orchestration registries"
+        }
+        request.generatedActionRegistryBindings.forEach { (actionKey, registryFqn) ->
+            require(registryFqn.matches(Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+"))) {
+                "Generated action '$actionKey' has invalid registry FQN '$registryFqn'"
+            }
+            val descriptor = request.catalog.actions.singleOrNull { it.key == actionKey }
+            require(descriptor != null) { "Generated action '$actionKey' is absent from the capability catalog" }
+            require(descriptor.parameters.isEmpty()) {
+                "Generated orchestration action '$actionKey' must be parameterless"
+            }
+        }
 
         val actions = request.catalog.actions.associateBy { it.key }
         val conditions = request.catalog.conditions.associateBy { it.key }
@@ -428,6 +444,9 @@ object AresKotlinProjectGenerator {
         }
         record("generator", ARES_KOTLIN_CODEGEN_VERSION.toString())
         record("subsystem-registry", request.subsystemRegistryFqn.orEmpty())
+        request.generatedActionRegistryBindings.toSortedMap().forEach { (key, registry) ->
+            record("generated-action:$key", registry)
+        }
         request.projectMetadata?.let { record("project-metadata", AresProjectMetadataCodec.encode(it)) }
         record("catalog", CapabilityCatalogCodec.encode(request.catalog))
         routines.forEach { record("routine:${it.documentId}", AresRoutineCodec.encode(it)) }
@@ -453,19 +472,24 @@ object AresKotlinProjectGenerator {
         append("interface ${request.registryInterfaceName} {\n")
         append("    /** Creates a hand-authored or season action by its catalog key, or null when unavailable. */\n")
         append("    fun createActionTask(actionKey: String, arguments: Map<String, String>): Task? = null\n\n")
-        actions.filter { it.key in subsystemActions }.forEach { descriptor ->
+        actions.filter { it.key in actionMethods }.forEach { descriptor ->
             append("    /** Implements action key ${descriptor.key}. */\n")
             append("    fun ${actionMethods.getValue(descriptor.key)}(")
             append(renderSignatureParameters(descriptor.parameters))
-            if (descriptor.key !in subsystemActions) {
-                append("): Task\n\n")
-            } else {
+            if (descriptor.key in subsystemActions) {
                 val registry = requireNotNull(request.subsystemRegistryFqn)
                 val valueName = assignParameterNames(descriptor.parameters).getValue("value")
                 append("): Task = requireNotNull($registry.createActionTask(")
                 append(stringLiteral(descriptor.key))
                 append(", $valueName)) { ")
                 append(stringLiteral("Generated subsystem action '${descriptor.key}' rejected its value"))
+                append(" }\n\n")
+            } else {
+                val registry = requireNotNull(request.generatedActionRegistryBindings[descriptor.key])
+                append("): Task = requireNotNull($registry.createActionTask(")
+                append(stringLiteral(descriptor.key))
+                append(")) { ")
+                append(stringLiteral("Generated orchestration action '${descriptor.key}' is unavailable"))
                 append(" }\n\n")
             }
         }

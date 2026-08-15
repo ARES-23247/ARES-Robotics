@@ -21,6 +21,9 @@ class TelemetryUpdateE2ETest {
 
     @org.junit.Before
     fun setup() {
+        val summaryFile = java.io.File("build/test-output/ares_run_summary.json")
+        check(summaryFile.parentFile.mkdirs() || summaryFile.parentFile.isDirectory)
+        System.setProperty(DesktopSimLauncher.SUMMARY_OUTPUT_PROPERTY, summaryFile.absolutePath)
         com.areslib.sim.DesktopSimLauncher.isSimRunning = false
         com.areslib.telemetry.SimInputBridge.reset()
         Thread.sleep(300)

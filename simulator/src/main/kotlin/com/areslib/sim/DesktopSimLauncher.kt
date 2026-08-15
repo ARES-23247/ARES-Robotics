@@ -34,6 +34,7 @@ object DesktopSimLauncher {
     internal const val SIM_TIMESTEP_SECONDS = 0.02
     internal const val SIM_TIMESTEP_MS = 20L
     internal const val ACTIVE_OP_MODE_STATE_TOPIC = "ARES/DriverStation/ActiveOpModeState"
+    internal const val SUMMARY_OUTPUT_PROPERTY = "ares.sim.summary.path"
 
 
     @Volatile private var sumSqErrorX = 0.0
@@ -98,7 +99,9 @@ object DesktopSimLauncher {
                     rmseX, rmseY, rmseHeading, maxCurrent, count
                 )
                 try {
-                    val summaryFile = File("ares_run_summary.json")
+                    val summaryFile = File(
+                        System.getProperty(SUMMARY_OUTPUT_PROPERTY, "ares_run_summary.json")
+                    )
                     summaryFile.writeText(summaryJson)
                     println("[Simulator] Wrote run summary to ${summaryFile.absolutePath}")
                 } catch (e: Exception) {
