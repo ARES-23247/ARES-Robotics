@@ -24,10 +24,11 @@ object SuperstructureKotlinGenerator {
         subsystemRegistryFqn: String,
         subsystems: List<SubsystemDocument>,
         actionKeys: Set<String>,
+        parameterlessActionKeys: Set<String> = actionKeys,
     ): GeneratedSuperstructureFile {
         require(packageName.isKotlinPackage()) { "Invalid superstructure package '$packageName'" }
         require(subsystemRegistryFqn.isKotlinFqn()) { "Invalid subsystem registry '$subsystemRegistryFqn'" }
-        val errors = validateSuperstructureProject(document, subsystems, actionKeys)
+        val errors = validateSuperstructureProject(document, subsystems, actionKeys, parameterlessActionKeys)
             .filter { it.severity == SuperstructureIssueSeverity.ERROR }
         require(errors.isEmpty()) { errors.joinToString("; ") { "${it.path}: ${it.message}" } }
 
@@ -35,7 +36,10 @@ object SuperstructureKotlinGenerator {
         val definitionName = "${typeName}SuperstructureDefinition"
         val bindingName = "${typeName}SuperstructureBinding"
         val basePackage = subsystemRegistryFqn.substringBeforeLast('.')
-        val referenced = referencedSubsystems(document).map { id -> subsystems.single { it.documentId == id } }
+        val referenced = referencedSubsystems(document).map { uid -> subsystems.single { it.uid == uid } }
+        val ports = referenced.sortedBy { it.uid }.flatMap { subsystem ->
+            subsystem.stateFields.sortedBy { it.uid }.map { field -> PortBinding(subsystem, field) }
+        }.mapIndexed { index, port -> port.copy(index = index) }
         val machineActions = document.transitions.asSequence()
             .filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
             .mapNotNull { it.actionKey }
@@ -50,12 +54,16 @@ object SuperstructureKotlinGenerator {
             appendLine("package $packageName")
             appendLine()
             appendLine("import com.areslib.sequencer.Task")
+            appendLine("import com.areslib.pathing.CommandKey")
+            appendLine("import com.areslib.pathing.NamedCommands")
             appendLine("import com.areslib.state.RobotState")
             appendLine("import com.areslib.subsystem.Subsystem")
             appendLine("import com.areslib.subsystem.SubsystemValueType")
             appendLine("import com.areslib.superstructure.SuperstructureDocumentCodec")
             appendLine("import com.areslib.superstructure.SuperstructureRuntime")
             appendLine("import com.areslib.superstructure.SuperstructureRuntimeBinding")
+            appendLine("import com.areslib.superstructure.SuperstructurePortHealthBits")
+            appendLine("import com.areslib.telemetry.RobotStatusTracker")
             appendLine("import $subsystemRegistryFqn")
             appendLine()
             appendLine("object $definitionName {")
@@ -65,24 +73,30 @@ object SuperstructureKotlinGenerator {
             appendLine("}")
             appendLine()
             appendLine("private object $bindingName : SuperstructureRuntimeBinding {")
-            append(targetTypeFunction(referenced))
-            append(readFunction("readNumeric", "Double", "Double.NaN", referenced, basePackage) { field ->
+            appendLine("    override fun isRobotEnabled(): Boolean = RobotStatusTracker.isEnabled")
+            appendLine()
+            append(resolvePortFunction(ports))
+            append(portTypeFunction(ports))
+            append(readFunction("readNumeric", "Double", "Double.NaN", ports, basePackage) { field ->
                 when (field.type) {
                     SubsystemValueType.DOUBLE -> "snapshot.${field.fieldId}"
                     SubsystemValueType.INT -> "snapshot.${field.fieldId}.toDouble()"
                     else -> null
                 }
             })
-            append(readFunction("readBoolean", "Boolean?", "null", referenced, basePackage) { field ->
+            append(readFunction("readBoolean", "Boolean?", "null", ports, basePackage) { field ->
                 if (field.type == SubsystemValueType.BOOLEAN) "snapshot.${field.fieldId}" else null
             })
-            append(readFunction("readString", "String?", "null", referenced, basePackage) { field ->
+            append(readFunction("readString", "String?", "null", ports, basePackage) { field ->
                 if (field.type == SubsystemValueType.STRING) "snapshot.${field.fieldId}" else null
             })
-            append(targetTaskFunction("Double", "createDoubleTargetTask", referenced, subsystemRegistryFqn))
-            append(targetTaskFunction("Int", "createIntTargetTask", referenced, subsystemRegistryFqn))
-            append(targetTaskFunction("Boolean", "createBooleanTargetTask", referenced, subsystemRegistryFqn))
-            append(targetTaskFunction("String", "createStringTargetTask", referenced, subsystemRegistryFqn))
+            append(healthFunction(ports, basePackage))
+            append(targetTaskFunction("Double", "createDoubleTargetTask", ports, subsystemRegistryFqn))
+            append(targetTaskFunction("Int", "createIntTargetTask", ports, subsystemRegistryFqn))
+            append(targetTaskFunction("Boolean", "createBooleanTargetTask", ports, subsystemRegistryFqn))
+            append(targetTaskFunction("String", "createStringTargetTask", ports, subsystemRegistryFqn))
+            appendLine("    override fun createLifecycleActionTask(actionKey: String, timestampMs: Long): Task? =")
+            appendLine("        runCatching { CommandKey(actionKey) }.getOrNull()?.let { NamedCommands.create(it, timestampMs) }")
             appendLine("}")
             appendLine()
             appendLine("fun create${typeName}Superstructure(): Subsystem = SuperstructureRuntime(")
@@ -155,17 +169,24 @@ object SuperstructureKotlinGenerator {
         )
     }
 
-    private fun targetTypeFunction(subsystems: List<SubsystemDocument>): String = buildString {
-        appendLine("    override fun targetType(subsystemId: String, fieldId: String): SubsystemValueType? = when (subsystemId) {")
-        subsystems.sortedBy { it.documentId }.forEach { subsystem ->
-            val fields = subsystem.stateFields.filter { it.role.name == "TARGET" }
-            appendLine("        ${subsystem.documentId.quoted()} -> when (fieldId) {")
-            fields.sortedBy { it.fieldId }.forEach { field ->
-                appendLine("            ${field.fieldId.quoted()} -> SubsystemValueType.${field.type}")
+    private fun resolvePortFunction(ports: List<PortBinding>): String = buildString {
+        appendLine("    override fun resolvePort(subsystemUid: String, fieldUid: String): Int = when (subsystemUid) {")
+        ports.groupBy { it.subsystem.uid }.toSortedMap().forEach { (subsystemUid, subsystemPorts) ->
+            appendLine("        ${subsystemUid.quoted()} -> when (fieldUid) {")
+            subsystemPorts.sortedBy { it.field.uid }.forEach { port ->
+                appendLine("            ${port.field.uid.quoted()} -> ${port.index}")
             }
-            appendLine("            else -> null")
+            appendLine("            else -> -1")
             appendLine("        }")
         }
+        appendLine("        else -> -1")
+        appendLine("    }")
+        appendLine()
+    }
+
+    private fun portTypeFunction(ports: List<PortBinding>): String = buildString {
+        appendLine("    override fun portType(port: Int): SubsystemValueType? = when (port) {")
+        ports.forEach { port -> appendLine("        ${port.index} -> SubsystemValueType.${port.field.type}") }
         appendLine("        else -> null")
         appendLine("    }")
         appendLine()
@@ -175,27 +196,55 @@ object SuperstructureKotlinGenerator {
         name: String,
         returnType: String,
         fallback: String,
-        subsystems: List<SubsystemDocument>,
+        ports: List<PortBinding>,
         basePackage: String,
         expression: (SubsystemStateFieldDocument) -> String?,
     ): String = buildString {
-        appendLine("    override fun $name(subsystemId: String, fieldId: String, state: RobotState): $returnType = when (subsystemId) {")
-        subsystems.sortedBy { it.documentId }.forEach { subsystem ->
-            val readable = subsystem.stateFields.mapNotNull { field -> expression(field)?.let { field to it } }
-            val segment = subsystem.documentId.replace('-', '_')
-            val stateFqn = "$basePackage.$segment.${subsystem.kotlinTypeName}State"
-            appendLine("        ${subsystem.documentId.quoted()} -> {")
-            appendLine("            val snapshot = state.superstructure.subsystems[${subsystem.documentId.quoted()}] as? $stateFqn")
-            appendLine("                ?: return $fallback")
-            appendLine("            when (fieldId) {")
-            readable.sortedBy { it.first.fieldId }.forEach { (field, value) ->
-                appendLine("                ${field.fieldId.quoted()} -> $value")
-            }
-            appendLine("                else -> $fallback")
+        appendLine("    override fun $name(port: Int, state: RobotState): $returnType {")
+        appendLine("        return when (port) {")
+        ports.forEach { port ->
+            val value = expression(port.field) ?: return@forEach
+            val segment = port.subsystem.documentId.replace('-', '_')
+            val stateFqn = "$basePackage.$segment.${port.subsystem.kotlinTypeName}State"
+            appendLine("            ${port.index} -> {")
+            appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.quoted()}] as? $stateFqn")
+            appendLine("                    ?: return $fallback")
+            appendLine("                $value")
             appendLine("            }")
-            appendLine("        }")
         }
-        appendLine("        else -> $fallback")
+        appendLine("            else -> $fallback")
+        appendLine("        }")
+        appendLine("    }")
+        appendLine()
+    }
+
+    private fun healthFunction(ports: List<PortBinding>, basePackage: String): String = buildString {
+        appendLine("    override fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int {")
+        appendLine("        return when (port) {")
+        ports.forEach { port ->
+            val segment = port.subsystem.documentId.replace('-', '_')
+            val stateFqn = "$basePackage.$segment.${port.subsystem.kotlinTypeName}State"
+            val maxAgeMs = port.subsystem.hardware.asSequence()
+                .flatMap { it.measurements.asSequence() }
+                .filter { it.fieldId == port.field.fieldId }
+                .mapNotNull { it.maxAgeMs }
+                .minOrNull() ?: port.subsystem.safety.feedbackTimeoutMs ?: 250L
+            appendLine("            ${port.index} -> {")
+            appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.quoted()}] as? $stateFqn ?: return 0")
+            appendLine("                var bits = 0")
+            appendLine("                if (snapshot.feedbackValid) bits = bits or SuperstructurePortHealthBits.VALID")
+            appendLine("                val ageMs = if (nowMs >= snapshot.feedbackTimestampMs) nowMs - snapshot.feedbackTimestampMs else Long.MAX_VALUE")
+            appendLine("                if (ageMs <= ${maxAgeMs}L) bits = bits or SuperstructurePortHealthBits.FRESH")
+            appendLine("                if (snapshot.configurationHealthy) bits = bits or SuperstructurePortHealthBits.CONFIGURED")
+            appendLine("                if (snapshot.homed) bits = bits or SuperstructurePortHealthBits.HOMED")
+            appendLine("                if (snapshot.calibrated) bits = bits or SuperstructurePortHealthBits.CALIBRATED")
+            appendLine("                if (snapshot.currentReadingValid) bits = bits or SuperstructurePortHealthBits.CURRENT_VALID")
+            appendLine("                if (!snapshot.outputFaultLatched) bits = bits or SuperstructurePortHealthBits.OUTPUT_HEALTHY")
+            appendLine("                bits")
+            appendLine("            }")
+        }
+        appendLine("            else -> 0")
+        appendLine("        }")
         appendLine("    }")
         appendLine()
     }
@@ -203,7 +252,7 @@ object SuperstructureKotlinGenerator {
     private fun targetTaskFunction(
         valueType: String,
         functionName: String,
-        subsystems: List<SubsystemDocument>,
+        ports: List<PortBinding>,
         registryFqn: String,
     ): String = buildString {
         val expectedType = when (valueType) {
@@ -212,16 +261,10 @@ object SuperstructureKotlinGenerator {
             "Boolean" -> SubsystemValueType.BOOLEAN
             else -> SubsystemValueType.STRING
         }
-        appendLine("    override fun $functionName(subsystemId: String, fieldId: String, value: $valueType): Task? = when (subsystemId) {")
-        subsystems.sortedBy { it.documentId }.forEach { subsystem ->
-            val fields = subsystem.stateFields.filter { it.type == expectedType && it.role.name == "TARGET" }
-            appendLine("        ${subsystem.documentId.quoted()} -> when (fieldId) {")
-            fields.sortedBy { it.fieldId }.forEach { field ->
-                val key = subsystemTargetActionKey(subsystem.documentId, field.fieldId)
-                appendLine("            ${field.fieldId.quoted()} -> $registryFqn.createActionTask(${key.quoted()}, value)")
-            }
-            appendLine("            else -> null")
-            appendLine("        }")
+        appendLine("    override fun $functionName(port: Int, value: $valueType): Task? = when (port) {")
+        ports.filter { it.field.type == expectedType && it.field.role.name == "TARGET" }.forEach { port ->
+            val key = subsystemTargetActionKey(port.subsystem.documentId, port.field.fieldId)
+            appendLine("        ${port.index} -> $registryFqn.createActionTask(${key.quoted()}, value)")
         }
         appendLine("        else -> null")
         appendLine("    }")
@@ -231,17 +274,24 @@ object SuperstructureKotlinGenerator {
     private fun referencedSubsystems(document: SuperstructureDocument): Set<String> = buildSet {
         document.states.forEach { state ->
             state.subsystemTargets.forEach { target ->
-                add(target.subsystemId)
-                target.source?.let { add(it.subsystemId) }
+                add(target.target.subsystemUid)
+                target.source?.let { add(it.subsystemUid) }
             }
         }
-        document.transitions.forEach { edge -> edge.guards.forEach { add(it.source.subsystemId) } }
+        document.transitions.forEach { edge -> edge.guards.forEach { add(it.source.subsystemUid) } }
         document.interlocks.forEach {
-            add(it.primary.subsystemId)
-            add(it.constrainedSubsystemId)
+            add(it.primary.subsystemUid)
+            add(it.constrained.subsystemUid)
         }
+        document.healthFallbacks.forEach { add(it.source.subsystemUid) }
     }
 }
+
+private data class PortBinding(
+    val subsystem: SubsystemDocument,
+    val field: SubsystemStateFieldDocument,
+    val index: Int = -1,
+)
 
 private fun String.pascalCase(): String = split(Regex("[^A-Za-z0-9]+"))
     .filter(String::isNotBlank)

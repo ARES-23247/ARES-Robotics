@@ -13,11 +13,26 @@ import com.google.gson.JsonParser
 import java.security.MessageDigest
 import java.util.ArrayDeque
 
-const val ARES_SUPERSTRUCTURE_SCHEMA_VERSION: Int = 2
+const val ARES_SUPERSTRUCTURE_SCHEMA_VERSION: Int = 3
 
 enum class SuperstructureTargetMode { CONSTANT, DYNAMIC_LUT, PASS_THROUGH }
 enum class TransitionTriggerKind { ACTION_REQUEST, SENSOR_CONDITION_AUTO, TIME_ELAPSED }
 enum class LutInterpolationMethod { LINEAR, STEP, SMOOTH_COSINE }
+enum class SuperstructureDisabledPolicy {
+    /** Enter the declared neutral disabled state and reject requests until the robot is enabled. */
+    FORCE_SAFE_AND_REJECT_REQUESTS,
+
+    /** Retain the logical state while subsystem controllers independently enforce neutral output. */
+    RETAIN_LOGICAL_STATE_WITH_NEUTRAL_OUTPUT,
+}
+enum class SuperstructurePortHealthRequirement {
+    /** Type and finite-value checks only. Intended for advanced derived values. */
+    VALUE_ONLY,
+    /** The cached snapshot must be valid and inside its descriptor-defined freshness lease. */
+    FRESH_VALID,
+    /** Fresh/valid plus configuration, homing, calibration, current, and output-fault health. */
+    CONTROL_READY,
+}
 
 data class LutControlPoint(val inputX: Double, val outputY: Double)
 
@@ -53,10 +68,11 @@ data class SuperstructureDynamicLut(
     }
 }
 
-/** A typed cached subsystem field used by a guard or computed target. */
+/** A stable typed port reference. Code-facing IDs may be renamed without breaking this link. */
 data class SuperstructureFieldReference(
-    val subsystemId: String,
-    val fieldId: String,
+    val subsystemUid: String,
+    val fieldUid: String,
+    val healthRequirement: SuperstructurePortHealthRequirement = SuperstructurePortHealthRequirement.CONTROL_READY,
 )
 
 data class TransitionGuard(
@@ -76,6 +92,8 @@ data class StateTransitionEdge(
     val triggerKind: TransitionTriggerKind = TransitionTriggerKind.ACTION_REQUEST,
     val actionKey: String? = null,
     val guards: List<TransitionGuard> = emptyList(),
+    /** Lower values run first. Automatic edges leaving one state must have unique priorities. */
+    val priority: Int = 0,
     val debounceMs: Long = 0L,
     /** Required for TIME_ELAPSED; optional pending-request deadline for ACTION_REQUEST. */
     val timeoutSeconds: Double? = null,
@@ -84,8 +102,7 @@ data class StateTransitionEdge(
 )
 
 data class SuperstructureSubsystemTarget(
-    val subsystemId: String,
-    val fieldId: String,
+    val target: SuperstructureFieldReference,
     val targetMode: SuperstructureTargetMode = SuperstructureTargetMode.CONSTANT,
     val constantDoubleValue: Double? = null,
     val constantBooleanValue: Boolean? = null,
@@ -99,6 +116,10 @@ data class SuperstructureStatePreset(
     val displayName: String = "",
     val description: String = "",
     val subsystemTargets: List<SuperstructureSubsystemTarget> = emptyList(),
+    /** Parameterless project-catalog tasks run once after leaving this state. */
+    val onExitActionKeys: List<String> = emptyList(),
+    /** Parameterless project-catalog tasks run once after entering this state. */
+    val onEntryActionKeys: List<String> = emptyList(),
     val timeoutSeconds: Double? = null,
     val timeoutTargetStateId: String? = null,
 )
@@ -109,10 +130,19 @@ data class SuperstructureInterlockRule(
     val primary: SuperstructureFieldReference,
     val conditionComparison: InterlockComparison = InterlockComparison.LESS_THAN,
     val conditionThreshold: Double = 0.0,
-    val constrainedSubsystemId: String,
-    val constrainedFieldId: String,
+    val constrained: SuperstructureFieldReference,
     val clampMinimum: Double? = null,
     val clampMaximum: Double? = null,
+)
+
+/** Supervisory fallback evaluated before requested and ordinary automatic transitions. */
+data class SuperstructureHealthFallbackPolicy(
+    val policyId: String,
+    val source: SuperstructureFieldReference,
+    val fallbackStateId: String,
+    /** Latched fallbacks require an explicit legal recovery transition after health is restored. */
+    val latchFault: Boolean = true,
+    val description: String = "",
 )
 
 data class SuperstructureDocument(
@@ -124,9 +154,14 @@ data class SuperstructureDocument(
     val states: List<SuperstructureStatePreset> = emptyList(),
     val transitions: List<StateTransitionEdge> = emptyList(),
     val interlocks: List<SuperstructureInterlockRule> = emptyList(),
+    val healthFallbacks: List<SuperstructureHealthFallbackPolicy> = emptyList(),
     val luts: List<SuperstructureDynamicLut> = emptyList(),
     /** Required fail-closed preset used when generated target application cannot be completed. */
     val faultStateId: String,
+    /** Disabled behavior is explicit so a logical posture cannot arm unexpectedly on re-enable. */
+    val disabledPolicy: SuperstructureDisabledPolicy = SuperstructureDisabledPolicy.FORCE_SAFE_AND_REJECT_REQUESTS,
+    /** Required neutral preset when [disabledPolicy] forces safe state. */
+    val disabledStateId: String = faultStateId,
 )
 
 enum class SuperstructureIssueSeverity { ERROR, WARNING }
@@ -152,11 +187,13 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
     duplicateValues(document.states.map { it.stateId }).forEach { error("states", "State ID '$it' is duplicated") }
     duplicateValues(document.transitions.map { it.transitionId }).forEach { error("transitions", "Transition ID '$it' is duplicated") }
     duplicateValues(document.interlocks.map { it.ruleId }).forEach { error("interlocks", "Interlock ID '$it' is duplicated") }
+    duplicateValues(document.healthFallbacks.map { it.policyId }).forEach { error("healthFallbacks", "Health fallback ID '$it' is duplicated") }
     duplicateValues(document.luts.map { it.lutId }).forEach { error("luts", "LUT ID '$it' is duplicated") }
 
     val stateIds = document.states.mapTo(linkedSetOf()) { it.stateId }
     if (document.initialStateId !in stateIds) error("initialStateId", "Initial state '${document.initialStateId}' is not declared")
     if (document.faultStateId !in stateIds) error("faultStateId", "Fault state '${document.faultStateId}' is not declared")
+    if (document.disabledStateId !in stateIds) error("disabledStateId", "Disabled state '${document.disabledStateId}' is not declared")
     val lutIds = document.luts.mapTo(linkedSetOf()) { it.lutId }
 
     document.luts.forEachIndexed { index, lut ->
@@ -174,14 +211,22 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
     }
 
     val canonicalTargetSet = document.states.firstOrNull()?.subsystemTargets
-        ?.map { it.subsystemId to it.fieldId }?.toSet().orEmpty()
+        ?.map { it.target.subsystemUid to it.target.fieldUid }?.toSet().orEmpty()
     document.states.forEachIndexed { index, state ->
         val path = "states[$index]"
         if (!state.stateId.matches(TYPE_ID_PATTERN)) error("$path.stateId", "Use letters, digits, and underscores")
-        val targetKeys = state.subsystemTargets.map { it.subsystemId to it.fieldId }
+        val targetKeys = state.subsystemTargets.map { it.target.subsystemUid to it.target.fieldUid }
         duplicateValues(targetKeys).forEach { error("$path.subsystemTargets", "Target '${it.first}.${it.second}' is duplicated") }
         if (targetKeys.toSet() != canonicalTargetSet) {
             error("$path.subsystemTargets", "Every state must explicitly command the same target fields so outputs cannot remain stale")
+        }
+        duplicateValues(state.onExitActionKeys).forEach { error("$path.onExitActionKeys", "Lifecycle action '$it' is duplicated") }
+        duplicateValues(state.onEntryActionKeys).forEach { error("$path.onEntryActionKeys", "Lifecycle action '$it' is duplicated") }
+        state.onExitActionKeys.forEachIndexed { actionIndex, actionKey ->
+            if (!actionKey.matches(CAPABILITY_KEY_PATTERN)) error("$path.onExitActionKeys[$actionIndex]", "Invalid action key '$actionKey'")
+        }
+        state.onEntryActionKeys.forEachIndexed { actionIndex, actionKey ->
+            if (!actionKey.matches(CAPABILITY_KEY_PATTERN)) error("$path.onEntryActionKeys[$actionIndex]", "Invalid action key '$actionKey'")
         }
         validateTimeout(state.timeoutSeconds, "$path.timeoutSeconds", ::error)
         if ((state.timeoutSeconds == null) != (state.timeoutTargetStateId == null)) {
@@ -192,7 +237,7 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
         }
         state.subsystemTargets.forEachIndexed { targetIndex, target ->
             val targetPath = "$path.subsystemTargets[$targetIndex]"
-            if (target.subsystemId.isBlank() || target.fieldId.isBlank()) error(targetPath, "Subsystem and field IDs are required")
+            if (target.target.subsystemUid.isBlank() || target.target.fieldUid.isBlank()) error(targetPath, "Stable subsystem and field UIDs are required")
             val constants = listOfNotNull(target.constantDoubleValue, target.constantBooleanValue, target.constantStringValue)
             when (target.targetMode) {
                 SuperstructureTargetMode.CONSTANT -> if (constants.size != 1) error(targetPath, "A constant target requires exactly one typed value")
@@ -210,11 +255,13 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
     }
 
     val actionEdges = mutableSetOf<Pair<String, String>>()
+    val automaticPriorities = mutableSetOf<Pair<String, Int>>()
     document.transitions.forEachIndexed { index, transition ->
         val path = "transitions[$index]"
         if (!transition.transitionId.matches(ID_PATTERN)) error("$path.transitionId", "Use lowercase letters, digits, and hyphens")
         if (transition.sourceStateId !in stateIds) error("$path.sourceStateId", "Unknown source state '${transition.sourceStateId}'")
         if (transition.targetStateId !in stateIds) error("$path.targetStateId", "Unknown target state '${transition.targetStateId}'")
+        if (transition.priority !in 0..10_000) error("$path.priority", "Priority must be from 0 to 10000; lower values run first")
         if (transition.sourceStateId == transition.targetStateId) error(path, "A transition must change state")
         if (transition.debounceMs !in 0L..60_000L) error("$path.debounceMs", "Debounce must be from 0 to 60000 ms")
         validateTimeout(transition.timeoutSeconds, "$path.timeoutSeconds", ::error)
@@ -234,11 +281,17 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
                 }
             }
             TransitionTriggerKind.SENSOR_CONDITION_AUTO -> {
+                if (!automaticPriorities.add(transition.sourceStateId to transition.priority)) {
+                    error("$path.priority", "Automatic transitions leaving ${transition.sourceStateId} require unique priorities")
+                }
                 if (transition.actionKey != null) error("$path.actionKey", "Automatic sensor transitions cannot declare an action key")
                 if (transition.guards.isEmpty()) error("$path.guards", "Automatic sensor transitions require at least one guard")
                 if (transition.timeoutTargetStateId != null) error(path, "Sensor transitions do not use a pending-request timeout target")
             }
             TransitionTriggerKind.TIME_ELAPSED -> {
+                if (!automaticPriorities.add(transition.sourceStateId to transition.priority)) {
+                    error("$path.priority", "Automatic transitions leaving ${transition.sourceStateId} require unique priorities")
+                }
                 if (transition.actionKey != null || transition.guards.isNotEmpty()) error(path, "Time transitions cannot declare action keys or guards")
                 if (transition.timeoutSeconds == null) error("$path.timeoutSeconds", "Time transitions require timeoutSeconds")
                 if (transition.timeoutTargetStateId != null) error(path, "The transition target is the elapsed-time destination")
@@ -248,7 +301,7 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
         transition.guards.forEachIndexed { guardIndex, guard ->
             val guardPath = "$path.guards[$guardIndex]"
             if (!guard.guardId.matches(ID_PATTERN)) error("$guardPath.guardId", "Use lowercase letters, digits, and hyphens")
-            if (guard.source.subsystemId.isBlank() || guard.source.fieldId.isBlank()) error("$guardPath.source", "A typed source is required")
+            if (guard.source.subsystemUid.isBlank() || guard.source.fieldUid.isBlank()) error("$guardPath.source", "A stable typed source is required")
             if (!guard.tolerance.isFinite() || guard.tolerance < 0.0) error("$guardPath.tolerance", "Tolerance must be finite and non-negative")
             if (listOfNotNull(guard.expectedDoubleValue, guard.expectedBooleanValue, guard.expectedStringValue).size != 1) {
                 error(guardPath, "A guard requires exactly one typed expected value")
@@ -265,6 +318,12 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
         if (interlock.clampMinimum != null && interlock.clampMaximum != null && interlock.clampMinimum > interlock.clampMaximum) {
             error(path, "Clamp minimum cannot exceed clamp maximum")
         }
+    }
+    document.healthFallbacks.forEachIndexed { index, policy ->
+        val path = "healthFallbacks[$index]"
+        if (!policy.policyId.matches(ID_PATTERN)) error("$path.policyId", "Use lowercase letters, digits, and hyphens")
+        if (policy.source.subsystemUid.isBlank() || policy.source.fieldUid.isBlank()) error("$path.source", "A stable typed source is required")
+        if (policy.fallbackStateId !in stateIds) error("$path.fallbackStateId", "Fallback state '${policy.fallbackStateId}' is not declared")
     }
 
     // The runtime can enter the fault preset from any state when target preflight/application
@@ -294,30 +353,33 @@ fun validateSuperstructureProject(
     document: SuperstructureDocument,
     subsystems: List<SubsystemDocument>,
     actionKeys: Set<String>,
+    parameterlessActionKeys: Set<String> = actionKeys,
 ): List<SuperstructureValidationIssue> {
     val issues = validateSuperstructureDocument(document).toMutableList()
     fun error(path: String, message: String) {
         issues += SuperstructureValidationIssue(SuperstructureIssueSeverity.ERROR, path, message)
     }
-    val byId = subsystems.associateBy { it.documentId }
+    val byUid = subsystems.associateBy { it.uid }
     fun resolve(reference: SuperstructureFieldReference, path: String): Pair<SubsystemDocument, SubsystemStateFieldDocument>? {
-        val subsystem = byId[reference.subsystemId]
+        val subsystem = byUid[reference.subsystemUid]
         if (subsystem == null) {
-            error(path, "Subsystem '${reference.subsystemId}' is not declared in .ares/subsystems")
+            error(path, "Subsystem UID '${reference.subsystemUid}' is not declared in .ares/subsystems")
             return null
         }
         if (subsystem.implementation.kind != SubsystemImplementationKind.GENERATED_STARTER) {
-            error(path, "Hand-authored subsystem '${reference.subsystemId}' requires an explicit typed superstructure adapter")
+            error(path, "Hand-authored subsystem '${subsystem.documentId}' requires an explicit typed superstructure adapter")
             return null
         }
-        val field = subsystem.stateFields.singleOrNull { it.fieldId == reference.fieldId }
-        if (field == null) error(path, "Field '${reference.fieldId}' is not declared by subsystem '${reference.subsystemId}'")
+        val field = subsystem.stateFields.singleOrNull { it.uid == reference.fieldUid }
+        if (field == null) error(path, "Field UID '${reference.fieldUid}' is not declared by subsystem '${subsystem.documentId}'")
         return field?.let { subsystem to it }
     }
 
     document.transitions.forEachIndexed { edgeIndex, edge ->
         if (edge.triggerKind == TransitionTriggerKind.ACTION_REQUEST && edge.actionKey !in actionKeys) {
             error("transitions[$edgeIndex].actionKey", "Action '${edge.actionKey}' is not present in the project action catalog")
+        } else if (edge.triggerKind == TransitionTriggerKind.ACTION_REQUEST && edge.actionKey !in parameterlessActionKeys) {
+            error("transitions[$edgeIndex].actionKey", "Superstructure request actions must be parameterless")
         }
         edge.guards.forEachIndexed guardLoop@ { guardIndex, guard ->
             val path = "transitions[$edgeIndex].guards[$guardIndex]"
@@ -333,7 +395,7 @@ fun validateSuperstructureProject(
     document.states.forEachIndexed { stateIndex, state ->
         state.subsystemTargets.forEachIndexed targetLoop@ { targetIndex, target ->
             val path = "states[$stateIndex].subsystemTargets[$targetIndex]"
-            val field = resolve(SuperstructureFieldReference(target.subsystemId, target.fieldId), path)?.second
+            val field = resolve(target.target, path)?.second
                 ?: return@targetLoop
             if (field.role != SubsystemFieldRole.TARGET) error(path, "Superstructure targets may command only TARGET fields")
             val constantTypeMatches = when (field.type) {
@@ -355,6 +417,18 @@ fun validateSuperstructureProject(
                 if (target.targetMode == SuperstructureTargetMode.PASS_THROUGH && sourceField.type != field.type) {
                     error("$path.source", "Pass-through source type ${sourceField.type} does not match target type ${field.type}")
                 }
+                if (target.targetMode == SuperstructureTargetMode.PASS_THROUGH && sourceField.unit.orEmpty() != field.unit.orEmpty()) {
+                    error("$path.source", "Pass-through units '${sourceField.unit.orEmpty()}' and '${field.unit.orEmpty()}' do not match")
+                }
+                if (target.targetMode == SuperstructureTargetMode.DYNAMIC_LUT) {
+                    val lut = document.luts.singleOrNull { it.lutId == target.lutId }
+                    if (lut != null && lut.inputUnit != sourceField.unit.orEmpty()) {
+                        error("$path.lutId", "LUT input unit '${lut.inputUnit}' must match source unit '${sourceField.unit.orEmpty()}'")
+                    }
+                    if (lut != null && lut.outputUnit != field.unit.orEmpty()) {
+                        error("$path.lutId", "LUT output unit '${lut.outputUnit}' must match target unit '${field.unit.orEmpty()}'")
+                    }
+                }
             }
         }
     }
@@ -364,28 +438,49 @@ fun validateSuperstructureProject(
         if (primary != null && primary.type !in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)) {
             error("$path.primary", "Interlock source must be numeric")
         }
-        val constrained = resolve(
-            SuperstructureFieldReference(interlock.constrainedSubsystemId, interlock.constrainedFieldId),
-            "$path.constrainedFieldId",
-        )?.second
+        val constrained = resolve(interlock.constrained, "$path.constrained")?.second
         if (constrained != null && (constrained.role != SubsystemFieldRole.TARGET || constrained.type !in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT))) {
             error(path, "Interlocks may clamp only numeric TARGET fields")
         }
     }
-    val fault = document.states.singleOrNull { it.stateId == document.faultStateId }
-    fault?.subsystemTargets?.forEachIndexed { index, target ->
-        val field = resolve(SuperstructureFieldReference(target.subsystemId, target.fieldId), "faultStateId.targets[$index]")?.second
-        if (field != null && target.targetMode == SuperstructureTargetMode.CONSTANT) {
-            val neutral = when (field.type) {
-                SubsystemValueType.DOUBLE, SubsystemValueType.INT ->
-                    target.constantDoubleValue == field.numericDefault()
-                SubsystemValueType.BOOLEAN -> target.constantBooleanValue == field.defaultBoolean
-                SubsystemValueType.STRING -> target.constantStringValue == field.defaultText
+    fun validateNeutralPreset(stateId: String, path: String, label: String) {
+        document.states.singleOrNull { it.stateId == stateId }?.subsystemTargets?.forEachIndexed { index, target ->
+            val targetPath = "$path.targets[$index]"
+            val field = resolve(target.target, targetPath)?.second
+            if (field != null && target.targetMode == SuperstructureTargetMode.CONSTANT) {
+                val neutral = when (field.type) {
+                    SubsystemValueType.DOUBLE, SubsystemValueType.INT -> target.constantDoubleValue == field.numericDefault()
+                    SubsystemValueType.BOOLEAN -> target.constantBooleanValue == field.defaultBoolean
+                    SubsystemValueType.STRING -> target.constantStringValue == field.defaultText
+                }
+                if (!neutral) error(targetPath, "$label targets must equal the subsystem field's declared safe default")
+            } else if (field != null) {
+                error(targetPath, "$label targets must be constants")
             }
-            if (!neutral) error("faultStateId.targets[$index]", "Fault-state targets must equal the subsystem field's declared safe default")
-        } else if (field != null) {
-            error("faultStateId.targets[$index]", "Fault-state targets must be constants")
         }
+    }
+    document.healthFallbacks.forEachIndexed { index, policy ->
+        resolve(policy.source, "healthFallbacks[$index].source")
+    }
+    document.states.forEachIndexed { stateIndex, state ->
+        state.onExitActionKeys.forEachIndexed { actionIndex, actionKey ->
+            if (actionKey !in actionKeys) {
+                error("states[$stateIndex].onExitActionKeys[$actionIndex]", "Action '$actionKey' is not declared by the project catalog")
+            } else if (actionKey !in parameterlessActionKeys) {
+                error("states[$stateIndex].onExitActionKeys[$actionIndex]", "Lifecycle actions must be parameterless")
+            }
+        }
+        state.onEntryActionKeys.forEachIndexed { actionIndex, actionKey ->
+            if (actionKey !in actionKeys) {
+                error("states[$stateIndex].onEntryActionKeys[$actionIndex]", "Action '$actionKey' is not declared by the project catalog")
+            } else if (actionKey !in parameterlessActionKeys) {
+                error("states[$stateIndex].onEntryActionKeys[$actionIndex]", "Lifecycle actions must be parameterless")
+            }
+        }
+    }
+    validateNeutralPreset(document.faultStateId, "faultStateId", "Fault-state")
+    if (document.disabledPolicy == SuperstructureDisabledPolicy.FORCE_SAFE_AND_REJECT_REQUESTS) {
+        validateNeutralPreset(document.disabledStateId, "disabledStateId", "Disabled-state")
     }
     return issues
 }
@@ -418,9 +513,16 @@ object SuperstructureDocumentCodec {
         .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 
     private fun normalize(document: SuperstructureDocument): SuperstructureDocument = document.copy(
-        states = document.states.orEmpty().map { it.copy(subsystemTargets = it.subsystemTargets.orEmpty()) },
+        states = document.states.orEmpty().map {
+            it.copy(
+                subsystemTargets = it.subsystemTargets.orEmpty(),
+                onExitActionKeys = it.onExitActionKeys.orEmpty(),
+                onEntryActionKeys = it.onEntryActionKeys.orEmpty(),
+            )
+        },
         transitions = document.transitions.orEmpty().map { it.copy(guards = it.guards.orEmpty()) },
         interlocks = document.interlocks.orEmpty(),
+        healthFallbacks = document.healthFallbacks.orEmpty(),
         luts = document.luts.orEmpty().map { it.copy(controlPoints = it.controlPoints.orEmpty()) },
     )
 
@@ -439,6 +541,11 @@ object SuperstructureDocumentCodec {
             exact(state, STATE_FIELDS, "$.states[$index]")
             arrayObjects(state, "subsystemTargets", "$.states[$index]").forEachIndexed { targetIndex, target ->
                 exact(target, TARGET_FIELDS, "$.states[$index].subsystemTargets[$targetIndex]")
+                exact(
+                    requiredObject(target, "target", "$.states[$index].subsystemTargets[$targetIndex]"),
+                    REFERENCE_FIELDS,
+                    "$.states[$index].subsystemTargets[$targetIndex].target",
+                )
                 optionalObject(target, "source", "$.states[$index].subsystemTargets[$targetIndex]")?.let {
                     exact(it, REFERENCE_FIELDS, "$.states[$index].subsystemTargets[$targetIndex].source")
                 }
@@ -458,6 +565,11 @@ object SuperstructureDocumentCodec {
         arrayObjects(root, "interlocks", "$").forEachIndexed { index, interlock ->
             exact(interlock, INTERLOCK_FIELDS, "$.interlocks[$index]")
             exact(requiredObject(interlock, "primary", "$.interlocks[$index]"), REFERENCE_FIELDS, "$.interlocks[$index].primary")
+            exact(requiredObject(interlock, "constrained", "$.interlocks[$index]"), REFERENCE_FIELDS, "$.interlocks[$index].constrained")
+        }
+        arrayObjects(root, "healthFallbacks", "$").forEachIndexed { index, policy ->
+            exact(policy, HEALTH_FALLBACK_FIELDS, "$.healthFallbacks[$index]")
+            exact(requiredObject(policy, "source", "$.healthFallbacks[$index]"), REFERENCE_FIELDS, "$.healthFallbacks[$index].source")
         }
         arrayObjects(root, "luts", "$").forEachIndexed { index, lut ->
             exact(lut, LUT_FIELDS, "$.luts[$index]")
@@ -501,13 +613,14 @@ object SuperstructureDocumentCodec {
         return element.asJsonObject
     }
 
-    private val ROOT_FIELDS = setOf("superstructureId", "displayName", "description", "schemaVersion", "initialStateId", "states", "transitions", "interlocks", "luts", "faultStateId")
-    private val STATE_FIELDS = setOf("stateId", "displayName", "description", "subsystemTargets", "timeoutSeconds", "timeoutTargetStateId")
-    private val TARGET_FIELDS = setOf("subsystemId", "fieldId", "targetMode", "constantDoubleValue", "constantBooleanValue", "constantStringValue", "lutId", "source")
-    private val TRANSITION_FIELDS = setOf("transitionId", "sourceStateId", "targetStateId", "triggerKind", "actionKey", "guards", "debounceMs", "timeoutSeconds", "timeoutTargetStateId")
+    private val ROOT_FIELDS = setOf("superstructureId", "displayName", "description", "schemaVersion", "initialStateId", "states", "transitions", "interlocks", "healthFallbacks", "luts", "faultStateId", "disabledPolicy", "disabledStateId")
+    private val STATE_FIELDS = setOf("stateId", "displayName", "description", "subsystemTargets", "onExitActionKeys", "onEntryActionKeys", "timeoutSeconds", "timeoutTargetStateId")
+    private val TARGET_FIELDS = setOf("target", "targetMode", "constantDoubleValue", "constantBooleanValue", "constantStringValue", "lutId", "source")
+    private val TRANSITION_FIELDS = setOf("transitionId", "sourceStateId", "targetStateId", "triggerKind", "actionKey", "guards", "priority", "debounceMs", "timeoutSeconds", "timeoutTargetStateId")
     private val GUARD_FIELDS = setOf("guardId", "source", "comparison", "expectedDoubleValue", "expectedBooleanValue", "expectedStringValue", "tolerance")
-    private val REFERENCE_FIELDS = setOf("subsystemId", "fieldId")
-    private val INTERLOCK_FIELDS = setOf("ruleId", "description", "primary", "conditionComparison", "conditionThreshold", "constrainedSubsystemId", "constrainedFieldId", "clampMinimum", "clampMaximum")
+    private val REFERENCE_FIELDS = setOf("subsystemUid", "fieldUid", "healthRequirement")
+    private val INTERLOCK_FIELDS = setOf("ruleId", "description", "primary", "conditionComparison", "conditionThreshold", "constrained", "clampMinimum", "clampMaximum")
+    private val HEALTH_FALLBACK_FIELDS = setOf("policyId", "source", "fallbackStateId", "latchFault", "description")
     private val LUT_FIELDS = setOf("lutId", "displayName", "inputUnit", "outputUnit", "interpolation", "controlPoints")
     private val POINT_FIELDS = setOf("inputX", "outputY")
 }
@@ -529,3 +642,4 @@ private fun SubsystemStateFieldDocument.numericDefault(): Double? = when (type) 
 
 private val ID_PATTERN = Regex("[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
 private val TYPE_ID_PATTERN = Regex("[A-Za-z][A-Za-z0-9_]*")
+private val CAPABILITY_KEY_PATTERN = Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")

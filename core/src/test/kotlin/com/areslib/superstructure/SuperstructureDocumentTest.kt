@@ -52,11 +52,10 @@ class SuperstructureDocumentTest {
             ),
         )
         val target = SuperstructureSubsystemTarget(
-            subsystemId = "arm",
-            fieldId = "enabled",
+            target = SuperstructureFieldReference(subsystem.uid, subsystem.stateFields.single { it.fieldId == "enabled" }.uid),
             targetMode = SuperstructureTargetMode.DYNAMIC_LUT,
             lutId = "position-map",
-            source = SuperstructureFieldReference("arm", "position"),
+            source = SuperstructureFieldReference(subsystem.uid, subsystem.stateFields.single { it.fieldId == "position" }.uid),
         )
         val document = SuperstructureDocument(
             superstructureId = "invalid-output",
@@ -98,7 +97,7 @@ class SuperstructureDocumentTest {
     }
 
     @Test
-    fun `codec requires schema v2 and rejects unknown fields`() {
+    fun `codec requires schema v3 and rejects unknown fields`() {
         val document = validFixture().document
         val encoded = SuperstructureDocumentCodec.encode(document)
         assertEquals(document, SuperstructureDocumentCodec.decode(encoded))
@@ -109,7 +108,7 @@ class SuperstructureDocumentTest {
             SuperstructureDocumentCodec.decode(unknown)
         }.message.orEmpty().contains("Unknown fields"))
 
-        val missingSchema = encoded.replace(Regex("\\s*\\\"schemaVersion\\\"\\s*:\\s*2,?"), "")
+        val missingSchema = encoded.replace(Regex("\\s*\\\"schemaVersion\\\"\\s*:\\s*3,?"), "")
         assertTrue(assertThrows<IllegalArgumentException> {
             SuperstructureDocumentCodec.decode(missingSchema)
         }.message.orEmpty().contains("schemaVersion"))
@@ -172,6 +171,88 @@ class SuperstructureDocumentTest {
         })
     }
 
+    @Test
+    fun `stable port references survive code id renames`() {
+        val fixture = validFixture()
+        val renamed = fixture.subsystem.copy(
+            documentId = "renamed-arm",
+            stateFields = fixture.subsystem.stateFields.map { field ->
+                if (field.role == SubsystemFieldRole.TARGET) field.copy(fieldId = "renamedTarget") else field
+            },
+        )
+
+        val errors = validateSuperstructureProject(fixture.document, listOf(renamed), fixture.actionKeys)
+            .filter { it.severity == SuperstructureIssueSeverity.ERROR }
+
+        assertTrue(errors.isEmpty(), errors.joinToString { "${it.path}: ${it.message}" })
+    }
+
+    @Test
+    fun `lifecycle actions must exist in the project catalog`() {
+        val fixture = validFixture()
+        val withLifecycle = fixture.document.copy(
+            states = fixture.document.states.map { state ->
+                if (state.stateId == "ACTIVE") state.copy(onEntryActionKeys = listOf("indicator.active")) else state
+            },
+        )
+
+        val errors = validateSuperstructureProject(withLifecycle, listOf(fixture.subsystem), fixture.actionKeys)
+
+        assertTrue(errors.any { it.path.contains("onEntryActionKeys") && it.message.contains("indicator.active") })
+    }
+
+    @Test
+    fun `request and lifecycle actions must be parameterless`() {
+        val fixture = validFixture()
+        val withLifecycle = fixture.document.copy(
+            states = fixture.document.states.map { state ->
+                if (state.stateId == "ACTIVE") state.copy(onEntryActionKeys = listOf("machine.activate")) else state
+            },
+        )
+
+        val errors = validateSuperstructureProject(
+            withLifecycle,
+            listOf(fixture.subsystem),
+            fixture.actionKeys,
+            emptySet(),
+        )
+
+        assertTrue(errors.any { it.path.endsWith("actionKey") && it.message.contains("parameterless") })
+        assertTrue(errors.any { it.path.contains("onEntryActionKeys") && it.message.contains("parameterless") })
+    }
+
+    @Test
+    fun `dynamic LUT canonical units must match both connected ports`() {
+        val fixture = validFixture()
+        val target = fixture.subsystem.stateFields.first { it.role == SubsystemFieldRole.TARGET }
+        val measurement = fixture.subsystem.stateFields.first { it.role == SubsystemFieldRole.MEASUREMENT && it.type.name in setOf("DOUBLE", "INT") }
+        val lut = SuperstructureDynamicLut(
+            lutId = "wrong-units",
+            inputUnit = "m",
+            outputUnit = "rpm",
+            controlPoints = listOf(LutControlPoint(0.0, 0.0), LutControlPoint(1.0, 1.0)),
+        )
+        val mismatched = fixture.document.copy(
+            luts = listOf(lut),
+            states = fixture.document.states.map { state ->
+                if (state.stateId != "ACTIVE") state else state.copy(
+                    subsystemTargets = listOf(
+                        SuperstructureSubsystemTarget(
+                            target = SuperstructureFieldReference(fixture.subsystem.uid, target.uid),
+                            targetMode = SuperstructureTargetMode.DYNAMIC_LUT,
+                            lutId = lut.lutId,
+                            source = SuperstructureFieldReference(fixture.subsystem.uid, measurement.uid),
+                        )
+                    )
+                )
+            },
+        )
+
+        val errors = validateSuperstructureProject(mismatched, listOf(fixture.subsystem), fixture.actionKeys)
+
+        assertTrue(errors.any { it.path.endsWith("lutId") && it.message.contains("unit") })
+    }
+
     private fun validFixture(): Fixture {
         val subsystem = SubsystemTemplates.create(
             template = SubsystemTemplate.SIMPLE_ACTUATOR,
@@ -188,8 +269,7 @@ class SuperstructureDocumentTest {
             stateId = id,
             subsystemTargets = listOf(
                 SuperstructureSubsystemTarget(
-                    subsystemId = subsystem.documentId,
-                    fieldId = target.fieldId,
+                    target = SuperstructureFieldReference(subsystem.uid, target.uid),
                     constantDoubleValue = value,
                 ),
             ),
@@ -212,7 +292,7 @@ class SuperstructureDocumentTest {
                     guards = listOf(
                         TransitionGuard(
                             guardId = "feedback-ready",
-                            source = SuperstructureFieldReference(subsystem.documentId, measurement.fieldId),
+                            source = SuperstructureFieldReference(subsystem.uid, measurement.uid),
                             comparison = InterlockComparison.GREATER_THAN,
                             expectedDoubleValue = 0.1,
                         ),

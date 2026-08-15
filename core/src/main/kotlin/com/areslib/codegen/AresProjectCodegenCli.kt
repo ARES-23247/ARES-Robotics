@@ -84,8 +84,11 @@ object AresProjectCodegenCli {
         val subsystemActions = subsystemTargetCapabilities(subsystems)
         val catalog = mergeSubsystemCapabilities(baseCatalog, subsystems)
         val catalogActionKeys = catalog.actions.mapTo(linkedSetOf()) { it.key }
+        val parameterlessActionKeys = catalog.actions.asSequence()
+            .filter { it.parameters.isEmpty() }
+            .mapTo(linkedSetOf()) { it.key }
         superstructures.forEach { document ->
-            val errors = validateSuperstructureProject(document, subsystems, catalogActionKeys)
+            val errors = validateSuperstructureProject(document, subsystems, catalogActionKeys, parameterlessActionKeys)
                 .filter { it.severity == SuperstructureIssueSeverity.ERROR }
             require(errors.isEmpty()) {
                 "Superstructure '${document.superstructureId}' is invalid: " +
@@ -140,7 +143,14 @@ object AresProjectCodegenCli {
         }
         syncSubsystemSources(projectRoot, subsystems, options)
         syncDrivebaseSources(projectRoot, drivetrains, tuningProfiles, declarations, options)
-        syncSuperstructureSources(projectRoot, superstructures, subsystems, catalogActionKeys, options)
+        syncSuperstructureSources(
+            projectRoot,
+            superstructures,
+            subsystems,
+            catalogActionKeys,
+            parameterlessActionKeys,
+            options,
+        )
         return generated
     }
 
@@ -242,6 +252,7 @@ object AresProjectCodegenCli {
         superstructures: List<com.areslib.superstructure.SuperstructureDocument>,
         subsystems: List<com.areslib.subsystem.SubsystemDocument>,
         actionKeys: Set<String>,
+        parameterlessActionKeys: Set<String>,
         options: CliOptions,
     ) {
         if (superstructures.isEmpty() && options.superstructureOutput == null &&
@@ -263,6 +274,7 @@ object AresProjectCodegenCli {
                 subsystemRegistryFqn = subsystemRegistryFqn,
                 subsystems = subsystems,
                 actionKeys = actionKeys,
+                parameterlessActionKeys = parameterlessActionKeys,
             )
         } + SuperstructureKotlinGenerator.generateRegistry(superstructures, packageName)
         val manifest = root.resolve(".ares-superstructure-manifest")

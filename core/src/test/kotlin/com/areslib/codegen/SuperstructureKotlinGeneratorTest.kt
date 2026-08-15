@@ -6,12 +6,21 @@ import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
 import com.areslib.superstructure.StateTransitionEdge
 import com.areslib.superstructure.SuperstructureDocument
+import com.areslib.superstructure.SuperstructureFieldReference
 import com.areslib.superstructure.SuperstructureStatePreset
 import com.areslib.superstructure.SuperstructureSubsystemTarget
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
+import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
+import org.jetbrains.kotlin.config.Services
+import java.nio.file.Files
 
 class SuperstructureKotlinGeneratorTest {
     @Test
@@ -28,6 +37,9 @@ class SuperstructureKotlinGeneratorTest {
         assertEquals("MainMachineSuperstructure.kt", generated.relativePath)
         assertTrue(generated.content.contains("SuperstructureRuntimeBinding"))
         assertTrue(generated.content.contains("as? org.example.subsystems.arm.ArmState"))
+        assertTrue(generated.content.contains("override fun resolvePort(subsystemUid: String, fieldUid: String): Int"))
+        assertTrue(generated.content.contains("override fun readHealthBits(port: Int"))
+        assertFalse(generated.content.contains("readNumeric(subsystemId: String"))
         assertTrue(generated.content.contains("GeneratedSubsystemRegistry.createActionTask"))
         assertTrue(generated.content.contains("\"machine.activate\" -> SuperstructureRuntime.requestTask"))
         assertFalse(generated.content.contains("requestedState"))
@@ -84,6 +96,80 @@ class SuperstructureKotlinGeneratorTest {
         assertFalse(registry.content.contains("when (actionKey)"))
     }
 
+    @Test
+    fun `generated adapter compiles against the published runtime contract`() {
+        val fixture = fixture()
+        val generated = SuperstructureKotlinGenerator.generate(
+            fixture.document,
+            "org.example.subsystems.superstructure",
+            "org.example.subsystems.GeneratedSubsystemRegistry",
+            listOf(fixture.subsystem),
+            fixture.actionKeys,
+        )
+        val root = Files.createTempDirectory("ares-superstructure-compile")
+        try {
+            val generatedFile = root.resolve(generated.relativePath).toFile().apply { writeText(generated.content) }
+            val stateProperties = fixture.subsystem.stateFields.joinToString(",\n") { field ->
+                val type = when (field.type) {
+                    com.areslib.subsystem.SubsystemValueType.DOUBLE -> "Double = 0.0"
+                    com.areslib.subsystem.SubsystemValueType.INT -> "Int = 0"
+                    com.areslib.subsystem.SubsystemValueType.BOOLEAN -> "Boolean = false"
+                    com.areslib.subsystem.SubsystemValueType.STRING -> "String = \"\""
+                }
+                "    val ${field.fieldId}: $type"
+            }
+            val stateFile = root.resolve("ArmState.kt").toFile().apply {
+                writeText(
+                    """
+                    package org.example.subsystems.arm
+                    import com.areslib.state.SubsystemState
+                    data class ArmState(
+                    $stateProperties,
+                        val feedbackValid: Boolean = true,
+                        val feedbackTimestampMs: Long = 0L,
+                        val configurationHealthy: Boolean = true,
+                        val homed: Boolean = true,
+                        val calibrated: Boolean = true,
+                        val currentReadingValid: Boolean = true,
+                        val outputFaultLatched: Boolean = false,
+                    ) : SubsystemState
+                    """.trimIndent()
+                )
+            }
+            val registryFile = root.resolve("GeneratedSubsystemRegistry.kt").toFile().apply {
+                writeText(
+                    """
+                    package org.example.subsystems
+                    import com.areslib.sequencer.Task
+                    object GeneratedSubsystemRegistry {
+                        fun createActionTask(actionKey: String, value: Double): Task? = null
+                    }
+                    """.trimIndent()
+                )
+            }
+            val messages = mutableListOf<String>()
+            val arguments = K2JVMCompilerArguments().apply {
+                freeArgs = listOf(generatedFile.path, stateFile.path, registryFile.path)
+                destination = root.resolve("classes").toString()
+                classpath = System.getProperty("java.class.path")
+                jvmTarget = "17"
+                noStdlib = true
+                noReflect = true
+            }
+            val result = K2JVMCompiler().exec(object : MessageCollector {
+                override fun clear() = messages.clear()
+                override fun hasErrors(): Boolean = messages.isNotEmpty()
+                override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageSourceLocation?) {
+                    if (severity.isError) messages += "${location?.path.orEmpty()}:${location?.line ?: 0}: $message"
+                }
+            }, Services.EMPTY, arguments)
+
+            assertEquals(ExitCode.OK, result, messages.joinToString("\n"))
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
     private fun fixture(): Fixture {
         val subsystem = SubsystemTemplates.create(
             SubsystemTemplate.SIMPLE_ACTUATOR,
@@ -96,14 +182,21 @@ class SuperstructureKotlinGeneratorTest {
         fun preset(id: String, value: Double) = SuperstructureStatePreset(
             stateId = id,
             subsystemTargets = listOf(
-                SuperstructureSubsystemTarget("arm", target.fieldId, constantDoubleValue = value),
+                SuperstructureSubsystemTarget(
+                    target = SuperstructureFieldReference(subsystem.uid, target.uid),
+                    constantDoubleValue = value,
+                ),
             ),
         )
         val document = SuperstructureDocument(
             superstructureId = "main-machine",
             initialStateId = "STOW",
             faultStateId = "FAULT",
-            states = listOf(preset("STOW", safe), preset("ACTIVE", 0.5), preset("FAULT", safe)),
+            states = listOf(
+                preset("STOW", safe).copy(onExitActionKeys = listOf("machine.stop")),
+                preset("ACTIVE", 0.5).copy(onEntryActionKeys = listOf("machine.activate")),
+                preset("FAULT", safe),
+            ),
             transitions = listOf(
                 StateTransitionEdge(
                     transitionId = "activate",
