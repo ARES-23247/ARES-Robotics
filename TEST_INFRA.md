@@ -62,7 +62,7 @@ Avoid sleeps and wall-clock assumptions. Use `RobotClock` mock time where the pr
 After ARESLib tests pass:
 
 ```powershell
-.\gradlew.bat apiCheck publishReleaseValidation
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
 Then run the affected ARES-FTC, ARES-FRC, and ARES-Analytics suites with `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`. This is required for changes to public APIs, season interfaces, PathPlanner parsing, coordinate conventions, NT4 topics/types, or log formats.

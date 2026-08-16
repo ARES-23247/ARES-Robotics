@@ -9,9 +9,11 @@ import com.areslib.telemetry.ITelemetry
  */
 interface FlywheelIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        val temperature = tempCelsius
         telemetry.putNumber("$prefix/VelocityRpm", velocityRpm)
         telemetry.putNumber("$prefix/CurrentAmps", currentAmps)
-        telemetry.putNumber("$prefix/TempCelsius", tempCelsius)
+        telemetry.putNumber("$prefix/TempCelsius", temperature)
+        telemetry.putBoolean("$prefix/TempReadingValid", temperature.isFinite())
     }
 
     override fun safe() {
@@ -51,9 +53,9 @@ interface FlywheelIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     override val currentAmps: Double
         get() = Double.NaN
 
-    /** Gets the temperature of the master motor in Celsius */
+    /** Gets the cached master-motor temperature in Celsius, or NaN when unavailable. */
     val tempCelsius: Double
-        get() = 0.0
+        get() = Double.NaN
 }
 
 /**

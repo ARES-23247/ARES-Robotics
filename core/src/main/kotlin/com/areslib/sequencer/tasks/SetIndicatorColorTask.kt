@@ -3,6 +3,7 @@ package com.areslib.sequencer.tasks
 import com.areslib.action.RobotAction
 import com.areslib.hardware.actuator.IndicatorLightColor
 import com.areslib.sequencer.Task
+import com.areslib.sequencer.TaskResources
 import com.areslib.state.RobotState
 
 /**
@@ -28,6 +29,7 @@ class SetIndicatorColorTask(
     private val color: IndicatorLightColor
 ) : Task {
     override val name = "SetIndicator($lightName→${color.name})"
+    override val requiredResources: Long = TaskResources.LIGHTING
     private var dispatched = false
 
     override fun initialize(state: RobotState): List<RobotAction> {

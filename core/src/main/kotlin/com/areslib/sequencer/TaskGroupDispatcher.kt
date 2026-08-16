@@ -10,6 +10,7 @@ import java.util.IdentityHashMap
  */
 class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     override val name = "Sequential(${tasks.joinToString { it.name }})"
+    override val requiredResources: Long = TaskResourceValidator.union(tasks)
     private var currentIndex = 0
     private var currentTaskStartTimeMs = 0L
     private val pendingActions = mutableListOf<RobotAction>()
@@ -97,7 +98,11 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
  * Task group that runs multiple tasks simultaneously in parallel.
  */
 class ParallelTaskGroup(private val tasks: List<Task>) : Task {
+    init {
+        TaskResourceValidator.requireNoParallelConflicts("Parallel task group", tasks)
+    }
     override val name = "Parallel(${tasks.joinToString { it.name }})"
+    override val requiredResources: Long = TaskResourceValidator.union(tasks)
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
@@ -185,8 +190,10 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
 class ParallelRaceGroup(private val tasks: List<Task>) : Task {
     init {
         require(tasks.isNotEmpty()) { "Parallel race requires at least one task" }
+        TaskResourceValidator.requireNoParallelConflicts("Parallel race group", tasks)
     }
     override val name = "ParallelRace(${tasks.joinToString { it.name }})"
+    override val requiredResources: Long = TaskResourceValidator.union(tasks)
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
@@ -282,7 +289,11 @@ class ParallelDeadlineGroup(
     private val otherTasks: List<Task>
 ) : Task {
     private val tasks = listOf(deadline) + otherTasks
+    init {
+        TaskResourceValidator.requireNoParallelConflicts("Parallel deadline group", tasks)
+    }
     override val name = "ParallelDeadline(deadline=${deadline.name}, others=${otherTasks.joinToString { it.name }})"
+    override val requiredResources: Long = TaskResourceValidator.union(tasks)
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()

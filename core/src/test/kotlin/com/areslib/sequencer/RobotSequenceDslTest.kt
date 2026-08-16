@@ -78,6 +78,54 @@ class RobotSequenceDslTest {
     }
 
     @Test
+    fun `named command resources participate in parallel conflict validation`() {
+        val firstKey = CommandKey("collect.first")
+        val secondKey = CommandKey("collect.second")
+        NamedCommands.register(
+            firstKey,
+            "Run the first intake action",
+            requiredResources = TaskResources.INTAKE
+        ) { _ ->
+            StateActionTask("first", TaskResources.INTAKE) {
+                RobotAction.SetAlliance(Alliance.RED, timestampMs = 1L)
+            }
+        }
+        NamedCommands.register(
+            secondKey,
+            "Run the second intake action",
+            requiredResources = TaskResources.INTAKE
+        ) { _ ->
+            StateActionTask("second", TaskResources.INTAKE) {
+                RobotAction.SetAlliance(Alliance.RED, timestampMs = 1L)
+            }
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            robotSequence {
+                parallel {
+                    namedCommand(firstKey)
+                    namedCommand(secondKey)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `named command factory must match its advertised resources`() {
+        val key = CommandKey("misdeclared")
+        NamedCommands.register(
+            key,
+            "Incorrect resource declaration",
+            requiredResources = TaskResources.INTAKE
+        ) { _ -> TimeWaitTask(10L) }
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            NamedCommands.create(key, 1L)
+        }
+        assertTrue(error.message.orEmpty().contains("misdeclared"))
+    }
+
+    @Test
     fun `missing deferred command fails during initialization with its key`() {
         val task = NamedCommands.task(CommandKey("not_registered"))
         val error = assertThrows(IllegalArgumentException::class.java) {

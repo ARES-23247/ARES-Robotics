@@ -146,7 +146,6 @@ class RootReducerTest {
         val poseBefore = store.state.drive.poseEstimator.estimatedPose
         assertEquals(2.0, poseBefore.x, 0.1)
         assertEquals(200L, store.state.drive.poseEstimator.lastObservationTimestampMs)
-        assertTrue(store.state.drive.poseEstimator.history.isEmpty())
         
         // 2. Dispatch a PoseUpdate with isReset = true
         val resetAction = RobotAction.PoseUpdate(
@@ -166,7 +165,6 @@ class RootReducerTest {
         assertEquals(1.0, poseAfter.heading.radians, 1e-6)
         
         // Mutable replay history remains private; Redux exposes only its newest timestamp.
-        assertTrue(stateAfterReset.drive.poseEstimator.history.isEmpty())
         assertEquals(300L, stateAfterReset.drive.poseEstimator.lastObservationTimestampMs)
     }
 }

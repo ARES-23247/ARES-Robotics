@@ -31,11 +31,7 @@ class Store(
 ) {
     private val poseEstimatorRuntime = PoseEstimatorRuntime(initialState.drive.poseEstimator)
 
-    @Volatile var state: RobotState = initialState.copy(
-        drive = initialState.drive.copy(
-            poseEstimator = initialState.drive.poseEstimator.reduxSnapshot()
-        )
-    )
+    @Volatile var state: RobotState = initialState
         private set
 
     private val listeners = java.util.concurrent.CopyOnWriteArrayList<(RobotState) -> Unit>()

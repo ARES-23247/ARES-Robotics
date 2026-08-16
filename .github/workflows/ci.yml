@@ -34,11 +34,30 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Reject tracked local artifacts
+        shell: bash
+        run: |
+          tracked_artifacts="$(git ls-files -- local.properties '*.csv' 'scratch/**')"
+          if [[ -n "$tracked_artifacts" ]]; then
+            echo "Local-only artifacts are tracked:" >&2
+            echo "$tracked_artifacts" >&2
+            exit 1
+          fi
+
       - name: Compile
         run: ./gradlew compileKotlin compileTestKotlin --console=plain
 
       - name: Run tests
         run: ./gradlew test --console=plain
 
+      - name: Select immutable validation candidate
+        shell: bash
+        run: |
+          base_version="$(sed -n 's/^aresVersion=//p' gradle.properties)"
+          echo "ARES_CANDIDATE_VERSION=${base_version}-rc.${GITHUB_SHA::12}" >> "$GITHUB_ENV"
+
       - name: Check public API and publication bundle
-        run: ./gradlew apiCheck publishReleaseValidation --no-parallel --console=plain
+        run: >-
+          ./gradlew apiCheck publishReleaseValidation
+          -ParesVersion=${ARES_CANDIDATE_VERSION}
+          --no-parallel --console=plain

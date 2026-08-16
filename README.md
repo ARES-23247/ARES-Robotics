@@ -54,16 +54,16 @@ Run commands from this repository root:
 .\gradlew.bat :frc-hardware:test
 .\gradlew.bat :simulator:test
 
-# Build the complete Maven bundle in an isolated repository under build/
-.\gradlew.bat apiCheck publishReleaseValidation
+# Build the complete Maven bundle under a unique, unpublished coordinate
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
 Normal FTC, FRC, and Analytics builds consume immutable releases from Maven Central. To test an unpublished library change against a sibling consumer without composite substitution, publish the isolated bundle and pass its repository explicitly:
 
 ```powershell
-.\gradlew.bat publishReleaseValidation
+.\gradlew.bat publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 cd ..\ARES-FTC
-.\gradlew.bat test -ParesRepository="..\ARESLib-Kotlin\build\release-repository"
+.\gradlew.bat test "-ParesVersion=8.0.0-rc.<commit>" "-ParesRepository=file:///C:/absolute/path/ARESLib-Kotlin/build/release-repository"
 ```
 
 All artifacts use the verified `org.aresfirst.ares` Maven namespace and one version:

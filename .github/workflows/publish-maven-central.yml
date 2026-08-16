@@ -41,6 +41,16 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
+      - name: Reject tracked local artifacts
+        shell: bash
+        run: |
+          tracked_artifacts="$(git ls-files -- local.properties '*.csv' 'scratch/**')"
+          if [[ -n "$tracked_artifacts" ]]; then
+            echo "Local-only artifacts are tracked:" >&2
+            echo "$tracked_artifacts" >&2
+            exit 1
+          fi
+
       - name: Verify protected environment secrets
         shell: bash
         run: |
@@ -55,10 +65,20 @@ jobs:
             fi
           done
 
+      - name: Reject an already-published release version
+        shell: bash
+        run: |
+          artifact_url="https://repo1.maven.org/maven2/org/aresfirst/ares/ares-bom/${{ inputs.version }}/ares-bom-${{ inputs.version }}.pom"
+          if curl --silent --show-error --fail --head "$artifact_url" >/dev/null; then
+            echo "ARES ${{ inputs.version }} already exists on Maven Central and is immutable." >&2
+            exit 1
+          fi
+
       - name: Test API and signed publication bundle
         run: >-
           ./gradlew clean test apiCheck publishReleaseValidation
           -ParesVersion=${{ inputs.version }}
+          -PallowFinalReleaseValidation=true
           --no-parallel --console=plain
 
       - name: Stage signed Maven Central deployment

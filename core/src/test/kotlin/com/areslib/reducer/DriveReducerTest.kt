@@ -130,7 +130,6 @@ class DriveReducerTest {
         assertEquals(0.0, updated.drive.ekfDriftX, 0.0)
         assertEquals(0.0, updated.drive.ekfDriftY, 0.0)
         assertEquals(20L, updated.drive.poseEstimator.lastObservationTimestampMs)
-        assertTrue(updated.drive.poseEstimator.history.isEmpty())
     }
 
     @Test

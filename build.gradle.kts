@@ -10,7 +10,10 @@ plugins {
 }
 
 val aresGroup = "org.aresfirst.ares"
-val aresVersion = providers.gradleProperty("aresVersion").orElse("7.0.0").get()
+val aresVersion = providers.gradleProperty("aresVersion").orElse("8.0.0").get()
+val allowFinalReleaseValidation = providers.gradleProperty("allowFinalReleaseValidation")
+    .map(String::toBoolean)
+    .orElse(false)
 val publishedProjectPaths = listOf(
     ":core",
     ":codegen",
@@ -122,10 +125,25 @@ tasks.register("validateReleaseVersion") {
     }
 }
 
+tasks.register("validateReleaseCandidateVersion") {
+    group = "verification"
+    description = "Requires isolated validation builds to use a unique prerelease coordinate."
+    dependsOn("validateAresVersion")
+    doLast {
+        if (!allowFinalReleaseValidation.get()) {
+            check('-' in aresVersion) {
+                "Release validation must use a unique prerelease version, for example " +
+                    "-ParesVersion=8.0.0-rc.<commit>. Final-version validation is reserved " +
+                    "for the protected Maven Central workflow."
+            }
+        }
+    }
+}
+
 tasks.register("publishReleaseValidation") {
     group = "publishing"
     description = "Publishes every public artifact to an isolated repository under build/ for consumer testing."
-    dependsOn("validateAresVersion")
+    dependsOn("validateReleaseCandidateVersion")
     dependsOn(publishedProjectPaths.map { "$it:publishAllPublicationsToReleaseValidationRepository" })
 }
 

@@ -6,6 +6,7 @@ import com.areslib.math.geometry.Translation3d
 import com.areslib.state.RobotState
 import com.areslib.state.VisionMeasurement
 import com.areslib.state.VisionState
+import com.areslib.state.snapshot
 import com.areslib.util.RobotClock
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -33,7 +34,7 @@ class VisionAlignControllerTest {
                 rotation = Rotation3d()
             )
         )
-        val state = RobotState(vision = VisionState(measurements = listOf(measurement)))
+        val state = RobotState(vision = VisionState(measurements = listOf(measurement.snapshot())))
 
         val command = assertNotNull(controller.calculate(state, targetTagId = 7, isAlignmentRequested = true))
 
@@ -51,7 +52,7 @@ class VisionAlignControllerTest {
         )
         val command = assertNotNull(
             VisionAlignController().calculate(
-                RobotState(vision = VisionState(measurements = listOf(measurement))),
+                RobotState(vision = VisionState(measurements = listOf(measurement.snapshot()))),
                 targetTagId = 7,
                 isAlignmentRequested = true
             )
@@ -75,7 +76,7 @@ class VisionAlignControllerTest {
         )
         val command = assertNotNull(
             VisionAlignController().calculate(
-                RobotState(vision = VisionState(measurements = listOf(measurement))),
+                RobotState(vision = VisionState(measurements = listOf(measurement.snapshot()))),
                 targetTagId = 7,
                 isAlignmentRequested = true
             )
@@ -96,7 +97,7 @@ class VisionAlignControllerTest {
             // tag-normal separation and must remain independent of IMU pitch.
             robotPoseTargetSpace = Pose3d(Translation3d(0.0, 1.0, 1.5), Rotation3d())
         )
-        val state = RobotState(vision = VisionState(measurements = listOf(measurement)))
+        val state = RobotState(vision = VisionState(measurements = listOf(measurement.snapshot())))
 
         val level = assertNotNull(
             VisionAlignController().calculate(state, 7, true, imuPitch = 0.0)

@@ -19,7 +19,7 @@ internal data class PreparedStoreAction(
  * deterministically rebuild this result with their own [PoseEstimatorRuntime].
  */
 internal data class ApplyPoseEstimatorRuntimeResult(
-    val estimatorState: PoseEstimatorState?,
+    val estimatorState: PoseEstimatorSnapshot?,
     val visionDiagnostics: VisionEstimatorDiagnostics?,
     override val timestampMs: Long
 ) : RobotAction
@@ -28,10 +28,10 @@ internal data class ApplyPoseEstimatorRuntimeResult(
  * Mutable EKF replay owner for exactly one [com.areslib.Store].
  *
  * The fixed-capacity history and estimator scratch state never enter Redux. Published
- * [PoseEstimatorState] values contain independent primitive arrays and a shared read-only empty
- * history marker, so retained robot states cannot be changed by later odometry or delayed vision.
+ * [PoseEstimatorSnapshot] values contain only immutable primitive fields, so retained robot states
+ * cannot be changed by later odometry or delayed vision.
  */
-internal class PoseEstimatorRuntime(initialState: PoseEstimatorState) {
+internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
     private var estimator = createWorkspace(initialState)
     private val visionController = StoreVisionMeasurementProcessor()
 
@@ -64,7 +64,7 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorState) {
         }
     }
 
-    private fun processDriveHardwareUpdate(action: RobotAction.DriveHardwareUpdate): PoseEstimatorState? {
+    private fun processDriveHardwareUpdate(action: RobotAction.DriveHardwareUpdate): PoseEstimatorSnapshot? {
         if (!action.xVelocity.isFinite() || !action.yVelocity.isFinite() ||
             !action.angularVelocity.isFinite() || !action.deltaX.isFinite() ||
             !action.deltaY.isFinite() || !action.deltaHeading.isFinite() ||
@@ -89,7 +89,7 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorState) {
         return estimator.reduxSnapshot()
     }
 
-    private fun processPoseUpdate(state: RobotState, action: RobotAction.PoseUpdate): PoseEstimatorState? {
+    private fun processPoseUpdate(state: RobotState, action: RobotAction.PoseUpdate): PoseEstimatorSnapshot? {
         if (!action.xMeters.isFinite() || !action.yMeters.isFinite() || !action.headingRadians.isFinite()) {
             return null
         }
@@ -192,11 +192,9 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorState) {
         return (deltaMs / 1_000.0).coerceIn(0.001, 0.1)
     }
 
-    private fun createWorkspace(snapshot: PoseEstimatorState): PoseEstimatorState {
+    private fun createWorkspace(snapshot: PoseEstimatorSnapshot): PoseEstimatorState {
         val history = HistoryBuffer(HISTORY_CAPACITY)
-        if (snapshot.history.isNotEmpty()) {
-            snapshot.history.copyInto(history)
-        } else if (snapshot.lastObservationTimestampMs >= 0L) {
+        if (snapshot.lastObservationTimestampMs >= 0L) {
             history.addEntryDirect(
                 snapshot.lastObservationTimestampMs,
                 snapshot.estimatedPoseX,
@@ -206,10 +204,23 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorState) {
                 1.0
             )
         }
-        return snapshot.copy(
-            covarianceArray = snapshot.covarianceArray.copyOf(),
+        return PoseEstimatorState(
+            estimatedPoseX = snapshot.estimatedPoseX,
+            estimatedPoseY = snapshot.estimatedPoseY,
+            estimatedPoseHeading = snapshot.estimatedPoseHeading,
+            covarianceArray = snapshot.copyCovariance(),
             history = history,
-            lastKalmanGain = snapshot.lastKalmanGain.copyOf()
+            isBeached = snapshot.isBeached,
+            lastUnbeachedTimeMs = snapshot.lastUnbeachedTimeMs,
+            gyroBiasRadPerSec = snapshot.gyroBiasRadPerSec,
+            stationarySinceMs = snapshot.stationarySinceMs,
+            lastInnovationX = snapshot.lastInnovationX,
+            lastInnovationY = snapshot.lastInnovationY,
+            lastInnovationTheta = snapshot.lastInnovationTheta,
+            lastNormalizedInnovationSquared = snapshot.lastNormalizedInnovationSquared,
+            lastKalmanGain = snapshot.copyKalmanGain(),
+            lastMeasurementAccepted = snapshot.lastMeasurementAccepted,
+            lastRejectionReason = snapshot.lastRejectionReason
         ).also { it.lastObservationTimestampMs = snapshot.lastObservationTimestampMs }
     }
 

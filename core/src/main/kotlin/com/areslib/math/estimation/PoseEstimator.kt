@@ -55,9 +55,11 @@ data class PoseHistoryEntry(
  *
  * ### Zero-GC Guarantee:
  * Pre-allocates array entries upon construction (`Array(capacity) { PoseHistoryEntry() }`).
- * Concurrent thread scratchpads obtain deep copies via a 256-instance static object pool.
+ * Runtime rewind paths reuse caller-owned scratch buffers through [copyInto]. Snapshot copies
+ * intentionally allocate so their ownership cannot alias a later caller.
  *
- * @param capacity Maximum number of historical frames to retain (default $50$, corresponding to $0.5$-$1.0\,\text{s}$ of history).
+ * @param capacity Maximum number of historical frames to retain (default $150$, corresponding to
+ * roughly $1.5$-$3.0\,\text{s}$ at 50-100 Hz).
  */
 class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryEntry>() {
     private var readOnly: Boolean = false
@@ -215,10 +217,10 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
     /**
      * Creates a deep-copy of this history buffer.
      *
-     * @return Newly allocated or pooled copy of [HistoryBuffer].
+     * @return Independently owned [HistoryBuffer]. This method allocates and is not a hot-path API.
      */
     fun deepCopy(): HistoryBuffer {
-        if (readOnly && count == 0) return READ_ONLY_EMPTY
+        if (readOnly && count == 0) return HistoryBuffer()
         val newBuf = HistoryBuffer(capacity)
         for (i in 0 until capacity) {
             val src = entries[i]
@@ -343,21 +345,18 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
         /** Shared immutable marker used by published Redux snapshots; EKF history is runtime-owned. */
         internal val READ_ONLY_EMPTY = HistoryBuffer(0, true)
 
-        private val pool = Array(256) { HistoryBuffer(150) }
-        private val poolIndex = java.util.concurrent.atomic.AtomicInteger(0)
-
         /**
-         * Obtains a thread-safe copy of [src] using a pre-allocated 256-instance ring pool to prevent GC allocation.
+         * Obtains an independently owned copy of [src].
+         *
+         * A former round-robin pool reused returned buffers after 256 calls without an ownership
+         * protocol, so retaining a valid earlier result could be corrupted by a later copy. The
+         * allocating behavior is deliberate; 50-100 Hz code must pre-allocate a destination and
+         * call [HistoryBuffer.copyInto] instead.
          *
          * @param src Source [HistoryBuffer] to clone.
-         * @return Pooled [HistoryBuffer] instance pre-populated with data from [src].
+         * @return Newly allocated [HistoryBuffer] pre-populated with data from [src].
          */
-        fun obtainCopy(src: HistoryBuffer): HistoryBuffer {
-            val idx = (poolIndex.getAndIncrement() and 0x7FFFFFFF) % 256
-            val dest = pool[idx]
-            src.copyInto(dest)
-            return dest
-        }
+        fun obtainCopy(src: HistoryBuffer): HistoryBuffer = src.deepCopy()
     }
 
     private fun requireWritable() {
@@ -367,10 +366,11 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
 
 
 /**
- * Immutable chronological state representation of the Pose Estimator.
+ * Mutable, runtime-owned workspace for the pose estimator.
  *
- * Designed to prevent high-frequency garbage collection overhead in Android ART
- * and RoboRIO runtimes by utilizing small, pre-allocated lists and primitive-backed matrices.
+ * This type exists to prevent high-frequency garbage collection on Android ART and RoboRIO by
+ * reusing primitive-backed matrices and history entries. It must never be placed in Redux state;
+ * publish [PoseEstimatorSnapshot] instead.
  *
  * @property estimatedPose The current best estimate of the robot's 2D field-centric position and heading.
  * @property covariance The 3x3 error covariance matrix representing estimate uncertainty.
@@ -411,19 +411,6 @@ data class PoseEstimatorState(
         lastKalmanGain = lastKalmanGain.copyOf()
     ).also { it.lastObservationTimestampMs = lastObservationTimestampMs }
 
-    /** Creates a Redux-safe observable snapshot without exposing mutable EKF replay history. */
-    internal fun reduxSnapshot(): PoseEstimatorState = copy(
-        covarianceArray = covarianceArray.copyOf(),
-        history = HistoryBuffer.READ_ONLY_EMPTY,
-        lastKalmanGain = lastKalmanGain.copyOf()
-    ).also { snapshot ->
-        snapshot.lastObservationTimestampMs = if (history.isEmpty()) {
-            lastObservationTimestampMs
-        } else {
-            history[history.size - 1].timestampMs
-        }
-    }
-
     val estimatedPose: Pose2d
         get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))
 
@@ -449,7 +436,9 @@ data class PoseEstimatorState(
  * Championship-grade **Extended Kalman Filter (EKF) Pose Estimator**.
  *
  * Fuses high-rate wheel odometry ($100\text{ Hz}$) with asynchronous, latency-delayed 3D AprilTag vision observations.
- * Integrates statistical Mahalanobis distance outlier filtering ($\chi^2 > 18.0$) and retroactive observation rewind playback.
+ * Integrates configurable normalized-innovation-squared (Mahalanobis) outlier filtering and
+ * retroactive observation rewind playback. The public vision APIs default to a threshold of
+ * $12.0$ for the 3-DOF $(x, y, \theta)$ innovation.
  *
  * ### EKF State Prediction & Innovation Equations:
  * $$x_k = f(x_{k-1}, u_{k-1}), \quad P_k = F P_{k-1} F^T + Q$$
@@ -458,13 +447,14 @@ data class PoseEstimatorState(
  * $$\hat{x}_k \leftarrow \hat{x}_k + K_k y_k, \quad P_k \leftarrow (I - K_k H) P_k$$
  *
  * ### Mahalanobis Outlier Filtering:
- * $$d_M = \sqrt{y_k^T S_k^{-1} y_k} \quad (\text{Reject if } d_M^2 > 18.0 \text{ for 3-DOF})$$
+ * $$d_M = \sqrt{y_k^T S_k^{-1} y_k} \quad (\text{Reject if } d_M^2 > \text{configured threshold})$$
  *
  * ### Physical Units & Guarantees:
  * - **Position ($x, y$):** Field-centric meters ($m$)
  * - **Heading ($\theta$):** Radians ($rad$, CCW-positive: $0 = +X$, $\frac{\pi}{2} = +Y$)
  * - **Timestamps ($t$):** Milliseconds ($ms$)
- * - **Memory Footprint:** 100% Zero-GC heap compliance during 100Hz rewind passes via a pre-allocated 256-instance ring pool.
+ * - **Memory Footprint:** Runtime rewind passes reuse thread-owned matrices and history scratchpads.
+ *   Explicit snapshot APIs such as [HistoryBuffer.deepCopy] allocate outside the hot path.
  *
  * @see VisionMeasurement
  * @see HistoryBuffer

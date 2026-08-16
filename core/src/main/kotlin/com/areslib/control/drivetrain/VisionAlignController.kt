@@ -82,7 +82,7 @@ class VisionAlignController {
         val now = RobotClock.currentTimeMillis()
         
         // Require reasonably fresh data (<= 250ms) for active closed-loop control
-        var activeMeasurement: com.areslib.state.VisionMeasurement? = null
+        var activeMeasurement: com.areslib.state.VisionMeasurementSnapshot? = null
         for (i in 0 until state.vision.measurements.size) {
             val measurement = state.vision.measurements[i]
             val ageMs = now - measurement.timestampMs
@@ -113,7 +113,7 @@ class VisionAlignController {
             // In target-space: Z+ is outward from tag, Y+ is up.
             // Yaw (robot turning left/right) = rotation around Y axis = rotation.y
             // Negated to match the controller's sign convention (positive = CCW)
-            val robotYaw = -robotPoseTargetSpace.rotation.y
+            val robotYaw = -robotPoseTargetSpace.rotationY
             val wrappedYaw = wrapAngle(robotYaw)
             
             // 1. Yaw rate-of-change sanity check (reject PnP flips/jumps)
@@ -261,12 +261,12 @@ class VisionAlignController {
     }
 
     private fun isUsableTargetSpace(
-        measurement: com.areslib.state.VisionMeasurement,
+        measurement: com.areslib.state.VisionMeasurementSnapshot,
         state: RobotState
     ): Boolean {
         val pose = measurement.robotPoseTargetSpace
         if (!pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() || pose.z < 0.0 ||
-            !pose.rotation.x.isFinite() || !pose.rotation.y.isFinite() || !pose.rotation.z.isFinite()) {
+            !pose.rotationX.isFinite() || !pose.rotationY.isFinite() || !pose.rotationZ.isFinite()) {
             return false
         }
         val maxDistance = state.vision.filterConfig.maxDistanceMeters

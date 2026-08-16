@@ -8,12 +8,29 @@ import com.areslib.math.estimation.PoseEstimatorState
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
+import com.areslib.state.RobotState
+import com.areslib.state.Pose3dSnapshot
+import com.areslib.state.SuperstructureState
+import com.areslib.state.VisionMeasurementSnapshot
+import com.areslib.state.VisionState
+import com.areslib.telemetry.ARESNetworkStatePublisher
+import com.areslib.telemetry.ITelemetry
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.lang.management.ManagementFactory
 import com.sun.management.ThreadMXBean
 
 class ZeroGcRegressionTest {
+
+    private object NoOpTelemetry : ITelemetry {
+        override fun putNumber(key: String, value: Double) = Unit
+        override fun putBoolean(key: String, value: Boolean) = Unit
+        override fun putString(key: String, value: String) = Unit
+        override fun putDoubleArray(key: String, value: DoubleArray) = Unit
+        override fun getNumber(key: String, defaultValue: Double): Double = defaultValue
+        override fun getBoolean(key: String, defaultValue: Boolean): Boolean = defaultValue
+        override fun getString(key: String, defaultValue: String): String = defaultValue
+    }
 
     private fun getAllocatedBytes(): Long {
         val mxBean = ManagementFactory.getThreadMXBean()
@@ -102,8 +119,39 @@ class ZeroGcRegressionTest {
         // A 150-entry deep copy allocated tens of megabytes here. Redux snapshots still allocate
         // small immutable state objects, but the bounded runtime history must never be cloned.
         assertTrue(
-            allocatedBytes <= 2_000_000L,
+            allocatedBytes <= 1_500_000L,
             "Store drive reduction must not clone EKF history (allocated $allocatedBytes bytes)"
+        )
+    }
+
+    @Test
+    fun `state telemetry publishing stays within its bounded allocation budget`() {
+        val publisher = ARESNetworkStatePublisher(NoOpTelemetry)
+        val state = RobotState(
+            vision = VisionState(
+                measurements = listOf(
+                    VisionMeasurementSnapshot(
+                        timestampMs = 1L,
+                        targetPose = Pose3dSnapshot(x = 1.0, y = 2.0)
+                    )
+                )
+            ),
+            superstructure = SuperstructureState(
+                indicatorLights = mapOf("status" to 0.5)
+            )
+        )
+        repeat(1_000) { publisher.publish(state, flush = false) }
+
+        val startBytes = getAllocatedBytes()
+        repeat(1_000) { publisher.publish(state, flush = false) }
+        val allocatedBytes = getAllocatedBytes() - startBytes
+        println("[Telemetry Test] Allocated bytes over 1,000 publishes: $allocatedBytes bytes")
+
+        // The first measured window may absorb final JVM bookkeeping after warmup. State pose,
+        // covariance, vision, gamepad, and stable indicator publication must not allocate per frame.
+        assertTrue(
+            allocatedBytes <= 4_096L,
+            "State telemetry publishing exceeded its bounded allocation budget ($allocatedBytes bytes)"
         )
     }
 

@@ -95,7 +95,7 @@ data class LocalizationCalibrationSample(
                 else -> null
             }
             val mt2Pose = mt2?.targetPose
-            val cov = drive.poseEstimator.covarianceArray.copyOf()
+            val cov = drive.poseEstimator.copyCovariance()
             val targetSpace = representative?.robotPoseTargetSpace
             val tagDistance = if (targetSpace == null) Double.NaN else kotlin.math.sqrt(
                 targetSpace.x * targetSpace.x + targetSpace.y * targetSpace.y + targetSpace.z * targetSpace.z

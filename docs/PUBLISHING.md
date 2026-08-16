@@ -7,11 +7,12 @@ ARESLib publishes ten coordinated artifacts under the verified `org.aresfirst.ar
 Before staging a release:
 
 1. Update and review the public `.api` baselines with `./gradlew apiDump` when an intentional public API change was made.
-2. Run `./gradlew clean test apiCheck publishReleaseValidation --no-parallel`.
+2. Choose a unique candidate version such as `8.0.0-rc.<commit>`, then run
+   `./gradlew clean test apiCheck publishReleaseValidation -ParesVersion=<candidate> --no-parallel`.
 3. Build FTC, FRC, and Analytics with composite substitution disabled and `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`.
 4. Confirm the release version is semantic and does not end in `-SNAPSHOT`.
 
-`publishReleaseValidation` writes a complete unsigned local Maven repository to `build/release-repository`. In the protected workflow, signing is enabled, so this step also proves that the in-memory key can sign every required file before any upload occurs.
+`publishReleaseValidation` writes a complete unsigned local Maven repository to `build/release-repository`. Ordinary validation rejects final release coordinates so a local candidate can never impersonate an immutable Central artifact. The protected release workflow is the only caller allowed to validate the exact final version; it first rejects versions already present on Maven Central. In that workflow, signing is enabled, so validation also proves that the in-memory key can sign every required file before any upload occurs.
 
 ## Protected GitHub environment
 

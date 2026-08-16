@@ -27,7 +27,7 @@ Use the checked-in wrapper and JDK 17:
 .\gradlew.bat :ftc-hardware:test
 .\gradlew.bat :frc-hardware:test
 .\gradlew.bat :simulator:test
-.\gradlew.bat apiCheck publishReleaseValidation
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
 After changing ARESLib, test it and publish the isolated validation repository before testing consumers with `-ParesRepository=<path>/build/release-repository`. Normal consumer builds use the pinned Maven Central version; sibling source substitution is opt-in. Publication coordinates are listed in [README.md](README.md).

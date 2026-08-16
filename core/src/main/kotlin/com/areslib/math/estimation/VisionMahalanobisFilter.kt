@@ -32,7 +32,7 @@ import com.areslib.math.wrapAngle
  *
  * ### Zero-GC Guarantee:
  * Uses caller-supplied pre-allocated matrix scratchpads (`scratchR`, `scratchS`, `scratchSInv`, `scratchK`, `scratchCov`)
- * and a 16-slot ring pool (`kalmanGainPool`) to maintain zero dynamic heap allocations.
+ * and a caller-supplied history scratchpad to avoid dynamic heap allocations in the vision update.
  *
  * @see PoseEstimator
  * @see EKFStatePropagator
@@ -49,7 +49,9 @@ object VisionMahalanobisFilter {
      * @param visionStdDevs Baseline vision standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ (units: meters, radians).
      * @param numTags Total number of detected AprilTags in the current vision frame.
      * @param useMahalanobisRejection If true, rejects vision observations exceeding [mahalanobisThreshold].
-     * @param mahalanobisThreshold Chi-squared threshold for outlier rejection (typically 9.21 for 99% confidence at 3 DOF).
+     * @param mahalanobisThreshold Normalized-innovation-squared threshold for the 3-DOF
+     * $(x, y, \theta)$ residual. [PoseEstimator] defaults this value to $12.0$; callers may tune it
+     * from validated field data.
      * @param maxAmbiguity Maximum acceptable AprilTag pose solver ambiguity ratio (0.0 to 1.0).
      * @param activeTags Map of tag IDs to field-space 3D poses for incidence angle calculations.
      * @param baseQ Process noise covariance matrix.

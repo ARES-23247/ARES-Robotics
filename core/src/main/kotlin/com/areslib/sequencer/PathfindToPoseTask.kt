@@ -27,6 +27,7 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     private val authoredAlliance: Alliance = Alliance.BLUE
 ) : Task {
     override val name = "PathfindToPose($targetPose)"
+    override val requiredResources: Long = TaskResources.DRIVE
     private var delegateTask: FollowPathTask? = null
 
     override fun initialize(state: RobotState): List<RobotAction> {
