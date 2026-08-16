@@ -70,7 +70,7 @@ All artifacts use the verified `org.aresfirst.ares` Maven namespace and one vers
 
 | Module | Coordinates |
 |---|---|
-| BOM | `org.aresfirst.ares:ares-bom:6.0.0` |
+| BOM | `org.aresfirst.ares:ares-bom:7.0.0` |
 | Core | `org.aresfirst.ares:core` |
 | Code generation | `org.aresfirst.ares:codegen` |
 | FTC | `org.aresfirst.ares:ftc-hardware`, `org.aresfirst.ares:ftc-mocks` |
