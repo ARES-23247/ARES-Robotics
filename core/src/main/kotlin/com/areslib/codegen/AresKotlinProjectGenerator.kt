@@ -4,6 +4,7 @@ import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CapabilityContext
+import com.areslib.catalog.ResourceAccess
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.CatalogValidationSeverity
@@ -286,7 +287,11 @@ object AresKotlinProjectGenerator {
 
         val actions = request.catalog.actions.associateBy { it.key }
         val conditions = request.catalog.conditions.associateBy { it.key }
-        val resources = actions.mapValues { (_, descriptor) -> descriptor.resources.mapTo(mutableSetOf()) { it.resourceKey } }
+        // Only EXCLUSIVE claims participate in concurrent-resource arbitration. Flattening READ
+        // claims in too made document validation reject routines that parallelize, say, a shot
+        // feed (READ on flywheel/cowl) with flywheel spin-up — a conflict the runtime bitmask
+        // model correctly allows.
+        val resources = actions.mapValues { (_, descriptor) -> exclusiveResourceKeys(descriptor).toSet() }
         val routineContext = RoutineValidationContext(
             hasAction = actions::containsKey,
             hasCondition = conditions::containsKey,
@@ -585,7 +590,7 @@ object AresKotlinProjectGenerator {
             append("                when (key) {\n")
             actions.forEach { descriptor ->
                 append("                    ${stringLiteral(descriptor.key)} -> ")
-                append(renderStringSet(descriptor.resources.map { it.resourceKey }, 5))
+                append(renderStringSet(exclusiveResourceKeys(descriptor), 5))
                 append('\n')
             }
             append("                    else -> emptySet()\n")
@@ -1172,6 +1177,14 @@ object AresKotlinProjectGenerator {
             prefix = "setOf(",
             postfix = ")"
         ) { stringLiteral(it) }
+
+    /**
+     * Resource keys an action exclusively owns while active. READ claims are omitted: they
+     * describe state observation, not arbitration, and must not produce parallel-resource
+     * conflicts — the runtime bitmask model treats them the same way.
+     */
+    private fun exclusiveResourceKeys(descriptor: ActionDescriptor): List<String> =
+        descriptor.resources.filter { it.access == ResourceAccess.EXCLUSIVE }.map { it.resourceKey }
 
     private fun assignMethodNames(prefix: String, keys: List<String>): Map<String, String> {
         val candidates = keys.associateWith { key -> prefix + key.toIdentifierSuffix() }

@@ -5,6 +5,8 @@ import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.ConditionDescriptor
+import com.areslib.catalog.ResourceAccess
+import com.areslib.catalog.ResourceClaim
 import com.areslib.controls.AnalogControlPolicyDocument
 import com.areslib.controls.ControlBindingDocument
 import com.areslib.controls.ControlEvent
@@ -67,6 +69,62 @@ class AresKotlinProjectGeneratorTest {
 }""",
             golden
         )
+    }
+
+    @Test
+    fun `READ claims do not create parallel conflicts and are omitted from generated resource sets`() {
+        val feed = action("shooter.feed").copy(
+            resources = listOf(
+                ResourceClaim("shooter.flywheel", ResourceAccess.READ),
+                ResourceClaim("shooter.cowl", ResourceAccess.READ),
+                ResourceClaim("shooter.feeder", ResourceAccess.EXCLUSIVE)
+            )
+        )
+        val spinUp = action("shooter.prepare").copy(
+            resources = listOf(
+                ResourceClaim("shooter.flywheel", ResourceAccess.EXCLUSIVE),
+                ResourceClaim("shooter.cowl", ResourceAccess.EXCLUSIVE)
+            )
+        )
+
+        // Parallelizing a READ-only consumer with the EXCLUSIVE owner is exactly the shot
+        // feed / spin-up pattern; flattening READ claims in made generation reject this.
+        val result = generate(
+            catalog = catalog(actions = listOf(feed, spinUp)),
+            routines = listOf(
+                simpleRoutine(
+                    "parallel-feed",
+                    RoutineStep.together(
+                        listOf(RoutineStep.action("shooter.feed"), RoutineStep.action("shooter.prepare"))
+                    )
+                )
+            )
+        )
+
+        assertTrue("\"shooter.feed\" -> setOf(\"shooter.feeder\")" in result.source)
+        assertTrue("\"shooter.prepare\" -> setOf(\"shooter.cowl\", \"shooter.flywheel\")" in result.source)
+    }
+
+    @Test
+    fun `EXCLUSIVE claims shared across parallel branches still fail generation closed`() {
+        val a = action("intake.collect").copy(resources = listOf(ResourceClaim("floor", ResourceAccess.EXCLUSIVE)))
+        val b = action("shooter.feed").copy(resources = listOf(ResourceClaim("floor", ResourceAccess.EXCLUSIVE)))
+
+        val failure = assertFailsWith<IllegalArgumentException> {
+            generate(
+                catalog = catalog(actions = listOf(a, b)),
+                routines = listOf(
+                    simpleRoutine(
+                        "conflicting",
+                        RoutineStep.together(
+                            listOf(RoutineStep.action("intake.collect"), RoutineStep.action("shooter.feed"))
+                        )
+                    )
+                )
+            )
+        }
+        // The joined ERROR text carries the human-readable conflict, not the issue code.
+        assertTrue("both require 'floor'" in (failure.message ?: ""))
     }
 
     @Test
