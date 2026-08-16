@@ -1,10 +1,32 @@
 package com.areslib.sim
 
 import com.areslib.sim.physics.SimPhysicsWorld
+import com.areslib.sim.physics.canonicalFieldConfigPaths
 import org.junit.Assert.assertEquals
+import org.junit.rules.TemporaryFolder
+import org.junit.Rule
 import org.junit.Test
 
 class SimPhysicsWorldContractTest {
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    @Test
+    fun projectFieldAssetPrecedesDeveloperCheckoutFallback() {
+        val workingDirectory = temporaryFolder.newFolder("generated-project")
+        val userHome = temporaryFolder.newFolder("home")
+        val projectField = java.io.File(workingDirectory, "TeamCode/src/main/assets/paths/field.json")
+        val developerField = java.io.File(userHome, "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/field.json")
+        projectField.parentFile.mkdirs()
+        developerField.parentFile.mkdirs()
+        projectField.writeText("project")
+        developerField.writeText("developer")
+
+        val discovered = canonicalFieldConfigPaths(workingDirectory, userHome).first(java.io.File::isFile)
+
+        assertEquals(projectField.canonicalFile, discovered.canonicalFile)
+    }
 
     @Test
     fun allianceSpawnPosesAreExactMirrorsAndAreAppliedToDyn4jBody() {
