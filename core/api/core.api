@@ -9191,23 +9191,25 @@ public final class com/areslib/superstructure/LutInterpolationMethod : java/lang
 }
 
 public final class com/areslib/superstructure/StateTransitionEdge {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;JLjava/lang/Double;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;JLjava/lang/Double;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;IJLjava/lang/Double;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;IJLjava/lang/Double;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Lcom/areslib/superstructure/TransitionTriggerKind;
 	public final fun component5 ()Ljava/lang/String;
 	public final fun component6 ()Ljava/util/List;
-	public final fun component7 ()J
-	public final fun component8 ()Ljava/lang/Double;
-	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;JLjava/lang/Double;Ljava/lang/String;)Lcom/areslib/superstructure/StateTransitionEdge;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/StateTransitionEdge;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;JLjava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public final fun component7 ()I
+	public final fun component8 ()J
+	public final fun component9 ()Ljava/lang/Double;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;IJLjava/lang/Double;Ljava/lang/String;)Lcom/areslib/superstructure/StateTransitionEdge;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/StateTransitionEdge;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/TransitionTriggerKind;Ljava/lang/String;Ljava/util/List;IJLjava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/StateTransitionEdge;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getActionKey ()Ljava/lang/String;
 	public final fun getDebounceMs ()J
 	public final fun getGuards ()Ljava/util/List;
+	public final fun getPriority ()I
 	public final fun getSourceStateId ()Ljava/lang/String;
 	public final fun getTargetStateId ()Ljava/lang/String;
 	public final fun getTimeoutSeconds ()Ljava/lang/Double;
@@ -9218,11 +9220,22 @@ public final class com/areslib/superstructure/StateTransitionEdge {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/superstructure/SuperstructureDisabledPolicy : java/lang/Enum {
+	public static final field FORCE_SAFE_AND_REJECT_REQUESTS Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+	public static final field RETAIN_LOGICAL_STATE_WITH_NEUTRAL_OUTPUT Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+	public static fun values ()[Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+}
+
 public final class com/areslib/superstructure/SuperstructureDocument {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDisabledPolicy;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDisabledPolicy;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/util/List;
+	public final fun component11 ()Ljava/lang/String;
+	public final fun component12 ()Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+	public final fun component13 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()I
@@ -9231,12 +9244,15 @@ public final class com/areslib/superstructure/SuperstructureDocument {
 	public final fun component7 ()Ljava/util/List;
 	public final fun component8 ()Ljava/util/List;
 	public final fun component9 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureDocument;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureDocument;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDisabledPolicy;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureDocument;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDisabledPolicy;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDisabledPolicy ()Lcom/areslib/superstructure/SuperstructureDisabledPolicy;
+	public final fun getDisabledStateId ()Ljava/lang/String;
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getFaultStateId ()Ljava/lang/String;
+	public final fun getHealthFallbacks ()Ljava/util/List;
 	public final fun getInitialStateId ()Ljava/lang/String;
 	public final fun getInterlocks ()Ljava/util/List;
 	public final fun getLuts ()Ljava/util/List;
@@ -9258,7 +9274,8 @@ public final class com/areslib/superstructure/SuperstructureDocumentCodec {
 public final class com/areslib/superstructure/SuperstructureDocumentKt {
 	public static final field ARES_SUPERSTRUCTURE_SCHEMA_VERSION I
 	public static final fun validateSuperstructureDocument (Lcom/areslib/superstructure/SuperstructureDocument;)Ljava/util/List;
-	public static final fun validateSuperstructureProject (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/util/List;Ljava/util/Set;)Ljava/util/List;
+	public static final fun validateSuperstructureProject (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;)Ljava/util/List;
+	public static synthetic fun validateSuperstructureProject$default (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/List;
 }
 
 public final class com/areslib/superstructure/SuperstructureDynamicLut {
@@ -9285,39 +9302,60 @@ public final class com/areslib/superstructure/SuperstructureDynamicLut {
 }
 
 public final class com/areslib/superstructure/SuperstructureFieldReference {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureFieldReference;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun component3 ()Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;)Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureFieldReference;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getFieldId ()Ljava/lang/String;
-	public final fun getSubsystemId ()Ljava/lang/String;
+	public final fun getFieldUid ()Ljava/lang/String;
+	public final fun getHealthRequirement ()Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+	public final fun getSubsystemUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/superstructure/SuperstructureHealthFallbackPolicy {
+	public fun <init> (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;ZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/superstructure/SuperstructureHealthFallbackPolicy;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureHealthFallbackPolicy;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureHealthFallbackPolicy;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getFallbackStateId ()Ljava/lang/String;
+	public final fun getLatchFault ()Z
+	public final fun getPolicyId ()Ljava/lang/String;
+	public final fun getSource ()Lcom/areslib/superstructure/SuperstructureFieldReference;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/areslib/superstructure/SuperstructureInterlockRule {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLjava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLjava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/Double;Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/areslib/superstructure/SuperstructureFieldReference;
 	public final fun component4 ()Lcom/areslib/subsystem/InterlockComparison;
 	public final fun component5 ()D
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
+	public final fun component6 ()Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun component7 ()Ljava/lang/Double;
 	public final fun component8 ()Ljava/lang/Double;
-	public final fun component9 ()Ljava/lang/Double;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLjava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;)Lcom/areslib/superstructure/SuperstructureInterlockRule;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureInterlockRule;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLjava/lang/String;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureInterlockRule;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/Double;Ljava/lang/Double;)Lcom/areslib/superstructure/SuperstructureInterlockRule;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureInterlockRule;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/subsystem/InterlockComparison;DLcom/areslib/superstructure/SuperstructureFieldReference;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureInterlockRule;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClampMaximum ()Ljava/lang/Double;
 	public final fun getClampMinimum ()Ljava/lang/Double;
 	public final fun getConditionComparison ()Lcom/areslib/subsystem/InterlockComparison;
 	public final fun getConditionThreshold ()D
-	public final fun getConstrainedFieldId ()Ljava/lang/String;
-	public final fun getConstrainedSubsystemId ()Ljava/lang/String;
+	public final fun getConstrained ()Lcom/areslib/superstructure/SuperstructureFieldReference;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getPrimary ()Lcom/areslib/superstructure/SuperstructureFieldReference;
 	public final fun getRuleId ()Ljava/lang/String;
@@ -9333,6 +9371,29 @@ public final class com/areslib/superstructure/SuperstructureIssueSeverity : java
 	public static fun values ()[Lcom/areslib/superstructure/SuperstructureIssueSeverity;
 }
 
+public final class com/areslib/superstructure/SuperstructurePortHealthBits {
+	public static final field CALIBRATED I
+	public static final field CONFIGURED I
+	public static final field CONTROL_READY_MASK I
+	public static final field CURRENT_VALID I
+	public static final field FRESH I
+	public static final field FRESH_VALID_MASK I
+	public static final field HOMED I
+	public static final field INSTANCE Lcom/areslib/superstructure/SuperstructurePortHealthBits;
+	public static final field OUTPUT_HEALTHY I
+	public static final field VALID I
+	public final fun requiredMask (Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;)I
+}
+
+public final class com/areslib/superstructure/SuperstructurePortHealthRequirement : java/lang/Enum {
+	public static final field CONTROL_READY Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+	public static final field FRESH_VALID Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+	public static final field VALUE_ONLY Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+	public static fun values ()[Lcom/areslib/superstructure/SuperstructurePortHealthRequirement;
+}
+
 public final class com/areslib/superstructure/SuperstructureRuntime : com/areslib/subsystem/Subsystem {
 	public static final field Companion Lcom/areslib/superstructure/SuperstructureRuntime$Companion;
 	public fun <init> (Lcom/areslib/superstructure/SuperstructureDocument;Lcom/areslib/superstructure/SuperstructureRuntimeBinding;)V
@@ -9342,29 +9403,39 @@ public final class com/areslib/superstructure/SuperstructureRuntime : com/aresli
 }
 
 public final class com/areslib/superstructure/SuperstructureRuntime$Companion {
+	public final fun requestAction (Lcom/areslib/state/RobotState;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;J)Lcom/areslib/action/RobotAction$UpdateNamedSubsystemState;
 	public final fun requestTask (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/sequencer/Task;
 	public final fun state (Lcom/areslib/state/RobotState;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureRuntimeState;
 }
 
 public abstract interface class com/areslib/superstructure/SuperstructureRuntimeBinding {
-	public abstract fun createBooleanTargetTask (Ljava/lang/String;Ljava/lang/String;Z)Lcom/areslib/sequencer/Task;
-	public abstract fun createDoubleTargetTask (Ljava/lang/String;Ljava/lang/String;D)Lcom/areslib/sequencer/Task;
-	public abstract fun createIntTargetTask (Ljava/lang/String;Ljava/lang/String;I)Lcom/areslib/sequencer/Task;
-	public abstract fun createStringTargetTask (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/sequencer/Task;
-	public abstract fun readBoolean (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/state/RobotState;)Ljava/lang/Boolean;
-	public abstract fun readNumeric (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/state/RobotState;)D
-	public abstract fun readString (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/state/RobotState;)Ljava/lang/String;
-	public abstract fun targetType (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemValueType;
+	public abstract fun createBooleanTargetTask (IZ)Lcom/areslib/sequencer/Task;
+	public abstract fun createDoubleTargetTask (ID)Lcom/areslib/sequencer/Task;
+	public abstract fun createIntTargetTask (II)Lcom/areslib/sequencer/Task;
+	public abstract fun createLifecycleActionTask (Ljava/lang/String;J)Lcom/areslib/sequencer/Task;
+	public abstract fun createStringTargetTask (ILjava/lang/String;)Lcom/areslib/sequencer/Task;
+	public abstract fun isRobotEnabled ()Z
+	public abstract fun portType (I)Lcom/areslib/subsystem/SubsystemValueType;
+	public abstract fun readBoolean (ILcom/areslib/state/RobotState;)Ljava/lang/Boolean;
+	public abstract fun readHealthBits (ILcom/areslib/state/RobotState;J)I
+	public abstract fun readNumeric (ILcom/areslib/state/RobotState;)D
+	public abstract fun readString (ILcom/areslib/state/RobotState;)Ljava/lang/String;
+	public abstract fun resolvePort (Ljava/lang/String;Ljava/lang/String;)I
 }
 
 public final class com/areslib/superstructure/SuperstructureRuntimeState : com/areslib/state/SubsystemState {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;ZJJJLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;ZJJJLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()J
 	public final fun component11 ()Z
 	public final fun component12 ()Ljava/lang/String;
 	public final fun component13 ()Ljava/lang/String;
+	public final fun component14 ()Z
+	public final fun component15 ()J
+	public final fun component16 ()J
+	public final fun component17 ()J
+	public final fun component18 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()J
 	public final fun component4 ()Ljava/lang/String;
@@ -9373,8 +9444,8 @@ public final class com/areslib/superstructure/SuperstructureRuntimeState : com/a
 	public final fun component7 ()J
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()J
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureRuntimeState;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureRuntimeState;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureRuntimeState;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;ZJJJLjava/lang/String;)Lcom/areslib/superstructure/SuperstructureRuntimeState;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureRuntimeState;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;JJJLjava/lang/String;JJZLjava/lang/String;Ljava/lang/String;ZJJJLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureRuntimeState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCandidateSinceMs ()J
 	public final fun getCandidateTransitionId ()Ljava/lang/String;
@@ -9382,31 +9453,40 @@ public final class com/areslib/superstructure/SuperstructureRuntimeState : com/a
 	public final fun getFaultReason ()Ljava/lang/String;
 	public final fun getHandledRequestSequence ()J
 	public final fun getLastAppliedTargetHash ()J
+	public final fun getLastLifecycleError ()Ljava/lang/String;
 	public final fun getLastRejectionReason ()Ljava/lang/String;
+	public final fun getLifecycleSequenceCompleted ()J
+	public final fun getLifecycleSequenceScheduled ()J
 	public final fun getPendingActionKey ()Ljava/lang/String;
 	public final fun getPendingActionTimestampMs ()J
 	public final fun getPreviousStateId ()Ljava/lang/String;
 	public final fun getRequestSequence ()J
 	public final fun getStateEntryTimestampMs ()J
+	public final fun getTransitionSequence ()J
 	public fun hashCode ()I
+	public final fun isDisabled ()Z
 	public final fun isFaulted ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/areslib/superstructure/SuperstructureStatePreset {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Ljava/lang/Double;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureStatePreset;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureStatePreset;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureStatePreset;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/lang/Double;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureStatePreset;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureStatePreset;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Double;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureStatePreset;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getOnEntryActionKeys ()Ljava/util/List;
+	public final fun getOnExitActionKeys ()Ljava/util/List;
 	public final fun getStateId ()Ljava/lang/String;
 	public final fun getSubsystemTargets ()Ljava/util/List;
 	public final fun getTimeoutSeconds ()Ljava/lang/Double;
@@ -9416,26 +9496,24 @@ public final class com/areslib/superstructure/SuperstructureStatePreset {
 }
 
 public final class com/areslib/superstructure/SuperstructureSubsystemTarget {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lcom/areslib/superstructure/SuperstructureTargetMode;
-	public final fun component4 ()Ljava/lang/Double;
-	public final fun component5 ()Ljava/lang/Boolean;
+	public fun <init> (Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;)V
+	public synthetic fun <init> (Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun component2 ()Lcom/areslib/superstructure/SuperstructureTargetMode;
+	public final fun component3 ()Ljava/lang/Double;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/String;
 	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Lcom/areslib/superstructure/SuperstructureFieldReference;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;)Lcom/areslib/superstructure/SuperstructureSubsystemTarget;
-	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureSubsystemTarget;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureSubsystemTarget;
+	public final fun component7 ()Lcom/areslib/superstructure/SuperstructureFieldReference;
+	public final fun copy (Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;)Lcom/areslib/superstructure/SuperstructureSubsystemTarget;
+	public static synthetic fun copy$default (Lcom/areslib/superstructure/SuperstructureSubsystemTarget;Lcom/areslib/superstructure/SuperstructureFieldReference;Lcom/areslib/superstructure/SuperstructureTargetMode;Ljava/lang/Double;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureFieldReference;ILjava/lang/Object;)Lcom/areslib/superstructure/SuperstructureSubsystemTarget;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getConstantBooleanValue ()Ljava/lang/Boolean;
 	public final fun getConstantDoubleValue ()Ljava/lang/Double;
 	public final fun getConstantStringValue ()Ljava/lang/String;
-	public final fun getFieldId ()Ljava/lang/String;
 	public final fun getLutId ()Ljava/lang/String;
 	public final fun getSource ()Lcom/areslib/superstructure/SuperstructureFieldReference;
-	public final fun getSubsystemId ()Ljava/lang/String;
+	public final fun getTarget ()Lcom/areslib/superstructure/SuperstructureFieldReference;
 	public final fun getTargetMode ()Lcom/areslib/superstructure/SuperstructureTargetMode;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

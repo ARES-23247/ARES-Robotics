@@ -16,6 +16,7 @@ import java.lang.management.ManagementFactory
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -37,6 +38,7 @@ class SuperstructureRuntimeTest {
         dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.activate"), 10L)
         runtime.readSensors(store, 10L)
         assertEquals("STOW", machine(store).currentStateId)
+        assertTrue(machine(store).lastRejectionReason.orEmpty().contains("guard 'ready'"))
 
         store.dispatch(RobotAction.UpdateNamedSubsystemState(MECHANISM_ID, mechanism(store).copy(measured = 1.0)))
         runtime.readSensors(store, 20L)
@@ -45,6 +47,7 @@ class SuperstructureRuntimeTest {
 
         runtime.readSensors(store, 45L)
         assertEquals("ACTIVE", machine(store).currentStateId)
+        assertEquals(null, machine(store).lastRejectionReason)
         assertEquals(0.75, mechanism(store).target)
         assertEquals(2, binding.createdTargetTasks)
     }
@@ -122,13 +125,213 @@ class SuperstructureRuntimeTest {
     }
 
     @Test
+    fun `automatic transitions use explicit priority instead of document order`() {
+        val ready = TransitionGuard(
+            guardId = "ready",
+            source = SuperstructureFieldReference(MECHANISM_ID, "measured"),
+            comparison = InterlockComparison.GREATER_THAN,
+            expectedDoubleValue = 0.5,
+        )
+        val prioritized = document().copy(
+            states = document().states + preset("ALTERNATE", 0.25),
+            transitions = document().transitions + listOf(
+                StateTransitionEdge(
+                    transitionId = "lower-precedence-first-in-json",
+                    sourceStateId = "STOW",
+                    targetStateId = "ACTIVE",
+                    triggerKind = TransitionTriggerKind.SENSOR_CONDITION_AUTO,
+                    guards = listOf(ready),
+                    priority = 20,
+                ),
+                StateTransitionEdge(
+                    transitionId = "higher-precedence-second-in-json",
+                    sourceStateId = "STOW",
+                    targetStateId = "ALTERNATE",
+                    triggerKind = TransitionTriggerKind.SENSOR_CONDITION_AUTO,
+                    guards = listOf(ready.copy(guardId = "also-ready")),
+                    priority = 10,
+                ),
+            ),
+        )
+        val runtime = SuperstructureRuntime(prioritized, FakeBinding())
+        val store = store(FakeMechanismState(measured = 1.0))
+
+        runtime.readSensors(store, 1L)
+
+        assertEquals("ALTERNATE", machine(store).currentStateId)
+        assertEquals(0.25, mechanism(store).target)
+    }
+
+    @Test
+    fun `fault automation preempts a pending normal request`() {
+        val unsafe = TransitionGuard(
+            guardId = "unsafe",
+            source = SuperstructureFieldReference(MECHANISM_ID, "measured"),
+            comparison = InterlockComparison.LESS_THAN,
+            expectedDoubleValue = -0.5,
+        )
+        val failSafe = document().copy(
+            transitions = document().transitions + StateTransitionEdge(
+                transitionId = "unsafe-to-fault",
+                sourceStateId = "STOW",
+                targetStateId = "FAULT",
+                triggerKind = TransitionTriggerKind.SENSOR_CONDITION_AUTO,
+                guards = listOf(unsafe),
+                priority = 0,
+            ),
+        )
+        val runtime = SuperstructureRuntime(failSafe, FakeBinding())
+        val store = store(FakeMechanismState(measured = -1.0))
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.activate"), 10L)
+
+        runtime.readSensors(store, 10L)
+
+        assertEquals("FAULT", machine(store).currentStateId)
+        assertTrue(machine(store).isFaulted)
+        assertTrue(machine(store).faultReason.orEmpty().contains("unsafe-to-fault"))
+        assertEquals(null, machine(store).pendingActionKey)
+    }
+
+    @Test
+    fun `state timeout into fault always reports a fault`() {
+        val timed = document().copy(
+            states = document().states.map { state ->
+                if (state.stateId == "STOW") state.copy(timeoutSeconds = 0.01, timeoutTargetStateId = "FAULT")
+                else state
+            },
+        )
+        val runtime = SuperstructureRuntime(timed, FakeBinding())
+        val store = store()
+        runtime.readSensors(store, 1L)
+
+        runtime.readSensors(store, 20L)
+
+        assertEquals("FAULT", machine(store).currentStateId)
+        assertTrue(machine(store).isFaulted)
+        assertTrue(machine(store).faultReason.orEmpty().contains("timed out"))
+    }
+
+    @Test
+    fun `disabled robot enters neutral state and rejects requests until enabled`() {
+        val binding = FakeBinding(enabled = false)
+        val runtime = SuperstructureRuntime(document(), binding)
+        val store = store(FakeMechanismState(target = 0.7, measured = 1.0))
+
+        runtime.readSensors(store, 1L)
+        assertEquals("FAULT", machine(store).currentStateId)
+        assertTrue(machine(store).isDisabled)
+        assertFalse(machine(store).isFaulted)
+        assertEquals(0.0, mechanism(store).target)
+
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.recover"), 2L)
+        runtime.readSensors(store, 2L)
+        assertTrue(machine(store).lastRejectionReason.orEmpty().contains("disabled"))
+        assertEquals(null, machine(store).pendingActionKey)
+
+        binding.enabled = true
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.recover"), 3L)
+        runtime.readSensors(store, 3L)
+        assertEquals("STOW", machine(store).currentStateId)
+        assertFalse(machine(store).isDisabled)
+    }
+
+    @Test
+    fun `duplicate automatic priorities fail validation`() {
+        val ready = TransitionGuard(
+            guardId = "ready",
+            source = SuperstructureFieldReference(MECHANISM_ID, "measured"),
+            comparison = InterlockComparison.GREATER_THAN,
+            expectedDoubleValue = 0.5,
+        )
+        val invalid = document().copy(
+            transitions = document().transitions + listOf(
+                StateTransitionEdge("auto-one", "STOW", "ACTIVE", TransitionTriggerKind.SENSOR_CONDITION_AUTO, guards = listOf(ready), priority = 4),
+                StateTransitionEdge("auto-two", "STOW", "FAULT", TransitionTriggerKind.SENSOR_CONDITION_AUTO, guards = listOf(ready.copy(guardId = "ready-two")), priority = 4),
+            ),
+        )
+
+        val issue = validateSuperstructureDocument(invalid).firstOrNull { it.path.endsWith("priority") }
+
+        assertNotNull(issue)
+        assertTrue(issue!!.message.contains("unique priorities"))
+    }
+
+    @Test
+    fun `stale cached evidence cannot satisfy a transition guard`() {
+        val binding = FakeBinding(healthBits = SuperstructurePortHealthBits.VALID)
+        val runtime = SuperstructureRuntime(document(), binding)
+        val store = store(FakeMechanismState(measured = 1.0))
+        runtime.readSensors(store, 1L)
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.activate"), 10L)
+
+        runtime.readSensors(store, 10L)
+
+        assertEquals("STOW", machine(store).currentStateId)
+        assertEquals(null, machine(store).candidateTransitionId)
+        assertEquals(0.0, mechanism(store).target)
+    }
+
+    @Test
+    fun `unhealthy port enters its declared latched fallback before requests`() {
+        val healthPolicy = SuperstructureHealthFallbackPolicy(
+            policyId = "arm-feedback",
+            source = SuperstructureFieldReference(MECHANISM_ID, "measured"),
+            fallbackStateId = "FAULT",
+        )
+        val binding = FakeBinding(healthBits = 0)
+        val runtime = SuperstructureRuntime(document().copy(healthFallbacks = listOf(healthPolicy)), binding)
+        val store = store(FakeMechanismState(target = 0.5, measured = 1.0))
+
+        runtime.readSensors(store, 1L)
+
+        assertEquals("FAULT", machine(store).currentStateId)
+        assertTrue(machine(store).isFaulted)
+        assertTrue(machine(store).faultReason.orEmpty().contains("arm-feedback"))
+        assertEquals(0.0, mechanism(store).target)
+    }
+
+    @Test
+    fun `every control ready health dimension fails closed`() {
+        val requiredBits = listOf(
+            SuperstructurePortHealthBits.VALID,
+            SuperstructurePortHealthBits.FRESH,
+            SuperstructurePortHealthBits.CONFIGURED,
+            SuperstructurePortHealthBits.HOMED,
+            SuperstructurePortHealthBits.CALIBRATED,
+            SuperstructurePortHealthBits.CURRENT_VALID,
+            SuperstructurePortHealthBits.OUTPUT_HEALTHY,
+        )
+        val guarded = document().copy(
+            healthFallbacks = listOf(
+                SuperstructureHealthFallbackPolicy(
+                    policyId = "arm-feedback",
+                    source = SuperstructureFieldReference(MECHANISM_ID, "measured"),
+                    fallbackStateId = "FAULT",
+                )
+            ),
+        )
+
+        requiredBits.forEach { missing ->
+            val runtime = SuperstructureRuntime(
+                guarded,
+                FakeBinding(healthBits = SuperstructurePortHealthBits.CONTROL_READY_MASK and missing.inv()),
+            )
+            val store = store(FakeMechanismState(target = 0.5, measured = 1.0))
+
+            runtime.readSensors(store, 1L)
+
+            assertEquals("FAULT", machine(store).currentStateId, "missing health bit $missing")
+            assertEquals(0.0, mechanism(store).target, "missing health bit $missing")
+        }
+    }
+
+    @Test
     fun `multi-target preset is preflighted before any action is initialized`() {
         val twoTargets = document().copy(
             states = document().states.map { preset ->
                 preset.copy(
                     subsystemTargets = preset.subsystemTargets + SuperstructureSubsystemTarget(
-                        subsystemId = MECHANISM_ID,
-                        fieldId = "target2",
+                        target = SuperstructureFieldReference(MECHANISM_ID, "target2"),
                         constantDoubleValue = 0.0,
                     ),
                 )
@@ -144,6 +347,54 @@ class SuperstructureRuntimeTest {
         assertEquals(0, binding.dispatchedTargetTasks)
         assertEquals(0.6, mechanism(store).target)
         assertEquals(0.4, mechanism(store).target2)
+    }
+
+    @Test
+    fun `lifecycle actions execute exit before entry exactly once per transition`() {
+        val lifecycleDocument = document().copy(
+            states = document().states.map { preset ->
+                when (preset.stateId) {
+                    "STOW" -> preset.copy(onExitActionKeys = listOf("arm.stop"))
+                    "ACTIVE" -> preset.copy(onEntryActionKeys = listOf("indicator.active"))
+                    else -> preset
+                }
+            },
+        )
+        val binding = FakeBinding()
+        val runtime = SuperstructureRuntime(lifecycleDocument, binding)
+        val store = store(FakeMechanismState(measured = 1.0))
+        runtime.readSensors(store, 1L)
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.activate"), 2L)
+
+        runtime.readSensors(store, 2L)
+        runtime.readSensors(store, 22L)
+        runtime.readSensors(store, 23L)
+
+        assertEquals(listOf("arm.stop", "indicator.active"), binding.executedLifecycleActions)
+        assertEquals(machine(store).transitionSequence, machine(store).lifecycleSequenceCompleted)
+    }
+
+    @Test
+    fun `unavailable lifecycle action faults without duplicate execution`() {
+        val lifecycleDocument = document().copy(
+            states = document().states.map { preset ->
+                if (preset.stateId == "ACTIVE") preset.copy(onEntryActionKeys = listOf("missing.action")) else preset
+            },
+        )
+        val binding = FakeBinding(unavailableLifecycleAction = "missing.action")
+        val runtime = SuperstructureRuntime(lifecycleDocument, binding)
+        val store = store(FakeMechanismState(measured = 1.0))
+        runtime.readSensors(store, 1L)
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.activate"), 2L)
+
+        runtime.readSensors(store, 2L)
+        runtime.readSensors(store, 22L)
+        runtime.readSensors(store, 23L)
+
+        assertEquals("FAULT", machine(store).currentStateId)
+        assertTrue(machine(store).isFaulted)
+        assertTrue(machine(store).faultReason.orEmpty().contains("missing.action"))
+        assertTrue(binding.executedLifecycleActions.isEmpty())
     }
 
     @Test
@@ -223,8 +474,7 @@ class SuperstructureRuntimeTest {
         stateId = id,
         subsystemTargets = listOf(
             SuperstructureSubsystemTarget(
-                subsystemId = MECHANISM_ID,
-                fieldId = "target",
+                target = SuperstructureFieldReference(MECHANISM_ID, "target"),
                 constantDoubleValue = target,
             ),
         ),
@@ -260,45 +510,56 @@ class SuperstructureRuntimeTest {
     private class FakeBinding(
         private val rejectTargets: Boolean = false,
         private val rejectedFieldId: String? = null,
+        private val unavailableLifecycleAction: String? = null,
+        var enabled: Boolean = true,
+        var healthBits: Int = SuperstructurePortHealthBits.CONTROL_READY_MASK,
     ) : SuperstructureRuntimeBinding {
         var createdTargetTasks = 0
         var dispatchedTargetTasks = 0
+        val executedLifecycleActions = mutableListOf<String>()
 
-        override fun targetType(subsystemId: String, fieldId: String): SubsystemValueType? =
-            if (subsystemId == MECHANISM_ID && (fieldId == "target" || fieldId == "target2")) {
+        override fun isRobotEnabled(): Boolean = enabled
+
+        override fun resolvePort(subsystemUid: String, fieldUid: String): Int = when {
+            subsystemUid != MECHANISM_ID -> -1
+            fieldUid == "target" -> TARGET_PORT
+            fieldUid == "target2" -> TARGET_2_PORT
+            fieldUid == "measured" -> MEASURED_PORT
+            else -> -1
+        }
+
+        override fun portType(port: Int): SubsystemValueType? =
+            if (port == TARGET_PORT || port == TARGET_2_PORT) {
                 SubsystemValueType.DOUBLE
             } else null
 
-        override fun readNumeric(subsystemId: String, fieldId: String, state: RobotState): Double {
+        override fun readNumeric(port: Int, state: RobotState): Double {
             val snapshot = state.superstructure.subsystems[MECHANISM_ID] as? FakeMechanismState
                 ?: return Double.NaN
-            return when (fieldId) {
-                "target" -> snapshot.target
-                "target2" -> snapshot.target2
-                "measured" -> snapshot.measured
+            return when (port) {
+                TARGET_PORT -> snapshot.target
+                TARGET_2_PORT -> snapshot.target2
+                MEASURED_PORT -> snapshot.measured
                 else -> Double.NaN
             }
         }
 
-        override fun readBoolean(
-            subsystemId: String,
-            fieldId: String,
-            state: RobotState,
-        ): Boolean? = null
+        override fun readBoolean(port: Int, state: RobotState): Boolean? = null
 
-        override fun readString(
-            subsystemId: String,
-            fieldId: String,
-            state: RobotState,
-        ): String? = null
+        override fun readString(port: Int, state: RobotState): String? = null
+
+        override fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int = healthBits
 
         override fun createDoubleTargetTask(
-            subsystemId: String,
-            fieldId: String,
+            port: Int,
             value: Double,
         ): Task? {
-            if (rejectTargets || fieldId == rejectedFieldId || subsystemId != MECHANISM_ID ||
-                (fieldId != "target" && fieldId != "target2")
+            val fieldId = when (port) {
+                TARGET_PORT -> "target"
+                TARGET_2_PORT -> "target2"
+                else -> return null
+            }
+            if (rejectTargets || fieldId == rejectedFieldId
             ) return null
             createdTargetTasks++
             return StateActionTask("Set fake mechanism") { state ->
@@ -312,23 +573,32 @@ class SuperstructureRuntimeTest {
             }
         }
 
-        override fun createIntTargetTask(
-            subsystemId: String,
-            fieldId: String,
-            value: Int,
-        ): Task? = null
+        override fun createIntTargetTask(port: Int, value: Int): Task? = null
 
-        override fun createBooleanTargetTask(
-            subsystemId: String,
-            fieldId: String,
-            value: Boolean,
-        ): Task? = null
+        override fun createBooleanTargetTask(port: Int, value: Boolean): Task? = null
 
-        override fun createStringTargetTask(
-            subsystemId: String,
-            fieldId: String,
-            value: String,
-        ): Task? = null
+        override fun createStringTargetTask(port: Int, value: String): Task? = null
+
+        override fun createLifecycleActionTask(actionKey: String, timestampMs: Long): Task? {
+            if (actionKey == unavailableLifecycleAction) return null
+            return object : Task {
+                override val name: String = "Lifecycle($actionKey)"
+
+                override fun initialize(state: RobotState): List<RobotAction> {
+                    super.initialize(state)
+                    executedLifecycleActions += actionKey
+                    return emptyList()
+                }
+
+                override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = true
+            }
+        }
+
+        private companion object {
+            const val TARGET_PORT = 0
+            const val TARGET_2_PORT = 1
+            const val MEASURED_PORT = 2
+        }
     }
 
     private companion object {

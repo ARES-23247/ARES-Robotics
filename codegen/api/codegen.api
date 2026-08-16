@@ -225,7 +225,8 @@ public final class com/areslib/codegen/SubsystemStarterReconciler {
 
 public final class com/areslib/codegen/SuperstructureKotlinGenerator {
 	public static final field INSTANCE Lcom/areslib/codegen/SuperstructureKotlinGenerator;
-	public final fun generate (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Set;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+	public final fun generate (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+	public static synthetic fun generate$default (Lcom/areslib/codegen/SuperstructureKotlinGenerator;Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
 	public final fun generateRegistry (Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
 }
 

@@ -121,7 +121,10 @@ class AresProjectCodegenCliTest {
         fun preset(id: String, value: Double) = SuperstructureStatePreset(
             stateId = id,
             subsystemTargets = listOf(
-                SuperstructureSubsystemTarget(subsystem.documentId, target.fieldId, constantDoubleValue = value),
+                SuperstructureSubsystemTarget(
+                    target = com.areslib.superstructure.SuperstructureFieldReference(subsystem.uid, target.uid),
+                    constantDoubleValue = value,
+                ),
             ),
         )
         val superstructure = SuperstructureDocument(
