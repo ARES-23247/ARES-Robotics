@@ -4,6 +4,7 @@ import com.areslib.state.DriveState
 import com.ctre.phoenix6.swerve.SwerveRequest
 import com.sun.management.ThreadMXBean
 import java.lang.management.ManagementFactory
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -24,24 +25,43 @@ class SwerveCtreZeroGcTest {
             isFieldCentric = false,
         )
 
-        repeat(2_000) { writer.write(state, 0.75) }
+        repeat(20_000) { writer.write(state, 0.75) }
         val threadId = Thread.currentThread().id
 
-        // ThreadMXBean includes one-time JVM profiling/OSR bookkeeping on some JDK builds. Compare
-        // two differently sized windows: a real per-write allocation scales with call count, while
-        // fixed compiler bookkeeping does not.
-        val shortBefore = allocationBean.getThreadAllocatedBytes(threadId)
-        repeat(10_000) { writer.write(state, 0.75) }
-        val shortWindowBytes = allocationBean.getThreadAllocatedBytes(threadId) - shortBefore
-        val longBefore = allocationBean.getThreadAllocatedBytes(threadId)
-        repeat(100_000) { writer.write(state, 0.75) }
-        val longWindowBytes = allocationBean.getThreadAllocatedBytes(threadId) - longBefore
+        // ThreadMXBean can charge one-time profiling/OSR bookkeeping to the mutator thread even
+        // after warm-up. Equal windows distinguish that fixed noise from a real per-write
+        // allocation: a production allocation appears in every window and cannot produce a
+        // zero-byte minimum. Keep a separate aggregate cap so excessive VM noise is still visible.
+        val windowBytes = LongArray(MEASURED_WINDOWS)
+        for (window in windowBytes.indices) {
+            val before = allocationBean.getThreadAllocatedBytes(threadId)
+            var writeIndex = 0
+            while (writeIndex < WRITES_PER_WINDOW) {
+                writer.write(state, 0.75)
+                writeIndex++
+            }
+            windowBytes[window] = allocationBean.getThreadAllocatedBytes(threadId) - before
+        }
+        val minimumWindowBytes = windowBytes.minOrNull() ?: Long.MAX_VALUE
+        val totalWindowBytes = windowBytes.sum()
 
         assertTrue(observed is SwerveRequest.ApplyRobotSpeeds)
-        assertTrue(
-            longWindowBytes <= shortWindowBytes * 2L + 1_024L,
-            "Scaled swerve writes must have zero per-call allocation growth " +
-                "(10k=$shortWindowBytes, 100k=$longWindowBytes)",
+        assertEquals(
+            0L,
+            minimumWindowBytes,
+            "At least one steady-state write window must allocate exactly zero bytes: " +
+                windowBytes.contentToString(),
         )
+        assertTrue(
+            totalWindowBytes <= MAX_FIXED_VM_BOOKKEEPING_BYTES,
+            "Post-warmup VM bookkeeping exceeded the fixed-noise budget: " +
+                windowBytes.contentToString(),
+        )
+    }
+
+    private companion object {
+        const val MEASURED_WINDOWS = 5
+        const val WRITES_PER_WINDOW = 20_000
+        const val MAX_FIXED_VM_BOOKKEEPING_BYTES = 64L * 1_024L
     }
 }
