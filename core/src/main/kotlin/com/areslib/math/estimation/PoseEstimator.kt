@@ -589,7 +589,9 @@ object PoseEstimator {
      * This is used by platforms such as CTRE swerve where wheel, gyro, and vision
      * observations have already been fused. Treating that pose as raw odometry would
      * rotate field-frame corrections again and give the local covariance a false
-     * statistical meaning.
+     * statistical meaning. Diagnostics are cleared rather than marked rejected: innovation,
+     * Kalman gain, and `lastMeasurementAccepted=false` here mean "no local correction was
+     * applied", not "a measurement was rejected".
      */
     fun acceptExternalEstimate(
         state: PoseEstimatorState,

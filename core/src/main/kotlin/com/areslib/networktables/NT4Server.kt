@@ -67,7 +67,9 @@ class NT4Server(
     /** One transport-owned slot per connection; reuse is delayed until its socket queue drains. */
     private inner class ConnectionSendState {
         val slot = OwnedSendSlot()
-        var inFlight = false
+        // Read by the flush thread and the connection callback thread; volatile so a
+        // mid-write transition cannot be missed by an unsynchronized reader.
+        @Volatile var inFlight = false
 
         fun acquireIfDrained(conn: WebSocket): OwnedSendSlot? {
             if (conn.hasBufferedData()) return null
@@ -179,7 +181,11 @@ class NT4Server(
         }
         try {
             super.stop()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            // Teardown failures are surfaced instead of swallowed: a port that fails to
+            // release silently breaks the next server instance on the same JVM.
+            println("NT4Server: stop() failed: ${e::class.java.simpleName}: ${e.message}")
+        }
     }
 
     override fun onMessage(conn: WebSocket, message: String) {

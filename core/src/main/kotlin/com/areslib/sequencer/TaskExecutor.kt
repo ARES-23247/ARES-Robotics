@@ -21,7 +21,8 @@ class TaskExecutor {
     private var activeTask: Task? = null
     private var activeTaskStartTimeMs: Long = 0L
     private var isSuspended = false
-    
+    private var suspendedAtMs: Long = 0L
+
     // Stack of (Task, elapsedMsBeforePreemption) to enable nested preemption & resumption
     private val preemptedStack = ArrayDeque<Pair<Task, Long>>()
 
@@ -34,19 +35,25 @@ class TaskExecutor {
     }
 
     /**
-     * Suspends execution of all tasks.
+     * Suspends execution of all tasks. Time spent suspended does not count against the active
+     * task's elapsed duration or timeout: [resume] shifts the active task's start time forward
+     * by the suspended interval so waits and deadlines measure execution time, not wall time.
      */
     @Synchronized
     fun suspend() {
-        isSuspended = true
+        if (!isSuspended) {
+            isSuspended = true
+            suspendedAtMs = com.areslib.util.RobotClock.currentTimeMillis()
+        }
     }
 
-    /**
-     * Resumes execution of tasks.
-     */
+    /** Resumes execution of tasks. */
     @Synchronized
     fun resume() {
-        isSuspended = false
+        if (isSuspended) {
+            isSuspended = false
+            activeTaskStartTimeMs += com.areslib.util.RobotClock.currentTimeMillis() - suspendedAtMs
+        }
     }
 
     /**
