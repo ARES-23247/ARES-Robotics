@@ -70,6 +70,8 @@ object TaskCallbacks {
 interface Task {
     val name: String
     val priority: Int get() = 0
+    /** Primitive ownership mask checked when parallel task trees are constructed. */
+    val requiredResources: Long get() = TaskResources.NONE
 
     /**
      * Marks the task running, records its timeout origin, and returns no actions by default.
@@ -218,8 +220,9 @@ class PathProgressWaitTask(
 /**
  * Task to instantly dispatch a single Redux action and finish.
  */
-class ActionDispatchTask(
-    private val action: RobotAction
+class ActionDispatchTask @kotlin.jvm.JvmOverloads constructor(
+    private val action: RobotAction,
+    override val requiredResources: Long = TaskResources.NONE
 ) : Task {
     override val name = "ActionDispatch(${action::class.simpleName})"
 
@@ -246,8 +249,15 @@ class ActionDispatchTask(
  */
 class StateActionTask(
     override val name: String,
+    override val requiredResources: Long = TaskResources.NONE,
     private val actionFactory: (RobotState) -> RobotAction
 ) : Task {
+    /** Source-compatible overload for existing callers that pass the factory positionally. */
+    constructor(
+        name: String,
+        actionFactory: (RobotState) -> RobotAction
+    ) : this(name, TaskResources.NONE, actionFactory)
+
     private var dispatched = false
 
     init {
@@ -280,6 +290,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     override val name = "FollowPath(${path.points.size} points)"
+    override val requiredResources: Long = TaskResources.DRIVE
     private var lastTimeMs = 0L
     private lateinit var activePath: com.areslib.pathing.Path
     private var triggeredEvents = BooleanArray(0)

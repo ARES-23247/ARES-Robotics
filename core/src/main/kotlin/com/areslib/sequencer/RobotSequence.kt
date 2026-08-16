@@ -48,8 +48,8 @@ class RobotSequence internal constructor() {
     }
 
     /** Dispatches one immutable Redux intent and completes immediately. */
-    fun dispatch(action: RobotAction) {
-        task(ActionDispatchTask(action))
+    fun dispatch(action: RobotAction, requiredResources: Long = TaskResources.NONE) {
+        task(ActionDispatchTask(action, requiredResources))
     }
 
     /** Waits for a finite, non-negative [duration]. */
@@ -92,8 +92,11 @@ class RobotSequence internal constructor() {
     }
 
     /** Creates a fresh task from the typed named-command registry when the routine runs. */
-    fun namedCommand(key: CommandKey) {
-        task(NamedCommands.task(key))
+    fun namedCommand(
+        key: CommandKey,
+        requiredResources: Long = NamedCommands.registeredResources(key) ?: TaskResources.NONE
+    ) {
+        task(NamedCommands.task(key, requiredResources))
     }
 
     /** Runs every child concurrently and completes when every child completes. */

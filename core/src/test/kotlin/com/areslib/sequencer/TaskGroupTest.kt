@@ -9,11 +9,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 
 class MockTestTask(
     override val name: String,
     private val durationMs: Long,
-    private val actionToDispatch: RobotAction? = null
+    private val actionToDispatch: RobotAction? = null,
+    override val requiredResources: Long = TaskResources.NONE
 ) : Task {
     var initialized = false
     var ended = false
@@ -36,6 +38,31 @@ class MockTestTask(
 }
 
 class TaskGroupTest {
+
+    @Test
+    fun `parallel groups reject overlapping task resources at construction`() {
+        val first = MockTestTask("first drive", 100L, requiredResources = TaskResources.DRIVE)
+        val second = MockTestTask("second drive", 100L, requiredResources = TaskResources.DRIVE)
+
+        val failure = assertThrows(IllegalArgumentException::class.java) {
+            ParallelTaskGroup(listOf(first, second))
+        }
+
+        assertTrue(failure.message.orEmpty().contains("drive"))
+    }
+
+    @Test
+    fun `parallel groups allow disjoint resources and sequential groups allow reuse`() {
+        val drive = MockTestTask("drive", 100L, requiredResources = TaskResources.DRIVE)
+        val intake = MockTestTask("intake", 100L, requiredResources = TaskResources.INTAKE)
+        val secondDrive = MockTestTask("second drive", 100L, requiredResources = TaskResources.DRIVE)
+
+        val parallel = ParallelTaskGroup(listOf(drive, intake))
+        val sequential = SequentialTaskGroup(listOf(drive, secondDrive))
+
+        assertEquals(TaskResources.DRIVE or TaskResources.INTAKE, parallel.requiredResources)
+        assertEquals(TaskResources.DRIVE, sequential.requiredResources)
+    }
 
     @Test
     fun `test SequentialTaskGroup execution order`() {

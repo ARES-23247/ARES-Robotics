@@ -27,7 +27,7 @@ class ExternalEstimatorRoutingTest {
         )
         val initialized = store.state
         val estimatorBefore = initialized.drive.poseEstimator
-        val covarianceBefore = estimatorBefore.covarianceArray.copyOf()
+        val covarianceBefore = estimatorBefore.copyCovariance()
 
         val measurement = VisionMeasurement(
             timestampMs = 100L,
@@ -57,7 +57,6 @@ class ExternalEstimatorRoutingTest {
         assertTrue(updated.vision.lastMeasurementAccepted)
         assertEquals(1.0, updated.drive.poseEstimator.estimatedPoseX, 0.0)
         assertEquals(1.0, updated.drive.poseEstimator.estimatedPoseY, 0.0)
-        assertTrue(updated.drive.poseEstimator.history.isEmpty())
-        assertTrue(covarianceBefore.contentEquals(updated.drive.poseEstimator.covarianceArray))
+        assertTrue(covarianceBefore.contentEquals(updated.drive.poseEstimator.copyCovariance()))
     }
 }

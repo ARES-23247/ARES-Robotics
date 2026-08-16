@@ -152,16 +152,17 @@ object SubsystemKotlinGenerator {
             }
             "    GeneratedSubsystemRegistrySupport.install(this, ${document.documentId.quoted()}, ${document.requiredAtStartup}) { $factory }"
         }
-        val actionCases = generatedDocuments.sortedBy { it.documentId }.flatMap { document ->
+        val actionCases = generatedDocuments.sortedBy { it.documentId }.flatMapIndexed { resourceIndex, document ->
+            val resourceExpression = "TaskResources.generatedSubsystem($resourceIndex)"
             subsystemTargetCapabilities(listOf(document)).map { capability ->
                 when (capability.operation) {
                     SubsystemCapabilityOperation.SET_FIELD ->
-                        registryActionCase(document, requireNotNull(document.field(capability.fieldId)))
-                    SubsystemCapabilityOperation.SET_HOMING_REQUEST -> registryHomingActionCase(document)
+                        registryActionCase(document, requireNotNull(document.field(capability.fieldId)), resourceExpression)
+                    SubsystemCapabilityOperation.SET_HOMING_REQUEST -> registryHomingActionCase(document, resourceExpression)
                     SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY ->
-                        registryNeutralRecoveryActionCase(document)
+                        registryNeutralRecoveryActionCase(document, resourceExpression)
                     SubsystemCapabilityOperation.CONFIRM_CALIBRATION ->
-                        registryCalibrationConfirmationActionCase(document)
+                        registryCalibrationConfirmationActionCase(document, resourceExpression)
                 }
             }
         }.joinToString("\n")
@@ -196,6 +197,7 @@ $factories
             if (actionCases.isNotBlank()) {
                 append("import com.areslib.action.RobotAction\n")
                 append("import com.areslib.sequencer.StateActionTask\n")
+                append("import com.areslib.sequencer.TaskResources\n")
             }
             if (generatedDocuments.any { it.interlocks.isNotEmpty() }) {
                 append("import com.areslib.state.RobotState\n")
@@ -2441,6 +2443,7 @@ private fun SubsystemHardwareDocument.invertedExpression(requested: String): Str
 private fun registryActionCase(
     document: SubsystemDocument,
     field: SubsystemStateFieldDocument,
+    resourceExpression: String,
 ): String {
     val key = subsystemTargetActionKey(document.documentId, field.fieldId)
     val numericBounds = buildList {
@@ -2481,17 +2484,17 @@ private fun registryActionCase(
         """.trimIndent()
     }
     return """    ${key.quoted()} -> $converted?.let { typedValue ->
-        StateActionTask(${("Set ${document.displayName} ${field.displayName}").quoted()}) { robotState ->
+        StateActionTask(${("Set ${document.displayName} ${field.displayName}").quoted()}, $resourceExpression) { robotState ->
             val current = ${document.kotlinTypeName}Subsystem.state(robotState)
             $commandSequence
         }
     }"""
 }
 
-private fun registryHomingActionCase(document: SubsystemDocument): String {
+private fun registryHomingActionCase(document: SubsystemDocument, resourceExpression: String): String {
     val key = subsystemTargetActionKey(document.documentId, "homingRequested")
     return """    ${key.quoted()} -> (value as? Boolean)?.let { requested ->
-        StateActionTask(${("Run ${document.displayName} homing").quoted()}) { robotState ->
+        StateActionTask(${("Run ${document.displayName} homing").quoted()}, $resourceExpression) { robotState ->
             val current = ${document.kotlinTypeName}Subsystem.state(robotState)
             RobotAction.UpdateNamedSubsystemState(
                 ${document.kotlinTypeName}Subsystem.ID,
@@ -2501,20 +2504,22 @@ private fun registryHomingActionCase(document: SubsystemDocument): String {
     }"""
 }
 
-private fun registryNeutralRecoveryActionCase(document: SubsystemDocument): String =
+private fun registryNeutralRecoveryActionCase(document: SubsystemDocument, resourceExpression: String): String =
     registryOneShotSafetyActionCase(
         key = subsystemNeutralRecoveryActionKey(document.documentId),
         taskName = "Recover ${document.displayName} with neutral",
         document = document,
         sequenceField = "neutralRecoveryRequestSequence",
+        resourceExpression = resourceExpression,
     )
 
-private fun registryCalibrationConfirmationActionCase(document: SubsystemDocument): String =
+private fun registryCalibrationConfirmationActionCase(document: SubsystemDocument, resourceExpression: String): String =
     registryOneShotSafetyActionCase(
         key = subsystemCalibrationConfirmationActionKey(document.documentId),
         taskName = "Confirm ${document.displayName} calibration",
         document = document,
         sequenceField = "calibrationConfirmationRequestSequence",
+        resourceExpression = resourceExpression,
     )
 
 private fun registryOneShotSafetyActionCase(
@@ -2522,8 +2527,9 @@ private fun registryOneShotSafetyActionCase(
     taskName: String,
     document: SubsystemDocument,
     sequenceField: String,
+    resourceExpression: String,
 ): String = """    ${key.quoted()} -> (value as? Boolean)?.takeIf { it }?.let {
-        StateActionTask(${taskName.quoted()}) { robotState ->
+        StateActionTask(${taskName.quoted()}, $resourceExpression) { robotState ->
             val current = ${document.kotlinTypeName}Subsystem.state(robotState)
             val nextSequence = if (current.$sequenceField == Long.MAX_VALUE) 1L else current.$sequenceField + 1L
             RobotAction.UpdateNamedSubsystemState(

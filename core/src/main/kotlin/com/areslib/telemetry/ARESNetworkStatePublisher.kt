@@ -14,6 +14,11 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     private val emptyGamepadState = GamepadState()
     private val covarianceArray = DoubleArray(3)
     private val estimatedPoseArray = DoubleArray(3)
+    private val visionPoseArray = DoubleArray(3)
+    private val gamepad1Topics = gamepadTopics("Gamepad1")
+    private val gamepad2Topics = gamepadTopics("Gamepad2")
+    private var indicatorNames = emptyArray<String>()
+    private var indicatorTopics = emptyArray<String>()
     
     private var lastPublishedPath: com.areslib.pathing.Path? = null
     private var cachedPathPoints: DoubleArray = emptyDoubleArray
@@ -43,21 +48,24 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber(TelemetryTopicConstants.DRIVE_ODOM_HEADING, state.drive.odometryHeading)
 
         // Fused EKF Estimated Pose
-        val estimatedPose = state.drive.poseEstimator.estimatedPose
-        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_X, estimatedPose.x)
-        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_Y, estimatedPose.y)
-        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_HEADING, estimatedPose.heading.radians)
+        val estimator = state.drive.poseEstimator
+        val estimatedX = estimator.estimatedPoseX
+        val estimatedY = estimator.estimatedPoseY
+        val estimatedHeading = estimator.estimatedPoseHeading
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_X, estimatedX)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_Y, estimatedY)
+        telemetry.putNumber(TelemetryTopicConstants.DRIVE_POSE_HEADING, estimatedHeading)
         telemetry.putString(
             "Drive/Pose_Source",
             if (state.drive.poseEstimateIsExternal) "EXTERNAL" else "ARES_EKF"
         )
-        estimatedPoseArray[0] = estimatedPose.x
-        estimatedPoseArray[1] = estimatedPose.y
-        estimatedPoseArray[2] = estimatedPose.heading.radians
+        estimatedPoseArray[0] = estimatedX
+        estimatedPoseArray[1] = estimatedY
+        estimatedPoseArray[2] = estimatedHeading
         telemetry.putDoubleArray("ARES/EstimatedPose", estimatedPoseArray)
-        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_X, estimatedPose.x)
-        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_Y, estimatedPose.y)
-        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_HEADING, estimatedPose.heading.radians)
+        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_X, estimatedX)
+        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_Y, estimatedY)
+        telemetry.putNumber(TelemetryTopicConstants.ESTIMATED_POSE_HEADING, estimatedHeading)
 
         telemetry.putNumber("Drive/Velocity_X", state.drive.xVelocityMetersPerSecond)
         telemetry.putNumber("Drive/Velocity_Y", state.drive.yVelocityMetersPerSecond)
@@ -66,14 +74,13 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         publishCommandCatalog()
 
         // ── EKF Covariance Diagonals ──
-        val cov = state.drive.poseEstimator.covariance
-        covarianceArray[0] = cov.m00
-        covarianceArray[1] = cov.m11
-        covarianceArray[2] = cov.m22
+        covarianceArray[0] = estimator.covariance00
+        covarianceArray[1] = estimator.covariance11
+        covarianceArray[2] = estimator.covariance22
         telemetry.putDoubleArray("Robot/Odometry/Covariance", covarianceArray)
 
         // ── AdvantageScope 3D Pose ──
-        telemetry.logPose3d("Robot/Pose3d", estimatedPose)
+        telemetry.logPose3d("Robot/Pose3d", estimatedX, estimatedY, estimatedHeading)
 
         // ── Loop Time & Diagnostics ──
         if (dtSeconds != null) {
@@ -111,9 +118,14 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putNumber("Vision/EKF_RejectedCount", state.vision.rejectionCount.toDouble())
 
         if (primaryMeasurement != null) {
-            val pose = primaryMeasurement.targetPose.toPose2d()
-            telemetry.logPoseArray2d("Vision/PoseArray", pose)
-            telemetry.logPose2d("Vision/Pose", pose, useUnderscores = true)
+            val pose = primaryMeasurement.targetPose
+            visionPoseArray[0] = pose.x
+            visionPoseArray[1] = pose.y
+            visionPoseArray[2] = pose.rotationZ
+            telemetry.putDoubleArray("Vision/PoseArray", visionPoseArray)
+            telemetry.putNumber("Vision/Pose_X", pose.x)
+            telemetry.putNumber("Vision/Pose_Y", pose.y)
+            telemetry.putNumber("Vision/Pose_Heading", pose.rotationZ)
             telemetry.putNumber("Vision/Primary_TagId", primaryMeasurement.tagId.toDouble())
             telemetry.putNumber("Vision/Primary_Ambiguity", primaryMeasurement.ambiguity)
             telemetry.putString("Vision/Primary_Source", primaryMeasurement.sourceId)
@@ -178,15 +190,13 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         }
 
         // ── Gamepad 1 ──
-        telemetry.logGamepad("Gamepad1", gamepad1 ?: emptyGamepadState)
+        publishGamepad(gamepad1Topics, gamepad1 ?: emptyGamepadState)
 
         // ── Gamepad 2 ──
-        telemetry.logGamepad("Gamepad2", gamepad2 ?: emptyGamepadState)
+        publishGamepad(gamepad2Topics, gamepad2 ?: emptyGamepadState)
 
         // ── Indicator Lights ──
-        for (i in state.superstructure.indicatorLights.entries) {
-            telemetry.putNumber("Superstructure/IndicatorLight/${i.key}", i.value)
-        }
+        publishIndicatorLights(state.superstructure.indicatorLights)
         
         if (flush) telemetry.update()
     }
@@ -207,12 +217,65 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
                     "key" to descriptor.key.value,
                     "displayName" to descriptor.displayName,
                     "description" to descriptor.description,
-                    "category" to descriptor.category
+                    "category" to descriptor.category,
+                    "requiredResources" to "0x${descriptor.requiredResources.toString(16)}"
                 )
             }
             commandCatalogJson = com.google.gson.Gson().toJson(catalog)
         }
         telemetry.putString("ARES/Auto/CommandCatalog", commandCatalogJson)
+    }
+
+    /** Publishes against constructor-cached keys so the 50-100 Hz path does not format strings. */
+    private fun publishGamepad(topics: Array<String>, gamepad: GamepadState) {
+        telemetry.putNumber(topics[0], gamepad.leftStickX.toDouble())
+        telemetry.putNumber(topics[1], gamepad.leftStickY.toDouble())
+        telemetry.putNumber(topics[2], gamepad.rightStickX.toDouble())
+        telemetry.putNumber(topics[3], gamepad.rightStickY.toDouble())
+        telemetry.putNumber(topics[4], gamepad.leftTrigger.toDouble())
+        telemetry.putNumber(topics[5], gamepad.rightTrigger.toDouble())
+        telemetry.putBoolean(topics[6], gamepad.a)
+        telemetry.putBoolean(topics[7], gamepad.b)
+        telemetry.putBoolean(topics[8], gamepad.x)
+        telemetry.putBoolean(topics[9], gamepad.y)
+        telemetry.putBoolean(topics[10], gamepad.dpadUp)
+        telemetry.putBoolean(topics[11], gamepad.dpadDown)
+        telemetry.putBoolean(topics[12], gamepad.dpadLeft)
+        telemetry.putBoolean(topics[13], gamepad.dpadRight)
+        telemetry.putBoolean(topics[14], gamepad.leftBumper)
+        telemetry.putBoolean(topics[15], gamepad.rightBumper)
+        telemetry.putBoolean(topics[16], gamepad.c)
+        telemetry.putBoolean(topics[17], gamepad.z)
+        telemetry.putBoolean(topics[18], gamepad.m1)
+        telemetry.putBoolean(topics[19], gamepad.m2)
+        telemetry.putBoolean(topics[20], gamepad.m3)
+        telemetry.putBoolean(topics[21], gamepad.m4)
+        telemetry.putBoolean(topics[22], gamepad.touchpad)
+        telemetry.putBoolean(topics[23], gamepad.share)
+        telemetry.putBoolean(topics[24], gamepad.options)
+    }
+
+    /** Caches dynamic indicator keys and uses indexed lookups to avoid a Map iterator per frame. */
+    private fun publishIndicatorLights(lights: Map<String, Double>) {
+        var rebuildTopics = lights.size != indicatorNames.size
+        if (!rebuildTopics) {
+            for (i in indicatorNames.indices) {
+                if (!lights.containsKey(indicatorNames[i])) {
+                    rebuildTopics = true
+                    break
+                }
+            }
+        }
+        if (rebuildTopics) {
+            indicatorNames = lights.keys.toTypedArray()
+            indicatorTopics = Array(indicatorNames.size) { index ->
+                "Superstructure/IndicatorLight/${indicatorNames[index]}"
+            }
+        }
+        for (i in indicatorNames.indices) {
+            val value = lights[indicatorNames[i]] ?: continue
+            telemetry.putNumber(indicatorTopics[i], value)
+        }
     }
 
     /**
@@ -237,5 +300,33 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
     private companion object {
         val UNKNOWN_TAG_FIELD_POSITION = doubleArrayOf(Double.NaN, Double.NaN, Double.NaN)
+
+        fun gamepadTopics(prefix: String): Array<String> = arrayOf(
+            "$prefix/LeftStick_X",
+            "$prefix/LeftStick_Y",
+            "$prefix/RightStick_X",
+            "$prefix/RightStick_Y",
+            "$prefix/LeftTrigger",
+            "$prefix/RightTrigger",
+            "$prefix/A",
+            "$prefix/B",
+            "$prefix/X",
+            "$prefix/Y",
+            "$prefix/DpadUp",
+            "$prefix/DpadDown",
+            "$prefix/DpadLeft",
+            "$prefix/DpadRight",
+            "$prefix/LeftBumper",
+            "$prefix/RightBumper",
+            "$prefix/C",
+            "$prefix/Z",
+            "$prefix/M1",
+            "$prefix/M2",
+            "$prefix/M3",
+            "$prefix/M4",
+            "$prefix/Touchpad",
+            "$prefix/Share",
+            "$prefix/Options"
+        )
     }
 }

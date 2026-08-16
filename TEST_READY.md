@@ -11,7 +11,7 @@ The test sources are checked in and runnable through the Gradle Wrapper. This fi
 For a change to published ARESLib behavior, also run:
 
 ```powershell
-.\gradlew.bat apiCheck publishReleaseValidation
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
 Then test every affected sibling repository against `build/release-repository`. See [TEST_INFRA.md](TEST_INFRA.md) for module commands, coverage areas, E2E scope, JNI notes, and port-owning tests.

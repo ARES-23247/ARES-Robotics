@@ -4444,6 +4444,87 @@ public final class com/areslib/math/estimation/PoseEstimator {
 	public final fun setQY (D)V
 }
 
+public final class com/areslib/math/estimation/PoseEstimatorSnapshot {
+	public fun <init> ()V
+	public fun <init> (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;J)V
+	public synthetic fun <init> (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()D
+	public final fun component10 ()D
+	public final fun component11 ()D
+	public final fun component12 ()D
+	public final fun component13 ()Z
+	public final fun component14 ()J
+	public final fun component15 ()D
+	public final fun component16 ()J
+	public final fun component17 ()D
+	public final fun component18 ()D
+	public final fun component19 ()D
+	public final fun component2 ()D
+	public final fun component20 ()D
+	public final fun component21 ()D
+	public final fun component22 ()D
+	public final fun component23 ()D
+	public final fun component24 ()D
+	public final fun component25 ()D
+	public final fun component26 ()D
+	public final fun component27 ()D
+	public final fun component28 ()D
+	public final fun component29 ()D
+	public final fun component3 ()D
+	public final fun component30 ()Z
+	public final fun component31 ()Ljava/lang/String;
+	public final fun component32 ()J
+	public final fun component4 ()D
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun component8 ()D
+	public final fun component9 ()D
+	public final fun copy (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;J)Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/math/estimation/PoseEstimatorSnapshot;DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
+	public final fun copyCovariance ()[D
+	public final fun copyKalmanGain ()[D
+	public final fun covarianceElement (I)D
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCovariance ()Lcom/areslib/math/geometry/Matrix3x3;
+	public final fun getCovariance00 ()D
+	public final fun getCovariance01 ()D
+	public final fun getCovariance02 ()D
+	public final fun getCovariance10 ()D
+	public final fun getCovariance11 ()D
+	public final fun getCovariance12 ()D
+	public final fun getCovariance20 ()D
+	public final fun getCovariance21 ()D
+	public final fun getCovariance22 ()D
+	public final fun getEstimatedPose ()Lcom/areslib/math/geometry/Pose2d;
+	public final fun getEstimatedPoseHeading ()D
+	public final fun getEstimatedPoseX ()D
+	public final fun getEstimatedPoseY ()D
+	public final fun getGyroBiasRadPerSec ()D
+	public final fun getKalmanGain00 ()D
+	public final fun getKalmanGain01 ()D
+	public final fun getKalmanGain02 ()D
+	public final fun getKalmanGain10 ()D
+	public final fun getKalmanGain11 ()D
+	public final fun getKalmanGain12 ()D
+	public final fun getKalmanGain20 ()D
+	public final fun getKalmanGain21 ()D
+	public final fun getKalmanGain22 ()D
+	public final fun getLastInnovationTheta ()D
+	public final fun getLastInnovationX ()D
+	public final fun getLastInnovationY ()D
+	public final fun getLastMeasurementAccepted ()Z
+	public final fun getLastNormalizedInnovationSquared ()D
+	public final fun getLastObservationTimestampMs ()J
+	public final fun getLastRejectionReason ()Ljava/lang/String;
+	public final fun getLastUnbeachedTimeMs ()J
+	public final fun getStationarySinceMs ()J
+	public fun hashCode ()I
+	public final fun isBeached ()Z
+	public final fun kalmanGainElement (I)D
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/math/estimation/PoseEstimatorState {
 	public fun <init> ()V
 	public fun <init> (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;)V
@@ -5523,19 +5604,21 @@ public final class com/areslib/pathing/MutablePathPoint {
 }
 
 public final class com/areslib/pathing/NamedCommandDescriptor {
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1-E-uNXtg ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun copy-3XTYOqA (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/pathing/NamedCommandDescriptor;
-	public static synthetic fun copy-3XTYOqA$default (Lcom/areslib/pathing/NamedCommandDescriptor;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/pathing/NamedCommandDescriptor;
+	public final fun component5 ()J
+	public final fun copy-zHYRGPw (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;J)Lcom/areslib/pathing/NamedCommandDescriptor;
+	public static synthetic fun copy-zHYRGPw$default (Lcom/areslib/pathing/NamedCommandDescriptor;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JILjava/lang/Object;)Lcom/areslib/pathing/NamedCommandDescriptor;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCategory ()Ljava/lang/String;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getKey-E-uNXtg ()Ljava/lang/String;
+	public final fun getRequiredResources ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -5549,9 +5632,11 @@ public final class com/areslib/pathing/NamedCommands {
 	public final fun getCatalogRevision ()J
 	public final fun getCommand (Ljava/lang/String;J)Lcom/areslib/sequencer/Task;
 	public final fun register (Lcom/areslib/pathing/NamedCommandDescriptor;Lkotlin/jvm/functions/Function1;)V
-	public final fun register-3XTYOqA (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun register-3XTYOqA$default (Lcom/areslib/pathing/NamedCommands;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public final fun task-HGsVB84 (Ljava/lang/String;)Lcom/areslib/sequencer/Task;
+	public final fun register-zHYRGPw (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/jvm/functions/Function1;)V
+	public static synthetic fun register-zHYRGPw$default (Lcom/areslib/pathing/NamedCommands;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun registeredResources-HGsVB84 (Ljava/lang/String;)Ljava/lang/Long;
+	public final fun task-B16Sg2w (Ljava/lang/String;J)Lcom/areslib/sequencer/Task;
+	public static synthetic fun task-B16Sg2w$default (Lcom/areslib/pathing/NamedCommands;Ljava/lang/String;JILjava/lang/Object;)Lcom/areslib/sequencer/Task;
 }
 
 public final class com/areslib/pathing/Path {
@@ -6619,11 +6704,14 @@ public final class com/areslib/routine/RoutineValidationSeverity : java/lang/Enu
 
 public final class com/areslib/sequencer/ActionDispatchTask : com/areslib/sequencer/Task {
 	public fun <init> (Lcom/areslib/action/RobotAction;)V
+	public fun <init> (Lcom/areslib/action/RobotAction;J)V
+	public synthetic fun <init> (Lcom/areslib/action/RobotAction;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun cancel ()V
 	public fun end (Lcom/areslib/state/RobotState;Z)Ljava/util/List;
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6694,6 +6782,7 @@ public final class com/areslib/sequencer/FollowPathTask : com/areslib/sequencer/
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6712,6 +6801,7 @@ public final class com/areslib/sequencer/ParallelDeadlineGroup : com/areslib/seq
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6730,6 +6820,7 @@ public final class com/areslib/sequencer/ParallelRaceGroup : com/areslib/sequenc
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6748,6 +6839,7 @@ public final class com/areslib/sequencer/ParallelTaskGroup : com/areslib/sequenc
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6767,6 +6859,7 @@ public final class com/areslib/sequencer/PathProgressWaitTask : com/areslib/sequ
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6791,6 +6884,7 @@ public final class com/areslib/sequencer/PathfindToPoseTask : com/areslib/sequen
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6806,10 +6900,12 @@ public final class com/areslib/sequencer/RobotSequence {
 	public final fun blinkIndicator-J7AnP2E (Ljava/lang/String;Lcom/areslib/hardware/actuator/IndicatorLightColor;Lcom/areslib/hardware/actuator/IndicatorLightColor;JJ)V
 	public static synthetic fun blinkIndicator-J7AnP2E$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;Lcom/areslib/hardware/actuator/IndicatorLightColor;Lcom/areslib/hardware/actuator/IndicatorLightColor;JJILjava/lang/Object;)V
 	public final fun deadline (Lcom/areslib/sequencer/Task;Lkotlin/jvm/functions/Function1;)V
-	public final fun dispatch (Lcom/areslib/action/RobotAction;)V
+	public final fun dispatch (Lcom/areslib/action/RobotAction;J)V
+	public static synthetic fun dispatch$default (Lcom/areslib/sequencer/RobotSequence;Lcom/areslib/action/RobotAction;JILjava/lang/Object;)V
 	public final fun followPath (Lcom/areslib/pathing/Path;Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/math/coordinate/FieldSymmetry;)V
 	public static synthetic fun followPath$default (Lcom/areslib/sequencer/RobotSequence;Lcom/areslib/pathing/Path;Lcom/areslib/pathing/HolonomicPathFollower;Lcom/areslib/math/coordinate/FieldSymmetry;ILjava/lang/Object;)V
-	public final fun namedCommand-HGsVB84 (Ljava/lang/String;)V
+	public final fun namedCommand-B16Sg2w (Ljava/lang/String;J)V
+	public static synthetic fun namedCommand-B16Sg2w$default (Lcom/areslib/sequencer/RobotSequence;Ljava/lang/String;JILjava/lang/Object;)V
 	public final fun parallel (Lkotlin/jvm/functions/Function1;)V
 	public final fun race (Lkotlin/jvm/functions/Function1;)V
 	public final fun sequence (Lkotlin/jvm/functions/Function1;)V
@@ -6833,6 +6929,7 @@ public final class com/areslib/sequencer/SequentialTaskGroup : com/areslib/seque
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6845,12 +6942,15 @@ public final class com/areslib/sequencer/SequentialTaskGroup : com/areslib/seque
 }
 
 public final class com/areslib/sequencer/StateActionTask : com/areslib/sequencer/Task {
+	public fun <init> (Ljava/lang/String;JLkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Ljava/lang/String;JLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public fun cancel ()V
 	public fun end (Lcom/areslib/state/RobotState;Z)Ljava/util/List;
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6868,6 +6968,7 @@ public abstract interface class com/areslib/sequencer/Task {
 	public abstract fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getPriority ()I
+	public abstract fun getRequiredResources ()J
 	public abstract fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public abstract fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public abstract fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6884,6 +6985,7 @@ public final class com/areslib/sequencer/Task$DefaultImpls {
 	public static fun end (Lcom/areslib/sequencer/Task;Lcom/areslib/state/RobotState;Z)Ljava/util/List;
 	public static fun execute (Lcom/areslib/sequencer/Task;Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public static fun getPriority (Lcom/areslib/sequencer/Task;)I
+	public static fun getRequiredResources (Lcom/areslib/sequencer/Task;)J
 	public static fun initialize (Lcom/areslib/sequencer/Task;Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public static fun onComplete (Lcom/areslib/sequencer/Task;Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
 	public static fun onFail (Lcom/areslib/sequencer/Task;Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6914,6 +7016,24 @@ public final class com/areslib/sequencer/TaskExecutor {
 	public final fun resume ()V
 	public final fun suspend ()V
 	public final fun update (Lcom/areslib/state/RobotState;J)Ljava/util/List;
+}
+
+public final class com/areslib/sequencer/TaskResources {
+	public static final field ARM J
+	public static final field CLIMBER J
+	public static final field DRIVE J
+	public static final field ELEVATOR J
+	public static final field FEEDER J
+	public static final field FLOOR J
+	public static final field FLYWHEEL J
+	public static final field INSTANCE Lcom/areslib/sequencer/TaskResources;
+	public static final field INTAKE J
+	public static final field LIGHTING J
+	public static final field NONE J
+	public static final field SUPERSTRUCTURE_SHARED J
+	public static final field WRIST J
+	public final fun generatedSubsystem (I)J
+	public final fun season (I)J
 }
 
 public final class com/areslib/sequencer/TaskStateMachine {
@@ -6952,6 +7072,7 @@ public final class com/areslib/sequencer/TimeWaitTask : com/areslib/sequencer/Ta
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6970,6 +7091,7 @@ public final class com/areslib/sequencer/WaitUntilTask : com/areslib/sequencer/T
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -6989,6 +7111,7 @@ public final class com/areslib/sequencer/tasks/BlinkIndicatorTask : com/areslib/
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -7007,6 +7130,7 @@ public final class com/areslib/sequencer/tasks/SetIndicatorColorTask : com/aresl
 	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public fun getName ()Ljava/lang/String;
 	public fun getPriority ()I
+	public fun getRequiredResources ()J
 	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public fun isCompleted (Lcom/areslib/state/RobotState;J)Z
 	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
@@ -7073,11 +7197,11 @@ public final class com/areslib/state/DriveMode : java/lang/Enum {
 
 public final class com/areslib/state/DriveState {
 	public fun <init> ()V
-	public fun <init> (DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorState;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;[DDDDDD[DDDD)V
-	public synthetic fun <init> (DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorState;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;[DDDDDD[DDDDIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorSnapshot;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;DDDDDDDD)V
+	public synthetic fun <init> (DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorSnapshot;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;DDDDDDDDIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()D
 	public final fun component10 ()D
-	public final fun component11 ()Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun component11 ()Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
 	public final fun component12 ()Z
 	public final fun component13 ()D
 	public final fun component14 ()D
@@ -7093,29 +7217,26 @@ public final class com/areslib/state/DriveState {
 	public final fun component23 ()Z
 	public final fun component24 ()Z
 	public final fun component25 ()Lcom/areslib/state/Alliance;
-	public final fun component26 ()[D
+	public final fun component26 ()D
 	public final fun component27 ()D
 	public final fun component28 ()D
 	public final fun component29 ()D
 	public final fun component3 ()D
 	public final fun component30 ()D
 	public final fun component31 ()D
-	public final fun component32 ()[D
+	public final fun component32 ()D
 	public final fun component33 ()D
-	public final fun component34 ()D
-	public final fun component35 ()D
 	public final fun component4 ()D
 	public final fun component5 ()D
 	public final fun component6 ()D
 	public final fun component7 ()Z
 	public final fun component8 ()D
 	public final fun component9 ()D
-	public final fun copy (DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorState;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;[DDDDDD[DDDD)Lcom/areslib/state/DriveState;
-	public static synthetic fun copy$default (Lcom/areslib/state/DriveState;DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorState;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;[DDDDDD[DDDDIILjava/lang/Object;)Lcom/areslib/state/DriveState;
+	public final fun copy (DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorSnapshot;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;DDDDDDDD)Lcom/areslib/state/DriveState;
+	public static synthetic fun copy$default (Lcom/areslib/state/DriveState;DDDDDDZDDDLcom/areslib/math/estimation/PoseEstimatorSnapshot;ZDDZDDDLcom/areslib/state/DriveMode;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLcom/areslib/state/Alliance;DDDDDDDDIILjava/lang/Object;)Lcom/areslib/state/DriveState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAlliance ()Lcom/areslib/state/Alliance;
 	public final fun getAngularVelocityRadiansPerSecond ()D
-	public final fun getCovarianceMatrix ()[D
 	public final fun getDriveMode ()Lcom/areslib/state/DriveMode;
 	public final fun getEkfDriftX ()D
 	public final fun getEkfDriftY ()D
@@ -7124,7 +7245,6 @@ public final class com/areslib/state/DriveState {
 	public final fun getLastInnovationTheta ()D
 	public final fun getLastInnovationX ()D
 	public final fun getLastInnovationY ()D
-	public final fun getLastKalmanGain ()[D
 	public final fun getMeasuredAngularVelocityRadiansPerSecond ()D
 	public final fun getMeasuredFieldXVelocityMetersPerSecond ()D
 	public final fun getMeasuredFieldYVelocityMetersPerSecond ()D
@@ -7134,7 +7254,7 @@ public final class com/areslib/state/DriveState {
 	public final fun getOdometryY ()D
 	public final fun getPitchDegrees ()D
 	public final fun getPoseEstimateIsExternal ()Z
-	public final fun getPoseEstimator ()Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun getPoseEstimator ()Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
 	public final fun getPositionLockX ()Ljava/lang/Double;
 	public final fun getPositionLockY ()Ljava/lang/Double;
 	public final fun getRawOdometryHeading ()D
@@ -7150,7 +7270,7 @@ public final class com/areslib/state/DriveState {
 	public final fun isFieldCentric ()Z
 	public final fun isXLock ()Z
 	public fun toString ()Ljava/lang/String;
-	public final fun updateDiagnostics (DDDLcom/areslib/math/estimation/PoseEstimatorState;)Lcom/areslib/state/DriveState;
+	public final fun updateDiagnostics (DDDLcom/areslib/math/estimation/PoseEstimatorSnapshot;)Lcom/areslib/state/DriveState;
 }
 
 public final class com/areslib/state/DriveTuningState {
@@ -7305,6 +7425,10 @@ public final class com/areslib/state/FtcSubsystemTuningState {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/state/ImmutableVisionSnapshotsKt {
+	public static final fun snapshot (Lcom/areslib/state/VisionMeasurement;)Lcom/areslib/state/VisionMeasurementSnapshot;
+}
+
 public final class com/areslib/state/LocalizationTuningState {
 	public fun <init> ()V
 	public fun <init> (Lcom/areslib/state/EkfProcessNoiseTuningState;Lcom/areslib/state/FtcPinpointTuningState;)V
@@ -7318,6 +7442,39 @@ public final class com/areslib/state/LocalizationTuningState {
 	public final fun getFtcPinpoint ()Lcom/areslib/state/FtcPinpointTuningState;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/state/Matrix3x3Snapshot {
+	public static final field Companion Lcom/areslib/state/Matrix3x3Snapshot$Companion;
+	public fun <init> (DDDDDDDDD)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun component8 ()D
+	public final fun component9 ()D
+	public final fun copy (DDDDDDDDD)Lcom/areslib/state/Matrix3x3Snapshot;
+	public static synthetic fun copy$default (Lcom/areslib/state/Matrix3x3Snapshot;DDDDDDDDDILjava/lang/Object;)Lcom/areslib/state/Matrix3x3Snapshot;
+	public final fun copyToDoubleArray ()[D
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getM00 ()D
+	public final fun getM01 ()D
+	public final fun getM02 ()D
+	public final fun getM10 ()D
+	public final fun getM11 ()D
+	public final fun getM12 ()D
+	public final fun getM20 ()D
+	public final fun getM21 ()D
+	public final fun getM22 ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/state/Matrix3x3Snapshot$Companion {
+	public final fun from ([D)Lcom/areslib/state/Matrix3x3Snapshot;
 }
 
 public final class com/areslib/state/MechanismTuningState {
@@ -7368,6 +7525,40 @@ public final class com/areslib/state/PathState {
 	public fun hashCode ()I
 	public final fun isChained ()Z
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/state/Pose3dSnapshot {
+	public static final field Companion Lcom/areslib/state/Pose3dSnapshot$Companion;
+	public fun <init> ()V
+	public fun <init> (DDDDDDD)V
+	public synthetic fun <init> (DDDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun copy (DDDDDDD)Lcom/areslib/state/Pose3dSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/state/Pose3dSnapshot;DDDDDDDILjava/lang/Object;)Lcom/areslib/state/Pose3dSnapshot;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getQuaternionW ()D
+	public final fun getQuaternionX ()D
+	public final fun getQuaternionY ()D
+	public final fun getQuaternionZ ()D
+	public final fun getRotationX ()D
+	public final fun getRotationY ()D
+	public final fun getRotationZ ()D
+	public final fun getX ()D
+	public final fun getY ()D
+	public final fun getZ ()D
+	public fun hashCode ()I
+	public final fun toPose2d ()Lcom/areslib/math/geometry/Pose2d;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/state/Pose3dSnapshot$Companion {
+	public final fun from (Lcom/areslib/math/geometry/Pose3d;)Lcom/areslib/state/Pose3dSnapshot;
 }
 
 public final class com/areslib/state/RecoveryTuningState {
@@ -7930,6 +8121,61 @@ public final class com/areslib/state/VisionMeasurement {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/state/VisionMeasurementSnapshot {
+	public fun <init> ()V
+	public fun <init> (JJLcom/areslib/state/Pose3dSnapshot;IDZLcom/areslib/state/Pose3dSnapshot;IDDDLjava/lang/String;JLcom/areslib/state/VisionSolverType;DDDDLcom/areslib/state/Pose3dSnapshot;ZDZ)V
+	public synthetic fun <init> (JJLcom/areslib/state/Pose3dSnapshot;IDZLcom/areslib/state/Pose3dSnapshot;IDDDLjava/lang/String;JLcom/areslib/state/VisionSolverType;DDDDLcom/areslib/state/Pose3dSnapshot;ZDZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component10 ()D
+	public final fun component11 ()D
+	public final fun component12 ()Ljava/lang/String;
+	public final fun component13 ()J
+	public final fun component14 ()Lcom/areslib/state/VisionSolverType;
+	public final fun component15 ()D
+	public final fun component16 ()D
+	public final fun component17 ()D
+	public final fun component18 ()D
+	public final fun component19 ()Lcom/areslib/state/Pose3dSnapshot;
+	public final fun component2 ()J
+	public final fun component20 ()Z
+	public final fun component21 ()D
+	public final fun component22 ()Z
+	public final fun component3 ()Lcom/areslib/state/Pose3dSnapshot;
+	public final fun component4 ()I
+	public final fun component5 ()D
+	public final fun component6 ()Z
+	public final fun component7 ()Lcom/areslib/state/Pose3dSnapshot;
+	public final fun component8 ()I
+	public final fun component9 ()D
+	public final fun copy (JJLcom/areslib/state/Pose3dSnapshot;IDZLcom/areslib/state/Pose3dSnapshot;IDDDLjava/lang/String;JLcom/areslib/state/VisionSolverType;DDDDLcom/areslib/state/Pose3dSnapshot;ZDZ)Lcom/areslib/state/VisionMeasurementSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/state/VisionMeasurementSnapshot;JJLcom/areslib/state/Pose3dSnapshot;IDZLcom/areslib/state/Pose3dSnapshot;IDDDLjava/lang/String;JLcom/areslib/state/VisionSolverType;DDDDLcom/areslib/state/Pose3dSnapshot;ZDZILjava/lang/Object;)Lcom/areslib/state/VisionMeasurementSnapshot;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAmbiguity ()D
+	public final fun getAmbiguityAvailable ()Z
+	public final fun getAverageTagAreaPercent ()D
+	public final fun getAverageTagDistanceMeters ()D
+	public final fun getCaptureTimestampMicros ()J
+	public final fun getFrameId ()J
+	public final fun getHasRecoveryPose ()Z
+	public final fun getLatencyMs ()D
+	public final fun getRecoveryAmbiguity ()D
+	public final fun getRecoveryAmbiguityAvailable ()Z
+	public final fun getRecoveryPose ()Lcom/areslib/state/Pose3dSnapshot;
+	public final fun getRobotPoseTargetSpace ()Lcom/areslib/state/Pose3dSnapshot;
+	public final fun getSolverType ()Lcom/areslib/state/VisionSolverType;
+	public final fun getSourceId ()Ljava/lang/String;
+	public final fun getStdDevHeadingRadians ()D
+	public final fun getStdDevXMeters ()D
+	public final fun getStdDevYMeters ()D
+	public final fun getTagCount ()I
+	public final fun getTagId ()I
+	public final fun getTagSpanMeters ()D
+	public final fun getTargetPose ()Lcom/areslib/state/Pose3dSnapshot;
+	public final fun getTimestampMs ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/state/VisionSolverType : java/lang/Enum {
 	public static final field MEGATAG1 Lcom/areslib/state/VisionSolverType;
 	public static final field MEGATAG2 Lcom/areslib/state/VisionSolverType;
@@ -7943,10 +8189,10 @@ public final class com/areslib/state/VisionSolverType : java/lang/Enum {
 
 public final class com/areslib/state/VisionState {
 	public fun <init> ()V
-	public fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;[D[DII)V
-	public synthetic fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;[D[DIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;II)V
+	public synthetic fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
-	public final fun component10 ()[D
+	public final fun component10 ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun component11 ()I
 	public final fun component12 ()I
 	public final fun component2 ()D
@@ -7956,12 +8202,12 @@ public final class com/areslib/state/VisionState {
 	public final fun component6 ()Lcom/areslib/hardware/vision/VisionFilterConfig;
 	public final fun component7 ()Z
 	public final fun component8 ()Ljava/lang/String;
-	public final fun component9 ()[D
-	public final fun copy (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;[D[DII)Lcom/areslib/state/VisionState;
-	public static synthetic fun copy$default (Lcom/areslib/state/VisionState;JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;[D[DIIILjava/lang/Object;)Lcom/areslib/state/VisionState;
+	public final fun component9 ()Lcom/areslib/state/Matrix3x3Snapshot;
+	public final fun copy (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;II)Lcom/areslib/state/VisionState;
+	public static synthetic fun copy$default (Lcom/areslib/state/VisionState;JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIILjava/lang/Object;)Lcom/areslib/state/VisionState;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCovarianceAfterUpdate ()[D
-	public final fun getCovarianceBeforeUpdate ()[D
+	public final fun getCovarianceAfterUpdate ()Lcom/areslib/state/Matrix3x3Snapshot;
+	public final fun getCovarianceBeforeUpdate ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun getFilterConfig ()Lcom/areslib/hardware/vision/VisionFilterConfig;
 	public final fun getHasTarget ()Z
 	public final fun getLastMeasurementAccepted ()Z

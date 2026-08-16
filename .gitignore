@@ -4,6 +4,7 @@ bin/
 
 # Gradle
 .gradle/
+local.properties
 
 # OS files
 .DS_Store
@@ -22,3 +23,6 @@ Thumbs.db
 *.csv
 **/logs/
 ares_run_summary.json
+
+# Local experiments
+scratch/

@@ -2,8 +2,7 @@ package com.areslib.state
 
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.deepCopy
-import com.areslib.math.estimation.PoseEstimatorState
-import com.areslib.math.estimation.HistoryBuffer
+import com.areslib.math.estimation.PoseEstimatorSnapshot
 
 /**
  * Stores the costmap update state.
@@ -58,7 +57,7 @@ data class DriveState(
     val odometryX: Double = 0.0,
     val odometryY: Double = 0.0,
     val odometryHeading: Double = 0.0,
-    val poseEstimator: PoseEstimatorState = PoseEstimatorState(history = HistoryBuffer.READ_ONLY_EMPTY),
+    val poseEstimator: PoseEstimatorSnapshot = PoseEstimatorSnapshot(),
     /** True when [poseEstimator] mirrors an upstream authoritative estimator (for example CTRE). */
     val poseEstimateIsExternal: Boolean = false,
     val pitchDegrees: Double = 0.0,
@@ -75,14 +74,12 @@ data class DriveState(
     val isFieldCentric: Boolean = true,
     val isXLock: Boolean = false,
     val alliance: Alliance = Alliance.BLUE,
-    // EKF diagnostics:
-    val covarianceMatrix: DoubleArray = DoubleArray(0),
+    // EKF diagnostics not already carried by the immutable estimator snapshot:
     val ekfDriftX: Double = 0.0,
     val ekfDriftY: Double = 0.0,
     val lastInnovationX: Double = 0.0,
     val lastInnovationY: Double = 0.0,
     val lastInnovationTheta: Double = 0.0,
-    val lastKalmanGain: DoubleArray = DoubleArray(0),
     val rawOdometryX: Double = 0.0,
     val rawOdometryY: Double = 0.0,
     val rawOdometryHeading: Double = 0.0
@@ -93,12 +90,9 @@ data class DriveState(
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
-    fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorState): DriveState {
+    fun updateDiagnostics(odomX: Double, odomY: Double, odomHeading: Double, updatedEstimator: PoseEstimatorSnapshot): DriveState {
         return this.copy(
             poseEstimator = updatedEstimator,
-            // These arrays are already unique to this published estimator snapshot. Sharing them
-            // within the same DriveState avoids two redundant 9-double allocations per frame.
-            covarianceMatrix = updatedEstimator.covarianceArray,
             ekfDriftX = odomX - updatedEstimator.estimatedPoseX,
             ekfDriftY = odomY - updatedEstimator.estimatedPoseY,
             rawOdometryX = odomX,
@@ -106,8 +100,7 @@ data class DriveState(
             rawOdometryHeading = odomHeading,
             lastInnovationX = updatedEstimator.lastInnovationX,
             lastInnovationY = updatedEstimator.lastInnovationY,
-            lastInnovationTheta = updatedEstimator.lastInnovationTheta,
-            lastKalmanGain = updatedEstimator.lastKalmanGain
+            lastInnovationTheta = updatedEstimator.lastInnovationTheta
         )
     }
 }
@@ -266,13 +259,13 @@ data class VisionState(
     val targetX: Double = 0.0,
     val targetY: Double = 0.0,
     val hasTarget: Boolean = false,
-    val measurements: List<VisionMeasurement> = emptyList(),
+    val measurements: List<VisionMeasurementSnapshot> = emptyList(),
     val filterConfig: com.areslib.hardware.vision.VisionFilterConfig = com.areslib.hardware.vision.VisionFilterConfig.ftcDefaults(),
     // EKF diagnostics:
     val lastMeasurementAccepted: Boolean = false,
     val lastRejectionReason: String? = null,
-    val covarianceBeforeUpdate: DoubleArray? = null,
-    val covarianceAfterUpdate: DoubleArray? = null,
+    val covarianceBeforeUpdate: Matrix3x3Snapshot? = null,
+    val covarianceAfterUpdate: Matrix3x3Snapshot? = null,
     val measurementCount: Int = 0,
     val rejectionCount: Int = 0
 )

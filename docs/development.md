@@ -68,7 +68,7 @@ The suite includes unit and regression coverage for reducers, controllers, pathi
 After a cross-repository library change:
 
 ```powershell
-.\gradlew.bat apiCheck publishReleaseValidation
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
 Then build and test each affected sibling with `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`. Normal builds resolve the pinned release from Maven Central; `-ParesUseSiblingLib=true` is the explicit source-substitution escape hatch.
@@ -86,7 +86,7 @@ Run `java -version` and `./gradlew --version`; the Gradle JVM should be JDK 17. 
 ### Consumer compiles against stale ARESLib
 
 1. Confirm the consumer's `aresVersion` is the intended release.
-2. For unpublished changes, run `publishReleaseValidation` and pass its repository with `-ParesRepository`.
+2. For unpublished changes, run `publishReleaseValidation` with a unique prerelease `-ParesVersion`, then pass both that exact version and its repository to the consumer.
 3. Confirm `-ParesUseSiblingLib=true` was not supplied accidentally.
 4. Use Gradle dependency insight if two versions are present.
 

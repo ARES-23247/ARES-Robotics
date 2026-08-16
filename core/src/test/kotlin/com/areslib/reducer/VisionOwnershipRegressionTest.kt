@@ -30,9 +30,9 @@ class VisionOwnershipRegressionTest {
         measurement.robotPoseTargetSpace.translation.z = 88.0
         measurement.tagId = 42
 
-        assertEquals(1.0, retained.targetPose.translation.x)
-        assertEquals(1.0, retained.targetPose.rotation.q.w)
-        assertEquals(6.0, retained.robotPoseTargetSpace.translation.z)
+        assertEquals(1.0, retained.targetPose.x)
+        assertEquals(1.0, retained.targetPose.quaternionW)
+        assertEquals(6.0, retained.robotPoseTargetSpace.z)
         assertEquals(7, retained.tagId)
     }
 }

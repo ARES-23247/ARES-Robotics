@@ -6,6 +6,7 @@ import com.areslib.sequencer.StateActionTask
 import com.areslib.sequencer.SequentialTaskGroup
 import com.areslib.sequencer.Task
 import com.areslib.sequencer.TaskExecutor
+import com.areslib.sequencer.TaskResources
 import com.areslib.state.RobotState
 import com.areslib.state.SubsystemState
 import com.areslib.subsystem.InterlockComparison
@@ -774,7 +775,10 @@ class SuperstructureRuntime(
             superstructureId: String,
             initialStateId: String,
             actionKey: String,
-        ): Task = StateActionTask("Request $superstructureId action $actionKey") { robotState ->
+        ): Task = StateActionTask(
+            "Request $superstructureId action $actionKey",
+            TaskResources.SUPERSTRUCTURE_SHARED
+        ) { robotState ->
             requestAction(
                 robotState = robotState,
                 superstructureId = superstructureId,

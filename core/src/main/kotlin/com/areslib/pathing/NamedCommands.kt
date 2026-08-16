@@ -2,6 +2,7 @@ package com.areslib.pathing
 
 import com.areslib.action.RobotAction
 import com.areslib.sequencer.Task
+import com.areslib.sequencer.TaskResources
 import com.areslib.sequencer.TaskStateMachine
 import com.areslib.sequencer.TaskStatus
 import com.areslib.state.RobotState
@@ -27,12 +28,14 @@ data class NamedCommandDescriptor(
     val key: CommandKey,
     val displayName: String,
     val description: String,
-    val category: String = "General"
+    val category: String = "General",
+    val requiredResources: Long = TaskResources.NONE
 ) {
     init {
         require(displayName.isNotBlank()) { "Command display name must not be blank" }
         require(description.isNotBlank()) { "Command description must not be blank" }
         require(category.isNotBlank()) { "Command category must not be blank" }
+        require(requiredResources >= 0L) { "Command resources must use bits 0..62" }
     }
 }
 
@@ -71,6 +74,7 @@ object NamedCommands {
         key: CommandKey,
         description: String,
         category: String = "General",
+        requiredResources: Long = TaskResources.NONE,
         taskFactory: (Long) -> Task
     ) {
         register(
@@ -78,7 +82,8 @@ object NamedCommands {
                 key = key,
                 displayName = key.value.replace('_', ' ').replace('-', ' '),
                 description = description,
-                category = category
+                category = category,
+                requiredResources = requiredResources
             ),
             taskFactory
         )
@@ -86,8 +91,14 @@ object NamedCommands {
 
     /** Returns a fresh task for [key], or `null` when the robot did not register it. */
     fun create(key: CommandKey, timestampMs: Long): Task? {
-        val factory = synchronized(lock) { commands[key]?.taskFactory }
-        return factory?.invoke(timestampMs)
+        val registration = synchronized(lock) { commands[key] } ?: return null
+        val task = registration.taskFactory(timestampMs)
+        require(task.requiredResources == registration.descriptor.requiredResources) {
+            "Named command '${key.value}' declares " +
+                "${TaskResources.describe(registration.descriptor.requiredResources)} but its task requires " +
+                TaskResources.describe(task.requiredResources)
+        }
+        return task
     }
 
     /** Returns an immutable, predictable snapshot for telemetry and editor discovery. */
@@ -99,7 +110,15 @@ object NamedCommands {
     fun contains(key: CommandKey): Boolean = synchronized(lock) { key in commands }
 
     /** Creates a lazy task so registration is checked when the sequence starts, not when it is built. */
-    fun task(key: CommandKey): Task = DeferredNamedCommandTask(key)
+    fun task(
+        key: CommandKey,
+        requiredResources: Long = registeredResources(key) ?: TaskResources.NONE
+    ): Task = DeferredNamedCommandTask(key, requiredResources)
+
+    /** Returns the registered resource mask without constructing a mutable task instance. */
+    fun registeredResources(key: CommandKey): Long? = synchronized(lock) {
+        commands[key]?.descriptor?.requiredResources
+    }
 
     /** Resolves an exact registered path-marker key. Unregistered markers are rejected. */
     fun getCommand(name: String, timestampMs: Long): Task? {
@@ -120,7 +139,10 @@ object NamedCommands {
 }
 
 /** Delegates lifecycle to a newly-created named task and propagates its failure status. */
-private class DeferredNamedCommandTask(private val key: CommandKey) : Task {
+private class DeferredNamedCommandTask(
+    private val key: CommandKey,
+    override val requiredResources: Long
+) : Task {
     override val name: String = "NamedCommand(${key.value})"
     private var delegate: Task? = null
 
@@ -129,6 +151,11 @@ private class DeferredNamedCommandTask(private val key: CommandKey) : Task {
         val timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
         val resolved = requireNotNull(NamedCommands.create(key, timestampMs)) {
             "Named command '${key.value}' is not registered on this robot"
+        }
+        require(resolved.requiredResources == requiredResources) {
+            "Named command '${key.value}' was built with resources " +
+                "${TaskResources.describe(requiredResources)} but is registered with " +
+                TaskResources.describe(resolved.requiredResources)
         }
         delegate = resolved
         return resolved.initialize(state)

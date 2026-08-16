@@ -1,5 +1,6 @@
 package com.areslib.e2e.tier1.state
 
+import com.areslib.math.estimation.PoseEstimatorSnapshot
 import com.areslib.state.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -15,7 +16,14 @@ class StateImmutabilityTier1Test {
             SuperstructureState::class.java,
             VisionState::class.java,
             CostmapState::class.java,
-            PathState::class.java
+            PathState::class.java,
+            RoutineExecutionState::class.java,
+            RoutineLifecycleState::class.java,
+            TuningState::class.java,
+            PoseEstimatorSnapshot::class.java,
+            VisionMeasurementSnapshot::class.java,
+            Pose3dSnapshot::class.java,
+            Matrix3x3Snapshot::class.java
         )
 
         for (clazz in stateClasses) {
@@ -31,16 +39,21 @@ class StateImmutabilityTier1Test {
                     Modifier.isFinal(modifiers),
                     "Field '${field.name}' in class '${clazz.simpleName}' is not final! All state properties must be immutable (val)."
                 )
+                assertFalse(
+                    field.type.isArray,
+                    "Field '${field.name}' in class '${clazz.simpleName}' exposes a mutable array"
+                )
             }
         }
     }
 
     @Test
-    fun testCollectionStatePropertiesAreReadOnly() {
-        
-        // VisionState contains measurements: List<VisionMeasurement>
-        val vision = VisionState()
-        assertTrue(vision.measurements is List<*>, "measurements in VisionState should be a List")
+    fun testVisionStateRetainsImmutableMeasurementSnapshots() {
+        val measurementField = VisionState::class.java.getDeclaredField("measurements")
+        assertTrue(
+            measurementField.genericType.typeName.contains(VisionMeasurementSnapshot::class.java.name),
+            "VisionState must retain immutable snapshots rather than pooled VisionMeasurement objects"
+        )
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.areslib.sequencer.tasks
 import com.areslib.action.RobotAction
 import com.areslib.hardware.actuator.IndicatorLightColor
 import com.areslib.sequencer.Task
+import com.areslib.sequencer.TaskResources
 import com.areslib.state.RobotState
 
 /**
@@ -33,6 +34,7 @@ class BlinkIndicatorTask(
     private val periodMs: Long = 500L
 ) : Task {
     override val name = "BlinkIndicator($lightName, ${colorA.name}↔${colorB.name}, ${durationMs}ms)"
+    override val requiredResources: Long = TaskResources.LIGHTING
     private var lastPhase = -1L
 
     override fun initialize(state: RobotState): List<RobotAction> {

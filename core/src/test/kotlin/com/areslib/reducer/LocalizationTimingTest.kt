@@ -55,7 +55,7 @@ class LocalizationTimingTest {
         val shortInterval = shortStore.state.drive
         val longInterval = longStore.state.drive
 
-        assertTrue(longInterval.poseEstimator.covarianceArray[0] > shortInterval.poseEstimator.covarianceArray[0])
+        assertTrue(longInterval.poseEstimator.covariance00 > shortInterval.poseEstimator.covariance00)
     }
 
     @Test

@@ -2,7 +2,10 @@ package com.areslib.reducer
 
 import com.areslib.action.RobotAction
 import com.areslib.math.estimation.ApplyPoseEstimatorRuntimeResult
+import com.areslib.state.Matrix3x3Snapshot
+import com.areslib.state.VisionMeasurementSnapshot
 import com.areslib.state.VisionState
+import com.areslib.state.snapshot
 
 /**
  * Object implementation for Vision Reducer.
@@ -37,7 +40,7 @@ object VisionReducer {
                     val stateMeasurements = state.measurements
                     val totalSize = stateMeasurements.size + validMeasurements.size
                     val keepCount = kotlin.math.min(totalSize, MAX_VISION_BUFFER_SIZE)
-                    val newMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(keepCount)
+                    val newMeasurements = ArrayList<VisionMeasurementSnapshot>(keepCount)
                     
                     val fromState = kotlin.math.max(0, keepCount - validMeasurements.size)
                     val stateStartIndex = stateMeasurements.size - fromState
@@ -48,7 +51,7 @@ object VisionReducer {
                     val fromValid = keepCount - fromState
                     val validStartIndex = validMeasurements.size - fromValid
                     for (i in validStartIndex until validMeasurements.size) {
-                        newMeasurements.add(validMeasurements[i].ownedCopy())
+                        newMeasurements.add(validMeasurements[i].snapshot())
                     }
 
                     state.copy(
@@ -63,9 +66,9 @@ object VisionReducer {
                 state.copy(
                     lastMeasurementAccepted = diagnostics.lastMeasurementAccepted,
                     lastRejectionReason = diagnostics.lastRejectionReason,
-                    covarianceBeforeUpdate = diagnostics.covarianceBeforeUpdate
+                    covarianceBeforeUpdate = diagnostics.covarianceBeforeUpdate?.let(Matrix3x3Snapshot::from)
                         ?: state.covarianceBeforeUpdate,
-                    covarianceAfterUpdate = diagnostics.covarianceAfterUpdate
+                    covarianceAfterUpdate = diagnostics.covarianceAfterUpdate?.let(Matrix3x3Snapshot::from)
                         ?: state.covarianceAfterUpdate,
                     measurementCount = state.measurementCount + diagnostics.acceptedCountDelta,
                     rejectionCount = state.rejectionCount + diagnostics.rejectedCountDelta

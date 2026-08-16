@@ -273,6 +273,7 @@ private class RoutineStepLifecycleTask(
     private val delegate: Task
 ) : Task {
     override val name: String = "RoutineStep($stepPath:${delegate.name})"
+    override val requiredResources: Long = delegate.requiredResources
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
@@ -335,6 +336,7 @@ private class ConditionalRoutineTask(
     private val whenFalse: Task
 ) : Task {
     override val name: String = "RoutineBranch"
+    override val requiredResources: Long = whenTrue.requiredResources or whenFalse.requiredResources
     private var selected: Task? = null
 
     override fun initialize(state: RobotState): List<RobotAction> {
