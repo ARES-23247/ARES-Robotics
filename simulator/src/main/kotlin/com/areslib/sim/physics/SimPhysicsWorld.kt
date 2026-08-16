@@ -21,8 +21,9 @@ import java.io.File
  *
  * Distances are meters and body rotations are CCW-positive radians. The FTC field is bounded at
  * approximately ±1.825 m on each axis. [loadFieldElements] removes prior dynamic field content
- * before loading a supplied configuration; when no configuration is supplied it searches known
- * development checkout locations and leaves a missing/invalid asset category empty.
+ * before loading a supplied configuration; when no configuration is supplied it searches the
+ * running project's canonical assets before developer-only fallbacks and leaves a missing/invalid
+ * asset category empty.
  *
  * Dyn4j world mutation is single-thread-owned by the simulation loop. Public body collections are
  * exposed for visualization but callers must not mutate them concurrently with physics stepping.
@@ -88,12 +89,9 @@ class SimPhysicsWorld {
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
             NT4FieldPublisher.publishAprilTags(activeConfig.apriltags)
         } else {
-            val canonicalConfigPaths = listOf(
-                File(System.getProperty("user.home"), "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
-                File("../ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
-                File("TeamCode/src/main/assets/paths/field.json"),
-                File("src/main/assets/paths/field.json"),
-                File("src/main/deploy/paths/field.json")
+            val canonicalConfigPaths = canonicalFieldConfigPaths(
+                workingDirectory = File(System.getProperty("user.dir")),
+                userHome = File(System.getProperty("user.home")),
             )
             val canonicalConfigFile = canonicalConfigPaths.firstOrNull(File::isFile)
             if (canonicalConfigFile != null) {
@@ -167,3 +165,17 @@ class SimPhysicsWorld {
         }
     }
 }
+
+/**
+ * Candidate field documents in ownership order.
+ *
+ * The running project's own assets must win over developer-convenience fallbacks. Otherwise a
+ * generated project can silently simulate an unrelated sibling checkout when both exist.
+ */
+internal fun canonicalFieldConfigPaths(workingDirectory: File, userHome: File): List<File> = listOf(
+    File(workingDirectory, "TeamCode/src/main/assets/paths/field.json"),
+    File(workingDirectory, "src/main/assets/paths/field.json"),
+    File(workingDirectory, "src/main/deploy/paths/field.json"),
+    File(workingDirectory, "../ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
+    File(userHome, "dev/robotics/ares/ARES-FTC/TeamCode/src/main/assets/paths/field.json"),
+)

@@ -264,13 +264,13 @@ class MecanumRobotDouble {
 
         if (visibleTagId != null) {
             this.limelight.setSimulatedPose(trueX, trueY, Math.toDegrees(trueHeadingRad), visibleTagId)
-            com.areslib.networktables.NT4Server.publishTopic("Vision/HasTarget", 1.0)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/HasTarget", true)
             com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_X", trueX)
             com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Y", trueY)
             com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Heading", trueHeadingRad)
         } else {
             this.limelight.setLatestResult(null)
-            com.areslib.networktables.NT4Server.publishTopic("Vision/HasTarget", 0.0)
+            com.areslib.networktables.NT4Server.publishTopic("Vision/HasTarget", false)
             com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_X", 0.0)
             com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Y", 0.0)
             com.areslib.networktables.NT4Server.publishTopic("Vision/Pose_Heading", 0.0)

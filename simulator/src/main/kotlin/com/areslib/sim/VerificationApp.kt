@@ -3,8 +3,27 @@ package com.areslib.sim
 import com.areslib.networktables.NT4Server
 import kotlin.concurrent.thread
 import kotlin.math.abs
+import kotlin.math.pow
 
 import com.areslib.math.wrapAngle
+
+/**
+ * Converts a desired post-curve drive effort back into the normalized joystick axis consumed by
+ * the season drive controller. The verification runner publishes driver intent, so sending its
+ * feedback output directly would apply the controller's deadband and cubic curve a second time.
+ */
+internal fun verificationDriverAxis(
+    desiredEffort: Double,
+    deadband: Double = 0.05,
+    exponent: Double = 3.0,
+): Double {
+    require(deadband in 0.0..<1.0) { "deadband must be in [0, 1)" }
+    require(exponent > 0.0 && exponent.isFinite()) { "exponent must be finite and positive" }
+    if (!desiredEffort.isFinite() || desiredEffort == 0.0) return 0.0
+    val boundedEffort = abs(desiredEffort).coerceAtMost(1.0)
+    val deadzonedMagnitude = boundedEffort.pow(1.0 / exponent)
+    return kotlin.math.sign(desiredEffort) * (deadband + (1.0 - deadband) * deadzonedMagnitude)
+}
 
 fun main() {
     println("=================================================================")
@@ -140,9 +159,8 @@ fun main() {
 
             val kP = 2.5
             val kD = 0.02
-            var cmdOmega = error * kP - velocity * kD
-            cmdOmega = cmdOmega.coerceIn(-1.5, 1.5)
-            setOmega(cmdOmega)
+            val desiredEffort = (error * kP - velocity * kD).coerceIn(-1.0, 1.0)
+            setOmega(verificationDriverAxis(desiredEffort))
             Thread.sleep(20)
         }
         setOmega(0.0)
