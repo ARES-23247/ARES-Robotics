@@ -28,7 +28,7 @@ Do not add these values to repository secrets, Gradle files, logs, or local sour
 ## Stage and publish
 
 1. Open **Actions → Stage Maven Central Release → Run workflow**.
-2. Enter the exact semantic version, such as `7.0.0`.
+2. Enter the exact semantic version, such as `8.0.0`.
 3. Approve the protected `maven-central` environment deployment.
 4. Wait for tests, API checks, signed local publication, and `stageMavenCentral` to succeed.
 5. Open Maven Central Portal **Deployments**, wait for the status to become **Validated**, review the deployment, and click **Publish**.
@@ -41,7 +41,7 @@ Season projects import the BOM once and omit versions from individual modules:
 
 ```kotlin
 dependencies {
-    implementation(platform("org.aresfirst.ares:ares-bom:7.0.0"))
+    implementation(platform("org.aresfirst.ares:ares-bom:8.0.0"))
     implementation("org.aresfirst.ares:core")
     implementation("org.aresfirst.ares:ftc-hardware")
 }
