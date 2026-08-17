@@ -67,19 +67,14 @@ class NT4Server(
     /** One transport-owned slot per connection; reuse is delayed until its socket queue drains. */
     private inner class ConnectionSendState {
         val slot = OwnedSendSlot()
-        // Read by the flush thread and the connection callback thread; volatile so a
-        // mid-write transition cannot be missed by an unsynchronized reader.
-        @Volatile var inFlight = false
 
-        fun acquireIfDrained(conn: WebSocket): OwnedSendSlot? {
-            if (conn.hasBufferedData()) return null
-            if (inFlight) inFlight = false
-            return slot
-        }
-
-        fun markInFlight() {
-            inFlight = true
-        }
+        /**
+         * Returns the send slot once the transport has drained. Java-WebSocket reports no
+         * buffered data only after a frame is fully handed to the kernel, so this is the sole
+         * reuse gate; there is no additional in-flight protocol.
+         */
+        fun acquireIfDrained(conn: WebSocket): OwnedSendSlot? =
+            if (conn.hasBufferedData()) null else slot
     }
 
     private inner class OwnedSendSlot {
@@ -798,8 +793,17 @@ class NT4Server(
 
         try {
             for (conn in connections) {
+                // A connection may close (and onClose may have already torn its maps down)
+                // while this snapshot is iterated; never re-insert state for it.
+                if (!conn.isOpen) continue
                 val pendingEntries = pendingEntriesByConnection.computeIfAbsent(conn) {
                     ConcurrentHashMap.newKeySet()
+                }
+                if (!conn.isOpen) {
+                    // Closed between the check and the insert: drop what we just added.
+                    pendingEntriesByConnection.remove(conn)
+                    sendStateByConnection.remove(conn)
+                    continue
                 }
                 for (entry in currentDirty) {
                     if (isSubscribed(conn, entry)) {
@@ -813,8 +817,14 @@ class NT4Server(
         }
 
         for (conn in connections) {
+            if (!conn.isOpen) continue
             val pendingEntries = pendingEntriesByConnection[conn] ?: continue
             val sendState = sendStateByConnection.computeIfAbsent(conn) { ConnectionSendState() }
+            if (!conn.isOpen) {
+                pendingEntriesByConnection.remove(conn)
+                sendStateByConnection.remove(conn)
+                continue
+            }
             val ownedSlot = sendState.acquireIfDrained(conn) ?: continue
             if (pendingEntries.isEmpty()) continue
 
@@ -824,8 +834,6 @@ class NT4Server(
                 val end = MAX_ENTRIES_PER_SEND.coerceAtMost(entriesToSendBuffer.size)
                 try {
                     val binMsg = encodeOwnedEntries(ownedSlot, timestamp, entriesToSendBuffer, 0, end)
-                    // Mark before send: even an exceptional transport may have retained the buffer.
-                    sendState.markInFlight()
                     if (sendBinaryBuffer(conn, binMsg)) {
                         for (index in 0 until end) pendingEntries.remove(entriesToSendBuffer[index])
                     }

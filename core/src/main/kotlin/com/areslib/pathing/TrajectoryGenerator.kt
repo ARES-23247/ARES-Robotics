@@ -49,8 +49,12 @@ object TrajectoryGenerator {
     fun generateTrajectory(
         startPose: Pose2d,
         endPose: Pose2d,
-        constraints: PathConstraints
+        constraints: PathConstraints,
+        initialVelocityMps: Double = 0.0
     ): Path {
+        require(initialVelocityMps.isFinite() && initialVelocityMps >= 0.0) {
+            "Initial velocity must be finite and non-negative"
+        }
         require(constraints.maxVelocityMps.isFinite() && constraints.maxVelocityMps > 0.0)
         require(constraints.maxAccelerationMps2.isFinite() && constraints.maxAccelerationMps2 > 0.0)
 
@@ -125,8 +129,10 @@ object TrajectoryGenerator {
             curr.velocityMps = kotlin.math.min(curr.velocityMps, maxReachableVel)
         }
 
-        // Forward pass: Apply trapezoidal acceleration
-        points.first().velocityMps = 0.0
+        // Forward pass: Apply trapezoidal acceleration. A finite initialVelocityMps starts the
+        // profile from the robot's current speed instead of forcing a rest discontinuity;
+        // callers regenerating a trajectory mid-motion should pass the measured speed.
+        points.first().velocityMps = initialVelocityMps
         for (i in 1 until points.size) {
             val curr = points[i]
             val prev = points[i - 1]
