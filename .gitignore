@@ -26,3 +26,5 @@ ares_run_summary.json
 
 # Local experiments
 scratch/
+# Scratch crash-test main, never shipped
+simulator/src/main/kotlin/com/areslib/sim/TestCrash.kt

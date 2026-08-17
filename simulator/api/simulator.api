@@ -35,11 +35,6 @@ public final class com/areslib/sim/SimInteractionModel$DefaultImpls {
 	public static fun reset (Lcom/areslib/sim/SimInteractionModel;)V
 }
 
-public final class com/areslib/sim/TestCrashKt {
-	public static final fun main ()V
-	public static synthetic fun main ([Ljava/lang/String;)V
-}
-
 public final class com/areslib/sim/VerificationAppKt {
 	public static final fun main ()V
 	public static synthetic fun main ([Ljava/lang/String;)V

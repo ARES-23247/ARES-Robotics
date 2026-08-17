@@ -37,7 +37,7 @@ jobs:
       - name: Reject tracked local artifacts
         shell: bash
         run: |
-          tracked_artifacts="$(git ls-files -- local.properties '*.csv' 'scratch/**')"
+          tracked_artifacts="$(git ls-files -- local.properties '*.csv' 'scratch/**' '**/ares_run_summary.json' 'simulator/src/main/kotlin/com/areslib/sim/TestCrash.kt')"
           if [[ -n "$tracked_artifacts" ]]; then
             echo "Local-only artifacts are tracked:" >&2
             echo "$tracked_artifacts" >&2
