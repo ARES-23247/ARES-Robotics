@@ -498,7 +498,7 @@ public abstract interface class com/qualcomm/robotcore/hardware/DcMotorEx : com/
 	public abstract fun getCurrent (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
 	public abstract fun getCurrentPosition ()I
 	public abstract fun getVelocity ()D
-	public abstract fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
+	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
 	public abstract fun setVelocity (D)V
 }
 
@@ -628,12 +628,12 @@ public final class com/qualcomm/robotcore/hardware/Gamepad$Companion {
 }
 
 public abstract interface class com/qualcomm/robotcore/hardware/HardwareDevice {
-	public abstract fun close ()V
-	public abstract fun getConnectionInfo ()Ljava/lang/String;
-	public abstract fun getDeviceName ()Ljava/lang/String;
-	public abstract fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
-	public abstract fun getVersion ()I
-	public abstract fun resetDeviceConfigurationForOpMode ()V
+	public fun close ()V
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getDeviceName ()Ljava/lang/String;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getVersion ()I
+	public fun resetDeviceConfigurationForOpMode ()V
 }
 
 public final class com/qualcomm/robotcore/hardware/HardwareDevice$DefaultImpls {
@@ -758,8 +758,8 @@ public final class com/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufact
 }
 
 public abstract interface class com/qualcomm/robotcore/hardware/I2cDeviceSynchSimple : com/qualcomm/robotcore/hardware/HardwareDevice {
-	public abstract fun read8 (I)B
-	public abstract fun write8 (II)V
+	public fun read8 (I)B
+	public fun write8 (II)V
 }
 
 public final class com/qualcomm/robotcore/hardware/I2cDeviceSynchSimple$DefaultImpls {

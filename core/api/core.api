@@ -123,7 +123,7 @@ public final class com/areslib/action/CalibrationFrameLogged : com/areslib/actio
 }
 
 public abstract interface class com/areslib/action/RobotAction {
-	public abstract fun getTimestampMs ()J
+	public fun getTimestampMs ()J
 }
 
 public final class com/areslib/action/RobotAction$CalibrateSwerveOffsets : com/areslib/action/RobotAction {
@@ -885,9 +885,9 @@ public final class com/areslib/codegen/GeneratedDrivebaseFile {
 }
 
 public abstract interface class com/areslib/control/assist/Action {
-	public abstract fun end (Z)V
+	public fun end (Z)V
 	public abstract fun isFinished ()Z
-	public abstract fun start ()V
+	public fun start ()V
 	public abstract fun update (D)V
 }
 
@@ -1024,7 +1024,7 @@ public abstract interface class com/areslib/control/assist/SysIdMechanismIO {
 	public abstract fun getMechanism ()Lcom/areslib/control/assist/SysIdMechanism;
 	public abstract fun getVelocity ()D
 	public abstract fun setCharacterizationVoltage (D)V
-	public abstract fun stop ()V
+	public fun stop ()V
 }
 
 public final class com/areslib/control/assist/SysIdMechanismIO$DefaultImpls {
@@ -2444,9 +2444,9 @@ public final class com/areslib/drivetrain/VendorSourceOwnership : java/lang/Enum
 
 public abstract interface class com/areslib/hardware/CurrentSourceIO {
 	public abstract fun getCurrentAmps ()D
-	public abstract fun getCurrentReadingValid ()Z
-	public abstract fun includesCurrentFrom (Lcom/areslib/hardware/CurrentSourceIO;)Z
-	public abstract fun isCurrentReadingValid (D)Z
+	public fun getCurrentReadingValid ()Z
+	public fun includesCurrentFrom (Lcom/areslib/hardware/CurrentSourceIO;)Z
+	public fun isCurrentReadingValid (D)Z
 }
 
 public final class com/areslib/hardware/CurrentSourceIO$DefaultImpls {
@@ -2514,7 +2514,7 @@ public final class com/areslib/hardware/HardwareTopology {
 }
 
 public abstract interface class com/areslib/hardware/LoggableDevice {
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 }
 
 public final class com/areslib/hardware/LoggableDevice$DefaultImpls {
@@ -2528,8 +2528,8 @@ public abstract interface class com/areslib/hardware/SimMechanismOutputProvider 
 }
 
 public abstract interface class com/areslib/hardware/SubsystemIO : com/areslib/hardware/LoggableDevice {
-	public abstract fun refresh ()V
-	public abstract fun safe ()V
+	public fun refresh ()V
+	public fun safe ()V
 }
 
 public final class com/areslib/hardware/SubsystemIO$DefaultImpls {
@@ -2597,14 +2597,14 @@ public final class com/areslib/hardware/TopologyNodeType : java/lang/Enum {
 }
 
 public abstract interface class com/areslib/hardware/actuator/ClimberIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun getCurrentAmps ()D
-	public abstract fun getPositionRotations ()D
-	public abstract fun getPositionValid ()Z
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
-	public abstract fun safe ()V
+	public fun getCurrentAmps ()D
+	public fun getPositionRotations ()D
+	public fun getPositionValid ()Z
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun safe ()V
 	public abstract fun setAppliedVoltage (D)V
 	public abstract fun setTargetPositionRotations (D)V
-	public abstract fun setTargetPositionRotations (DD)V
+	public fun setTargetPositionRotations (DD)V
 }
 
 public final class com/areslib/hardware/actuator/ClimberIO$DefaultImpls {
@@ -2621,14 +2621,14 @@ public final class com/areslib/hardware/actuator/ClimberIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/actuator/CowlIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun getAngleRotations ()D
-	public abstract fun getAngleValid ()Z
-	public abstract fun getCurrentAmps ()D
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
-	public abstract fun safe ()V
+	public fun getAngleRotations ()D
+	public fun getAngleValid ()Z
+	public fun getCurrentAmps ()D
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun safe ()V
 	public abstract fun setAppliedVoltage (D)V
 	public abstract fun setTargetAngle (D)V
-	public abstract fun setTargetAngle (DD)V
+	public fun setTargetAngle (DD)V
 }
 
 public final class com/areslib/hardware/actuator/CowlIO$DefaultImpls {
@@ -2645,11 +2645,11 @@ public final class com/areslib/hardware/actuator/CowlIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/actuator/FeederIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun getCurrentAmps ()D
-	public abstract fun getPieceDetectionValid ()Z
-	public abstract fun isBeamBroken ()Z
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
-	public abstract fun safe ()V
+	public fun getCurrentAmps ()D
+	public fun getPieceDetectionValid ()Z
+	public fun isBeamBroken ()Z
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun safe ()V
 	public abstract fun setAppliedVoltage (D)V
 }
 
@@ -2666,10 +2666,10 @@ public final class com/areslib/hardware/actuator/FeederIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/actuator/FloorIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun getCurrentAmps ()D
-	public abstract fun getVelocityRps ()D
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
-	public abstract fun safe ()V
+	public fun getCurrentAmps ()D
+	public fun getVelocityRps ()D
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun safe ()V
 	public abstract fun setAppliedVoltage (D)V
 }
 
@@ -2685,16 +2685,16 @@ public final class com/areslib/hardware/actuator/FloorIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/actuator/FlywheelIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun configureVelocityController (Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/SimpleFeedforwardCoeffs;)V
-	public abstract fun getCurrentAmps ()D
-	public abstract fun getTempCelsius ()D
-	public abstract fun getVelocityRpm ()D
-	public abstract fun getVelocityValid ()Z
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
-	public abstract fun safe ()V
+	public fun configureVelocityController (Lcom/areslib/control/tuning/PIDFCoefficients;Lcom/areslib/control/tuning/SimpleFeedforwardCoeffs;)V
+	public fun getCurrentAmps ()D
+	public fun getTempCelsius ()D
+	public fun getVelocityRpm ()D
+	public fun getVelocityValid ()Z
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun safe ()V
 	public abstract fun setAppliedVoltage (D)V
 	public abstract fun setVelocityRpm (D)V
-	public abstract fun setVelocityRpm (DD)V
+	public fun setVelocityRpm (DD)V
 }
 
 public final class com/areslib/hardware/actuator/FlywheelIO$DefaultImpls {
@@ -2758,7 +2758,7 @@ public final class com/areslib/hardware/actuator/IndicatorLightColor : java/lang
 
 public abstract interface class com/areslib/hardware/actuator/IndicatorLightIO : com/areslib/hardware/SubsystemIO {
 	public abstract fun getCurrentPosition ()D
-	public abstract fun setColor (Lcom/areslib/hardware/actuator/IndicatorLightColor;)V
+	public fun setColor (Lcom/areslib/hardware/actuator/IndicatorLightColor;)V
 	public abstract fun setPosition (D)V
 }
 
@@ -2770,20 +2770,20 @@ public final class com/areslib/hardware/actuator/IndicatorLightIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/actuator/IntakeIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun getCurrentAmps ()D
-	public abstract fun getPivotAngleDegrees ()D
-	public abstract fun getPivotAngleValid ()Z
-	public abstract fun getPivotCurrentAmps ()D
-	public abstract fun getRollerCurrentAmps ()D
-	public abstract fun getRollerCurrentValid ()Z
-	public abstract fun getRollerVelocityTicksPerSec ()D
-	public abstract fun isCurrentReadingValid (D)Z
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
-	public abstract fun safe ()V
+	public fun getCurrentAmps ()D
+	public fun getPivotAngleDegrees ()D
+	public fun getPivotAngleValid ()Z
+	public fun getPivotCurrentAmps ()D
+	public fun getRollerCurrentAmps ()D
+	public fun getRollerCurrentValid ()Z
+	public fun getRollerVelocityTicksPerSec ()D
+	public fun isCurrentReadingValid (D)Z
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun safe ()V
 	public abstract fun setPivotAngle (D)V
-	public abstract fun setPivotAngle (DD)V
+	public fun setPivotAngle (DD)V
 	public abstract fun setPivotVoltage (D)V
-	public abstract fun setRollerVelocityRps (D)V
+	public fun setRollerVelocityRps (D)V
 	public abstract fun setRollerVoltage (D)V
 }
 
@@ -2806,17 +2806,17 @@ public final class com/areslib/hardware/actuator/IntakeIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/actuator/MotorIO : com/areslib/hardware/CurrentSourceIO, com/areslib/hardware/SubsystemIO {
-	public abstract fun getCurrentAmps ()D
+	public fun getCurrentAmps ()D
 	public abstract fun getPosition ()D
 	public abstract fun getPower ()D
-	public abstract fun getPowerScale ()D
+	public fun getPowerScale ()D
 	public abstract fun getVelocity ()D
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public abstract fun resetEncoder ()V
-	public abstract fun safe ()V
+	public fun safe ()V
 	public abstract fun setPower (D)V
-	public abstract fun setPowerScale (D)V
-	public abstract fun setVoltage (DD)V
+	public fun setPowerScale (D)V
+	public fun setVoltage (DD)V
 }
 
 public final class com/areslib/hardware/actuator/MotorIO$DefaultImpls {
@@ -2836,14 +2836,14 @@ public abstract interface class com/areslib/hardware/actuator/PrismDriverIO : co
 	public abstract fun getCurrentPulseWidthUs ()I
 	public abstract fun getMaxBrightnessPercent ()I
 	public abstract fun setMaxBrightnessPercent (I)V
-	public abstract fun setPosition (D)V
-	public abstract fun setPreset (Lcom/areslib/hardware/actuator/PrismPwmPreset;)V
-	public abstract fun setPulseHue (D)V
+	public fun setPosition (D)V
+	public fun setPreset (Lcom/areslib/hardware/actuator/PrismPwmPreset;)V
+	public fun setPulseHue (D)V
 	public abstract fun setPulseWidthUs (I)V
-	public abstract fun setSineWaveHue (D)V
-	public abstract fun setSolidColorHue (D)V
+	public fun setSineWaveHue (D)V
+	public fun setSolidColorHue (D)V
 	public abstract fun setSolidColorRgb (III)V
-	public abstract fun setSparkleHue (D)V
+	public fun setSparkleHue (D)V
 }
 
 public final class com/areslib/hardware/actuator/PrismDriverIO$DefaultImpls {
@@ -2950,7 +2950,7 @@ public final class com/areslib/hardware/actuator/RevEncoderVersion : java/lang/E
 
 public abstract interface class com/areslib/hardware/actuator/ServoIO : com/areslib/hardware/SubsystemIO {
 	public abstract fun getPosition ()D
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public abstract fun setPosition (D)V
 }
 
@@ -2962,6 +2962,7 @@ public final class com/areslib/hardware/actuator/ServoIO$DefaultImpls {
 
 public abstract interface class com/areslib/hardware/drive/OdometryIO {
 	public abstract fun initialize (Lcom/areslib/math/geometry/Pose2d;)V
+	public static synthetic fun initialize$default (Lcom/areslib/hardware/drive/OdometryIO;Lcom/areslib/math/geometry/Pose2d;ILjava/lang/Object;)V
 	public abstract fun updateInputs (Lcom/areslib/hardware/drive/OdometryInputs;)V
 }
 
@@ -3004,25 +3005,25 @@ public final class com/areslib/hardware/drive/OdometryInputs {
 public abstract interface class com/areslib/hardware/drive/SwerveHardwareIO : com/areslib/hardware/SubsystemIO {
 	public static final field Companion Lcom/areslib/hardware/drive/SwerveHardwareIO$Companion;
 	public abstract fun addVisionMeasurement (Lcom/areslib/math/geometry/Pose2d;D)V
-	public abstract fun addVisionMeasurement (Lcom/areslib/math/geometry/Pose2d;DDDD)V
-	public abstract fun getCurrentMeasurementsValid ()Z
-	public abstract fun getCurrents ([D)V
-	public abstract fun getCurrentsIfValid ([D)Z
-	public abstract fun getEncoderPositions ([D)V
-	public abstract fun getEncoderPositionsIfValid ([D)Z
-	public abstract fun getEncoderPositionsValid ()Z
-	public abstract fun getFaults ([I)V
-	public abstract fun getModuleSpeeds ([D)V
-	public abstract fun getPitchDegrees ()D
-	public abstract fun getRawGyroYawDegrees ()D
-	public abstract fun getRollDegrees ()D
-	public abstract fun getSignalLatencyMs ()D
-	public abstract fun getYawRateDegreesPerSecond ()D
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun addVisionMeasurement (Lcom/areslib/math/geometry/Pose2d;DDDD)V
+	public fun getCurrentMeasurementsValid ()Z
+	public fun getCurrents ([D)V
+	public fun getCurrentsIfValid ([D)Z
+	public fun getEncoderPositions ([D)V
+	public fun getEncoderPositionsIfValid ([D)Z
+	public fun getEncoderPositionsValid ()Z
+	public fun getFaults ([I)V
+	public fun getModuleSpeeds ([D)V
+	public fun getPitchDegrees ()D
+	public fun getRawGyroYawDegrees ()D
+	public fun getRollDegrees ()D
+	public fun getSignalLatencyMs ()D
+	public fun getYawRateDegreesPerSecond ()D
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public abstract fun read ()Lcom/areslib/state/DriveState;
-	public abstract fun refresh ()V
-	public abstract fun samplePoseAt (D[D)Z
-	public abstract fun seedPose (Lcom/areslib/math/geometry/Pose2d;)V
+	public fun refresh ()V
+	public fun samplePoseAt (D[D)Z
+	public fun seedPose (Lcom/areslib/math/geometry/Pose2d;)V
 	public abstract fun write (Lcom/areslib/state/DriveState;D)V
 }
 
@@ -3052,7 +3053,7 @@ public final class com/areslib/hardware/drive/SwerveHardwareIO$DefaultImpls {
 }
 
 public abstract interface class com/areslib/hardware/drive/SwerveModuleIO {
-	public abstract fun setDesiredPower (DD)V
+	public fun setDesiredPower (DD)V
 	public abstract fun updateInputs (Lcom/areslib/hardware/drive/SwerveModuleInputs;)V
 }
 
@@ -3093,7 +3094,7 @@ public final class com/areslib/hardware/drive/SwerveModuleInputs {
 }
 
 public abstract interface class com/areslib/hardware/sensor/ColorSensorIO {
-	public abstract fun copyNormalizedRgbInto ([D)V
+	public fun copyNormalizedRgbInto ([D)V
 	public abstract fun getAlpha ()I
 	public abstract fun getBlue ()I
 	public abstract fun getGreen ()I
@@ -3110,7 +3111,7 @@ public abstract interface class com/areslib/hardware/sensor/DistanceSensorIO {
 }
 
 public abstract interface class com/areslib/hardware/sensor/ImuIO : com/areslib/hardware/SubsystemIO {
-	public abstract fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public abstract fun resetHeading ()V
 	public abstract fun updateInputs (Lcom/areslib/hardware/sensor/ImuInputs;)V
 }
@@ -3154,7 +3155,7 @@ public final class com/areslib/hardware/sensor/ImuInputs {
 }
 
 public abstract interface class com/areslib/hardware/sensor/MultizoneDistanceSensorIO {
-	public abstract fun copyDistancesMetersInto ([D)I
+	public fun copyDistancesMetersInto ([D)I
 	public abstract fun getColumns ()I
 	public abstract fun getDistancesMeters ()[D
 	public abstract fun getRows ()I
@@ -3270,9 +3271,10 @@ public final class com/areslib/hardware/vision/VisionHardware {
 }
 
 public abstract interface class com/areslib/hardware/vision/VisionIO : com/areslib/hardware/LoggableDevice {
-	public abstract fun getCameraPoses ()Ljava/util/List;
-	public abstract fun setImuMode (I)V
-	public abstract fun setOrientation (DDDDDDD)V
+	public fun getCameraPoses ()Ljava/util/List;
+	public fun setImuMode (I)V
+	public fun setOrientation (DDDDDDD)V
+	public static synthetic fun setOrientation$default (Lcom/areslib/hardware/vision/VisionIO;DDDDDDDILjava/lang/Object;)V
 	public abstract fun updateInputs (Lcom/areslib/hardware/vision/VisionIOInputs;)V
 }
 
@@ -3378,7 +3380,7 @@ public final class com/areslib/input/AnalogBinding$Companion {
 }
 
 public abstract interface class com/areslib/input/AnalogBindingListener {
-	public abstract fun onValue (D)V
+	public fun onValue (D)V
 }
 
 public final class com/areslib/input/AnalogBindingListener$DefaultImpls {
@@ -3414,9 +3416,9 @@ public final class com/areslib/input/AnalogZone {
 }
 
 public abstract interface class com/areslib/input/AnalogZoneListener {
-	public abstract fun onActive (D)V
-	public abstract fun onEnter (D)V
-	public abstract fun onExit (D)V
+	public fun onActive (D)V
+	public fun onEnter (D)V
+	public fun onExit (D)V
 }
 
 public final class com/areslib/input/AnalogZoneListener$DefaultImpls {
@@ -3701,11 +3703,11 @@ public final class com/areslib/input/DigitalBinding {
 }
 
 public abstract interface class com/areslib/input/DigitalBindingListener {
-	public abstract fun onHeld (J)V
-	public abstract fun onHold (J)V
-	public abstract fun onPress ()V
-	public abstract fun onRelease (JLcom/areslib/input/BindingReleaseReason;)V
-	public abstract fun onRepeat (J)V
+	public fun onHeld (J)V
+	public fun onHold (J)V
+	public fun onPress ()V
+	public fun onRelease (JLcom/areslib/input/BindingReleaseReason;)V
+	public fun onRepeat (J)V
 }
 
 public final class com/areslib/input/DigitalBindingListener$DefaultImpls {
@@ -6964,21 +6966,21 @@ public final class com/areslib/sequencer/StateActionTask : com/areslib/sequencer
 }
 
 public abstract interface class com/areslib/sequencer/Task {
-	public abstract fun cancel ()V
-	public abstract fun end (Lcom/areslib/state/RobotState;Z)Ljava/util/List;
-	public abstract fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
+	public fun cancel ()V
+	public fun end (Lcom/areslib/state/RobotState;Z)Ljava/util/List;
+	public fun execute (Lcom/areslib/state/RobotState;J)Ljava/util/List;
 	public abstract fun getName ()Ljava/lang/String;
-	public abstract fun getPriority ()I
-	public abstract fun getRequiredResources ()J
-	public abstract fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
+	public fun getPriority ()I
+	public fun getRequiredResources ()J
+	public fun initialize (Lcom/areslib/state/RobotState;)Ljava/util/List;
 	public abstract fun isCompleted (Lcom/areslib/state/RobotState;J)Z
-	public abstract fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
-	public abstract fun onFail (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
-	public abstract fun pause (Lcom/areslib/state/RobotState;)Ljava/util/List;
-	public abstract fun releaseRuntimeState ()V
-	public abstract fun reset ()V
-	public abstract fun resume (Lcom/areslib/state/RobotState;)Ljava/util/List;
-	public abstract fun withTimeout (J)Lcom/areslib/sequencer/Task;
+	public fun onComplete (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
+	public fun onFail (Lkotlin/jvm/functions/Function0;)Lcom/areslib/sequencer/Task;
+	public fun pause (Lcom/areslib/state/RobotState;)Ljava/util/List;
+	public fun releaseRuntimeState ()V
+	public fun reset ()V
+	public fun resume (Lcom/areslib/state/RobotState;)Ljava/util/List;
+	public fun withTimeout (J)Lcom/areslib/sequencer/Task;
 }
 
 public final class com/areslib/sequencer/Task$DefaultImpls {
@@ -8454,7 +8456,7 @@ public final class com/areslib/subsystem/SimInteractionRole : java/lang/Enum {
 }
 
 public abstract interface class com/areslib/subsystem/Subsystem : java/lang/AutoCloseable {
-	public abstract fun close ()V
+	public fun close ()V
 	public abstract fun readSensors (Lcom/areslib/Store;J)V
 	public abstract fun writeOutputs (Lcom/areslib/state/RobotState;D)V
 }
@@ -10024,7 +10026,7 @@ public final class com/areslib/telemetry/GamepadState {
 }
 
 public abstract interface class com/areslib/telemetry/ITelemetry {
-	public abstract fun close ()V
+	public fun close ()V
 	public abstract fun getBoolean (Ljava/lang/String;Z)Z
 	public abstract fun getNumber (Ljava/lang/String;D)D
 	public abstract fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
@@ -10032,7 +10034,7 @@ public abstract interface class com/areslib/telemetry/ITelemetry {
 	public abstract fun putDoubleArray (Ljava/lang/String;[D)V
 	public abstract fun putNumber (Ljava/lang/String;D)V
 	public abstract fun putString (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun update ()V
+	public fun update ()V
 }
 
 public final class com/areslib/telemetry/ITelemetry$DefaultImpls {
@@ -10107,6 +10109,7 @@ public abstract interface class com/areslib/telemetry/RobotTelemetryManager : ja
 	public abstract fun getCustomPublishers ()Ljava/util/List;
 	public abstract fun getDataLoggingTelemetry ()Lcom/areslib/logging/DataLoggingTelemetry;
 	public abstract fun publish (Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DD)V
+	public static synthetic fun publish$default (Lcom/areslib/telemetry/RobotTelemetryManager;Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DDILjava/lang/Object;)V
 }
 
 public final class com/areslib/telemetry/RobotTelemetryManager$DefaultImpls {
