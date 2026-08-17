@@ -331,11 +331,11 @@ class RobotFieldConfigTest {
         // Bumper radius is 0.1m, Resolution is 0.1m.
         val costmap = Costmap.fromFieldConfig(config, robotRadiusMeters = 0.1)
 
-        // Verify bounds & sizes for FTC config (3.66m)
-        assertEquals(3.66, costmap.widthMeters, 0.001)
-        assertEquals(3.66, costmap.heightMeters, 0.001)
-        assertEquals(-1.83, costmap.origin.x, 0.001)
-        assertEquals(-1.83, costmap.origin.y, 0.001)
+        // Verify bounds & sizes for FTC config (canonical 12 ft = 3.6576 m)
+        assertEquals(com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE, costmap.widthMeters, 0.001)
+        assertEquals(com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE, costmap.heightMeters, 0.001)
+        assertEquals(-com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE / 2.0, costmap.origin.x, 0.001)
+        assertEquals(-com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE / 2.0, costmap.origin.y, 0.001)
 
         // Verify obstacle is rasterized
         assertTrue(costmap.isOccupied(0.5, 0.5))
