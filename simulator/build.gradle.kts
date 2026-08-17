@@ -49,10 +49,10 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.12")
     
     // LWJGL Core
-    implementation("org.lwjgl:lwjgl:3.3.3")
+    implementation("org.lwjgl:lwjgl:3.4.2")
     
     // LWJGL GLFW for robust cross-platform Gamepad support (auto-extracts natives)
-    implementation("org.lwjgl:lwjgl-glfw:3.3.3")
+    implementation("org.lwjgl:lwjgl-glfw:3.4.2")
 
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
@@ -83,8 +83,8 @@ dependencies {
     listOf("wpinet", "ntcore", "wpiutil", "wpimath", "hal").forEach { module ->
         add(hostRuntime.name, "edu.wpi.first.$module:$module-jni:$hostWpiVersion:$hostWpiPlatform")
     }
-    add(hostRuntime.name, "org.lwjgl:lwjgl:3.3.3:$hostLwjglClassifier")
-    add(hostRuntime.name, "org.lwjgl:lwjgl-glfw:3.3.3:$hostLwjglClassifier")
+    add(hostRuntime.name, "org.lwjgl:lwjgl:3.4.2:$hostLwjglClassifier")
+    add(hostRuntime.name, "org.lwjgl:lwjgl-glfw:3.4.2:$hostLwjglClassifier")
 }
 
 configurations.testRuntimeClasspath {
