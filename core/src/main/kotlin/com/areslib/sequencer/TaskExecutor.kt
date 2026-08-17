@@ -64,6 +64,13 @@ class TaskExecutor {
     fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> {
         var actions: MutableList<RobotAction>? = null
 
+        if (isSuspended) {
+            // The preemptor starts now; only suspension time after this instant may be
+            // charged to it on resume. Without this reset, resume would over-credit the
+            // new task's elapsed time by the pre-preempt suspension interval.
+            suspendedAtMs = currentTimestampMs
+        }
+
         val currentActive = activeTask
         if (currentActive != null) {
             val elapsed = currentTimestampMs - activeTaskStartTimeMs

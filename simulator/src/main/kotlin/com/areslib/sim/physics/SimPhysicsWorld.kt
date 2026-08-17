@@ -34,8 +34,8 @@ class SimPhysicsWorld {
     val activeObstacles = mutableListOf<Body>()
     val gamePieces = mutableListOf<Body>()
 
-    private val FIELD_WIDTH = 3.65
-    private val FIELD_HEIGHT = 3.65
+    private val FIELD_WIDTH = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
+    private val FIELD_HEIGHT = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
 
     init {
         world.setGravity(Vector2(0.0, 0.0))

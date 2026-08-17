@@ -71,6 +71,7 @@ class NT4NetworkingHardeningTest {
         val binaryMessages = mutableListOf<ByteArray>()
         val connection = proxy<WebSocket> { method, args ->
             when (method.name) {
+                "isOpen" -> true
                 "hasBufferedData" -> buffered.get()
                 "send" -> {
                     val message = args?.firstOrNull()
@@ -120,6 +121,7 @@ class NT4NetworkingHardeningTest {
         val sentLengths = mutableListOf<Int>()
         val connection = proxy<WebSocket> { method, args ->
             when (method.name) {
+                "isOpen" -> true
                 "hasBufferedData" -> buffered.get()
                 "send" -> {
                     val message = args?.firstOrNull()
@@ -611,6 +613,7 @@ class NT4NetworkingHardeningTest {
     ): WebSocket {
         return proxy { method, args ->
             when (method.name) {
+                "isOpen" -> true
                 "hasBufferedData" -> false
                 "send" -> {
                     val message = args?.firstOrNull()

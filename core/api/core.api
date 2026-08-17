@@ -6033,7 +6033,8 @@ public final class com/areslib/pathing/TrajectoryGenerationResult {
 
 public final class com/areslib/pathing/TrajectoryGenerator {
 	public static final field INSTANCE Lcom/areslib/pathing/TrajectoryGenerator;
-	public final fun generateTrajectory (Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/pathing/TrajectoryGenerator$PathConstraints;)Lcom/areslib/pathing/Path;
+	public final fun generateTrajectory (Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/pathing/TrajectoryGenerator$PathConstraints;D)Lcom/areslib/pathing/Path;
+	public static synthetic fun generateTrajectory$default (Lcom/areslib/pathing/TrajectoryGenerator;Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/pathing/TrajectoryGenerator$PathConstraints;DILjava/lang/Object;)Lcom/areslib/pathing/Path;
 }
 
 public final class com/areslib/pathing/TrajectoryGenerator$PathConstraints {
