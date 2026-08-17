@@ -2,9 +2,9 @@ import org.gradle.api.publish.PublishingExtension
 
 plugins {
     kotlin("jvm") version "1.9.23" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.25" apply false
     id("org.jetbrains.dokka") version "1.9.20"
-    id("org.jetbrains.kotlinx.kover") version "0.7.6"
+    id("org.jetbrains.kotlinx.kover") version "0.9.9"
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1"
     id("com.vanniktech.maven.publish") version "0.34.0" apply false
 }
@@ -52,10 +52,10 @@ allprojects {
     }
     configurations.all {
         resolutionStrategy {
-            force("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
-            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23")
-            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23")
-            force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.23")
+            force("org.jetbrains.kotlin:kotlin-stdlib:1.9.25")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.25")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.25")
+            force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.25")
         }
     }
 }

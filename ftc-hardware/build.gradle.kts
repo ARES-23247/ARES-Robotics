@@ -21,7 +21,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     api(project(":core"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     compileOnly(project(":ftc-mocks"))
     testImplementation(project(":ftc-mocks"))
     testImplementation(kotlin("test"))

@@ -23,7 +23,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     api("org.java-websocket:Java-WebSocket:1.5.3") // transitive dep of NT4Server (extends WebSocketServer)
     implementation("org.msgpack:msgpack-core:0.9.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     api("org.nanohttpd:nanohttpd:2.3.1")
     testImplementation(kotlin("test"))
 }
