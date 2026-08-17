@@ -27,7 +27,7 @@ public final class com/areslib/sim/NoOpInteractionModel : com/areslib/sim/SimInt
 }
 
 public abstract interface class com/areslib/sim/SimInteractionModel {
-	public abstract fun reset ()V
+	public fun reset ()V
 	public abstract fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
 }
 
