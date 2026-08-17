@@ -41,7 +41,30 @@ enum class ControlThresholdDirection { ABOVE, BELOW }
 enum class ControlTargetKind {
     ACTION,
     ROUTINE,
-    CANCEL_ROUTINE
+    CANCEL_ROUTINE,
+    /**
+     * Continuous teleop drivetrain axis. [ControlTargetDocument.key] names the axis via
+     * [DriveAxisKeys]; the binding's source must be an AXIS_VALUE source with a VALUE event so
+     * the generated runtime receives shaped, disconnect-safe axis values every frame.
+     */
+    DRIVE
+}
+
+/**
+ * Axis keys a DRIVE target may reference. Values are normalized (-1..1) after the binding's
+ * axis transform; the robot-side sink scales them by drivetrain limits.
+ */
+object DriveAxisKeys {
+    /** Forward field velocity, +X. */
+    const val VX = "vx"
+
+    /** Lateral field velocity, +Y (left). */
+    const val VY = "vy"
+
+    /** Angular velocity, CCW-positive. */
+    const val OMEGA = "omega"
+
+    val ALL: Set<String> = setOf(VX, VY, OMEGA)
 }
 
 /** How a routine binding behaves if the same routine is already active. */
