@@ -20,7 +20,7 @@ import com.areslib.math.geometry.Matrix3x3
  *    $$s_{\text{tilt}} = 1.0 + 99.0 \cdot \left[\text{clamp}\left(\frac{\theta_{\text{tilt}} - 5^\circ}{10^\circ}, 0, 1\right)\right]^2$$
  * 3. **Online Gyro Bias IIR Filter**:
  *    Estimates gyro zero-rate drift when stationary ($\Delta x = \Delta y = \Delta\theta = 0$):
- *    $$\beta_k = (1 - \alpha) \cdot \beta_{k-1} + \alpha \cdot \omega_{\text{gyro}}, \quad \alpha = 0.01 \cdot \Delta t$$
+ *    $$\beta_k = (1 - \alpha) \cdot \beta_{k-1} + \alpha \cdot \omega_{\text{gyro}}, \quad \alpha = 1 - e^{-\Delta t / 5\,\text{s}}$$
  * 4. **Wheel Slip Mismatch Detection**:
  *    If $|\frac{\Delta\theta}{\Delta t} - (\omega_{\text{gyro}} - \beta_k)| > 0.5 \text{ rad/s}$, applies $s_{\text{slip}} = 10.0$ covariance multiplier.
  *
@@ -161,6 +161,9 @@ object OdometryFusionController {
             )
             state.isBeached = true
             state.lastUnbeachedTimeMs = unbeachedTime
+            // A dwell that began before beaching must not satisfy the bias-learning gate on
+            // the first post-recovery frame; require a fresh stationary dwell after recovery.
+            state.stationarySinceMs = 0L
             return state
         }
 

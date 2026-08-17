@@ -211,7 +211,6 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (isCompleted) return true
-        var anyCompleted = false
         for (i in 0 until tasks.size) {
             val task = tasks[i]
             if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
@@ -225,13 +224,15 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
                     handledTasks.add(task)
                     task.releaseRuntimeState()
                 }
-                anyCompleted = true
+                // The first finisher wins the race for this whole pass: stop evaluating
+                // siblings immediately so a later-iterated failed sibling cannot retroactively
+                // turn a finished race into a failure, and stragglers cannot "complete
+                // normally" in the same tick they should have been interrupted.
+                isCompleted = true
+                break
             } else if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
                 return false
             }
-        }
-        if (anyCompleted) {
-            isCompleted = true
         }
         return isCompleted
     }
