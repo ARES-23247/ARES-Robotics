@@ -91,12 +91,16 @@ class PIDController(
     private var isFirstStep: Boolean = true
 
     /**
-     * Resets accumulated integral error sum ($I = 0.0$) and previous error state to zero.
+     * Resets accumulated integral error sum ($I = 0.0$), previous error state, and the
+     * derivative filter to zero. The filtered derivative must clear with the rest or the EMA
+     * keeps blending the previous motion segment's rate (~20 loops of phantom D) into the
+     * first outputs after every reset.
      */
     fun reset() {
         prevError = 0.0
         prevMeasurement = 0.0
         totalError = 0.0
+        filteredDerivative = 0.0
         isFirstStep = true
     }
 

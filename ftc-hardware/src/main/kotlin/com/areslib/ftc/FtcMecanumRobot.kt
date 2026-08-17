@@ -486,7 +486,10 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     override fun close() {
         super.close()
-        if (isAndroid) LimelightProxyAutoStart.start()
+        // close() is teardown: stop the proxy instead of resurrecting it. Starting here (the
+        // historical behavior) re-spawned the proxy on every OpMode teardown even after an
+        // explicit stop, contradicting this method's own documentation.
+        if (isAndroid) LimelightProxyAutoStart.stop()
     }
 
     private companion object {
