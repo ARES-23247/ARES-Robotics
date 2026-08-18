@@ -70,7 +70,7 @@ if ($Full) {
 Invoke-AresGradle "ARESLib-Kotlin" @("publishToMavenLocal", "--console=plain")
 
 if ($Full) {
-    Invoke-AresGradle "ARES-Analytics" @(":app:test", "--console=plain")
+    Invoke-AresGradle "ARES-Analytics" @(":app:test", "-ParesUseSiblingLib=true", "--console=plain")
     Invoke-AresGradle "ARES-FTC" @(":TeamCode:verifyAresProject", "--console=plain")
     Invoke-AresGradle "ARES-FTC" @(
         ":TeamCode:testDebugUnitTest",
@@ -81,6 +81,7 @@ if ($Full) {
 } else {
     Invoke-AresGradle "ARES-Analytics" @(
         ":app:test",
+        "-ParesUseSiblingLib=true",
         "--tests", "com.ares.analytics.viewmodel.project.ProjectDocumentRepositoriesTest",
         "--tests", "com.ares.analytics.viewmodel.routine.RoutineEditorModelTest",
         "--tests", "com.ares.analytics.viewmodel.controls.ControlsEditorViewModelTest",
