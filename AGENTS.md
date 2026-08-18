@@ -186,7 +186,49 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 - **Build/run:** `.\gradlew.bat :app:run` (mainClass `com.ares.analytics.MainKt`); `.\gradlew.bat run` (root) orchestrates gateway (bg) + app (fg). Native dist: `:app:packageReleaseMsi`.
 - **Audit status:** Never infer the live backlog from `AUDIT.md` severity counts; verify each dated finding against current source and tests.
 
-## 7. Working in This Workspace — Checklist
+## 7. ARES-Analytics Desktop Launch Reliability (MANDATORY)
+
+The desktop app has a single-instance lock and a native Compose/AWT window. A JVM can therefore be alive while no usable window exists, and a second launch can exit successfully without showing anything. Treat "the command is still running" and "the window is visible" as separate facts.
+
+### Do not conflate these four failure modes
+
+| Failure mode | Observable evidence | Correct response |
+|---|---|---|
+| **Orphaned lock owner** | A prior `com.ares.analytics.MainKt` JVM is still alive; the next process prints `App is already running (failed to acquire app.lock). Exiting.` and shows no window. | Confirm the ARES process with `jps -lv`, then run `ARES-Analytics\.\gradlew.bat killExisting`. Do not kill every Java process and do not delete `app.lock`; the operating-system file lock, not the file's existence, is authoritative. |
+| **Missing desktop Main dispatcher** | Compose starts, but StateFlow/lifecycle collection fails or the window disappears. | Keep `org.jetbrains.kotlinx:kotlinx-coroutines-swing` beside `kotlinx-coroutines-core` and keep `DesktopCoroutineDispatcherTest`. `coroutines-core` alone is insufficient for Compose Desktop's Swing event thread. |
+| **Native window/rendering regression** | The JVM and UI coroutines remain alive but no visible top-level HWND is capturable, or the window is blank/intermittent. | Let Compose/Skiko select its renderer. Preserve the explicit window state and presentation behavior in `Main.kt`, then verify a real HWND with the Compose desktop capture workflow. |
+| **AWT event-thread crash** | The console reports `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` and names a `~/.ares-analytics/logs/crash-*.log`; the window may freeze or disappear while service threads keep the JVM and lock alive. | Read the newest crash log and fix the first relevant application stack frame. Then close through the verified window or use scoped `killExisting` cleanup. Treat the orphaned lock owner as a consequence, not the root cause. |
+
+Offline NT4 connection failures and Google Drive sign-in errors are expected when those services are unavailable. They are not evidence that desktop window creation failed.
+
+### Startup invariants agents must preserve
+
+- `app/build.gradle.kts` must retain `kotlinx-coroutines-swing` at the same version as `kotlinx-coroutines-core`.
+- Do **not** add `skiko.renderApi`, `skiko.renderApi.fallback`, forced Direct3D, forced OpenGL, or forced software-renderer JVM properties as a general startup fix. A renderer experiment requires its own branch, before/after captures on the affected machine, and a fallback/removal plan.
+- `Main.kt` must retain an explicit floating, centered `1440 x 900 dp` window, `visible = true`, a `1100 x 700` AWT minimum size, and the `toFront()` / `requestFocus()` presentation calls unless a tested replacement provides the same guarantees.
+- Keep the `Desktop window presented` diagnostic. It proves that the AWT peer reached the presentation hook; it does **not** replace screenshot verification.
+- Keep the single-instance lock, bounded service disposal, and hard-exit watchdog unless the replacement is tested for normal close, hung shutdown, relaunch, and stale-process recovery.
+- A direct packaged-app launch does not run Gradle's `killExisting` task. Do not assume that behavior exists outside `:app:run`.
+
+### Mandatory launch/debug workflow for every agent
+
+1. Run `git status --short --branch` in `ARES-Analytics` and preserve all unrelated or in-progress edits.
+2. Separate compilation from presentation: run `.\gradlew.bat :app:compileKotlin` first. A successful compile does not prove a window exists.
+3. Before killing anything, inspect Java command lines with `jps -lv | Select-String 'com\.ares\.analytics\.MainKt'`.
+4. If a verified ARES JVM owns the lock but has no usable window, run `.\gradlew.bat killExisting` from `ARES-Analytics` and report the PID that was terminated.
+5. Launch with `.\gradlew.bat :app:run` for released dependencies, or add `"-ParesUseSiblingLib=true"` only when intentionally validating sibling ARESLib source.
+6. Require both the `Desktop window presented` log and a strict capture of a visible top-level `ARES Analytics` window. A full-desktop fallback image is not proof.
+7. Inspect the captured image for actual app content rather than accepting a process ID, Gradle task state, or blank frame.
+8. If the console reports an uncaught `AWT-EventQueue-0` exception, inspect the named crash log before cleanup. The first relevant application frame is evidence of the initiating UI defect; the remaining process and lock are secondary effects.
+9. Close the app through its window so `disposeAndJoin()` and the shutdown watchdog are exercised. Use the tester skill's native `-CloseWindow` action; do not automate Alt+F4 through `SendKeys`, which can be delivered to a focused Compose text field as input. Use `killExisting` only as cleanup if graceful close fails.
+10. Confirm `jps -lv` no longer lists `com.ares.analytics.MainKt`.
+11. If startup, `Main.kt`, `ServiceRegistry`, Compose/coroutines dependencies, or Skiko settings changed, launch and capture a second time after a clean shutdown. This catches invisible lock owners and one-launch-only success.
+
+Never report "the app launches" based only on `BUILD SUCCESSFUL`, a long-running Gradle process, `MainScreen` logs, or a screenshot tool's full-screen fallback. The required evidence is a visible ARES HWND containing rendered UI, followed by a shutdown that leaves no ARES JVM.
+
+The detailed diagnostic decision tree and exact capture/cleanup commands live in `.agents/skills/compose-desktop-tester/references/startup-recovery.md`.
+
+## 8. Working in This Workspace — Checklist
 
 - **Fresh checkout?** Run `.\setup.ps1` (Windows) or `./setup.sh` (macOS/Linux) to clone all four subprojects as siblings of this file. Idempotent — existing dirs are skipped.
 - **Changing ARESLib?** Run `apiCheck publishReleaseValidation` in `ARESLib-Kotlin/`, then rebuild consumers with `-ParesRepository=<absolute validation-repository path>`. Source substitution requires explicit `-ParesUseSiblingLib=true`.
@@ -195,9 +237,10 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 - **Writing a hot-path (robot or sim)?** Zero allocations. Use buffers/pools, `RobotClock`, `when` over nested `if`.
 - **Adding a subsystem?** Follow the 6-file Redux pattern (State/Action/Reducer/IO interface/Ftc-or-Frc IO/Mock IO/Controller). See `ARES-FTC/TeamCode/.../test/tools/SubsystemGenerator.kt`.
 - **Cloud/sync code?** Remember offline-first: robot serves `LogManagerServer:5002`; the laptop pulls then syncs. Never push from robot.
+- **Analytics launches but shows no window?** Follow §7 and the Compose desktop tester startup-recovery reference. Check for an orphaned lock owner before changing rendering or UI code.
 - **Tests:** JUnit 5 everywhere. ARESLib has tiered E2E + `ZeroGcRegressionTest`; ARES-FRC/FTC have subsystem & sim tests. Run with `.\gradlew.bat test` (per-module: `:core:test`, `:TeamCode:test`, etc.).
 
-## 8. Key File Lookup
+## 9. Key File Lookup
 
 | Need | Go to |
 |---|---|
@@ -215,7 +258,7 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 | Gateway HTTP surface | `ARES-Analytics/gateway/.../Application.kt`, `routes/DiagnosticsRoutes.kt` |
 | PathPlanner file format | `ARES-Analytics/shared/.../PathPlannerModels.kt`, `ARESLib-Kotlin/core/.../pathing/PathPlannerParser.kt` |
 
-## 9. Engineering Truthfulness & Anti-Hallucination Directives
+## 10. Engineering Truthfulness & Anti-Hallucination Directives
 
 All agents operating in this workspace must adhere to strict factual precision:
 - **Zero Hyperbole:** Never use promotional or celebratory adjectives (e.g. "PERFECT TUNE!", "flawless", "100% no-code"). State exact engineering facts, line numbers, and limitations.

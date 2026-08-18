@@ -1,0 +1,122 @@
+# ARES Analytics startup and recovery
+
+Use this decision tree when ARES Analytics does not show a usable desktop window. Preserve all unrelated worktree changes while diagnosing it.
+
+## First establish which layer failed
+
+| Evidence | Meaning | Next action |
+|---|---|---|
+| `:app:compileKotlin` fails | Source or dependency compilation failed before window creation. | Fix the reported compiler/dependency error. Do not change renderers or the instance lock. |
+| A second launch prints `App is already running (failed to acquire app.lock). Exiting.` | Another process holds the OS lock. The new process intentionally exits without a window. | Identify the lock-owning ARES JVM and recover it as described below. |
+| JVM/service logs continue, but strict capture reports no matching visible window | Compose/AWT presentation or rendering failed. | Check the Swing dispatcher and window/rendering invariants. |
+| `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` names a crash log | Application UI code crashed on the AWT event thread. The window can freeze or disappear while other threads keep the JVM and lock alive. | Read the named log and start with the first relevant application stack frame. Diagnose the UI defect before cleaning up the orphan. |
+| Strict capture returns a visible ARES window with rendered content | Desktop launch succeeded. | Treat offline NT4/Drive errors separately from window startup. The configured size is `1440 x 900 dp`; captured pixel dimensions vary with Windows display scaling. |
+
+## Failure mode 1: orphaned single-instance lock owner
+
+`Main.kt` opens `~/.ares-analytics/app.lock` and holds an operating-system file lock for the JVM lifetime. The file normally remains on disk after exit; that is harmless. The lock state, not file existence, determines whether another instance may start.
+
+A JVM can outlive its window when an agent abandons a background Gradle session, interrupts shutdown, or leaves non-daemon services running. A later direct launch cannot acquire the lock, prints the already-running message, and exits without creating a window.
+
+Diagnose before killing:
+
+```powershell
+cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
+```
+
+If the listed ARES process has no usable window, use the scoped repository task:
+
+```powershell
+.\gradlew.bat killExisting
+```
+
+Rules:
+
+- Never delete `app.lock` as a repair; deleting the path does not safely revoke a live process's lock.
+- Never kill every `java.exe`; Gradle daemons, IDEs, simulators, and robot tooling may also be Java processes.
+- Report the verified ARES PID terminated by `killExisting`.
+- `:app:run` depends on `killExisting`, but a packaged executable launched directly does not.
+
+## Failure mode 2: missing Swing Main dispatcher
+
+Compose Desktop state collection needs a Swing-backed `Dispatchers.Main`. `kotlinx-coroutines-core` does not install it.
+
+Required dependency pair in `app/build.gradle.kts`:
+
+```kotlin
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:<same-version>")
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:<same-version>")
+```
+
+Keep and run the focused regression:
+
+```powershell
+.\gradlew.bat :app:test --tests com.ares.analytics.DesktopCoroutineDispatcherTest
+```
+
+Do not work around a missing Main dispatcher by moving UI state collection to an arbitrary background dispatcher.
+
+## Failure mode 3: native window or renderer regression
+
+Known-good policy:
+
+- Let Compose/Skiko select the renderer.
+- Do not add global `skiko.renderApi` or fallback JVM properties as a generic fix.
+- Keep the floating, centered `1440 x 900 dp` Compose window and `visible = true`.
+- Keep the `1100 x 700` AWT minimum size.
+- Keep `toFront()`, `requestFocus()`, and the `Desktop window presented` diagnostic.
+
+If a renderer-specific experiment is genuinely required, isolate it on a branch and collect before/after captures on the affected machine. A successful experiment must also pass a second launch after a clean shutdown.
+
+## Failure mode 4: AWT event-thread crash with a surviving JVM
+
+An exception on `AWT-EventQueue-0` can stop or corrupt the desktop UI without stopping database, networking, executor, or other non-daemon threads. The resulting process may keep `app.lock`, so the next launch reports an already-running instance. In this sequence, the lock collision is secondary evidence; the AWT exception is the initiating failure.
+
+When the console reports a critical AWT fault:
+
+1. Open the exact `~/.ares-analytics/logs/crash-*.log` path named by the message, or inspect the newest file in that directory.
+2. Find the first stack frame in ARES application code and investigate the state/input that reached it. Do not stop at framework frames or the later lock message.
+3. Try the tester's native `-CloseWindow` action. If the damaged AWT thread cannot process `WM_CLOSE`, report the failed graceful shutdown and run `.\gradlew.bat killExisting` from `ARES-Analytics`.
+4. After the fix, require two clean launch, strict-capture, native-close cycles with no remaining ARES JVM.
+
+Do not automate shutdown with `SendKeys` Alt+F4. Synthetic key input can be delivered to the currently focused Compose text field and trigger application key-handling code instead of closing the native window. The tester posts `WM_CLOSE` directly to the verified ARES HWND.
+
+## Expected warnings that do not mean startup failed
+
+When offline or signed out, these may appear after the window renders:
+
+- NT4 `Connection refused` / timeout errors for the selected robot.
+- `DriveDestinationAccessException` asking for Google sign-in.
+
+They are service-state messages. Do not suppress them as a window fix, and do not report launch failure if a strict screenshot shows rendered ARES UI.
+
+## Required verification sequence
+
+```powershell
+cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+git status --short --branch
+.\gradlew.bat :app:compileKotlin
+jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
+.\gradlew.bat :app:run
+```
+
+After `Desktop window presented`, capture strictly:
+
+```powershell
+& "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
+  -WindowTitle "ARES Analytics" `
+  -OutputFile "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\startup.png"
+```
+
+Inspect the PNG, then close gracefully by posting `WM_CLOSE` to the verified ARES HWND. If the console has reported an AWT critical fault, read its crash log before cleanup:
+
+```powershell
+& "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" `
+  -WindowTitle "ARES Analytics" `
+  -CloseWindow
+
+jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
+```
+
+For startup-related edits, repeat the launch, strict capture, graceful close, and no-process check once. Do not claim success until both cycles pass.
