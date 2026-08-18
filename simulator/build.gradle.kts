@@ -31,7 +31,7 @@ dependencies {
     implementation("org.dyn4j:dyn4j:4.2.2")
 
     // JSON Parser
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.14.0")
 
     // Java APIs are platform-neutral. JNI and LWJGL natives are supplied by one of the
     // simulator-runtime-{windows,linux,macos} artifacts.
