@@ -404,13 +404,14 @@ class FtcMecanumCalibrationController {
                     kotlin.math.sqrt(dx * dx + dy * dy)
                 }
                 SysIdMechanism.ANGULAR -> sysIdManager.accumulatedHeadingChange
-                SysIdMechanism.FLYWHEEL -> sysIdManager.accumulatedPosition
+                SysIdMechanism.FLYWHEEL, SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM -> sysIdManager.accumulatedPosition
             }
 
             val velocity = when (sysIdManager.activeMechanism) {
                 SysIdMechanism.LINEAR -> store.state.drive.xVelocityMetersPerSecond
                 SysIdMechanism.ANGULAR -> store.state.drive.angularVelocityRadiansPerSecond
-                SysIdMechanism.FLYWHEEL -> customSysIdVelocityProvider?.invoke() ?: flywheelSysIdAdapter?.velocity ?: 0.0
+                SysIdMechanism.FLYWHEEL, SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM ->
+                    customSysIdVelocityProvider?.invoke() ?: flywheelSysIdAdapter?.velocity ?: 0.0
             }
 
             sysIdData[0] = timestamp.toDouble()

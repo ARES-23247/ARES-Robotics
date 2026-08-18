@@ -993,25 +993,38 @@ public final class com/areslib/control/assist/ShotSetup$Companion {
 
 public final class com/areslib/control/assist/SysIdManager {
 	public fun <init> ()V
-	public final fun checkSafety (DDDJ)Z
+	public final fun checkSafety (DDDJD)Z
+	public static synthetic fun checkSafety$default (Lcom/areslib/control/assist/SysIdManager;DDDJDILjava/lang/Object;)Z
 	public final fun getAccumulatedHeadingChange ()D
 	public final fun getAccumulatedPosition ()D
 	public final fun getActiveMechanism ()Lcom/areslib/control/assist/SysIdMechanism;
 	public final fun getActiveRoutine ()Lcom/areslib/control/assist/SysIdRoutine;
 	public final fun getCalculatedAcceleration ()D
 	public final fun getCurrentVoltage ()D
+	public final fun getMaxCurrentAmps ()D
+	public final fun getMaxPosition ()D
+	public final fun getMinPosition ()D
+	public final fun getStallTimeoutMs ()J
 	public final fun getStartHeading ()D
 	public final fun getStartTimeMs ()J
 	public final fun getStartX ()D
 	public final fun getStartY ()D
 	public final fun isActive ()Z
+	public final fun setMaxCurrentAmps (D)V
+	public final fun setMaxPosition (D)V
+	public final fun setMinPosition (D)V
+	public final fun setStallTimeoutMs (J)V
 	public final fun start (Lcom/areslib/control/assist/SysIdMechanism;Lcom/areslib/control/assist/SysIdRoutine;JDDD)V
+	public static synthetic fun start$default (Lcom/areslib/control/assist/SysIdManager;Lcom/areslib/control/assist/SysIdMechanism;Lcom/areslib/control/assist/SysIdRoutine;JDDDILjava/lang/Object;)V
 	public final fun stop ()V
 	public final fun update (JD)D
 }
 
 public final class com/areslib/control/assist/SysIdMechanism : java/lang/Enum {
 	public static final field ANGULAR Lcom/areslib/control/assist/SysIdMechanism;
+	public static final field ARM Lcom/areslib/control/assist/SysIdMechanism;
+	public static final field CUSTOM Lcom/areslib/control/assist/SysIdMechanism;
+	public static final field ELEVATOR Lcom/areslib/control/assist/SysIdMechanism;
 	public static final field FLYWHEEL Lcom/areslib/control/assist/SysIdMechanism;
 	public static final field LINEAR Lcom/areslib/control/assist/SysIdMechanism;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
@@ -2438,8 +2451,8 @@ public final class com/areslib/drivetrain/SwerveOffsetManager {
 	public final fun getDeployFile ()Ljava/io/File;
 	public final fun getRootDir ()Ljava/io/File;
 	public final fun getRuntimeFile ()Ljava/io/File;
-	public final fun loadOffsets (Lcom/areslib/drivetrain/SwerveOffsetData;)Lcom/areslib/drivetrain/SwerveOffsetData;
-	public static synthetic fun loadOffsets$default (Lcom/areslib/drivetrain/SwerveOffsetManager;Lcom/areslib/drivetrain/SwerveOffsetData;ILjava/lang/Object;)Lcom/areslib/drivetrain/SwerveOffsetData;
+	public final fun loadOffsets (Lcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/drivetrain/SwerveOffsetData;)Lcom/areslib/drivetrain/SwerveOffsetData;
+	public static synthetic fun loadOffsets$default (Lcom/areslib/drivetrain/SwerveOffsetManager;Lcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/drivetrain/SwerveOffsetData;ILjava/lang/Object;)Lcom/areslib/drivetrain/SwerveOffsetData;
 	public final fun saveRuntimeOffsets (Lcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/telemetry/ITelemetry;)V
 	public static synthetic fun saveRuntimeOffsets$default (Lcom/areslib/drivetrain/SwerveOffsetManager;Lcom/areslib/drivetrain/SwerveOffsetData;Lcom/areslib/telemetry/ITelemetry;ILjava/lang/Object;)V
 }

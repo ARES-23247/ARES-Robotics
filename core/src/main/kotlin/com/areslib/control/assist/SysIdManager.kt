@@ -1,6 +1,7 @@
 package com.areslib.control.assist
 
 import com.areslib.math.wrapAngle
+import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
@@ -9,12 +10,18 @@ import kotlin.math.sqrt
  * Defines the physical degree of freedom under characterization.
  */
 enum class SysIdMechanism {
-    /** Linear mechanism (drivetrain translation or elevator) with velocity in $m/s$ and position in $m$. */
+    /** Linear mechanism (drivetrain translation) with velocity in $m/s$ and position in $m$. */
     LINEAR,
-    /** Rotational mechanism (drivetrain rotation or arm) with velocity in $rad/s$ and angle in $rad$. */
+    /** Rotational mechanism (drivetrain rotation) with velocity in $rad/s$ and angle in $rad$. */
     ANGULAR,
     /** Flywheel mechanism with rotational velocity in $rad/s$ or $RPM$. */
-    FLYWHEEL
+    FLYWHEEL,
+    /** Vertical linear elevator with position in $m$, velocity in $m/s$, and gravity bias $k_G$. */
+    ELEVATOR,
+    /** Rotating arm with angle in $rad$, angular velocity in $rad/s$, and gravity feedforward $k_G \cos\theta$. */
+    ARM,
+    /** Custom mechanism with arbitrary continuous single degree of freedom. */
+    CUSTOM
 }
 
 /**
@@ -25,9 +32,9 @@ enum class SysIdMechanism {
 enum class SysIdRoutine {
     /** Inactive routine state; 0.0V commanded. */
     NONE,
-    /** Quasistatic test routine applying a slow linear voltage ramp $\dot{V} = 1.2\text{ V/s}$ to measure $k_S$ and $k_V$. */
+    /** Quasistatic test routine applying a linear voltage ramp $\dot{V} = 1.2\text{ V/s}$ to measure $k_S, k_V, k_G$. */
     QUASISTATIC,
-    /** Dynamic step-response routine applying a fast voltage step $V = \pm 3.0\text{ V}$ to measure $k_A$. */
+    /** Dynamic step-response routine applying a fast voltage step to measure $k_A$. */
     DYNAMIC
 }
 
@@ -35,29 +42,7 @@ enum class SysIdRoutine {
  * System Identification Routine Controller & Data Logging Manager.
  *
  * Generates calibrated voltage test profiles (Quasistatic ramp and Dynamic step test) for calculating
- * feedforward gains ($k_S, k_V, k_A$) while enforcing displacement, rotation, and duration safety boundaries.
- *
- * ### Applied Voltage Profiles:
- * 1. **Quasistatic Ramp Routine**:
- *    $$V(t) = \begin{cases} 1.2 \cdot t & t < 2.5\text{ s} \\ -1.2 \cdot (t - 2.5) & t \ge 2.5\text{ s} \end{cases}$$
- * 2. **Dynamic Step Routine**:
- *    $$V(t) = \begin{cases} +3.0\text{ V} & t < 1.5\text{ s} \\ -3.0\text{ V} & t \ge 1.5\text{ s} \end{cases}$$
- * 3. **Flywheel Profiles**: a one-direction 0-to-6 V quasistatic ramp, or a 6 V dynamic
- *    step followed by a zero-voltage coast-down. This avoids reversing high-inertia mechanisms.
- *
- * ### Numerical Differentiation:
- * Calculates real-time acceleration:
- * $$a_k = \frac{v_k - v_{k-1}}{\Delta t}$$
- *
- * ### Physical Units & Limits:
- * - Voltage: Volts ($V$), clamped to battery range $[-12.0\text{V}, +12.0\text{V}]$
- * - Timestamp: Milliseconds ($ms$)
- * - Maximum Test Duration Safety Limit: $5.0$ seconds
- * - Maximum Linear Displacement Limit: $1.5$ meters ($m$)
- * - Maximum Rotational Travel Limit: $4\pi$ radians ($rad$)
- *
- * @see SysIdMechanism
- * @see SysIdRoutine
+ * feedforward gains ($k_S, k_V, k_A, k_G$) while enforcing displacement, rotation, stall current, and duration safety boundaries.
  */
 class SysIdManager {
     /** Currently active mechanism under test. */
@@ -88,6 +73,19 @@ class SysIdManager {
     var currentVoltage = 0.0
         private set
 
+    /** Maximum allowed motor continuous current before tripwire abort ($A$). */
+    var maxCurrentAmps = 40.0
+
+    /** Minimum allowable position travel boundary ($m$ or $rad$). */
+    var minPosition = -Double.MAX_VALUE
+
+    /** Maximum allowable position travel boundary ($m$ or $rad$). */
+    var maxPosition = Double.MAX_VALUE
+
+    /** Maximum allowed continuous stall duration at or above [maxCurrentAmps] ($ms$). */
+    var stallTimeoutMs = 200L
+
+    private var stallStartTimeMs = -1L
     private var lastTimeMs = 0L
     private var lastVelocity = 0.0
     private var lastHeading = 0.0
@@ -110,11 +108,18 @@ class SysIdManager {
      * @param mechanism Target mechanism under characterization ([SysIdMechanism]).
      * @param routine Target test routine profile ([SysIdRoutine]).
      * @param timestampMs Start timestamp in milliseconds ($ms$).
-     * @param x Initial robot X position in meters ($m$).
+     * @param x Initial robot X position or mechanism position in meters or radians.
      * @param y Initial robot Y position in meters ($m$).
      * @param heading Initial robot heading in radians ($rad$).
      */
-    fun start(mechanism: SysIdMechanism, routine: SysIdRoutine, timestampMs: Long, x: Double, y: Double, heading: Double) {
+    fun start(
+        mechanism: SysIdMechanism,
+        routine: SysIdRoutine,
+        timestampMs: Long,
+        x: Double,
+        y: Double = 0.0,
+        heading: Double = 0.0
+    ) {
         if (!x.isFinite() || !y.isFinite() || !heading.isFinite()) {
             stop()
             return
@@ -132,6 +137,7 @@ class SysIdManager {
         accumulatedHeadingChange = 0.0
         accumulatedPosition = 0.0
         calculatedAcceleration = 0.0
+        stallStartTimeMs = -1L
     }
 
     /**
@@ -140,6 +146,7 @@ class SysIdManager {
     fun stop() {
         activeRoutine = SysIdRoutine.NONE
         currentVoltage = 0.0
+        stallStartTimeMs = -1L
     }
 
     /**
@@ -150,15 +157,22 @@ class SysIdManager {
     fun isActive(): Boolean = activeRoutine != SysIdRoutine.NONE
 
     /**
-     * Evaluates safety limit constraints (time, displacement, rotation).
+     * Evaluates safety limit constraints (time, displacement, rotation, stall current).
      *
-     * @param x Current robot X position in meters ($m$).
+     * @param x Current robot X position or mechanism position ($m$ or $rad$).
      * @param y Current robot Y position in meters ($m$).
      * @param heading Current robot heading in radians ($rad$).
+     * @param currentAmps Current measured motor draw ($A$).
      * @param timestampMs Current loop timestamp in milliseconds ($ms$).
      * @return `true` if operation is within safe bounds; `false` if a safety threshold was exceeded (must abort).
      */
-    fun checkSafety(x: Double, y: Double, heading: Double, timestampMs: Long): Boolean {
+    fun checkSafety(
+        x: Double,
+        y: Double,
+        heading: Double,
+        timestampMs: Long,
+        currentAmps: Double = 0.0
+    ): Boolean {
         if (!isActive()) return true
 
         if (!x.isFinite() || !y.isFinite() || !heading.isFinite() || timestampMs < startTimeMs) {
@@ -172,25 +186,58 @@ class SysIdManager {
             return false // Time safety limit
         }
 
-        if (activeMechanism == SysIdMechanism.FLYWHEEL) {
-            return true
-        }
-
-        if (activeMechanism == SysIdMechanism.LINEAR) {
-            val dx = x - startX
-            val dy = y - startY
-            val dist = sqrt(dx * dx + dy * dy)
-            if (!dist.isFinite() || dist > 1.5) {
+        // Stall current watchdog
+        if (currentAmps.isFinite() && currentAmps >= maxCurrentAmps) {
+            if (stallStartTimeMs < 0L) {
+                stallStartTimeMs = timestampMs
+            } else if (timestampMs - stallStartTimeMs >= stallTimeoutMs) {
                 stop()
-                return false // Distance safety limit
+                return false // Stall current safety tripwire
             }
         } else {
-            val diff = wrapAngle(heading - lastHeading)
-            accumulatedHeadingChange += kotlin.math.abs(diff)
-            lastHeading = heading
-            if (!accumulatedHeadingChange.isFinite() || accumulatedHeadingChange > 4.0 * kotlin.math.PI) {
-                stop()
-                return false // Rotation safety limit (2 full rotations)
+            stallStartTimeMs = -1L
+        }
+
+        // Soft-stop position boundary limits
+        if (x < minPosition || x > maxPosition) {
+            stop()
+            return false // Position boundary limit exceeded
+        }
+
+        when (activeMechanism) {
+            SysIdMechanism.FLYWHEEL -> return true
+            SysIdMechanism.ELEVATOR -> {
+                val travel = x - startX
+                if (travel < -0.1 || travel > 1.5) {
+                    stop()
+                    return false
+                }
+            }
+            SysIdMechanism.ARM -> {
+                val angleTravel = abs(x - startX)
+                if (angleTravel > 2.0 * Math.PI) {
+                    stop()
+                    return false
+                }
+            }
+            SysIdMechanism.CUSTOM -> return true
+            SysIdMechanism.LINEAR -> {
+                val dx = x - startX
+                val dy = y - startY
+                val dist = sqrt(dx * dx + dy * dy)
+                if (!dist.isFinite() || dist > 1.5) {
+                    stop()
+                    return false // Distance safety limit
+                }
+            }
+            SysIdMechanism.ANGULAR -> {
+                val diff = wrapAngle(heading - lastHeading)
+                accumulatedHeadingChange += abs(diff)
+                lastHeading = heading
+                if (!accumulatedHeadingChange.isFinite() || accumulatedHeadingChange > 4.0 * Math.PI) {
+                    stop()
+                    return false // Rotation safety limit (2 full rotations)
+                }
             }
         }
         return true
@@ -217,7 +264,7 @@ class SysIdManager {
             return 0.0
         }
         val dt = (timestampMs - lastTimeMs) / 1000.0
-        
+
         // Calculate acceleration and integrate position
         if (dt > 1e-4) {
             accumulatedPosition += velocity * dt
@@ -226,9 +273,11 @@ class SysIdManager {
         lastTimeMs = timestampMs
         lastVelocity = velocity
 
+        val isUnidirectional = activeMechanism == SysIdMechanism.FLYWHEEL || activeMechanism == SysIdMechanism.ELEVATOR
+
         currentVoltage = when (activeRoutine) {
             SysIdRoutine.QUASISTATIC -> {
-                if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+                if (isUnidirectional) {
                     1.2 * elapsedSec
                 } else if (elapsedSec < 2.5) {
                     1.2 * elapsedSec
@@ -237,7 +286,7 @@ class SysIdManager {
                 }
             }
             SysIdRoutine.DYNAMIC -> {
-                if (activeMechanism == SysIdMechanism.FLYWHEEL) {
+                if (isUnidirectional) {
                     if (elapsedSec < 2.5) 6.0 else 0.0
                 } else if (elapsedSec < 1.5) {
                     3.0
@@ -247,11 +296,12 @@ class SysIdManager {
             }
             else -> 0.0
         }
-        
+
         // Clamp voltage to battery limits
         if (currentVoltage > 12.0) currentVoltage = 12.0
         if (currentVoltage < -12.0) currentVoltage = -12.0
-        
+
         return currentVoltage
     }
 }
+
