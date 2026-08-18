@@ -110,4 +110,90 @@ class ControlSchemeValidationTest {
         assertTrue(issues.any { it.code == "missing_device_port" })
         assertTrue(issues.any { it.code == "duplicate_device_port" })
     }
+
+    @Test
+    fun `drive axes validate as analog value bindings`() {
+        val document = ControlSchemeDocument(
+            documentId = "drive",
+            name = "Drive controls",
+            controllers = listOf(ControllerAssignment("driver", "Driver", "vader5", devicePort = 0)),
+            bindings = listOf(
+                driveAxisBinding("drive.vx", "vx", "left_stick_y"),
+                driveAxisBinding("drive.vy", "vy", "left_stick_x"),
+                driveAxisBinding("drive.omega", "omega", "right_stick_x"),
+            ),
+        )
+        val context = ControlValidationContext(
+            profileControls = mapOf("vader5" to setOf("left_stick_x", "left_stick_y", "right_stick_x"))
+        )
+
+        val issues = validateControlScheme(document, context)
+
+        assertTrue(issues.none { it.severity == ControlValidationSeverity.ERROR })
+        assertTrue(
+            ControlSchemeCodec.decode(ControlSchemeCodec.encode(document)).bindings.all {
+                it.target.kind == ControlTargetKind.DRIVE
+            },
+        )
+    }
+
+    @Test
+    fun `drive targets reject unknown axes arguments and non-value sources`() {
+        val issues = validateControlScheme(
+            ControlSchemeDocument(
+                documentId = "drive-bad",
+                name = "Bad drive controls",
+                controllers = listOf(ControllerAssignment("driver", "Driver", "vader5", devicePort = 0)),
+                bindings = listOf(
+                    driveAxisBinding("drive.bad-axis", "throttle", "left_stick_y"),
+                    driveAxisBinding("drive.args", "vx", "left_stick_y")
+                        .copy(target = ControlTargetDocument(ControlTargetKind.DRIVE, "vx", arguments = mapOf("gain" to "2"))),
+                    ControlBindingDocument(
+                        "drive.digital",
+                        "Digital drive",
+                        ControlSourceDocument(ControlSourceKind.BUTTON, "driver", listOf("a")),
+                        ControlEvent.PRESS,
+                        ControlTargetDocument(ControlTargetKind.DRIVE, "vx"),
+                    ),
+                ),
+            ),
+            ControlValidationContext(profileControls = mapOf("vader5" to setOf("left_stick_y", "a"))),
+        )
+
+        assertTrue(issues.any { it.code == "unknown_drive_axis" })
+        assertTrue(issues.any { it.code == "invalid_drive_arguments" })
+        assertTrue(issues.any { it.code == "invalid_drive_binding" })
+    }
+
+    @Test
+    fun `each drive axis accepts exactly one enabled binding`() {
+        val document = ControlSchemeDocument(
+            documentId = "drive-dupe",
+            name = "Duplicate drive controls",
+            controllers = listOf(ControllerAssignment("driver", "Driver", "vader5", devicePort = 0)),
+            bindings = listOf(
+                driveAxisBinding("drive.vx", "vx", "left_stick_y"),
+                driveAxisBinding("drive.vx-alt", "vx", "right_stick_y"),
+                driveAxisBinding("drive.vx-disabled", "vx", "left_stick_x").copy(enabled = false),
+            ),
+        )
+        val context = ControlValidationContext(
+            profileControls = mapOf("vader5" to setOf("left_stick_x", "left_stick_y", "right_stick_y"))
+        )
+
+        val issues = validateControlScheme(document, context)
+
+        assertTrue(issues.count { it.code == "duplicate_drive_axis" } == 1)
+        assertTrue(issues.none { it.code == "ambiguous_binding" }, "distinct axes are not input conflicts")
+    }
+
+    private fun driveAxisBinding(bindingId: String, axis: String, controlId: String): ControlBindingDocument =
+        ControlBindingDocument(
+            bindingId = bindingId,
+            displayName = "Drive $axis",
+            source = ControlSourceDocument(ControlSourceKind.AXIS_VALUE, "driver", listOf(controlId)),
+            event = ControlEvent.VALUE,
+            target = ControlTargetDocument(ControlTargetKind.DRIVE, axis),
+            analogPolicy = AnalogControlPolicyDocument(),
+        )
 }

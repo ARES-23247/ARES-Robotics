@@ -1664,6 +1664,7 @@ public final class com/areslib/controls/ControlTargetDocument {
 public final class com/areslib/controls/ControlTargetKind : java/lang/Enum {
 	public static final field ACTION Lcom/areslib/controls/ControlTargetKind;
 	public static final field CANCEL_ROUTINE Lcom/areslib/controls/ControlTargetKind;
+	public static final field DRIVE Lcom/areslib/controls/ControlTargetKind;
 	public static final field ROUTINE Lcom/areslib/controls/ControlTargetKind;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/controls/ControlTargetKind;
@@ -1934,6 +1935,14 @@ public final class com/areslib/controls/DigitalControlBindingBuilder {
 	public final fun repeat (DD)Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun suppressSingles ()Lcom/areslib/controls/DigitalControlBindingBuilder;
 	public final fun whileHeld (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/areslib/controls/DriveAxisKeys {
+	public static final field INSTANCE Lcom/areslib/controls/DriveAxisKeys;
+	public static final field OMEGA Ljava/lang/String;
+	public static final field VX Ljava/lang/String;
+	public static final field VY Ljava/lang/String;
+	public final fun getALL ()Ljava/util/Set;
 }
 
 public final class com/areslib/controls/RoutineInvocationPolicy : java/lang/Enum {

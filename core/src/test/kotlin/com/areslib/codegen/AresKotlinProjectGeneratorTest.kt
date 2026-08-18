@@ -61,6 +61,15 @@ class AresKotlinProjectGeneratorTest {
     /** Creates a hand-authored or season action by its catalog key, or null when unavailable. */
     fun createActionTask(actionKey: String, arguments: Map<String, String>): Task? = null
 
+    /**
+     * Receives the combined teleop drivetrain command once per frame. Values are normalized
+     * (-1..1) after each axis binding's transform, field-centric with CCW-positive rotation;
+     * the implementation scales them by drivetrain limits and applies alliance mirroring.
+     * [active] is false when the scheme has no drive bindings, so sinks without generated
+     * drivetrain control stay inert.
+     */
+    fun onDriveCommand(vx: Double, vy: Double, omega: Double, active: Boolean) = Unit
+
     /** Creates a hand-authored condition predicate by its catalog key, or null when unavailable. */
     fun createCondition(conditionKey: String, arguments: Map<String, String>): ((RobotState) -> Boolean)? = null
 
@@ -488,6 +497,81 @@ class AresKotlinProjectGeneratorTest {
         assertTrue(source.contains("task = registry.actionSubsystemArmSetPower("))
         assertFailsWith<IllegalArgumentException> {
             AresKotlinProjectGenerator.generate(request(AnalogControlPolicyDocument(emitOnlyOnChange = false)))
+        }
+    }
+
+    @Test
+    fun `drivetrain axis bindings render an accumulator a drive sink and inert baselines`() {
+        val profile = ControllerProfileDocument(
+            documentId = "standard",
+            displayName = "Standard",
+            controls = listOf(
+                control("left_stick_y", ControllerControlTypeDocument.AXIS, glfw = 1, ftc = 1),
+                control("left_stick_x", ControllerControlTypeDocument.AXIS, glfw = 0, ftc = 0),
+                control("right_stick_x", ControllerControlTypeDocument.AXIS, glfw = 2, ftc = 2),
+            ),
+        )
+        fun driveBinding(id: String, axis: String, controlId: String) = ControlBindingDocument(
+            bindingId = id,
+            displayName = "Drive $axis",
+            source = ControlSourceDocument(ControlSourceKind.AXIS_VALUE, "driver", listOf(controlId)),
+            event = ControlEvent.VALUE,
+            target = ControlTargetDocument(ControlTargetKind.DRIVE, axis),
+            analogPolicy = AnalogControlPolicyDocument(),
+        )
+        fun request(bindings: List<ControlBindingDocument>) = KotlinProjectCodegenRequest(
+            packageName = "org.example.generated",
+            catalog = catalog(actions = emptyList()),
+            routines = emptyList(),
+            controlSchemes = listOf(
+                ControlSchemeDocument(
+                    documentId = "competition",
+                    name = "Competition",
+                    controllers = listOf(ControllerAssignment("driver", "Driver", profile.documentId, 0)),
+                    bindings = bindings,
+                ),
+            ),
+            controllerProfiles = listOf(profile),
+            targetInputPlatform = ControllerInputPlatform.FTC,
+        )
+
+        val generated = AresKotlinProjectGenerator.generate(
+            request(
+                listOf(
+                    driveBinding("drive.vx", "vx", "left_stick_y"),
+                    driveBinding("drive.vy", "vy", "left_stick_x"),
+                    driveBinding("drive.omega", "omega", "right_stick_x"),
+                ),
+            ),
+        ).source
+
+        assertTrue(generated.contains("val HAS_GENERATED_DRIVE_BINDINGS: Boolean = true"))
+        assertTrue(generated.contains("driveAxisValues[0] = value"))
+        assertTrue(generated.contains("driveAxisValues[1] = value"))
+        assertTrue(generated.contains("driveAxisValues[2] = value"))
+        assertTrue(
+            generated.contains(
+                "registry.onDriveCommand(driveAxisValues[0], driveAxisValues[1], driveAxisValues[2], HAS_GENERATED_DRIVE_BINDINGS)"
+            ),
+        )
+        assertFalse(generated.contains("taskSink.submit"), "drive bindings never submit tasks")
+
+        val withoutDrive = generate(catalog(actions = emptyList()), emptyList()).source
+        assertTrue(withoutDrive.contains("val HAS_GENERATED_DRIVE_BINDINGS: Boolean = false"))
+        assertTrue(withoutDrive.contains("fun emitDriveCommand(registry: GeneratedAresProjectCapabilities)"))
+
+        assertFailsWith<IllegalArgumentException> {
+            AresKotlinProjectGenerator.generate(
+                request(
+                    listOf(
+                        driveBinding("drive.vx", "vx", "left_stick_y"),
+                        driveBinding("drive.vx-alt", "vx", "left_stick_x"),
+                    ),
+                ),
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AresKotlinProjectGenerator.generate(request(listOf(driveBinding("drive.bad", "throttle", "left_stick_y"))))
         }
     }
 

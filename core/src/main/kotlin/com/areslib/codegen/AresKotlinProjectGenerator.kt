@@ -22,6 +22,7 @@ import com.areslib.controls.ControlValidationSeverity
 import com.areslib.controls.ControllerControlDocument
 import com.areslib.controls.ControllerControlTypeDocument
 import com.areslib.controls.ControllerInputPlatform
+import com.areslib.controls.DriveAxisKeys
 import com.areslib.controls.ControllerProfileCodec
 import com.areslib.controls.ControllerProfileDocument
 import com.areslib.controls.RoutineInvocationPolicy
@@ -504,6 +505,14 @@ object AresKotlinProjectGenerator {
             append(renderSignatureParameters(descriptor.parameters))
             append("): Unit\n\n")
         }
+        append("    /**\n")
+        append("     * Receives the combined teleop drivetrain command once per frame. Values are normalized\n")
+        append("     * (-1..1) after each axis binding's transform, field-centric with CCW-positive rotation;\n")
+        append("     * the implementation scales them by drivetrain limits and applies alliance mirroring.\n")
+        append("     * [active] is false when the scheme has no drive bindings, so sinks without generated\n")
+        append("     * drivetrain control stay inert.\n")
+        append("     */\n")
+        append("    fun onDriveCommand(vx: Double, vy: Double, omega: Double, active: Boolean) = Unit\n\n")
         append("    /** Creates a hand-authored condition predicate by its catalog key, or null when unavailable. */\n")
         append("    fun createCondition(conditionKey: String, arguments: Map<String, String>): ((RobotState) -> Boolean)? = null\n\n")
         append("    /** Platform trajectory adapter; returning null rejects a drive step safely. */\n")
@@ -616,6 +625,18 @@ object AresKotlinProjectGenerator {
         append("    val DEFAULT_CONTROL_SCHEME_ID: String? = ")
         append(renderNullableString(schemes.singleOrNull()?.documentId))
         append("\n\n")
+        val hasDriveBindings = schemes.any { scheme -> scheme.bindings.any { it.enabled && it.target.kind == ControlTargetKind.DRIVE } }
+        append("    /** True when the active scheme binds at least one drivetrain axis. */\n")
+        append("    val HAS_GENERATED_DRIVE_BINDINGS: Boolean = $hasDriveBindings\n")
+        append("    private val driveAxisValues = DoubleArray(3)\n\n")
+        append("    /**\n")
+        append("     * Publishes the latest drive-axis listener values as one combined command. Disconnects emit\n")
+        append("     * zeros and the analog rearm policy holds that neutral until every axis passes through its\n")
+        append("     * deadband, so a deflected stick cannot lurch the robot across a controller reconnect.\n")
+        append("     */\n")
+        append("    fun emitDriveCommand(registry: ${request.registryInterfaceName}) {\n")
+        append("        registry.onDriveCommand(driveAxisValues[0], driveAxisValues[1], driveAxisValues[2], HAS_GENERATED_DRIVE_BINDINGS)\n")
+        append("    }\n\n")
         append("    /**\n")
         append("     * Builds one allocation-free update runtime per zero-based Driver Station port. Suppressing chords are\n")
         append("     * ordered before constituent buttons and raise their effective press debounce to the chord\n")
@@ -847,12 +868,13 @@ object AresKotlinProjectGenerator {
                 appendIndent(indent + 2, "axisIndex = $axisIndex,\n")
                 appendIndent(indent + 2, "transform = ${renderAxisTransform(source.transform, indent + 2)},\n")
                 if (source.kind == ControlSourceKind.AXIS_VALUE) {
-                    appendIndent(indent + 2, "listener = object : AnalogBindingListener {\n")
-                    appendListenerMethod(
-                        indent + 3,
-                        "onValue(value: Double)",
+                    val listenerStatement = if (binding.target.kind == ControlTargetKind.DRIVE) {
+                        "driveAxisValues[${driveAxisIndex(binding.target.key)}] = value"
+                    } else {
                         renderControlTarget(binding, actions, actionMethods, "value", continuousActionMethods)
-                    )
+                    }
+                    appendIndent(indent + 2, "listener = object : AnalogBindingListener {\n")
+                    appendListenerMethod(indent + 3, "onValue(value: Double)", listenerStatement)
                     appendIndent(indent + 2, "},\n")
                     appendIndent(indent + 2, "zones = emptyList(),\n")
                 } else {
@@ -970,7 +992,16 @@ object AresKotlinProjectGenerator {
             ControlTargetKind.CANCEL_ROUTINE ->
                 "routineManager.cancelRoutine(${stringLiteral(target.key)}, " +
                     "${stringLiteral("Cancelled by ${binding.bindingId}")})"
+            ControlTargetKind.DRIVE ->
+                error("Validated drive-axis binding '${binding.bindingId}' must render through the analog accumulator")
         }
+    }
+
+    private fun driveAxisIndex(key: String): Int = when (key) {
+        DriveAxisKeys.VX -> 0
+        DriveAxisKeys.VY -> 1
+        DriveAxisKeys.OMEGA -> 2
+        else -> error("Validated drive axis key '$key' has no accumulator index")
     }
 
     private fun renderControlActionArguments(
@@ -1349,6 +1380,18 @@ object AresKotlinProjectGenerator {
         actions: Map<String, ActionDescriptor>
     ) {
         val target = binding.target
+        if (target.kind == ControlTargetKind.DRIVE) {
+            require(target.arguments.isEmpty()) {
+                "Binding '${binding.bindingId}' supplies arguments to a drivetrain axis"
+            }
+            require(target.key in DriveAxisKeys.ALL) {
+                "Binding '${binding.bindingId}' targets unknown drivetrain axis '${target.key}'"
+            }
+            require(binding.source.kind == ControlSourceKind.AXIS_VALUE && binding.event == ControlEvent.VALUE) {
+                "Drivetrain axis binding '${binding.bindingId}' must be an AXIS_VALUE source with a VALUE event"
+            }
+            return
+        }
         if (target.kind != ControlTargetKind.ACTION) {
             require(target.arguments.isEmpty()) {
                 "Binding '${binding.bindingId}' supplies arguments to a routine target"

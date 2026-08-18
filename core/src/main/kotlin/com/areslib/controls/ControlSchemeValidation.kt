@@ -84,6 +84,7 @@ fun validateControlScheme(
 
     val bindingIds = linkedSetOf<String>()
     val enabledSignatures = linkedMapOf<String, String>()
+    val boundDriveAxes = linkedMapOf<String, String>()
     document.bindings.forEachIndexed { index, binding ->
         val path = "bindings[$index]"
         validateStableKey(binding.bindingId, "$path.bindingId", issues)
@@ -100,6 +101,16 @@ fun validateControlScheme(
         validateTiming(binding.timing, "$path.timing", issues)
         validateTarget(binding, path, context, issues)
         validateEventCompatibility(binding, path, issues)
+        if (binding.enabled && binding.target.kind == ControlTargetKind.DRIVE) {
+            boundDriveAxes.putIfAbsent(binding.target.key, binding.bindingId)?.let { existing ->
+                issues += controlError(
+                    path,
+                    "duplicate_drive_axis",
+                    "Drive axis '${binding.target.key}' is already bound by '$existing'; " +
+                        "each axis accepts exactly one binding so control is never ambiguous",
+                )
+            }
+        }
 
         if (binding.enabled) {
             val signature = sourceSignature(binding)
@@ -268,6 +279,25 @@ private fun validateTarget(
             if (context.routineIds.isNotEmpty() && target.key !in context.routineIds) {
                 issues += controlError("$path.target", "unknown_routine", "Unknown routine '${target.key}'")
             }
+        ControlTargetKind.DRIVE -> {
+            if (target.key !in DriveAxisKeys.ALL) {
+                issues += controlError(
+                    "$path.target",
+                    "unknown_drive_axis",
+                    "Drivetrain axis must be one of ${DriveAxisKeys.ALL.sorted().joinToString(", ")}",
+                )
+            }
+            if (target.arguments.isNotEmpty()) {
+                issues += controlError("$path.target", "invalid_drive_arguments", "Drivetrain axis targets take no arguments")
+            }
+            if (binding.source.kind != ControlSourceKind.AXIS_VALUE || binding.event != ControlEvent.VALUE) {
+                issues += controlError(
+                    path,
+                    "invalid_drive_binding",
+                    "Drivetrain axis '${target.key}' requires an AXIS_VALUE source with a VALUE event",
+                )
+            }
+        }
     }
 }
 
