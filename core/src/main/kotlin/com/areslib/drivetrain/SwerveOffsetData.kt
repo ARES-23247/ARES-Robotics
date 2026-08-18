@@ -37,7 +37,7 @@ data class SwerveOffsetData(
             val values = HashMap<String, Double>(REQUIRED_KEYS.size)
             try {
                 JsonReader(StringReader(json)).use { reader ->
-                    reader.isLenient = false
+                    reader.strictness = com.google.gson.Strictness.LEGACY_STRICT
                     require(reader.peek() == JsonToken.BEGIN_OBJECT) { "Swerve offsets must be a JSON object" }
                     reader.beginObject()
                     while (reader.hasNext()) {

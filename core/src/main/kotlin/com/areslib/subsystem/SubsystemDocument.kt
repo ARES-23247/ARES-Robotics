@@ -1238,6 +1238,7 @@ object SubsystemDocumentCodec {
         return gson.toJson(document)
     }
 
+    @Suppress("USELESS_ELVIS") // Gson/Unsafe can deliver null for non-null fields; see the note below
     fun decode(json: String): SubsystemDocument {
         val document = try {
             val root = JsonParser.parseString(json).asJsonObject
@@ -1263,6 +1264,9 @@ object SubsystemDocumentCodec {
             require(implementation.has("kind") && implementation.has("ownership")) {
                 "Subsystem implementation kind and ownership are required"
             }
+            // The elvis defaults below are load-bearing, not dead: Gson allocates via
+            // Unsafe without calling a constructor, so nominally non-null fields are null
+            // at runtime when the JSON omits them. They normalize those missing collections.
             val parsed = gson.fromJson(json, SubsystemDocument::class.java)
                 ?: throw IllegalArgumentException("Subsystem document is empty")
             parsed.copy(
