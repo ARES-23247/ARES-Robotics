@@ -15,7 +15,7 @@ description = "ARES project, autonomous, controls, and subsystem Kotlin code gen
 dependencies {
     api(project(":core"))
     testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
     testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.2.21")
 }
 
