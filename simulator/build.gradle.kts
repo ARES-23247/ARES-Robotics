@@ -46,7 +46,7 @@ dependencies {
     implementation("edu.wpi.first.hal:hal-java:$wpiVersion")
     
     // Slf4j for logging (optional, usually good to have)
-    implementation("org.slf4j:slf4j-simple:2.0.12")
+    implementation("org.slf4j:slf4j-simple:2.0.18")
     
     // LWJGL Core
     implementation("org.lwjgl:lwjgl:3.4.2")
