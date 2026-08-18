@@ -75,6 +75,11 @@ data class SuperstructureFieldReference(
     val healthRequirement: SuperstructurePortHealthRequirement = SuperstructurePortHealthRequirement.CONTROL_READY,
 )
 
+data class StateNodeLayout(
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+)
+
 data class TransitionGuard(
     val guardId: String,
     val source: SuperstructureFieldReference,
@@ -83,6 +88,7 @@ data class TransitionGuard(
     val expectedBooleanValue: Boolean? = null,
     val expectedStringValue: String? = null,
     val tolerance: Double = 1e-4,
+    val maxStalenessMs: Long? = null,
 )
 
 data class StateTransitionEdge(
@@ -162,6 +168,8 @@ data class SuperstructureDocument(
     val disabledPolicy: SuperstructureDisabledPolicy = SuperstructureDisabledPolicy.FORCE_SAFE_AND_REJECT_REQUESTS,
     /** Required neutral preset when [disabledPolicy] forces safe state. */
     val disabledStateId: String = faultStateId,
+    /** Optional 2D Stateflow visual studio node positions. */
+    val nodeLayouts: Map<String, StateNodeLayout> = emptyMap(),
 )
 
 enum class SuperstructureIssueSeverity { ERROR, WARNING }
@@ -303,6 +311,7 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
             if (!guard.guardId.matches(ID_PATTERN)) error("$guardPath.guardId", "Use lowercase letters, digits, and hyphens")
             if (guard.source.subsystemUid.isBlank() || guard.source.fieldUid.isBlank()) error("$guardPath.source", "A stable typed source is required")
             if (!guard.tolerance.isFinite() || guard.tolerance < 0.0) error("$guardPath.tolerance", "Tolerance must be finite and non-negative")
+            if (guard.maxStalenessMs != null && guard.maxStalenessMs <= 0L) error("$guardPath.maxStalenessMs", "maxStalenessMs must be greater than 0")
             if (listOfNotNull(guard.expectedDoubleValue, guard.expectedBooleanValue, guard.expectedStringValue).size != 1) {
                 error(guardPath, "A guard requires exactly one typed expected value")
             }
@@ -326,6 +335,20 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
         if (policy.fallbackStateId !in stateIds) error("$path.fallbackStateId", "Fallback state '${policy.fallbackStateId}' is not declared")
     }
 
+    // Check dead-end trap states (states with no outgoing transitions, excluding terminal fault/disabled states)
+    if (document.states.size > 1) {
+        val statesWithOutgoing = document.transitions.mapTo(mutableSetOf()) { it.sourceStateId }
+        document.states.map { it.stateId }.forEach { stateId ->
+            if (stateId != document.faultStateId && stateId != document.disabledStateId && stateId !in statesWithOutgoing) {
+                issues += SuperstructureValidationIssue(
+                    SuperstructureIssueSeverity.WARNING,
+                    "states",
+                    "State '$stateId' has no outgoing transitions (dead-end state)",
+                )
+            }
+        }
+    }
+
     // The runtime can enter the fault preset from any state when target preflight/application
     // fails. It therefore has an implicit safety edge and must not require a fabricated student
     // transition merely to satisfy graph reachability.
@@ -340,11 +363,9 @@ fun validateSuperstructureDocument(document: SuperstructureDocument): List<Super
             if (reachable.add(edge.targetStateId)) queue.add(edge.targetStateId)
             edge.timeoutTargetStateId?.let { if (reachable.add(it)) queue.add(it) }
         }
-        document.states.singleOrNull { it.stateId == source }?.timeoutTargetStateId?.let {
-            if (reachable.add(it)) queue.add(it)
-        }
     }
-    (stateIds - reachable).forEach { error("states", "State '$it' is unreachable from '${document.initialStateId}'") }
+    (stateIds - reachable).forEach { error("states", "State '$it' is unreachable from the initial state") }
+
     return issues
 }
 
@@ -524,6 +545,7 @@ object SuperstructureDocumentCodec {
         interlocks = document.interlocks.orEmpty(),
         healthFallbacks = document.healthFallbacks.orEmpty(),
         luts = document.luts.orEmpty().map { it.copy(controlPoints = it.controlPoints.orEmpty()) },
+        nodeLayouts = document.nodeLayouts.orEmpty(),
     )
 
     private fun requireValid(document: SuperstructureDocument) {
@@ -577,6 +599,12 @@ object SuperstructureDocumentCodec {
                 exact(point, POINT_FIELDS, "$.luts[$index].controlPoints[$pointIndex]")
             }
         }
+        optionalObject(root, "nodeLayouts", "$")?.let { layoutsObj ->
+            layoutsObj.entrySet().forEach { (stateKey, layoutEl) ->
+                require(layoutEl.isJsonObject) { "$.nodeLayouts.$stateKey must be an object" }
+                exact(layoutEl.asJsonObject, NODE_LAYOUT_FIELDS, "$.nodeLayouts.$stateKey")
+            }
+        }
     }
 
     private fun exact(value: JsonObject, fields: Set<String>, path: String) {
@@ -613,11 +641,12 @@ object SuperstructureDocumentCodec {
         return element.asJsonObject
     }
 
-    private val ROOT_FIELDS = setOf("superstructureId", "displayName", "description", "schemaVersion", "initialStateId", "states", "transitions", "interlocks", "healthFallbacks", "luts", "faultStateId", "disabledPolicy", "disabledStateId")
+    private val ROOT_FIELDS = setOf("superstructureId", "displayName", "description", "schemaVersion", "initialStateId", "states", "transitions", "interlocks", "healthFallbacks", "luts", "faultStateId", "disabledPolicy", "disabledStateId", "nodeLayouts")
+    private val NODE_LAYOUT_FIELDS = setOf("x", "y")
     private val STATE_FIELDS = setOf("stateId", "displayName", "description", "subsystemTargets", "onExitActionKeys", "onEntryActionKeys", "timeoutSeconds", "timeoutTargetStateId")
     private val TARGET_FIELDS = setOf("target", "targetMode", "constantDoubleValue", "constantBooleanValue", "constantStringValue", "lutId", "source")
     private val TRANSITION_FIELDS = setOf("transitionId", "sourceStateId", "targetStateId", "triggerKind", "actionKey", "guards", "priority", "debounceMs", "timeoutSeconds", "timeoutTargetStateId")
-    private val GUARD_FIELDS = setOf("guardId", "source", "comparison", "expectedDoubleValue", "expectedBooleanValue", "expectedStringValue", "tolerance")
+    private val GUARD_FIELDS = setOf("guardId", "source", "comparison", "expectedDoubleValue", "expectedBooleanValue", "expectedStringValue", "tolerance", "maxStalenessMs")
     private val REFERENCE_FIELDS = setOf("subsystemUid", "fieldUid", "healthRequirement")
     private val INTERLOCK_FIELDS = setOf("ruleId", "description", "primary", "conditionComparison", "conditionThreshold", "constrained", "clampMinimum", "clampMaximum")
     private val HEALTH_FALLBACK_FIELDS = setOf("policyId", "source", "fallbackStateId", "latchFault", "description")
