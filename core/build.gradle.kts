@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.14.0")
     api("org.java-websocket:Java-WebSocket:1.6.0") // transitive dep of NT4Server (extends WebSocketServer)
     implementation("org.msgpack:msgpack-core:0.9.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
