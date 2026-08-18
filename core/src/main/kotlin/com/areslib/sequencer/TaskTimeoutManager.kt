@@ -25,10 +25,10 @@ object TaskTimeoutManager {
     private val timedOutScratch = ArrayList<Task>(16)
     private var watchdogNowMs = 0L
     private val watchdogVisitor = object : WeakIdentityMap.EntryVisitor<Task, TimeoutState> {
-        override fun visit(task: Task, state: TimeoutState) {
-            val start = state.startTimeMs ?: return
-            if (state.elapsedBeforePauseMs + watchdogNowMs - start > state.timeoutMs) {
-                timedOutScratch.add(task)
+        override fun visit(key: Task, value: TimeoutState) {
+            val start = value.startTimeMs ?: return
+            if (value.elapsedBeforePauseMs + watchdogNowMs - start > value.timeoutMs) {
+                timedOutScratch.add(key)
             }
         }
     }

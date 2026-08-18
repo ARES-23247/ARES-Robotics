@@ -255,7 +255,7 @@ object AresRoutineCodec {
     private fun validateNoDuplicateKeys(json: String) {
         try {
             JsonReader(StringReader(json)).use { reader ->
-                reader.isLenient = false
+                reader.strictness = com.google.gson.Strictness.LEGACY_STRICT
                 scanJsonValue(reader, "routine document")
                 require(reader.peek() == JsonToken.END_DOCUMENT) { "Routine document contains trailing JSON" }
             }
