@@ -16,7 +16,7 @@ Read [references/startup-recovery.md](references/startup-recovery.md) before act
 - changing `Main.kt`, `ServiceRegistry`, Compose/coroutines dependencies, or Skiko settings;
 - validating a fix for any desktop startup or shutdown failure.
 
-The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, native-window/rendering regressions, AWT event-thread crashes, and expected offline-service warnings. Do not treat them as one generic "Compose failed" problem.
+The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, native-window/rendering regressions, AWT event-thread crashes, incomplete runtime class output, and expected offline-service warnings. Do not treat them as one generic "Compose failed" problem.
 
 ## Core workflow
 

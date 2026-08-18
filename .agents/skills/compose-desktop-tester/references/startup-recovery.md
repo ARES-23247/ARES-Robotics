@@ -10,6 +10,7 @@ Use this decision tree when ARES Analytics does not show a usable desktop window
 | A second launch prints `App is already running (failed to acquire app.lock). Exiting.` | Another process holds the OS lock. The new process intentionally exits without a window. | Identify the lock-owning ARES JVM and recover it as described below. |
 | JVM/service logs continue, but strict capture reports no matching visible window | Compose/AWT presentation or rendering failed. | Check the Swing dispatcher and window/rendering invariants. |
 | `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` names a crash log | Application UI code crashed on the AWT event thread. The window can freeze or disappear while other threads keep the JVM and lock alive. | Read the named log and start with the first relevant application stack frame. Diagnose the UI defect before cleaning up the orphan. |
+| A crash log reports `NoClassDefFoundError` / `ClassNotFoundException` for an application `*Kt` class whose source exists | Gradle's runtime class output is incomplete or stale. | Stop the ARES process and perform the no-cache clean compile below before relaunching. |
 | Strict capture returns a visible ARES window with rendered content | Desktop launch succeeded. | Treat offline NT4/Drive errors separately from window startup. The configured size is `1440 x 900 dp`; captured pixel dimensions vary with Windows display scaling. |
 
 ## Failure mode 1: orphaned single-instance lock owner
@@ -82,6 +83,20 @@ When the console reports a critical AWT fault:
 
 Do not automate shutdown with `SendKeys` Alt+F4. Synthetic key input can be delivered to the currently focused Compose text field and trigger application key-handling code instead of closing the native window. The tester posts `WM_CLOSE` directly to the verified ARES HWND.
 
+## Failure mode 5: incomplete runtime class output
+
+If a crash log contains `NoClassDefFoundError` or `ClassNotFoundException` for an ARES application class such as `SuperstructureStudioScreenKt`, first confirm that the corresponding `.kt` source still exists. This can occur when the runtime starts from an incomplete incremental output set after large source changes.
+
+An ordinary `:app:compileKotlin` result may say `FROM-CACHE` while restoring the same bad output. Recover with a scoped, no-cache rebuild:
+
+```powershell
+cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+.\gradlew.bat killExisting
+.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks
+```
+
+Confirm the formerly missing class exists under `app/build/classes/kotlin/main/`, then perform the complete two-cycle launch verification. Do not delete source files, global Gradle caches, or unrelated repositories as part of this recovery.
+
 ## Expected warnings that do not mean startup failed
 
 When offline or signed out, these may appear after the window renders:
@@ -101,7 +116,7 @@ jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 .\gradlew.bat :app:run
 ```
 
-After `Desktop window presented`, capture strictly:
+After the deferred `Desktop window presented` log reports `showing=true`, capture strictly:
 
 ```powershell
 & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
