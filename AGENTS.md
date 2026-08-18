@@ -28,7 +28,7 @@ This workspace (`C:\Users\david\dev\robotics\ares`) contains **4 interconnected 
                   bidirectional telemetry contract
 ```
 
-**Release-validation order matters.** Normal consumers resolve immutable ARESLib binaries from Maven Central. After changing the library, publish its isolated validation repository before testing consumers:
+**Release-validation order matters.** Normal consumers resolve immutable ARESLib binaries from Maven Central **and the GitHub-hosted ARES Maven repository** (`https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven`, the `maven` branch of ARESLib-Kotlin) under identical `org.aresfirst.ares` coordinates. The GitHub channel exists because Central's free tier enforces monthly publishing quotas (file/release counts); publish new releases there with `.\gradlew.bat publishGitHubRepository -ParesVersion=<final>` and push `build/github-repository` to the `maven` branch, then optionally stage to Central when quota allows. After changing the library, publish its isolated validation repository before testing consumers:
 
 ```powershell
 # 1. Always do this FIRST after changing ARESLib-Kotlin:
@@ -212,3 +212,12 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 | Dashboard business logic index | `ARES-Analytics/app/.../di/ServiceRegistry.kt` |
 | Gateway HTTP surface | `ARES-Analytics/gateway/.../Application.kt`, `routes/DiagnosticsRoutes.kt` |
 | PathPlanner file format | `ARES-Analytics/shared/.../PathPlannerModels.kt`, `ARESLib-Kotlin/core/.../pathing/PathPlannerParser.kt` |
+
+## 9. Engineering Truthfulness & Anti-Hallucination Directives
+
+All agents operating in this workspace must adhere to strict factual precision:
+- **Zero Hyperbole:** Never use promotional or celebratory adjectives (e.g. "PERFECT TUNE!", "flawless", "100% no-code"). State exact engineering facts, line numbers, and limitations.
+- **Explicit Fidelity Boundaries:** Always distinguish between simplified educational previews (1D Euler step response, 2D trig kinematics drawings) and production robot runtime or multi-body Dyn4j physics simulations. Explicitly state what educational sandboxes ignore.
+- **Accurate Scope Boundaries:** Delineate where GUI scaffolding ends and Kotlin programming begins. Do not claim the system is "100% no-code" when competition logic and hardware mapping require code inspection.
+- **Differentiate Preexisting vs. New:** Clearly state what was already present in the codebase versus what was incrementally added in the current task.
+- **Strict Branch Discipline:** Keep feature work isolated on designated branches; never commit directly to `master` unless instructed.
