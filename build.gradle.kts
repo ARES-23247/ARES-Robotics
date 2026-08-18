@@ -73,6 +73,10 @@ subprojects {
                     name = "releaseValidation"
                     url = rootProject.layout.buildDirectory.dir("release-repository").get().asFile.toURI()
                 }
+                maven {
+                    name = "github"
+                    url = rootProject.layout.buildDirectory.dir("github-repository").get().asFile.toURI()
+                }
             }
         }
 
@@ -145,6 +149,24 @@ tasks.register("publishReleaseValidation") {
     description = "Publishes every public artifact to an isolated repository under build/ for consumer testing."
     dependsOn("validateReleaseCandidateVersion")
     dependsOn(publishedProjectPaths.map { "$it:publishAllPublicationsToReleaseValidationRepository" })
+}
+
+tasks.register("validateGitHubRepositoryVersion") {
+    group = "verification"
+    description = "The GitHub-hosted repository serves final versions; validation coordinates belong in build/release-repository."
+    dependsOn("validateAresVersion")
+    doLast {
+        check('-' !in aresVersion) {
+            "GitHub repository releases must use final versions: $aresVersion"
+        }
+    }
+}
+
+tasks.register("publishGitHubRepository") {
+    group = "publishing"
+    description = "Publishes every public artifact under final coordinates to build/github-repository for the ARESLib-Kotlin 'maven' branch."
+    dependsOn("validateGitHubRepositoryVersion")
+    dependsOn(publishedProjectPaths.map { "$it:publishAllPublicationsToGithubRepository" })
 }
 
 tasks.register("stageMavenCentral") {
