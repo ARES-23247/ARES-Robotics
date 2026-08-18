@@ -53,6 +53,8 @@ Both robot repos are **thin season-specific shells** over ARESLib. Almost all ca
 3. A **robot facade** (`AresRobot` in FTC, `ARESRobot` in FRC) wiring IO into subsystems.
 4. **OpModes / mode orchestration** (FTC `@TeleOp`/`@Autonomous`; FRC `TimedRobot` + teleop/auto controllers).
 
+**Context parameters (Kotlin 2.4):** Season-layer helpers in ARES-FTC may declare `context(ctx: FtcTeleOpContext<...>)` and resolve implicitly inside `teleOp { }` blocks (verified by `ContextParameterProbeTest`). This is allowed **only in internal app/season code** - never in published ARESLib signatures, and never for stored-block invocation, until explicit context arguments leave the experimental compiler flag.
+
 **Redux flow (everywhere):** `Driver input → Facade → dispatch(RobotAction) → rootReducer (+season reducer) → immutable RobotState → writeOutputs(IO)`. State is 100% immutable; reducers are pure. Season reducers compose: `MarvinReducer.reduce` wraps `rootReducer`; never bypass this.
 
 ## 4. How Projects Communicate: the NT4 Contract
