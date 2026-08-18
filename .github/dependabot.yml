@@ -22,7 +22,7 @@ updates:
       # Kotlin moves workspace-wide as one coordinated change (compiler metadata is
       # forward-compatible by only one minor); per-repo offers fork the toolchain.
       - dependency-name: "org.jetbrains.kotlin*"
-        versions: [">= 2.3"]
+        versions: [">= 2.5"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
