@@ -11,6 +11,7 @@ Use this decision tree when ARES Analytics does not show a usable desktop window
 | JVM/service logs continue, but strict capture reports no matching visible window | Compose/AWT presentation or rendering failed. | Check the Swing dispatcher and window/rendering invariants. |
 | `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` names a crash log | Application UI code crashed on the AWT event thread. The window can freeze or disappear while other threads keep the JVM and lock alive. | Read the named log and start with the first relevant application stack frame. Diagnose the UI defect before cleaning up the orphan. |
 | A crash log reports `NoClassDefFoundError` / `ClassNotFoundException` for an application `*Kt` class whose source exists | Gradle's runtime class output is incomplete or stale. | Stop the ARES process and perform the no-cache clean compile below before relaunching. |
+| A healthy window disappears exactly when another Gradle command starts | A concurrent task may have killed the PID or replaced mutable runtime bytecode. | Inspect the other command line. `clean`, compile, and test must not call `killExisting`; a normal `:app:run` must print its isolated temp classpath before window creation. |
 | Strict capture returns a visible ARES window with rendered content | Desktop launch succeeded. | Treat offline NT4/Drive errors separately from window startup. The configured size is `1440 x 900 dp`; captured pixel dimensions vary with Windows display scaling. |
 
 ## Failure mode 1: orphaned single-instance lock owner
@@ -97,6 +98,36 @@ cd C:\Users\david\dev\robotics\ares\ARES-Analytics
 
 Confirm the formerly missing class exists under `app/build/classes/kotlin/main/`, then perform the complete two-cycle launch verification. Do not delete source files, global Gradle caches, or unrelated repositories as part of this recovery.
 
+The repository also disables Kotlin incremental compilation for Analytics. Do not remove `kotlin.incremental=false`: complete module output is intentional because Compose loads many screen and gesture classes lazily.
+
+## Failure mode 6: concurrent build interference
+
+Two separate mechanisms previously made other agents' builds look like random window failures:
+
+1. Every subproject `clean` depended on `killExisting`, so `:app:clean` forcibly terminated a healthy visible ARES process.
+2. Compose's development `run` task used mutable `app/build/classes` and `shared/build/classes` paths. A later compile/clean could remove a class that the running JVM had not loaded yet, producing a delayed `NoClassDefFoundError` when a screen or gesture was first used.
+
+Required build contracts:
+
+- Only `run` may depend on `killExisting`; `clean`, compile, and test must not terminate ARES.
+- Within a replacement `:app:run`, `killExisting` must run after `:app:jar`; if the new source does not compile, the existing healthy app stays open.
+- `:app:run` must print `Isolated desktop runtime classpath at ...ares-analytics-run-*` and launch project classes, project-owned artifacts, and `compose.application.resources.dir` against that unique snapshot.
+- The snapshot cleanup finalizer must run after normal or failed app exit. Never reuse a snapshot between launches.
+- Builds performed while the app is open affect the next launch only. Do not expect hot reload from `:app:run`.
+- Do not launch `MainKt` directly against project `build/classes` directories as a workaround.
+
+To confirm a suspected external kill, inspect active command lines before changing UI code:
+
+```powershell
+jps -lv
+Get-CimInstance Win32_Process | Where-Object CommandLine -Match 'gradlew|com\.ares\.analytics\.MainKt' |
+    Select-Object ProcessId, ParentProcessId, CommandLine
+```
+
+Preserve other agents' edits. If their compile caught a half-written feature, wait for their coherent edit boundary and compile the combined tree; do not revert their files merely to make startup green.
+
+Do not run two Gradle compilers against the same Analytics module simultaneously. Runtime isolation protects the open app, not competing writers to `app/build/classes`; concurrent compiler processes can fail with `Could not delete ...build\classes\kotlin\main`. Inspect wrapper command lines and wait for the active build to finish.
+
 ## Expected warnings that do not mean startup failed
 
 When offline or signed out, these may appear after the window renders:
@@ -116,7 +147,7 @@ jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 .\gradlew.bat :app:run
 ```
 
-After the deferred `Desktop window presented` log reports `showing=true`, capture strictly:
+After `Isolated desktop runtime classpath` and the deferred `Desktop window presented` log reports `showing=true, nativeVisible=true`, capture strictly:
 
 ```powershell
 & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `

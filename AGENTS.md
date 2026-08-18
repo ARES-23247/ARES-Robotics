@@ -190,7 +190,7 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 
 The desktop app has a single-instance lock and a native Compose/AWT window. A JVM can therefore be alive while no usable window exists, and a second launch can exit successfully without showing anything. Treat "the command is still running" and "the window is visible" as separate facts.
 
-### Do not conflate these five failure modes
+### Do not conflate these six failure modes
 
 | Failure mode | Observable evidence | Correct response |
 |---|---|---|
@@ -199,6 +199,7 @@ The desktop app has a single-instance lock and a native Compose/AWT window. A JV
 | **Native window/rendering regression** | The JVM and UI coroutines remain alive but no visible top-level HWND is capturable, or the window is blank/intermittent. | Let Compose/Skiko select its renderer. Preserve the explicit window state and presentation behavior in `Main.kt`, then verify a real HWND with the Compose desktop capture workflow. |
 | **AWT event-thread crash** | The console reports `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` and names a `~/.ares-analytics/logs/crash-*.log`; the window may freeze or disappear while service threads keep the JVM and lock alive. | Read the newest crash log and fix the first relevant application stack frame. Then close through the verified window or use scoped `killExisting` cleanup. Treat the orphaned lock owner as a consequence, not the root cause. |
 | **Incomplete runtime class output** | A crash log reports `NoClassDefFoundError` / `ClassNotFoundException` for an application `*Kt` class even though its `.kt` source exists. | Stop the verified ARES process, then run `.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks`. Confirm the class is regenerated before relaunching. An ordinary incremental compile may reuse the same incomplete cache entry. |
+| **Concurrent agent rebuild/cleanup** | A healthy window vanishes while another task runs, or a delayed `NoClassDefFoundError` occurs after source/build output changed. Inspect concurrent Gradle command lines; the historical `clean -> killExisting` dependency forcibly closed the UI, while a mutable `build/classes` launch could lose lazy-loaded bytecode. | Preserve the isolated `:app:run` classpath and keep `clean` independent of `killExisting`. Only a new `run` may replace an existing ARES process. Compile/test/clean may run while the app is open; their new code takes effect only after the next launch. |
 
 Offline NT4 connection failures and Google Drive sign-in errors are expected when those services are unavailable. They are not evidence that desktop window creation failed.
 
@@ -209,8 +210,13 @@ Offline NT4 connection failures and Google Drive sign-in errors are expected whe
 - `Main.kt` must retain an explicit floating, centered `1440 x 900 dp` window, `visible = true`, a `1100 x 700` AWT minimum size, and the `toFront()` / `requestFocus()` presentation calls unless a tested replacement provides the same guarantees.
 - Keep the `Desktop window presented` diagnostic. It proves that the AWT peer reached the presentation hook; it does **not** replace screenshot verification.
 - Keep final visibility/focus presentation deferred through `EventQueue.invokeLater`; the Compose `Window` peer is created asynchronously. The diagnostic must report the final bounds and `showing=true` from that deferred event.
+- On Windows, a usable window means a visible top-level HWND owned by the current ARES PID. AWT `isShowing=true`, `IsWindowVisible` on a stale/reused handle, or a live JVM is not sufficient. Keep the native ownership check, recovery timer, and initial foreground/topmost-then-demote presentation unless an equally strict replacement is verified.
 - A fatal uncaught `AWT-EventQueue` exception or unexpected disposal of the only Compose window must terminate the process after logging. An unusable desktop JVM must not remain alive solely to hold `app.lock`.
 - Keep the single-instance lock, bounded service disposal, and hard-exit watchdog unless the replacement is tested for normal close, hung shutdown, relaunch, and stale-process recovery.
+- Keep `kotlin.incremental=false` in `ARES-Analytics/gradle.properties`. Large Compose source changes have twice produced delayed missing-class crashes (`SuperstructureStudioScreenKt` and a nested `FieldCanvas...WhenMappings`) from incomplete incremental outputs.
+- Keep the `:app:run` runtime snapshot in `app/build.gradle.kts`. A running JVM must load project classes, classpath resources, project-owned artifacts, and `compose.application.resources.dir` from its unique `ares-analytics-run-*` temp snapshot, never mutable `build/` paths that another agent can clean or replace. Keep the finalizer that removes the snapshot after exit.
+- `clean` must **never** depend on `killExisting`. Only `run` may depend on the scoped replacement task. A compile, test, or clean performed by another agent is not authority to close a developer's visible app.
+- In the `:app:run` task graph, `killExisting` must run after `:app:jar`. A broken replacement build must fail before terminating the current healthy window.
 - A direct packaged-app launch does not run Gradle's `killExisting` task. Do not assume that behavior exists outside `:app:run`.
 
 ### Mandatory launch/debug workflow for every agent
@@ -220,8 +226,8 @@ Offline NT4 connection failures and Google Drive sign-in errors are expected whe
 3. Before killing anything, inspect Java command lines with `jps -lv | Select-String 'com\.ares\.analytics\.MainKt'`.
 4. If a verified ARES JVM owns the lock but has no usable window, run `.\gradlew.bat killExisting` from `ARES-Analytics` and report the PID that was terminated.
 5. If the crash is `NoClassDefFoundError` / `ClassNotFoundException` for an application class whose source exists, run `.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks`; do not trust an incremental `FROM-CACHE` result for that recovery.
-6. Launch with `.\gradlew.bat :app:run` for released dependencies, or add `"-ParesUseSiblingLib=true"` only when intentionally validating sibling ARESLib source.
-7. Require a deferred `Desktop window presented` log ending in `showing=true` and a strict capture of a visible top-level `ARES Analytics` window. A full-desktop fallback image is not proof.
+6. Launch with `.\gradlew.bat :app:run` for released dependencies, or add `"-ParesUseSiblingLib=true"` only when intentionally validating sibling ARESLib source. Require the `Isolated desktop runtime classpath at ...ares-analytics-run-*` log; otherwise concurrent builds can corrupt the running app.
+7. Require a deferred `Desktop window presented` log ending in `showing=true, nativeVisible=true` and a strict capture of a visible top-level `ARES Analytics` window owned by the ARES PID. A full-desktop fallback image is not proof.
 8. Inspect the captured image for actual app content rather than accepting a process ID, Gradle task state, or blank frame.
 9. If the console reports an uncaught `AWT-EventQueue-0` exception, inspect the named crash log before cleanup. The first relevant application frame is evidence of the initiating UI defect; the remaining process and lock are secondary effects.
 10. Close the app through its window so `disposeAndJoin()` and the shutdown watchdog are exercised. Use the tester skill's native `-CloseWindow` action; do not automate Alt+F4 through `SendKeys`, which can be delivered to a focused Compose text field as input. Use `killExisting` only as cleanup if graceful close fails.
@@ -229,6 +235,10 @@ Offline NT4 connection failures and Google Drive sign-in errors are expected whe
 12. If startup, `Main.kt`, `ServiceRegistry`, Compose/coroutines dependencies, or Skiko settings changed, launch and capture a second time after a clean shutdown. This catches invisible lock owners and one-launch-only success.
 
 Never report "the app launches" based only on `BUILD SUCCESSFUL`, a long-running Gradle process, `MainScreen` logs, or a screenshot tool's full-screen fallback. The required evidence is a visible ARES HWND containing rendered UI, followed by a shutdown that leaves no ARES JVM.
+
+When multiple agents are active, inspect `jps -lv` / `Win32_Process.CommandLine` before attributing a disappearance to Compose. Another agent's build may explain the timing. Do not revert that agent's source edits; first verify whether their task is still writing, wait for a coherent compile boundary, then validate the combined tree. The isolated runtime intentionally does not hot-reload those edits.
+
+Only one Gradle invocation may compile/clean the same Analytics module at a time. The running app is isolated from those outputs, but two compiler processes can still contend over `app/build/classes` and fail with `Could not delete ...build\classes\kotlin\main`. Wait for the existing wrapper command to finish; do not kill its compiler daemon or delete its outputs underneath it.
 
 The detailed diagnostic decision tree and exact capture/cleanup commands live in `.agents/skills/compose-desktop-tester/references/startup-recovery.md`.
 
