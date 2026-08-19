@@ -68,6 +68,7 @@ Known-good policy:
 - Keep the floating, centered `1440 x 900 dp` Compose window and `visible = true`.
 - Keep the `1100 x 700` AWT minimum size.
 - Keep `toFront()`, `requestFocus()`, and the `Desktop window presented` diagnostic.
+- Keep native health checks limited to `EnumWindows`, current-process ownership, and visibility. Do not query HWND titles with `GetWindowTextLength` / `GetWindowText` from the AWT event thread; those calls can synchronously message AWT's toolkit window and deadlock presentation. The external tester may match titles from its own process.
 
 If a renderer-specific experiment is genuinely required, isolate it on a branch and collect before/after captures on the affected machine. A successful experiment must also pass a second launch after a clean shutdown.
 
@@ -155,7 +156,7 @@ After `Isolated desktop runtime classpath` and the deferred `Desktop window pres
   -OutputFile "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\startup.png"
 ```
 
-Inspect the PNG, then close gracefully by posting `WM_CLOSE` to the verified ARES HWND. If the console has reported an AWT critical fault, read its crash log before cleanup:
+Inspect the PNG. If the exact ARES HWND has a black client area on the first capture, keep the same process alive, check the console for an AWT/render error, wait one paint interval, and recapture that same HWND. A rendered recapture is delayed painting; a persistently black/blank client area is a startup failure. Then close gracefully by posting `WM_CLOSE` to the verified ARES HWND. If the console has reported an AWT critical fault, read its crash log before cleanup:
 
 ```powershell
 & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" `
