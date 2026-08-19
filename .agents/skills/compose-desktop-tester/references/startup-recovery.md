@@ -68,7 +68,9 @@ Known-good policy:
 - Keep the floating, centered `1440 x 900 dp` Compose window and `visible = true`.
 - Keep the `1100 x 700` AWT minimum size.
 - Keep `toFront()`, `requestFocus()`, and the `Desktop window presented` diagnostic.
-- Keep native health checks limited to `EnumWindows`, current-process ownership, and visibility. Do not query HWND titles with `GetWindowTextLength` / `GetWindowText` from the AWT event thread; those calls can synchronously message AWT's toolkit window and deadlock presentation. The external tester may match titles from its own process.
+- Identify the actual Compose/AWT peer with `Native.getWindowPointer(window)`, then require that exact handle to be present in `EnumWindows`, owned by the current PID, valid, and visible. Never accept an arbitrary same-process GLFW/helper HWND as proof of the desktop window.
+- Do not query HWND titles with `GetWindowTextLength` / `GetWindowText` from the AWT event thread; those calls can synchronously message AWT's toolkit window and deadlock presentation. Match by exact peer pointer internally; the external tester may match titles from its own process.
+- Schedule initial presentation from `windowOpened` after the lifecycle callback returns. A generic startup `EventQueue.invokeLater` may run before `componentShown` / `windowOpened` and validate a transient peer. Keep the bounded delayed fallback for listeners attached after the opened event.
 
 If a renderer-specific experiment is genuinely required, isolate it on a branch and collect before/after captures on the affected machine. A successful experiment must also pass a second launch after a clean shutdown.
 
@@ -148,7 +150,7 @@ jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 .\gradlew.bat :app:run
 ```
 
-After `Isolated desktop runtime classpath` and the deferred `Desktop window presented` log reports `showing=true, nativeVisible=true`, capture strictly:
+After `Isolated desktop runtime classpath`, require `Desktop window shown` and `Desktop window opened` before `Desktop window presented after windowOpened` (or the explicit startup fallback). The presentation log must report `showing=true, nativeVisible=true, hwnd=<value>`. Capture strictly and confirm the script reports that same HWND:
 
 ```powershell
 & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
