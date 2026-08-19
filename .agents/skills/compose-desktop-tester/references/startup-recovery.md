@@ -9,6 +9,7 @@ Use this decision tree when ARES Analytics does not show a usable desktop window
 | `:app:compileKotlin` fails | Source or dependency compilation failed before window creation. | Fix the reported compiler/dependency error. Do not change renderers or the instance lock. |
 | A second launch prints `App is already running (failed to acquire app.lock). Exiting.` | Another process holds the OS lock. The new process intentionally exits without a window. | Identify the lock-owning ARES JVM and recover it as described below. |
 | JVM/service logs continue, but strict capture reports no matching visible window | Compose/AWT presentation or rendering failed. | Check the Swing dispatcher and window/rendering invariants. |
+| A real Compose HWND is logged, but the window is intermittent or stays behind the terminal | Windows denied foreground activation or the app demoted topmost status too early. | Preserve the bounded Compose-owned startup `alwaysOnTop` state and wait for the settled-state diagnostic. Never force activation with Win32 Z-order/focus calls. |
 | `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` names a crash log | Application UI code crashed on the AWT event thread. The window can freeze or disappear while other threads keep the JVM and lock alive. | Read the named log and start with the first relevant application stack frame. Diagnose the UI defect before cleaning up the orphan. |
 | A crash log reports `NoClassDefFoundError` / `ClassNotFoundException` for an application `*Kt` class whose source exists | Gradle's runtime class output is incomplete or stale. | Stop the ARES process and perform the no-cache clean compile below before relaunching. |
 | A healthy window disappears exactly when another Gradle command starts | A concurrent task may have killed the PID or replaced mutable runtime bytecode. | Inspect the other command line. `clean`, compile, and test must not call `killExisting`; a normal `:app:run` must print its isolated temp classpath before window creation. |
@@ -68,11 +69,15 @@ Known-good policy:
 - Keep the floating, centered `1440 x 900 dp` Compose window and `visible = true`.
 - Keep the `1100 x 700` AWT minimum size.
 - Keep `toFront()`, `requestFocus()`, and the `Desktop window presented` diagnostic.
+- Keep startup `alwaysOnTop` state owned by the Compose `Window`. Release it after the bounded interval and require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`.
 - Identify the actual Compose/AWT peer with `Native.getWindowPointer(window)`, then require that exact handle to be present in `EnumWindows`, owned by the current PID, valid, and visible. Never accept an arbitrary same-process GLFW/helper HWND as proof of the desktop window.
+- Treat native APIs as observation-only during normal startup. Do not use `AttachThreadInput`, `ShowWindow`, `SetWindowPos`, `BringWindowToTop`, `SetForegroundWindow`, or an AWT visibility off/on toggle. Compose owns visibility, peer creation, and topmost state; Windows may reject foreground requests without making the HWND invalid.
 - Do not query HWND titles with `GetWindowTextLength` / `GetWindowText` from the AWT event thread; those calls can synchronously message AWT's toolkit window and deadlock presentation. Match by exact peer pointer internally; the external tester may match titles from its own process.
 - Schedule initial presentation from `windowOpened` after the lifecycle callback returns. A generic startup `EventQueue.invokeLater` may run before `componentShown` / `windowOpened` and validate a transient peer. Keep the bounded delayed fallback for listeners attached after the opened event.
 
 If a renderer-specific experiment is genuinely required, isolate it on a branch and collect before/after captures on the affected machine. A successful experiment must also pass a second launch after a clean shutdown.
+
+For a read-only native-state probe, use `scripts/inspect_app_window.ps1` with either `-Handle <hwnd>` or `-OwnerProcessId <pid>`. It reports validity, bounds, styles, foreground ownership, DWM cloak state, monitor bounds, and virtual-desktop membership without restoring, focusing, moving, or closing the target. Add `-WatchSeconds <n>` to record HWND transitions. `EnumWindows` is scoped to the inspector's Windows desktop/window station, so a zero-window result from an isolated agent process is not evidence that an app on a different desktop destroyed its HWND; use the opt-in same-process capture below to resolve that boundary.
 
 ## Failure mode 4: AWT event-thread crash with a surviving JVM
 
@@ -150,7 +155,7 @@ jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 .\gradlew.bat :app:run
 ```
 
-After `Isolated desktop runtime classpath`, require `Desktop window shown` and `Desktop window opened` before `Desktop window presented after windowOpened` (or the explicit startup fallback). The presentation log must report `showing=true, nativeVisible=true, hwnd=<value>`. Capture strictly and confirm the script reports that same HWND:
+After `Isolated desktop runtime classpath`, require `Desktop window shown` and `Desktop window opened` before `Desktop window presented after windowOpened` (or the explicit startup fallback). The presentation log must report `showing=true, nativeVisible=true, hwnd=<value>`. Then require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`. Capture strictly and confirm the script reports that same HWND:
 
 ```powershell
 & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
@@ -159,6 +164,18 @@ After `Isolated desktop runtime classpath`, require `Desktop window shown` and `
 ```
 
 Inspect the PNG. If the exact ARES HWND has a black client area on the first capture, keep the same process alive, check the console for an AWT/render error, wait one paint interval, and recapture that same HWND. A rendered recapture is delayed painting; a persistently black/blank client area is a startup failure. Then close gracefully by posting `WM_CLOSE` to the verified ARES HWND. If the console has reported an AWT critical fault, read its crash log before cleanup:
+
+If the app and external tester run on different Windows desktops/window stations, the tester cannot enumerate the app's HWND even when both processes share a login session. Use the app's opt-in same-desktop verifier for that run:
+
+```powershell
+$env:ARES_ANALYTICS_STARTUP_CAPTURE = "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\startup.png"
+$env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE = "true"
+.\gradlew.bat :app:run
+Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE
+Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE
+```
+
+The app waits for settled `alwaysOnTop=false`, uses `java.awt.Robot` to capture its own window rectangle, and posts `WM_CLOSE` to the exact verified HWND. Normal launches do not perform this capture or auto-close behavior. Inspect the image and confirm `cleanupDesktopRunSnapshot`, `BUILD SUCCESSFUL`, and no remaining `MainKt`.
 
 ```powershell
 & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" `

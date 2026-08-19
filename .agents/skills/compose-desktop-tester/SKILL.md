@@ -44,6 +44,18 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 
 4. Inspect the saved image with the available image-viewing tool. Verify actual ARES content, window dimensions, layout, contrast, canvas rendering, and the state relevant to the task.
 
+   Some agent GUI runners assign each tool process a different Windows desktop/window station. If the app logs an exact HWND and `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true` but an external capture process cannot enumerate it, use the opt-in same-process capture instead of claiming the window vanished:
+
+   ```powershell
+   $env:ARES_ANALYTICS_STARTUP_CAPTURE = "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\window.png"
+   $env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE = "true"
+   .\gradlew.bat :app:run
+   Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE
+   Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE
+   ```
+
+   This path waits until Compose has actually released startup topmost state, captures the 1440×900 window from its own AWT desktop, and posts `WM_CLOSE` to the exact Compose HWND. It is inactive unless the variables are explicitly set. Inspect the PNG and still confirm no `MainKt` remains.
+
 5. Interact only through a verified ARES window. Coordinates are relative to that window; the script fails instead of clicking the desktop when no window is found.
 
    ```powershell
@@ -64,6 +76,7 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 
 - `BUILD SUCCESSFUL` proves a task completed, not that a window exists.
 - `MainScreen` or service logs prove coroutines ran, not that an HWND is visible.
+- `Desktop window presented` proves the peer existed at one instant; require the later settled-state diagnostic and rendered capture for startup work.
 - A full-screen screenshot is not launch evidence.
 - An `AWT-EventQueue-0` crash can leave service threads and the single-instance lock alive. Read the named crash log before treating the surviving JVM as the cause.
 - NT4 connection failures and Google Drive sign-in errors do not invalidate a successfully rendered offline window.
