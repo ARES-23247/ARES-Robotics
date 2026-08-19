@@ -17,7 +17,7 @@ Use this decision tree when ARES Analytics does not show a usable desktop window
 
 ## Failure mode 1: orphaned single-instance lock owner
 
-`Main.kt` opens `~/.ares-analytics/app.lock` and holds an operating-system file lock for the JVM lifetime. The file normally remains on disk after exit; that is harmless. The lock state, not file existence, determines whether another instance may start.
+`DesktopInstanceLock` (acquired by the `Main.kt` composition root) opens `~/.ares-analytics/app.lock` and holds an operating-system file lock for the JVM lifetime. The file normally remains on disk after exit; that is harmless. The lock state, not file existence, determines whether another instance may start.
 
 A JVM can outlive its window when an agent abandons a background Gradle session, interrupts shutdown, or leaves non-daemon services running. A later direct launch cannot acquire the lock, prints the already-running message, and exits without creating a window.
 
