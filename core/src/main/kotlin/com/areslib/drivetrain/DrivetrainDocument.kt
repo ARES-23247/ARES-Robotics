@@ -36,6 +36,10 @@ data class DrivetrainComponentDocument(
     val currentLimitAmps: Double? = null,
     val xMeters: Double? = null,
     val yMeters: Double? = null,
+    val zMeters: Double? = null,
+    val pitchDegrees: Double? = null,
+    val yawDegrees: Double? = null,
+    val rollDegrees: Double? = null,
     val inverted: Boolean = false,
     val required: Boolean = true,
     /** Optional direct leader for a hardware-controller follower; follower inversion remains [inverted]. */
