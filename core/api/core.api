@@ -8822,8 +8822,10 @@ public final class com/areslib/subsystem/SubsystemHardwareBuilder {
 	public final fun colorSensor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun continuousServo (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun digitalInput (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun indicatorLight (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun motor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun positionalServo (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun prismDriver (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 }
 
 public final class com/areslib/subsystem/SubsystemHardwareConnection {
@@ -8884,8 +8886,10 @@ public final class com/areslib/subsystem/SubsystemHardwareKind : java/lang/Enum 
 	public static final field COLOR_SENSOR Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field CONTINUOUS_SERVO Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field DIGITAL_INPUT Lcom/areslib/subsystem/SubsystemHardwareKind;
+	public static final field INDICATOR_LIGHT Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field MOTOR Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field POSITIONAL_SERVO Lcom/areslib/subsystem/SubsystemHardwareKind;
+	public static final field PRISM_DRIVER Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static fun values ()[Lcom/areslib/subsystem/SubsystemHardwareKind;

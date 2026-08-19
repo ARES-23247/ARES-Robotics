@@ -116,6 +116,28 @@ object SubsystemHardwareScaffolding {
                 ),
                 SubsystemStateFieldDocument(fieldId("argb"), "ARGB color", SubsystemValueType.INT, SubsystemFieldRole.MEASUREMENT, defaultInt = 0),
             )
+            SubsystemHardwareKind.INDICATOR_LIGHT -> outputScaffold(
+                kind,
+                hardwareId,
+                displayName,
+                connection,
+                fieldId("colorPosition"),
+                "Color spectrum position",
+                0.0,
+                1.0,
+                SubsystemControlStrategy.DIRECT,
+            )
+            SubsystemHardwareKind.PRISM_DRIVER -> outputScaffold(
+                kind,
+                hardwareId,
+                displayName,
+                connection,
+                fieldId("pulseWidthUs"),
+                "PWM pulse width",
+                500.0,
+                2500.0,
+                SubsystemControlStrategy.DIRECT,
+            )
         }
     }
 

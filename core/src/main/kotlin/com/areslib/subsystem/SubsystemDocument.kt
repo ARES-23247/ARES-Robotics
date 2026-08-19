@@ -87,6 +87,8 @@ enum class SubsystemHardwareKind {
     DIGITAL_INPUT,
     ANALOG_INPUT,
     COLOR_SENSOR,
+    INDICATOR_LIGHT,
+    PRISM_DRIVER,
 }
 
 /** Explicit cached signal read from one hardware device. */
@@ -510,7 +512,9 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 SubsystemHardwareKind.POSITIONAL_SERVO,
                 SubsystemHardwareKind.CONTINUOUS_SERVO,
                 SubsystemHardwareKind.DIGITAL_INPUT,
-                SubsystemHardwareKind.ANALOG_INPUT -> if (device.connection.channel == null || device.connection.channel !in 0..31) {
+                SubsystemHardwareKind.ANALOG_INPUT,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> if (device.connection.channel == null || device.connection.channel !in 0..31) {
                     issue("$path.connection.channel", "FRC channel must be from 0 to 31")
                 }
                 SubsystemHardwareKind.COLOR_SENSOR ->
@@ -532,8 +536,12 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> if (neutral !in -1.0..1.0) {
                     issue("$path.safeOutput", "Continuous-servo neutral must be within -1 to 1")
                 }
-                SubsystemHardwareKind.POSITIONAL_SERVO -> if (neutral !in 0.0..1.0) {
-                    issue("$path.safeOutput", "Positional-servo neutral must be within 0 to 1")
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT -> if (neutral !in 0.0..1.0) {
+                    issue("$path.safeOutput", "Positional-servo/indicator neutral must be within 0 to 1")
+                }
+                SubsystemHardwareKind.PRISM_DRIVER -> if (neutral !in 500.0..2500.0 && neutral != 0.0) {
+                    issue("$path.safeOutput", "Prism driver neutral must be within 500 to 2500 microseconds (or 0.0 for off)")
                 }
                 else -> Unit
             }
@@ -1568,6 +1576,8 @@ private val ACTUATOR_KINDS = setOf(
     SubsystemHardwareKind.MOTOR,
     SubsystemHardwareKind.POSITIONAL_SERVO,
     SubsystemHardwareKind.CONTINUOUS_SERVO,
+    SubsystemHardwareKind.INDICATOR_LIGHT,
+    SubsystemHardwareKind.PRISM_DRIVER,
 )
 private val NUMERIC_TYPES = setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)
 private val CLOSED_LOOP_STRATEGIES = setOf(
@@ -1593,7 +1603,9 @@ fun SubsystemHardwareKind.compatibleMeasurementSources(): List<SubsystemMeasurem
     SubsystemHardwareKind.ANALOG_INPUT -> listOf(SubsystemMeasurementSource.ANALOG_VOLTAGE)
     SubsystemHardwareKind.COLOR_SENSOR -> listOf(SubsystemMeasurementSource.COLOR_ARGB)
     SubsystemHardwareKind.POSITIONAL_SERVO,
-    SubsystemHardwareKind.CONTINUOUS_SERVO -> emptyList()
+    SubsystemHardwareKind.CONTINUOUS_SERVO,
+    SubsystemHardwareKind.INDICATOR_LIGHT,
+    SubsystemHardwareKind.PRISM_DRIVER -> emptyList()
 }
 
 fun SubsystemMeasurementSource.valueType(): SubsystemValueType = when (this) {
