@@ -132,9 +132,9 @@ object SubsystemHardwareScaffolding {
                 hardwareId,
                 displayName,
                 connection,
-                fieldId("pulseWidthUs"),
-                "PWM pulse width",
-                500.0,
+                fieldId("animationPattern"),
+                "Animation pattern",
+                0.0,
                 2500.0,
                 SubsystemControlStrategy.DIRECT,
             )

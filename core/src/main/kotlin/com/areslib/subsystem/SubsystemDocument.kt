@@ -540,8 +540,8 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 SubsystemHardwareKind.INDICATOR_LIGHT -> if (neutral !in 0.0..1.0) {
                     issue("$path.safeOutput", "Positional-servo/indicator neutral must be within 0 to 1")
                 }
-                SubsystemHardwareKind.PRISM_DRIVER -> if (neutral !in 500.0..2500.0 && neutral != 0.0) {
-                    issue("$path.safeOutput", "Prism driver neutral must be within 500 to 2500 microseconds (or 0.0 for off)")
+                SubsystemHardwareKind.PRISM_DRIVER -> if (neutral < 0.0) {
+                    issue("$path.safeOutput", "Prism driver neutral must be non-negative (0.0 for off)")
                 }
                 else -> Unit
             }
