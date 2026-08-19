@@ -9402,7 +9402,9 @@ public final class com/areslib/subsystem/SubsystemTemplate : java/lang/Enum {
 	public static final field ADVANCED_CUSTOM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field COMPOSITE_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field HOMED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field INDICATOR_LIGHT_PWM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field POSITION_CONTROLLED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field PRISM_LED_DRIVER Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field SENSOR_ONLY_SUBSYSTEM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field SIMPLE_ACTUATOR Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field VELOCITY_CONTROLLED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
