@@ -239,6 +239,24 @@ class TelemetryUpdateE2ETest {
             trueDisplacement > 0.05,
         )
 
+        val simulatorPoseFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
+        assertEquals("Atomic simulator pose frame must keep its canonical layout", 10, simulatorPoseFrame.size)
+        assertTrue("Atomic simulator pose frame must be finite", simulatorPoseFrame.all(Double::isFinite))
+        assertTrue(
+            "Raw odometry and same-cycle truth should remain colocated in the simulator pose frame",
+            kotlin.math.hypot(
+                simulatorPoseFrame[0] - simulatorPoseFrame[6],
+                simulatorPoseFrame[1] - simulatorPoseFrame[7],
+            ) < 0.10,
+        )
+        assertTrue(
+            "EKF and same-cycle truth should remain close without replacing the EKF with truth",
+            kotlin.math.hypot(
+                simulatorPoseFrame[0] - simulatorPoseFrame[3],
+                simulatorPoseFrame[1] - simulatorPoseFrame[4],
+            ) < 0.25,
+        )
+
         // 8. Verify simulator lifecycle publication without stealing dashboard MatchState.
         val matchState = NT4Server.getString("ARES/DriverStation/MatchState", "")
         println("[Telemetry E2E Test] Match State: '$matchState'")

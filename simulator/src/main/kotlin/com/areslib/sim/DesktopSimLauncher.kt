@@ -355,6 +355,7 @@ object DesktopSimLauncher {
             }
 
             val ccwPos = com.areslib.ftc.FtcBaseRobot.activeInstance?.pinpointIsCcwPositive ?: true
+            val currentPhysX = physicsWorld.robotBody.transform.translationX
             val currentPhysY = physicsWorld.robotBody.transform.translationY
             val currentPhysHeading = physicsWorld.robotBody.transform.rotationAngle
 
@@ -470,7 +471,11 @@ object DesktopSimLauncher {
             }
             TelemetryPublisher.publishGamePieces(gamePieceTelemetryBuffer, pieces.size)
 
-            TelemetryPublisher.publishTruePose(postStepX, postStepY, postStepHeading)
+            // The OpMode tick above consumed the sensor sample written after the previous physics
+            // step. Publish that same observation pose alongside the Redux odometry/EKF state.
+            // Publishing the newly advanced physics pose here would make truth one frame newer than
+            // both estimators and create a visible, artificial trailing overlay while moving.
+            TelemetryPublisher.publishTruePose(currentPhysX, currentPhysY, currentPhysHeading)
 
             // Extract OpMode display lines from MockTelemetry and publish to NT4 for ARES-Analytics
             val mockTelemetry = opModeSlot.activeMode?.telemetry as? org.firstinspires.ftc.robotcore.external.MockTelemetry
@@ -483,12 +488,19 @@ object DesktopSimLauncher {
             if (activeInstance != null) {
                 val state = activeInstance.store.state
                 TelemetryPublisher.publish(state, dtSeconds = SIM_TIMESTEP_SECONDS)
+                TelemetryPublisher.publishSimulatorPoseFrame(
+                    trueX = currentPhysX,
+                    trueY = currentPhysY,
+                    trueHeading = currentPhysHeading,
+                    state = state,
+                )
                 activeInstance.profiler.publishSensorsProfiling(activeInstance.telemetryManager)
                 
                 if (sampleCount % 250L == 0L) {
-                    println("[SimTelemetry] groundTruthY=%.3f".format(postStepY))
+                    println("[SimTelemetry] observedTruthY=%.3f".format(currentPhysY))
                 }
-                TelemetryPublisher.publishEstimatedPose(postStepX, postStepY, postStepHeading)
+                // TelemetryPublisher.publish(state) is the sole owner of Drive/Pose_* and
+                // ARES/EstimatedPose/*. Do not overwrite the real Redux EKF with Dyn4j truth.
                 TelemetryPublisher.publishTargetPose(postStepX, postStepY, postStepHeading)
             }
 
