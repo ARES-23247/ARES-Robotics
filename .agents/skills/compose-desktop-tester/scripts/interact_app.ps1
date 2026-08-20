@@ -4,6 +4,14 @@ param(
     [int]$ClickY = -1,
     [string]$Text = "",
     [string]$Key = "",
+    [string]$HoldKeys = "",
+    [int]$HoldMilliseconds = 1000,
+    [int]$WheelDelta = 0,
+    [int]$ResizeWidth = 0,
+    [int]$ResizeHeight = 0,
+    [int]$MoveX = -1,
+    [int]$MoveY = -1,
+    [switch]$MaximizeWindow,
     [switch]$CloseWindow,
     [int]$CloseTimeoutSeconds = 25
 )
@@ -20,7 +28,13 @@ public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwDat
 [DllImport("user32.dll")]
 public static extern bool SetCursorPos(int x, int y);
 [DllImport("user32.dll", SetLastError = true)]
+public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+[DllImport("user32.dll")]
+public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+[DllImport("user32.dll", SetLastError = true)]
 public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+[DllImport("user32.dll")]
+public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
 public struct RECT {
     public int Left;
@@ -37,6 +51,13 @@ $interactionRequested =
     $ClickY -ge 0 -or
     -not [string]::IsNullOrEmpty($Text) -or
     -not [string]::IsNullOrEmpty($Key) -or
+    -not [string]::IsNullOrEmpty($HoldKeys) -or
+    $WheelDelta -ne 0 -or
+    $ResizeWidth -gt 0 -or
+    $ResizeHeight -gt 0 -or
+    $MoveX -ge 0 -or
+    $MoveY -ge 0 -or
+    $MaximizeWindow -or
     $CloseWindow
 
 if ($interactionRequested -and -not $proc) {
@@ -77,9 +98,43 @@ if ($CloseWindow) {
     exit 0
 }
 
+if ($MaximizeWindow) {
+    [AresNative.User32Interact]::ShowWindow($proc.MainWindowHandle, 3) | Out-Null # SW_MAXIMIZE
+    Start-Sleep -Milliseconds 500
+    Write-Output "Maximized ARES window PID $($proc.Id)"
+}
+
+if ($ResizeWidth -gt 0 -or $ResizeHeight -gt 0 -or $MoveX -ge 0 -or $MoveY -ge 0) {
+    if (($ResizeWidth -gt 0) -ne ($ResizeHeight -gt 0)) {
+        Write-Error "-ResizeWidth and -ResizeHeight must be supplied together."
+        exit 6
+    }
+    [AresNative.User32Interact]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null # SW_RESTORE
+    Start-Sleep -Milliseconds 200
+    $rect = New-Object 'AresNative.User32Interact+RECT'
+    [AresNative.User32Interact]::GetWindowRect($proc.MainWindowHandle, [ref]$rect) | Out-Null
+    $targetX = if ($MoveX -ge 0) { $MoveX } else { $rect.Left }
+    $targetY = if ($MoveY -ge 0) { $MoveY } else { $rect.Top }
+    $targetWidth = if ($ResizeWidth -gt 0) { $ResizeWidth } else { $rect.Right - $rect.Left }
+    $targetHeight = if ($ResizeHeight -gt 0) { $ResizeHeight } else { $rect.Bottom - $rect.Top }
+    if (-not [AresNative.User32Interact]::MoveWindow(
+        $proc.MainWindowHandle,
+        $targetX,
+        $targetY,
+        $targetWidth,
+        $targetHeight,
+        $true
+    )) {
+        Write-Error "Failed to resize ARES window PID $($proc.Id)."
+        exit 7
+    }
+    Start-Sleep -Milliseconds 500
+    Write-Output "Moved/resized ARES window PID $($proc.Id) to ($targetX,$targetY) $targetWidth x $targetHeight"
+}
+
 # Handle Click
 if ($ClickX -ge 0 -and $ClickY -ge 0) {
-    $rect = New-Object AresNative.RECT
+    $rect = New-Object 'AresNative.User32Interact+RECT'
     [AresNative.User32Interact]::GetWindowRect($proc.MainWindowHandle, [ref]$rect)
     $targetX = $rect.Left + $ClickX
     $targetY = $rect.Top + $ClickY
@@ -93,10 +148,48 @@ if ($ClickX -ge 0 -and $ClickY -ge 0) {
     Write-Output "Clicked at ($targetX, $targetY)"
 }
 
+if ($WheelDelta -ne 0) {
+    # MOUSEEVENTF_WHEEL = 0x0800. Positive values scroll up; negative values scroll down.
+    $wheelData = [BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$WheelDelta), 0)
+    [AresNative.User32Interact]::mouse_event(0x0800, 0, 0, $wheelData, 0)
+    Write-Output "Sent mouse wheel delta $WheelDelta"
+    Start-Sleep -Milliseconds 300
+}
+
 # Handle Keys
 if (-not [string]::IsNullOrEmpty($Key)) {
     [System.Windows.Forms.SendKeys]::SendWait("{$Key}")
     Write-Output "Sent key {$Key}"
+}
+
+# Hold a comma-separated key chord (for example SPACE,W) long enough to exercise controls that
+# intentionally depend on simultaneous key state. Always release in reverse order, even if the
+# wait is interrupted, so a failed UI test cannot leave a movement key latched.
+if (-not [string]::IsNullOrEmpty($HoldKeys)) {
+    $virtualKeys = @(
+        $HoldKeys.Split(',') | ForEach-Object {
+            $keyName = $_.Trim()
+            if ([string]::IsNullOrEmpty($keyName)) { return }
+            try {
+                [byte][System.Enum]::Parse([System.Windows.Forms.Keys], $keyName, $true)
+            } catch {
+                Write-Error "Unknown key '$keyName' in -HoldKeys."
+                exit 5
+            }
+        }
+    )
+    try {
+        foreach ($virtualKey in $virtualKeys) {
+            [AresNative.User32Interact]::keybd_event($virtualKey, 0, 0, [UIntPtr]::Zero)
+        }
+        Start-Sleep -Milliseconds ([Math]::Max(1, $HoldMilliseconds))
+    } finally {
+        [Array]::Reverse($virtualKeys)
+        foreach ($virtualKey in $virtualKeys) {
+            [AresNative.User32Interact]::keybd_event($virtualKey, 0, 2, [UIntPtr]::Zero)
+        }
+    }
+    Write-Output "Held keys {$HoldKeys} for $HoldMilliseconds ms"
 }
 
 # Handle Text

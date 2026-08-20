@@ -98,8 +98,10 @@ val robotYaw = -robotPoseTargetSpace.rotation.y
 val robotYaw = robotPoseTargetSpace.rotation.z
 ```
 
-### Simulator State Sync Pitfall
-The sim's `DesktopSimLauncher` maintains a local `var state = RobotState()`. This is **NOT synced** with the OpMode's Redux store for drive data (only superstructure is synced). `TelemetryPublisher.publishEstimatedPose()` must use `currentPose` (Dyn4j ground truth), NOT `state.drive.poseEstimator.estimatedPose` (always default/zeroed).
+### Simulator Pose Telemetry Ownership
+`DesktopSimLauncher` publishes `ARES/TruePose/*` from Dyn4j ground truth. `TelemetryPublisher.publish(activeInstance.store.state)` is the **only** publisher of `Drive/Pose_*`, `Drive/Odom_*`, and `ARES/EstimatedPose/*`; those topics must expose the real Redux estimator and odometry state. Never call `publishEstimatedPose()` with Dyn4j truth after publishing the store, because that alternates two different values on the estimator topics and hides EKF behavior. Publish truth from the same pre-step observation consumed by the current OpMode tick so truth, odometry, and EKF are time-aligned while moving.
+
+The NT4 transport delivers pose components and pose sources sequentially, not as one Compose state transaction, and suppresses scalars that did not change. The simulator therefore publishes `ARES/SimulatorPoseFrame` as `[true x/y/h, EKF x/y/h, odom x/y/h, sequence]`; the changing final sequence forces one complete frame every loop. `FieldPoseFrameAccumulator` commits only after array element 9 and then ignores legacy simulator pose scalars. Do not replace this with a coordinate/heading end marker, restore per-scalar simulator `LivePoseState` updates, or make the UI substitute truth for EKF: unchanged headings do not arrive, per-scalar rendering paints a deterministic ghost, and truth substitution hides estimator defects.
 
 ### Vision & Kidnapped Robot Recovery
 - **FtcVisionTracker.kt**: Do NOT use `isInInit` flag. The snap triggers ONCE when `hasInitializedPoseWithVision` is false, then relies on `consecutiveVisionRejections >= 10` for further snaps during active play.
@@ -247,6 +249,87 @@ When multiple agents are active, inspect `jps -lv` / `Win32_Process.CommandLine`
 Only one Gradle invocation may compile/clean the same Analytics module at a time. The running app is isolated from those outputs, but two compiler processes can still contend over `app/build/classes` and fail with `Could not delete ...build\classes\kotlin\main`. Wait for the existing wrapper command to finish; do not kill its compiler daemon or delete its outputs underneath it.
 
 The detailed diagnostic decision tree and exact capture/cleanup commands live in `.agents/skills/compose-desktop-tester/references/startup-recovery.md`.
+
+## 7A. FTC Simulator Runtime and Control Reliability (MANDATORY)
+
+`ARES-FTC\TeamCode:runSim` starts a **headless physics/NT4 server**, not a ready-to-drive
+OpMode. “Port 5810 is online” proves only that the server is listening. A controllable robot
+requires all of these states in order:
+
+1. Analytics is connected to `127.0.0.1:5810` with Local Sim selected.
+2. A published TeleOp is selected and the Driver Station sends `INIT`, then `START`.
+3. Dashboard local control is explicitly armed.
+
+Preserve these invariants:
+
+- `TeamCode/build.gradle` must keep the unique `ares-ftc-sim-run-*` runtime snapshot for
+  `runSim`. The simulator must not load TeamCode/FtcRobotController classes or jars from mutable
+  workspace `build/` output. On Windows a live mutable classpath locks `classes.jar`; concurrent
+  compile/verification can then fail or replace lazily loaded bytecode.
+- Require the launch line `[ARES-FTC] Isolated simulator runtime classpath at ...` before treating
+  a developer run as rebuild-safe. A green compile or `:simulator:test` does not exercise this
+  long-running runtime contract.
+- Never start a second simulator merely because Analytics does not own the process. If Local Sim is
+  already online on port 5810, use the existing server or stop it from the process that launched it.
+  A second `runSim` can fail during compilation or NT4 binding while the first server remains alive.
+- Keep `LocalSimulatorControlBar` visible above the configurable Dashboard grid for an FTC Local
+  Sim target. Saved/custom layouts may omit or place the full Driver Station and Gamepad Monitor
+  widgets below the fold; those layouts must not hide the required start/arm path.
+- When Local Sim is offline, that strip's primary action must be the labeled **Launch simulator**
+  button wired to the same guarded `ProcessManagerService.runSimulation` path as the execution
+  toolbar. Do not send users to an icon-only toolbar control or leave a disabled **Start driving**
+  button as the only apparent action. While the managed process starts, show the connecting state;
+  after NT4 connects, replace the primary action with **Start driving**.
+- A fresh Analytics session has no successful build evidence. If the current authored project is
+  eligible for verification but simulation is blocked only by that missing evidence, the strip must
+  offer **Verify & launch**. It runs the existing compile-only verification, launches automatically
+  only after a successful result, and leaves the simulator stopped after failure or cancellation.
+- Keep the window-level `DesktopDriveKeyDispatcher`. Compose buttons, dropdowns, and text fields may
+  own focus and consume keys before a root `onPreviewKeyEvent` modifier observes them. The dispatcher
+  must remain inert unless Dashboard is active, Local Sim is selected and connected through a
+  loopback host, local control is armed, and keyboard mode is selected. Focus, target, connection,
+  page, and arm-state changes must neutralize every latched input immediately.
+- Dashboard/simulator drive publication is a loopback-only capability. Keep the non-loopback rejection
+  inside `Nt4ClientService.publishDriveFrame`, in addition to UI gating, so stale Compose state cannot
+  send motion to a physical Control Hub or roboRIO. Do not broaden this allowlist beyond
+  `127.0.0.1`, `localhost`, and `::1`.
+- Do not weaken the neutral v2 `ARES/Input/driveFrame` handshake, session/sequence monotonicity,
+  receiver lease, or explicit arm to make a demo move. If publication pauses long enough to exceed
+  the receiver lease, begin a new session and publish at least five neutral frames (100 ms at 50 Hz)
+  before resuming motion. A single 20 ms neutral frame can fall entirely between receiver polls and
+  permanently disarm that session.
+- Treat control, raw telemetry, and UI telemetry as three independent rate domains. The
+  `ARES/Input/driveFrame` control heartbeat is safety-critical and stays at 50 Hz; its send path must
+  never synchronously write `TelemetryStore`, touch a database, update Compose state, or wait behind
+  inbound telemetry. `Nt4ClientService.telemetryFlow` is the full-rate stream for recording and
+  analysis services. Compose UI consumers must use `Nt4ClientService.uiTelemetryFlow`, which keeps
+  only the latest value per topic and fans it out at 20 Hz.
+- `DriveFrameTelemetryRecorder` is intentionally a lossy, background side channel. It records only
+  `vx`, `vy`, and `omega` at 10 Hz for charts/history. Do not restore the previous behavior that
+  flattened all eight drive-frame fields into synchronous telemetry writes on every 50 Hz control
+  tick; that created hundreds of contended writes per second and periodically expired the simulator
+  input lease.
+- `VisionState.measurements` is ordered oldest to newest. Any current-pose telemetry derived from
+  that buffer must select a fresh `lastOrNull()` measurement, never `firstOrNull()`. Publishing the
+  oldest entry produces the visibly trailing dotted EKF/vision ghost even though estimation itself
+  is current.
+
+### Mandatory FTC simulator verification
+
+1. Preserve unrelated edits, especially `ARES-FTC/TeamCode/src/main/assets/paths/field.json`.
+2. Launch `ARES-FTC\.\gradlew.bat :TeamCode:runSim` and require the isolated-runtime line, NT4
+   startup on 5810, Driver Station Server Mode, and the published TeleOp/Auto counts.
+3. While that exact simulator remains alive, rerun
+   `:FtcRobotController:bundleLibCompileToJarDebug --rerun-tasks`. It must succeed and the simulator
+   must remain alive; otherwise the runtime is still using mutable build output.
+4. Launch/capture Analytics through the §7 workflow. On Dashboard, require the Local Simulator strip
+   to name a TeleOp and explain that an online server can still be waiting for a TeleOp.
+5. Choose a drive-capable TeleOp, use **Start driving**, and require simulator logs for the selected
+   class, `INIT`, successful initialization, `START`, and `OpMode STARTED`.
+6. Verify the strip reports `TELEOP RUNNING` and `ARMED`. Hold W briefly, release W,
+   and prove `ARES/TruePose` changed and then settled. A button state, transmitted frame, changing
+   chart, or live JVM alone is not proof of physical simulated motion.
+7. Stop the OpMode, close Analytics through its window, stop `runSim`, and confirm neither JVM remains.
 
 ## 8. Working in This Workspace — Checklist
 
