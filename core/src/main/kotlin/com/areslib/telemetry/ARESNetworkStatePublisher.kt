@@ -4,6 +4,8 @@ import com.areslib.control.safety.BrownoutGuard
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
 
+private const val VISION_TARGET_FRESHNESS_MS = 500L
+
 /**
  * Serializes and publishes the complete RobotState to an ITelemetry interface.
  * Covers drive, superstructure, vision, and optional gamepad inputs so that
@@ -315,7 +317,6 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     }
 
     private companion object {
-        const val VISION_TARGET_FRESHNESS_MS = 500L
         val UNKNOWN_TAG_FIELD_POSITION = doubleArrayOf(Double.NaN, Double.NaN, Double.NaN)
 
         fun gamepadTopics(prefix: String): Array<String> = arrayOf(
