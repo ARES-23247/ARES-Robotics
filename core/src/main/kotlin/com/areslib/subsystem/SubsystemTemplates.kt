@@ -23,6 +23,8 @@ object SubsystemTemplates {
         SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM -> sensorOnly(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.HOMED_MECHANISM -> homed(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.COMPOSITE_MECHANISM -> composite(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.INDICATOR_LIGHT_PWM -> indicatorLight(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.PRISM_LED_DRIVER -> prismDriver(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.ADVANCED_CUSTOM -> advanced(documentId, displayName, kotlinTypeName, platform)
     }
 
@@ -167,6 +169,75 @@ object SubsystemTemplates {
             ),
         )
     }
+
+    private fun indicatorLight(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform) = SubsystemDocument(
+        documentId = id,
+        displayName = displayName,
+        kotlinTypeName = kotlinTypeName,
+        description = "PWM servo-port RGB indicator light with normalized color presets and safe off state.",
+        platform = platform,
+        template = SubsystemTemplate.INDICATOR_LIGHT_PWM,
+        hardware = listOf(
+            SubsystemHardwareDocument(
+                "light", "Indicator light", SubsystemHardwareKind.INDICATOR_LIGHT,
+                if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "light")
+                else SubsystemHardwareConnection(channel = 0),
+                safeOutput = 0.0,
+            )
+        ),
+        stateFields = listOf(
+            SubsystemStateFieldDocument("targetColor", "Target color", SubsystemValueType.DOUBLE, SubsystemFieldRole.TARGET, defaultNumber = 0.0, minimum = 0.0, maximum = 1.0),
+            SubsystemStateFieldDocument("enabled", "Enabled", SubsystemValueType.BOOLEAN, SubsystemFieldRole.STATUS, defaultBoolean = true),
+        ),
+        controlLoops = listOf(
+            SubsystemControlLoopDocument(
+                "primary", "Light color control", SubsystemControlStrategy.DIRECT,
+                "light", "targetColor",
+            )
+        ),
+        safety = SubsystemSafetyDocument(
+            feedbackTimeoutMs = 250L,
+            requiresCurrentMonitoring = false,
+            latchOutputFaults = false,
+            requiresExplicitNeutralRecovery = false,
+        ),
+        autonomousResourceKey = id,
+    )
+
+    private fun prismDriver(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform) = SubsystemDocument(
+        documentId = id,
+        displayName = displayName,
+        kotlinTypeName = kotlinTypeName,
+        description = "Prism I2C/PWM driver with pattern presets, brightness control, and safe neutral output.",
+        platform = platform,
+        template = SubsystemTemplate.PRISM_LED_DRIVER,
+        hardware = listOf(
+            SubsystemHardwareDocument(
+                "prism", "Prism driver", SubsystemHardwareKind.PRISM_DRIVER,
+                if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "prism")
+                else SubsystemHardwareConnection(canId = 1),
+                safeOutput = 1000.0,
+            )
+        ),
+        stateFields = listOf(
+            SubsystemStateFieldDocument("targetPulseWidthUs", "Target pulse width", SubsystemValueType.DOUBLE, SubsystemFieldRole.TARGET, defaultNumber = 1000.0, minimum = 500.0, maximum = 2500.0, unit = "µs"),
+            SubsystemStateFieldDocument("brightnessPercent", "Brightness", SubsystemValueType.DOUBLE, SubsystemFieldRole.CONFIGURATION, defaultNumber = 75.0, minimum = 0.0, maximum = 100.0, unit = "%"),
+            SubsystemStateFieldDocument("enabled", "Enabled", SubsystemValueType.BOOLEAN, SubsystemFieldRole.STATUS, defaultBoolean = true),
+        ),
+        controlLoops = listOf(
+            SubsystemControlLoopDocument(
+                "primary", "Prism pattern control", SubsystemControlStrategy.DIRECT,
+                "prism", "targetPulseWidthUs",
+            )
+        ),
+        safety = SubsystemSafetyDocument(
+            feedbackTimeoutMs = 250L,
+            requiresCurrentMonitoring = false,
+            latchOutputFaults = false,
+            requiresExplicitNeutralRecovery = false,
+        ),
+        autonomousResourceKey = id,
+    )
 
     private fun advanced(id: String, displayName: String, kotlinTypeName: String, platform: SubsystemPlatform) =
         actuator(id, displayName, kotlinTypeName, platform, SubsystemControlStrategy.DIRECT).copy(

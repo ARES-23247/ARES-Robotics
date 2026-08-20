@@ -393,6 +393,12 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
     fun colorSensor(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
         add(id, displayName, SubsystemHardwareKind.COLOR_SENSOR, block)
 
+    fun indicatorLight(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.INDICATOR_LIGHT, block)
+
+    fun prismDriver(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.PRISM_DRIVER, block)
+
     private fun add(
         id: String,
         displayName: String,

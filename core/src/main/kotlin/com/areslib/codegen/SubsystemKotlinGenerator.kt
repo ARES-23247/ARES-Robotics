@@ -926,7 +926,9 @@ $feedforward
         document.hardware.forEach { device ->
             imports += when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "com.qualcomm.robotcore.hardware.DcMotorEx"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "com.qualcomm.robotcore.hardware.Servo"
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "com.qualcomm.robotcore.hardware.Servo"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "com.qualcomm.robotcore.hardware.CRServo"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "com.qualcomm.robotcore.hardware.DigitalChannel"
                 SubsystemHardwareKind.ANALOG_INPUT -> "com.qualcomm.robotcore.hardware.AnalogInput"
@@ -963,7 +965,9 @@ $feedforward
                 (device.kind == SubsystemHardwareKind.MOTOR ||
                     device.kind == SubsystemHardwareKind.CONTINUOUS_SERVO) && device.inverted ->
                     "            ${device.hardwareId}?.direction = DcMotorSimple.Direction.REVERSE"
-                device.kind == SubsystemHardwareKind.POSITIONAL_SERVO && device.inverted ->
+                (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
+                    device.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
+                    device.kind == SubsystemHardwareKind.PRISM_DRIVER) && device.inverted ->
                     "            ${device.hardwareId}?.direction = Servo.Direction.REVERSE"
                 device.kind == SubsystemHardwareKind.DIGITAL_INPUT ->
                     "            ${device.hardwareId}?.mode = DigitalChannel.Mode.INPUT"
@@ -1018,7 +1022,9 @@ $feedforward
             }).joinToString("\n            ") { (target, expression) ->
                 when (target.kind) {
                     SubsystemHardwareKind.MOTOR -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = (($expression) / 12.0).coerceIn(-1.0, 1.0)"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ($expression).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ($expression).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ((($expression) - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = ($expression).coerceIn(-1.0, 1.0)"
                     else -> error("Not an actuator")
                 }
@@ -1041,7 +1047,9 @@ $feedforward
                 val neutral = requireNotNull(device.safeOutput).kotlinDouble()
                 val assignment = when (device.kind) {
                     SubsystemHardwareKind.MOTOR -> "${device.hardwareId}?.power = ($neutral / 12.0).coerceIn(-1.0, 1.0)"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}?.position = $neutral.coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}?.position = $neutral.coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}?.position = (($neutral - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}?.power = $neutral.coerceIn(-1.0, 1.0)"
                     else -> error("Not an FTC actuator")
                 }
@@ -1152,7 +1160,9 @@ $telemetry
         document.hardware.forEach { device ->
             imports += when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "com.ctre.phoenix6.hardware.TalonFX"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "edu.wpi.first.wpilibj.Servo"
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "edu.wpi.first.wpilibj.Servo"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "edu.wpi.first.wpilibj.DigitalInput"
                 SubsystemHardwareKind.ANALOG_INPUT -> "edu.wpi.first.wpilibj.AnalogInput"
@@ -1165,7 +1175,9 @@ $telemetry
         val fields = document.hardware.joinToString("\n") { device ->
             val constructor = when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "TalonFX(${device.connection.canId}, ${device.connection.canBus.quoted()})"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "Servo(${device.connection.channel})"
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "Servo(${device.connection.channel})"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "PWMSparkMax(${device.connection.channel})"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalInput(${device.connection.channel})"
                 SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput(${device.connection.channel})"
@@ -1272,14 +1284,18 @@ $telemetry
         val neutralWrites = document.hardware.filter { it.kind.isActuator() }
             .joinToString("\n") { device ->
                 val neutral = requireNotNull(device.safeOutput).kotlinDouble()
-                val appliedNeutral = if (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO) {
+                val appliedNeutral = if (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
+                    device.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
+                    device.kind == SubsystemHardwareKind.PRISM_DRIVER) {
                     device.invertedExpression(neutral)
                 } else {
                     neutral
                 }
                 val command = when (device.kind) {
                     SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage($appliedNeutral.coerceIn(-12.0, 12.0))"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}.set($appliedNeutral.coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}.set($appliedNeutral.coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}.set((($appliedNeutral - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set($appliedNeutral.coerceIn(-1.0, 1.0))"
                     else -> error("Not an FRC actuator")
                 }
@@ -1292,7 +1308,9 @@ $telemetry
                 SubsystemHardwareKind.POSITIONAL_SERVO,
                 SubsystemHardwareKind.CONTINUOUS_SERVO,
                 SubsystemHardwareKind.DIGITAL_INPUT,
-                SubsystemHardwareKind.ANALOG_INPUT -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
+                SubsystemHardwareKind.ANALOG_INPUT,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
                 SubsystemHardwareKind.COLOR_SENSOR -> ""
             }
         }
@@ -1451,7 +1469,9 @@ $telemetry
                 val applied = target.invertedExpression(expression)
                 val bounded = when (target.kind) {
                     SubsystemHardwareKind.MOTOR -> "($applied).coerceIn(-12.0, 12.0)"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "($applied).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "($applied).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "($applied).coerceIn(500.0, 2500.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "($applied).coerceIn(-1.0, 1.0)"
                     else -> error("Not an actuator")
                 }
@@ -2262,18 +2282,23 @@ private fun SubsystemDocument.hasSafetyRequestHandshake(): Boolean =
     safety.requiresExplicitNeutralRecovery || safety.requiresCalibration
 
 private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardwareKind.MOTOR ||
-    this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO
+    this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO ||
+    this == SubsystemHardwareKind.INDICATOR_LIGHT || this == SubsystemHardwareKind.PRISM_DRIVER
 
 private fun SubsystemHardwareDocument.commandName(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "set${hardwareId.pascalCase()}Voltage"
-    SubsystemHardwareKind.POSITIONAL_SERVO -> "set${hardwareId.pascalCase()}Position"
+    SubsystemHardwareKind.POSITIONAL_SERVO,
+    SubsystemHardwareKind.INDICATOR_LIGHT -> "set${hardwareId.pascalCase()}Position"
+    SubsystemHardwareKind.PRISM_DRIVER -> "set${hardwareId.pascalCase()}PulseWidthUs"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "set${hardwareId.pascalCase()}Power"
     else -> error("$kind is not an actuator")
 }
 
 private fun SubsystemHardwareDocument.ftcType(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "DcMotorEx"
-    SubsystemHardwareKind.POSITIONAL_SERVO -> "Servo"
+    SubsystemHardwareKind.POSITIONAL_SERVO,
+    SubsystemHardwareKind.INDICATOR_LIGHT,
+    SubsystemHardwareKind.PRISM_DRIVER -> "Servo"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "CRServo"
     SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalChannel"
     SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput"
@@ -2287,6 +2312,8 @@ private fun SubsystemHardwareDocument.dslFunction(): String = when (kind) {
     SubsystemHardwareKind.DIGITAL_INPUT -> "digitalInput"
     SubsystemHardwareKind.ANALOG_INPUT -> "analogInput"
     SubsystemHardwareKind.COLOR_SENSOR -> "colorSensor"
+    SubsystemHardwareKind.INDICATOR_LIGHT -> "indicatorLight"
+    SubsystemHardwareKind.PRISM_DRIVER -> "prismDriver"
 }
 
 private fun SubsystemControlLoopDocument.dslFunction(): String = when (strategy) {

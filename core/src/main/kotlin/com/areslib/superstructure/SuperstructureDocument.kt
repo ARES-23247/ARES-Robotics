@@ -533,18 +533,98 @@ object SuperstructureDocumentCodec {
         .digest(encode(document).toByteArray(Charsets.UTF_8))
         .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 
-    private fun normalize(document: SuperstructureDocument): SuperstructureDocument = document.copy(
-        states = document.states.orEmpty().map {
-            it.copy(
-                subsystemTargets = it.subsystemTargets.orEmpty(),
-                onExitActionKeys = it.onExitActionKeys.orEmpty(),
-                onEntryActionKeys = it.onEntryActionKeys.orEmpty(),
+    private fun normalize(document: SuperstructureDocument): SuperstructureDocument = SuperstructureDocument(
+        superstructureId = document.superstructureId ?: "",
+        displayName = document.displayName ?: document.superstructureId ?: "",
+        description = document.description ?: "",
+        schemaVersion = document.schemaVersion ?: ARES_SUPERSTRUCTURE_SCHEMA_VERSION,
+        initialStateId = document.initialStateId ?: "",
+        states = document.states.orEmpty().map { s ->
+            SuperstructureStatePreset(
+                stateId = s.stateId ?: "",
+                displayName = s.displayName ?: s.stateId ?: "",
+                description = s.description ?: "",
+                subsystemTargets = s.subsystemTargets.orEmpty().map { t ->
+                    SuperstructureSubsystemTarget(
+                        target = t.target ?: SuperstructureFieldReference("", ""),
+                        targetMode = t.targetMode ?: SuperstructureTargetMode.CONSTANT,
+                        constantDoubleValue = t.constantDoubleValue,
+                        constantBooleanValue = t.constantBooleanValue,
+                        constantStringValue = t.constantStringValue,
+                        lutId = t.lutId,
+                        source = t.source,
+                    )
+                },
+                onExitActionKeys = s.onExitActionKeys.orEmpty(),
+                onEntryActionKeys = s.onEntryActionKeys.orEmpty(),
+                timeoutSeconds = s.timeoutSeconds,
+                timeoutTargetStateId = s.timeoutTargetStateId,
             )
         },
-        transitions = document.transitions.orEmpty().map { it.copy(guards = it.guards.orEmpty()) },
-        interlocks = document.interlocks.orEmpty(),
-        healthFallbacks = document.healthFallbacks.orEmpty(),
-        luts = document.luts.orEmpty().map { it.copy(controlPoints = it.controlPoints.orEmpty()) },
+        transitions = document.transitions.orEmpty().map { t ->
+            StateTransitionEdge(
+                transitionId = t.transitionId ?: "",
+                sourceStateId = t.sourceStateId ?: "",
+                targetStateId = t.targetStateId ?: "",
+                triggerKind = t.triggerKind ?: TransitionTriggerKind.ACTION_REQUEST,
+                actionKey = t.actionKey,
+                guards = t.guards.orEmpty().map { g ->
+                    TransitionGuard(
+                        guardId = g.guardId ?: "",
+                        source = g.source ?: SuperstructureFieldReference("", ""),
+                        comparison = g.comparison ?: InterlockComparison.EQUALS_STATE,
+                        expectedDoubleValue = g.expectedDoubleValue,
+                        expectedBooleanValue = g.expectedBooleanValue,
+                        expectedStringValue = g.expectedStringValue,
+                        tolerance = g.tolerance ?: 1e-4,
+                        maxStalenessMs = g.maxStalenessMs,
+                    )
+                },
+                priority = t.priority ?: 0,
+                debounceMs = t.debounceMs ?: 0L,
+                timeoutSeconds = t.timeoutSeconds,
+                timeoutTargetStateId = t.timeoutTargetStateId,
+            )
+        },
+        interlocks = document.interlocks.orEmpty().map { i ->
+            SuperstructureInterlockRule(
+                ruleId = i.ruleId ?: "",
+                description = i.description ?: "",
+                primary = i.primary ?: SuperstructureFieldReference("", ""),
+                conditionComparison = i.conditionComparison ?: InterlockComparison.LESS_THAN,
+                conditionThreshold = i.conditionThreshold ?: 0.0,
+                constrained = i.constrained ?: SuperstructureFieldReference("", ""),
+                clampMinimum = i.clampMinimum,
+                clampMaximum = i.clampMaximum,
+            )
+        },
+        healthFallbacks = document.healthFallbacks.orEmpty().map { h ->
+            SuperstructureHealthFallbackPolicy(
+                policyId = h.policyId ?: "",
+                source = h.source ?: SuperstructureFieldReference("", ""),
+                fallbackStateId = h.fallbackStateId ?: "",
+                latchFault = h.latchFault ?: true,
+                description = h.description ?: "",
+            )
+        },
+        luts = document.luts.orEmpty().map { l ->
+            SuperstructureDynamicLut(
+                lutId = l.lutId ?: "",
+                displayName = l.displayName ?: l.lutId ?: "",
+                inputUnit = l.inputUnit ?: "",
+                outputUnit = l.outputUnit ?: "",
+                interpolation = l.interpolation ?: LutInterpolationMethod.LINEAR,
+                controlPoints = l.controlPoints.orEmpty().map { cp ->
+                    LutControlPoint(
+                        inputX = cp.inputX ?: 0.0,
+                        outputY = cp.outputY ?: 0.0,
+                    )
+                },
+            )
+        },
+        faultStateId = document.faultStateId ?: "",
+        disabledPolicy = document.disabledPolicy ?: SuperstructureDisabledPolicy.FORCE_SAFE_AND_REJECT_REQUESTS,
+        disabledStateId = document.disabledStateId ?: document.faultStateId ?: "",
         nodeLayouts = document.nodeLayouts.orEmpty(),
     )
 

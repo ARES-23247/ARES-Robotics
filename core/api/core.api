@@ -2034,15 +2034,19 @@ public final class com/areslib/drivetrain/DisabledDrivePolicy : java/lang/Enum {
 }
 
 public final class com/areslib/drivetrain/DrivetrainComponentDocument {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/lang/Double;
 	public final fun component11 ()Ljava/lang/Double;
 	public final fun component12 ()Ljava/lang/Double;
-	public final fun component13 ()Z
-	public final fun component14 ()Z
-	public final fun component15 ()Ljava/lang/String;
+	public final fun component13 ()Ljava/lang/Double;
+	public final fun component14 ()Ljava/lang/Double;
+	public final fun component15 ()Ljava/lang/Double;
+	public final fun component16 ()Ljava/lang/Double;
+	public final fun component17 ()Z
+	public final fun component18 ()Z
+	public final fun component19 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/areslib/drivetrain/DrivetrainComponentRole;
 	public final fun component4 ()Ljava/lang/String;
@@ -2051,8 +2055,8 @@ public final class com/areslib/drivetrain/DrivetrainComponentDocument {
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Z
 	public final fun component9 ()Z
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
-	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainComponentDocument;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainComponentDocument;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainComponentRole;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZLjava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainComponentDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getControllerModel ()Ljava/lang/String;
 	public final fun getCurrentLimitAmps ()Ljava/lang/Double;
@@ -2064,11 +2068,15 @@ public final class com/areslib/drivetrain/DrivetrainComponentDocument {
 	public final fun getInverted ()Z
 	public final fun getLeaderUid ()Ljava/lang/String;
 	public final fun getModuleUid ()Ljava/lang/String;
+	public final fun getPitchDegrees ()Ljava/lang/Double;
 	public final fun getRequired ()Z
 	public final fun getRole ()Lcom/areslib/drivetrain/DrivetrainComponentRole;
+	public final fun getRollDegrees ()Ljava/lang/Double;
 	public final fun getUid ()Ljava/lang/String;
 	public final fun getXMeters ()Ljava/lang/Double;
 	public final fun getYMeters ()Ljava/lang/Double;
+	public final fun getYawDegrees ()Ljava/lang/Double;
+	public final fun getZMeters ()Ljava/lang/Double;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -8814,8 +8822,10 @@ public final class com/areslib/subsystem/SubsystemHardwareBuilder {
 	public final fun colorSensor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun continuousServo (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun digitalInput (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun indicatorLight (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun motor (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 	public final fun positionalServo (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
+	public final fun prismDriver (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/areslib/subsystem/SubsystemHardwareRef;
 }
 
 public final class com/areslib/subsystem/SubsystemHardwareConnection {
@@ -8876,8 +8886,10 @@ public final class com/areslib/subsystem/SubsystemHardwareKind : java/lang/Enum 
 	public static final field COLOR_SENSOR Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field CONTINUOUS_SERVO Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field DIGITAL_INPUT Lcom/areslib/subsystem/SubsystemHardwareKind;
+	public static final field INDICATOR_LIGHT Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field MOTOR Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static final field POSITIONAL_SERVO Lcom/areslib/subsystem/SubsystemHardwareKind;
+	public static final field PRISM_DRIVER Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemHardwareKind;
 	public static fun values ()[Lcom/areslib/subsystem/SubsystemHardwareKind;
@@ -9390,7 +9402,9 @@ public final class com/areslib/subsystem/SubsystemTemplate : java/lang/Enum {
 	public static final field ADVANCED_CUSTOM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field COMPOSITE_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field HOMED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field INDICATOR_LIGHT_PWM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field POSITION_CONTROLLED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field PRISM_LED_DRIVER Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field SENSOR_ONLY_SUBSYSTEM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field SIMPLE_ACTUATOR Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field VELOCITY_CONTROLLED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;

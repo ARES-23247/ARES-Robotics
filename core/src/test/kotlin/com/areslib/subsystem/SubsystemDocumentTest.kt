@@ -272,4 +272,73 @@ class SubsystemDocumentTest {
         generateMockIo = false,
         generateTest = false,
     )
+
+    @Test
+    fun `decode normalizes missing optional string fields so copy operations succeed`() {
+        val legacyJson = """
+            {
+              "schemaVersion": 8,
+              "documentId": "indicator-lights",
+              "displayName": "Indicator lights",
+              "kotlinTypeName": "IndicatorLightSubsystem",
+              "platform": "FTC",
+              "revision": 1,
+              "hardware": [
+                {
+                  "hardwareId": "primaryIndicator",
+                  "displayName": "Primary indicator light",
+                  "kind": "POSITIONAL_SERVO",
+                  "connection": { "hardwareMapName": "indicator" },
+                  "required": false,
+                  "safeOutput": 0.0
+                }
+              ],
+              "stateFields": [
+                {
+                  "fieldId": "primaryPosition",
+                  "displayName": "Primary color position",
+                  "type": "DOUBLE",
+                  "role": "TARGET",
+                  "defaultNumber": 0.0
+                }
+              ],
+              "controlLoops": [
+                {
+                  "loopId": "primaryColorOutput",
+                  "displayName": "Primary indicator color",
+                  "strategy": "SERVO_POSITION",
+                  "actuatorId": "primaryIndicator",
+                  "targetFieldId": "primaryPosition",
+                  "minimumOutput": 0.0,
+                  "maximumOutput": 1.0
+                }
+              ],
+              "tuningParameters": [],
+              "implementation": {
+                "kind": "GENERATED_STARTER",
+                "ownership": "GENERATED_STARTER"
+              },
+              "safety": {
+                "homing": { "method": "NONE" }
+              }
+            }
+        """.trimIndent()
+
+        val decoded = SubsystemDocumentCodec.decode(legacyJson)
+        val hardware = decoded.hardware.single()
+        val copiedHardware = hardware.copy(displayName = "Updated Primary Light")
+        assertEquals("Updated Primary Light", copiedHardware.displayName)
+        assertEquals("", copiedHardware.description)
+        assertEquals("primaryIndicator", copiedHardware.uid)
+
+        val stateField = decoded.stateFields.single()
+        val copiedStateField = stateField.copy(displayName = "Updated Position")
+        assertEquals("Updated Position", copiedStateField.displayName)
+        assertEquals("", copiedStateField.description)
+
+        val loop = decoded.controlLoops.single()
+        val copiedLoop = loop.copy(displayName = "Updated Loop")
+        assertEquals("Updated Loop", copiedLoop.displayName)
+        assertEquals("", copiedLoop.description)
+    }
 }
