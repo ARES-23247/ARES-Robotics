@@ -239,22 +239,44 @@ class TelemetryUpdateE2ETest {
             trueDisplacement > 0.05,
         )
 
-        val simulatorPoseFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
+        var simulatorPoseFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
+        val firstPoseFrameSequence = simulatorPoseFrame.getOrNull(9)
+        var odometryTruthError = Double.POSITIVE_INFINITY
+        var estimatorTruthError = Double.POSITIVE_INFINITY
+        var poseFramePollsRemaining = 250
+        do {
+            Thread.sleep(20L)
+            simulatorPoseFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
+            if (simulatorPoseFrame.size == 10 && simulatorPoseFrame.all(Double::isFinite)) {
+                odometryTruthError = kotlin.math.hypot(
+                    simulatorPoseFrame[0] - simulatorPoseFrame[6],
+                    simulatorPoseFrame[1] - simulatorPoseFrame[7],
+                )
+                estimatorTruthError = kotlin.math.hypot(
+                    simulatorPoseFrame[0] - simulatorPoseFrame[3],
+                    simulatorPoseFrame[1] - simulatorPoseFrame[4],
+                )
+            }
+            poseFramePollsRemaining--
+        } while (
+            poseFramePollsRemaining > 0 &&
+            (
+                simulatorPoseFrame.getOrNull(9) == firstPoseFrameSequence ||
+                    odometryTruthError >= 0.10 ||
+                    estimatorTruthError >= 0.25
+                )
+        )
         assertEquals("Atomic simulator pose frame must keep its canonical layout", 10, simulatorPoseFrame.size)
         assertTrue("Atomic simulator pose frame must be finite", simulatorPoseFrame.all(Double::isFinite))
         assertTrue(
-            "Raw odometry and same-cycle truth should remain colocated in the simulator pose frame",
-            kotlin.math.hypot(
-                simulatorPoseFrame[0] - simulatorPoseFrame[6],
-                simulatorPoseFrame[1] - simulatorPoseFrame[7],
-            ) < 0.10,
+            "Raw odometry and same-cycle truth should remain colocated in a fresh simulator pose frame " +
+                "(error=$odometryTruthError, frame=${simulatorPoseFrame.contentToString()})",
+            odometryTruthError < 0.10,
         )
         assertTrue(
-            "EKF and same-cycle truth should remain close without replacing the EKF with truth",
-            kotlin.math.hypot(
-                simulatorPoseFrame[0] - simulatorPoseFrame[3],
-                simulatorPoseFrame[1] - simulatorPoseFrame[4],
-            ) < 0.25,
+            "EKF and same-cycle truth should remain close without replacing the EKF with truth " +
+                "(error=$estimatorTruthError, frame=${simulatorPoseFrame.contentToString()})",
+            estimatorTruthError < 0.25,
         )
 
         // 8. Verify simulator lifecycle publication without stealing dashboard MatchState.
