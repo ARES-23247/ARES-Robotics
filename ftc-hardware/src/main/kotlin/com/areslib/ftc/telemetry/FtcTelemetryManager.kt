@@ -53,7 +53,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     /** Core NT4 network tables client interface. */
     val nt4 = NT4Telemetry()
     /** Integrated disk and NT4 network telemetry logger. */
-    override val dataLoggingTelemetry = DataLoggingTelemetry(nt4)
+    override val dataLoggingTelemetry = DataLoggingTelemetry(nt4, runId)
     /** Network state publisher translating Redux [RobotState] into NT4 topics. */
     val publisher = ARESNetworkStatePublisher(dataLoggingTelemetry)
     private var activeBrownoutGuard = BrownoutGuard.ftcDefaults()

@@ -78,4 +78,18 @@ class CanonicalFieldPhysicsTest {
         assertEquals(1, physics.activeObstacles.size)
         assertEquals(1, physics.gamePieces.size)
     }
+
+    @Test
+    fun canonicalDimensionsRebuildTheFourFieldBoundaries() {
+        val physics = SimPhysicsWorld()
+
+        physics.loadFieldElements(RobotFieldConfig(widthMeters = 2.0, heightMeters = 4.0))
+
+        assertEquals(4, physics.fieldWalls.size)
+        assertEquals(2.05, physics.fieldWalls[0].transform.translationY, 1e-9)
+        assertEquals(-2.05, physics.fieldWalls[1].transform.translationY, 1e-9)
+        assertEquals(-1.05, physics.fieldWalls[2].transform.translationX, 1e-9)
+        assertEquals(1.05, physics.fieldWalls[3].transform.translationX, 1e-9)
+        assertEquals(5, physics.world.bodyCount)
+    }
 }

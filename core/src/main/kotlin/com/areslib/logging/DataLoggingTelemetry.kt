@@ -31,6 +31,7 @@ class DataLoggingTelemetry private constructor(
     private val ntTelemetry: ITelemetry?,
     internal val loggingPolicy: LoggingPolicy,
     private val logDirectory: File,
+    private val runId: String?,
     @Suppress("UNUSED_PARAMETER") internalMarker: Unit
 ) : ITelemetry {
 
@@ -38,6 +39,7 @@ class DataLoggingTelemetry private constructor(
         null,
         RobotLogEnvironment.loggingPolicy(),
         RobotLogEnvironment.logDirectory,
+        null,
         Unit
     )
 
@@ -46,6 +48,16 @@ class DataLoggingTelemetry private constructor(
         ntTelemetry,
         RobotLogEnvironment.loggingPolicy(),
         RobotLogEnvironment.logDirectory,
+        null,
+        Unit
+    )
+
+    /** Associates every mode-specific telemetry file with the matching action-log run. */
+    constructor(ntTelemetry: ITelemetry?, runId: String) : this(
+        ntTelemetry,
+        RobotLogEnvironment.loggingPolicy(),
+        RobotLogEnvironment.logDirectory,
+        runId,
         Unit
     )
 
@@ -53,10 +65,11 @@ class DataLoggingTelemetry private constructor(
     internal constructor(
         ntTelemetry: ITelemetry? = null,
         loggingPolicy: LoggingPolicy,
-        logDirectory: File = RobotLogEnvironment.logDirectory
-    ) : this(ntTelemetry, loggingPolicy, logDirectory, Unit)
+        logDirectory: File = RobotLogEnvironment.logDirectory,
+        runId: String? = null
+    ) : this(ntTelemetry, loggingPolicy, logDirectory, runId, Unit)
     
-    private var logger = ARESDataLogger("Init", logDirectory, loggingPolicy)
+    private var logger = ARESDataLogger("Init", logDirectory, loggingPolicy, runId)
     private val currentFrame = java.util.HashMap<String, Any>()
     private val frameLock = Any()
     private var currentMode = "Init"
@@ -141,7 +154,7 @@ class DataLoggingTelemetry private constructor(
         if (detectedMode != currentMode) {
             logger.stop()
             currentMode = detectedMode
-            logger = ARESDataLogger(currentMode, logDirectory, loggingPolicy)
+            logger = ARESDataLogger(currentMode, logDirectory, loggingPolicy, runId)
             ntTelemetry?.putString("OpMode", currentMode)
         }
 

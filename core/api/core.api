@@ -3921,6 +3921,7 @@ public final class com/areslib/logging/DataLoggingTelemetry : com/areslib/teleme
 	public fun <init> ()V
 	public fun <init> (Lcom/areslib/telemetry/ITelemetry;)V
 	public synthetic fun <init> (Lcom/areslib/telemetry/ITelemetry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public fun close ()V
 	public fun getBoolean (Ljava/lang/String;Z)Z
 	public final fun getMinLogIntervalMs ()J
@@ -7850,6 +7851,43 @@ public final class com/areslib/state/RobotFieldPoint {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/state/RobotFieldValidationCode : java/lang/Enum {
+	public static final field APRIL_TAGS_REQUIRED Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field APRIL_TAG_DUPLICATE Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field APRIL_TAG_INVALID Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field ELEMENT_INVALID Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field ELEMENT_TYPE_INVALID Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field FIELD_DIMENSIONS Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field FIELD_TYPE Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field OBSTACLE_INVALID Lcom/areslib/state/RobotFieldValidationCode;
+	public static final field WAYPOINT_INVALID Lcom/areslib/state/RobotFieldValidationCode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/state/RobotFieldValidationCode;
+	public static fun values ()[Lcom/areslib/state/RobotFieldValidationCode;
+}
+
+public final class com/areslib/state/RobotFieldValidationIssue {
+	public fun <init> (Lcom/areslib/state/RobotFieldValidationCode;Ljava/lang/String;Ljava/util/Set;)V
+	public synthetic fun <init> (Lcom/areslib/state/RobotFieldValidationCode;Ljava/lang/String;Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/state/RobotFieldValidationCode;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/Set;
+	public final fun copy (Lcom/areslib/state/RobotFieldValidationCode;Ljava/lang/String;Ljava/util/Set;)Lcom/areslib/state/RobotFieldValidationIssue;
+	public static synthetic fun copy$default (Lcom/areslib/state/RobotFieldValidationIssue;Lcom/areslib/state/RobotFieldValidationCode;Ljava/lang/String;Ljava/util/Set;ILjava/lang/Object;)Lcom/areslib/state/RobotFieldValidationIssue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCode ()Lcom/areslib/state/RobotFieldValidationCode;
+	public final fun getElementIds ()Ljava/util/Set;
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/state/RobotFieldValidator {
+	public static final field INSTANCE Lcom/areslib/state/RobotFieldValidator;
+	public static final fun validate (Lcom/areslib/state/RobotFieldConfig;Lcom/areslib/state/FieldType;Z)Ljava/util/List;
+	public static synthetic fun validate$default (Lcom/areslib/state/RobotFieldConfig;Lcom/areslib/state/FieldType;ZILjava/lang/Object;)Ljava/util/List;
+}
+
 public final class com/areslib/state/RobotFieldWaypoint {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;DDDZ)V
@@ -8312,14 +8350,18 @@ public final class com/areslib/subsystem/ControlLoopBuilder {
 	public final fun getKD ()D
 	public final fun getKI ()D
 	public final fun getKP ()D
+	public final fun getMaximumAcceleration ()D
 	public final fun getMaximumOutput ()D
+	public final fun getMaximumVelocity ()D
 	public final fun getMinimumOutput ()D
 	public final fun getTolerance ()D
 	public final fun setDerivativeFilterTimeConstantSeconds (D)V
 	public final fun setKD (D)V
 	public final fun setKI (D)V
 	public final fun setKP (D)V
+	public final fun setMaximumAcceleration (D)V
 	public final fun setMaximumOutput (D)V
+	public final fun setMaximumVelocity (D)V
 	public final fun setMinimumOutput (D)V
 	public final fun setTolerance (D)V
 }
@@ -8543,6 +8585,8 @@ public final class com/areslib/subsystem/SubsystemControlBuilder {
 	public static synthetic fun direct$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun positionPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun positionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun profiledPositionPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun profiledPositionPid$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun servoPosition (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun servoPosition$default (Lcom/areslib/subsystem/SubsystemControlBuilder;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun velocityPid (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemHardwareRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lcom/areslib/subsystem/SubsystemFieldRef;Lkotlin/jvm/functions/Function1;)V
@@ -8550,16 +8594,17 @@ public final class com/areslib/subsystem/SubsystemControlBuilder {
 }
 
 public final class com/areslib/subsystem/SubsystemControlLoopDocument {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemMotionProfileDocument;Lcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemMotionProfileDocument;Lcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lcom/areslib/subsystem/SubsystemFeedforwardDocument;
-	public final fun component11 ()D
+	public final fun component10 ()Lcom/areslib/subsystem/SubsystemMotionProfileDocument;
+	public final fun component11 ()Lcom/areslib/subsystem/SubsystemFeedforwardDocument;
 	public final fun component12 ()D
 	public final fun component13 ()D
 	public final fun component14 ()D
-	public final fun component15 ()Ljava/lang/String;
+	public final fun component15 ()D
 	public final fun component16 ()Ljava/lang/String;
+	public final fun component17 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public final fun component4 ()Ljava/lang/String;
@@ -8568,8 +8613,8 @@ public final class com/areslib/subsystem/SubsystemControlLoopDocument {
 	public final fun component7 ()D
 	public final fun component8 ()D
 	public final fun component9 ()D
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemControlLoopDocument;
-	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemControlLoopDocument;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopDocument;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemMotionProfileDocument;Lcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemControlLoopDocument;
+	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemControlLoopDocument;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemControlStrategy;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;DDDLcom/areslib/subsystem/SubsystemMotionProfileDocument;Lcom/areslib/subsystem/SubsystemFeedforwardDocument;DDDDLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemControlLoopDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getActuatorId ()Ljava/lang/String;
 	public final fun getDerivativeFilterTimeConstantSeconds ()D
@@ -8583,6 +8628,7 @@ public final class com/areslib/subsystem/SubsystemControlLoopDocument {
 	public final fun getMaximumOutput ()D
 	public final fun getMeasurementFieldId ()Ljava/lang/String;
 	public final fun getMinimumOutput ()D
+	public final fun getMotionProfile ()Lcom/areslib/subsystem/SubsystemMotionProfileDocument;
 	public final fun getStrategy ()Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public final fun getTargetFieldId ()Ljava/lang/String;
 	public final fun getTolerance ()D
@@ -8595,6 +8641,7 @@ public final class com/areslib/subsystem/SubsystemControlStrategy : java/lang/En
 	public static final field BANG_BANG Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public static final field DIRECT Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public static final field POSITION_PID Lcom/areslib/subsystem/SubsystemControlStrategy;
+	public static final field PROFILED_POSITION_PID Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public static final field SERVO_POSITION Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public static final field VELOCITY_PID Lcom/areslib/subsystem/SubsystemControlStrategy;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
@@ -9180,6 +9227,21 @@ public final class com/areslib/subsystem/SubsystemMeasurementSource : java/lang/
 	public static fun values ()[Lcom/areslib/subsystem/SubsystemMeasurementSource;
 }
 
+public final class com/areslib/subsystem/SubsystemMotionProfileDocument {
+	public fun <init> ()V
+	public fun <init> (DD)V
+	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun copy (DD)Lcom/areslib/subsystem/SubsystemMotionProfileDocument;
+	public static synthetic fun copy$default (Lcom/areslib/subsystem/SubsystemMotionProfileDocument;DDILjava/lang/Object;)Lcom/areslib/subsystem/SubsystemMotionProfileDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMaximumAcceleration ()D
+	public final fun getMaximumVelocity ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/subsystem/SubsystemPlatform : java/lang/Enum {
 	public static final field FRC Lcom/areslib/subsystem/SubsystemPlatform;
 	public static final field FTC Lcom/areslib/subsystem/SubsystemPlatform;
@@ -9400,14 +9462,24 @@ public final class com/areslib/subsystem/SubsystemTeachingLevel : java/lang/Enum
 
 public final class com/areslib/subsystem/SubsystemTemplate : java/lang/Enum {
 	public static final field ADVANCED_CUSTOM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field ARM_PIVOT Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field COMPOSITE_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field CONTINUOUS_SERVO Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field CURRENT_HOMED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field DUAL_MOTOR_FOLLOWER Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field ELEVATOR_LIFT Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field FLYWHEEL_SHOOTER Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field HOMED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field INDICATOR_LIGHT_PWM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field INTAKE_CONVEYOR Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field POSITIONAL_SERVO Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field POSITION_CONTROLLED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field PRISM_LED_DRIVER Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field SENSOR_ONLY_SUBSYSTEM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field SIMPLE_ACTUATOR Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field TWO_DOF_ARM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static final field VELOCITY_CONTROLLED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
+	public static final field VELOCITY_HOMED_MECHANISM Lcom/areslib/subsystem/SubsystemTemplate;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemTemplate;
 	public static fun values ()[Lcom/areslib/subsystem/SubsystemTemplate;
@@ -10239,6 +10311,7 @@ public final class com/areslib/telemetry/TelemetryTopicConstants {
 	public static final field ESTIMATED_POSE_Y Ljava/lang/String;
 	public static final field GAME_PIECES Ljava/lang/String;
 	public static final field GAME_PIECES_COUNT Ljava/lang/String;
+	public static final field GAME_PIECES_FRAME Ljava/lang/String;
 	public static final field HARDWARE_MOTORS_PREFIX Ljava/lang/String;
 	public static final field INSTANCE Lcom/areslib/telemetry/TelemetryTopicConstants;
 	public static final field VISION_POSE_HEADING Ljava/lang/String;

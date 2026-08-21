@@ -4,6 +4,7 @@ import com.areslib.networktables.NT4Server
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
 import com.areslib.sim.infra.SimGamepadManager
+import com.areslib.sim.field.SimGamePieceTelemetryFrame
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
 import edu.wpi.first.wpilibj.DataLogManager
@@ -28,6 +29,7 @@ object TelemetryPublisher {
     )
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES).publish()
     private val gamePiecesCountPublisher = ntInst.getIntegerTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_COUNT).publish()
+    private val gamePiecesFramePublisher = ntInst.getDoubleArrayTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_FRAME).publish()
     private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 
     // --- AdvantageKit-level Swerve Module Telemetry ---
@@ -51,6 +53,7 @@ object TelemetryPublisher {
     private val truePoseBuf = DoubleArray(3)
     private val simulatorPoseFrameBuf = DoubleArray(SIMULATOR_POSE_FRAME_VALUE_COUNT)
     private var simulatorPoseFrameSequence = 0L
+    private var gamePieceFrameSequence = 0L
 
     private var lastObstaclesJson = ""
     private var lastFieldConfigJson = ""
@@ -239,6 +242,14 @@ object TelemetryPublisher {
             com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES,
             payload
         )
+    }
+
+    /** Publishes one atomic typed game-piece frame; [frame] is reused and mutated in place. */
+    fun publishGamePieceFrame(frame: DoubleArray, count: Int) {
+        SimGamePieceTelemetryFrame.finish(frame, count, gamePieceFrameSequence)
+        gamePieceFrameSequence = if (gamePieceFrameSequence >= MAX_EXACT_DOUBLE_INTEGER) 0L else gamePieceFrameSequence + 1L
+        gamePiecesFramePublisher.set(frame)
+        NT4Server.publishTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_FRAME, frame)
     }
 
     /**

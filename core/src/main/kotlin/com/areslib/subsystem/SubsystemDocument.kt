@@ -6,7 +6,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 8
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 9
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -110,6 +110,8 @@ enum class SubsystemControlStrategy {
     DIRECT,
 
     POSITION_PID,
+    /** Position PID whose setpoint is constrained by a trapezoidal velocity/acceleration profile. */
+    PROFILED_POSITION_PID,
     VELOCITY_PID,
     BANG_BANG,
     SERVO_POSITION,
@@ -120,9 +122,19 @@ enum class SubsystemTemplate {
     SIMPLE_ACTUATOR,
     POSITION_CONTROLLED_MECHANISM,
     VELOCITY_CONTROLLED_MECHANISM,
+    ELEVATOR_LIFT,
+    ARM_PIVOT,
+    FLYWHEEL_SHOOTER,
+    INTAKE_CONVEYOR,
+    DUAL_MOTOR_FOLLOWER,
+    POSITIONAL_SERVO,
+    CONTINUOUS_SERVO,
     SENSOR_ONLY_SUBSYSTEM,
     HOMED_MECHANISM,
+    CURRENT_HOMED_MECHANISM,
+    VELOCITY_HOMED_MECHANISM,
     COMPOSITE_MECHANISM,
+    TWO_DOF_ARM,
     INDICATOR_LIGHT_PWM,
     PRISM_LED_DRIVER,
     ADVANCED_CUSTOM,
@@ -180,6 +192,12 @@ data class SubsystemFeedforwardDocument(
     val gravityAngleFieldId: String? = null,
     /** Controlled serial-linkage joint (1 or 2); required only for TWO_DOF_ARM. */
     val linkageJoint: Int? = null,
+)
+
+/** Allocation-free trapezoidal setpoint constraints for profiled position control. */
+data class SubsystemMotionProfileDocument(
+    val maximumVelocity: Double = 1.0,
+    val maximumAcceleration: Double = 2.0,
 )
 
 /**
@@ -381,6 +399,8 @@ data class SubsystemControlLoopDocument(
     val kP: Double = 0.0,
     val kI: Double = 0.0,
     val kD: Double = 0.0,
+    /** Used only by [SubsystemControlStrategy.PROFILED_POSITION_PID]. */
+    val motionProfile: SubsystemMotionProfileDocument = SubsystemMotionProfileDocument(),
     /** Typed feedforward combined with feedback; NONE disables feedforward. */
     val feedforward: SubsystemFeedforwardDocument = SubsystemFeedforwardDocument(),
     /** First-order derivative filter time constant; zero disables filtering. */
@@ -707,6 +727,16 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         }
         if (loop.tolerance < 0.0) issue("$path.tolerance", "Tolerance cannot be negative")
         if (loop.minimumOutput >= loop.maximumOutput) issue(path, "Minimum output must be below maximum output")
+        val profile = loop.motionProfile
+        if (!profile.maximumVelocity.isFinite() || profile.maximumVelocity <= 0.0) {
+            issue("$path.motionProfile.maximumVelocity", "Profile maximum velocity must be finite and positive")
+        }
+        if (!profile.maximumAcceleration.isFinite() || profile.maximumAcceleration <= 0.0) {
+            issue("$path.motionProfile.maximumAcceleration", "Profile maximum acceleration must be finite and positive")
+        }
+        if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID && actuator?.kind != SubsystemHardwareKind.MOTOR) {
+            issue("$path.strategy", "Profiled position control currently requires a motor actuator")
+        }
         validateFeedforward(document, loop, fieldsById, path, ::issue)
     }
 
@@ -825,6 +855,14 @@ private fun validateFeedforward(
             issue("$path.feedforward", "Select a feedforward model before configuring its gains or fields")
         }
         return
+    }
+    if (loop.strategy !in setOf(
+            SubsystemControlStrategy.POSITION_PID,
+            SubsystemControlStrategy.PROFILED_POSITION_PID,
+            SubsystemControlStrategy.VELOCITY_PID,
+        )
+    ) {
+        issue("$path.feedforward", "Feedforward requires a PID-based motor controller")
     }
     if (loop.strategy == SubsystemControlStrategy.SERVO_POSITION) {
         issue("$path.feedforward", "Generated positional-servo control does not use voltage feedforward")
@@ -1279,7 +1317,12 @@ object SubsystemDocumentCodec {
             // We fully normalize and re-instantiate each model with non-null defaults.
             val parsed = gson.fromJson(json, SubsystemDocument::class.java)
                 ?: throw IllegalArgumentException("Subsystem document is empty")
-            normalizeSubsystemDocument(parsed)
+            normalizeSubsystemDocument(
+                parsed,
+                feedbackTimeoutWasDeclared = root.getAsJsonObject("safety")?.has("feedbackTimeoutMs") == true,
+                generateMockIoWasDeclared = root.has("generateMockIo"),
+                generateTestWasDeclared = root.has("generateTest"),
+            )
         } catch (error: Exception) {
             throw IllegalArgumentException("Subsystem document is not valid JSON: ${error.message}", error)
         }
@@ -1288,7 +1331,12 @@ object SubsystemDocumentCodec {
     }
 
     @Suppress("USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "UNNECESSARY_NOT_NULL_ASSERTION")
-    private fun normalizeSubsystemDocument(doc: SubsystemDocument): SubsystemDocument {
+    private fun normalizeSubsystemDocument(
+        doc: SubsystemDocument,
+        feedbackTimeoutWasDeclared: Boolean,
+        generateMockIoWasDeclared: Boolean,
+        generateTestWasDeclared: Boolean,
+    ): SubsystemDocument {
         val hardware = (doc.hardware ?: emptyList()).map { h ->
             val conn = h.connection
             SubsystemHardwareDocument(
@@ -1357,6 +1405,10 @@ object SubsystemDocumentCodec {
                 kP = l.kP ?: 0.0,
                 kI = l.kI ?: 0.0,
                 kD = l.kD ?: 0.0,
+                motionProfile = SubsystemMotionProfileDocument(
+                    maximumVelocity = l.motionProfile?.maximumVelocity ?: 1.0,
+                    maximumAcceleration = l.motionProfile?.maximumAcceleration ?: 2.0,
+                ),
                 feedforward = SubsystemFeedforwardDocument(
                     kind = ff?.kind ?: SubsystemFeedforwardKind.NONE,
                     kS = ff?.kS ?: 0.0,
@@ -1435,13 +1487,13 @@ object SubsystemDocumentCodec {
         val inter = sim?.interaction
         val teach = impl?.teaching
         val genMock = when {
-            doc.generateMockIo != null -> doc.generateMockIo == true
+            generateMockIoWasDeclared -> doc.generateMockIo
             impl?.kind == SubsystemImplementationKind.HAND_AUTHORED -> false
             sim?.support == SubsystemSimulationSupport.UNAVAILABLE -> false
             else -> true
         }
         val genTest = when {
-            doc.generateTest != null -> doc.generateTest == true
+            generateTestWasDeclared -> doc.generateTest
             impl?.kind == SubsystemImplementationKind.HAND_AUTHORED -> false
             else -> true
         }
@@ -1486,7 +1538,9 @@ object SubsystemDocumentCodec {
         val homing = s?.homing
         val fault = s?.faultRecovery
         val safety = SubsystemSafetyDocument(
-            feedbackTimeoutMs = s?.feedbackTimeoutMs,
+            // Gson supplies the Kotlin field initializer when this nullable property is omitted.
+            // Preserve an intentionally absent lease without changing an explicitly declared one.
+            feedbackTimeoutMs = if (feedbackTimeoutWasDeclared) s?.feedbackTimeoutMs else null,
             homing = SubsystemHomingDocument(
                 method = homing?.method ?: SubsystemHomingMethod.NONE,
                 actuatorId = homing?.actuatorId,
@@ -1503,6 +1557,8 @@ object SubsystemDocumentCodec {
                 zeroPosition = homing?.zeroPosition ?: 0.0,
             ),
             faultRecovery = SubsystemFaultRecoveryDocument(
+                enabled = fault?.enabled ?: false,
+                actuatorId = fault?.actuatorId,
                 currentFieldId = fault?.currentFieldId,
                 currentThresholdAmps = fault?.currentThresholdAmps ?: 18.0,
                 currentDurationMs = fault?.currentDurationMs ?: 250L,
@@ -1584,6 +1640,7 @@ private val ACTUATOR_KINDS = setOf(
 private val NUMERIC_TYPES = setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)
 private val CLOSED_LOOP_STRATEGIES = setOf(
     SubsystemControlStrategy.POSITION_PID,
+    SubsystemControlStrategy.PROFILED_POSITION_PID,
     SubsystemControlStrategy.VELOCITY_PID,
     SubsystemControlStrategy.BANG_BANG,
 )

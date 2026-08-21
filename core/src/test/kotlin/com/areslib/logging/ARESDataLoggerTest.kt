@@ -9,6 +9,26 @@ import kotlin.test.assertEquals
 class ARESDataLoggerTest {
 
     @Test
+    fun `run identity is sanitized into telemetry filename`() {
+        val directory = kotlin.io.path.createTempDirectory("ares-data-logger-run-id").toFile()
+        try {
+            val logger = ARESDataLogger(
+                mode = "TeleOp",
+                logDirectory = directory,
+                policy = testLoggingPolicy(),
+                runId = "run/123"
+            )
+            logger.logFrame(hashMapOf("TimestampMs" to 1L, "Value" to 1.0))
+            logger.stop()
+
+            val completed = directory.listFiles { file -> file.extension == "csv" }.orEmpty().single()
+            assertTrue(completed.name.contains("_run_run_123"))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `two loggers created in the same millisecond retain distinct completed files`() {
         val directory = kotlin.io.path.createTempDirectory("ares-data-logger-collision").toFile()
         com.areslib.util.RobotClock.useMockTime(1_234_567L)

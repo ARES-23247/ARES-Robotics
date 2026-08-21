@@ -9,6 +9,7 @@ import com.areslib.state.Alliance
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldManager
+import com.areslib.state.RobotFieldValidator
 import org.dyn4j.dynamics.Body
 import org.dyn4j.world.World
 import org.dyn4j.geometry.Geometry
@@ -19,8 +20,8 @@ import java.io.File
 /**
  * Owns the center-origin Dyn4j top-down world and its robot/field bodies.
  *
- * Distances are meters and body rotations are CCW-positive radians. The FTC field is bounded at
- * approximately ±1.825 m on each axis. [loadFieldElements] removes prior dynamic field content
+ * Distances are meters and body rotations are CCW-positive radians. Field boundaries follow the
+ * active canonical document dimensions in the center-origin frame. [loadFieldElements] removes prior dynamic field content
  * before loading a supplied configuration; when no configuration is supplied it searches the
  * running project's canonical assets before developer-only fallbacks and leaves a missing/invalid
  * asset category empty.
@@ -33,9 +34,13 @@ class SimPhysicsWorld {
     val robotBody = Body()
     val activeObstacles = mutableListOf<Body>()
     val gamePieces = mutableListOf<Body>()
+    val fieldWalls = mutableListOf<Body>()
 
-    private val FIELD_WIDTH = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
-    private val FIELD_HEIGHT = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
+    var loadedFieldConfig: RobotFieldConfig? = null
+        private set
+
+    private var fieldWidth = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
+    private var fieldHeight = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
 
     init {
         world.setGravity(Vector2(0.0, 0.0))
@@ -47,7 +52,7 @@ class SimPhysicsWorld {
         robotBody.angularDamping = 3.0
 
         world.addBody(robotBody)
-        createWalls()
+        rebuildWalls(fieldWidth, fieldHeight)
     }
 
     /**
@@ -81,6 +86,9 @@ class SimPhysicsWorld {
         gamePieces.clear()
 
         if (activeConfig != null) {
+            loadedFieldConfig = activeConfig
+            RobotFieldManager.setActiveConfig(activeConfig)
+            rebuildWallsIfDimensionsChanged(activeConfig.resolvedWidthMeters, activeConfig.resolvedHeightMeters)
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
             activeObstacles.addAll(obstacles)
             val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)
@@ -110,16 +118,26 @@ class SimPhysicsWorld {
     }
 
 
-    private fun createWalls() {
-        val halfW = FIELD_WIDTH / 2.0
-        val halfH = FIELD_HEIGHT / 2.0
+    private fun rebuildWallsIfDimensionsChanged(width: Double, height: Double) {
+        if (width == fieldWidth && height == fieldHeight) return
+        rebuildWalls(width, height)
+    }
+
+    private fun rebuildWalls(width: Double, height: Double) {
+        fieldWalls.forEach(world::removeBody)
+        fieldWalls.clear()
+        fieldWidth = width
+        fieldHeight = height
+
+        val halfW = width / 2.0
+        val halfH = height / 2.0
         val thickness = 0.1
 
         val walls = listOf(
-            Geometry.createRectangle(FIELD_WIDTH, thickness) to Vector2(0.0, halfH + thickness / 2.0),
-            Geometry.createRectangle(FIELD_WIDTH, thickness) to Vector2(0.0, -halfH - thickness / 2.0),
-            Geometry.createRectangle(thickness, FIELD_HEIGHT) to Vector2(-halfW - thickness / 2.0, 0.0),
-            Geometry.createRectangle(thickness, FIELD_HEIGHT) to Vector2(halfW + thickness / 2.0, 0.0)
+            Geometry.createRectangle(width, thickness) to Vector2(0.0, halfH + thickness / 2.0),
+            Geometry.createRectangle(width, thickness) to Vector2(0.0, -halfH - thickness / 2.0),
+            Geometry.createRectangle(thickness, height) to Vector2(-halfW - thickness / 2.0, 0.0),
+            Geometry.createRectangle(thickness, height) to Vector2(halfW + thickness / 2.0, 0.0)
         )
 
         for ((shape, pos) in walls) {
@@ -128,6 +146,7 @@ class SimPhysicsWorld {
             wallBody.setMass(MassType.INFINITE)
             wallBody.transform.setTranslation(pos)
             world.addBody(wallBody)
+            fieldWalls += wallBody
         }
     }
 
@@ -143,7 +162,9 @@ class SimPhysicsWorld {
             for (body in activeObstacles) world.removeBody(body)
             activeObstacles.clear()
             activeObstacles.addAll(FieldObstacleLoader.loadObstacles(world, obstacles))
-            RobotFieldManager.setActiveConfig(RobotFieldManager.activeConfig.copy(obstacles = obstacles))
+            val updatedConfig = (loadedFieldConfig ?: RobotFieldManager.activeConfig).copy(obstacles = obstacles)
+            loadedFieldConfig = updatedConfig
+            RobotFieldManager.setActiveConfig(updatedConfig)
             NT4FieldPublisher.publishObstacles(obstacles)
             true
         } catch (e: Exception) {
@@ -156,7 +177,11 @@ class SimPhysicsWorld {
     fun replaceFieldDocumentJson(json: String): Boolean {
         return try {
             val config = RobotFieldDocument.decode(json)
-            RobotFieldManager.setActiveConfig(config)
+            val validationIssues = RobotFieldValidator.validate(config)
+            if (validationIssues.isNotEmpty()) {
+                System.err.println("Failed to apply dashboard field document: ${validationIssues.first().message}")
+                return false
+            }
             loadFieldElements(config)
             true
         } catch (e: Exception) {

@@ -64,6 +64,7 @@ class ARESDataLogger private constructor(
     val mode: String,
     private val logDirectory: File,
     internal val policy: LoggingPolicy,
+    private val runId: String?,
     @Suppress("UNUSED_PARAMETER") internalMarker: Unit
 ) {
 
@@ -71,6 +72,7 @@ class ARESDataLogger private constructor(
         "Init",
         RobotLogEnvironment.logDirectory,
         RobotLogEnvironment.loggingPolicy(),
+        null,
         Unit
     )
 
@@ -78,14 +80,15 @@ class ARESDataLogger private constructor(
     constructor(
         mode: String = "Init",
         logDirectory: File = RobotLogEnvironment.logDirectory
-    ) : this(mode, logDirectory, RobotLogEnvironment.loggingPolicy(), Unit)
+    ) : this(mode, logDirectory, RobotLogEnvironment.loggingPolicy(), null, Unit)
 
     /** Internal policy injection used by calibration and deterministic logging tests. */
     internal constructor(
         mode: String = "Init",
         logDirectory: File = RobotLogEnvironment.logDirectory,
-        policy: LoggingPolicy
-    ) : this(mode, logDirectory, policy, Unit)
+        policy: LoggingPolicy,
+        runId: String? = null
+    ) : this(mode, logDirectory, policy, runId, Unit)
 
     private val retentionEnabled = RobotLogEnvironment.isRetentionEnabled()
     private val logQueue = LinkedBlockingQueue<Map<String, Any>>(1000)
@@ -502,10 +505,14 @@ class ARESDataLogger private constructor(
         val safeMode = mode.map { character ->
             if (character.isLetterOrDigit() || character == '-' || character == '_') character else '_'
         }.joinToString("").ifBlank { "Unknown" }
+        val safeRunId = runId?.map { character ->
+            if (character.isLetterOrDigit() || character == '-' || character == '_') character else '_'
+        }?.joinToString("")?.take(MAX_RUN_ID_FILENAME_LENGTH)?.ifBlank { null }
+        val runSuffix = safeRunId?.let { "_run_$it" }.orEmpty()
         val extension = if (policy.compress) ".csv.gz" else ".csv"
         repeat(MAX_FILE_RESERVATION_ATTEMPTS) { attempt ->
             val suffix = if (attempt == 0) "" else "_${UUID.randomUUID()}"
-            val completed = File(logDirectory, "ares_log_${timestamp}_${safeMode}${suffix}$extension")
+            val completed = File(logDirectory, "ares_log_${timestamp}_${safeMode}${runSuffix}${suffix}$extension")
             if (completed.exists()) return@repeat
             val active = File(logDirectory, "${completed.name}.active")
             var channel: FileChannel? = null
@@ -601,6 +608,7 @@ class ARESDataLogger private constructor(
     companion object {
         const val EXTRA_FIELDS_COLUMN = "_ExtraFieldsJson"
         private const val MAX_FILE_RESERVATION_ATTEMPTS = 32
+        private const val MAX_RUN_ID_FILENAME_LENGTH = 64
         private const val WRITER_BUFFER_BYTES = 64 * 1024
     }
 

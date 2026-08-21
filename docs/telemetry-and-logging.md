@@ -53,6 +53,17 @@ neutral frame before motion is accepted. Field payloads remain separate non-cont
 `ARES/Input/obstacles` and `ARES/Input/fieldConfig`. Retired scalar input and heartbeat topics are
 not accepted.
 
+The field editor publishes `ARES/Input/fieldConfig` as the single authoritative field mutation.
+Simulators rebuild walls, obstacles, element metadata, and AprilTag vision from that document; the
+legacy obstacle-only input remains a compatibility surface for older clients, not a second half of
+an editor transaction.
+
+Both FTC and FRC simulators publish `ARES/GamePiecesFrame` as an atomic v2 `double[]`:
+`[version, count, records..., sequence]`. Each nine-value record is
+`[instanceKey, typeKey, x, y, rotation, width, height, shapeCode, colorRgb]`. Keys are stable,
+positive integers exactly representable as doubles; translations/sizes are meters and rotation is
+CCW-positive radians. The final changing sequence is the commit marker, including at zero count.
+
 ## Local log API
 
 `LogManagerServer` is a NanoHTTPD service on port `5002`:

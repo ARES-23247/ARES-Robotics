@@ -10,8 +10,10 @@ import java.net.URL
 /** Parsed simulator startup options. */
 data class SimCliArgs(
     val fieldConfigArg: String? = null,
-    val watchFieldConfig: Boolean = false,
     val headless: Boolean = false,
+    /** Binary-compatibility shim; live field updates use the canonical NT4 document topic. */
+    @Deprecated("The --watch option never reloaded fields; publish ARES/Input/fieldConfig instead")
+    val watchFieldConfig: Boolean = false,
     val opModeClassName: String? = null
 )
 
@@ -22,7 +24,6 @@ object SimCliParser {
 
     fun parseArgs(args: Array<String>): SimCliArgs {
         var fieldConfigArg: String? = null
-        var watchFieldConfig = false
         var headless = false
         var opModeClassName: String? = null
 
@@ -40,7 +41,6 @@ object SimCliParser {
                     fieldConfigArg = args.getOrNull(++argIdx)?.requireValue(argument)
                         ?: throw IllegalArgumentException("$argument requires a value")
                 }
-                argument == "--watch" -> watchFieldConfig = true
                 argument == "--headless" -> headless = true
                 argument == "--opmode" -> {
                     opModeClassName = args.getOrNull(++argIdx)?.requireValue(argument)
@@ -53,7 +53,6 @@ object SimCliParser {
 
         return SimCliArgs(
             fieldConfigArg = fieldConfigArg,
-            watchFieldConfig = watchFieldConfig,
             headless = headless,
             opModeClassName = opModeClassName
         )

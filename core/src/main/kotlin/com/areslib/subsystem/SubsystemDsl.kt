@@ -510,6 +510,16 @@ class SubsystemControlBuilder internal constructor() {
         block: ControlLoopBuilder.() -> Unit = {},
     ) = add(id, displayName, SubsystemControlStrategy.POSITION_PID, actuator, target, measurement, block)
 
+    /** Position PID with an allocation-free trapezoidal setpoint profile. */
+    fun profiledPositionPid(
+        id: String,
+        displayName: String,
+        actuator: SubsystemHardwareRef,
+        target: SubsystemFieldRef,
+        measurement: SubsystemFieldRef,
+        block: ControlLoopBuilder.() -> Unit = {},
+    ) = add(id, displayName, SubsystemControlStrategy.PROFILED_POSITION_PID, actuator, target, measurement, block)
+
     fun velocityPid(
         id: String,
         displayName: String,
@@ -556,6 +566,10 @@ class SubsystemControlBuilder internal constructor() {
             kP = builder.kP,
             kI = builder.kI,
             kD = builder.kD,
+            motionProfile = SubsystemMotionProfileDocument(
+                maximumVelocity = builder.maximumVelocity,
+                maximumAcceleration = builder.maximumAcceleration,
+            ),
             feedforward = builder.feedforward.build(),
             derivativeFilterTimeConstantSeconds = builder.derivativeFilterTimeConstantSeconds,
             tolerance = builder.tolerance,
@@ -570,6 +584,10 @@ class ControlLoopBuilder internal constructor() {
     var kP: Double = 0.0
     var kI: Double = 0.0
     var kD: Double = 0.0
+    /** Maximum profiled setpoint velocity in the target field's unit per second. */
+    var maximumVelocity: Double = 1.0
+    /** Maximum profiled setpoint acceleration in the target field's unit per second squared. */
+    var maximumAcceleration: Double = 2.0
     val feedforward = SubsystemFeedforwardBuilder()
     var derivativeFilterTimeConstantSeconds: Double = 0.02
     var tolerance: Double = 0.0

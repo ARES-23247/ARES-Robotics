@@ -7,6 +7,50 @@ import org.junit.jupiter.api.Test
 
 class SubsystemDocumentTest {
     @Test
+    fun `every capability template is valid and round trips on both robot platforms`() {
+        SubsystemPlatform.entries.forEach { platform ->
+            SubsystemTemplate.entries.forEach { template ->
+                val id = "sample-${template.name.lowercase().replace('_', '-')}"
+                val document = SubsystemTemplates.create(template, id, "Sample${template.name.toTypeName()}", platform)
+                val issues = validateSubsystemDocument(document)
+                assertTrue(issues.isEmpty()) { "$platform $template was invalid: $issues" }
+                assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
+            }
+        }
+    }
+
+    @Test
+    fun `profiled position template declares bounded motion and feedforward`() {
+        val elevator = SubsystemTemplates.create(
+            SubsystemTemplate.ELEVATOR_LIFT,
+            "elevator",
+            "Elevator",
+            SubsystemPlatform.FTC,
+        )
+        val loop = elevator.controlLoops.single()
+
+        assertEquals(SubsystemControlStrategy.PROFILED_POSITION_PID, loop.strategy)
+        assertTrue(loop.motionProfile.maximumVelocity > 0.0)
+        assertTrue(loop.motionProfile.maximumAcceleration > 0.0)
+        assertEquals(SubsystemFeedforwardKind.ELEVATOR, loop.feedforward.kind)
+    }
+
+    @Test
+    fun `fault recovery ownership survives codec normalization`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.INTAKE_CONVEYOR,
+            "intake",
+            "Intake",
+            SubsystemPlatform.FTC,
+        )
+        val decoded = SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(base))
+
+        assertTrue(decoded.safety.faultRecovery.enabled)
+        assertEquals("motor", decoded.safety.faultRecovery.actuatorId)
+        assertEquals("currentAmps", decoded.safety.faultRecovery.currentFieldId)
+    }
+
+    @Test
     fun `DSL and JSON share the same validated document model`() {
         val document = subsystem("elevator", "Elevator", SubsystemPlatform.FTC) {
             description = "Lift game pieces"
@@ -201,13 +245,13 @@ class SubsystemDocumentTest {
         val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
 
         val oldSchema = assertThrows(IllegalArgumentException::class.java) {
-            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 8", "\"schemaVersion\": 7"))
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 9", "\"schemaVersion\": 8"))
         }
-        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 7"))
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 8"))
 
         val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
             SubsystemDocumentCodec.decode(
-                """{"schemaVersion":8,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
+                """{"schemaVersion":9,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
             )
         }
         assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))
@@ -277,7 +321,7 @@ class SubsystemDocumentTest {
     fun `decode normalizes missing optional string fields so copy operations succeed`() {
         val legacyJson = """
             {
-              "schemaVersion": 8,
+              "schemaVersion": 9,
               "documentId": "indicator-lights",
               "displayName": "Indicator lights",
               "kotlinTypeName": "IndicatorLightSubsystem",
@@ -341,4 +385,8 @@ class SubsystemDocumentTest {
         assertEquals("Updated Loop", copiedLoop.displayName)
         assertEquals("", copiedLoop.description)
     }
+}
+
+private fun String.toTypeName(): String = lowercase().split('_').joinToString("") { token ->
+    token.replaceFirstChar { it.uppercase() }
 }

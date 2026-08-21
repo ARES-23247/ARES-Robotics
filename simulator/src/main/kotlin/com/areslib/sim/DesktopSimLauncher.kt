@@ -10,6 +10,7 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.sim.cli.SimCliParser
 import com.areslib.sim.field.FieldElementLoader
 import com.areslib.sim.field.MecanumInteractionModel
+import com.areslib.sim.field.SimGamePieceTelemetryFrame
 import com.areslib.sim.infra.VirtualDriverStation
 import com.areslib.sim.infra.SimGamepadManager
 import com.areslib.sim.model.MecanumRobotDouble
@@ -154,6 +155,7 @@ object DesktopSimLauncher {
 
         // 4. Mecanum Robot Double & OpMode Execution
         val robotDouble = MecanumRobotDouble()
+        physicsWorld.loadedFieldConfig?.let(robotDouble::configureField)
         val synchronizeDriverStationState = {
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
                 val alliance = if (driverStation.effectiveIsRedAlliance) {
@@ -225,7 +227,6 @@ object DesktopSimLauncher {
         }
         lifecycleStop = {
             opModeSlot.stopActiveForShutdown()
-            Unit
         }
 
         opModeSlot.activeMode?.let { initialMode ->
@@ -270,7 +271,7 @@ object DesktopSimLauncher {
         var lastDsCommand = ""
         var lastSelectedOpMode = ""
         var inventoryCount = 0
-        var gamePieceTelemetryBuffer = DoubleArray(0)
+        var gamePieceTelemetryBuffer = DoubleArray(SimGamePieceTelemetryFrame.requiredSize(0))
 
         while (isSimRunning) {
           try {
@@ -278,7 +279,9 @@ object DesktopSimLauncher {
                 physicsWorld.replaceObstaclesFromAnalyticsJson(obstaclesJson)
             }
             TelemetryPublisher.pollWebFieldConfig()?.let { fieldConfigJson ->
-                physicsWorld.replaceFieldDocumentJson(fieldConfigJson)
+                if (physicsWorld.replaceFieldDocumentJson(fieldConfigJson)) {
+                    physicsWorld.loadedFieldConfig?.let(robotDouble::configureField)
+                }
             }
             // Check for Driver Station UI commands from ARES-Analytics dashboard or in-process NT4Server
             val dsCommand = NT4Server.getString("ARES/DriverStation/Command", "").trim()
@@ -445,31 +448,19 @@ object DesktopSimLauncher {
 
             // Stream dynamic game piece positions to NT4 for live visual rendering
             val pieces = physicsWorld.gamePieces
-            val requiredGamePieceDoubles = pieces.size * TelemetryPublisher.GAME_PIECE_RECORD_WIDTH
+            val requiredGamePieceDoubles = SimGamePieceTelemetryFrame.requiredSize(pieces.size)
             if (gamePieceTelemetryBuffer.size != requiredGamePieceDoubles) {
                 // Population changes are infrequent; reuse the exact-sized buffer on every stable
-                // 50 Hz frame and the singleton empty array after the final removal.
-                gamePieceTelemetryBuffer = if (requiredGamePieceDoubles == 0) {
-                    DoubleArray(0)
-                } else {
-                    DoubleArray(requiredGamePieceDoubles)
-                }
+                // 50 Hz frame. The atomic frame retains a header and sequence even at zero count.
+                gamePieceTelemetryBuffer = DoubleArray(requiredGamePieceDoubles)
             }
 
             if (pieces.isNotEmpty()) {
                 for (i in pieces.indices) {
-                    val p = pieces[i]
-                    val base = i * TelemetryPublisher.GAME_PIECE_RECORD_WIDTH
-                    gamePieceTelemetryBuffer[base + 0] = p.transform.translationX
-                    gamePieceTelemetryBuffer[base + 1] = p.transform.translationY
-                    gamePieceTelemetryBuffer[base + 2] = p.transform.rotationAngle
-                    gamePieceTelemetryBuffer[base + 3] = 0.15
-                    gamePieceTelemetryBuffer[base + 4] = 0.15
-                    gamePieceTelemetryBuffer[base + 5] = 0.0
-                    gamePieceTelemetryBuffer[base + 6] = 0.0
+                    SimGamePieceTelemetryFrame.writeBody(gamePieceTelemetryBuffer, i, pieces[i])
                 }
             }
-            TelemetryPublisher.publishGamePieces(gamePieceTelemetryBuffer, pieces.size)
+            TelemetryPublisher.publishGamePieceFrame(gamePieceTelemetryBuffer, pieces.size)
 
             // The OpMode tick above consumed the sensor sample written after the previous physics
             // step. Publish that same observation pose alongside the Redux odometry/EKF state.

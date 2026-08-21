@@ -15,6 +15,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import com.qualcomm.robotcore.hardware.HardwareMap
+import com.areslib.state.RobotFieldAprilTag
+import com.areslib.state.RobotFieldConfig
 import kotlin.math.abs
 
 /**
@@ -97,6 +99,7 @@ class MecanumRobotDouble {
     
     val pinpoint = GoBildaPinpointDriver()
     val limelight = SimLimelight3A()
+    private var simulatedAprilTags: List<RobotFieldAprilTag> = DEFAULT_SIM_TAGS
     
     val voltageSensor = object : VoltageSensor {
         override val voltage: Double = 12.8
@@ -208,6 +211,11 @@ class MecanumRobotDouble {
     // Encoder properties
     private val encoderTicksPerMeter = 2000.0 // Ticks per meter of wheel travel
 
+    /** Replaces the immutable AprilTag snapshot used by the 50 Hz camera simulation. */
+    fun configureField(config: RobotFieldConfig) {
+        simulatedAprilTags = config.apriltags
+    }
+
     fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2
@@ -243,23 +251,23 @@ class MecanumRobotDouble {
         pinpoint.velY = actualVy
 
         var visibleTagId: Int? = null
-        val hFovRad = Math.toRadians(35.0)
-        val maxRangeMeters = 3.5
+        var tagIndex = 0
+        while (tagIndex < simulatedAprilTags.size) {
+            val tag = simulatedAprilTags[tagIndex]
+            val dx = tag.x - trueX
+            val dy = tag.y - trueY
+            val distanceSquared = dx * dx + dy * dy
 
-        for ((tagId, pos) in SIM_TAGS) {
-            val dx = pos.first - trueX
-            val dy = pos.second - trueY
-            val dist = kotlin.math.sqrt(dx * dx + dy * dy)
-
-            if (dist in 0.2..maxRangeMeters) {
+            if (distanceSquared in MIN_VISION_RANGE_SQUARED..MAX_VISION_RANGE_SQUARED) {
                 val angleToTag = kotlin.math.atan2(dy, dx)
                 val relAngle = com.areslib.math.wrapAngle(angleToTag - trueHeadingRad)
 
-                if (kotlin.math.abs(relAngle) <= hFovRad) {
-                    visibleTagId = tagId
+                if (kotlin.math.abs(relAngle) <= HORIZONTAL_HALF_FOV_RADIANS) {
+                    visibleTagId = tag.id
                     break
                 }
             }
+            tagIndex++
         }
 
         if (visibleTagId != null) {
@@ -278,10 +286,14 @@ class MecanumRobotDouble {
     }
 }
 
-private val SIM_TAGS = mapOf(
-    1 to Pair(1.8, 1.8),
-    2 to Pair(-1.8, 1.8),
-    3 to Pair(1.8, -1.8),
-    4 to Pair(-1.8, -1.8),
-    11 to Pair(0.0, 1.8)
+private const val HORIZONTAL_HALF_FOV_RADIANS = 0.6108652381980153 // 35 degrees
+private const val MIN_VISION_RANGE_SQUARED = 0.04 // 0.2 m
+private const val MAX_VISION_RANGE_SQUARED = 12.25 // 3.5 m
+
+private val DEFAULT_SIM_TAGS = listOf(
+    RobotFieldAprilTag(id = 1, x = 1.8, y = 1.8),
+    RobotFieldAprilTag(id = 2, x = -1.8, y = 1.8),
+    RobotFieldAprilTag(id = 3, x = 1.8, y = -1.8),
+    RobotFieldAprilTag(id = 4, x = -1.8, y = -1.8),
+    RobotFieldAprilTag(id = 11, x = 0.0, y = 1.8),
 )
