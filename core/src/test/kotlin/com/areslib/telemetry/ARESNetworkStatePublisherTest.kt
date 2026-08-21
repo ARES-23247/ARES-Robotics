@@ -13,6 +13,20 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ARESNetworkStatePublisherTest {
+    @Test
+    fun `each published state advances the telemetry heartbeat`() {
+        val telemetry = RecordingTelemetry()
+        val publisher = ARESNetworkStatePublisher(telemetry)
+        val state = RobotState()
+
+        publisher.publish(state, flush = false)
+        val first = telemetry.numbers.getValue(TelemetryTopicConstants.TELEMETRY_FRAME_SEQUENCE)
+        publisher.publish(state, flush = false)
+        val second = telemetry.numbers.getValue(TelemetryTopicConstants.TELEMETRY_FRAME_SEQUENCE)
+
+        assertEquals(0.0, first)
+        assertEquals(1.0, second)
+    }
     @AfterTest
     fun restoreClock() {
         RobotClock.useSystemTime()

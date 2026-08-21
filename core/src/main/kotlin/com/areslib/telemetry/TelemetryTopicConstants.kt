@@ -4,6 +4,8 @@ package com.areslib.telemetry
  * Centralized topic string constants and canonical topic normalization rules for ARESLib.
  */
 object TelemetryTopicConstants {
+    /** Monotonic per-publish heartbeat; a changing value proves the robot telemetry loop is alive. */
+    const val TELEMETRY_FRAME_SEQUENCE: String = "ARES/Telemetry/FrameSequence"
     const val DRIVE_POSE_X = "Drive/Pose_X"
     const val DRIVE_POSE_Y = "Drive/Pose_Y"
     const val DRIVE_POSE_HEADING = "Drive/Pose_Heading"

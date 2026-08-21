@@ -279,6 +279,24 @@ class TelemetryUpdateE2ETest {
             estimatorTruthError < 0.25,
         )
 
+        // The heartbeat wait belongs after the time-sensitive pose-coherence assertions. Waiting
+        // for an independently scheduled telemetry update earlier can let the modeled odometry
+        // drift beyond that assertion's narrow same-cycle window on a heavily loaded CI runner.
+        val heartbeatTopic = com.areslib.telemetry.TelemetryTopicConstants.TELEMETRY_FRAME_SEQUENCE
+        val firstHeartbeat = NT4Server.getDouble(heartbeatTopic, Double.NaN)
+        assertTrue("Simulator must publish a finite robot-loop heartbeat", firstHeartbeat.isFinite())
+        var secondHeartbeat = firstHeartbeat
+        var heartbeatPollsRemaining = 100
+        while (secondHeartbeat <= firstHeartbeat && heartbeatPollsRemaining > 0) {
+            Thread.sleep(20L)
+            secondHeartbeat = NT4Server.getDouble(heartbeatTopic, Double.NaN)
+            heartbeatPollsRemaining--
+        }
+        assertTrue(
+            "Simulator robot-loop heartbeat must advance while TeleOp is running",
+            secondHeartbeat.isFinite() && secondHeartbeat > firstHeartbeat,
+        )
+
         // 8. Verify simulator lifecycle publication without stealing dashboard MatchState.
         val matchState = NT4Server.getString("ARES/DriverStation/MatchState", "")
         println("[Telemetry E2E Test] Match State: '$matchState'")
