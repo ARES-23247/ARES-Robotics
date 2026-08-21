@@ -2,6 +2,8 @@ package com.areslib.sim
 
 import com.areslib.sim.model.MecanumRobotDouble
 import com.areslib.networktables.NT4Server
+import com.areslib.state.RobotFieldAprilTag
+import com.areslib.state.RobotFieldConfig
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
@@ -60,5 +62,40 @@ class SimVisionFovTest {
         )
         val centerRedResult = robot.limelight.getLatestResult()
         assertNull("Limelight result should be null when no tags are within camera FOV cone", centerRedResult)
+    }
+
+    @Test
+    fun authoredAprilTagsReplaceTheLegacyVisionLayout() {
+        NT4Server.createInstance("127.0.0.1", 0)
+        val robot = MecanumRobotDouble()
+        robot.configureField(
+            RobotFieldConfig(
+                apriltags = listOf(RobotFieldAprilTag(id = 42, x = 0.0, y = 1.8, z = 0.2))
+            )
+        )
+
+        robot.updateSensors(
+            dt = 0.02,
+            actualVx = 0.0,
+            actualVy = 0.0,
+            actualOmega = 0.0,
+            trueX = 0.0,
+            trueY = -1.2,
+            trueHeadingRad = Math.PI / 2
+        )
+
+        assertEquals(42, robot.limelight.getLatestResult()!!.getFiducialResults().single().getFiducialId())
+
+        robot.configureField(RobotFieldConfig(apriltags = emptyList()))
+        robot.updateSensors(
+            dt = 0.02,
+            actualVx = 0.0,
+            actualVy = 0.0,
+            actualOmega = 0.0,
+            trueX = 0.0,
+            trueY = -1.2,
+            trueHeadingRad = Math.PI / 2
+        )
+        assertNull(robot.limelight.getLatestResult())
     }
 }

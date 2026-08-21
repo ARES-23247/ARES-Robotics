@@ -144,7 +144,11 @@ object LogManagerServer : NanoHTTPD(5002) {
     }
 
     private fun serveFile(file: File): Response {
-        val mimeType = if (file.name.endsWith(".jsonl")) "application/x-jsonlines" else "text/csv"
+        val mimeType = when {
+            file.name.endsWith(".csv.gz", ignoreCase = true) -> "application/gzip"
+            file.name.endsWith(".jsonl", ignoreCase = true) -> "application/x-jsonlines"
+            else -> "text/csv"
+        }
         return try {
             newChunkedResponse(Response.Status.OK, mimeType, file.inputStream())
         } catch (e: Exception) {
@@ -235,9 +239,12 @@ object LogManagerServer : NanoHTTPD(5002) {
         )
     }
 
-    /** True only for regular files whose writer has atomically removed the `.active` reservation. */
-    private fun isCompletedLogFile(file: File): Boolean =
-        file.isFile && !isActiveLogName(file.name)
+    /** True only for supported completed logs, never abandoned or writer-owned reservations. */
+    private fun isCompletedLogFile(file: File): Boolean = file.isFile && when {
+        isActiveLogName(file.name) -> false
+        file.name.endsWith(".abandoned", ignoreCase = true) -> false
+        else -> COMPLETED_LOG_SUFFIXES.any { suffix -> file.name.endsWith(suffix, ignoreCase = true) }
+    }
 
     /**
      * Endpoint requests use one basename and let the server search the unsynced and synced roots.
@@ -248,7 +255,8 @@ object LogManagerServer : NanoHTTPD(5002) {
         if (fileName.isBlank() || fileName != fileName.trim()) return false
         if (fileName.indexOf('/') >= 0 || fileName.indexOf('\\') >= 0 || fileName.indexOf(':') >= 0) return false
         if (fileName.endsWith('.') || fileName.endsWith(' ')) return false
-        return !isActiveLogName(fileName)
+        if (isActiveLogName(fileName) || fileName.endsWith(".abandoned", ignoreCase = true)) return false
+        return COMPLETED_LOG_SUFFIXES.any { suffix -> fileName.endsWith(suffix, ignoreCase = true) }
     }
 
     private fun isActiveLogName(fileName: String): Boolean =
@@ -501,4 +509,17 @@ object LogManagerServer : NanoHTTPD(5002) {
 
     private const val MIN_DELETE_TOKEN_LENGTH = 16
     private const val ACTIVE_LOG_SUFFIX = ".active"
+    private val COMPLETED_LOG_SUFFIXES = listOf(
+        ".csv",
+        ".csv.gz",
+        ".jsonl",
+        ".wpilog",
+        ".wpilogxz",
+        ".rlog",
+        ".revlog",
+        ".parquet",
+        ".dslog",
+        ".dsevents",
+        ".log"
+    )
 }

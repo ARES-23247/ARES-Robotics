@@ -31,6 +31,30 @@ import org.junit.jupiter.api.Test
 
 class SubsystemKotlinGeneratorTest {
     @Test
+    fun `profiled position starter generates allocation-free constrained setpoint and feedforward`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.ELEVATOR_LIFT,
+            "elevator",
+            "Elevator",
+            SubsystemPlatform.FTC,
+        )
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        )
+        val controller = files.single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+
+        assertTrue(controller.contains("primaryProfilePosition"))
+        assertTrue(controller.contains("primaryProfileVelocity"))
+        assertTrue(controller.contains("primaryVelocityStep = 1.5 * dtSeconds"))
+        assertTrue(controller.contains("minOf(0.8, primaryStoppingVelocity)"))
+        assertTrue(controller.contains("primaryDesiredAcceleration = primaryProfileAcceleration"))
+        assertTrue(controller.contains("+ 0.6"))
+        assertTrue(!controller.contains("mutableListOf"))
+        assertTrue(!controller.contains("DoubleArray"))
+    }
+
+    @Test
     fun `two joint linkage mock runs accepted outputs through deterministic plant`() {
         val shoulder = SubsystemHardwareScaffolding.create(
             SubsystemHardwareKind.MOTOR,

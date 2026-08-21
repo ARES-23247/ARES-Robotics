@@ -7,10 +7,13 @@ This file is the repository-specific guide for automated contributors. Read it b
 ARESLib-Kotlin is the shared foundation for ARES-FTC, ARES-FRC, ARES-Analytics, and the desktop simulator. It is organized as:
 
 - `core`: SDK-independent state, math, estimation, control, safety, pathing, sequencing, IO contracts, NT4, telemetry, and logging.
+- `codegen`: generated API/source support published alongside the runtime modules.
 - `ftc-hardware`: FTC hardware adapters and base robot/facade classes.
 - `frc-hardware`: WPILib/vendor adapters and base robot/facade classes.
 - `ftc-mocks`: desktop FTC/Android API mocks.
 - `simulator`: Dyn4j physics, OpMode runner, replay, virtual driver station, and NT4 bridge.
+- `simulator-runtime-windows`, `simulator-runtime-linux`, `simulator-runtime-macos`: platform-specific simulator native runtime artifacts.
+- `ares-bom`: published dependency constraints for all ARES artifacts.
 
 Platform and season code depend inward on `core`. Do not add FTC, Android, WPILib, or vendor API types to `core`. Game-specific mechanism and field code belongs in the season repositories.
 
@@ -27,10 +30,10 @@ Use the checked-in wrapper and JDK 17:
 .\gradlew.bat :ftc-hardware:test
 .\gradlew.bat :frc-hardware:test
 .\gradlew.bat :simulator:test
-.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
+.\gradlew.bat test apiCheck publishReleaseValidation --no-parallel "-ParesVersion=<candidate>-rc.<commit>"
 ```
 
-After changing ARESLib, test it and publish the isolated validation repository before testing consumers with `-ParesRepository=<path>/build/release-repository`. Normal consumer builds use the pinned Maven Central version; sibling source substitution is opt-in. Publication coordinates are listed in [README.md](README.md).
+After changing ARESLib, test it and publish the isolated validation repository before testing consumers. Pass the same candidate `-ParesVersion` plus an absolute `-ParesRepository=file:///.../build/release-repository` to every consumer. Normal consumer builds resolve the pinned version from Maven Central and the GitHub-hosted ARES Maven repository; sibling source substitution is opt-in with `-ParesUseSiblingLib=true`. Do not use `mavenLocal()` as cross-repository validation evidence. Publication coordinates are listed in [README.md](README.md).
 
 ## State and reducer contract
 
@@ -102,6 +105,9 @@ One-time initialization, file parsing, and explicit operator actions may allocat
 - An announced NT4 topic keeps one type for its lifetime.
 - Keep publisher/subscriber topic spelling, units, types, and heading signs consistent across all four repositories.
 - Robots never push logs to cloud services. ARES Analytics pulls local logs and the laptop performs optional cloud sync.
+- Main telemetry logs are `.csv` or `.csv.gz`; `.jsonl` remains valid for action/replay logs. Keep `LogManagerServer` discovery and download support aligned with all accepted formats.
+- Simulator truth belongs only on `ARES/TruePose/*`. Redux EKF estimate belongs on `ARES/EstimatedPose/*` and `Drive/Pose_*`; odometry belongs on `Drive/Odom_*`.
+- The simulator publishes `ARES/SimulatorPoseFrame` as `[true x/y/h, EKF x/y/h, odom x/y/h, sequence]`. Preserve this atomic frame and never substitute truth for estimator data or restore per-scalar simulator UI commits.
 - `ARESDataLogger.stop()` drains accepted frames. Watch `droppedFrameCount`; never block a robot loop waiting for storage.
 
 The endpoint and topic tables are in [Telemetry and logging](docs/telemetry-and-logging.md).
@@ -128,5 +134,5 @@ See [Development, testing, and troubleshooting](docs/development.md) and [TEST_I
 2. Identify all sibling-repository consumers before changing a public type, topic, unit, file format, or behavior.
 3. Keep source KDoc explicit about frames, units, signs, timestamps, invalid inputs, and ownership of mutable/pool-backed data.
 4. Run focused and module tests.
-5. Publish to Maven Local and test affected consumers.
+5. Publish an explicit prerelease version to the isolated `build/release-repository` and test affected consumers with that same version and repository URI.
 6. Update the nearest document in the same change.

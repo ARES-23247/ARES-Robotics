@@ -11,7 +11,7 @@ class ARESDataLoggerIntegrityContractTest {
     @Test
     fun `late non-finite and escaped values remain valid JSON inside valid CSV`() {
         val mode = "LateJson_${System.nanoTime()}"
-        val logger = ARESDataLogger(mode)
+        val logger = ARESDataLogger(mode, policy = testLoggingPolicy())
         var logFile: File? = null
         try {
             logger.logFrame(hashMapOf("TimestampMs" to 1L, "Stable" to "first"))
@@ -52,7 +52,7 @@ class ARESDataLoggerIntegrityContractTest {
     @Test
     fun `stop is idempotent and an empty session closes to an empty file`() {
         val mode = "EmptyStop_${System.nanoTime()}"
-        val logger = ARESDataLogger(mode)
+        val logger = ARESDataLogger(mode, policy = testLoggingPolicy())
         var logFile: File? = null
         try {
             logger.stop()

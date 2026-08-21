@@ -16,7 +16,7 @@ From the ARESLib repository root:
 
 The actual season OpMode must be on the simulator runtime classpath. In normal development, run the simulator task exposed by ARES-FTC so its `TeamCode` sources are included.
 
-Supported launcher arguments include `--opmode <class>`, `--headless`, `--field-config <file-or-id>`, `--watch`, and `--replay-cloud <id>`. The Gradle `appArgs` property splits arguments on spaces, so avoid paths containing spaces when using that property.
+Supported launcher arguments include `--opmode <class>`, `--headless`, and `--field-config <file-or-id>`. Live field revisions arrive through the canonical `ARES/Input/fieldConfig` NT4 topic; the retired `--watch` flag never reloaded a document and is no longer accepted. The Gradle `appArgs` property splits arguments on spaces, so avoid paths containing spaces when using that property.
 
 ## Local controls
 

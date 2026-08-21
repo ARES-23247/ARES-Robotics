@@ -316,7 +316,7 @@ const onConnection = (ws) => {
         const gradlewCmd = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
         const args = [":simulator:run"];
         if (msg.params && msg.params.configId) {
-          args.push(`--args=--field-config ${msg.params.configId} --watch`);
+          args.push(`--args=--field-config ${msg.params.configId}`);
         }
 
         try {

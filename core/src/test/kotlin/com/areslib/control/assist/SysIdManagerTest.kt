@@ -108,6 +108,46 @@ class SysIdManagerTest {
     }
 
     @Test
+    fun `stall current trips watchdog after timeout`() {
+        val manager = SysIdManager()
+        manager.maxCurrentAmps = 35.0
+        manager.stallTimeoutMs = 200L
+
+        manager.start(SysIdMechanism.ELEVATOR, SysIdRoutine.QUASISTATIC, 1000L, 0.0, 0.0, 0.0)
+        assertTrue(manager.isActive())
+
+        // Normal current (20A) - Safe
+        assertTrue(manager.checkSafety(0.1, 0.0, 0.0, 1100L, currentAmps = 20.0))
+
+        // High stall current spike at t=1200ms (50ms duration) - Not tripped yet
+        assertTrue(manager.checkSafety(0.1, 0.0, 0.0, 1200L, currentAmps = 45.0))
+        assertTrue(manager.checkSafety(0.1, 0.0, 0.0, 1250L, currentAmps = 45.0))
+
+        // High stall current sustained for 250ms (exceeding 200ms timeout) - Tripped!
+        assertFalse(manager.checkSafety(0.1, 0.0, 0.0, 1450L, currentAmps = 45.0))
+        assertFalse(manager.isActive())
+    }
+
+    @Test
+    fun `elevator and arm soft stop position bounds enforce safety`() {
+        val manager = SysIdManager()
+        manager.minPosition = 0.0
+        manager.maxPosition = 1.0
+
+        manager.start(SysIdMechanism.ELEVATOR, SysIdRoutine.QUASISTATIC, 1000L, 0.0, 0.0, 0.0)
+        assertTrue(manager.checkSafety(0.5, 0.0, 0.0, 2000L))
+
+        // Below min boundary
+        assertFalse(manager.checkSafety(-0.1, 0.0, 0.0, 2500L))
+        assertFalse(manager.isActive())
+
+        // Re-arm and test max boundary
+        manager.start(SysIdMechanism.ELEVATOR, SysIdRoutine.QUASISTATIC, 3000L, 0.0, 0.0, 0.0)
+        assertFalse(manager.checkSafety(1.1, 0.0, 0.0, 3500L))
+        assertFalse(manager.isActive())
+    }
+
+    @Test
     fun `nonfinite pose aborts active safety check`() {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)

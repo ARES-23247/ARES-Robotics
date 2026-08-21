@@ -89,6 +89,48 @@ class ConfigurableGamePieceInteractionModelTest {
     }
 
     @Test
+    fun capturedPieceMetadataSurvivesInventoryAndEjection() {
+        val world = World<Body>()
+        val robot = Body()
+        val model = ConfigurableGamePieceInteractionModel(maxCapacity = 1)
+        val metadata = SimGamePieceBodyFactory.fallback(
+            instanceId = "authored-piece-7",
+            typeId = "purple-ball",
+            diameterMeters = 0.22,
+            massKg = 0.31,
+        )
+        val captured = SimGamePieceBodyFactory.createBody(metadata, 0.35, 0.0)
+        world.addBody(captured)
+        val gamePieces = mutableListOf(captured)
+
+        val inventory = model.update(
+            world, robot, gamePieces,
+            intakeApplied = true,
+            flywheelApplied = false,
+            transferApplied = false,
+            currentInventoryCount = 0,
+            robotHeading = 0.0,
+            robotX = 0.0,
+            robotY = 0.0,
+        )
+        model.update(
+            world, robot, gamePieces,
+            intakeApplied = false,
+            flywheelApplied = true,
+            transferApplied = true,
+            currentInventoryCount = inventory,
+            robotHeading = 0.0,
+            robotX = 0.0,
+            robotY = 0.0,
+        )
+
+        val ejected = SimGamePieceBodyFactory.metadata(gamePieces.single())!!
+        assertEquals(metadata.instanceKey, ejected.instanceKey)
+        assertEquals(metadata.typeKey, ejected.typeKey)
+        assertEquals(0.22, ejected.widthMeters, 1e-9)
+    }
+
+    @Test
     fun testFromSubsystemsAggregatesIntakeAndShooterParameters() {
         val intakeDoc = com.areslib.subsystem.SubsystemDocument(
             documentId = "intake",

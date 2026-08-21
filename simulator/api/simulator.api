@@ -111,6 +111,75 @@ public final class com/areslib/sim/field/MecanumInteractionModel : com/areslib/s
 	public fun update (Lorg/dyn4j/world/World;Lorg/dyn4j/dynamics/Body;Ljava/util/List;ZZZIDDD)I
 }
 
+public final class com/areslib/sim/field/SimGamePieceBodyFactory {
+	public static final field INSTANCE Lcom/areslib/sim/field/SimGamePieceBodyFactory;
+	public static final field SHAPE_BOX I
+	public static final field SHAPE_CIRCLE I
+	public final fun createBody (Lcom/areslib/sim/field/SimGamePieceMetadata;DDD)Lorg/dyn4j/dynamics/Body;
+	public static synthetic fun createBody$default (Lcom/areslib/sim/field/SimGamePieceBodyFactory;Lcom/areslib/sim/field/SimGamePieceMetadata;DDDILjava/lang/Object;)Lorg/dyn4j/dynamics/Body;
+	public final fun fallback (Ljava/lang/String;Ljava/lang/String;DD)Lcom/areslib/sim/field/SimGamePieceMetadata;
+	public static synthetic fun fallback$default (Lcom/areslib/sim/field/SimGamePieceBodyFactory;Ljava/lang/String;Ljava/lang/String;DDILjava/lang/Object;)Lcom/areslib/sim/field/SimGamePieceMetadata;
+	public final fun metadata (Lcom/areslib/state/RobotFieldElementType;Lcom/areslib/state/RobotFieldElementInstance;)Lcom/areslib/sim/field/SimGamePieceMetadata;
+	public final fun metadata (Lorg/dyn4j/dynamics/Body;)Lcom/areslib/sim/field/SimGamePieceMetadata;
+	public final fun stableTelemetryKey (Ljava/lang/String;)J
+}
+
+public final class com/areslib/sim/field/SimGamePieceMetadata {
+	public fun <init> (Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;IDDDIDDD)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()I
+	public final fun component11 ()D
+	public final fun component12 ()D
+	public final fun component13 ()D
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()I
+	public final fun component7 ()D
+	public final fun component8 ()D
+	public final fun component9 ()D
+	public final fun copy (Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;IDDDIDDD)Lcom/areslib/sim/field/SimGamePieceMetadata;
+	public static synthetic fun copy$default (Lcom/areslib/sim/field/SimGamePieceMetadata;Ljava/lang/String;JLjava/lang/String;JLjava/lang/String;IDDDIDDDILjava/lang/Object;)Lcom/areslib/sim/field/SimGamePieceMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getColorRgb ()I
+	public final fun getFriction ()D
+	public final fun getHeightMeters ()D
+	public final fun getInstanceId ()Ljava/lang/String;
+	public final fun getInstanceKey ()J
+	public final fun getMassKg ()D
+	public final fun getName ()Ljava/lang/String;
+	public final fun getRestitution ()D
+	public final fun getShapeCode ()I
+	public final fun getThicknessMeters ()D
+	public final fun getTypeId ()Ljava/lang/String;
+	public final fun getTypeKey ()J
+	public final fun getWidthMeters ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/sim/field/SimGamePieceTelemetryFrame {
+	public static final field COLOR_RGB I
+	public static final field HEADER_WIDTH I
+	public static final field HEIGHT_METERS I
+	public static final field INSTANCE Lcom/areslib/sim/field/SimGamePieceTelemetryFrame;
+	public static final field INSTANCE_KEY I
+	public static final field RECORD_WIDTH I
+	public static final field ROTATION_RADIANS I
+	public static final field SEQUENCE_WIDTH I
+	public static final field SHAPE_CODE I
+	public static final field TYPE_KEY I
+	public static final field VERSION D
+	public static final field WIDTH_METERS I
+	public static final field X_METERS I
+	public static final field Y_METERS I
+	public final fun finish ([DIJ)V
+	public final fun requiredSize (I)I
+	public final fun write ([DILcom/areslib/sim/field/SimGamePieceMetadata;DDD)V
+	public final fun writeBody ([DILorg/dyn4j/dynamics/Body;)V
+}
+
 public final class com/areslib/sim/infra/FakeControllerClient {
 	public static final field INSTANCE Lcom/areslib/sim/infra/FakeControllerClient;
 	public static final fun main ([Ljava/lang/String;)V
@@ -256,6 +325,7 @@ public final class com/areslib/sim/model/IntakePivotSim {
 
 public final class com/areslib/sim/model/MecanumRobotDouble {
 	public fun <init> ()V
+	public final fun configureField (Lcom/areslib/state/RobotFieldConfig;)V
 	public final fun getFl ()Lcom/areslib/sim/model/SimDcMotorEx;
 	public final fun getFr ()Lcom/areslib/sim/model/SimDcMotorEx;
 	public final fun getHardwareMap ()Lcom/qualcomm/robotcore/hardware/HardwareMap;
@@ -400,6 +470,7 @@ public final class com/areslib/sim/network/TelemetryPublisher {
 	public final fun publishDriveMode (ZZZ)V
 	public final fun publishEstimatedPose (DDD)V
 	public final fun publishEstimatedPose (Lcom/areslib/math/geometry/Pose2d;)V
+	public final fun publishGamePieceFrame ([DI)V
 	public final fun publishGamePieces ([DI)V
 	public static synthetic fun publishGamePieces$default (Lcom/areslib/sim/network/TelemetryPublisher;[DIILjava/lang/Object;)V
 	public final fun publishSuperstructure (Lcom/areslib/state/RobotState;)V
@@ -463,7 +534,9 @@ public final class com/areslib/sim/opmode/SimOpModeState : java/lang/Enum {
 public final class com/areslib/sim/physics/SimPhysicsWorld {
 	public fun <init> ()V
 	public final fun getActiveObstacles ()Ljava/util/List;
+	public final fun getFieldWalls ()Ljava/util/List;
 	public final fun getGamePieces ()Ljava/util/List;
+	public final fun getLoadedFieldConfig ()Lcom/areslib/state/RobotFieldConfig;
 	public final fun getRobotBody ()Lorg/dyn4j/dynamics/Body;
 	public final fun getWorld ()Lorg/dyn4j/world/World;
 	public final fun loadFieldElements (Lcom/areslib/state/RobotFieldConfig;)V

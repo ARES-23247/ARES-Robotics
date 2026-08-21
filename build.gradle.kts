@@ -137,8 +137,8 @@ tasks.register("validateReleaseCandidateVersion") {
         if (!allowFinalReleaseValidation.get()) {
             check('-' in aresVersion) {
                 "Release validation must use a unique prerelease version, for example " +
-                    "-ParesVersion=8.0.0-rc.<commit>. Final-version validation is reserved " +
-                    "for the protected Maven Central workflow."
+                    "-ParesVersion=<candidate>-rc.<commit>. Final-version validation is reserved " +
+                    "for the protected release workflow."
             }
         }
     }

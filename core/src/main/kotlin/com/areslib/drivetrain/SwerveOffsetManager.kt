@@ -70,18 +70,27 @@ object SwerveOffsetManager {
         get() = File(deployDir, "swerve_offsets.json")
 
     /**
-     * Resolves and loads the active swerve offsets according to the 4-tier fallback hierarchy.
-     * Uses flat functional chains to eliminate nested control flow.
+     * Resolves and loads the active swerve offsets according to the fallback hierarchy:
+     * 1. Tier 1 (Runtime Zero): Local runtime overlay
+     * 2. Tier 2 (Typed Tuning Profile): Canonical schema-declared values from .ares/tuning/
+     * 3. Tier 3 (Legacy Deployed JSON): deploy/swerve_offsets.json
+     * 4. Tier 4 (Local Backup): Most recent backups/swerve_offsets_*.json
+     * 5. Tier 5 (Hardcoded Defaults)
      *
      * @param defaultOffsets Baseline offsets from code constants ([SwerveOffsetData]).
+     * @param typedTuningOffsets Optional schema-declared profile offsets from .ares/tuning/.
      * @return Resolved [SwerveOffsetData] object.
      */
-    fun loadOffsets(defaultOffsets: SwerveOffsetData = SwerveOffsetData()): SwerveOffsetData {
+    fun loadOffsets(
+        defaultOffsets: SwerveOffsetData = SwerveOffsetData(),
+        typedTuningOffsets: SwerveOffsetData? = null
+    ): SwerveOffsetData {
         return readOffsetFile(runtimeFile, "Tier 1 runtime")
+            ?: typedTuningOffsets
             ?: readOffsetFile(deployFile, "Tier 2 deployed")
             ?: readLatestBackupFile()
             ?: run {
-                println("ARES SwerveOffsetManager: Falling back to Tier 4 hardcoded defaults.")
+                println("ARES SwerveOffsetManager: Falling back to Tier 5 hardcoded defaults.")
                 defaultOffsets
             }
     }

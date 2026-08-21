@@ -6,9 +6,6 @@ import com.areslib.simulation.SimAppliedOutputSignal
 import com.areslib.subsystem.SimInteractionRole
 import com.areslib.subsystem.SubsystemDocument
 import org.dyn4j.dynamics.Body
-import org.dyn4j.dynamics.BodyFixture
-import org.dyn4j.geometry.Geometry
-import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.World
 import kotlin.math.abs
@@ -59,6 +56,8 @@ class ConfigurableGamePieceInteractionModel private constructor(
     )
 
     private var launchWasApplied = false
+    private val inventoryMetadata = java.util.ArrayDeque<SimGamePieceMetadata>()
+    private var fallbackInstanceSequence = 0L
 
     init {
         require(maxCapacity >= 1) { "Capacity must be at least one" }
@@ -83,6 +82,7 @@ class ConfigurableGamePieceInteractionModel private constructor(
         robotY: Double,
     ): Int {
         var newInventory = currentInventoryCount.coerceIn(0, maxCapacity)
+        reconcileMetadataInventory(newInventory)
         val descriptorDriven = bindings.isNotEmpty()
         val collectorActive = if (descriptorDriven) roleActive(SimInteractionRole.INTAKE_COLLECTOR) else intakeApplied
         val launcherActive = if (descriptorDriven) {
@@ -100,8 +100,10 @@ class ConfigurableGamePieceInteractionModel private constructor(
                 val dx = piece.transform.translationX - frontX
                 val dy = piece.transform.translationY - frontY
                 if (dx * dx + dy * dy < captureRadiusSq) {
+                    val metadata = SimGamePieceBodyFactory.metadata(piece) ?: nextFallbackMetadata("captured")
                     world.removeBody(piece)
                     gamePieces.removeAt(index)
+                    inventoryMetadata.addLast(metadata)
                     newInventory++
                     break
                 }
@@ -109,21 +111,15 @@ class ConfigurableGamePieceInteractionModel private constructor(
         }
 
         if (launcherActive && !launchWasApplied && newInventory > 0) {
-            val newPiece = Body()
-            val radius = pieceDiameterMeters / 2.0
-            val shape = Geometry.createCircle(radius)
-            val fixture = BodyFixture(shape)
-            fixture.friction = 0.6
-            fixture.restitution = 0.3
-            fixture.density = pieceMassKg / shape.getArea()
-            newPiece.addFixture(fixture)
-            newPiece.setMass(MassType.NORMAL)
+            val metadata = inventoryMetadata.pollFirst() ?: nextFallbackMetadata("launched")
+            val radius = maxOf(metadata.widthMeters, metadata.heightMeters) / 2.0
+            val newPiece = SimGamePieceBodyFactory.createBody(
+                metadata = metadata,
+                x = robotX + cos(robotHeading) * (intakeRangeMeters + radius + 0.05),
+                y = robotY + sin(robotHeading) * (intakeRangeMeters + radius + 0.05),
+            )
             newPiece.linearDamping = 1.5
             newPiece.angularDamping = 1.5
-            newPiece.translate(
-                robotX + cos(robotHeading) * (intakeRangeMeters + radius + 0.05),
-                robotY + sin(robotHeading) * (intakeRangeMeters + radius + 0.05),
-            )
 
             val planarSpeed = launchSpeedMps * cos(Math.toRadians(launchElevationDeg))
             newPiece.linearVelocity = Vector2(
@@ -149,6 +145,22 @@ class ConfigurableGamePieceInteractionModel private constructor(
 
     override fun reset() {
         launchWasApplied = false
+        inventoryMetadata.clear()
+        fallbackInstanceSequence = 0L
+    }
+
+    private fun reconcileMetadataInventory(inventoryCount: Int) {
+        while (inventoryMetadata.size > inventoryCount) inventoryMetadata.removeLast()
+        while (inventoryMetadata.size < inventoryCount) inventoryMetadata.addLast(nextFallbackMetadata("inventory"))
+    }
+
+    private fun nextFallbackMetadata(prefix: String): SimGamePieceMetadata {
+        val instanceId = "$prefix-${fallbackInstanceSequence++}"
+        return SimGamePieceBodyFactory.fallback(
+            instanceId = instanceId,
+            diameterMeters = pieceDiameterMeters,
+            massKg = pieceMassKg,
+        )
     }
 
     companion object {

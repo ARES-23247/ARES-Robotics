@@ -364,6 +364,10 @@ ${checks.prependIndent("    ")}
                 if (loop.kP != 0.0) add("kP = ${loop.kP.kotlinDouble()}")
                 if (loop.kI != 0.0) add("kI = ${loop.kI.kotlinDouble()}")
                 if (loop.kD != 0.0) add("kD = ${loop.kD.kotlinDouble()}")
+                if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) {
+                    add("maximumVelocity = ${loop.motionProfile.maximumVelocity.kotlinDouble()}")
+                    add("maximumAcceleration = ${loop.motionProfile.maximumAcceleration.kotlinDouble()}")
+                }
                 if (loop.feedforward.kind != SubsystemFeedforwardKind.NONE) {
                     add("feedforward.kind = com.areslib.subsystem.SubsystemFeedforwardKind.${loop.feedforward.kind}")
                     if (loop.feedforward.kS != 0.0) add("feedforward.kS = ${loop.feedforward.kS.kotlinDouble()}")
@@ -560,19 +564,36 @@ $fieldLines
     }
 
     private fun controllerSource(document: SubsystemDocument, pkg: String): String {
-        val stateFields = document.controlLoops.filter { it.strategy in PID_STRATEGIES }.joinToString("\n") { loop ->
+        val pidStateFields = document.controlLoops.filter { it.strategy in PID_STRATEGIES }.joinToString("\n") { loop ->
             "    private var ${loop.loopId}Integral = 0.0\n" +
                 "    private var ${loop.loopId}PreviousError = 0.0\n" +
                 "    private var ${loop.loopId}Derivative = 0.0\n" +
                 "    private var ${loop.loopId}HasPreviousError = false"
         }
+        val profileStateFields = document.controlLoops
+            .filter { it.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID }
+            .joinToString("\n") { loop ->
+                "    private var ${loop.loopId}ProfilePosition = 0.0\n" +
+                    "    private var ${loop.loopId}ProfileVelocity = 0.0\n" +
+                    "    private var ${loop.loopId}ProfileInitialized = false"
+            }
+        val stateFields = listOf(pidStateFields, profileStateFields).filter(String::isNotBlank).joinToString("\n")
         val loopBodies = document.controlLoops.joinToString("\n\n") { loop -> controllerLoop(document, loop) }
-        val reset = document.controlLoops.filter { it.strategy in PID_STRATEGIES }.joinToString("\n") { loop ->
+        val pidReset = document.controlLoops.filter { it.strategy in PID_STRATEGIES }.joinToString("\n") { loop ->
             "        ${loop.loopId}Integral = 0.0\n" +
                 "        ${loop.loopId}PreviousError = 0.0\n" +
                 "        ${loop.loopId}Derivative = 0.0\n" +
                 "        ${loop.loopId}HasPreviousError = false"
-        }.ifBlank { "        // This subsystem has no stateful PID loops." }
+        }
+        val profileReset = document.controlLoops
+            .filter { it.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID }
+            .joinToString("\n") { loop ->
+                "        ${loop.loopId}ProfilePosition = 0.0\n" +
+                    "        ${loop.loopId}ProfileVelocity = 0.0\n" +
+                    "        ${loop.loopId}ProfileInitialized = false"
+            }
+        val reset = listOf(pidReset, profileReset).filter(String::isNotBlank).joinToString("\n")
+            .ifBlank { "        // This subsystem has no stateful PID loops." }
         val requestState = buildString {
             if (document.hasSafetyRequestHandshake()) {
                 append("    private var neutralHoldCommandSequence = Long.MIN_VALUE\n")
@@ -790,11 +811,42 @@ ${if (document.safety.faultRecovery.enabled) "                    resetAutomatic
         }
         $command(${loop.loopId}Output * scale)"""
             }
-            SubsystemControlStrategy.POSITION_PID, SubsystemControlStrategy.VELOCITY_PID -> {
+            SubsystemControlStrategy.POSITION_PID,
+            SubsystemControlStrategy.PROFILED_POSITION_PID,
+            SubsystemControlStrategy.VELOCITY_PID -> {
                 val measurement = "state.${requireNotNull(loop.measurementFieldId)}.toDouble()"
                 val feedforward = feedforwardExpression(document, loop)
-                """        val ${loop.loopId}Target = $target
+                val targetPreparation = if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) {
+                    """        val ${loop.loopId}Goal = $target
         val ${loop.loopId}Measurement = $measurement
+        if (!${loop.loopId}ProfileInitialized && ${loop.loopId}Measurement.isFinite()) {
+            ${loop.loopId}ProfilePosition = ${loop.loopId}Measurement
+            ${loop.loopId}ProfileVelocity = 0.0
+            ${loop.loopId}ProfileInitialized = true
+        }
+        val ${loop.loopId}PreviousProfileVelocity = ${loop.loopId}ProfileVelocity
+        if (${loop.loopId}Goal.isFinite() && ${loop.loopId}Measurement.isFinite()) {
+            val ${loop.loopId}Remaining = ${loop.loopId}Goal - ${loop.loopId}ProfilePosition
+            val ${loop.loopId}StoppingVelocity = kotlin.math.sqrt(2.0 * ${loop.motionProfile.maximumAcceleration.kotlinDouble()} * abs(${loop.loopId}Remaining))
+            val ${loop.loopId}DesiredVelocity = sign(${loop.loopId}Remaining) * minOf(${loop.motionProfile.maximumVelocity.kotlinDouble()}, ${loop.loopId}StoppingVelocity)
+            val ${loop.loopId}VelocityStep = ${loop.motionProfile.maximumAcceleration.kotlinDouble()} * dtSeconds
+            ${loop.loopId}ProfileVelocity += (${loop.loopId}DesiredVelocity - ${loop.loopId}ProfileVelocity).coerceIn(-${loop.loopId}VelocityStep, ${loop.loopId}VelocityStep)
+            val ${loop.loopId}PositionStep = ${loop.loopId}ProfileVelocity * dtSeconds
+            if (abs(${loop.loopId}PositionStep) >= abs(${loop.loopId}Remaining)) {
+                ${loop.loopId}ProfilePosition = ${loop.loopId}Goal
+                ${loop.loopId}ProfileVelocity = 0.0
+            } else {
+                ${loop.loopId}ProfilePosition += ${loop.loopId}PositionStep
+            }
+        }
+        val ${loop.loopId}ProfileAcceleration = (${loop.loopId}ProfileVelocity - ${loop.loopId}PreviousProfileVelocity) / dtSeconds
+        val ${loop.loopId}Target = if (${loop.loopId}Goal.isFinite()) ${loop.loopId}ProfilePosition else Double.NaN"""
+                } else {
+                    """        val ${loop.loopId}Target = $target
+        val ${loop.loopId}Measurement = $measurement
+        val ${loop.loopId}ProfileAcceleration = 0.0"""
+                }
+                """$targetPreparation
         if (!${loop.loopId}Target.isFinite() || !${loop.loopId}Measurement.isFinite()) {
             ${loop.loopId}Integral = 0.0
             ${loop.loopId}Derivative = 0.0
@@ -926,7 +978,9 @@ $feedforward
         document.hardware.forEach { device ->
             imports += when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "com.qualcomm.robotcore.hardware.DcMotorEx"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "com.qualcomm.robotcore.hardware.Servo"
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "com.qualcomm.robotcore.hardware.Servo"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "com.qualcomm.robotcore.hardware.CRServo"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "com.qualcomm.robotcore.hardware.DigitalChannel"
                 SubsystemHardwareKind.ANALOG_INPUT -> "com.qualcomm.robotcore.hardware.AnalogInput"
@@ -963,7 +1017,9 @@ $feedforward
                 (device.kind == SubsystemHardwareKind.MOTOR ||
                     device.kind == SubsystemHardwareKind.CONTINUOUS_SERVO) && device.inverted ->
                     "            ${device.hardwareId}?.direction = DcMotorSimple.Direction.REVERSE"
-                device.kind == SubsystemHardwareKind.POSITIONAL_SERVO && device.inverted ->
+                (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
+                    device.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
+                    device.kind == SubsystemHardwareKind.PRISM_DRIVER) && device.inverted ->
                     "            ${device.hardwareId}?.direction = Servo.Direction.REVERSE"
                 device.kind == SubsystemHardwareKind.DIGITAL_INPUT ->
                     "            ${device.hardwareId}?.mode = DigitalChannel.Mode.INPUT"
@@ -1018,7 +1074,9 @@ $feedforward
             }).joinToString("\n            ") { (target, expression) ->
                 when (target.kind) {
                     SubsystemHardwareKind.MOTOR -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = (($expression) / 12.0).coerceIn(-1.0, 1.0)"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ($expression).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ($expression).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ((($expression) - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = ($expression).coerceIn(-1.0, 1.0)"
                     else -> error("Not an actuator")
                 }
@@ -1041,7 +1099,9 @@ $feedforward
                 val neutral = requireNotNull(device.safeOutput).kotlinDouble()
                 val assignment = when (device.kind) {
                     SubsystemHardwareKind.MOTOR -> "${device.hardwareId}?.power = ($neutral / 12.0).coerceIn(-1.0, 1.0)"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}?.position = $neutral.coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}?.position = $neutral.coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}?.position = (($neutral - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}?.power = $neutral.coerceIn(-1.0, 1.0)"
                     else -> error("Not an FTC actuator")
                 }
@@ -1152,7 +1212,9 @@ $telemetry
         document.hardware.forEach { device ->
             imports += when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "com.ctre.phoenix6.hardware.TalonFX"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "edu.wpi.first.wpilibj.Servo"
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "edu.wpi.first.wpilibj.Servo"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "edu.wpi.first.wpilibj.DigitalInput"
                 SubsystemHardwareKind.ANALOG_INPUT -> "edu.wpi.first.wpilibj.AnalogInput"
@@ -1165,7 +1227,9 @@ $telemetry
         val fields = document.hardware.joinToString("\n") { device ->
             val constructor = when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> "TalonFX(${device.connection.canId}, ${device.connection.canBus.quoted()})"
-                SubsystemHardwareKind.POSITIONAL_SERVO -> "Servo(${device.connection.channel})"
+                SubsystemHardwareKind.POSITIONAL_SERVO,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "Servo(${device.connection.channel})"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "PWMSparkMax(${device.connection.channel})"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalInput(${device.connection.channel})"
                 SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput(${device.connection.channel})"
@@ -1272,14 +1336,18 @@ $telemetry
         val neutralWrites = document.hardware.filter { it.kind.isActuator() }
             .joinToString("\n") { device ->
                 val neutral = requireNotNull(device.safeOutput).kotlinDouble()
-                val appliedNeutral = if (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO) {
+                val appliedNeutral = if (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
+                    device.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
+                    device.kind == SubsystemHardwareKind.PRISM_DRIVER) {
                     device.invertedExpression(neutral)
                 } else {
                     neutral
                 }
                 val command = when (device.kind) {
                     SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage($appliedNeutral.coerceIn(-12.0, 12.0))"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${device.hardwareId}.set($appliedNeutral.coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}.set($appliedNeutral.coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}.set((($appliedNeutral - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set($appliedNeutral.coerceIn(-1.0, 1.0))"
                     else -> error("Not an FRC actuator")
                 }
@@ -1292,7 +1360,9 @@ $telemetry
                 SubsystemHardwareKind.POSITIONAL_SERVO,
                 SubsystemHardwareKind.CONTINUOUS_SERVO,
                 SubsystemHardwareKind.DIGITAL_INPUT,
-                SubsystemHardwareKind.ANALOG_INPUT -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
+                SubsystemHardwareKind.ANALOG_INPUT,
+                SubsystemHardwareKind.INDICATOR_LIGHT,
+                SubsystemHardwareKind.PRISM_DRIVER -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
                 SubsystemHardwareKind.COLOR_SENSOR -> ""
             }
         }
@@ -1451,7 +1521,9 @@ $telemetry
                 val applied = target.invertedExpression(expression)
                 val bounded = when (target.kind) {
                     SubsystemHardwareKind.MOTOR -> "($applied).coerceIn(-12.0, 12.0)"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "($applied).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "($applied).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "($applied).coerceIn(500.0, 2500.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "($applied).coerceIn(-1.0, 1.0)"
                     else -> error("Not an actuator")
                 }
@@ -2245,6 +2317,7 @@ $evidenceAssignments
 
 private val PID_STRATEGIES = setOf(
     SubsystemControlStrategy.POSITION_PID,
+    SubsystemControlStrategy.PROFILED_POSITION_PID,
     SubsystemControlStrategy.VELOCITY_PID,
 )
 
@@ -2262,18 +2335,23 @@ private fun SubsystemDocument.hasSafetyRequestHandshake(): Boolean =
     safety.requiresExplicitNeutralRecovery || safety.requiresCalibration
 
 private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardwareKind.MOTOR ||
-    this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO
+    this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO ||
+    this == SubsystemHardwareKind.INDICATOR_LIGHT || this == SubsystemHardwareKind.PRISM_DRIVER
 
 private fun SubsystemHardwareDocument.commandName(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "set${hardwareId.pascalCase()}Voltage"
-    SubsystemHardwareKind.POSITIONAL_SERVO -> "set${hardwareId.pascalCase()}Position"
+    SubsystemHardwareKind.POSITIONAL_SERVO,
+    SubsystemHardwareKind.INDICATOR_LIGHT -> "set${hardwareId.pascalCase()}Position"
+    SubsystemHardwareKind.PRISM_DRIVER -> "set${hardwareId.pascalCase()}PulseWidthUs"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "set${hardwareId.pascalCase()}Power"
     else -> error("$kind is not an actuator")
 }
 
 private fun SubsystemHardwareDocument.ftcType(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "DcMotorEx"
-    SubsystemHardwareKind.POSITIONAL_SERVO -> "Servo"
+    SubsystemHardwareKind.POSITIONAL_SERVO,
+    SubsystemHardwareKind.INDICATOR_LIGHT,
+    SubsystemHardwareKind.PRISM_DRIVER -> "Servo"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "CRServo"
     SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalChannel"
     SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput"
@@ -2287,11 +2365,14 @@ private fun SubsystemHardwareDocument.dslFunction(): String = when (kind) {
     SubsystemHardwareKind.DIGITAL_INPUT -> "digitalInput"
     SubsystemHardwareKind.ANALOG_INPUT -> "analogInput"
     SubsystemHardwareKind.COLOR_SENSOR -> "colorSensor"
+    SubsystemHardwareKind.INDICATOR_LIGHT -> "indicatorLight"
+    SubsystemHardwareKind.PRISM_DRIVER -> "prismDriver"
 }
 
 private fun SubsystemControlLoopDocument.dslFunction(): String = when (strategy) {
     SubsystemControlStrategy.DIRECT -> "direct"
     SubsystemControlStrategy.POSITION_PID -> "positionPid"
+    SubsystemControlStrategy.PROFILED_POSITION_PID -> "profiledPositionPid"
     SubsystemControlStrategy.VELOCITY_PID -> "velocityPid"
     SubsystemControlStrategy.BANG_BANG -> "bangBang"
     SubsystemControlStrategy.SERVO_POSITION -> "servoPosition"
@@ -2384,9 +2465,14 @@ private fun homingDsl(document: SubsystemDocument): String {
 private fun feedforwardExpression(document: SubsystemDocument, loop: SubsystemControlLoopDocument): String {
         val ff = loop.feedforward
         if (ff.kind == SubsystemFeedforwardKind.NONE) return "            val ${loop.loopId}Feedforward = 0.0"
-        val velocity = ff.velocityFieldId?.let { "state.$it.toDouble()" }
-            ?: if (loop.strategy == SubsystemControlStrategy.VELOCITY_PID) "${loop.loopId}Target" else "0.0"
-        val acceleration = ff.accelerationFieldId?.let { "state.$it.toDouble()" } ?: "0.0"
+        val defaultVelocity = when (loop.strategy) {
+            SubsystemControlStrategy.VELOCITY_PID -> "${loop.loopId}Target"
+            SubsystemControlStrategy.PROFILED_POSITION_PID -> "${loop.loopId}ProfileVelocity"
+            else -> "0.0"
+        }
+        val velocity = ff.velocityFieldId?.let { "state.$it.toDouble()" } ?: defaultVelocity
+        val acceleration = ff.accelerationFieldId?.let { "state.$it.toDouble()" }
+            ?: if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) "${loop.loopId}ProfileAcceleration" else "0.0"
         val gravity = when (ff.kind) {
             SubsystemFeedforwardKind.NONE, SubsystemFeedforwardKind.SIMPLE_MOTOR -> "0.0"
             SubsystemFeedforwardKind.ELEVATOR -> ff.kG.kotlinDouble()

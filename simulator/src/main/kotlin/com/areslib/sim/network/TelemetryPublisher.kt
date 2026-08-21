@@ -4,6 +4,7 @@ import com.areslib.networktables.NT4Server
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.state.RobotState
 import com.areslib.sim.infra.SimGamepadManager
+import com.areslib.sim.field.SimGamePieceTelemetryFrame
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.StructPublisher
 import edu.wpi.first.wpilibj.DataLogManager
@@ -28,6 +29,7 @@ object TelemetryPublisher {
     )
     private val gamePiecesPublisher = ntInst.getDoubleArrayTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES).publish()
     private val gamePiecesCountPublisher = ntInst.getIntegerTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_COUNT).publish()
+    private val gamePiecesFramePublisher = ntInst.getDoubleArrayTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_FRAME).publish()
     private val timestampPub = ntInst.getIntegerTopic("TimestampMs").publish()
 
     // --- AdvantageKit-level Swerve Module Telemetry ---
@@ -49,6 +51,9 @@ object TelemetryPublisher {
     private val targetPoseBuf = DoubleArray(3)
     private val estimatedPoseBuf = DoubleArray(3)
     private val truePoseBuf = DoubleArray(3)
+    private val simulatorPoseFrameBuf = DoubleArray(SIMULATOR_POSE_FRAME_VALUE_COUNT)
+    private var simulatorPoseFrameSequence = 0L
+    private var gamePieceFrameSequence = 0L
 
     private var lastObstaclesJson = ""
     private var lastFieldConfigJson = ""
@@ -119,20 +124,32 @@ object TelemetryPublisher {
     }
 
     /**
-     * Publishes the simulator's dashboard pose under estimated-pose compatibility topics.
+     * Legacy compatibility helper for a simulator that has no Redux [RobotState] publisher.
      *
-     * [com.areslib.sim.DesktopSimLauncher] deliberately supplies Dyn4j ground truth because its local Redux state is
-     * not the OpMode estimator. The same pose is mirrored to `Drive/Pose_X`, `Drive/Pose_Y`, and
-     * `Drive/Pose_Heading` for the fused-pose dashboard contract.
-     *
-     * @param pose The field-relative estimated pose.
+     * [com.areslib.sim.DesktopSimLauncher] must not call this method: [publish] already writes the
+     * real Redux EKF to `Drive/Pose_*` and the three `ARES/EstimatedPose` scalar topics. Calling
+     * both in one frame
+     * alternates EKF and physics truth under the same topic names, hides estimator behavior, and
+     * produces a moving ghost in clients that render the intermediate update.
      */
+    @Deprecated(
+        message = "DesktopSimLauncher must publish the active RobotState; physics truth belongs on ARES/TruePose/*",
+        level = DeprecationLevel.ERROR,
+    )
     fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
-        publishEstimatedPose(pose.x, pose.y, pose.heading.radians)
+        publishEstimatedPoseLegacy(pose.x, pose.y, pose.heading.radians)
     }
 
-    /** Allocation-free primitive pose publication for the simulator hot loop. */
+    /** Legacy primitive overload; see [publishEstimatedPose]. */
+    @Deprecated(
+        message = "DesktopSimLauncher must publish the active RobotState; physics truth belongs on ARES/TruePose/*",
+        level = DeprecationLevel.ERROR,
+    )
     fun publishEstimatedPose(x: Double, y: Double, headingRadians: Double) {
+        publishEstimatedPoseLegacy(x, y, headingRadians)
+    }
+
+    private fun publishEstimatedPoseLegacy(x: Double, y: Double, headingRadians: Double) {
         estimatedPoseBuf[0] = x
         estimatedPoseBuf[1] = y
         estimatedPoseBuf[2] = headingRadians
@@ -170,6 +187,38 @@ object TelemetryPublisher {
     }
 
     /**
+     * Publishes one atomic dashboard frame after the Redux state for this observation is complete.
+     *
+     * Layout: `[trueX, trueY, trueHeading, ekfX, ekfY, ekfHeading, odomX, odomY,
+     * odomHeading, sequence]`. The changing sequence forces delivery even when the robot and its
+     * heading are stationary; Analytics commits only after receiving the final array element.
+     */
+    internal fun publishSimulatorPoseFrame(
+        trueX: Double,
+        trueY: Double,
+        trueHeading: Double,
+        state: RobotState,
+    ) {
+        val estimator = state.drive.poseEstimator
+        simulatorPoseFrameBuf[0] = trueX
+        simulatorPoseFrameBuf[1] = trueY
+        simulatorPoseFrameBuf[2] = trueHeading
+        simulatorPoseFrameBuf[3] = estimator.estimatedPoseX
+        simulatorPoseFrameBuf[4] = estimator.estimatedPoseY
+        simulatorPoseFrameBuf[5] = estimator.estimatedPoseHeading
+        simulatorPoseFrameBuf[6] = state.drive.odometryX
+        simulatorPoseFrameBuf[7] = state.drive.odometryY
+        simulatorPoseFrameBuf[8] = state.drive.odometryHeading
+        simulatorPoseFrameBuf[9] = simulatorPoseFrameSequence.toDouble()
+        simulatorPoseFrameSequence = if (simulatorPoseFrameSequence >= MAX_EXACT_DOUBLE_INTEGER) {
+            0L
+        } else {
+            simulatorPoseFrameSequence + 1L
+        }
+        NT4Server.publishTopic(SIMULATOR_POSE_FRAME_TOPIC, simulatorPoseFrameBuf)
+    }
+
+    /**
      * Publishes the locations of game pieces on the field.
      *
      * [count] is authoritative so consumers can discard stale tail records and reconcile removals.
@@ -193,6 +242,14 @@ object TelemetryPublisher {
             com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES,
             payload
         )
+    }
+
+    /** Publishes one atomic typed game-piece frame; [frame] is reused and mutated in place. */
+    fun publishGamePieceFrame(frame: DoubleArray, count: Int) {
+        SimGamePieceTelemetryFrame.finish(frame, count, gamePieceFrameSequence)
+        gamePieceFrameSequence = if (gamePieceFrameSequence >= MAX_EXACT_DOUBLE_INTEGER) 0L else gamePieceFrameSequence + 1L
+        gamePiecesFramePublisher.set(frame)
+        NT4Server.publishTopic(com.areslib.telemetry.TelemetryTopicConstants.GAME_PIECES_FRAME, frame)
     }
 
     /**
@@ -301,5 +358,8 @@ object TelemetryPublisher {
     }
 
     const val GAME_PIECE_RECORD_WIDTH = 7
+    private const val SIMULATOR_POSE_FRAME_TOPIC = "ARES/SimulatorPoseFrame"
+    private const val SIMULATOR_POSE_FRAME_VALUE_COUNT = 10
+    private const val MAX_EXACT_DOUBLE_INTEGER = 9_007_199_254_740_991L
     private val EMPTY_GAME_PIECES = DoubleArray(0)
 }

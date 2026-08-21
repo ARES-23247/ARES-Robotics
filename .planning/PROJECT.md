@@ -92,18 +92,30 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 
 ### Active
 
-- [ ] FTC-SYS-02: Subsystem Modularity & Student Loop Facade
-- [ ] FTC-EKF-03: FTC EKF Reset Alignment & Yaw Rejection Lockout
-- [ ] SYS-TEST-01: Complete FRC autonomous match simulation (ShootAndMobility)
+- [x] LOG-GOV-01: Runtime-specific sampling profiles and bounded compressed telemetry storage
+- [x] LOG-GOV-02: Crash-safe active-file quarantine and ownership-scoped retention
+- [x] OBS-LOG-01: NT4 and dashboard evidence for queue depth, drops, throughput, and pruning
+- [x] IMPORT-GZ-01: Bounded streaming import for compressed ARES CSV logs
+- [x] REPLAY-LIVE-01: Live rewind flushes pending NT4 frames, uses receipt-time persistence,
+  transfers packed-pose ownership at replay boundaries, and reconstructs distinct historical poses
+- [x] SOAK-FRC-01: Deterministic five-minute dashboard-control simulation
+- [x] SOAK-FTC-01: One-hour real NT4 simulator control and estimator soak, with native live
+  persistence, bounded pose-gap SLO, and subsecond rewind load
+- [x] RELEASE-GATE-01: API compatibility plus final-coordinate validation in all three consumers
 
-## Current Milestone: v3.1 (FTC EKF Localization Hardening & FRC E2E Match Simulation)
+## Completed Milestone: v9.3.6 (Runtime Reliability, Logging Governance & Soak Validation)
 
-**Goal:** Harden the FTC EKF pose integration resets and vision outlier threshold gates to prevent driver-centric control lockout, implement the student facade layer, and run full FRC autonomous match simulations.
+**Goal:** Extended FTC and FRC development sessions remain responsive and diagnosable without
+unbounded disk growth, hidden logger backpressure, stale estimator frames, or mutable-build runtime
+failures.
 
 **Target features:**
-- FTC-SYS-02 (Student Loop Facade)
-- FTC-EKF-03 (Reset Alignment & Yaw Rejection Lockout)
-- SYS-TEST-01 (Autonomous Match Simulation)
+- LOG-GOV-01/02 (profiles, gzip, rotation, retention, recovery)
+- OBS-LOG-01 (runtime health evidence)
+- IMPORT-GZ-01 (safe desktop import)
+- REPLAY-LIVE-01 (deterministic live and compressed-log rewind)
+- SOAK-FTC-01/SOAK-FRC-01 (real and deterministic control endurance)
+- RELEASE-GATE-01 (binary consumer validation before GitHub Maven publication)
 
 ### Out of Scope
 - Mutable internal state within subsystems — breaks testability and the functional paradigm.
@@ -135,6 +147,9 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 | Path Progress Floor Velocity | Enforces a nominal floor velocity of 1.5 m/s in simulations when progress is driven strictly by target trajectory speed to prevent standstill profiles. | ✓ Good |
 | Chi-Squared Outlier Gating | Employs Mahalanobis Distance outlier verification to isolate and reject spurious visual camera updates. | ✓ Good |
 | Superstructure Redux State | Fully models FRC multi-state superstructures in pure immutable state and physics simulation. | ✓ Good |
+| Runtime logging profiles | Match fidelity, desktop efficiency, and incident capture need distinct rates and budgets rather than one unbounded default. | ✓ Good |
+| Completed-file ownership retention | Prune only logger-owned, finalized telemetry; never infer that an active or unrelated file is disposable. | ✓ Good |
+| Real NT4 soak gate | Unit tests cannot prove control scheduling and pose-frame cadence across the actual client/server boundary. | ✓ Good |
 
 ---
 
@@ -156,4 +171,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after v2.9 milestone complete*
+*Last updated: 2026-08-20 after v9.3.6 runtime reliability validation completed*

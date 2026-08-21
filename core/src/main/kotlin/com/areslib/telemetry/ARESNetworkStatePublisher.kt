@@ -2,6 +2,9 @@ package com.areslib.telemetry
 
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.state.RobotState
+import com.areslib.util.RobotClock
+
+private const val VISION_TARGET_FRESHNESS_MS = 500L
 
 /**
  * Serializes and publishes the complete RobotState to an ITelemetry interface.
@@ -105,8 +108,23 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
 
         // ── Vision ──
-        val primaryMeasurement = state.vision.measurements.firstOrNull()
-        val hasVisionTarget = primaryMeasurement != null || state.vision.hasTarget
+        // VisionState retains a bounded oldest-to-newest diagnostic history. Publishing the first
+        // entry made the field overlay trail by almost the entire 50-sample buffer. Only the newest
+        // still-fresh observation represents the current camera frame.
+        val newestVisionMeasurement = state.vision.measurements.lastOrNull()
+        val visionMeasurementAgeMs = if (newestVisionMeasurement == null) {
+            Long.MAX_VALUE
+        } else {
+            RobotClock.currentTimeMillis() - newestVisionMeasurement.timestampMs
+        }
+        val primaryMeasurement = if (
+            state.vision.hasTarget && visionMeasurementAgeMs in 0L..VISION_TARGET_FRESHNESS_MS
+        ) {
+            newestVisionMeasurement
+        } else {
+            null
+        }
+        val hasVisionTarget = primaryMeasurement != null
         telemetry.putBoolean("Vision/HasTarget", hasVisionTarget)
         telemetry.putNumber("Vision/Target_X", state.vision.targetX)
         telemetry.putNumber("Vision/Target_Y", state.vision.targetY)
@@ -329,4 +347,5 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             "$prefix/Options"
         )
     }
+
 }

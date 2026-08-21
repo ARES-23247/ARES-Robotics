@@ -24,30 +24,32 @@
 - ✅ **v2.8 Deterministic Input Replay & "What-If" Ghost Simulation** — Phases 60-63 (shipped 2026-05-18)
 - ✅ **v2.9 Physical Deployment & FRC Redux Superstructure Architecture** — Phases 64-71 (shipped 2026-05-18)
 - ✅ **v3.0 FRC Unified Robot Integration & Full System Verification** — Phases 72-74 (shipped 2026-06-15)
-- 🚧 **v3.1 FTC EKF Localization Hardening & FRC E2E Match Simulation** — Phases 74.1-75 (in progress)
+- ℹ️ **v3.1 historical planning line** — superseded as release numbering advanced through v9.x
+- ✅ **v9.3.6 Runtime Reliability, Logging Governance & Soak Validation** — Phase 76 (shipped 2026-08-20)
 
 ## Phases
 
-### 🚧 v3.1 FTC EKF Localization Hardening & FRC E2E Match Simulation (Phases 74.1-75)
+### ✅ v9.3.6 Runtime Reliability, Logging Governance & Soak Validation (Phase 76)
 
-- [ ] Phase 74.1: Subsystem Modularity & Student Loop Facade
-- [ ] Phase 74.2: FTC EKF Reset Alignment & Yaw Lockout Correction (INSERTED)
-- [ ] Phase 75: FRC Autonomous Match E2E Simulation
+The historical v3.1 tasks are no longer a trustworthy description of the live workspace. Current
+release work starts from the published 9.3.5 baseline and closes the failure modes discovered during
+extended simulator driving.
 
-### Phase 74.1: Subsystem Modularity & Student Loop Facade
+- [x] LOG-GOV-01: Competition, simulation, and forensic sampling profiles
+- [x] LOG-GOV-02: Streaming gzip, bounded rotation, retention, and stale-active quarantine
+- [x] OBS-LOG-01: Robot logger queue/drop/rate/storage health in NT4 and Analytics
+- [x] IMPORT-GZ-01: Bounded `.csv.gz` import and automatic discovery
+- [x] REPLAY-LIVE-01: Atomic live-pose rewind with committed persistence and one clock domain
+- [x] SOAK-FRC-01: Five simulated minutes of leased dashboard translation and rotation
+- [x] SOAK-FTC-01: One continuous real NT4 FTC simulator hour with zero control stalls,
+  bounded telemetry smoothness, and verified live rewind
+- [x] RELEASE-GATE-01: Full library suite, API check, isolated repository, and all consumers
 
-**Goal**: Implement a clean vertical-slice subsystem modularity design and an intuitive student-facing loop facade to simplify state, action dispatching, and background telemetry.
-**Mode**: Smart Autonomous Discuss
+### Phase 76: Runtime Reliability, Logging Governance & Soak Validation
 
-### Phase 74.2: FTC EKF Reset Alignment & Yaw Lockout Correction (INSERTED)
-
-**Goal**: Correct FTC EKF estimated pose overrides when resetting offsets, and widen the Limelight yaw rejection gate to 30.0 degrees to prevent permanent EKF lockouts under drift.
-**Mode**: Smart Autonomous Discuss
-
-### Phase 75: FRC Autonomous Match E2E Simulation
-
-**Goal**: Run end-to-end simulated FRC autonomous matches.
-**Mode**: Smart Autonomous Discuss
+**Goal**: Make extended robot/simulator sessions boring: bounded disk use, observable writer
+backpressure, responsive leased controls, time-aligned estimator telemetry, and repeatable release
+evidence across FTC, FRC, Analytics, and ARESLib.
 
 <details>
 <summary>✅ Legacy Milestones (v1.0 to v3.0) — SHIPPED</summary>
@@ -60,6 +62,4 @@
 
 | Phase             | Milestone | Plans Complete | Status      | Completed  |
 | ----------------- | --------- | -------------- | ----------- | ---------- |
-| 74.1 Subsystem Modularity & Student Loop Facade | v3.1 | 0/1 | Not started | -          |
-| 74.2 FTC EKF Reset Alignment & Yaw Lockout Correction | v3.1 | 0/1 | Not started | -          |
-| 75. FRC Autonomous Match E2E Simulation | v3.1 | 0/1 | Not started | -          |
+| 76. Runtime Reliability, Logging Governance & Soak Validation | v9.3.6 | 8/8 | Complete | 2026-08-20 |

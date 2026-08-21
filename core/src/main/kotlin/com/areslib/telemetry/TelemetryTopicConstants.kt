@@ -27,6 +27,8 @@ object TelemetryTopicConstants {
     const val GAME_PIECES = "ARES/GamePieces"
     /** Number of live records in [GAME_PIECES], including the explicit zero/removal state. */
     const val GAME_PIECES_COUNT = "ARES/GamePieces/Count"
+    /** Atomic v2 frame: version, count, typed records, then a changing sequence marker. */
+    const val GAME_PIECES_FRAME = "ARES/GamePiecesFrame"
 
     const val HARDWARE_MOTORS_PREFIX = "Hardware/Motors"
     fun motorVelocityTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Velocity"
