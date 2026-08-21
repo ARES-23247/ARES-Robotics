@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ares-frc-starter",
+  "revision": 1,
+  "defaultEntryId": "do-nothing",
+  "entries": [
+    {
+      "entryId": "do-nothing",
+      "displayName": "Do Nothing",
+      "description": "Match-safe starter routine that leaves every output neutral.",
+      "routineId": "do-nothing",
+      "startingPose": {"xMeters": 1.0, "yMeters": 1.0, "headingRadians": 0.0},
+      "authoredAlliance": "BLUE",
+      "mirrorForOppositeAlliance": true,
+      "sortOrder": 0,
+      "enabled": true
+    }
+  ]
+}

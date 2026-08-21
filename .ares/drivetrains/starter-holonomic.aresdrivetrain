@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "uid": "ares.starter.frc.drivebase",
+  "drivebaseId": "starter-holonomic",
+  "displayName": "Starter FRC holonomic drivebase",
+  "description": "Hardware-neutral holonomic model for desktop simulation. Replace it with a reviewed swerve, mecanum, differential, or custom hardware contract before deployment.",
+  "kind": "ADVANCED_CUSTOM",
+  "platform": "FRC",
+  "components": [
+    {"uid":"frc.drivebase","displayName":"Starter drivebase","role":"OTHER","hardwareId":"drivebase"},
+    {"uid":"frc.drive.fl","displayName":"Front-left drive","role":"DRIVE_MOTOR","hardwareId":"front-left","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":0.35,"yMeters":0.3,"inverted":false,"required":true},
+    {"uid":"frc.drive.fr","displayName":"Front-right drive","role":"DRIVE_MOTOR","hardwareId":"front-right","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":0.35,"yMeters":-0.3,"inverted":true,"required":true},
+    {"uid":"frc.drive.rl","displayName":"Rear-left drive","role":"DRIVE_MOTOR","hardwareId":"rear-left","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":-0.35,"yMeters":0.3,"inverted":false,"required":true},
+    {"uid":"frc.drive.rr","displayName":"Rear-right drive","role":"DRIVE_MOTOR","hardwareId":"rear-right","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":-0.35,"yMeters":-0.3,"inverted":true,"required":true},
+    {"uid":"frc.localization.gyro","displayName":"Robot gyro","role":"GYRO","hardwareId":"gyro","controllerModel":"Select in Hardware Setup","required":true}
+  ],
+  "modules": [],
+  "geometry": {
+    "wheelDiameterMeters": 0.1524,
+    "trackWidthMeters": 0.6,
+    "wheelBaseMeters": 0.7,
+    "driveGearRatio": 10.71,
+    "maxLinearSpeedMetersPerSecond": 2.0,
+    "maxAngularSpeedRadiansPerSecond": 4.0
+  },
+  "localization": {
+    "primaryOdometry": {
+      "uid": "frc.localization.wheel-imu",
+      "source": "WHEEL_ENCODERS_IMU",
+      "componentUids": ["frc.drive.fl", "frc.drive.fr", "frc.drive.rl", "frc.drive.rr", "frc.localization.gyro"],
+      "implementationClassName": "org.aresfirst.starter.frc.StarterDriveSimulation"
+    },
+    "headingSourceUid": "frc.localization.wheel-imu",
+    "visionFusion": [],
+    "headingCcwPositive": true,
+    "cachedInputsRequired": true
+  },
+  "control": {
+    "supported": ["OPEN_LOOP", "CHASSIS_VELOCITY", "TRAJECTORY"],
+    "defaultControl": "OPEN_LOOP",
+    "fieldCentric": true
+  },
+  "safety": {
+    "safeNeutralRequired": true,
+    "configurationHealthRequired": true,
+    "staleFeedbackTimeoutMs": 250,
+    "currentValidityRequired": true,
+    "faultLatchingRequired": true,
+    "explicitNeutralRecoveryRequired": true,
+    "disabledOutputIsNeutral": true,
+    "enabledNeutralMode": "BRAKE",
+    "disabledPolicy": "FORCE_NEUTRAL_BRAKE",
+    "zeroAllocationPeriodicRequired": true
+  },
+  "simulation": {
+    "modelClassName": "org.aresfirst.starter.frc.StarterDriveSimulation",
+    "adapterClassName": "org.aresfirst.starter.frc.StarterDriveSimulation",
+    "usesPhysicalGeometry": true,
+    "usesCanonicalProfile": true,
+    "behavioralParityRequired": true
+  },
+  "parameters": [
+    {
+      "uid": "frc.starter.path.velocity-scale",
+      "key": "drive.pathVelocityScale",
+      "componentUid": "frc.drivebase",
+      "displayName": "Autonomous velocity scale",
+      "description": "Conservative fraction of the modeled maximum speed available to starter trajectories.",
+      "type": "DOUBLE",
+      "minimum": 0.05,
+      "maximum": 1.0,
+      "defaultValue": {"doubleValue": 0.5},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    }
+  ],
+  "calibrationProvenance": [],
+  "canonicalProfileUid": "ares.starter.frc.profile.simulation"
+}

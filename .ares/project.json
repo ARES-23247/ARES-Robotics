@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ares-frc-starter",
+  "league": "FRC",
+  "coordinateConvention": "BLUE_CORNER_ORIGIN_CCW",
+  "robotLengthMeters": 0.75,
+  "robotWidthMeters": 0.65,
+  "fieldLengthMeters": 16.54175,
+  "fieldWidthMeters": 8.21055
+}

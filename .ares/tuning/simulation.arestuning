@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "uid": "ares.starter.frc.profile.simulation",
+  "profileId": "simulation",
+  "displayName": "Simulation-only baseline",
+  "description": "No physical gains or calibrations are claimed. Complete Hardware Review before deployment.",
+  "projectUid": "ares.starter.frc",
+  "drivebaseUid": "ares.starter.frc.drivebase",
+  "authority": "CANONICAL_CHECKED_IN",
+  "values": [
+    {"parameterUid":"frc.starter.path.velocity-scale","value":{"doubleValue":0.5}}
+  ]
+}
