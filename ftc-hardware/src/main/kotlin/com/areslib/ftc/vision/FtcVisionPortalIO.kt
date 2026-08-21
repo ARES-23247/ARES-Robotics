@@ -86,7 +86,11 @@ class FtcVisionPortalIO(
                         translationPoolIndex = (translationPoolIndex + 1) % 20
                         
                         val tagFieldRotation = rotationPool[rotationPoolIndex].apply {
-                            setEulerAngles(0.0, 0.0, Math.toRadians(tagConfig.yaw))
+                            setEulerAngles(
+                                Math.toRadians(tagConfig.roll),
+                                Math.toRadians(tagConfig.pitch),
+                                Math.toRadians(tagConfig.yaw),
+                            )
                         }
                         rotationPoolIndex = (rotationPoolIndex + 1) % 20
                         

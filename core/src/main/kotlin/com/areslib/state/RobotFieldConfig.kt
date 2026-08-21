@@ -1,6 +1,5 @@
 package com.areslib.state
 
-import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.File
 import com.areslib.math.geometry.Pose2d
@@ -78,10 +77,21 @@ data class RobotFieldObstacle(
  */
 data class RobotFieldAprilTag(
     val id: Int = 0,
+    /** Human-readable season label such as "Blue reef 18". */
+    val name: String = "",
+    /** AprilTag family identifier, for example `36h11`; blank means unspecified. */
+    val family: String = "",
+    /** Physical black-square edge length in meters; null means the source format omitted it. */
+    val sizeMeters: Double? = null,
     val x: Double = 0.0,
     val y: Double = 0.0,
     val z: Double = 0.0,
-    val yaw: Double = 0.0, // Yaw rotation in degrees
+    /** Right-handed roll about +X in degrees. */
+    val roll: Double = 0.0,
+    /** Right-handed pitch about +Y in degrees. */
+    val pitch: Double = 0.0,
+    /** Right-handed, CCW-positive yaw about +Z in degrees. */
+    val yaw: Double = 0.0,
     val editorId: String = "",
     val locked: Boolean = false
 )
@@ -259,7 +269,28 @@ data class RobotFieldConfig(
     }
 }
 
-const val CURRENT_FIELD_SCHEMA_VERSION: Int = 1
+/**
+ * Builds the immutable AprilTag pose lookup consumed by localization and simulation.
+ *
+ * The canonical field document stores display-friendly degrees. Conversion to radians occurs once
+ * at the runtime boundary; periodic vision code must reuse the returned map rather than rebuilding
+ * it each frame.
+ */
+fun RobotFieldConfig.aprilTagPoseMap(): Map<Int, com.areslib.math.geometry.Pose3d> =
+    LinkedHashMap<Int, com.areslib.math.geometry.Pose3d>(apriltags.size).also { poses ->
+        apriltags.forEach { tag ->
+            poses[tag.id] = com.areslib.math.geometry.Pose3d(
+                com.areslib.math.geometry.Translation3d(tag.x, tag.y, tag.z),
+                com.areslib.math.geometry.Rotation3d(
+                    Math.toRadians(tag.roll),
+                    Math.toRadians(tag.pitch),
+                    Math.toRadians(tag.yaw),
+                ),
+            )
+        }
+    }
+
+const val CURRENT_FIELD_SCHEMA_VERSION: Int = 2
 
 /** Gson codec for the canonical, versioned field document. */
 object RobotFieldDocument {
@@ -283,8 +314,6 @@ object RobotFieldDocument {
  * Pure Redux state definition and deterministic reducer transition handler.
  */
 object RobotFieldManager {
-    private val gson = Gson()
-    
     // Default fallback layout
     var activeConfig: RobotFieldConfig = RobotFieldConfig(
         name = "Default FTC Field",
@@ -322,41 +351,10 @@ object RobotFieldManager {
      */
     fun parseFmapContent(jsonContent: String): List<RobotFieldAprilTag> {
         return try {
-            val fmap = gson.fromJson(jsonContent, LimelightFmap::class.java) ?: return emptyList()
-            fmap.fiducials.mapNotNull { fiducial ->
-                val transform = fiducial.transform
-                if (transform.size >= 16) {
-                    val tx = transform[3]
-                    val ty = transform[7]
-                    val tz = transform[11]
-                    // Calculate yaw from row-major rotation matrix r00 (index 0) and r10 (index 4)
-                    val yawRad = kotlin.math.atan2(transform[4], transform[0])
-                    val yawDeg = Math.toDegrees(yawRad)
-                    RobotFieldAprilTag(
-                        id = fiducial.id,
-                        x = tx,
-                        y = ty,
-                        z = tz,
-                        yaw = yawDeg
-                    )
-                } else {
-                    null
-                }
-            }
+            AprilTagMapCodec.decodeLimelightFmap(jsonContent).tags
         } catch (e: Exception) {
             println("ARES Field Manager Error: Failed to parse fmap JSON: ${e.message}")
             emptyList()
         }
     }
 }
-
-private data class LimelightFiducial(
-    val id: Int = 0,
-    val family: String? = null,
-    val size: Double = 0.0,
-    val transform: List<Double> = emptyList()
-)
-
-private data class LimelightFmap(
-    val fiducials: List<LimelightFiducial> = emptyList()
-)

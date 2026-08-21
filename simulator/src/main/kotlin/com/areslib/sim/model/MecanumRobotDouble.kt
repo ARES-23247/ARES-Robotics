@@ -100,6 +100,8 @@ class MecanumRobotDouble {
     val pinpoint = GoBildaPinpointDriver()
     val limelight = SimLimelight3A()
     private var simulatedAprilTags: List<RobotFieldAprilTag> = DEFAULT_SIM_TAGS
+    @Volatile private var simulatedImuHeadingRadians = 0.0
+    @Volatile private var simulatedImuAngularVelocityRadiansPerSecond = 0.0
     
     val voltageSensor = object : VoltageSensor {
         override val voltage: Double = 12.8
@@ -111,12 +113,17 @@ class MecanumRobotDouble {
         override fun getRobotYawPitchRollAngles(): org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles {
             return org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles(
                 org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS,
-                0.0, 0.0, 0.0, 0L
+                simulatedImuHeadingRadians, 0.0, 0.0, com.areslib.util.RobotClock.currentTimeMillis()
             )
         }
         override fun getRobotAngularVelocity(unit: org.firstinspires.ftc.robotcore.external.navigation.AngleUnit): org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity {
+            val yawRate = if (unit == org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS) {
+                simulatedImuAngularVelocityRadiansPerSecond
+            } else {
+                Math.toDegrees(simulatedImuAngularVelocityRadiansPerSecond)
+            }
             return org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity(
-                unit, 0.0f, 0.0f, 0.0f, 0L
+                unit, 0.0f, 0.0f, yawRate.toFloat(), com.areslib.util.RobotClock.currentTimeMillis()
             )
         }
         override fun close() {}
@@ -217,6 +224,9 @@ class MecanumRobotDouble {
     }
 
     fun updateSensors(dt: Double, actualVx: Double, actualVy: Double, actualOmega: Double, trueX: Double, trueY: Double, trueHeadingRad: Double, isPinpointCcwPositive: Boolean = false) {
+        simulatedImuHeadingRadians = trueHeadingRad
+        simulatedImuAngularVelocityRadiansPerSecond = actualOmega
+
         // FL = vx - vy - omega * (trackWidth + wheelBase)/2
         // FR = vx + vy + omega * (trackWidth + wheelBase)/2
         // RL = vx + vy - omega * (trackWidth + wheelBase)/2

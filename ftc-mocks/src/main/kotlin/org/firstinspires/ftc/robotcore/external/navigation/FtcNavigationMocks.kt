@@ -31,6 +31,15 @@ enum class UnnormalizedAngleUnit {
     DEGREES, RADIANS
 }
 
+/** Minimal FTC SDK quaternion used by custom AprilTag metadata in desktop simulation. */
+class Quaternion(
+    @JvmField val w: Float,
+    @JvmField val x: Float,
+    @JvmField val y: Float,
+    @JvmField val z: Float,
+    @JvmField val acquisitionTime: Long,
+)
+
 /**
  * Class implementation for Pose2 D.
  *

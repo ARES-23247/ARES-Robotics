@@ -948,6 +948,12 @@ public abstract interface class org/firstinspires/ftc/robotcore/external/Telemet
 public abstract interface class org/firstinspires/ftc/robotcore/external/Telemetry$Item {
 }
 
+public final class org/firstinspires/ftc/robotcore/external/matrices/VectorF {
+	public fun <init> ([F)V
+	public final fun get (I)F
+	public final fun length ()I
+}
+
 public final class org/firstinspires/ftc/robotcore/external/navigation/AngleUnit : java/lang/Enum {
 	public static final field DEGREES Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
 	public static final field RADIANS Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
@@ -1061,6 +1067,15 @@ public final class org/firstinspires/ftc/robotcore/external/navigation/Position 
 	public final fun toUnit (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)Lorg/firstinspires/ftc/robotcore/external/navigation/Position;
 }
 
+public final class org/firstinspires/ftc/robotcore/external/navigation/Quaternion {
+	public final field acquisitionTime J
+	public final field w F
+	public final field x F
+	public final field y F
+	public final field z F
+	public fun <init> (FFFFJ)V
+}
+
 public final class org/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit : java/lang/Enum {
 	public static final field DEGREES Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
 	public static final field RADIANS Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
@@ -1100,6 +1115,29 @@ public final class org/firstinspires/ftc/vision/apriltag/AprilTagDetection {
 	public final fun setId (I)V
 }
 
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagLibrary {
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAllTags ()[Lorg/firstinspires/ftc/vision/apriltag/AprilTagMetadata;
+	public final fun lookupTag (I)Lorg/firstinspires/ftc/vision/apriltag/AprilTagMetadata;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagLibrary$Builder {
+	public fun <init> ()V
+	public final fun addTag (ILjava/lang/String;DLorg/firstinspires/ftc/robotcore/external/matrices/VectorF;Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary$Builder;
+	public final fun build ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
+	public final fun setAllowOverwrite (Z)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary$Builder;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagMetadata {
+	public final field distanceUnit Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public final field fieldOrientation Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
+	public final field fieldPosition Lorg/firstinspires/ftc/robotcore/external/matrices/VectorF;
+	public final field id I
+	public final field name Ljava/lang/String;
+	public final field tagsize D
+	public fun <init> (ILjava/lang/String;DLorg/firstinspires/ftc/robotcore/external/matrices/VectorF;Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;)V
+}
+
 public final class org/firstinspires/ftc/vision/apriltag/AprilTagPoseFtc {
 	public fun <init> ()V
 	public final fun getPitch ()D
@@ -1119,6 +1157,25 @@ public final class org/firstinspires/ftc/vision/apriltag/AprilTagPoseFtc {
 public class org/firstinspires/ftc/vision/apriltag/AprilTagProcessor {
 	public fun <init> ()V
 	public final fun getFreshDetections ()Ljava/util/List;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder {
+	public fun <init> ()V
+	public final fun build ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;
+	public final fun getTagFamily ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public final fun getTagLibrary ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
+	public final fun setTagFamily (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+	public final fun setTagLibrary (Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily : java/lang/Enum {
+	public static final field TAG_16h5 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static final field TAG_25h9 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static final field TAG_36h11 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static final field TAG_standard41h12 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static fun values ()[Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
 }
 
 public class org/json/JSONObject {

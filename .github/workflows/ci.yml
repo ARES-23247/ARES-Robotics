@@ -45,10 +45,12 @@ jobs:
           fi
 
       - name: Compile
-        run: ./gradlew compileKotlin compileTestKotlin --console=plain
+        run: ./gradlew compileKotlin compileTestKotlin --no-parallel --console=plain
 
       - name: Run tests
-        run: ./gradlew test --console=plain
+        # Module test tasks each fork JVM workers. Serializing the modules prevents the
+        # GitHub runner from exhausting its shared JIT CodeCache under the full matrix.
+        run: ./gradlew test --no-parallel --console=plain
 
       - name: Select immutable validation candidate
         shell: bash

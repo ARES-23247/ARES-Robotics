@@ -9,6 +9,18 @@ import org.junit.Test
 
 class VerificationRotationControlTest {
     @Test
+    fun `verification opmode uses explicit generic starter entry point`() {
+        assertEquals(
+            "org.example.StarterTeleOp",
+            verificationOpModeClassName("  org.example.StarterTeleOp  "),
+        )
+        assertEquals(
+            "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp",
+            verificationOpModeClassName(" "),
+        )
+    }
+
+    @Test
     fun inverseAxisReconstructsDesiredPostCurveEffort() {
         val desiredEfforts = doubleArrayOf(-1.0, -0.22, -0.01, 0.01, 0.22, 1.0)
 
