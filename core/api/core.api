@@ -10384,6 +10384,7 @@ public final class com/areslib/telemetry/TelemetryTopicConstants {
 	public static final field GAME_PIECES_FRAME Ljava/lang/String;
 	public static final field HARDWARE_MOTORS_PREFIX Ljava/lang/String;
 	public static final field INSTANCE Lcom/areslib/telemetry/TelemetryTopicConstants;
+	public static final field TELEMETRY_FRAME_SEQUENCE Ljava/lang/String;
 	public static final field VISION_POSE_HEADING Ljava/lang/String;
 	public static final field VISION_POSE_X Ljava/lang/String;
 	public static final field VISION_POSE_Y Ljava/lang/String;

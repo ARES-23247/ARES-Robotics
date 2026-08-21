@@ -4,6 +4,7 @@ import com.areslib.control.safety.BrownoutGuard
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
 
+private const val MAX_SAFE_DOUBLE_INTEGER: Long = 9_007_199_254_740_991L
 private const val VISION_TARGET_FRESHNESS_MS = 500L
 
 /**
@@ -27,6 +28,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     private var cachedPathPoints: DoubleArray = emptyDoubleArray
     private var commandCatalogRevision = Long.MIN_VALUE
     private var commandCatalogJson = "[]"
+    private var frameSequence = 0L
 
     /**
      * Publishes one immutable state snapshot and optionally flushes the telemetry backend.
@@ -44,6 +46,11 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         brownoutGuard: BrownoutGuard? = null,
         flush: Boolean = true
     ) {
+        // Changes on every publication even when every physical measurement is stationary. This
+        // lets remote tools distinguish an active telemetry loop from a merely open/stale socket.
+        telemetry.putNumber(TelemetryTopicConstants.TELEMETRY_FRAME_SEQUENCE, frameSequence.toDouble())
+        frameSequence = if (frameSequence == MAX_SAFE_DOUBLE_INTEGER) 0L else frameSequence + 1L
+
         // ── Drive ──
         // Raw Pinpoint Odometry
         telemetry.putNumber(TelemetryTopicConstants.DRIVE_ODOM_X, state.drive.odometryX)
