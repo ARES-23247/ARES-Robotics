@@ -101,9 +101,9 @@ ARESLib-Kotlin is a foundational, cross-platform (FTC and FRC) robotics library 
 - [x] SOAK-FRC-01: Deterministic five-minute dashboard-control simulation
 - [x] SOAK-FTC-01: One-hour real NT4 simulator control and estimator soak, with native live
   persistence, bounded pose-gap SLO, and subsecond rewind load
-- [ ] RELEASE-GATE-01: API compatibility plus final-coordinate validation in all three consumers
+- [x] RELEASE-GATE-01: API compatibility plus final-coordinate validation in all three consumers
 
-## Current Milestone: v9.3.6 (Runtime Reliability, Logging Governance & Soak Validation)
+## Completed Milestone: v9.3.6 (Runtime Reliability, Logging Governance & Soak Validation)
 
 **Goal:** Extended FTC and FRC development sessions remain responsive and diagnosable without
 unbounded disk growth, hidden logger backpressure, stale estimator frames, or mutable-build runtime
@@ -171,4 +171,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-20 during v9.3.6 runtime reliability validation*
+*Last updated: 2026-08-20 after v9.3.6 runtime reliability validation completed*

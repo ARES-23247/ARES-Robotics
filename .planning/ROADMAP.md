@@ -25,11 +25,11 @@
 - ✅ **v2.9 Physical Deployment & FRC Redux Superstructure Architecture** — Phases 64-71 (shipped 2026-05-18)
 - ✅ **v3.0 FRC Unified Robot Integration & Full System Verification** — Phases 72-74 (shipped 2026-06-15)
 - ℹ️ **v3.1 historical planning line** — superseded as release numbering advanced through v9.x
-- 🚧 **v9.3.6 Runtime Reliability, Logging Governance & Soak Validation** — Phase 76 (in progress)
+- ✅ **v9.3.6 Runtime Reliability, Logging Governance & Soak Validation** — Phase 76 (shipped 2026-08-20)
 
 ## Phases
 
-### 🚧 v9.3.6 Runtime Reliability, Logging Governance & Soak Validation (Phase 76)
+### ✅ v9.3.6 Runtime Reliability, Logging Governance & Soak Validation (Phase 76)
 
 The historical v3.1 tasks are no longer a trustworthy description of the live workspace. Current
 release work starts from the published 9.3.5 baseline and closes the failure modes discovered during
@@ -43,7 +43,7 @@ extended simulator driving.
 - [x] SOAK-FRC-01: Five simulated minutes of leased dashboard translation and rotation
 - [x] SOAK-FTC-01: One continuous real NT4 FTC simulator hour with zero control stalls,
   bounded telemetry smoothness, and verified live rewind
-- [ ] RELEASE-GATE-01: Full library suite, API check, isolated repository, and all consumers
+- [x] RELEASE-GATE-01: Full library suite, API check, isolated repository, and all consumers
 
 ### Phase 76: Runtime Reliability, Logging Governance & Soak Validation
 
@@ -62,4 +62,4 @@ evidence across FTC, FRC, Analytics, and ARESLib.
 
 | Phase             | Milestone | Plans Complete | Status      | Completed  |
 | ----------------- | --------- | -------------- | ----------- | ---------- |
-| 76. Runtime Reliability, Logging Governance & Soak Validation | v9.3.6 | 7/8 | In progress | - |
+| 76. Runtime Reliability, Logging Governance & Soak Validation | v9.3.6 | 8/8 | Complete | 2026-08-20 |
