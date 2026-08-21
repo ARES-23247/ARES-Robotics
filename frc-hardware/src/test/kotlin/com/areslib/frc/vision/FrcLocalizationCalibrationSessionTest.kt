@@ -66,7 +66,9 @@ class FrcLocalizationCalibrationSessionTest {
         session.periodic(140L)
         session.close()
 
-        val files = tempDir.toFile().listFiles { file -> file.extension == "csv" }?.toList().orEmpty()
+        val files = tempDir.toFile().listFiles { file ->
+            file.name.endsWith(".csv.gz")
+        }?.toList().orEmpty()
         val samples = LocalizationCalibrationCsv.read(files)
         assertEquals(2, samples.size)
         assertEquals(1.0, samples[0].truthX, 0.0)

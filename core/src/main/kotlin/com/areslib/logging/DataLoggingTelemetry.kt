@@ -2,6 +2,17 @@ package com.areslib.logging
 
 import com.areslib.telemetry.ITelemetry
 import com.areslib.telemetry.RobotStatusTracker
+import java.io.File
+
+private const val LOG_PROFILE_TOPIC = "Diagnostics/Logging/Profile"
+private const val LOG_ACCEPTED_TOPIC = "Diagnostics/Logging/AcceptedFrames"
+private const val LOG_WRITTEN_TOPIC = "Diagnostics/Logging/WrittenFrames"
+private const val LOG_DROPPED_TOPIC = "Diagnostics/Logging/DroppedFrames"
+private const val LOG_QUEUE_DEPTH_TOPIC = "Diagnostics/Logging/QueueDepth"
+private const val LOG_CURRENT_BYTES_TOPIC = "Diagnostics/Logging/CurrentFileBytes"
+private const val LOG_COMPLETED_BYTES_TOPIC = "Diagnostics/Logging/CompletedBytes"
+private const val LOG_ROTATIONS_TOPIC = "Diagnostics/Logging/Rotations"
+private const val LOG_PRUNED_FILES_TOPIC = "Diagnostics/Logging/PrunedFiles"
 
 /**
  * Single-owner telemetry accumulator that mirrors values to a live backend and asynchronous CSV.
@@ -16,9 +27,36 @@ import com.areslib.telemetry.RobotStatusTracker
  * previous logger synchronously before creating the next mode-specific file. [close] drains disk
  * logging before closing the live backend.
  */
-class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelemetry {
+class DataLoggingTelemetry private constructor(
+    private val ntTelemetry: ITelemetry?,
+    internal val loggingPolicy: LoggingPolicy,
+    private val logDirectory: File,
+    @Suppress("UNUSED_PARAMETER") internalMarker: Unit
+) : ITelemetry {
+
+    constructor() : this(
+        null,
+        RobotLogEnvironment.loggingPolicy(),
+        RobotLogEnvironment.logDirectory,
+        Unit
+    )
+
+    /** Binary-compatible constructor retained for existing ARESLib consumers. */
+    constructor(ntTelemetry: ITelemetry? = null) : this(
+        ntTelemetry,
+        RobotLogEnvironment.loggingPolicy(),
+        RobotLogEnvironment.logDirectory,
+        Unit
+    )
+
+    /** Internal policy injection used by deterministic logging tests. */
+    internal constructor(
+        ntTelemetry: ITelemetry? = null,
+        loggingPolicy: LoggingPolicy,
+        logDirectory: File = RobotLogEnvironment.logDirectory
+    ) : this(ntTelemetry, loggingPolicy, logDirectory, Unit)
     
-    private var logger = ARESDataLogger("Init")
+    private var logger = ARESDataLogger("Init", logDirectory, loggingPolicy)
     private val currentFrame = java.util.HashMap<String, Any>()
     private val frameLock = Any()
     private var currentMode = "Init"
@@ -37,9 +75,14 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
 
     /**
      * The minimum time interval in milliseconds between file-based logging writes.
-     * Defaults to 0ms (unthrottled per-frame logging rate) to capture every control loop iteration.
+     * Defaults to the selected [loggingPolicy]. FORENSIC remains unthrottled; desktop SIMULATION
+     * defaults to 20 Hz and physical COMPETITION defaults to 50 Hz.
      */
-    var minLogIntervalMs: Long = 0L
+    var minLogIntervalMs: Long = loggingPolicy.minFrameIntervalMs
+        set(value) {
+            require(value >= 0L) { "Minimum log interval cannot be negative" }
+            field = value
+        }
     
     private var lastLogTimeMs = 0L
 
@@ -98,9 +141,20 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         if (detectedMode != currentMode) {
             logger.stop()
             currentMode = detectedMode
-            logger = ARESDataLogger(currentMode)
+            logger = ARESDataLogger(currentMode, logDirectory, loggingPolicy)
             ntTelemetry?.putString("OpMode", currentMode)
         }
+
+        val logMetrics = logger.metricsSnapshot()
+        putString(LOG_PROFILE_TOPIC, logMetrics.profile.name)
+        putNumber(LOG_ACCEPTED_TOPIC, logMetrics.acceptedFrames.toDouble())
+        putNumber(LOG_WRITTEN_TOPIC, logMetrics.writtenFrames.toDouble())
+        putNumber(LOG_DROPPED_TOPIC, logMetrics.droppedFrames.toDouble())
+        putNumber(LOG_QUEUE_DEPTH_TOPIC, logMetrics.queueDepth.toDouble())
+        putNumber(LOG_CURRENT_BYTES_TOPIC, logMetrics.currentFileBytes.toDouble())
+        putNumber(LOG_COMPLETED_BYTES_TOPIC, logMetrics.completedBytes.toDouble())
+        putNumber(LOG_ROTATIONS_TOPIC, logMetrics.rotations.toDouble())
+        putNumber(LOG_PRUNED_FILES_TOPIC, logMetrics.prunedFiles.toDouble())
         
         // Log the complete frame asynchronously using the GC-free map pool only if interval elapsed
         if (now - lastLogTimeMs >= minLogIntervalMs) {
@@ -126,4 +180,7 @@ class DataLoggingTelemetry(private val ntTelemetry: ITelemetry? = null) : ITelem
         logger.stop()
         ntTelemetry?.close()
     }
+
+    /** Latest disk-writer metrics without waiting for the background queue to drain. */
+    internal fun loggingMetrics(): ARESDataLoggerMetrics = logger.metricsSnapshot()
 }

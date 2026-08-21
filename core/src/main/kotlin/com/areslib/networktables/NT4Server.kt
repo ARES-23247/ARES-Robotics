@@ -462,7 +462,7 @@ class NT4Server(
             val dataType = getTypeIdFromValue(entry.value)
             packer.packArrayHeader(4)
             packer.packLong(entry.id.toLong())
-            packer.packLong(if (entry.timestampUs == Long.MIN_VALUE) timestamp else entry.timestampUs)
+            packer.packLong(retainedWireTimestamp(entry.timestampUs, timestamp))
             packer.packInt(dataType)
             packDataValue(packer, dataType, entry.value.borrowedValueForEncoding())
         }
@@ -504,7 +504,7 @@ class NT4Server(
             val dataType = getTypeIdFromValue(entry.value)
             ownedPacker.packArrayHeader(4)
             ownedPacker.packLong(entry.id.toLong())
-            ownedPacker.packLong(if (entry.timestampUs == Long.MIN_VALUE) timestamp else entry.timestampUs)
+            ownedPacker.packLong(retainedWireTimestamp(entry.timestampUs, timestamp))
             ownedPacker.packInt(dataType)
             packDataValue(ownedPacker, dataType, entry.value.borrowedValueForEncoding())
         }
@@ -559,6 +559,15 @@ class NT4Server(
             }
         }
     }
+
+    /**
+     * NT4 reserves zero/one as server-time sentinels. A deterministic simulator can create static
+     * retained topics at time zero, but replaying that sentinel to a late subscriber makes the
+     * client substitute its wall clock and mixes two timestamp domains in one session. Stamp such
+     * retained values with the server's current RobotClock value at transmission instead.
+     */
+    private fun retainedWireTimestamp(entryTimestampUs: Long, fallbackTimestampUs: Long): Long =
+        if (entryTimestampUs <= 1L) fallbackTimestampUs else entryTimestampUs
 
     fun decodeNT4Messages(message: ByteBuffer): List<NT4Message> {
         if (message.remaining() > MAX_DECODED_FRAME_BYTES) {

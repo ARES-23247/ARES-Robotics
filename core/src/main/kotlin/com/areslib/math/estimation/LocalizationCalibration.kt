@@ -8,6 +8,7 @@ import com.areslib.state.VisionMeasurement
 import com.areslib.state.VisionSolverType
 import com.google.gson.GsonBuilder
 import java.io.File
+import java.util.zip.GZIPInputStream
 
 enum class LocalizationCalibrationPlatform { FTC, FRC }
 
@@ -146,10 +147,17 @@ class LocalizationCalibrationRecorder(
     platform: LocalizationCalibrationPlatform,
     logDirectory: File? = null
 ) : AutoCloseable {
+    private val forensicPolicy = com.areslib.logging.LoggingPolicy.forProfile(
+        com.areslib.logging.LoggingProfile.FORENSIC
+    )
     private val logger = if (logDirectory == null) {
-        ARESDataLogger(mode = "${platform.name}_LocalizationCalibration")
+        ARESDataLogger(mode = "${platform.name}_LocalizationCalibration", policy = forensicPolicy)
     } else {
-        ARESDataLogger(mode = "${platform.name}_LocalizationCalibration", logDirectory = logDirectory)
+        ARESDataLogger(
+            mode = "${platform.name}_LocalizationCalibration",
+            logDirectory = logDirectory,
+            policy = forensicPolicy
+        )
     }
 
     val droppedSampleCount: Long get() = logger.droppedFrameCount
@@ -338,7 +346,14 @@ object LocalizationCalibrationCsv {
     fun read(files: List<File>): List<LocalizationCalibrationSample> {
         val samples = ArrayList<LocalizationCalibrationSample>()
         for (file in files) {
-            val lines = file.readLines()
+            val lines = file.inputStream().use { input ->
+                val decoded = if (file.name.endsWith(".gz", ignoreCase = true)) {
+                    GZIPInputStream(input)
+                } else {
+                    input
+                }
+                decoded.bufferedReader(Charsets.UTF_8).use { it.readLines() }
+            }
             if (lines.isEmpty()) continue
             val header = lines[0].split(',')
             val index = header.withIndex().associate { it.value to it.index }

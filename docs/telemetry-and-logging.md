@@ -66,7 +66,32 @@ not accepted.
 
 File names are canonicalized and constrained to the configured log directories. The API is rate-limited per remote IP. Treat it as a trusted local-subnet interface; do not expose port `5002` to the public internet.
 
-Default log storage is `/sdcard/FIRST/telemetry_logs/` on Android and `./logs/` on desktop. The desktop location is relative to the process working directory.
+Default log storage is `/sdcard/FIRST/telemetry_logs/` on Android and `./logs/` on desktop. The desktop location is relative to the process working directory. Only completed `.csv` and `.csv.gz` telemetry logs are listed or downloadable. Active writer reservations and quarantined abandoned files are deliberately hidden.
+
+## Logging profiles and storage governance
+
+`ARESDataLogger` selects one bounded policy for the process:
+
+| Profile | Default runtime | Sample interval | Rotation | Completed-log budget |
+| --- | --- | ---: | --- | ---: |
+| `COMPETITION` | FTC Control Hub or FRC roboRIO | 20 ms | 64 MiB or 30 min | 1 GiB |
+| `SIMULATION` | Desktop simulator/development | 50 ms | 64 MiB or 15 min | 2 GiB |
+| `FORENSIC` | Explicit incident capture | every submitted frame | 128 MiB or 15 min | 4 GiB |
+
+All built-in profiles stream gzip at low CPU cost. Set `ares.logging.profile` or
+`ARES_LOGGING_PROFILE` to select a profile explicitly. Misspelled values fail fast instead of
+silently falling back. Retention deletes only oldest completed `ares_log_*.csv[.gz]` files owned by
+this logger; it never deletes action logs, imported artifacts, active reservations, or abandoned
+quarantine files. It also preserves each profile's minimum recent-file count.
+
+At startup, old `.active` files are tested with an operating-system lock. Unlocked reservations
+older than 12 hours move to a uniquely named `.abandoned` quarantine. A locked file is considered a
+live writer and is never moved based only on age.
+
+Maintenance and validation runs that must preserve an existing directory byte-for-byte may set
+`ares.logging.retention.enabled=false` or `ARES_LOG_RETENTION_ENABLED=false`. This is not a logging
+off switch: new logs still rotate and finalize, but no automatic pruning occurs. Normal production
+defaults to retention enabled.
 
 ## Asynchronous CSV logger
 
@@ -74,12 +99,19 @@ Default log storage is `/sdcard/FIRST/telemetry_logs/` on Android and `./logs/` 
 
 - `logFrame` is non-blocking; a stopped/full logger increments `droppedFrameCount`.
 - `stop()` stops acceptance, drains all accepted frames, flushes, and closes the writer.
+- Active files end in `.csv.gz.active` by default and become importable `.csv.gz` files only after a successful close.
+- Files rotate at the selected profile's size or duration boundary, whichever comes first.
 - The first frame establishes stable CSV columns.
 - Values and headers use CSV quoting rules.
 - Keys first seen after the header are preserved as JSON in `_ExtraFieldsJson` rather than changing row width.
 - Pooled mutable maps returned by logger helpers must not be retained by callers after submission.
 
 Monitor `droppedFrameCount` in stress tests. A zero count is expected during ordinary operation, but the bounded queue deliberately favors robot-loop progress over blocking when storage cannot keep up.
+
+The logger publishes operational evidence under `Diagnostics/Logging/*`: `Profile`,
+`AcceptedFrames`, `WrittenFrames`, `DroppedFrames`, `QueueDepth`, `CurrentFileBytes`,
+`CompletedBytes`, `Rotations`, and `PrunedFiles`. Dashboard health should alarm on dropped frames or
+a persistently growing queue, not on the mere existence of a large completed archive.
 
 ## Troubleshooting
 

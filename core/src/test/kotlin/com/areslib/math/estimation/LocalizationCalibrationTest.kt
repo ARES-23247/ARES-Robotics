@@ -31,7 +31,7 @@ class LocalizationCalibrationTest {
             recorder.record(sample(7, truthX = 2.0, mt1X = 2.1, mt2X = 1.9))
         }
 
-        val file = directory.listFiles().orEmpty().single { it.extension == "csv" }
+        val file = directory.listFiles().orEmpty().single { it.name.endsWith(".csv.gz") }
         val parsed = LocalizationCalibrationCsv.read(listOf(file))
 
         assertEquals(1, parsed.size)

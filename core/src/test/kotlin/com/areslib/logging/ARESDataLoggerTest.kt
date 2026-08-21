@@ -13,8 +13,8 @@ class ARESDataLoggerTest {
         val directory = kotlin.io.path.createTempDirectory("ares-data-logger-collision").toFile()
         com.areslib.util.RobotClock.useMockTime(1_234_567L)
         try {
-            val first = ARESDataLogger("Teleop/Unsafe Name", directory)
-            val second = ARESDataLogger("Teleop/Unsafe Name", directory)
+            val first = ARESDataLogger("Teleop/Unsafe Name", directory, testLoggingPolicy())
+            val second = ARESDataLogger("Teleop/Unsafe Name", directory, testLoggingPolicy())
             first.logFrame(hashMapOf("TimestampMs" to 1L, "Logger" to "first"))
             second.logFrame(hashMapOf("TimestampMs" to 2L, "Logger" to "second"))
 
@@ -38,7 +38,7 @@ class ARESDataLoggerTest {
     @Test
     fun `log becomes importable only after clean shutdown`() {
         val mode = "ActiveMarker_${System.nanoTime()}"
-        val logger = ARESDataLogger(mode)
+        val logger = ARESDataLogger(mode, policy = testLoggingPolicy())
         val logsDir = File("./logs/")
 
         assertEquals(
@@ -65,7 +65,7 @@ class ARESDataLoggerTest {
     @Test
     fun csvEscapesValuesAndPreservesLateFieldsInStableSchema() {
         val mode = "CsvSafety_${System.nanoTime()}"
-        val logger = ARESDataLogger(mode)
+        val logger = ARESDataLogger(mode, policy = testLoggingPolicy())
 
         logger.logFrame(hashMapOf(
             "TimestampMs" to 1L,
@@ -100,7 +100,7 @@ class ARESDataLoggerTest {
     @Test
     fun stopDrainsAcceptedFramesAndRejectionsAreCounted() {
         val mode = "Drain_${System.nanoTime()}"
-        val logger = ARESDataLogger(mode)
+        val logger = ARESDataLogger(mode, policy = testLoggingPolicy())
         for (i in 0 until 200) {
             logger.logFrame(hashMapOf("TimestampMs" to i.toLong(), "Value" to i))
         }
@@ -121,7 +121,7 @@ class ARESDataLoggerTest {
     @Test
     fun stopRacingProducerAccountsForEveryFrame() {
         val mode = "StopRace_${System.nanoTime()}"
-        val logger = ARESDataLogger(mode)
+        val logger = ARESDataLogger(mode, policy = testLoggingPolicy())
         val attempted = 500
         val attemptsMade = java.util.concurrent.atomic.AtomicInteger(0)
         val producer = Thread {
@@ -147,7 +147,7 @@ class ARESDataLoggerTest {
 
     @Test
     fun testAsyncCSVLogging() {
-        val telemetry = DataLoggingTelemetry()
+        val telemetry = DataLoggingTelemetry(loggingPolicy = testLoggingPolicy())
         
         // Log 3 mock frames
         for (i in 1..3) {
@@ -185,7 +185,7 @@ class ARESDataLoggerTest {
 
     @Test
     fun testMapPoolingAndZeroAllocations() {
-        val logger = ARESDataLogger()
+        val logger = ARESDataLogger(policy = testLoggingPolicy())
         
         // 1. Exhaust the pre-populated pool of 16 maps to test behavior when empty
         val exhaustedMaps = mutableListOf<HashMap<String, Any>>()
@@ -217,7 +217,7 @@ class ARESDataLoggerTest {
     fun testDataLoggingThrottle() {
         com.areslib.util.RobotClock.useMockTime(1000L)
         try {
-            val telemetry = DataLoggingTelemetry()
+            val telemetry = DataLoggingTelemetry(loggingPolicy = testLoggingPolicy())
             telemetry.minLogIntervalMs = 50L // 50ms interval
 
             // Log 5 times in rapid succession (dt = 0ms)
@@ -282,3 +282,24 @@ class ARESDataLoggerTest {
         return fields
     }
 }
+
+internal fun testLoggingPolicy(
+    compress: Boolean = false,
+    maxFileBytes: Long = 64L * 1024L * 1024L,
+    maxFileDurationMs: Long = 60L * 60L * 1_000L,
+    maxDirectoryBytes: Long = Long.MAX_VALUE / 4L,
+    maxCompletedFiles: Int = Int.MAX_VALUE,
+    minRetainedFiles: Int = 0,
+    staleActiveAfterMs: Long = 24L * 60L * 60L * 1_000L
+): LoggingPolicy = LoggingPolicy(
+    profile = LoggingProfile.FORENSIC,
+    minFrameIntervalMs = 0L,
+    compress = compress,
+    maxFileBytes = maxFileBytes,
+    maxFileDurationMs = maxFileDurationMs,
+    maxDirectoryBytes = maxDirectoryBytes,
+    minFreeSpaceBytes = 0L,
+    maxCompletedFiles = maxCompletedFiles,
+    minRetainedFiles = minRetainedFiles,
+    staleActiveAfterMs = staleActiveAfterMs
+)

@@ -537,6 +537,17 @@ class NT4NetworkingHardeningTest {
         assertTrue(firstSnapshot.contentEquals(afterReuse), "queued frames must not alias the reusable encoder")
         assertEquals(1.0, server.decodeNT4Messages(ByteBuffer.wrap(firstSnapshot)).single().dataValue)
         assertEquals(2.0, server.decodeNT4Messages(second).single().dataValue)
+
+        val retainedAtSimulatorEpoch = NT4Entry(
+            3,
+            "StaticAtStartup",
+            NT4Value.StringVal("ready"),
+            timestampUs = 0L
+        )
+        val retainedMessage = server.decodeNT4Messages(
+            server.encodeNT4Messages(777_000L, listOf(retainedAtSimulatorEpoch))
+        ).single()
+        assertEquals(777_000L, retainedMessage.timestamp)
     }
 
     @Test
