@@ -383,7 +383,12 @@ object DesktopSimLauncher {
                 val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
 
                 if (sampleCount % 250L == 0L) {
-                    println("[SimPhysics] flP=%.2f, frP=%.2f, rawVx=%.2f, rawVy=%.2f, physY=%.3f".format(flP, frP, rawVx, rawVy, currentPhysY))
+                    println(
+                        ("[SimPhysics] flP=%.2f, frP=%.2f, rlP=%.2f, rrP=%.2f, " +
+                            "rawVx=%.2f, rawVy=%.2f, rawOmega=%.2f, physY=%.3f").format(
+                                flP, frP, rlP, rrP, rawVx, rawVy, rawOmega, currentPhysY,
+                            )
+                    )
                 }
 
                 val heading = currentPhysHeading

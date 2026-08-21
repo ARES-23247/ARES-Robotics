@@ -131,6 +131,48 @@ class DrivetrainKotlinGeneratorTest {
     }
 
     @Test
+    fun `FTC wheel encoder IMU runtime does not require or expose Pinpoint tuning`() {
+        val pinpoint = runtimeReadyMecanumDocument()
+        val imu = DrivetrainComponentDocument(
+            uid = "drive.localization.imu",
+            displayName = "Control Hub IMU",
+            role = DrivetrainComponentRole.GYRO,
+            hardwareId = "imu",
+            required = true,
+        )
+        val wheelImu = pinpoint.copy(
+            components = pinpoint.components.filterNot {
+                it.role == DrivetrainComponentRole.ODOMETRY_SENSOR
+            } + imu,
+            localization = DrivetrainLocalizationDocument(
+                primaryOdometry = DrivetrainLocalizationSourceDocument(
+                    uid = "localization.wheel-imu",
+                    source = LocalizationSourceKind.WHEEL_ENCODERS_IMU,
+                    componentUids = pinpoint.components.filter {
+                        it.role == DrivetrainComponentRole.DRIVE_MOTOR
+                    }.map { it.uid } + imu.uid,
+                    implementationClassName = "com.areslib.ftc.drivetrain.MecanumHardwareIO",
+                ),
+                headingSourceUid = "localization.wheel-imu",
+            ),
+            parameters = pinpoint.parameters.filterNot { it.key.startsWith("localization.pinpoint") },
+        )
+        val profile = canonicalProfile(wheelImu)
+
+        val generated = DrivetrainKotlinGenerator.generateFtcMecanumRuntime(
+            wheelImu,
+            listOf(profile),
+            "example.generated",
+        )
+
+        assertTrue(generated.content.contains("pinpointName = null"))
+        assertTrue(generated.content.contains("hardwareMap.get(com.qualcomm.robotcore.hardware.IMU::class.java"))
+        assertTrue(generated.content.contains("pinpointEncoderResolution = null"))
+        assertTrue(!generated.content.contains("GeneratedAresTuningConfig.Parameters.LOCALIZATION_PINPOINT"))
+        assertTrue(!generated.content.contains("FtcPinpointTuningState("))
+    }
+
+    @Test
     fun `generated strings are escaped and Kotlin identifier collisions fail closed`() {
         val drivetrain = mecanumDocument()
         val escaped = drivetrain.parameters.single().copy(description = "Dollar ${'$'} and\nnext line")

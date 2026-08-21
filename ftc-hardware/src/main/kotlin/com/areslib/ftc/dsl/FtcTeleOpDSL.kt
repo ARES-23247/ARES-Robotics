@@ -1,5 +1,6 @@
 package com.areslib.ftc.dsl
 
+import com.areslib.state.aprilTagPoseMap
 import com.areslib.ftc.FtcBaseRobot
 import com.areslib.ftc.update
 import com.areslib.telemetry.AresGamepad
@@ -127,12 +128,7 @@ abstract class FtcTeleOpBase<R> : OpMode() {
     final override fun init() {
         val builtDefinition = define().also { it.validate() }
         com.areslib.math.estimation.PoseEstimator.activeTags =
-            com.areslib.state.RobotFieldManager.activeConfig.apriltags.associate { tag ->
-                tag.id to com.areslib.math.geometry.Pose3d(
-                    com.areslib.math.geometry.Translation3d(tag.x, tag.y, tag.z),
-                    com.areslib.math.geometry.Rotation3d(0.0, 0.0, Math.toRadians(tag.yaw))
-                )
-            }
+            com.areslib.state.RobotFieldManager.activeConfig.aprilTagPoseMap()
         val builtRobot = buildRobot()
         val builtContext = FtcTeleOpContext(builtRobot, driver, operator, telemetry)
         definition = builtDefinition

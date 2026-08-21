@@ -31,6 +31,28 @@ class RobotFieldValidationTest {
     }
 
     @Test
+    fun `FTC tag family accepts SDK and Limelight spellings but rejects unknown detectors`() {
+        assertEquals("36h11", canonicalFtcAprilTagFamily("TAG_36h11"))
+        assertEquals("36h11", canonicalFtcAprilTagFamily("apriltag3_36h11_classic"))
+        assertEquals("standard41h12", canonicalFtcAprilTagFamily("apriltag3_41h12_standard"))
+        assertEquals(null, canonicalFtcAprilTagFamily("custom99h99"))
+
+        val issues = RobotFieldValidator.validate(
+            RobotFieldConfig(
+                fieldType = FieldType.FTC,
+                apriltags = listOf(
+                    RobotFieldAprilTag(
+                        id = 8,
+                        family = "custom99h99",
+                        sizeMeters = 0.1651,
+                    )
+                ),
+            ),
+        )
+        assertTrue(issues.any { it.message.contains("not supported by VisionPortal") })
+    }
+
+    @Test
     fun `zero dimensions select defaults while invalid explicit dimensions fail`() {
         assertTrue(RobotFieldValidator.validate(RobotFieldConfig()).isEmpty())
 

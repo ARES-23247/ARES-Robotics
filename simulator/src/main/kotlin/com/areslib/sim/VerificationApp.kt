@@ -7,6 +7,13 @@ import kotlin.math.pow
 
 import com.areslib.math.wrapAngle
 
+private const val DEFAULT_VERIFICATION_OPMODE =
+    "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp"
+
+/** Resolves the reviewed OpMode entry point without hard-wiring a season class into generic starters. */
+internal fun verificationOpModeClassName(configured: String?): String =
+    configured?.trim()?.takeIf(String::isNotBlank) ?: DEFAULT_VERIFICATION_OPMODE
+
 /**
  * Converts a desired post-curve drive effort back into the normalized joystick axis consumed by
  * the season drive controller. The verification runner publishes driver intent, so sending its
@@ -26,6 +33,9 @@ internal fun verificationDriverAxis(
 }
 
 fun main() {
+    val opModeClassName = verificationOpModeClassName(
+        System.getProperty("ares.sim.verification.opmode"),
+    )
     println("=================================================================")
     println("STARTING PROGRAMMATIC INTEGRATION VERIFICATION")
     println("=================================================================")
@@ -34,7 +44,7 @@ fun main() {
     thread {
         try {
             DesktopSimLauncher.launch(
-                args = arrayOf("--opmode", "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp", "--headless"),
+                args = arrayOf("--opmode", opModeClassName, "--headless"),
                 interactionModel = NoOpInteractionModel()
             )
         } catch (e: Exception) {
@@ -81,9 +91,9 @@ fun main() {
     }
 
     // 3. Command INIT
-    NT4Server.publishTopic("ARES/DriverStation/SelectedOpMode", "org.firstinspires.ftc.teamcode.opmodes.ARESMecanumTeleOp")
+    NT4Server.publishTopic("ARES/DriverStation/SelectedOpMode", opModeClassName)
     NT4Server.publishTopic("ARES/DriverStation/Command", "INIT")
-    println("Sent INIT command for ARESMecanumTeleOp.")
+    println("Sent INIT command for $opModeClassName.")
     Thread.sleep(3000) // Wait for init loop
 
     // 4. Command START

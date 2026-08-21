@@ -214,6 +214,11 @@ public class com/areslib/frc/telemetry/FrcTelemetryManager : com/areslib/telemet
 public final class com/areslib/frc/telemetry/FrcTelemetryManager$Companion {
 }
 
+public final class com/areslib/frc/vision/FrcAprilTagFieldLayoutFactory {
+	public static final field INSTANCE Lcom/areslib/frc/vision/FrcAprilTagFieldLayoutFactory;
+	public static final fun create (Lcom/areslib/state/RobotFieldConfig;)Ledu/wpi/first/apriltag/AprilTagFieldLayout;
+}
+
 public final class com/areslib/frc/vision/FrcLocalizationCalibrationSession : java/lang/AutoCloseable {
 	public fun <init> (Lcom/areslib/Store;Lcom/areslib/hardware/drive/SwerveHardwareIO;Lkotlin/jvm/functions/Function0;Ljava/io/File;)V
 	public synthetic fun <init> (Lcom/areslib/Store;Lcom/areslib/hardware/drive/SwerveHardwareIO;Lkotlin/jvm/functions/Function0;Ljava/io/File;ILkotlin/jvm/internal/DefaultConstructorMarker;)V

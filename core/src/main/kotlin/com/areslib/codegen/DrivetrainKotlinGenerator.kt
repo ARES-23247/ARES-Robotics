@@ -181,9 +181,13 @@ object DrivetrainKotlinGenerator {
             "FTC runtime generation accepts only checked-in canonical tuning profiles"
         }
 
+        val usesPinpoint = document.localization.primaryOdometry.source ==
+            com.areslib.drivetrain.LocalizationSourceKind.PINPOINT
+        val requiredParameterTypes = FTC_MECANUM_COMMON_PARAMETER_TYPES +
+            if (usesPinpoint) FTC_MECANUM_PINPOINT_PARAMETER_TYPES else emptyMap()
         val declarations = document.parameters + additionalDeclarations
         val declarationByKey = declarations.associateBy(TuningParameterDeclaration::key)
-        FTC_MECANUM_RUNTIME_PARAMETER_TYPES.forEach { (key, type) ->
+        requiredParameterTypes.forEach { (key, type) ->
             val declaration = requireNotNull(declarationByKey[key]) {
                 "FTC zero-code runtime requires tuning parameter '$key'"
             }
@@ -194,7 +198,7 @@ object DrivetrainKotlinGenerator {
         val canonical = requireNotNull(resolveTuningProfiles(profiles, declarations)[document.canonicalProfileUid]) {
             "Missing canonical profile '${document.canonicalProfileUid}'"
         }
-        FTC_MECANUM_RUNTIME_PARAMETER_TYPES.keys.forEach { key ->
+        requiredParameterTypes.keys.forEach { key ->
             val declaration = requireNotNull(declarationByKey[key])
             require(canonical[declaration.uid] != null) { "Canonical profile has no value for '$key'" }
         }
@@ -274,7 +278,9 @@ object DrivetrainKotlinGenerator {
                 add("hardwareMap.get(com.qualcomm.hardware.limelightvision.Limelight3A::class.java, ${hardwareConstant(it)})")
             }
         }.joinToString("\n") { "        $it" }
-        val reduxUids = FTC_MECANUM_RUNTIME_REDUX_KEYS.map { key ->
+        val reduxKeys = FTC_MECANUM_COMMON_REDUX_KEYS +
+            if (usesPinpoint) FTC_MECANUM_PINPOINT_REDUX_KEYS else emptySet()
+        val reduxUids = reduxKeys.map { key ->
             requireNotNull(declarationByKey[key]).uid
         }.sorted()
         val neutral = when (document.safety.enabledNeutralMode) {
@@ -310,10 +316,12 @@ object DrivetrainKotlinGenerator {
             appendLine("    val rearLeftDirection: DcMotorSimple.Direction get() = direction(GeneratedAresDrivebaseConfig.Components.${rearLeft.uid.constantName()}.INVERTED)")
             appendLine("    /** Canonical motor direction for the rear-right wheel. */")
             appendLine("    val rearRightDirection: DcMotorSimple.Direction get() = direction(GeneratedAresDrivebaseConfig.Components.${rearRight.uid.constantName()}.INVERTED)")
-            appendLine("    /** Pinpoint X-pod direction derived from the checked-in tuning profile. */")
-            appendLine("    val pinpointXDirection: GoBildaPinpointDriver.EncoderDirection get() = encoderDirection(values.${constant("localization.pinpointXReversed")})")
-            appendLine("    /** Pinpoint Y-pod direction derived from the checked-in tuning profile. */")
-            appendLine("    val pinpointYDirection: GoBildaPinpointDriver.EncoderDirection get() = encoderDirection(values.${constant("localization.pinpointYReversed")})")
+            if (usesPinpoint) {
+                appendLine("    /** Pinpoint X-pod direction derived from the checked-in tuning profile. */")
+                appendLine("    val pinpointXDirection: GoBildaPinpointDriver.EncoderDirection get() = encoderDirection(values.${constant("localization.pinpointXReversed")})")
+                appendLine("    /** Pinpoint Y-pod direction derived from the checked-in tuning profile. */")
+                appendLine("    val pinpointYDirection: GoBildaPinpointDriver.EncoderDirection get() = encoderDirection(values.${constant("localization.pinpointYReversed")})")
+            }
             appendLine("    /** Neutral policy applied to every drive motor while output is zero. */")
             appendLine("    val driveZeroPowerBehavior: DcMotor.ZeroPowerBehavior get() = DcMotor.ZeroPowerBehavior.$neutral")
             appendLine()
@@ -348,21 +356,32 @@ object DrivetrainKotlinGenerator {
             appendLine("            odomQx = tuning.localization.ekfNoise.qX,")
             appendLine("            odomQy = tuning.localization.ekfNoise.qY,")
             appendLine("            odomQtheta = tuning.localization.ekfNoise.qTheta,")
-            appendLine("            pinpointXOffsetMm = values.${constant("localization.pinpointXOffsetMm")},")
-            appendLine("            pinpointYOffsetMm = values.${constant("localization.pinpointYOffsetMm")},")
-            appendLine("            pinpointEncoderResolution = pinpointEncoderResolution,")
-            appendLine("            pinpointXDirection = pinpointXDirection,")
-            appendLine("            pinpointYDirection = pinpointYDirection,")
-            appendLine("            pinpointIsCcwPositive = values.${constant("localization.pinpointCcwPositive")},")
+            if (usesPinpoint) {
+                appendLine("            pinpointXOffsetMm = values.${constant("localization.pinpointXOffsetMm")},")
+                appendLine("            pinpointYOffsetMm = values.${constant("localization.pinpointYOffsetMm")},")
+                appendLine("            pinpointEncoderResolution = pinpointEncoderResolution,")
+                appendLine("            pinpointXDirection = pinpointXDirection,")
+                appendLine("            pinpointYDirection = pinpointYDirection,")
+                appendLine("            pinpointIsCcwPositive = values.${constant("localization.pinpointCcwPositive")},")
+            } else {
+                appendLine("            pinpointXOffsetMm = 0.0,")
+                appendLine("            pinpointYOffsetMm = 0.0,")
+                appendLine("            pinpointEncoderResolution = null,")
+                appendLine("            pinpointXDirection = encoderDirection(false),")
+                appendLine("            pinpointYDirection = encoderDirection(false),")
+                appendLine("            pinpointIsCcwPositive = true,")
+            }
             appendLine("            motorGains = tuning.drive.ftc.motorGains,")
             appendLine("            ticksPerMeter = values.${constant("drive.ticksPerMeter")},")
             appendLine("            initialTuningState = tuning,")
             appendLine("        )")
             appendLine("    }")
             appendLine()
-            appendLine("    val pinpointEncoderResolution: Double?")
-            appendLine("        get() = values.${constant("localization.pinpointEncoderResolution")}.takeIf { it > 0.0 }")
-            appendLine()
+            if (usesPinpoint) {
+                appendLine("    val pinpointEncoderResolution: Double?")
+                appendLine("        get() = values.${constant("localization.pinpointEncoderResolution")}.takeIf { it > 0.0 }")
+                appendLine()
+            }
             appendLine("    /** True only when [withRuntimeValues] consumes the approved live value. */")
             appendLine("    fun supportsRuntimeParameter(parameterUid: String): Boolean = parameterUid in reduxParameterUids")
             appendLine()
@@ -388,9 +407,11 @@ object DrivetrainKotlinGenerator {
             appendLine("                motorGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.motorKp").uid.q()}, values.${constant("drive.motorKp")}), number(${declarationByKey.getValue("drive.motorKi").uid.q()}, values.${constant("drive.motorKi")}), number(${declarationByKey.getValue("drive.motorKd").uid.q()}, values.${constant("drive.motorKd")}), number(${declarationByKey.getValue("drive.motorKf").uid.q()}, values.${constant("drive.motorKf")})),")
             appendLine("            ),")
             appendLine("        )")
-            appendLine("        val localization = LocalizationTuningState(")
+            appendLine("        val localization = current.localization.copy(")
             appendLine("            ekfNoise = EkfProcessNoiseTuningState(number(${declarationByKey.getValue("localization.ekfQx").uid.q()}, values.${constant("localization.ekfQx")}), number(${declarationByKey.getValue("localization.ekfQy").uid.q()}, values.${constant("localization.ekfQy")}), number(${declarationByKey.getValue("localization.ekfQtheta").uid.q()}, values.${constant("localization.ekfQtheta")})),")
-            appendLine("            ftcPinpoint = FtcPinpointTuningState(number(${declarationByKey.getValue("localization.pinpointXOffsetMm").uid.q()}, values.${constant("localization.pinpointXOffsetMm")}), number(${declarationByKey.getValue("localization.pinpointYOffsetMm").uid.q()}, values.${constant("localization.pinpointYOffsetMm")}), number(${declarationByKey.getValue("localization.pinpointEncoderResolution").uid.q()}, values.${constant("localization.pinpointEncoderResolution")})),")
+            if (usesPinpoint) {
+                appendLine("            ftcPinpoint = FtcPinpointTuningState(number(${declarationByKey.getValue("localization.pinpointXOffsetMm").uid.q()}, values.${constant("localization.pinpointXOffsetMm")}), number(${declarationByKey.getValue("localization.pinpointYOffsetMm").uid.q()}, values.${constant("localization.pinpointYOffsetMm")}), number(${declarationByKey.getValue("localization.pinpointEncoderResolution").uid.q()}, values.${constant("localization.pinpointEncoderResolution")})),")
+            }
             appendLine("        )")
             appendLine("        return current.copy(drive = drive, localization = localization)")
             appendLine("    }")
@@ -492,7 +513,7 @@ private fun List<TuningProfileDocument>.singleProjectUid(): String {
     return projectUids.single()
 }
 
-private val FTC_MECANUM_RUNTIME_PARAMETER_TYPES: Map<String, TuningParameterType> = linkedMapOf(
+private val FTC_MECANUM_COMMON_PARAMETER_TYPES: Map<String, TuningParameterType> = linkedMapOf(
     "drive.closedLoopVelocity" to TuningParameterType.BOOLEAN,
     "drive.feedforwardKs" to TuningParameterType.DOUBLE,
     "drive.feedforwardKv" to TuningParameterType.DOUBLE,
@@ -512,18 +533,21 @@ private val FTC_MECANUM_RUNTIME_PARAMETER_TYPES: Map<String, TuningParameterType
     "drive.pathVelocityScale" to TuningParameterType.DOUBLE,
     "drive.pathAccelerationLimit" to TuningParameterType.DOUBLE,
     "drive.ticksPerMeter" to TuningParameterType.DOUBLE,
+    "localization.ekfQx" to TuningParameterType.DOUBLE,
+    "localization.ekfQy" to TuningParameterType.DOUBLE,
+    "localization.ekfQtheta" to TuningParameterType.DOUBLE,
+)
+
+private val FTC_MECANUM_PINPOINT_PARAMETER_TYPES: Map<String, TuningParameterType> = linkedMapOf(
     "localization.pinpointCcwPositive" to TuningParameterType.BOOLEAN,
     "localization.pinpointXOffsetMm" to TuningParameterType.DOUBLE,
     "localization.pinpointYOffsetMm" to TuningParameterType.DOUBLE,
     "localization.pinpointEncoderResolution" to TuningParameterType.DOUBLE,
     "localization.pinpointXReversed" to TuningParameterType.BOOLEAN,
     "localization.pinpointYReversed" to TuningParameterType.BOOLEAN,
-    "localization.ekfQx" to TuningParameterType.DOUBLE,
-    "localization.ekfQy" to TuningParameterType.DOUBLE,
-    "localization.ekfQtheta" to TuningParameterType.DOUBLE,
 )
 
-private val FTC_MECANUM_RUNTIME_REDUX_KEYS: Set<String> = setOf(
+private val FTC_MECANUM_COMMON_REDUX_KEYS: Set<String> = setOf(
     "drive.feedforwardKs",
     "drive.feedforwardKv",
     "drive.feedforwardKa",
@@ -542,12 +566,15 @@ private val FTC_MECANUM_RUNTIME_REDUX_KEYS: Set<String> = setOf(
     "drive.pathVelocityScale",
     "drive.pathAccelerationLimit",
     "drive.ticksPerMeter",
-    "localization.pinpointXOffsetMm",
-    "localization.pinpointYOffsetMm",
-    "localization.pinpointEncoderResolution",
     "localization.ekfQx",
     "localization.ekfQy",
     "localization.ekfQtheta",
+)
+
+private val FTC_MECANUM_PINPOINT_REDUX_KEYS: Set<String> = setOf(
+    "localization.pinpointXOffsetMm",
+    "localization.pinpointYOffsetMm",
+    "localization.pinpointEncoderResolution",
 )
 
 private val PACKAGE = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*")

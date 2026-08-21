@@ -6,7 +6,10 @@ import com.areslib.hardware.vision.VisionIO
 import com.areslib.ftc.vision.FtcLimelightFactory
 import com.areslib.ftc.vision.FtcLimelightIO
 import com.areslib.ftc.vision.FtcVisionPortalIO
+import com.areslib.ftc.vision.FtcAprilTagLibraryFactory
 import com.areslib.hardware.vision.CompositeVisionIO
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldManager
 
 /**
  * Central hardware dependency injector and factory for FTC target platforms.
@@ -22,6 +25,17 @@ import com.areslib.hardware.vision.CompositeVisionIO
  * @see FtcVisionPortalIO
  */
 class RobotConfig(private val hardwareMap: HardwareMap) {
+
+    /**
+     * Builds the AprilTag processor for the reviewed canonical field contract.
+     *
+     * The caller remains responsible for attaching this processor to exactly one VisionPortal and
+     * closing that portal. Keeping portal/camera ownership outside this helper avoids hidden camera
+     * allocation while still eliminating hand-maintained season tag libraries.
+     */
+    @JvmOverloads
+    fun createAprilTagProcessor(field: RobotFieldConfig = RobotFieldManager.activeConfig): AprilTagProcessor =
+        FtcAprilTagLibraryFactory.configure(AprilTagProcessor.Builder(), field).build()
 
     /**
      * Instantiates a single or multi-camera [VisionIO] wrapper for Limelight 3A hardware.

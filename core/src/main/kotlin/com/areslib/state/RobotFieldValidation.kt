@@ -7,6 +7,7 @@ enum class RobotFieldValidationCode {
     APRIL_TAGS_REQUIRED,
     APRIL_TAG_DUPLICATE,
     APRIL_TAG_INVALID,
+    APRIL_TAG_METADATA,
     OBSTACLE_INVALID,
     ELEMENT_TYPE_INVALID,
     ELEMENT_INVALID,
@@ -82,6 +83,29 @@ object RobotFieldValidator {
                     setOf(tag.editorElementId(tag.id)),
                 )
             )
+        }
+
+        if (config.fieldType == FieldType.FTC) {
+            config.apriltags.filter { tag -> tag.family.isBlank() || tag.sizeMeters == null }.forEach { tag ->
+                add(
+                    RobotFieldValidationIssue(
+                        RobotFieldValidationCode.APRIL_TAG_METADATA,
+                        "FTC AprilTag ${tag.id} needs a family and physical size for VisionPortal generation",
+                        setOf(tag.editorElementId(tag.id)),
+                    )
+                )
+            }
+            config.apriltags.filter { tag ->
+                tag.family.isNotBlank() && canonicalFtcAprilTagFamily(tag.family) == null
+            }.forEach { tag ->
+                add(
+                    RobotFieldValidationIssue(
+                        RobotFieldValidationCode.APRIL_TAG_METADATA,
+                        "FTC AprilTag ${tag.id} family '${tag.family}' is not supported by VisionPortal",
+                        setOf(tag.editorElementId(tag.id)),
+                    )
+                )
+            }
         }
 
         val obstacleIds = hashSetOf<String>()
@@ -164,10 +188,25 @@ object RobotFieldValidator {
     private fun isValidDimension(value: Double): Boolean = value == 0.0 || value.isFinite() && value > 0.0
 
     private fun isValidAprilTag(tag: RobotFieldAprilTag): Boolean =
-        tag.id > 0 && tag.x.isFinite() && tag.y.isFinite() && tag.z.isFinite() && tag.yaw.isFinite()
+        tag.id > 0 && tag.x.isFinite() && tag.y.isFinite() && tag.z.isFinite() &&
+            tag.roll.isFinite() && tag.pitch.isFinite() && tag.yaw.isFinite() &&
+            (tag.sizeMeters == null || tag.sizeMeters.isFinite() && tag.sizeMeters > 0.0)
 
     private fun RobotFieldAprilTag.editorElementId(fallbackId: Int): String =
         editorId.ifBlank { "apriltag-$fallbackId" }
 
     private val VALID_ELEMENT_SHAPES = setOf("box", "circle", "cylinder", "sphere")
+}
+
+/**
+ * Converts FTC SDK and Limelight spellings to the detector family name stored by ARES.
+ * Returns null rather than guessing when the family is not supported by FTC VisionPortal.
+ */
+fun canonicalFtcAprilTagFamily(value: String): String? = when (value.trim().lowercase()) {
+    "36h11", "tag36h11", "tag_36h11", "apriltag3_36h11_classic" -> "36h11"
+    "25h9", "tag25h9", "tag_25h9", "apriltag3_25h9_classic" -> "25h9"
+    "16h5", "tag16h5", "tag_16h5", "apriltag3_16h5_classic" -> "16h5"
+    "standard41h12", "41h12", "tagstandard41h12", "tag_standard41h12",
+    "apriltag3_41h12_standard", "apriltag3_standard41h12" -> "standard41h12"
+    else -> null
 }

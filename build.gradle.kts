@@ -61,6 +61,13 @@ allprojects {
 }
 
 subprojects {
+    // The documented release matrix intentionally runs apiDump and apiCheck in one invocation.
+    // Order them without making apiCheck depend on apiDump: standalone apiCheck must continue to
+    // compare source against the committed baseline instead of rewriting that baseline first.
+    tasks.matching { it.name == "apiCheck" }.configureEach {
+        mustRunAfter("apiDump")
+    }
+
     if (name != "tools" && name != "FtcRobotController") {
         apply(plugin = "org.jetbrains.dokka")
         apply(plugin = "org.jetbrains.kotlinx.kover")

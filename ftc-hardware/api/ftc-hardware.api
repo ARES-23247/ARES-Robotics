@@ -262,6 +262,9 @@ public final class com/areslib/ftc/calibration/FtcMecanumCalibrationController {
 
 public final class com/areslib/ftc/config/RobotConfig {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/HardwareMap;)V
+	public final fun createAprilTagProcessor ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;
+	public final fun createAprilTagProcessor (Lcom/areslib/state/RobotFieldConfig;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;
+	public static synthetic fun createAprilTagProcessor$default (Lcom/areslib/ftc/config/RobotConfig;Lcom/areslib/state/RobotFieldConfig;ILjava/lang/Object;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;
 	public final fun getAprilTagVision (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;)Lcom/areslib/hardware/vision/VisionIO;
 	public final fun getLimelight (Ljava/lang/String;)Lcom/areslib/hardware/vision/VisionIO;
 	public static synthetic fun getLimelight$default (Lcom/areslib/ftc/config/RobotConfig;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/hardware/vision/VisionIO;
@@ -1646,6 +1649,12 @@ public final class com/areslib/ftc/telemetry/LimelightProxyAutoStart {
 	public static final fun registerWebHandlers (Landroid/content/Context;Lcom/qualcomm/robotcore/util/WebHandlerManager;)V
 	public final fun start ()V
 	public final fun stop ()V
+}
+
+public final class com/areslib/ftc/vision/FtcAprilTagLibraryFactory {
+	public static final field INSTANCE Lcom/areslib/ftc/vision/FtcAprilTagLibraryFactory;
+	public static final fun configure (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;Lcom/areslib/state/RobotFieldConfig;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+	public static final fun create (Lcom/areslib/state/RobotFieldConfig;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
 }
 
 public final class com/areslib/ftc/vision/FtcLimelightIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
