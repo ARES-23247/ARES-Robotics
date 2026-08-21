@@ -384,14 +384,29 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
     fun continuousServo(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
         add(id, displayName, SubsystemHardwareKind.CONTINUOUS_SERVO, block)
 
+    fun absoluteEncoder(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.ABSOLUTE_ENCODER, block)
+
+    fun quadratureEncoder(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.QUADRATURE_ENCODER, block)
+
     fun digitalInput(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
         add(id, displayName, SubsystemHardwareKind.DIGITAL_INPUT, block)
 
     fun analogInput(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
         add(id, displayName, SubsystemHardwareKind.ANALOG_INPUT, block)
 
+    fun distanceSensor(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.DISTANCE_SENSOR, block)
+
+    fun imu(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.IMU, block)
+
     fun colorSensor(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
         add(id, displayName, SubsystemHardwareKind.COLOR_SENSOR, block)
+
+    fun solenoid(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
+        add(id, displayName, SubsystemHardwareKind.SOLENOID, block)
 
     fun indicatorLight(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
         add(id, displayName, SubsystemHardwareKind.INDICATOR_LIGHT, block)
@@ -415,6 +430,8 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
                 canId = builder.canId,
                 canBus = builder.canBus,
                 channel = builder.channel,
+                secondaryChannel = builder.secondaryChannel,
+                pneumaticsModuleType = builder.pneumaticsModuleType,
             ),
             required = builder.required,
             inverted = builder.inverted,
@@ -433,9 +450,14 @@ class SubsystemHardwareBuilder internal constructor(private val platform: Subsys
             safeOutput = builder.safeOutput ?: when (kind) {
                 SubsystemHardwareKind.MOTOR, SubsystemHardwareKind.CONTINUOUS_SERVO -> 0.0
                 SubsystemHardwareKind.POSITIONAL_SERVO -> 0.5
+                SubsystemHardwareKind.SOLENOID -> 0.0
                 else -> null
             },
             following = builder.following,
+            encoderCountsPerRevolution = builder.encoderCountsPerRevolution,
+            distanceMetersPerVolt = builder.distanceMetersPerVolt,
+            imuLogoFacingDirection = builder.imuLogoFacingDirection,
+            imuUsbFacingDirection = builder.imuUsbFacingDirection,
         )
         return SubsystemHardwareRef(id)
     }
@@ -447,10 +469,16 @@ class HardwareDeviceBuilder internal constructor(platform: SubsystemPlatform) {
     var canId: Int? = null
     var canBus: String = "rio"
     var channel: Int? = null
+    var secondaryChannel: Int? = null
+    var pneumaticsModuleType: SubsystemPneumaticsModuleType? = null
     var required: Boolean = true
     var inverted: Boolean = false
     var currentLimitAmps: Double? = null
     var safeOutput: Double? = null
+    var encoderCountsPerRevolution: Double? = null
+    var distanceMetersPerVolt: Double? = null
+    var imuLogoFacingDirection: SubsystemHubFacingDirection? = null
+    var imuUsbFacingDirection: SubsystemHubFacingDirection? = null
     internal var following: SubsystemFollowerDocument? = null
     internal val measurements = mutableListOf<MeasurementBuilderValue>()
 

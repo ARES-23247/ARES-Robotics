@@ -407,6 +407,86 @@ class SubsystemKotlinGeneratorTest {
     }
 
     @Test
+    fun `typed sensor templates generate canonical cached reads on FTC and FRC`() {
+        val ftcEncoder = SubsystemTemplates.create(
+            SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR,
+            "wrist-encoder",
+            "WristEncoder",
+            SubsystemPlatform.FTC,
+        )
+        val ftcIo = SubsystemKotlinGenerator.generate(
+            ftcEncoder,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        ).single { it.relativePath.endsWith("FtcWristEncoderIO.kt") }.content
+        assertTrue(ftcIo.contains("AnalogInput::class.java"))
+        assertTrue(ftcIo.contains("input.voltage / input.maxVoltage"))
+        assertTrue(ftcIo.contains("* ${2.0 * Math.PI}"))
+
+        val ftcImu = SubsystemTemplates.create(
+            SubsystemTemplate.IMU_SENSOR,
+            "robot-imu",
+            "RobotImu",
+            SubsystemPlatform.FTC,
+        )
+        val ftcImuFiles = SubsystemKotlinGenerator.generate(
+            ftcImu,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        )
+        val ftcImuIo = ftcImuFiles.single { it.relativePath.endsWith("FtcRobotImuIO.kt") }.content
+        val ftcImuDefinition = ftcImuFiles.single { it.relativePath.endsWith("RobotImuDefinition.kt") }.content
+        assertTrue(ftcImuIo.contains("RevHubOrientationOnRobot.LogoFacingDirection.UP"))
+        assertTrue(ftcImuIo.contains("RevHubOrientationOnRobot.UsbFacingDirection.FORWARD"))
+        assertTrue(ftcImuIo.contains("require(imu.initialize(IMU.Parameters"))
+        assertTrue(ftcImuDefinition.contains("SubsystemHubFacingDirection.UP"))
+
+        val frcEncoder = SubsystemTemplates.create(
+            SubsystemTemplate.QUADRATURE_ENCODER_SENSOR,
+            "arm-encoder",
+            "ArmEncoder",
+            SubsystemPlatform.FRC,
+        )
+        val frcIo = SubsystemKotlinGenerator.generate(
+            frcEncoder,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FRC, "com.example.generated.subsystems"),
+        ).single { it.relativePath.endsWith("FrcArmEncoderIO.kt") }.content
+        assertTrue(frcIo.contains("Encoder(0, 1)"))
+        assertTrue(frcIo.contains("distancePerPulse = 1.0 / 1.0"))
+        assertTrue(frcIo.contains("sensor.rate"))
+
+        val frcImu = SubsystemTemplates.create(
+            SubsystemTemplate.IMU_SENSOR,
+            "robot-imu",
+            "RobotImu",
+            SubsystemPlatform.FRC,
+        )
+        val frcImuIo = SubsystemKotlinGenerator.generate(
+            frcImu,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FRC, "com.example.generated.subsystems"),
+        ).single { it.relativePath.endsWith("FrcRobotImuIO.kt") }.content
+        assertTrue(frcImuIo.contains("Math.toRadians(-sensor.angle)"))
+        assertTrue(frcImuIo.contains("Math.toRadians(-sensor.rate)"))
+    }
+
+    @Test
+    fun `FRC pneumatic template declares module and fail closed boolean output`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.PNEUMATIC_ACTUATOR,
+            "claw",
+            "Claw",
+            SubsystemPlatform.FRC,
+        )
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FRC, "com.example.generated.subsystems"),
+        )
+        val io = files.single { it.relativePath.endsWith("FrcClawIO.kt") }.content
+        val mock = files.single { it.relativePath.endsWith("MockClawIO.kt") }.content
+        assertTrue(io.contains("Solenoid(1, PneumaticsModuleType.REVPH, 0)"))
+        assertTrue(io.contains("solenoid.set((requested) >= 0.5)"))
+        assertTrue(mock.contains("solenoidCommand = 0.0"))
+    }
+
+    @Test
     fun `PID generation makes sensor conversion filtering and anti-windup explicit`() {
         val document = subsystem("elevator", "Elevator", SubsystemPlatform.FTC) {
             val target = state.double("targetMeters", "Target", SubsystemFieldRole.TARGET, 0.0, "m", 0.0, 1.2)

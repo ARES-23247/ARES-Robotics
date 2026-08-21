@@ -6,7 +6,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 9
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 10
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -84,11 +84,25 @@ enum class SubsystemHardwareKind {
     MOTOR,
     POSITIONAL_SERVO,
     CONTINUOUS_SERVO,
+    /** Standalone duty-cycle or analog absolute encoder. */
+    ABSOLUTE_ENCODER,
+    /** Standalone incremental A/B encoder. */
+    QUADRATURE_ENCODER,
     DIGITAL_INPUT,
     ANALOG_INPUT,
+    DISTANCE_SENSOR,
+    IMU,
     COLOR_SENSOR,
+    /** FRC pneumatic binary actuator. */
+    SOLENOID,
     INDICATOR_LIGHT,
     PRISM_DRIVER,
+}
+
+/** True only when the generated physical adapter has an implemented, tested platform binding. */
+fun SubsystemHardwareKind.supportsPlatform(platform: SubsystemPlatform): Boolean = when (platform) {
+    SubsystemPlatform.FTC -> this != SubsystemHardwareKind.SOLENOID
+    SubsystemPlatform.FRC -> this != SubsystemHardwareKind.COLOR_SENSOR
 }
 
 /** Explicit cached signal read from one hardware device. */
@@ -96,8 +110,15 @@ enum class SubsystemMeasurementSource {
     MOTOR_POSITION_NATIVE,
     MOTOR_VELOCITY_NATIVE_PER_SECOND,
     MOTOR_CURRENT_AMPS,
+    /** Standalone encoder position expressed in turns before descriptor scale/offset. */
+    ENCODER_POSITION_TURNS,
+    /** Standalone encoder velocity expressed in turns per second before descriptor conversion. */
+    ENCODER_VELOCITY_TURNS_PER_SECOND,
     DIGITAL_STATE,
     ANALOG_VOLTAGE,
+    DISTANCE_METERS,
+    IMU_YAW_RADIANS,
+    IMU_YAW_RATE_RADIANS_PER_SECOND,
     COLOR_ARGB,
 }
 
@@ -130,6 +151,14 @@ enum class SubsystemTemplate {
     POSITIONAL_SERVO,
     CONTINUOUS_SERVO,
     SENSOR_ONLY_SUBSYSTEM,
+    LIMIT_SWITCH_SENSOR,
+    BEAM_BREAK_SENSOR,
+    POTENTIOMETER_SENSOR,
+    ABSOLUTE_ENCODER_SENSOR,
+    QUADRATURE_ENCODER_SENSOR,
+    DISTANCE_SENSOR,
+    IMU_SENSOR,
+    PNEUMATIC_ACTUATOR,
     HOMED_MECHANISM,
     CURRENT_HOMED_MECHANISM,
     VELOCITY_HOMED_MECHANISM,
@@ -139,6 +168,18 @@ enum class SubsystemTemplate {
     PRISM_LED_DRIVER,
     ADVANCED_CUSTOM,
 }
+
+/** Whether the generated physical adapter for this starter exists on [platform]. */
+fun SubsystemTemplate.supportsPlatform(platform: SubsystemPlatform): Boolean = when (this) {
+    SubsystemTemplate.PNEUMATIC_ACTUATOR -> platform == SubsystemPlatform.FRC
+    else -> true
+}
+
+/** WPILib pneumatic module used by a generated FRC solenoid adapter. */
+enum class SubsystemPneumaticsModuleType { REV_PH, CTRE_PCM }
+
+/** Physical Control Hub orientation used to initialize a generated FTC IMU adapter. */
+enum class SubsystemHubFacingDirection { UP, DOWN, FORWARD, BACKWARD, LEFT, RIGHT }
 
 /** Unit-aware feedforward model combined with feedback before output clamping. */
 enum class SubsystemFeedforwardKind {
@@ -320,6 +361,10 @@ data class SubsystemHardwareConnection(
     val canId: Int? = null,
     val canBus: String = "rio",
     val channel: Int? = null,
+    /** B channel for a generated FRC quadrature encoder. */
+    val secondaryChannel: Int? = null,
+    /** Required for a generated FRC solenoid; [canId] identifies the module. */
+    val pneumaticsModuleType: SubsystemPneumaticsModuleType? = null,
 )
 
 /** One cached signal sampled from a device during the subsystem read phase. */
@@ -369,6 +414,14 @@ data class SubsystemHardwareDocument(
     val uid: String = hardwareId,
     /** Null means independently controlled; otherwise this actuator follows exactly one leader. */
     val following: SubsystemFollowerDocument? = null,
+    /** Counts per mechanical revolution for standalone incremental encoders. */
+    val encoderCountsPerRevolution: Double? = null,
+    /** FRC analog-distance conversion. FTC distance adapters already report meters. */
+    val distanceMetersPerVolt: Double? = null,
+    /** FTC Control Hub logo direction; meaningful only for an IMU. */
+    val imuLogoFacingDirection: SubsystemHubFacingDirection? = null,
+    /** FTC Control Hub USB direction; meaningful only for an IMU. */
+    val imuUsbFacingDirection: SubsystemHubFacingDirection? = null,
 )
 
 /** A typed state value. Raw Kotlin expressions are deliberately not accepted. */
@@ -526,15 +579,48 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 if (device.currentLimitAmps != null) {
                     issue("$path.currentLimitAmps", "FTC DcMotorEx cannot enforce a controller current limit; use a current safety rule instead")
                 }
+                if (device.kind == SubsystemHardwareKind.SOLENOID) {
+                    issue("$path.kind", "Generated pneumatic solenoids are available only for FRC projects")
+                }
             }
             SubsystemPlatform.FRC -> when (device.kind) {
                 SubsystemHardwareKind.MOTOR -> if (device.connection.canId == null || device.connection.canId !in 0..62) {
                     issue("$path.connection.canId", "FRC motors require a CAN ID from 0 to 62")
                 }
+                SubsystemHardwareKind.SOLENOID -> {
+                    if (device.connection.canId == null || device.connection.canId !in 0..62) {
+                        issue("$path.connection.canId", "FRC solenoids require a pneumatic module CAN ID from 0 to 62")
+                    }
+                    if (device.connection.channel == null || device.connection.channel !in 0..15) {
+                        issue("$path.connection.channel", "FRC solenoid channels must be from 0 to 15")
+                    }
+                    if (device.connection.pneumaticsModuleType == null) {
+                        issue("$path.connection.pneumaticsModuleType", "Select REV PH or CTRE PCM for an FRC solenoid")
+                    }
+                }
+                SubsystemHardwareKind.QUADRATURE_ENCODER -> {
+                    if (device.connection.channel == null || device.connection.channel !in 0..31) {
+                        issue("$path.connection.channel", "FRC quadrature encoders require an A channel from 0 to 31")
+                    }
+                    if (device.connection.secondaryChannel == null || device.connection.secondaryChannel !in 0..31) {
+                        issue("$path.connection.secondaryChannel", "FRC quadrature encoders require a B channel from 0 to 31")
+                    }
+                    if (device.connection.channel == device.connection.secondaryChannel) {
+                        issue("$path.connection.secondaryChannel", "Quadrature encoder A and B channels must be different")
+                    }
+                }
+                SubsystemHardwareKind.IMU -> if (
+                    device.connection.canId != null || device.connection.channel != null ||
+                    device.connection.secondaryChannel != null
+                ) {
+                    issue("$path.connection", "Generated FRC IMU uses the roboRIO onboard SPI port and has no CAN/DIO channel")
+                }
                 SubsystemHardwareKind.POSITIONAL_SERVO,
                 SubsystemHardwareKind.CONTINUOUS_SERVO,
+                SubsystemHardwareKind.ABSOLUTE_ENCODER,
                 SubsystemHardwareKind.DIGITAL_INPUT,
                 SubsystemHardwareKind.ANALOG_INPUT,
+                SubsystemHardwareKind.DISTANCE_SENSOR,
                 SubsystemHardwareKind.INDICATOR_LIGHT,
                 SubsystemHardwareKind.PRISM_DRIVER -> if (device.connection.channel == null || device.connection.channel !in 0..31) {
                     issue("$path.connection.channel", "FRC channel must be from 0 to 31")
@@ -542,6 +628,39 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 SubsystemHardwareKind.COLOR_SENSOR ->
                     issue("$path.kind", "Generated FRC color-sensor wiring is not supported yet")
             }
+        }
+        if (device.kind != SubsystemHardwareKind.QUADRATURE_ENCODER && device.connection.secondaryChannel != null) {
+            issue("$path.connection.secondaryChannel", "Only quadrature encoders use a secondary channel")
+        }
+        if (device.kind != SubsystemHardwareKind.SOLENOID && device.connection.pneumaticsModuleType != null) {
+            issue("$path.connection.pneumaticsModuleType", "Only solenoids use a pneumatic module type")
+        }
+        if (device.kind == SubsystemHardwareKind.QUADRATURE_ENCODER) {
+            val counts = device.encoderCountsPerRevolution
+            if (counts == null || !counts.isFinite() || counts <= 0.0) {
+                issue("$path.encoderCountsPerRevolution", "Quadrature encoders require finite positive counts per revolution")
+            }
+        } else if (device.encoderCountsPerRevolution != null) {
+            issue("$path.encoderCountsPerRevolution", "Only quadrature encoders use counts per revolution")
+        }
+        if (device.kind == SubsystemHardwareKind.DISTANCE_SENSOR && document.platform == SubsystemPlatform.FRC) {
+            val conversion = device.distanceMetersPerVolt
+            if (conversion == null || !conversion.isFinite() || conversion <= 0.0) {
+                issue("$path.distanceMetersPerVolt", "Generated FRC analog distance sensors require positive meters per volt")
+            }
+        } else if (device.distanceMetersPerVolt != null && device.kind != SubsystemHardwareKind.DISTANCE_SENSOR) {
+            issue("$path.distanceMetersPerVolt", "Only distance sensors use meters-per-volt conversion")
+        }
+        if (device.kind == SubsystemHardwareKind.IMU && document.platform == SubsystemPlatform.FTC) {
+            val logo = device.imuLogoFacingDirection
+            val usb = device.imuUsbFacingDirection
+            if (logo == null) issue("$path.imuLogoFacingDirection", "FTC IMU requires the Control Hub logo direction")
+            if (usb == null) issue("$path.imuUsbFacingDirection", "FTC IMU requires the Control Hub USB direction")
+            if (logo != null && usb != null && !logo.isPerpendicularTo(usb)) {
+                issue("$path.imuUsbFacingDirection", "Control Hub logo and USB directions must be perpendicular")
+            }
+        } else if (device.imuLogoFacingDirection != null || device.imuUsbFacingDirection != null) {
+            issue(path, "Control Hub orientation is valid only for an FTC IMU")
         }
         device.currentLimitAmps?.let { limit ->
             if (!limit.isFinite() || limit <= 0.0) issue("$path.currentLimitAmps", "Current limit must be finite and positive")
@@ -564,6 +683,9 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 }
                 SubsystemHardwareKind.PRISM_DRIVER -> if (neutral < 0.0) {
                     issue("$path.safeOutput", "Prism driver neutral must be non-negative (0.0 for off)")
+                }
+                SubsystemHardwareKind.SOLENOID -> if (neutral != 0.0 && neutral != 1.0) {
+                    issue("$path.safeOutput", "Solenoid neutral must be exactly 0 (off) or 1 (on)")
                 }
                 else -> Unit
             }
@@ -630,6 +752,11 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
                 val requiredType = source.valueType()
                 if (field.type != requiredType) {
                     issue("$measurementPath.fieldId", "$source measurements require a ${requiredType.name} field")
+                }
+                source.canonicalUnit()?.let { canonicalUnit ->
+                    if (field.unit != canonicalUnit) {
+                        issue("$measurementPath.fieldId", "$source measurements require canonical unit '$canonicalUnit'")
+                    }
                 }
                 if (requiredType != SubsystemValueType.DOUBLE && (measurement.scale != 1.0 || measurement.offset != 0.0)) {
                     issue("$measurementPath.scale", "Only numeric double measurements use scale and offset")
@@ -1348,6 +1475,8 @@ object SubsystemDocumentCodec {
                     canId = conn?.canId,
                     canBus = conn?.canBus ?: "rio",
                     channel = conn?.channel,
+                    secondaryChannel = conn?.secondaryChannel,
+                    pneumaticsModuleType = conn?.pneumaticsModuleType,
                 ),
                 required = h.required ?: true,
                 inverted = h.inverted ?: false,
@@ -1372,6 +1501,10 @@ object SubsystemDocumentCodec {
                         transform = f.transform ?: SubsystemFollowerTransform.SAME_DIRECTION,
                     )
                 },
+                encoderCountsPerRevolution = h.encoderCountsPerRevolution,
+                distanceMetersPerVolt = h.distanceMetersPerVolt,
+                imuLogoFacingDirection = h.imuLogoFacingDirection,
+                imuUsbFacingDirection = h.imuUsbFacingDirection,
             )
         }
 
@@ -1636,6 +1769,7 @@ private val ACTUATOR_KINDS = setOf(
     SubsystemHardwareKind.CONTINUOUS_SERVO,
     SubsystemHardwareKind.INDICATOR_LIGHT,
     SubsystemHardwareKind.PRISM_DRIVER,
+    SubsystemHardwareKind.SOLENOID,
 )
 private val NUMERIC_TYPES = setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)
 private val CLOSED_LOOP_STRATEGIES = setOf(
@@ -1644,6 +1778,15 @@ private val CLOSED_LOOP_STRATEGIES = setOf(
     SubsystemControlStrategy.VELOCITY_PID,
     SubsystemControlStrategy.BANG_BANG,
 )
+
+private fun SubsystemHubFacingDirection.isPerpendicularTo(other: SubsystemHubFacingDirection): Boolean =
+    axisGroup() != other.axisGroup()
+
+private fun SubsystemHubFacingDirection.axisGroup(): Int = when (this) {
+    SubsystemHubFacingDirection.UP, SubsystemHubFacingDirection.DOWN -> 0
+    SubsystemHubFacingDirection.FORWARD, SubsystemHubFacingDirection.BACKWARD -> 1
+    SubsystemHubFacingDirection.LEFT, SubsystemHubFacingDirection.RIGHT -> 2
+}
 
 private fun String.isSafeProjectRelativePath(): Boolean =
     isNotBlank() && '/' in this && !startsWith('/') && '\\' !in this &&
@@ -1658,22 +1801,50 @@ fun SubsystemHardwareKind.compatibleMeasurementSources(): List<SubsystemMeasurem
         SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND,
         SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
     )
+    SubsystemHardwareKind.ABSOLUTE_ENCODER -> listOf(SubsystemMeasurementSource.ENCODER_POSITION_TURNS)
+    SubsystemHardwareKind.QUADRATURE_ENCODER -> listOf(
+        SubsystemMeasurementSource.ENCODER_POSITION_TURNS,
+        SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND,
+    )
     SubsystemHardwareKind.DIGITAL_INPUT -> listOf(SubsystemMeasurementSource.DIGITAL_STATE)
     SubsystemHardwareKind.ANALOG_INPUT -> listOf(SubsystemMeasurementSource.ANALOG_VOLTAGE)
+    SubsystemHardwareKind.DISTANCE_SENSOR -> listOf(SubsystemMeasurementSource.DISTANCE_METERS)
+    SubsystemHardwareKind.IMU -> listOf(
+        SubsystemMeasurementSource.IMU_YAW_RADIANS,
+        SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND,
+    )
     SubsystemHardwareKind.COLOR_SENSOR -> listOf(SubsystemMeasurementSource.COLOR_ARGB)
     SubsystemHardwareKind.POSITIONAL_SERVO,
     SubsystemHardwareKind.CONTINUOUS_SERVO,
     SubsystemHardwareKind.INDICATOR_LIGHT,
-    SubsystemHardwareKind.PRISM_DRIVER -> emptyList()
+    SubsystemHardwareKind.PRISM_DRIVER,
+    SubsystemHardwareKind.SOLENOID -> emptyList()
 }
 
 fun SubsystemMeasurementSource.valueType(): SubsystemValueType = when (this) {
     SubsystemMeasurementSource.MOTOR_POSITION_NATIVE,
     SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND,
     SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
-    SubsystemMeasurementSource.ANALOG_VOLTAGE -> SubsystemValueType.DOUBLE
+    SubsystemMeasurementSource.ENCODER_POSITION_TURNS,
+    SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND,
+    SubsystemMeasurementSource.ANALOG_VOLTAGE,
+    SubsystemMeasurementSource.DISTANCE_METERS,
+    SubsystemMeasurementSource.IMU_YAW_RADIANS,
+    SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND -> SubsystemValueType.DOUBLE
     SubsystemMeasurementSource.DIGITAL_STATE -> SubsystemValueType.BOOLEAN
     SubsystemMeasurementSource.COLOR_ARGB -> SubsystemValueType.INT
+}
+
+/** Canonical state-field unit required after measurement scale/offset conversion. */
+fun SubsystemMeasurementSource.canonicalUnit(): String? = when (this) {
+    SubsystemMeasurementSource.ENCODER_POSITION_TURNS,
+    SubsystemMeasurementSource.IMU_YAW_RADIANS -> "rad"
+    SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND -> "rad/s"
+    SubsystemMeasurementSource.DISTANCE_METERS -> "m"
+    SubsystemMeasurementSource.MOTOR_CURRENT_AMPS -> "A"
+    SubsystemMeasurementSource.ANALOG_VOLTAGE -> "V"
+    else -> null
 }
 
 private fun duplicateIds(ids: List<String>): Set<String> {

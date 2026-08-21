@@ -28,6 +28,17 @@ object SubsystemTemplates {
         SubsystemTemplate.POSITIONAL_SERVO -> positionalServo(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.CONTINUOUS_SERVO -> continuousServo(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM -> sensorOnly(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.LIMIT_SWITCH_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DIGITAL_INPUT, "Limit switch", "Cached limit-switch state for homing, interlocks, or diagnostics.")
+        SubsystemTemplate.BEAM_BREAK_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DIGITAL_INPUT, "Beam-break sensor", "Cached beam-break state for game-piece detection without hidden hardware reads.")
+        SubsystemTemplate.POTENTIOMETER_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.ANALOG_INPUT, "Potentiometer", "Cached potentiometer voltage with explicit scale and offset for physical units.")
+        SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.ABSOLUTE_ENCODER, "Absolute encoder", "Standalone absolute encoder converted to canonical radians.")
+        SubsystemTemplate.QUADRATURE_ENCODER_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.QUADRATURE_ENCODER, "Quadrature encoder", "Incremental encoder with reviewed counts per revolution and canonical radian outputs.")
+        SubsystemTemplate.DISTANCE_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DISTANCE_SENSOR, "Distance sensor", "Cached distance measurement in meters with validity and freshness checks.")
+        SubsystemTemplate.IMU_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.IMU, "IMU", "Cached CCW-positive yaw and yaw rate in radians.")
+        SubsystemTemplate.PNEUMATIC_ACTUATOR -> {
+            require(platform == SubsystemPlatform.FRC) { "Generated pneumatic actuator templates are available only for FRC projects" }
+            hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.SOLENOID, "Solenoid", "Binary pneumatic output with a declared neutral and fail-closed write handling.")
+        }
         SubsystemTemplate.HOMED_MECHANISM -> homed(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.CURRENT_HOMED_MECHANISM -> currentHomed(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.VELOCITY_HOMED_MECHANISM -> velocityHomed(documentId, displayName, kotlinTypeName, platform)
@@ -45,6 +56,49 @@ object SubsystemTemplates {
     private fun digitalConnection(platform: SubsystemPlatform, name: String, channel: Int = 0) =
         if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = name)
         else SubsystemHardwareConnection(channel = channel)
+
+    private fun hardwareTemplate(
+        id: String,
+        displayName: String,
+        kotlinTypeName: String,
+        platform: SubsystemPlatform,
+        template: SubsystemTemplate,
+        kind: SubsystemHardwareKind,
+        hardwareName: String,
+        description: String,
+    ): SubsystemDocument {
+        val scaffold = SubsystemHardwareScaffolding.create(
+            kind = kind,
+            hardwareId = "sensor".takeIf { kind !in setOf(SubsystemHardwareKind.SOLENOID) } ?: "solenoid",
+            displayName = hardwareName,
+            platform = platform,
+            hardwareMapName = when (kind) {
+                SubsystemHardwareKind.IMU -> "imu"
+                SubsystemHardwareKind.SOLENOID -> "solenoid"
+                else -> "sensor"
+            },
+        )
+        val actuator = kind == SubsystemHardwareKind.SOLENOID
+        return SubsystemDocument(
+            documentId = id,
+            displayName = displayName,
+            kotlinTypeName = kotlinTypeName,
+            description = description,
+            platform = platform,
+            template = template,
+            hardware = listOf(scaffold.hardware),
+            stateFields = scaffold.stateFields,
+            controlLoops = scaffold.controlLoops,
+            safety = SubsystemSafetyDocument(
+                feedbackTimeoutMs = if (actuator) null else 250L,
+                requiresConfigurationHealth = true,
+                requiresCurrentMonitoring = false,
+                latchOutputFaults = actuator,
+                requiresExplicitNeutralRecovery = actuator,
+            ),
+            autonomousResourceKey = id.takeIf { actuator },
+        )
+    }
 
     private fun actuator(
         id: String,
