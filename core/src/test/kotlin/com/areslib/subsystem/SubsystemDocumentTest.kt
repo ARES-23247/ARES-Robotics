@@ -7,9 +7,23 @@ import org.junit.jupiter.api.Test
 
 class SubsystemDocumentTest {
     @Test
+    fun `hardware picker support matches implemented generated platform adapters`() {
+        assertTrue(SubsystemHardwareKind.SOLENOID.supportsPlatform(SubsystemPlatform.FRC))
+        assertTrue(!SubsystemHardwareKind.SOLENOID.supportsPlatform(SubsystemPlatform.FTC))
+        assertTrue(SubsystemHardwareKind.COLOR_SENSOR.supportsPlatform(SubsystemPlatform.FTC))
+        assertTrue(!SubsystemHardwareKind.COLOR_SENSOR.supportsPlatform(SubsystemPlatform.FRC))
+        SubsystemHardwareKind.entries
+            .filterNot { it == SubsystemHardwareKind.SOLENOID || it == SubsystemHardwareKind.COLOR_SENSOR }
+            .forEach { kind ->
+                assertTrue(kind.supportsPlatform(SubsystemPlatform.FTC), "$kind should have an FTC adapter")
+                assertTrue(kind.supportsPlatform(SubsystemPlatform.FRC), "$kind should have an FRC adapter")
+            }
+    }
+
+    @Test
     fun `every capability template is valid and round trips on both robot platforms`() {
         SubsystemPlatform.entries.forEach { platform ->
-            SubsystemTemplate.entries.forEach { template ->
+            SubsystemTemplate.entries.filter { it.supportsPlatform(platform) }.forEach { template ->
                 val id = "sample-${template.name.lowercase().replace('_', '-')}"
                 val document = SubsystemTemplates.create(template, id, "Sample${template.name.toTypeName()}", platform)
                 val issues = validateSubsystemDocument(document)
@@ -17,6 +31,90 @@ class SubsystemDocumentTest {
                 assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
             }
         }
+    }
+
+    @Test
+    fun `typed sensor templates expose canonical units and platform wiring`() {
+        val absolute = SubsystemTemplates.create(
+            SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR,
+            "arm-encoder",
+            "ArmEncoder",
+            SubsystemPlatform.FTC,
+        )
+        val quadrature = SubsystemTemplates.create(
+            SubsystemTemplate.QUADRATURE_ENCODER_SENSOR,
+            "shaft-encoder",
+            "ShaftEncoder",
+            SubsystemPlatform.FRC,
+        )
+        val distance = SubsystemTemplates.create(
+            SubsystemTemplate.DISTANCE_SENSOR,
+            "range-sensor",
+            "RangeSensor",
+            SubsystemPlatform.FRC,
+        )
+        val imu = SubsystemTemplates.create(
+            SubsystemTemplate.IMU_SENSOR,
+            "mechanism-imu",
+            "MechanismImu",
+            SubsystemPlatform.FTC,
+        )
+
+        assertEquals("rad", absolute.stateFields.single().unit)
+        assertEquals(1, quadrature.hardware.single().connection.secondaryChannel)
+        assertEquals(setOf("rad", "rad/s"), quadrature.stateFields.mapNotNull { it.unit }.toSet())
+        assertEquals("m", distance.stateFields.single().unit)
+        assertEquals(1.0, distance.hardware.single().distanceMetersPerVolt)
+        assertEquals(setOf("rad", "rad/s"), imu.stateFields.mapNotNull { it.unit }.toSet())
+        assertEquals(SubsystemHubFacingDirection.UP, imu.hardware.single().imuLogoFacingDirection)
+        assertEquals(SubsystemHubFacingDirection.FORWARD, imu.hardware.single().imuUsbFacingDirection)
+        listOf(absolute, quadrature, distance, imu).forEach {
+            assertTrue(validateSubsystemDocument(it).isEmpty()) { validateSubsystemDocument(it).toString() }
+        }
+    }
+
+    @Test
+    fun `FTC IMU requires a complete perpendicular Control Hub orientation`() {
+        val valid = SubsystemTemplates.create(
+            SubsystemTemplate.IMU_SENSOR,
+            "robot-imu",
+            "RobotImu",
+            SubsystemPlatform.FTC,
+        )
+        val missing = valid.copy(hardware = valid.hardware.map {
+            it.copy(imuUsbFacingDirection = null)
+        })
+        val parallel = valid.copy(hardware = valid.hardware.map {
+            it.copy(
+                imuLogoFacingDirection = SubsystemHubFacingDirection.UP,
+                imuUsbFacingDirection = SubsystemHubFacingDirection.DOWN,
+            )
+        })
+
+        assertTrue(validateSubsystemDocument(missing).any { it.path.endsWith("imuUsbFacingDirection") })
+        assertTrue(validateSubsystemDocument(parallel).any { it.message.contains("perpendicular") })
+    }
+
+    @Test
+    fun `pneumatic template is FRC only and declares a neutralized solenoid`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            SubsystemTemplates.create(
+                SubsystemTemplate.PNEUMATIC_ACTUATOR,
+                "claw",
+                "Claw",
+                SubsystemPlatform.FTC,
+            )
+        }
+        val frc = SubsystemTemplates.create(
+            SubsystemTemplate.PNEUMATIC_ACTUATOR,
+            "claw",
+            "Claw",
+            SubsystemPlatform.FRC,
+        )
+        assertEquals(SubsystemHardwareKind.SOLENOID, frc.hardware.single().kind)
+        assertEquals(SubsystemPneumaticsModuleType.REV_PH, frc.hardware.single().connection.pneumaticsModuleType)
+        assertEquals(0.0, frc.hardware.single().safeOutput)
+        assertTrue(validateSubsystemDocument(frc).isEmpty()) { validateSubsystemDocument(frc).toString() }
     }
 
     @Test
@@ -245,13 +343,13 @@ class SubsystemDocumentTest {
         val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
 
         val oldSchema = assertThrows(IllegalArgumentException::class.java) {
-            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 9", "\"schemaVersion\": 8"))
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 10", "\"schemaVersion\": 9"))
         }
-        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 8"))
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 9"))
 
         val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
             SubsystemDocumentCodec.decode(
-                """{"schemaVersion":9,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
+                """{"schemaVersion":10,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
             )
         }
         assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))
@@ -321,7 +419,7 @@ class SubsystemDocumentTest {
     fun `decode normalizes missing optional string fields so copy operations succeed`() {
         val legacyJson = """
             {
-              "schemaVersion": 9,
+              "schemaVersion": 10,
               "documentId": "indicator-lights",
               "displayName": "Indicator lights",
               "kotlinTypeName": "IndicatorLightSubsystem",

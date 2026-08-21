@@ -335,10 +335,22 @@ ${checks.prependIndent("    ")}
                     add("canBus = ${device.connection.canBus.quoted()}")
                 }
                 device.connection.channel?.let { add("channel = $it") }
+                device.connection.secondaryChannel?.let { add("secondaryChannel = $it") }
+                device.connection.pneumaticsModuleType?.let {
+                    add("pneumaticsModuleType = com.areslib.subsystem.SubsystemPneumaticsModuleType.$it")
+                }
                 if (!device.required) add("required = false")
                 if (device.inverted) add("inverted = true")
                 device.currentLimitAmps?.let { add("currentLimitAmps = ${it.kotlinDouble()}") }
                 device.safeOutput?.let { add("safeOutput = ${it.kotlinDouble()}") }
+                device.encoderCountsPerRevolution?.let { add("encoderCountsPerRevolution = ${it.kotlinDouble()}") }
+                device.distanceMetersPerVolt?.let { add("distanceMetersPerVolt = ${it.kotlinDouble()}") }
+                device.imuLogoFacingDirection?.let {
+                    add("imuLogoFacingDirection = com.areslib.subsystem.SubsystemHubFacingDirection.$it")
+                }
+                device.imuUsbFacingDirection?.let {
+                    add("imuUsbFacingDirection = com.areslib.subsystem.SubsystemHubFacingDirection.$it")
+                }
                 device.measurements.forEach { measurement ->
                     val fieldId = measurement.fieldId
                     val arguments = buildList {
@@ -982,10 +994,22 @@ $feedforward
                 SubsystemHardwareKind.INDICATOR_LIGHT,
                 SubsystemHardwareKind.PRISM_DRIVER -> "com.qualcomm.robotcore.hardware.Servo"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "com.qualcomm.robotcore.hardware.CRServo"
+                SubsystemHardwareKind.ABSOLUTE_ENCODER -> "com.qualcomm.robotcore.hardware.AnalogInput"
+                SubsystemHardwareKind.QUADRATURE_ENCODER -> "com.qualcomm.robotcore.hardware.DcMotorEx"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "com.qualcomm.robotcore.hardware.DigitalChannel"
                 SubsystemHardwareKind.ANALOG_INPUT -> "com.qualcomm.robotcore.hardware.AnalogInput"
+                SubsystemHardwareKind.DISTANCE_SENSOR -> "com.qualcomm.robotcore.hardware.DistanceSensor"
+                SubsystemHardwareKind.IMU -> "com.qualcomm.robotcore.hardware.IMU"
                 SubsystemHardwareKind.COLOR_SENSOR -> "com.qualcomm.robotcore.hardware.ColorSensor"
+                SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
             }
+        }
+        if (document.hardware.any { it.kind == SubsystemHardwareKind.DISTANCE_SENSOR }) {
+            imports += "org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit"
+        }
+        if (document.hardware.any { it.kind == SubsystemHardwareKind.IMU }) {
+            imports += "org.firstinspires.ftc.robotcore.external.navigation.AngleUnit"
+            imports += "com.qualcomm.hardware.rev.RevHubOrientationOnRobot"
         }
         if (document.hardware.any {
                 it.inverted && (it.kind == SubsystemHardwareKind.MOTOR ||
@@ -1023,6 +1047,16 @@ $feedforward
                     "            ${device.hardwareId}?.direction = Servo.Direction.REVERSE"
                 device.kind == SubsystemHardwareKind.DIGITAL_INPUT ->
                     "            ${device.hardwareId}?.mode = DigitalChannel.Mode.INPUT"
+                device.kind == SubsystemHardwareKind.IMU -> {
+                    val logo = requireNotNull(device.imuLogoFacingDirection)
+                    val usb = requireNotNull(device.imuUsbFacingDirection)
+                    """            ${device.hardwareId}?.let { imu ->
+                require(imu.initialize(IMU.Parameters(RevHubOrientationOnRobot(
+                    RevHubOrientationOnRobot.LogoFacingDirection.$logo,
+                    RevHubOrientationOnRobot.UsbFacingDirection.$usb,
+                )))) { ${("Failed to initialize ${device.displayName} with the declared Control Hub orientation").quoted()} }
+            }"""
+                }
                 else -> null
             }
         }.joinToString("\n").ifBlank { "            // No one-time device configuration is required." }
@@ -1034,9 +1068,24 @@ $feedforward
                 SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND ->
                     "${device.hardwareId}?.velocity ?: 0.0"
                 SubsystemMeasurementSource.MOTOR_CURRENT_AMPS ->
-                    "${device.hardwareId}?.getCurrent(CurrentUnit.AMPS) ?: 0.0"
+                    "${device.hardwareId}?.getCurrent(CurrentUnit.AMPS) ?: Double.NaN"
+                SubsystemMeasurementSource.ENCODER_POSITION_TURNS -> when (device.kind) {
+                    SubsystemHardwareKind.ABSOLUTE_ENCODER ->
+                        "${device.hardwareId}?.let { input -> input.voltage / input.maxVoltage } ?: Double.NaN"
+                    SubsystemHardwareKind.QUADRATURE_ENCODER ->
+                        "${device.hardwareId}?.currentPosition?.toDouble()?.div(${requireNotNull(device.encoderCountsPerRevolution).kotlinDouble()}) ?: Double.NaN"
+                    else -> error("Validated encoder position is attached to ${device.kind}")
+                }
+                SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND ->
+                    "${device.hardwareId}?.velocity?.div(${requireNotNull(device.encoderCountsPerRevolution).kotlinDouble()}) ?: Double.NaN"
                 SubsystemMeasurementSource.DIGITAL_STATE -> "${device.hardwareId}?.state ?: false"
                 SubsystemMeasurementSource.ANALOG_VOLTAGE -> "${device.hardwareId}?.voltage ?: 0.0"
+                SubsystemMeasurementSource.DISTANCE_METERS ->
+                    "${device.hardwareId}?.getDistance(DistanceUnit.METER) ?: Double.NaN"
+                SubsystemMeasurementSource.IMU_YAW_RADIANS ->
+                    "${device.hardwareId}?.robotYawPitchRollAngles?.getYaw(AngleUnit.RADIANS) ?: Double.NaN"
+                SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND ->
+                    "${device.hardwareId}?.getRobotAngularVelocity(AngleUnit.RADIANS)?.zRotationRate?.toDouble() ?: Double.NaN"
                 SubsystemMeasurementSource.COLOR_ARGB -> "${device.hardwareId}?.argb() ?: 0"
             }
             val converted = if (field.type == SubsystemValueType.DOUBLE) {
@@ -1078,6 +1127,7 @@ $feedforward
                     SubsystemHardwareKind.INDICATOR_LIGHT -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ($expression).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.PRISM_DRIVER -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ((($expression) - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = ($expression).coerceIn(-1.0, 1.0)"
+                    SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
                     else -> error("Not an actuator")
                 }
             }
@@ -1103,6 +1153,7 @@ $feedforward
                     SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}?.position = $neutral.coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}?.position = (($neutral - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}?.power = $neutral.coerceIn(-1.0, 1.0)"
+                    SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
                     else -> error("Not an FTC actuator")
                 }
                 "        try { $assignment } catch (_: Exception) { succeeded = false }"
@@ -1216,10 +1267,18 @@ $telemetry
                 SubsystemHardwareKind.INDICATOR_LIGHT,
                 SubsystemHardwareKind.PRISM_DRIVER -> "edu.wpi.first.wpilibj.Servo"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax"
+                SubsystemHardwareKind.ABSOLUTE_ENCODER -> "edu.wpi.first.wpilibj.DutyCycleEncoder"
+                SubsystemHardwareKind.QUADRATURE_ENCODER -> "edu.wpi.first.wpilibj.Encoder"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "edu.wpi.first.wpilibj.DigitalInput"
                 SubsystemHardwareKind.ANALOG_INPUT -> "edu.wpi.first.wpilibj.AnalogInput"
+                SubsystemHardwareKind.DISTANCE_SENSOR -> "edu.wpi.first.wpilibj.AnalogInput"
+                SubsystemHardwareKind.IMU -> "edu.wpi.first.wpilibj.ADXRS450_Gyro"
+                SubsystemHardwareKind.SOLENOID -> "edu.wpi.first.wpilibj.Solenoid"
                 SubsystemHardwareKind.COLOR_SENSOR -> error("FRC color sensors are rejected by validation")
             }
+        }
+        if (document.hardware.any { it.kind == SubsystemHardwareKind.SOLENOID }) {
+            imports += "edu.wpi.first.wpilibj.PneumaticsModuleType"
         }
         if (document.hardware.any { it.kind == SubsystemHardwareKind.MOTOR }) {
             imports += "com.ctre.phoenix6.configs.TalonFXConfiguration"
@@ -1231,8 +1290,21 @@ $telemetry
                 SubsystemHardwareKind.INDICATOR_LIGHT,
                 SubsystemHardwareKind.PRISM_DRIVER -> "Servo(${device.connection.channel})"
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> "PWMSparkMax(${device.connection.channel})"
+                SubsystemHardwareKind.ABSOLUTE_ENCODER -> "DutyCycleEncoder(${device.connection.channel})"
+                SubsystemHardwareKind.QUADRATURE_ENCODER ->
+                    "Encoder(${device.connection.channel}, ${device.connection.secondaryChannel})"
                 SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalInput(${device.connection.channel})"
                 SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput(${device.connection.channel})"
+                SubsystemHardwareKind.DISTANCE_SENSOR -> "AnalogInput(${device.connection.channel})"
+                SubsystemHardwareKind.IMU -> "ADXRS450_Gyro()"
+                SubsystemHardwareKind.SOLENOID -> {
+                    val module = when (device.connection.pneumaticsModuleType) {
+                        com.areslib.subsystem.SubsystemPneumaticsModuleType.REV_PH -> "PneumaticsModuleType.REVPH"
+                        com.areslib.subsystem.SubsystemPneumaticsModuleType.CTRE_PCM -> "PneumaticsModuleType.CTREPCM"
+                        null -> error("Validated solenoid requires a pneumatics module type")
+                    }
+                    "Solenoid(${device.connection.canId}, $module, ${device.connection.channel})"
+                }
                 SubsystemHardwareKind.COLOR_SENSOR -> error("Unsupported")
             }
             "    private val ${device.hardwareId} = $constructor"
@@ -1244,9 +1316,13 @@ $telemetry
         }.distinct().joinToString("\n")
         val init = document.hardware.filter {
             it.kind == SubsystemHardwareKind.MOTOR ||
-                (it.kind == SubsystemHardwareKind.CONTINUOUS_SERVO && it.inverted)
+                (it.kind == SubsystemHardwareKind.CONTINUOUS_SERVO && it.inverted) ||
+                it.kind == SubsystemHardwareKind.QUADRATURE_ENCODER
         }
             .joinToString("\n") { device ->
+                if (device.kind == SubsystemHardwareKind.QUADRATURE_ENCODER) {
+                    return@joinToString "            ${device.hardwareId}.distancePerPulse = 1.0 / ${requireNotNull(device.encoderCountsPerRevolution).kotlinDouble()}"
+                }
                 if (device.kind == SubsystemHardwareKind.CONTINUOUS_SERVO) {
                     return@joinToString "        ${device.hardwareId}.setInverted(true)"
                 }
@@ -1271,8 +1347,20 @@ $telemetry
                 SubsystemMeasurementSource.MOTOR_POSITION_NATIVE -> "${device.hardwareId}.position.valueAsDouble"
                 SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND -> "${device.hardwareId}.velocity.valueAsDouble"
                 SubsystemMeasurementSource.MOTOR_CURRENT_AMPS -> "${device.hardwareId}.statorCurrent.valueAsDouble"
+                SubsystemMeasurementSource.ENCODER_POSITION_TURNS -> when (device.kind) {
+                    SubsystemHardwareKind.ABSOLUTE_ENCODER -> "${device.hardwareId}.get()"
+                    SubsystemHardwareKind.QUADRATURE_ENCODER -> "${device.hardwareId}.distance"
+                    else -> error("Validated encoder position is attached to ${device.kind}")
+                }
+                SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND -> "${device.hardwareId}.rate"
                 SubsystemMeasurementSource.DIGITAL_STATE -> "${device.hardwareId}.get()"
                 SubsystemMeasurementSource.ANALOG_VOLTAGE -> "${device.hardwareId}.voltage"
+                SubsystemMeasurementSource.DISTANCE_METERS ->
+                    "${device.hardwareId}.voltage * ${requireNotNull(device.distanceMetersPerVolt).kotlinDouble()}"
+                // WPILib Gyro raw angle/rate are clockwise-positive. Negate at the hardware
+                // boundary so generated state preserves the ARES CCW-positive convention.
+                SubsystemMeasurementSource.IMU_YAW_RADIANS -> "Math.toRadians(-${device.hardwareId}.angle)"
+                SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND -> "Math.toRadians(-${device.hardwareId}.rate)"
                 SubsystemMeasurementSource.COLOR_ARGB -> error("FRC color sensors are rejected by validation")
             }
             val converted = if (field.type == SubsystemValueType.DOUBLE) {
@@ -1308,7 +1396,11 @@ $telemetry
             val command = (listOf(device to "requested") + document.followersOf(device.hardwareId).map { follower ->
                 follower to follower.following!!.transformedExpression("requested")
             }).joinToString("\n            ") { (target, expression) ->
-                val applied = if (target.kind == SubsystemHardwareKind.POSITIONAL_SERVO) {
+                val applied = if (target.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
+                    target.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
+                    target.kind == SubsystemHardwareKind.PRISM_DRIVER ||
+                    target.kind == SubsystemHardwareKind.SOLENOID
+                ) {
                     target.invertedExpression(expression)
                 } else {
                     expression
@@ -1317,6 +1409,9 @@ $telemetry
                     SubsystemHardwareKind.MOTOR -> "${target.hardwareId}.setVoltage(($applied).coerceIn(-12.0, 12.0))"
                     SubsystemHardwareKind.POSITIONAL_SERVO -> "${target.hardwareId}.set(($applied).coerceIn(0.0, 1.0))"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${target.hardwareId}.set(($applied).coerceIn(-1.0, 1.0))"
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${target.hardwareId}.set(($applied).coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${target.hardwareId}.set(((($applied) - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.SOLENOID -> "${target.hardwareId}.set(($applied) >= 0.5)"
                     else -> error("Not actuator")
                 }
             }
@@ -1349,6 +1444,7 @@ $telemetry
                     SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}.set($appliedNeutral.coerceIn(0.0, 1.0))"
                     SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}.set((($appliedNeutral - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set($appliedNeutral.coerceIn(-1.0, 1.0))"
+                    SubsystemHardwareKind.SOLENOID -> "${device.hardwareId}.set($appliedNeutral >= 0.5)"
                     else -> error("Not an FRC actuator")
                 }
                 "        try { $command } catch (_: Exception) { succeeded = false }"
@@ -1359,8 +1455,13 @@ $telemetry
                 SubsystemHardwareKind.MOTOR -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
                 SubsystemHardwareKind.POSITIONAL_SERVO,
                 SubsystemHardwareKind.CONTINUOUS_SERVO,
+                SubsystemHardwareKind.ABSOLUTE_ENCODER,
+                SubsystemHardwareKind.QUADRATURE_ENCODER,
                 SubsystemHardwareKind.DIGITAL_INPUT,
                 SubsystemHardwareKind.ANALOG_INPUT,
+                SubsystemHardwareKind.DISTANCE_SENSOR,
+                SubsystemHardwareKind.IMU,
+                SubsystemHardwareKind.SOLENOID,
                 SubsystemHardwareKind.INDICATOR_LIGHT,
                 SubsystemHardwareKind.PRISM_DRIVER -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
                 SubsystemHardwareKind.COLOR_SENSOR -> ""
@@ -1525,6 +1626,7 @@ $telemetry
                     SubsystemHardwareKind.INDICATOR_LIGHT -> "($applied).coerceIn(0.0, 1.0)"
                     SubsystemHardwareKind.PRISM_DRIVER -> "($applied).coerceIn(500.0, 2500.0)"
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> "($applied).coerceIn(-1.0, 1.0)"
+                    SubsystemHardwareKind.SOLENOID -> "($applied).coerceIn(0.0, 1.0)"
                     else -> error("Not an actuator")
                 }
                 "${target.hardwareId}Command = $bounded\n        ${target.hardwareId}SimSignal.publish(${target.hardwareId}Command)"
@@ -1905,6 +2007,9 @@ override fun latchOutputFault() {
                 SubsystemHardwareKind.MOTOR -> 6.0
                 SubsystemHardwareKind.POSITIONAL_SERVO -> 0.75
                 SubsystemHardwareKind.CONTINUOUS_SERVO -> 0.5
+                SubsystemHardwareKind.INDICATOR_LIGHT -> 0.75
+                SubsystemHardwareKind.PRISM_DRIVER -> 1500.0
+                SubsystemHardwareKind.SOLENOID -> 1.0
                 else -> error("Not actuator")
             }.kotlinDouble()
             val followerActiveAssertions = document.followersOf(device.hardwareId).joinToString("\n") { follower ->
@@ -2336,7 +2441,8 @@ private fun SubsystemDocument.hasSafetyRequestHandshake(): Boolean =
 
 private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardwareKind.MOTOR ||
     this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO ||
-    this == SubsystemHardwareKind.INDICATOR_LIGHT || this == SubsystemHardwareKind.PRISM_DRIVER
+    this == SubsystemHardwareKind.INDICATOR_LIGHT || this == SubsystemHardwareKind.PRISM_DRIVER ||
+    this == SubsystemHardwareKind.SOLENOID
 
 private fun SubsystemHardwareDocument.commandName(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "set${hardwareId.pascalCase()}Voltage"
@@ -2344,6 +2450,7 @@ private fun SubsystemHardwareDocument.commandName(): String = when (kind) {
     SubsystemHardwareKind.INDICATOR_LIGHT -> "set${hardwareId.pascalCase()}Position"
     SubsystemHardwareKind.PRISM_DRIVER -> "set${hardwareId.pascalCase()}PulseWidthUs"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "set${hardwareId.pascalCase()}Power"
+    SubsystemHardwareKind.SOLENOID -> "set${hardwareId.pascalCase()}Active"
     else -> error("$kind is not an actuator")
 }
 
@@ -2353,18 +2460,28 @@ private fun SubsystemHardwareDocument.ftcType(): String = when (kind) {
     SubsystemHardwareKind.INDICATOR_LIGHT,
     SubsystemHardwareKind.PRISM_DRIVER -> "Servo"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "CRServo"
+    SubsystemHardwareKind.ABSOLUTE_ENCODER -> "AnalogInput"
+    SubsystemHardwareKind.QUADRATURE_ENCODER -> "DcMotorEx"
     SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalChannel"
     SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput"
+    SubsystemHardwareKind.DISTANCE_SENSOR -> "DistanceSensor"
+    SubsystemHardwareKind.IMU -> "IMU"
     SubsystemHardwareKind.COLOR_SENSOR -> "ColorSensor"
+    SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are not supported")
 }
 
 private fun SubsystemHardwareDocument.dslFunction(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "motor"
     SubsystemHardwareKind.POSITIONAL_SERVO -> "positionalServo"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "continuousServo"
+    SubsystemHardwareKind.ABSOLUTE_ENCODER -> "absoluteEncoder"
+    SubsystemHardwareKind.QUADRATURE_ENCODER -> "quadratureEncoder"
     SubsystemHardwareKind.DIGITAL_INPUT -> "digitalInput"
     SubsystemHardwareKind.ANALOG_INPUT -> "analogInput"
+    SubsystemHardwareKind.DISTANCE_SENSOR -> "distanceSensor"
+    SubsystemHardwareKind.IMU -> "imu"
     SubsystemHardwareKind.COLOR_SENSOR -> "colorSensor"
+    SubsystemHardwareKind.SOLENOID -> "solenoid"
     SubsystemHardwareKind.INDICATOR_LIGHT -> "indicatorLight"
     SubsystemHardwareKind.PRISM_DRIVER -> "prismDriver"
 }
@@ -2521,7 +2638,10 @@ private fun SubsystemHardwareDocument.invertedExpression(requested: String): Str
     return when (kind) {
         SubsystemHardwareKind.MOTOR,
         SubsystemHardwareKind.CONTINUOUS_SERVO -> "-($requested)"
-        SubsystemHardwareKind.POSITIONAL_SERVO -> "1.0 - ($requested)"
+        SubsystemHardwareKind.POSITIONAL_SERVO,
+        SubsystemHardwareKind.INDICATOR_LIGHT,
+        SubsystemHardwareKind.SOLENOID -> "1.0 - ($requested)"
+        SubsystemHardwareKind.PRISM_DRIVER -> "3000.0 - ($requested)"
         else -> requested
     }
 }
