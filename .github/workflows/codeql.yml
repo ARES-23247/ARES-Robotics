@@ -25,6 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x gradlew
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
