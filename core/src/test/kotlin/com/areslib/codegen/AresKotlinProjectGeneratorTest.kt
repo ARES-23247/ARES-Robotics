@@ -28,6 +28,12 @@ import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
+import com.areslib.project.AresCoordinateConvention
+import com.areslib.project.AresFtcHubCommandTransport
+import com.areslib.project.AresFtcRuntimeOptionsDocument
+import com.areslib.project.AresLeague
+import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresRuntimeOptionsDocument
 import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.SubsystemValueType
 import kotlin.test.Test
@@ -38,6 +44,33 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class AresKotlinProjectGeneratorTest {
+    @Test
+    fun `generated project exposes canonical FTC runtime choices`() {
+        val result = AresKotlinProjectGenerator.generate(
+            KotlinProjectCodegenRequest(
+                packageName = "org.example.generated",
+                catalog = catalog(actions = emptyList()),
+                routines = emptyList(),
+                projectMetadata = AresProjectMetadataDocument(
+                    projectId = "test-project",
+                    league = AresLeague.FTC,
+                    coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
+                    robotLengthMeters = 0.44,
+                    robotWidthMeters = 0.44,
+                    fieldLengthMeters = 3.6576,
+                    fieldWidthMeters = 3.6576,
+                    runtimeOptions = AresRuntimeOptionsDocument(
+                        AresFtcRuntimeOptionsDocument(AresFtcHubCommandTransport.ARES_PHOTON, true),
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue("object RuntimeOptions" in result.source)
+        assertTrue("FTC_HUB_COMMAND_TRANSPORT: String = \"ARES_PHOTON\"" in result.source)
+        assertTrue("FTC_LIMELIGHT_PROXY_ENABLED: Boolean = true" in result.source)
+    }
+
     @Test
     fun `golden registry is typed readable and stable`() {
         val result = generate(

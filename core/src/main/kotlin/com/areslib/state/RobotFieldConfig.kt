@@ -139,7 +139,7 @@ data class RobotFieldImageConfig(
     val cropRight: Double = 1.0,
     val cropTop: Double = 0.0,
     val cropBottom: Double = 1.0,
-    val ftcCoordinateSystem: FtcFieldCoordinateSystem = FtcFieldCoordinateSystem.DIAMOND
+    val ftcCoordinateSystem: FtcFieldCoordinateSystem = FtcFieldCoordinateSystem.SQUARE
 )
 
 /** Named field pose in meters with a counter-clockwise heading in degrees. */

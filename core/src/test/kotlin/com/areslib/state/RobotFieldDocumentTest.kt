@@ -6,6 +6,11 @@ import org.junit.jupiter.api.Test
 
 class RobotFieldDocumentTest {
     @Test
+    fun `new FTC image configuration defaults to the common square field`() {
+        assertEquals(FtcFieldCoordinateSystem.SQUARE, RobotFieldImageConfig().ftcCoordinateSystem)
+    }
+
+    @Test
     fun canonicalDocumentRoundTripsEditorAndPhysicsMetadata() {
         val original = RobotFieldConfig(
             revision = 7,

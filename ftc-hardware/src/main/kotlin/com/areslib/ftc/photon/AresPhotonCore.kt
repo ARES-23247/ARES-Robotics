@@ -25,6 +25,7 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynchDevice
 import com.qualcomm.robotcore.hardware.configuration.LynxConstants
 import com.qualcomm.robotcore.hardware.usb.RobotUsbDevice
 import com.qualcomm.robotcore.util.RobotLog
+import com.areslib.telemetry.RobotStatusTracker
 import org.firstinspires.ftc.ftccommon.external.OnCreateEventLoop
 import org.firstinspires.ftc.robotcore.internal.usb.exception.RobotUsbException
 import java.util.concurrent.ConcurrentHashMap
@@ -41,8 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * “parallel” refers only to allowing multiple real acknowledgements to remain pending.
  *
  * ### Performance Acceleration & Memory Rules:
- * - **Explicit opt-in**: interception is enabled by [enable] before pre-init or by implementing
- *   [PhotonEnabledOpMode], which is detected during pre-init.
+ * - **Explicit opt-in**: interception is selected through [AresFtcRuntimeOptionsProvider] during
+ *   pre-init. Generated projects default to [FtcHubCommandTransport.STANDARD_SDK].
  * - **Real acknowledgements**: no synthetic success is injected into the SDK lifecycle.
  * - **Outstanding-command limit**: [ExperimentalParameters.maximumParallelCommands] bounds the
  *   unfinished map best-effort; stalled entries are cleared after the bounded wait.
@@ -54,8 +55,11 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 object AresPhotonCore : OpModeManagerNotifier.Notifications {
 
-    /** Global flag indicating whether Photon parallelized write acceleration is active. */
+    /** Global flag indicating whether the current OpMode requested Photon interception. */
     val isEnabled = AtomicBoolean(false)
+
+    /** True only after at least one real Lynx module is routed through the direct-write wrapper. */
+    val isActive = AtomicBoolean(false)
 
     private var modules: List<LynxModule> = emptyList()
     private var syncLock: Any? = null
@@ -118,6 +122,8 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
     /** Disables interception; wrapped modules delegate new commands to the SDK path. */
     fun disable() {
         isEnabled.set(false)
+        isActive.set(false)
+        RobotStatusTracker.ftcPhotonActive = false
     }
 
     @OnCreateEventLoop
@@ -221,9 +227,12 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
 
     /** Reflectively replaces Lynx modules/device references before an enabled OpMode initializes. */
     override fun onOpModePreInit(opMode: OpMode) {
-        if (opMode is PhotonEnabledOpMode) {
-            enable()
-        }
+        val runtimeOptions = resolveAresFtcRuntimeOptions(opMode)
+        RobotStatusTracker.ftcHubCommandTransport = runtimeOptions.hubCommandTransport.name
+        RobotStatusTracker.ftcLimelightProxyConfigured = runtimeOptions.limelightProxyEnabled
+        disable()
+        RobotStatusTracker.ftcPhotonActive = false
+        if (runtimeOptions.hubCommandTransport == FtcHubCommandTransport.ARES_PHOTON) enable()
         if (!isEnabled.get()) return
         if (opModeManager?.activeOpModeName == OpModeManager.DEFAULT_OP_MODE_NAME) {
             return
@@ -387,7 +396,12 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
             }
         }
 
+        isActive.set(replacedPrev || replacements.isNotEmpty())
+        RobotStatusTracker.ftcPhotonActive = isActive.get()
+
         } catch (t: Throwable) {
+            disable()
+            RobotStatusTracker.ftcPhotonActive = false
             RobotLog.ww("AresPhotonCore", "Photon preInit skipped: ${t.message}")
         }
     }
@@ -410,7 +424,8 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
 
     /** Disables interception, restores original modules where possible, and clears retained hardware references. */
     override fun onOpModePostStop(@Suppress("UNUSED_PARAMETER") opMode: OpMode) {
-        isEnabled.set(false)
+        disable()
+        RobotStatusTracker.ftcPhotonActive = false
         synchronized(messageSync) {
             val usbDevice = lastUsbDevice
             if (usbDevice != null) {
@@ -436,3 +451,7 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
         }
     }
 }
+
+/** Pure policy boundary used by pre-init and simulator/unit verification. */
+internal fun resolveAresFtcRuntimeOptions(opMode: OpMode): AresFtcRuntimeOptions =
+    (opMode as? AresFtcRuntimeOptionsProvider)?.aresFtcRuntimeOptions ?: AresFtcRuntimeOptions()

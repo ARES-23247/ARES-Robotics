@@ -1,11 +1,35 @@
 package com.areslib.project
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import java.security.MessageDigest
 
-const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 1
+const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 2
 
 enum class AresLeague { FTC, FRC }
+
+/** FTC hub-command transport selected by the canonical project document. */
+enum class AresFtcHubCommandTransport {
+    /** Use only the supported FTC SDK command path. Recommended for new teams and first bring-up. */
+    STANDARD_SDK,
+
+    /** Use ARES' experimental direct REV Hub motor-write path, with SDK fallback on every failure. */
+    ARES_PHOTON,
+}
+
+/** FTC-only runtime choices that materially change robot-process behavior. */
+data class AresFtcRuntimeOptionsDocument(
+    val hubCommandTransport: AresFtcHubCommandTransport = AresFtcHubCommandTransport.STANDARD_SDK,
+    /** Start the bounded Control-Hub-to-Limelight HTTP proxy while the robot facade is alive. */
+    val limelightProxyEnabled: Boolean = false,
+)
+
+/** Platform-specific runtime choices. Unsupported platform sections are rejected, not ignored. */
+data class AresRuntimeOptionsDocument(
+    val ftc: AresFtcRuntimeOptionsDocument? = null,
+)
 
 /** Coordinate frame used by authored routine poses. Headings are CCW-positive in every frame. */
 enum class AresCoordinateConvention {
@@ -31,7 +55,12 @@ data class AresProjectMetadataDocument(
     val robotWidthMeters: Double,
     val fieldLengthMeters: Double,
     val fieldWidthMeters: Double,
+    val runtimeOptions: AresRuntimeOptionsDocument = AresRuntimeOptionsDocument(),
 )
+
+/** Resolves the explicit FTC policy, defaulting legacy/in-memory documents to the safe SDK path. */
+fun AresProjectMetadataDocument.resolvedFtcRuntimeOptions(): AresFtcRuntimeOptionsDocument =
+    runtimeOptions.ftc ?: AresFtcRuntimeOptionsDocument()
 
 fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<String> = buildList {
     if (document.schemaVersion != ARES_PROJECT_METADATA_SCHEMA_VERSION) {
@@ -62,22 +91,36 @@ fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<Str
             add("FRC projects must use BLUE_CORNER_ORIGIN_CCW")
         }
     }
+    if (document.league == AresLeague.FRC && document.runtimeOptions.ftc != null) {
+        add("FRC projects cannot declare FTC runtime options")
+    }
 }
 
 object AresProjectMetadataCodec {
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
     fun encode(document: AresProjectMetadataDocument): String {
-        requireValid(document)
-        return gson.toJson(document)
+        val normalized = normalize(document)
+        requireValid(normalized)
+        return gson.toJson(normalized)
     }
 
     fun decode(json: String): AresProjectMetadataDocument {
-        val document = try {
-            gson.fromJson(json, AresProjectMetadataDocument::class.java)
+        val root = try {
+            JsonParser.parseString(json).asJsonObject
         } catch (error: Exception) {
             throw IllegalArgumentException("Project metadata is not valid JSON: ${error.message}", error)
-        } ?: throw IllegalArgumentException("Project metadata is empty")
+        }
+        val schemaVersion = root.requiredInt("schemaVersion")
+        val document = when (schemaVersion) {
+            1 -> decodeCommon(root, schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION, legacy = true)
+            ARES_PROJECT_METADATA_SCHEMA_VERSION -> decodeCommon(
+                root,
+                schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,
+                legacy = false,
+            )
+            else -> throw IllegalArgumentException("Unsupported project metadata schema $schemaVersion")
+        }
         requireValid(document)
         return document
     }
@@ -90,4 +133,96 @@ object AresProjectMetadataCodec {
         val issues = validateAresProjectMetadata(document)
         require(issues.isEmpty()) { issues.joinToString("; ") }
     }
+
+    private fun normalize(document: AresProjectMetadataDocument): AresProjectMetadataDocument = when (document.league) {
+        AresLeague.FTC -> document.copy(
+            schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,
+            runtimeOptions = AresRuntimeOptionsDocument(ftc = document.resolvedFtcRuntimeOptions()),
+        )
+        AresLeague.FRC -> document.copy(schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION)
+    }
+
+    private fun decodeCommon(
+        root: JsonObject,
+        schemaVersion: Int,
+        legacy: Boolean,
+    ): AresProjectMetadataDocument {
+        val league = root.requiredEnum<AresLeague>("league")
+        val runtimeOptions = if (legacy) {
+            if (league == AresLeague.FTC) {
+                AresRuntimeOptionsDocument(ftc = AresFtcRuntimeOptionsDocument())
+            } else {
+                AresRuntimeOptionsDocument()
+            }
+        } else {
+            val runtime = root.requiredObject("runtimeOptions")
+            val ftc = runtime.get("ftc")?.takeUnless { it.isJsonNull }?.let { element ->
+                require(element.isJsonObject) { "Project metadata field 'runtimeOptions.ftc' must be an object or null" }
+                val value = element.asJsonObject
+                AresFtcRuntimeOptionsDocument(
+                    hubCommandTransport = value.requiredEnum("hubCommandTransport"),
+                    limelightProxyEnabled = value.requiredBoolean("limelightProxyEnabled"),
+                )
+            }
+            require(league != AresLeague.FTC || ftc != null) {
+                "FTC project metadata must declare 'runtimeOptions.ftc'"
+            }
+            AresRuntimeOptionsDocument(ftc = ftc)
+        }
+        return normalize(
+            AresProjectMetadataDocument(
+                schemaVersion = schemaVersion,
+                projectId = root.requiredString("projectId"),
+                league = league,
+                coordinateConvention = root.requiredEnum("coordinateConvention"),
+                robotLengthMeters = root.requiredDouble("robotLengthMeters"),
+                robotWidthMeters = root.requiredDouble("robotWidthMeters"),
+                fieldLengthMeters = root.requiredDouble("fieldLengthMeters"),
+                fieldWidthMeters = root.requiredDouble("fieldWidthMeters"),
+                runtimeOptions = runtimeOptions,
+            ),
+        )
+    }
+}
+
+private fun JsonObject.requiredElement(name: String) = get(name)?.takeUnless { it.isJsonNull }
+    ?: throw IllegalArgumentException("Project metadata is missing required field '$name'")
+
+private fun JsonObject.requiredObject(name: String): JsonObject = requiredElement(name).let { element ->
+    require(element.isJsonObject) { "Project metadata field '$name' must be an object" }
+    element.asJsonObject
+}
+
+private fun JsonObject.requiredPrimitive(name: String): JsonPrimitive = requiredElement(name).let { element ->
+    require(element.isJsonPrimitive) { "Project metadata field '$name' must be a primitive value" }
+    element.asJsonPrimitive
+}
+
+private fun JsonObject.requiredString(name: String): String = requiredPrimitive(name).let { value ->
+    require(value.isString) { "Project metadata field '$name' must be a string" }
+    value.asString
+}
+
+private fun JsonObject.requiredBoolean(name: String): Boolean = requiredPrimitive(name).let { value ->
+    require(value.isBoolean) { "Project metadata field '$name' must be a boolean" }
+    value.asBoolean
+}
+
+private fun JsonObject.requiredInt(name: String): Int = requiredPrimitive(name).let { value ->
+    require(value.isNumber) { "Project metadata field '$name' must be an integer" }
+    runCatching { value.asBigDecimal.intValueExact() }
+        .getOrElse { throw IllegalArgumentException("Project metadata field '$name' must be an integer", it) }
+}
+
+private fun JsonObject.requiredDouble(name: String): Double = requiredPrimitive(name).let { value ->
+    require(value.isNumber) { "Project metadata field '$name' must be a number" }
+    val result = value.asDouble
+    require(result.isFinite()) { "Project metadata field '$name' must be a finite number" }
+    result
+}
+
+private inline fun <reified T : Enum<T>> JsonObject.requiredEnum(name: String): T {
+    val raw = requiredString(name)
+    return enumValues<T>().firstOrNull { it.name == raw }
+        ?: throw IllegalArgumentException("Project metadata field '$name' has unsupported value '$raw'")
 }

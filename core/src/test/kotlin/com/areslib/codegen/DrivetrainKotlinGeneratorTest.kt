@@ -99,7 +99,9 @@ class DrivetrainKotlinGeneratorTest {
         )
 
         assertEquals("GeneratedAresFtcMecanumRuntimeConfig.kt", generated.relativePath)
-        assertTrue(generated.content.contains("fun createRobot(hardwareMap: HardwareMap"))
+        assertTrue(generated.content.contains("fun createRobot(\n        hardwareMap: HardwareMap"))
+        assertTrue(generated.content.contains("limelightProxyEnabled: Boolean = false"))
+        assertTrue(generated.content.contains("limelightProxyEnabled = limelightProxyEnabled"))
         assertTrue(generated.content.contains("flName = GeneratedAresDrivebaseConfig.Components.DRIVE_MOTOR_FL.HARDWARE_ID"))
         assertTrue(generated.content.contains("maxWheelSpeedMetersPerSecond = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND"))
         assertTrue(generated.content.contains("val driveZeroPowerBehavior: DcMotor.ZeroPowerBehavior get() = DcMotor.ZeroPowerBehavior.BRAKE"))

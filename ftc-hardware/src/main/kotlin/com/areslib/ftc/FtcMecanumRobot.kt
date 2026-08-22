@@ -75,6 +75,7 @@ enum class FtcTeleopDriveFrame {
  * @param wheelBaseMeters Longitudinal distance between front and rear wheel centers ($m$).
  * @param maxWheelSpeedMetersPerSecond Canonical maximum wheel surface speed used for command normalization ($m/s$).
  * @param driveZeroPowerBehavior FTC motor neutral behavior applied to all four drive motors during construction.
+ * @param limelightProxyEnabled Starts the bounded Control Hub camera proxy for this robot instance.
  * @param headingGains PIDF gain coefficients for heading stabilization controller.
  * @param headingDeadzoneDeg Angular deadzone for heading targeting ($deg$).
  * @param driveFeedforward Feedforward coefficients $(kS, kV, kA)$ for motor voltage feedforward calculations.
@@ -148,6 +149,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val maxWheelSpeedMetersPerSecond: Double = 3.5,
     val driveZeroPowerBehavior: com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior =
         com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE,
+    private val limelightProxyEnabled: Boolean = false,
 ) : FtcBaseRobot(
     hardwareMap = hardwareMap,
     pinpointName = pinpointName,
@@ -190,7 +192,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     var tuningManager: TuningManager? = null
 
     init {
-        if (isAndroid) LimelightProxyAutoStart.start()
+        com.areslib.telemetry.RobotStatusTracker.ftcLimelightProxyConfigured = limelightProxyEnabled
+        if (isAndroid && limelightProxyEnabled) LimelightProxyAutoStart.start()
     }
 
     /** Low-level IO cluster managing physical drive motors ($FL, FR, RL, RR$). */
@@ -489,7 +492,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         // close() is teardown: stop the proxy instead of resurrecting it. Starting here (the
         // historical behavior) re-spawned the proxy on every OpMode teardown even after an
         // explicit stop, contradicting this method's own documentation.
-        if (isAndroid) LimelightProxyAutoStart.stop()
+        if (isAndroid && limelightProxyEnabled) LimelightProxyAutoStart.stop()
     }
 
     private companion object {
