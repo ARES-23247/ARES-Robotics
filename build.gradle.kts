@@ -91,6 +91,12 @@ subprojects {
             from(rootProject.file("LICENSE")) {
                 into("META-INF")
             }
+            from(rootProject.file("NOTICE")) {
+                into("META-INF")
+            }
+            from(rootProject.file("THIRD_PARTY_NOTICES.md")) {
+                into("META-INF")
+            }
         }
     }
 }
