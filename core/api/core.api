@@ -6209,6 +6209,29 @@ public final class com/areslib/project/AresCoordinateConvention : java/lang/Enum
 	public static fun values ()[Lcom/areslib/project/AresCoordinateConvention;
 }
 
+public final class com/areslib/project/AresFtcHubCommandTransport : java/lang/Enum {
+	public static final field ARES_PHOTON Lcom/areslib/project/AresFtcHubCommandTransport;
+	public static final field STANDARD_SDK Lcom/areslib/project/AresFtcHubCommandTransport;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/AresFtcHubCommandTransport;
+	public static fun values ()[Lcom/areslib/project/AresFtcHubCommandTransport;
+}
+
+public final class com/areslib/project/AresFtcRuntimeOptionsDocument {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/project/AresFtcHubCommandTransport;Z)V
+	public synthetic fun <init> (Lcom/areslib/project/AresFtcHubCommandTransport;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/project/AresFtcHubCommandTransport;
+	public final fun component2 ()Z
+	public final fun copy (Lcom/areslib/project/AresFtcHubCommandTransport;Z)Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;Lcom/areslib/project/AresFtcHubCommandTransport;ZILjava/lang/Object;)Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHubCommandTransport ()Lcom/areslib/project/AresFtcHubCommandTransport;
+	public final fun getLimelightProxyEnabled ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/project/AresLeague : java/lang/Enum {
 	public static final field FRC Lcom/areslib/project/AresLeague;
 	public static final field FTC Lcom/areslib/project/AresLeague;
@@ -6225,8 +6248,8 @@ public final class com/areslib/project/AresProjectMetadataCodec {
 }
 
 public final class com/areslib/project/AresProjectMetadataDocument {
-	public fun <init> (ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDD)V
-	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;)V
+	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/areslib/project/AresLeague;
@@ -6235,8 +6258,9 @@ public final class com/areslib/project/AresProjectMetadataDocument {
 	public final fun component6 ()D
 	public final fun component7 ()D
 	public final fun component8 ()D
-	public final fun copy (ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDD)Lcom/areslib/project/AresProjectMetadataDocument;
-	public static synthetic fun copy$default (Lcom/areslib/project/AresProjectMetadataDocument;ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDILjava/lang/Object;)Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun component9 ()Lcom/areslib/project/AresRuntimeOptionsDocument;
+	public final fun copy (ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;)Lcom/areslib/project/AresProjectMetadataDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresProjectMetadataDocument;ILjava/lang/String;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;ILjava/lang/Object;)Lcom/areslib/project/AresProjectMetadataDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCoordinateConvention ()Lcom/areslib/project/AresCoordinateConvention;
 	public final fun getFieldLengthMeters ()D
@@ -6245,6 +6269,7 @@ public final class com/areslib/project/AresProjectMetadataDocument {
 	public final fun getProjectId ()Ljava/lang/String;
 	public final fun getRobotLengthMeters ()D
 	public final fun getRobotWidthMeters ()D
+	public final fun getRuntimeOptions ()Lcom/areslib/project/AresRuntimeOptionsDocument;
 	public final fun getSchemaVersion ()I
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -6252,7 +6277,21 @@ public final class com/areslib/project/AresProjectMetadataDocument {
 
 public final class com/areslib/project/AresProjectMetadataKt {
 	public static final field ARES_PROJECT_METADATA_SCHEMA_VERSION I
+	public static final fun resolvedFtcRuntimeOptions (Lcom/areslib/project/AresProjectMetadataDocument;)Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
 	public static final fun validateAresProjectMetadata (Lcom/areslib/project/AresProjectMetadataDocument;)Ljava/util/List;
+}
+
+public final class com/areslib/project/AresRuntimeOptionsDocument {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;)V
+	public synthetic fun <init> (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public final fun copy (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;)Lcom/areslib/project/AresRuntimeOptionsDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresRuntimeOptionsDocument;Lcom/areslib/project/AresFtcRuntimeOptionsDocument;ILjava/lang/Object;)Lcom/areslib/project/AresRuntimeOptionsDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFtc ()Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/areslib/reducer/DriveReducer {
@@ -10339,6 +10378,10 @@ public final class com/areslib/telemetry/RobotStatusTracker {
 	public final fun getActiveLimelightIps ()Ljava/util/List;
 	public final fun getActiveOpMode ()Ljava/lang/String;
 	public final fun getActiveUploadFile ()Ljava/lang/String;
+	public final fun getFtcHubCommandTransport ()Ljava/lang/String;
+	public final fun getFtcLimelightProxyActive ()Z
+	public final fun getFtcLimelightProxyConfigured ()Z
+	public final fun getFtcPhotonActive ()Z
 	public final fun getOdometrySource ()Ljava/lang/String;
 	public final fun getOdometryStatus ()Ljava/lang/String;
 	public final fun getResolvedLimelightIp ()Ljava/lang/String;
@@ -10350,6 +10393,10 @@ public final class com/areslib/telemetry/RobotStatusTracker {
 	public final fun setActiveOpMode (Ljava/lang/String;)V
 	public final fun setActiveUploadFile (Ljava/lang/String;)V
 	public final fun setEnabled (Z)V
+	public final fun setFtcHubCommandTransport (Ljava/lang/String;)V
+	public final fun setFtcLimelightProxyActive (Z)V
+	public final fun setFtcLimelightProxyConfigured (Z)V
+	public final fun setFtcPhotonActive (Z)V
 	public final fun setOdometrySource (Ljava/lang/String;)V
 	public final fun setOdometryStatus (Ljava/lang/String;)V
 	public final fun setResolvedLimelightIp (Ljava/lang/String;)V
@@ -10435,6 +10482,10 @@ public final class com/areslib/telemetry/TelemetryTopicConstants {
 	public static final field ESTIMATED_POSE_HEADING Ljava/lang/String;
 	public static final field ESTIMATED_POSE_X Ljava/lang/String;
 	public static final field ESTIMATED_POSE_Y Ljava/lang/String;
+	public static final field FTC_HUB_COMMAND_TRANSPORT Ljava/lang/String;
+	public static final field FTC_LIMELIGHT_PROXY_ACTIVE Ljava/lang/String;
+	public static final field FTC_LIMELIGHT_PROXY_CONFIGURED Ljava/lang/String;
+	public static final field FTC_PHOTON_ACTIVE Ljava/lang/String;
 	public static final field GAME_PIECES Ljava/lang/String;
 	public static final field GAME_PIECES_COUNT Ljava/lang/String;
 	public static final field GAME_PIECES_FRAME Ljava/lang/String;

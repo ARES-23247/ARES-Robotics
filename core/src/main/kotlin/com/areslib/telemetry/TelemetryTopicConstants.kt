@@ -6,6 +6,14 @@ package com.areslib.telemetry
 object TelemetryTopicConstants {
     /** Monotonic per-publish heartbeat; a changing value proves the robot telemetry loop is alive. */
     const val TELEMETRY_FRAME_SEQUENCE: String = "ARES/Telemetry/FrameSequence"
+    /** Selected FTC hub command transport (`STANDARD_SDK` or `ARES_PHOTON`). */
+    const val FTC_HUB_COMMAND_TRANSPORT: String = "ARES/Runtime/FTC/HubCommandTransport"
+    /** True only when the selected Photon path is active on at least one real REV hub. */
+    const val FTC_PHOTON_ACTIVE: String = "ARES/Runtime/FTC/PhotonActive"
+    /** Whether the canonical project requested the Control-Hub Limelight proxy. */
+    const val FTC_LIMELIGHT_PROXY_CONFIGURED: String = "ARES/Runtime/FTC/LimelightProxyConfigured"
+    /** Whether the bounded Limelight proxy currently owns its listener sockets. */
+    const val FTC_LIMELIGHT_PROXY_ACTIVE: String = "ARES/Runtime/FTC/LimelightProxyActive"
     const val DRIVE_POSE_X = "Drive/Pose_X"
     const val DRIVE_POSE_Y = "Drive/Pose_Y"
     const val DRIVE_POSE_HEADING = "Drive/Pose_Heading"

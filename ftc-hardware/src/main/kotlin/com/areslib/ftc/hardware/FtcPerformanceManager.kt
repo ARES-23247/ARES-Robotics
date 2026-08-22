@@ -2,13 +2,14 @@ package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.hardware.lynx.LynxModule
+import com.areslib.ftc.photon.AresPhotonCore
 
 /**
  * Central hardware performance optimizer for FTC Control Hub and Expansion Hub platforms.
  *
  * Configures manual bulk caching across all detected [LynxModule] REV Expansion Hubs to collapse per-sensor I2C queries
- * into a single unified 256-byte bulk read per loop frame. Automatically detects SolversLib Photon on the classpath
- * and enables asynchronous parallelized REV I2C writes when present.
+ * into a single unified 256-byte bulk read per loop frame. Hub command acceleration is configured
+ * separately by the canonical project policy; merely adding a dependency can never enable it.
  *
  * ### Performance Guarantees:
  * - **Bulk Read Latency**: Reduces REV Hub polling duration from $\sim 12\text{ms}$ down to $<1.5\text{ms}$.
@@ -21,13 +22,11 @@ object FtcPerformanceManager {
     private var lynxModules: List<LynxModule> = emptyList()
     private var srsHubs: List<SrsHubDriver> = emptyList()
 
-    /** Flag indicating whether SolversLib Photon parallelized write acceleration is active. */
-    var isPhotonEnabled: Boolean = false
-        private set
+    /** True only when the explicit ARES Photon policy successfully wrapped a real REV hub. */
+    val isPhotonEnabled: Boolean get() = AresPhotonCore.isActive.get()
 
     /**
-     * Scans the [HardwareMap], sets all REV Expansion Hubs ([LynxModule]) to manual bulk caching mode,
-     * and attempts to reflectively enable SolversLib Photon acceleration.
+     * Scans the [HardwareMap] and sets all REV Expansion Hubs ([LynxModule]) to manual bulk caching.
      *
      * @param hardwareMap FTC OpMode hardware map instance.
      */
@@ -50,19 +49,6 @@ object FtcPerformanceManager {
             println("ARES Performance: Detected ${srsHubs.size} SRS Robotics Expansion Hubs. Automatic bulk register reads configured.")
         } catch (e: Exception) {
             // Ignore in standard mock/unit test environments where SrsHubDriver isn't registered
-        }
-
-        // Try to detect and enable Photon
-        try {
-            val photonCoreClass = Class.forName("com.seattlesolvers.solverslib.photon.PhotonCore")
-            val enableMethod = photonCoreClass.getMethod("enable")
-            enableMethod.invoke(null)
-            isPhotonEnabled = true
-            println("ARES Performance: SolversLib Photon detected on classpath! Enabled asynchronous parallelized writes.")
-        } catch (e: ClassNotFoundException) {
-            println("ARES Performance: Photon not found. Running optimized native manual bulk reads.")
-        } catch (e: Exception) {
-            System.err.println("ARES Performance: Photon was detected but failed to initialize: ${e.message}")
         }
     }
 

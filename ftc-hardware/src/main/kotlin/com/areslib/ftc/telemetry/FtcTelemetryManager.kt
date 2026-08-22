@@ -16,6 +16,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import com.areslib.ftc.vision.FtcVisionTracker
 import com.areslib.telemetry.logPose2d
 import com.areslib.telemetry.logPoseArray2d
+import com.areslib.telemetry.TelemetryTopicConstants
 import com.areslib.math.geometry.toFormattedString
 
 /**
@@ -147,6 +148,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Finalize frame and flush to loggers/network
+        publishFtcRuntimeStatus()
         dataLoggingTelemetry.putNumber("Diagnostics/DroppedActions", actionLogger.droppedActionCount.toDouble())
         dataLoggingTelemetry.update()
     }
@@ -247,11 +249,29 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         }
 
         // Finalize frame: disk log always, NT4 flush only on NT frames
+        publishFtcRuntimeStatus()
         dataLoggingTelemetry.putNumber("Diagnostics/DroppedActions", actionLogger.droppedActionCount.toDouble())
         dataLoggingTelemetry.update()
 
         // Reset NT4 enabled for any out-of-band puts between frames
         dataLoggingTelemetry.ntEnabled = true
+    }
+
+    private fun publishFtcRuntimeStatus() {
+        val status = com.areslib.telemetry.RobotStatusTracker
+        dataLoggingTelemetry.putString(
+            TelemetryTopicConstants.FTC_HUB_COMMAND_TRANSPORT,
+            status.ftcHubCommandTransport,
+        )
+        dataLoggingTelemetry.putBoolean(TelemetryTopicConstants.FTC_PHOTON_ACTIVE, status.ftcPhotonActive)
+        dataLoggingTelemetry.putBoolean(
+            TelemetryTopicConstants.FTC_LIMELIGHT_PROXY_CONFIGURED,
+            status.ftcLimelightProxyConfigured,
+        )
+        dataLoggingTelemetry.putBoolean(
+            TelemetryTopicConstants.FTC_LIMELIGHT_PROXY_ACTIVE,
+            status.ftcLimelightProxyActive,
+        )
     }
 
     /**

@@ -155,7 +155,6 @@ abstract class FtcTeleOpBase<R> : OpMode() {
         val activeRobot = robot ?: return
         RobotStatusTracker.activeOpMode = "TeleOp"
         restoreStartingPose(getBaseRobot(activeRobot))
-        com.areslib.ftc.telemetry.LimelightProxyAutoStart.stop()
         refreshGamepadStates()
         driver.prime(g1State)
         operator.prime(g2State)

@@ -1,5 +1,9 @@
 package com.areslib.sim.opmode
 
+import com.areslib.ftc.photon.AresFtcRuntimeOptions
+import com.areslib.ftc.photon.AresFtcRuntimeOptionsProvider
+import com.areslib.ftc.photon.FtcHubCommandTransport
+import com.areslib.telemetry.RobotStatusTracker
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
@@ -17,6 +21,19 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class SimOpModeLifecycleTest {
+    @Test
+    fun `simulator reports selected runtime policy without claiming hardware photon is active`() {
+        val lifecycle = requireNotNull(SimOpModeLifecycle.wrap(PhotonPolicyOpMode()))
+
+        lifecycle.initialize(HardwareMap())
+
+        assertEquals(FtcHubCommandTransport.ARES_PHOTON.name, RobotStatusTracker.ftcHubCommandTransport)
+        assertFalse(RobotStatusTracker.ftcPhotonActive)
+        assertTrue(RobotStatusTracker.ftcLimelightProxyConfigured)
+        assertFalse(RobotStatusTracker.ftcLimelightProxyActive)
+        lifecycle.stop()
+    }
+
     @Test
     fun `annotation-derived auto and teleop states remain distinct through lifecycle`() {
         val auto = requireNotNull(SimOpModeLifecycle.wrap(RecordingAutoOpMode()))
@@ -177,6 +194,17 @@ class SimOpModeLifecycleTest {
         override fun stop() {
             stopCount++
         }
+    }
+
+    @TeleOp(name = "Photon policy")
+    class PhotonPolicyOpMode : OpMode(), AresFtcRuntimeOptionsProvider {
+        override val aresFtcRuntimeOptions = AresFtcRuntimeOptions(
+            hubCommandTransport = FtcHubCommandTransport.ARES_PHOTON,
+            limelightProxyEnabled = true,
+        )
+
+        override fun init() = Unit
+        override fun loop() = Unit
     }
 
     @TeleOp(name = "Recording linear")

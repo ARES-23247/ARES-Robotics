@@ -1,5 +1,8 @@
 package com.areslib.sim.opmode
 
+import com.areslib.ftc.photon.AresFtcRuntimeOptions
+import com.areslib.ftc.photon.AresFtcRuntimeOptionsProvider
+import com.areslib.telemetry.RobotStatusTracker
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous
@@ -77,6 +80,10 @@ class SimOpModeLifecycle private constructor(
         check(!initialized) { "$displayName was already initialized" }
         check(!stopped) { "$displayName was already stopped" }
         initialized = true
+        reportSimulatorRuntimeSelection(
+            (rawOpMode as? AresFtcRuntimeOptionsProvider)?.aresFtcRuntimeOptions
+                ?: AresFtcRuntimeOptions(),
+        )
         when {
             iterative != null -> {
                 iterative.hardwareMap = hardwareMap
@@ -228,6 +235,19 @@ class SimOpModeLifecycle private constructor(
             )
         }
     }
+}
+
+/**
+ * Publishes the policy selected by the simulated OpMode without claiming that hardware-only
+ * acceleration is active. The FTC SDK invokes ARES Photon before physical OpMode initialization;
+ * the desktop simulator has no SDK event loop or REV USB modules, so it must report selection at
+ * its own lifecycle boundary while keeping the actual-active signal false.
+ */
+internal fun reportSimulatorRuntimeSelection(options: AresFtcRuntimeOptions) {
+    RobotStatusTracker.ftcHubCommandTransport = options.hubCommandTransport.name
+    RobotStatusTracker.ftcPhotonActive = false
+    RobotStatusTracker.ftcLimelightProxyConfigured = options.limelightProxyEnabled
+    RobotStatusTracker.ftcLimelightProxyActive = false
 }
 
 /**

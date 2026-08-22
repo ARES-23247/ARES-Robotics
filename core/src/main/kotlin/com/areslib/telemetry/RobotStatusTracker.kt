@@ -12,4 +12,12 @@ object RobotStatusTracker {
     @Volatile var activeLimelightIps: List<String> = emptyList()
     @Volatile var uploadProgress: Double = 0.0
     @Volatile var activeUploadFile: String? = null
+    /** Canonical FTC hub transport selected by generated project metadata. */
+    @Volatile var ftcHubCommandTransport: String = "STANDARD_SDK"
+    /** True only when Photon successfully wrapped at least one real REV hub for this OpMode. */
+    @Volatile var ftcPhotonActive: Boolean = false
+    /** Whether this project requested the bounded Limelight HTTP proxy. */
+    @Volatile var ftcLimelightProxyConfigured: Boolean = false
+    /** Whether the requested Limelight proxy currently owns its listeners. */
+    @Volatile var ftcLimelightProxyActive: Boolean = false
 }
