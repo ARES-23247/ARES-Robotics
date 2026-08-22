@@ -64,8 +64,8 @@ fun interface GeneratedAresProjectControlTaskSink {
 object GeneratedAresProject {
     const val GENERATOR_VERSION: Int = 8
     const val CATALOG_SHA256: String = "579ff4b4c2fca23a876979c92254d669ecf2b27b227377c94a221c5c260ff6cb"
-    const val CONTENT_SHA256: String = "3b5a2a29183a9bd83703bc40bfdd2904b9d8023a4841b289bac13f648641aad9"
-    const val SOURCE_SHA256: String = "1c4daccebdd19c3389d6a033fabb0d434525c0a60cb7584f2aad20267d887eeb"
+    const val CONTENT_SHA256: String = "ecfee6839cabd299fe6430fd988b433bc5415de010baaad53fee4d7981a69b9e"
+    const val SOURCE_SHA256: String = "27eefa45a8b5e89819f0d67fd849b4781edd8a25f457aedba0d441b59148ac10"
 
     const val PROJECT_ID: String = "ares-frc-starter"
     const val PROJECT_LEAGUE: String = "FRC"
@@ -74,6 +74,12 @@ object GeneratedAresProject {
     const val ROBOT_WIDTH_METERS: Double = 0.65
     const val FIELD_LENGTH_METERS: Double = 16.54175
     const val FIELD_WIDTH_METERS: Double = 8.21055
+
+    /** Canonical runtime choices reviewed in .ares/project.json. */
+    object RuntimeOptions {
+        const val FTC_HUB_COMMAND_TRANSPORT: String = "STANDARD_SDK"
+        const val FTC_LIMELIGHT_PROXY_ENABLED: Boolean = false
+    }
 
     val knownActionKeys: Set<String> = emptySet()
     val knownConditionKeys: Set<String> = emptySet()
