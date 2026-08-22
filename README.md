@@ -120,3 +120,7 @@ The rationale and edge cases are documented in [Math and coordinate contracts](d
 - [Pit and hardware checklist](docs/onboarding/04_pit_operations_and_hardware.md)
 
 `GEMINI.md` contains repository rules for automated contributors. The documents above are the human-facing reference and should be updated with any contract or integration change.
+
+## License
+
+ARES-authored code is licensed under [Apache License 2.0](LICENSE). Third-party components retain their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The software license does not grant rights to ARES names or logos; see [TRADEMARKS.md](TRADEMARKS.md).
