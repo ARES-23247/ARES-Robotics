@@ -32,14 +32,22 @@ object SimOpModeRunner {
                     SimOpModeLifecycle.supports(opMode) &&
                     !java.lang.reflect.Modifier.isAbstract(opMode.modifiers)
             }
-            var teleops = findAnnotatedClasses(TeleOp::class.java).filter(enabledFilter).map(Class<*>::getName)
-            var autos = findAnnotatedClasses(Autonomous::class.java).filter(enabledFilter).map(Class<*>::getName)
+            val discoveredTeleOps = findAnnotatedClasses(TeleOp::class.java)
+                .filter(enabledFilter)
+                .map(Class<*>::getName)
+                .distinct()
+                .sorted()
+            val autos = findAnnotatedClasses(Autonomous::class.java)
+                .filter(enabledFilter)
+                .map(Class<*>::getName)
+                .distinct()
+                .sorted()
 
-            // A TeleOp fallback is useful for a library-only simulator. Never advertise it as an
-            // autonomous: lifecycle kind is annotation-derived and mode substitution is unsafe.
-            if (teleops.isEmpty()) {
-                teleops = listOf("com.areslib.ftc.hardware.AresHardwareTestOpMode")
-            }
+            // The library integration test is a fallback, not a project TeleOp. Advertising it
+            // beside team modes lets a classpath-order-dependent UI silently start hardware-test
+            // behavior instead of the robot's generated TeleOp. Keep it available only when the
+            // consuming project contributes no enabled TeleOp of its own.
+            val teleops = advertisedTeleOps(discoveredTeleOps)
 
             val gson = com.google.gson.Gson()
             val teleOpJson = gson.toJson(teleops)
@@ -71,6 +79,17 @@ object SimOpModeRunner {
         } catch (e: Exception) {
             println("[Simulator] Error scanning OpModes: ${e.message}")
         }
+    }
+
+    /** Returns deterministic project TeleOps, using the library hardware test only as a fallback. */
+    internal fun advertisedTeleOps(discovered: List<String>): List<String> {
+        val projectTeleOps = discovered
+            .asSequence()
+            .filterNot { it == HARDWARE_TEST_OP_MODE }
+            .distinct()
+            .sorted()
+            .toList()
+        return if (projectTeleOps.isNotEmpty()) projectTeleOps else listOf(HARDWARE_TEST_OP_MODE)
     }
 
     private fun findAnnotatedClasses(annotationClass: Class<out Annotation>): List<Class<*>> {
@@ -213,5 +232,7 @@ object SimOpModeRunner {
         if (!SimOpModeLifecycle.supports(clazz) || java.lang.reflect.Modifier.isAbstract(clazz.modifiers)) return null
         return SimOpModeLifecycle.wrap(clazz.getDeclaredConstructor().newInstance())
     }
+
+    private const val HARDWARE_TEST_OP_MODE = "com.areslib.ftc.hardware.AresHardwareTestOpMode"
 
 }

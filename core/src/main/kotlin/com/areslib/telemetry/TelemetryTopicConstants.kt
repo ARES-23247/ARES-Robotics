@@ -32,6 +32,15 @@ object TelemetryTopicConstants {
 
     /** Atomic v2 command: version, session, sequence, client monotonic ms, vx, vy, omega, flags. */
     const val DRIVE_INPUT_FRAME = "ARES/Input/driveFrame"
+    /**
+     * Simulator feedback for the dashboard-owned atomic drive frame.
+     *
+     * This is receiver telemetry, not another dashboard input. Keeping it outside `ARES/Input`
+     * prevents input-echo suppression from hiding the fail-closed receiver state.
+     * Values are `[1, statusCode, acceptedSession, acceptedSequence, leaseAgeMs, vx, vy, omega,
+     * rejectedCount]`.
+     */
+    const val DRIVE_INPUT_ACK = "ARES/Control/DriveInputAck"
 
     /** Packed seven-double records; consumers must honor [GAME_PIECES_COUNT]. */
     const val GAME_PIECES = "ARES/GamePieces"
@@ -41,6 +50,8 @@ object TelemetryTopicConstants {
     const val GAME_PIECES_FRAME = "ARES/GamePiecesFrame"
 
     const val HARDWARE_MOTORS_PREFIX = "Hardware/Motors"
+    /** Atomic `[4 powers, 4 velocities, 4 currents, sequence]` mecanum simulator sample. */
+    const val MECANUM_MOTOR_FRAME = "$HARDWARE_MOTORS_PREFIX/MecanumFrame"
     fun motorVelocityTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Velocity"
     fun motorPowerTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Power"
     fun motorPositionTopic(name: String): String = "$HARDWARE_MOTORS_PREFIX/$name/Position"

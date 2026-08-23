@@ -35,6 +35,8 @@ object DesktopSimLauncher {
     internal const val SIM_TIMESTEP_SECONDS = 0.02
     internal const val SIM_TIMESTEP_MS = 20L
     internal const val ACTIVE_OP_MODE_STATE_TOPIC = "ARES/DriverStation/ActiveOpModeState"
+    internal const val ACTIVE_OP_MODE_CLASS_TOPIC = "ARES/DriverStation/ActiveOpModeClass"
+    internal const val ACTIVE_OP_MODE_DISPLAY_NAME_TOPIC = "ARES/DriverStation/ActiveOpModeDisplayName"
     internal const val SUMMARY_OUTPUT_PROPERTY = "ares.sim.summary.path"
 
 
@@ -146,6 +148,7 @@ object DesktopSimLauncher {
         if (serverMode) {
             println("[Simulator] Running in Driver Station Server Mode")
             SimOpModeRunner.scanAndPublishOpModes()
+            publishActiveOpModeIdentity(null)
         }
 
         // 3. Dyn4j Physics World Initialization
@@ -245,6 +248,7 @@ object DesktopSimLauncher {
         }
 
         opModeSlot.activeMode?.let { initialMode ->
+            publishActiveOpModeIdentity(initialMode)
             driverStation.resetInjectionState()
             initialMode.initialize(robotDouble.hardwareMap)
             // The Pinpoint mock captures its native origin during robot construction. Prime it
@@ -291,6 +295,7 @@ object DesktopSimLauncher {
         var lastSelectedOpMode = ""
         var inventoryCount = 0
         var gamePieceTelemetryBuffer = DoubleArray(SimGamePieceTelemetryFrame.requiredSize(0))
+        val periodicTraceEnabled = java.lang.Boolean.getBoolean("ares.sim.trace")
 
         while (isSimRunning) {
           try {
@@ -335,6 +340,7 @@ object DesktopSimLauncher {
                             newOpMode.tick()
                             syncRobotPoseToPhysics(newOpMode)
                             opModeSlot.install(newOpMode)
+                            publishActiveOpModeIdentity(newOpMode)
                             println("[Simulator] Successfully INITED OpMode: ${newOpMode.displayName} (Alliance=${if (driverStation.effectiveIsRedAlliance) "RED" else "BLUE"})")
                         } catch (e: Exception) {
                             try {
@@ -343,6 +349,7 @@ object DesktopSimLauncher {
                                 if (cleanupFailure !== e) e.addSuppressed(cleanupFailure)
                             }
                             System.err.println("[Simulator] Failed to INIT OpMode: ${e.message}")
+                            publishActiveOpModeIdentity(null)
                             if (opModeSlot.isTerminal) throw e
                         }
                     }
@@ -359,6 +366,7 @@ object DesktopSimLauncher {
                     }
                     "STOP" -> {
                         stopActiveOpMode()
+                        publishActiveOpModeIdentity(null)
                         driverStation.resetInjectionState()
                         robotDouble.fl.power = 0.0
                         robotDouble.fr.power = 0.0
@@ -387,10 +395,6 @@ object DesktopSimLauncher {
             val frP = robotDouble.fr.power
             val rlP = robotDouble.rl.power
             val rrP = robotDouble.rr.power
-
-
-
-
             val isNoInput = kotlin.math.abs(flP) < 1e-3 && kotlin.math.abs(frP) < 1e-3 && 
                             kotlin.math.abs(rlP) < 1e-3 && kotlin.math.abs(rrP) < 1e-3
 
@@ -402,7 +406,7 @@ object DesktopSimLauncher {
                 val rawVy = (-flP + frP + rlP - rrP) / 4.0 * 2.6
                 val rawOmega = (-flP + frP - rlP + rrP) / 4.0 * 3.5
 
-                if (sampleCount % 250L == 0L) {
+                if (periodicTraceEnabled && sampleCount % 250L == 0L) {
                     println(
                         ("[SimPhysics] flP=%.2f, frP=%.2f, rlP=%.2f, rrP=%.2f, " +
                             "rawVx=%.2f, rawVy=%.2f, rawOmega=%.2f, physY=%.3f").format(
@@ -512,7 +516,7 @@ object DesktopSimLauncher {
                 )
                 activeInstance.profiler.publishSensorsProfiling(activeInstance.telemetryManager)
                 
-                if (sampleCount % 250L == 0L) {
+                if (periodicTraceEnabled && sampleCount % 250L == 0L) {
                     println("[SimTelemetry] observedTruthY=%.3f".format(currentPhysY))
                 }
                 // TelemetryPublisher.publish(state) is the sole owner of Drive/Pose_* and
@@ -548,6 +552,20 @@ object DesktopSimLauncher {
             NT4Server.publishTopic("Hardware/Motors/fr/CurrentAmps", frCurrent)
             NT4Server.publishTopic("Hardware/Motors/rl/CurrentAmps", rlCurrent)
             NT4Server.publishTopic("Hardware/Motors/rr/CurrentAmps", rrCurrent)
+            TelemetryPublisher.publishMecanumMotorFrame(
+                flPower = flPower,
+                frPower = frPower,
+                rlPower = rlPower,
+                rrPower = rrPower,
+                flVelocity = flVelocity,
+                frVelocity = frVelocity,
+                rlVelocity = rlVelocity,
+                rrVelocity = rrVelocity,
+                flCurrentAmps = flCurrent,
+                frCurrentAmps = frCurrent,
+                rlCurrentAmps = rlCurrent,
+                rrCurrentAmps = rrCurrent,
+            )
 
             val activeState = opModeSlot.activeMode?.publishedState ?: SimOpModeState.DISABLED
             // MatchState is dashboard-owned match sequencing (AUTO_INIT/TRANSITION/etc.). The
@@ -607,6 +625,12 @@ object DesktopSimLauncher {
             isSimRunning = false
             RobotClock.useSystemTime()
         }
+    }
+
+    /** Publishes an explicit lifecycle acknowledgement so a dashboard cannot infer it from a command echo. */
+    private fun publishActiveOpModeIdentity(mode: SimOpModeLifecycle?) {
+        NT4Server.publishTopic(ACTIVE_OP_MODE_CLASS_TOPIC, mode?.rawOpMode?.javaClass?.name.orEmpty())
+        NT4Server.publishTopic(ACTIVE_OP_MODE_DISPLAY_NAME_TOPIC, mode?.displayName.orEmpty())
     }
 }
 
