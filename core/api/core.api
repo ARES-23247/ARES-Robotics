@@ -10417,10 +10417,13 @@ public final class com/areslib/telemetry/RobotTelemetryManager$DefaultImpls {
 }
 
 public final class com/areslib/telemetry/SimInputBridge {
+	public static final field ACK_VALUE_COUNT I
 	public static final field INSTANCE Lcom/areslib/telemetry/SimInputBridge;
 	public static final field LEASE_TIMEOUT_MS J
 	public static final field MAX_OMEGA_RADIANS_PER_SECOND D
 	public static final field MAX_TRANSLATION_MPS D
+	public static final fun copyAcknowledgement ([DJ)I
+	public static synthetic fun copyAcknowledgement$default ([DJILjava/lang/Object;)I
 	public static final fun currentFrame (J)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
 	public static synthetic fun currentFrame$default (JILjava/lang/Object;)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
 	public static final fun pollNetworkFrame (J)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
@@ -10472,6 +10475,7 @@ public final class com/areslib/telemetry/SimInputBridge$CommandFrame {
 }
 
 public final class com/areslib/telemetry/TelemetryTopicConstants {
+	public static final field DRIVE_INPUT_ACK Ljava/lang/String;
 	public static final field DRIVE_INPUT_FRAME Ljava/lang/String;
 	public static final field DRIVE_ODOM_HEADING Ljava/lang/String;
 	public static final field DRIVE_ODOM_X Ljava/lang/String;
@@ -10491,6 +10495,7 @@ public final class com/areslib/telemetry/TelemetryTopicConstants {
 	public static final field GAME_PIECES_FRAME Ljava/lang/String;
 	public static final field HARDWARE_MOTORS_PREFIX Ljava/lang/String;
 	public static final field INSTANCE Lcom/areslib/telemetry/TelemetryTopicConstants;
+	public static final field MECANUM_MOTOR_FRAME Ljava/lang/String;
 	public static final field TELEMETRY_FRAME_SEQUENCE Ljava/lang/String;
 	public static final field VISION_POSE_HEADING Ljava/lang/String;
 	public static final field VISION_POSE_X Ljava/lang/String;

@@ -123,6 +123,61 @@ class SimInputBridgeTest {
         }
     }
 
+    @Test
+    fun `acknowledgement reports accepted motion and fail-closed recovery without allocation`() {
+        val acknowledgement = DoubleArray(SimInputBridge.ACK_VALUE_COUNT)
+
+        SimInputBridge.copyAcknowledgement(acknowledgement, nowMs = 90)
+        assertEquals(0.0, acknowledgement[1])
+        assertEquals(-1.0, acknowledgement[2])
+
+        publish(session = 21, sequence = 0, clientTime = 1_000, flags = MODE_FLAGS)
+        SimInputBridge.pollNetworkFrame(100)
+        SimInputBridge.copyAcknowledgement(acknowledgement, nowMs = 110)
+        assertEquals(2.0, acknowledgement[1])
+        assertEquals(21.0, acknowledgement[2])
+        assertEquals(0.0, acknowledgement[3])
+        assertEquals(10.0, acknowledgement[4])
+
+        publish(session = 21, sequence = 1, clientTime = 1_001, vx = 1.5, flags = MODE_FLAGS)
+        SimInputBridge.pollNetworkFrame(120)
+        SimInputBridge.copyAcknowledgement(acknowledgement, nowMs = 125)
+        assertEquals(3.0, acknowledgement[1])
+        assertEquals(1.0, acknowledgement[3])
+        assertEquals(1.5, acknowledgement[5])
+
+        SimInputBridge.pollNetworkFrame(621)
+        SimInputBridge.copyAcknowledgement(acknowledgement, nowMs = 621)
+        assertEquals(4.0, acknowledgement[1])
+        assertEquals(1.0, acknowledgement[3])
+        assertEquals(0.0, acknowledgement[5])
+
+        publish(session = 21, sequence = 2, clientTime = 1_002, flags = MODE_FLAGS)
+        SimInputBridge.pollNetworkFrame(630)
+        SimInputBridge.copyAcknowledgement(acknowledgement, nowMs = 631)
+        assertEquals(2.0, acknowledgement[1])
+        assertEquals(2.0, acknowledgement[3])
+    }
+
+    @Test
+    fun `acknowledgement distinguishes missing neutral and out of order frames`() {
+        val acknowledgement = DoubleArray(SimInputBridge.ACK_VALUE_COUNT)
+
+        publish(session = 31, sequence = 0, clientTime = 100, vx = 1.0)
+        SimInputBridge.pollNetworkFrame(1_000)
+        SimInputBridge.copyAcknowledgement(acknowledgement, 1_000)
+        assertEquals(1.0, acknowledgement[1])
+        assertEquals(1.0, acknowledgement[8])
+
+        publish(session = 31, sequence = 1, clientTime = 101)
+        SimInputBridge.pollNetworkFrame(1_010)
+        publish(session = 31, sequence = 0, clientTime = 99)
+        SimInputBridge.pollNetworkFrame(1_020)
+        SimInputBridge.copyAcknowledgement(acknowledgement, 1_020)
+        assertEquals(6.0, acknowledgement[1])
+        assertEquals(2.0, acknowledgement[8])
+    }
+
     private fun publish(
         session: Long,
         sequence: Long,

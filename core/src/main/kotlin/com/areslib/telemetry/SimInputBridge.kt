@@ -16,6 +16,18 @@ import kotlin.math.abs
  */
 object SimInputBridge {
     private const val FRAME_VALUE_COUNT = 8
+    const val ACK_VALUE_COUNT = 9
+
+    /** Stable numeric states carried by the atomic acknowledgement frame. */
+    private enum class ReceiverStatus(val code: Int) {
+        WAITING_FOR_FRAME(0),
+        WAITING_FOR_NEUTRAL(1),
+        ARMED_NEUTRAL(2),
+        ACTIVE(3),
+        EXPIRED(4),
+        INVALID_FRAME(5),
+        OUT_OF_ORDER(6),
+    }
 
     data class CommandFrame(
         val vx: Double,
@@ -64,6 +76,11 @@ object SimInputBridge {
     private var lastClientMonotonicMs = Long.MIN_VALUE
     private var lastFrameBits = LongArray(FRAME_VALUE_COUNT)
     private var sessionArmed = false
+    private var receiverStatus = ReceiverStatus.WAITING_FOR_FRAME
+    private var lastAcceptedSession = Long.MIN_VALUE
+    private var lastAcceptedSequence = Long.MIN_VALUE
+    private var lastAcceptedAtMs = Long.MIN_VALUE
+    private var rejectedFrameCount = 0L
 
     /** Polls NT4 and returns the sole expiry-checked command snapshot. */
     @Synchronized
@@ -72,22 +89,25 @@ object SimInputBridge {
         expireLease(nowMs)
         val count = NT4Server.copyDoubleArray(TelemetryTopicConstants.DRIVE_INPUT_FRAME, inputBuffer)
         if (count < 0) return currentFrame(nowMs)
-        if (count != FRAME_VALUE_COUNT) return reject()
+        if (count != FRAME_VALUE_COUNT) return reject(ReceiverStatus.INVALID_FRAME)
 
         val version = inputBuffer[VERSION_INDEX]
-        val session = protocolInteger(inputBuffer[SESSION_INDEX], requirePositive = true) ?: return reject()
-        val sequence = protocolInteger(inputBuffer[SEQUENCE_INDEX]) ?: return reject()
-        val clientTime = protocolInteger(inputBuffer[CLIENT_TIME_INDEX]) ?: return reject()
+        val session = protocolInteger(inputBuffer[SESSION_INDEX], requirePositive = true)
+            ?: return reject(ReceiverStatus.INVALID_FRAME)
+        val sequence = protocolInteger(inputBuffer[SEQUENCE_INDEX])
+            ?: return reject(ReceiverStatus.INVALID_FRAME)
+        val clientTime = protocolInteger(inputBuffer[CLIENT_TIME_INDEX])
+            ?: return reject(ReceiverStatus.INVALID_FRAME)
         val vx = inputBuffer[VX_INDEX]
         val vy = inputBuffer[VY_INDEX]
         val omega = inputBuffer[OMEGA_INDEX]
-        val flags = protocolInteger(inputBuffer[FLAGS_INDEX]) ?: return reject()
+        val flags = protocolInteger(inputBuffer[FLAGS_INDEX]) ?: return reject(ReceiverStatus.INVALID_FRAME)
 
         if (version != FRAME_VERSION || flags and KNOWN_FLAGS_MASK.inv() != 0L ||
             !isValidAxis(vx, MAX_TRANSLATION_MPS) ||
             !isValidAxis(vy, MAX_TRANSLATION_MPS) ||
             !isValidAxis(omega, MAX_OMEGA_RADIANS_PER_SECOND)
-        ) return reject()
+        ) return reject(ReceiverStatus.INVALID_FRAME)
 
         if (session != activeSession) {
             activeSession = session
@@ -99,12 +119,16 @@ object SimInputBridge {
         if (sequence == lastSequence) {
             // NT retains the last value. An identical frame is not a new command and cannot renew
             // the receiver lease; a same-sequence mutation is a protocol violation.
-            return if (sameRawFrame()) currentFrame(nowMs) else reject()
+            return if (sameRawFrame()) currentFrame(nowMs) else reject(ReceiverStatus.INVALID_FRAME)
         }
-        if (sequence < lastSequence || clientTime < lastClientMonotonicMs) return reject()
+        if (sequence < lastSequence || clientTime < lastClientMonotonicMs) {
+            return reject(ReceiverStatus.OUT_OF_ORDER)
+        }
 
         val needsHandshake = !sessionArmed
-        if (needsHandshake && !isNeutralHandshake(vx, vy, omega, flags)) return reject()
+        if (needsHandshake && !isNeutralHandshake(vx, vy, omega, flags)) {
+            return reject(ReceiverStatus.WAITING_FOR_NEUTRAL)
+        }
 
         val accepted = CommandFrame(
             vx = vx,
@@ -129,6 +153,14 @@ object SimInputBridge {
         lastClientMonotonicMs = clientTime
         rememberRawFrame()
         sessionArmed = true
+        lastAcceptedSession = session
+        lastAcceptedSequence = sequence
+        lastAcceptedAtMs = nowMs
+        receiverStatus = if (isNeutralHandshake(vx, vy, omega, flags)) {
+            ReceiverStatus.ARMED_NEUTRAL
+        } else {
+            ReceiverStatus.ACTIVE
+        }
         frame.set(accepted)
         return accepted
     }
@@ -144,14 +176,51 @@ object SimInputBridge {
     private fun expireLease(nowMs: Long) {
         if (!sessionArmed) return
         val snapshot = frame.get()
-        if (snapshot === neutralFrame || nowMs - snapshot.receivedAtMs !in 0..LEASE_TIMEOUT_MS) reject()
+        if (snapshot === neutralFrame || nowMs - snapshot.receivedAtMs !in 0..LEASE_TIMEOUT_MS) {
+            reject(ReceiverStatus.EXPIRED)
+        }
     }
 
-    private fun reject(): CommandFrame {
+    private fun reject(status: ReceiverStatus): CommandFrame {
         sessionArmed = false
+        receiverStatus = status
+        rejectedFrameCount++
         frame.set(neutralFrame)
         return neutralFrame
     }
+
+    /**
+     * Copies one allocation-free, atomic acknowledgement snapshot for the desktop controller.
+     * The accepted session/sequence remain visible after a rejection so a sender can distinguish
+     * an unacknowledged frame from an ordinary neutral command.
+     *
+     * @return the required acknowledgement value count.
+     */
+    @Synchronized
+    @JvmStatic
+    fun copyAcknowledgement(destination: DoubleArray, nowMs: Long = RobotClock.currentTimeMillis()): Int {
+        require(destination.size >= ACK_VALUE_COUNT) {
+            "Drive input acknowledgement requires at least $ACK_VALUE_COUNT values"
+        }
+        val applied = currentFrame(nowMs)
+        val leaseAgeMs = if (lastAcceptedAtMs == Long.MIN_VALUE) {
+            -1L
+        } else {
+            (nowMs - lastAcceptedAtMs).coerceAtLeast(0L)
+        }
+        destination[0] = ACK_VERSION
+        destination[1] = receiverStatus.code.toDouble()
+        destination[2] = protocolValue(lastAcceptedSession)
+        destination[3] = protocolValue(lastAcceptedSequence)
+        destination[4] = leaseAgeMs.toDouble()
+        destination[5] = applied.vx
+        destination[6] = applied.vy
+        destination[7] = applied.omega
+        destination[8] = rejectedFrameCount.toDouble()
+        return ACK_VALUE_COUNT
+    }
+
+    private fun protocolValue(value: Long): Double = if (value == Long.MIN_VALUE) -1.0 else value.toDouble()
 
     private fun isNeutralHandshake(vx: Double, vy: Double, omega: Double, flags: Long): Boolean =
         vx == 0.0 && vy == 0.0 && omega == 0.0 && flags and ACTUATING_OR_EDGE_FLAGS == 0L
@@ -189,6 +258,11 @@ object SimInputBridge {
         lastFrameBits.fill(0L)
         inputBuffer.fill(0.0)
         sessionArmed = false
+        receiverStatus = ReceiverStatus.WAITING_FOR_FRAME
+        lastAcceptedSession = Long.MIN_VALUE
+        lastAcceptedSequence = Long.MIN_VALUE
+        lastAcceptedAtMs = Long.MIN_VALUE
+        rejectedFrameCount = 0L
     }
 
     const val LEASE_TIMEOUT_MS = 500L
@@ -196,6 +270,7 @@ object SimInputBridge {
     const val MAX_OMEGA_RADIANS_PER_SECOND = 4.0 * Math.PI
 
     private const val FRAME_VERSION = 2.0
+    private const val ACK_VERSION = 1.0
     private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991.0
     private const val VERSION_INDEX = 0
     private const val SESSION_INDEX = 1

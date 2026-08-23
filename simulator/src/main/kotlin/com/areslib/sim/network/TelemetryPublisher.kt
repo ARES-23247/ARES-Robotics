@@ -52,8 +52,11 @@ object TelemetryPublisher {
     private val estimatedPoseBuf = DoubleArray(3)
     private val truePoseBuf = DoubleArray(3)
     private val simulatorPoseFrameBuf = DoubleArray(SIMULATOR_POSE_FRAME_VALUE_COUNT)
+    private val driveInputAckBuf = DoubleArray(com.areslib.telemetry.SimInputBridge.ACK_VALUE_COUNT)
+    private val mecanumMotorFrameBuf = DoubleArray(MECANUM_MOTOR_FRAME_VALUE_COUNT)
     private var simulatorPoseFrameSequence = 0L
     private var gamePieceFrameSequence = 0L
+    private var mecanumMotorFrameSequence = 0L
 
     private var lastObstaclesJson = ""
     private var lastFieldConfigJson = ""
@@ -296,6 +299,46 @@ object TelemetryPublisher {
     }
 
     /**
+     * Publishes one complete mecanum observation every physics tick.
+     *
+     * Scalar NT4 topics suppress unchanged values, which made a stationary simulator look stale
+     * and allowed powers, velocities, and currents from different ticks to be combined. The
+     * sequence element forces delivery while this reusable buffer keeps the 50 Hz path allocation
+     * free. Wheel order is the canonical FTC order: FL, FR, RL, RR.
+     */
+    internal fun publishMecanumMotorFrame(
+        flPower: Double,
+        frPower: Double,
+        rlPower: Double,
+        rrPower: Double,
+        flVelocity: Double,
+        frVelocity: Double,
+        rlVelocity: Double,
+        rrVelocity: Double,
+        flCurrentAmps: Double,
+        frCurrentAmps: Double,
+        rlCurrentAmps: Double,
+        rrCurrentAmps: Double,
+    ) {
+        mecanumMotorFrameBuf[0] = flPower
+        mecanumMotorFrameBuf[1] = frPower
+        mecanumMotorFrameBuf[2] = rlPower
+        mecanumMotorFrameBuf[3] = rrPower
+        mecanumMotorFrameBuf[4] = flVelocity
+        mecanumMotorFrameBuf[5] = frVelocity
+        mecanumMotorFrameBuf[6] = rlVelocity
+        mecanumMotorFrameBuf[7] = rrVelocity
+        mecanumMotorFrameBuf[8] = flCurrentAmps
+        mecanumMotorFrameBuf[9] = frCurrentAmps
+        mecanumMotorFrameBuf[10] = rlCurrentAmps
+        mecanumMotorFrameBuf[11] = rrCurrentAmps
+        mecanumMotorFrameBuf[12] = mecanumMotorFrameSequence.toDouble()
+        mecanumMotorFrameSequence =
+            if (mecanumMotorFrameSequence >= MAX_EXACT_DOUBLE_INTEGER) 0L else mecanumMotorFrameSequence + 1L
+        NT4Server.publishTopic(com.areslib.telemetry.TelemetryTopicConstants.MECANUM_MOTOR_FRAME, mecanumMotorFrameBuf)
+    }
+
+    /**
      * Polls canonical topics under `ARES/Input/` from the custom NT4 server and copies them into
      * [driverStation]. A live atomic lease temporarily owns all command fields; when it expires,
      * untouched local keyboard/gamepad state resumes. Alliance changes are dispatched to the
@@ -313,6 +356,8 @@ object TelemetryPublisher {
         } else {
             driverStation.clearRemoteCommand()
         }
+        com.areslib.telemetry.SimInputBridge.copyAcknowledgement(driveInputAckBuf)
+        NT4Server.publishTopic(com.areslib.telemetry.TelemetryTopicConstants.DRIVE_INPUT_ACK, driveInputAckBuf)
 
         val effectiveRedAlliance = driverStation.effectiveIsRedAlliance
         com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robot ->
@@ -348,6 +393,8 @@ object TelemetryPublisher {
             publisher.set(position)
         }
     }
+
+    private const val MECANUM_MOTOR_FRAME_VALUE_COUNT = 13
 
     /**
      * Shutdown telemetry server.
