@@ -429,17 +429,59 @@ class SubsystemDocumentTest {
     }
 
     @Test
+    fun `continuous position and bang bang hysteresis contracts validate explicitly`() {
+        val arm = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            "continuous-arm",
+            "ContinuousArm",
+            SubsystemPlatform.FTC,
+        )
+        val wrapped = arm.copy(controlLoops = arm.controlLoops.map { loop ->
+            loop.copy(continuousInput = SubsystemContinuousInputDocument(enabled = true))
+        })
+        assertTrue(validateSubsystemDocument(wrapped).isEmpty())
+
+        val wrongPeriod = wrapped.copy(controlLoops = wrapped.controlLoops.map { loop ->
+            loop.copy(continuousInput = loop.continuousInput.copy(maximumInput = Math.PI / 2.0))
+        })
+        assertTrue(validateSubsystemDocument(wrongPeriod).any {
+            it.path.endsWith("continuousInput") && it.message.contains("2π")
+        })
+
+        val wrongStrategy = wrapped.copy(controlLoops = wrapped.controlLoops.map { loop ->
+            loop.copy(strategy = SubsystemControlStrategy.VELOCITY_PID)
+        })
+        assertTrue(validateSubsystemDocument(wrongStrategy).any {
+            it.path.endsWith("continuousInput.enabled")
+        })
+
+        val onOff = arm.copy(controlLoops = arm.controlLoops.map { loop ->
+            loop.copy(
+                strategy = SubsystemControlStrategy.BANG_BANG,
+                feedforward = SubsystemFeedforwardDocument(),
+                continuousInput = SubsystemContinuousInputDocument(),
+                tolerance = 0.05,
+                hysteresis = 0.02,
+            )
+        })
+        assertTrue(validateSubsystemDocument(onOff).isEmpty())
+        assertTrue(validateSubsystemDocument(arm.copy(controlLoops = arm.controlLoops.map { it.copy(hysteresis = 0.02) })).any {
+            it.path.endsWith("hysteresis")
+        })
+    }
+
+    @Test
     fun `codec requires explicit current schema implementation and homing metadata`() {
         val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
 
         val oldSchema = assertThrows(IllegalArgumentException::class.java) {
-            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 10", "\"schemaVersion\": 9"))
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 11", "\"schemaVersion\": 10"))
         }
-        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 9"))
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 10"))
 
         val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
             SubsystemDocumentCodec.decode(
-                """{"schemaVersion":10,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
+                """{"schemaVersion":11,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
             )
         }
         assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))
@@ -509,7 +551,7 @@ class SubsystemDocumentTest {
     fun `decode normalizes missing optional string fields so copy operations succeed`() {
         val legacyJson = """
             {
-              "schemaVersion": 10,
+              "schemaVersion": 11,
               "documentId": "indicator-lights",
               "displayName": "Indicator lights",
               "kotlinTypeName": "IndicatorLightSubsystem",

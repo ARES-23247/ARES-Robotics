@@ -600,7 +600,13 @@ class SubsystemControlBuilder internal constructor() {
             ),
             feedforward = builder.feedforward.build(),
             derivativeFilterTimeConstantSeconds = builder.derivativeFilterTimeConstantSeconds,
+            continuousInput = SubsystemContinuousInputDocument(
+                enabled = builder.continuousInputEnabled,
+                minimumInput = builder.continuousInputMinimum,
+                maximumInput = builder.continuousInputMaximum,
+            ),
             tolerance = builder.tolerance,
+            hysteresis = builder.hysteresis,
             minimumOutput = builder.minimumOutput,
             maximumOutput = builder.maximumOutput,
         )
@@ -618,7 +624,15 @@ class ControlLoopBuilder internal constructor() {
     var maximumAcceleration: Double = 2.0
     val feedforward = SubsystemFeedforwardBuilder()
     var derivativeFilterTimeConstantSeconds: Double = 0.02
+    /** Enables shortest-path wrapping for a position target and measurement expressed in radians. */
+    var continuousInputEnabled: Boolean = false
+    /** Lower boundary of one complete angular turn in radians. */
+    var continuousInputMinimum: Double = -Math.PI
+    /** Upper boundary of one complete angular turn in radians. */
+    var continuousInputMaximum: Double = Math.PI
     var tolerance: Double = 0.0
+    /** Additional error required to restart bang-bang output after entering the stop band. */
+    var hysteresis: Double = 0.0
     var minimumOutput: Double = -12.0
     var maximumOutput: Double = 12.0
 }

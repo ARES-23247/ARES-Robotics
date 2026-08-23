@@ -6,7 +6,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import java.security.MessageDigest
 
-const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 10
+const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 11
 
 enum class SubsystemPlatform { FTC, FRC }
 
@@ -442,6 +442,19 @@ data class SubsystemStateFieldDocument(
     val uid: String = fieldId,
 )
 
+/**
+ * Periodic position-input contract for mechanisms such as turrets and continuous azimuth axes.
+ *
+ * Runtime angles remain radians. [minimumInput] and [maximumInput] describe one complete turn and
+ * must span exactly 2π radians. Generated controllers wrap both position error and derivative
+ * deltas so crossing the configured boundary follows the shortest angular path.
+ */
+data class SubsystemContinuousInputDocument(
+    val enabled: Boolean = false,
+    val minimumInput: Double = -Math.PI,
+    val maximumInput: Double = Math.PI,
+)
+
 data class SubsystemControlLoopDocument(
     val loopId: String,
     val displayName: String,
@@ -458,7 +471,11 @@ data class SubsystemControlLoopDocument(
     val feedforward: SubsystemFeedforwardDocument = SubsystemFeedforwardDocument(),
     /** First-order derivative filter time constant; zero disables filtering. */
     val derivativeFilterTimeConstantSeconds: Double = 0.02,
+    /** Shortest-path angular error handling for position PID strategies. Radians only. */
+    val continuousInput: SubsystemContinuousInputDocument = SubsystemContinuousInputDocument(),
     val tolerance: Double = 0.0,
+    /** Extra error beyond [tolerance] required to restart a stopped bang-bang controller. */
+    val hysteresis: Double = 0.0,
     val minimumOutput: Double = -12.0,
     val maximumOutput: Double = 12.0,
     val description: String = "",
@@ -924,7 +941,10 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
             loop.feedforward.kA,
             loop.feedforward.kG,
             loop.derivativeFilterTimeConstantSeconds,
+            loop.continuousInput.minimumInput,
+            loop.continuousInput.maximumInput,
             loop.tolerance,
+            loop.hysteresis,
             loop.minimumOutput,
             loop.maximumOutput,
         )
@@ -933,6 +953,27 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
             issue("$path.derivativeFilterTimeConstantSeconds", "Derivative filter time cannot be negative")
         }
         if (loop.tolerance < 0.0) issue("$path.tolerance", "Tolerance cannot be negative")
+        if (loop.hysteresis < 0.0) issue("$path.hysteresis", "Hysteresis cannot be negative")
+        if (loop.strategy != SubsystemControlStrategy.BANG_BANG && loop.hysteresis != 0.0) {
+            issue("$path.hysteresis", "Restart hysteresis is available only for bang-bang control")
+        }
+        if (loop.continuousInput.enabled) {
+            if (loop.strategy !in CONTINUOUS_POSITION_STRATEGIES) {
+                issue("$path.continuousInput.enabled", "Continuous input is available only for position PID control")
+            }
+            if (target != null && !subsystemUnitIsCanonicalAngle(target.unit)) {
+                issue("$path.targetFieldId", "Continuous position targets must use canonical radians (rad)")
+            }
+            if (measurement != null && !subsystemUnitIsCanonicalAngle(measurement.unit)) {
+                issue("$path.measurementFieldId", "Continuous position feedback must use canonical radians (rad)")
+            }
+            val period = loop.continuousInput.maximumInput - loop.continuousInput.minimumInput
+            if (loop.continuousInput.minimumInput >= loop.continuousInput.maximumInput) {
+                issue("$path.continuousInput", "Continuous input minimum must be below maximum")
+            } else if (kotlin.math.abs(period - 2.0 * Math.PI) > 1e-4) {
+                issue("$path.continuousInput", "Continuous angle range must span one full turn (2π radians)")
+            }
+        }
         if (loop.minimumOutput >= loop.maximumOutput) issue(path, "Minimum output must be below maximum output")
         val profile = loop.motionProfile
         if (!profile.maximumVelocity.isFinite() || profile.maximumVelocity <= 0.0) {
@@ -1654,7 +1695,13 @@ object SubsystemDocumentCodec {
                     linkageJoint = ff?.linkageJoint,
                 ),
                 derivativeFilterTimeConstantSeconds = l.derivativeFilterTimeConstantSeconds ?: 0.02,
+                continuousInput = SubsystemContinuousInputDocument(
+                    enabled = l.continuousInput?.enabled ?: false,
+                    minimumInput = l.continuousInput?.minimumInput ?: -Math.PI,
+                    maximumInput = l.continuousInput?.maximumInput ?: Math.PI,
+                ),
                 tolerance = l.tolerance ?: 0.0,
+                hysteresis = l.hysteresis ?: 0.0,
                 minimumOutput = l.minimumOutput ?: -12.0,
                 maximumOutput = l.maximumOutput ?: 12.0,
                 description = l.description ?: "",
@@ -1877,6 +1924,10 @@ private val CLOSED_LOOP_STRATEGIES = setOf(
     SubsystemControlStrategy.PROFILED_POSITION_PID,
     SubsystemControlStrategy.VELOCITY_PID,
     SubsystemControlStrategy.BANG_BANG,
+)
+private val CONTINUOUS_POSITION_STRATEGIES = setOf(
+    SubsystemControlStrategy.POSITION_PID,
+    SubsystemControlStrategy.PROFILED_POSITION_PID,
 )
 
 private fun SubsystemHubFacingDirection.isPerpendicularTo(other: SubsystemHubFacingDirection): Boolean =

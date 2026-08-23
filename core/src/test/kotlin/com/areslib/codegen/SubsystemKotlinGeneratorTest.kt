@@ -9,9 +9,13 @@ import com.areslib.subsystem.SubsystemInterlockDocument
 import com.areslib.subsystem.SubsystemLinkageDocument
 import com.areslib.subsystem.FaultRecoveryActionKind
 import com.areslib.subsystem.SubsystemDocument
+import com.areslib.subsystem.SubsystemContinuousInputDocument
+import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemFaultRecoveryDocument
+import com.areslib.subsystem.SubsystemFeedforwardDocument
 import com.areslib.subsystem.SubsystemHardwareScaffolding
 import com.areslib.subsystem.SubsystemHardwareKind
+import com.areslib.subsystem.SubsystemMotionProfileDocument
 import com.areslib.subsystem.SubsystemSafetyDocument
 import com.areslib.subsystem.SubsystemFeedforwardKind
 import com.areslib.subsystem.SubsystemFollowerTransform
@@ -21,6 +25,7 @@ import com.areslib.subsystem.SubsystemSourceOwnership
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
+import com.areslib.subsystem.SubsystemValueType
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystem
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -28,8 +33,82 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
+import org.jetbrains.kotlin.config.Services
+import java.net.URLClassLoader
+import java.nio.file.Files
 
 class SubsystemKotlinGeneratorTest {
+    @Test
+    fun `every selectable controller strategy compiles and executes its generated behavior`() {
+        val documents = SubsystemControlStrategy.entries.map(::behaviorDocument)
+        assertEquals(SubsystemControlStrategy.entries.toSet(), documents.map { it.controlLoops.single().strategy }.toSet())
+
+        val root = Files.createTempDirectory("ares-subsystem-controller-behavior")
+        try {
+            val sourceFiles = documents.flatMap { document ->
+                val target = SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.behavior")
+                val generated = SubsystemKotlinGenerator.generate(document, target)
+                val packageName = "${target.basePackage}.${document.documentId.replace('-', '_')}"
+                val selected = generated.filter { it.artifact in setOf(
+                    SubsystemArtifact.STATE,
+                    SubsystemArtifact.IO_CONTRACT,
+                    SubsystemArtifact.CONTROLLER,
+                ) }
+                val files = selected.map { file ->
+                    root.resolve(file.relativePath.substringAfterLast('/')).toFile().apply { writeText(file.content) }
+                }
+                val ioSource = selected.single { it.artifact == SubsystemArtifact.IO_CONTRACT }.content
+                files + root.resolve("${document.kotlinTypeName}BehaviorHarness.kt").toFile().apply {
+                    writeText(controllerBehaviorHarness(document, packageName, ioSource))
+                }
+            }
+            val classes = root.resolve("classes")
+            Files.createDirectories(classes)
+            val messages = mutableListOf<String>()
+            val arguments = K2JVMCompilerArguments().apply {
+                freeArgs = sourceFiles.map { it.path }
+                destination = classes.toString()
+                classpath = System.getProperty("java.class.path")
+                jvmTarget = "17"
+                noStdlib = true
+                noReflect = true
+            }
+            val result = K2JVMCompiler().exec(object : MessageCollector {
+                override fun clear() = messages.clear()
+                override fun hasErrors(): Boolean = messages.isNotEmpty()
+                override fun report(
+                    severity: CompilerMessageSeverity,
+                    message: String,
+                    location: CompilerMessageSourceLocation?,
+                ) {
+                    if (severity.isError) messages += "${location?.path.orEmpty()}:${location?.line ?: 0}: $message"
+                }
+            }, Services.EMPTY, arguments)
+            assertEquals(ExitCode.OK, result, messages.joinToString("\n"))
+
+            URLClassLoader(arrayOf(classes.toUri().toURL()), javaClass.classLoader).use { loader ->
+                documents.forEach { document ->
+                    val packageName = "org.example.behavior.${document.documentId.replace('-', '_')}"
+                    val harness = loader.loadClass("$packageName.${document.kotlinTypeName}BehaviorHarness")
+                    val outcome = try {
+                        harness.getMethod("run").invoke(null) as String
+                    } catch (failure: java.lang.reflect.InvocationTargetException) {
+                        throw failure.targetException
+                    }
+                    assertEquals("ok", outcome, document.controlLoops.single().strategy.name)
+                }
+            }
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
     @Test
     fun `profiled position starter generates allocation-free constrained setpoint and feedforward`() {
         val document = SubsystemTemplates.create(
@@ -691,5 +770,199 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(controller.contains("0.6 * kotlin.math.cos(state.position.toDouble())"))
         assertTrue(controller.contains("primaryStatic"))
         assertTrue(controller.contains("primaryFeedforward"))
+    }
+
+    private fun behaviorDocument(strategy: SubsystemControlStrategy): SubsystemDocument {
+        val template = when (strategy) {
+            SubsystemControlStrategy.DIRECT -> SubsystemTemplate.SIMPLE_ACTUATOR
+            SubsystemControlStrategy.POSITION_PID -> SubsystemTemplate.POSITION_CONTROLLED_MECHANISM
+            SubsystemControlStrategy.PROFILED_POSITION_PID -> SubsystemTemplate.ELEVATOR_LIFT
+            SubsystemControlStrategy.VELOCITY_PID -> SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM
+            SubsystemControlStrategy.BANG_BANG -> SubsystemTemplate.POSITION_CONTROLLED_MECHANISM
+            SubsystemControlStrategy.SERVO_POSITION -> SubsystemTemplate.POSITIONAL_SERVO
+        }
+        val typeStem = strategy.name.lowercase().split('_').joinToString("") { token ->
+            token.replaceFirstChar { it.uppercase() }
+        }
+        val documentId = "behavior-${strategy.name.lowercase().replace('_', '-')}"
+        val base = SubsystemTemplates.create(template, documentId, "${typeStem}Behavior", SubsystemPlatform.FTC)
+        val sourceLoop = base.controlLoops.single()
+        val continuous = strategy in setOf(
+            SubsystemControlStrategy.POSITION_PID,
+            SubsystemControlStrategy.PROFILED_POSITION_PID,
+        )
+        val loop = sourceLoop.copy(
+            strategy = strategy,
+            kP = if (strategy in setOf(
+                    SubsystemControlStrategy.POSITION_PID,
+                    SubsystemControlStrategy.PROFILED_POSITION_PID,
+                    SubsystemControlStrategy.VELOCITY_PID,
+                )
+            ) 1.0 else 0.0,
+            kI = 0.0,
+            kD = 0.0,
+            motionProfile = SubsystemMotionProfileDocument(maximumVelocity = 10.0, maximumAcceleration = 100.0),
+            feedforward = SubsystemFeedforwardDocument(),
+            derivativeFilterTimeConstantSeconds = 0.0,
+            continuousInput = SubsystemContinuousInputDocument(enabled = continuous),
+            tolerance = if (strategy == SubsystemControlStrategy.BANG_BANG) 0.10 else 0.0,
+            hysteresis = if (strategy == SubsystemControlStrategy.BANG_BANG) 0.05 else 0.0,
+            minimumOutput = if (strategy == SubsystemControlStrategy.SERVO_POSITION) 0.0 else -1.0,
+            maximumOutput = 1.0,
+        )
+        val angularFields = if (continuous) setOfNotNull(loop.targetFieldId, loop.measurementFieldId) else emptySet()
+        return base.copy(
+            stateFields = base.stateFields.map { field ->
+                if (field.fieldId in angularFields) field.copy(unit = "rad", minimum = null, maximum = null) else field
+            },
+            controlLoops = listOf(loop),
+        )
+    }
+
+    private fun controllerBehaviorHarness(
+        document: SubsystemDocument,
+        packageName: String,
+        ioSource: String,
+    ): String {
+        val loop = document.controlLoops.single()
+        val typeName = document.kotlinTypeName
+        val measuredFields = document.hardware.flatMap { it.measurements }
+            .distinctBy { it.fieldId }
+            .mapNotNull { measurement -> document.stateFields.firstOrNull { it.fieldId == measurement.fieldId } }
+        val measurementOverrides = measuredFields.joinToString("\n") { field ->
+            val typeAndDefault = when (field.type) {
+                SubsystemValueType.DOUBLE -> "Double = 0.0"
+                SubsystemValueType.INT -> "Int = 0"
+                SubsystemValueType.BOOLEAN -> "Boolean = false"
+                SubsystemValueType.STRING -> "String = \"\""
+            }
+            "    override val ${field.fieldId}: $typeAndDefault"
+        }
+        val commandMethods = Regex("fun (set[A-Za-z0-9_]+)\\(value: Double\\)")
+            .findAll(ioSource)
+            .map { it.groupValues[1] }
+            .distinct()
+            .toList()
+        require(commandMethods.isNotEmpty()) { "No generated actuator command found for ${document.documentId}" }
+        val commandOverrides = commandMethods.joinToString("\n") { method ->
+            "    override fun $method(value: Double) { lastCommand = value }"
+        }
+        val measurementArgument = loop.measurementFieldId?.let { "        $it = measurement,\n" }.orEmpty()
+        val behavior = when (loop.strategy) {
+            SubsystemControlStrategy.DIRECT -> """
+                controller.update(state(2.0), scale = 0.5)
+                require(closeTo(io.lastCommand, 0.5)) { "direct clamp/scale: ${'$'}{io.lastCommand}" }
+                controller.update(state(Double.NaN), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "direct invalid target: ${'$'}{io.lastCommand}" }
+            """.trimIndent()
+            SubsystemControlStrategy.SERVO_POSITION -> """
+                controller.update(state(2.0), scale = 0.5)
+                require(closeTo(io.lastCommand, 1.0)) { "servo clamp: ${'$'}{io.lastCommand}" }
+                controller.update(state(Double.NaN), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "servo invalid target: ${'$'}{io.lastCommand}" }
+            """.trimIndent()
+            SubsystemControlStrategy.POSITION_PID -> """
+                controller.update(state(-Math.PI + 0.1, Math.PI - 0.1), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.2, 1e-8)) { "wrapped position PID: ${'$'}{io.lastCommand}" }
+                controller.update(state(0.0, Double.NaN), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "position invalid feedback: ${'$'}{io.lastCommand}" }
+            """.trimIndent()
+            SubsystemControlStrategy.PROFILED_POSITION_PID -> """
+                controller.update(state(-Math.PI + 0.1, Math.PI - 0.1), scale = 1.0)
+                require(io.lastCommand > 0.0 && io.lastCommand < 0.2) { "wrapped profiled PID: ${'$'}{io.lastCommand}" }
+                controller.update(state(0.0, Double.NaN), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "profiled invalid feedback: ${'$'}{io.lastCommand}" }
+            """.trimIndent()
+            SubsystemControlStrategy.VELOCITY_PID -> """
+                controller.update(state(2.0, 0.5), scale = 1.0)
+                require(closeTo(io.lastCommand, 1.0)) { "velocity clamp: ${'$'}{io.lastCommand}" }
+                controller.update(state(0.0, Double.NaN), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "velocity invalid feedback: ${'$'}{io.lastCommand}" }
+            """.trimIndent()
+            SubsystemControlStrategy.BANG_BANG -> """
+                fun updateError(error: Double) = controller.update(state(0.0, -error), scale = 1.0)
+                updateError(0.0)
+                require(closeTo(io.lastCommand, 0.0)) { "on/off zero error: ${'$'}{io.lastCommand}" }
+                updateError(0.20)
+                require(closeTo(io.lastCommand, 1.0)) { "on/off start: ${'$'}{io.lastCommand}" }
+                updateError(0.12)
+                require(closeTo(io.lastCommand, 1.0)) { "on/off active hold: ${'$'}{io.lastCommand}" }
+                updateError(0.08)
+                require(closeTo(io.lastCommand, 0.0)) { "on/off stop band: ${'$'}{io.lastCommand}" }
+                updateError(0.12)
+                require(closeTo(io.lastCommand, 0.0)) { "on/off hysteresis hold: ${'$'}{io.lastCommand}" }
+                updateError(0.16)
+                require(closeTo(io.lastCommand, 1.0)) { "on/off restart: ${'$'}{io.lastCommand}" }
+                updateError(-0.16)
+                require(closeTo(io.lastCommand, 0.0)) { "on/off reversal neutral: ${'$'}{io.lastCommand}" }
+                updateError(-0.16)
+                require(closeTo(io.lastCommand, -1.0)) { "on/off reverse start: ${'$'}{io.lastCommand}" }
+                controller.reset()
+                updateError(0.12)
+                require(closeTo(io.lastCommand, 0.0)) { "on/off reset clears latch: ${'$'}{io.lastCommand}" }
+                controller.update(state(0.0, Double.NaN), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "on/off invalid feedback: ${'$'}{io.lastCommand}" }
+            """.trimIndent()
+        }
+        return """
+            package $packageName
+
+            import com.areslib.util.RobotClock
+            import kotlin.math.abs
+
+            private class ProbeIO : ${typeName}IO {
+                var lastCommand: Double = 0.0
+                override val feedbackValid: Boolean = true
+                override val feedbackTimestampMs: Long = 1_000L
+                override val configurationHealthy: Boolean = true
+                override val homed: Boolean = true
+                override val homingConditionMet: Boolean = false
+                override val homingFaultLatched: Boolean = false
+                override val calibrated: Boolean = true
+                override val currentReadingValid: Boolean = true
+                override val outputFaultLatched: Boolean = false
+$measurementOverrides
+$commandOverrides
+                override fun safe() { lastCommand = 0.0 }
+                override fun recoverWithNeutral(): Boolean { lastCommand = 0.0; return true }
+                override fun commandAutomaticRecovery(value: Double): Boolean { lastCommand = value; return true }
+                override fun latchOutputFault() { lastCommand = 0.0 }
+                override fun establishCalibration() = Unit
+                override fun commandHoming(): Boolean = false
+                override fun establishHome(): Boolean = false
+                override fun failHoming() { lastCommand = 0.0 }
+                override fun cancelHoming(): Boolean { lastCommand = 0.0; return true }
+                override fun close() = Unit
+            }
+
+            object ${typeName}BehaviorHarness {
+                private fun state(target: Double, measurement: Double = 0.0) = ${typeName}State(
+                    ${loop.targetFieldId} = target,
+$measurementArgument                    feedbackValid = true,
+                    feedbackTimestampMs = 1_000L,
+                    configurationHealthy = true,
+                    homed = true,
+                    calibrated = true,
+                    currentReadingValid = true,
+                    outputFaultLatched = false,
+                )
+
+                private fun closeTo(actual: Double, expected: Double, tolerance: Double = 1e-9): Boolean =
+                    abs(actual - expected) <= tolerance
+
+                @JvmStatic
+                fun run(): String {
+                    RobotClock.useMockTime(1_000L)
+                    return try {
+                        val io = ProbeIO()
+                        val controller = ${typeName}Controller(io)
+${behavior.prependIndent("                        ")}
+                        "ok"
+                    } finally {
+                        RobotClock.useSystemTime()
+                    }
+                }
+            }
+        """.trimIndent() + "\n"
     }
 }

@@ -83,6 +83,26 @@ Set a device's `inverted = true` separately when its physical mounting is revers
 follower relationship first and the device mounting inversion second, so selecting both is an
 intentional double reversal rather than an ambiguous alias.
 
+Continuous position mechanisms use the same position or profiled-position PID DSL with an explicit
+2π-radian input range:
+
+```kotlin
+control.positionPid("azimuth", "Azimuth", motor, targetAngle, measuredAngle) {
+    kP = 4.0
+    continuousInputEnabled = true
+    continuousInputMinimum = -Math.PI
+    continuousInputMaximum = Math.PI
+}
+```
+
+Both fields must use `rad`. Generated code wraps the profile's remaining distance, PID error, and
+derivative delta to the shortest signed path. Do not enable this for a hard-limited arm whose two
+ends cannot move through the declared boundary.
+
+On/off control has two thresholds. `tolerance` stops the output; `hysteresis` is the additional
+error required before a stopped controller restarts. A sign reversal neutralizes for one periodic
+tick before applying the opposite bounded output.
+
 Homing is a generated state machine rather than an adapter side effect. The DSL supports digital
 sensor, current-stall, velocity-stall, combined current-and-velocity stall, and custom cached
 evidence. Every active method declares a bounded search output, evidence dwell, attempt timeout, and
@@ -128,7 +148,7 @@ Example JSON shape:
 
 ```json
 {
-  "schemaVersion": 7,
+  "schemaVersion": 11,
   "documentId": "prism",
   "displayName": "Prism lights",
   "kotlinTypeName": "Prism",
@@ -164,6 +184,8 @@ conditional integration to prevent windup while saturated. Target limits are enf
 catalog arguments and at the controller boundary. Feedforward is typed as `NONE`, `SIMPLE_MOTOR`,
 `ELEVATOR`, or `ARM`; it supports `kS`, `kV`, `kA`, and `kG` plus explicit desired velocity,
 acceleration, and arm-angle fields. Keep target, measurement, and feedforward field units coherent.
+The codegen test suite compiles and executes every strategy exposed by the visual picker; source
+substring checks are not accepted as the only controller-behavior evidence.
 
 Hardware signals are never relabeled implicitly. Select native position, native velocity, current
 amps, digital state, analog volts, or color ARGB explicitly, then provide scale and offset when
