@@ -510,6 +510,69 @@ data class SubsystemDocument(
 
 data class SubsystemValidationIssue(val path: String, val message: String)
 
+/**
+ * Returns true when two controller-facing state fields use the same declared numeric unit.
+ *
+ * Blank units remain compatible for advanced/native-unit mechanisms. When both fields declare a
+ * unit, however, the controller must not silently subtract values expressed in different units.
+ * Common spelling aliases are normalized; this function intentionally does not perform conversion.
+ */
+fun subsystemControlUnitsCompatible(first: String?, second: String?): Boolean {
+    if (first.isNullOrBlank() || second.isNullOrBlank()) return true
+    return normalizedSubsystemUnit(first) == normalizedSubsystemUnit(second)
+}
+
+/** Unit predicates used by both validation and catalog-backed editors. Blank means advanced/native. */
+fun subsystemUnitCanRepresentVelocity(unit: String?): Boolean = unit.isNullOrBlank() ||
+    normalizedSubsystemUnit(unit) in setOf("m/s", "rad/s", "rot/s")
+
+fun subsystemUnitCanRepresentAcceleration(unit: String?): Boolean = unit.isNullOrBlank() ||
+    normalizedSubsystemUnit(unit) in setOf("m/s^2", "rad/s^2", "rot/s^2")
+
+fun subsystemUnitIsCanonicalAngle(unit: String?): Boolean = !unit.isNullOrBlank() &&
+    normalizedSubsystemUnit(unit) == "rad"
+
+/**
+ * Converts a native motor position/velocity sample into mechanism state units.
+ *
+ * The same scale applies to position and velocity because all three factors are ratios. Examples:
+ * FTC encoder counts/rev, motor rev/output rev, and metres/output rev; or FRC rotor turns/rev,
+ * motor rev/arm rev, and 2π radians/arm rev.
+ */
+fun subsystemMotorMeasurementScale(
+    nativeUnitsPerMotorRevolution: Double,
+    motorRevolutionsPerMechanismRevolution: Double,
+    stateUnitsPerMechanismRevolution: Double,
+): Double {
+    require(nativeUnitsPerMotorRevolution.isFinite() && nativeUnitsPerMotorRevolution > 0.0) {
+        "Native units per motor revolution must be finite and positive"
+    }
+    require(motorRevolutionsPerMechanismRevolution.isFinite() && motorRevolutionsPerMechanismRevolution > 0.0) {
+        "Motor revolutions per mechanism revolution must be finite and positive"
+    }
+    require(stateUnitsPerMechanismRevolution.isFinite() && stateUnitsPerMechanismRevolution > 0.0) {
+        "State units per mechanism revolution must be finite and positive"
+    }
+    return stateUnitsPerMechanismRevolution /
+        (nativeUnitsPerMotorRevolution * motorRevolutionsPerMechanismRevolution)
+}
+
+private fun normalizedSubsystemUnit(unit: String): String = when (unit.trim().lowercase()) {
+    "radian", "radians" -> "rad"
+    "degree", "degrees", "°" -> "deg"
+    "rotation", "rotations", "turn", "turns" -> "rot"
+    "meter", "meters", "metre", "metres" -> "m"
+    "meter/second", "meters/second", "metre/second", "metres/second" -> "m/s"
+    "radian/second", "radians/second" -> "rad/s"
+    "rotation/second", "rotations/second", "turn/second", "turns/second" -> "rot/s"
+    "meter/second²", "meters/second²", "meter/second^2", "meters/second^2", "m/s²" -> "m/s^2"
+    "radian/second²", "radians/second²", "radian/second^2", "radians/second^2", "rad/s²" -> "rad/s^2"
+    "rotation/second²", "rotations/second²", "turn/second²", "turns/second²", "rot/s²" -> "rot/s^2"
+    "volt", "volts" -> "v"
+    "amp", "amps", "ampere", "amperes" -> "a"
+    else -> unit.trim().lowercase().replace(" ", "")
+}
+
 fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValidationIssue> = buildList {
     fun issue(path: String, message: String) {
         add(SubsystemValidationIssue(path, message))
@@ -559,6 +622,15 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
     duplicateIds(document.hardware.map { it.uid }).forEach { issue("hardware", "Hardware UID '$it' is duplicated") }
     duplicateIds(document.stateFields.map { it.uid }).forEach { issue("stateFields", "State UID '$it' is duplicated") }
     duplicateIds(document.controlLoops.map { it.uid }).forEach { issue("controlLoops", "Control UID '$it' is duplicated") }
+    document.controlLoops
+        .groupBy { it.actuatorId }
+        .filterValues { loops -> loops.size > 1 }
+        .forEach { (actuatorId, loops) ->
+            issue(
+                "controlLoops",
+                "Actuator '$actuatorId' has ${loops.size} controllers. Each independent actuator must have exactly one controller.",
+            )
+        }
 
     val hardwareById = document.hardware.associateBy { it.hardwareId }
     val fieldsById = document.stateFields.associateBy { it.fieldId }
@@ -829,6 +901,14 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         val measurement = loop.measurementFieldId?.let(fieldsById::get)
         if (needsMeasurement && measurement == null) issue("$path.measurementFieldId", "This strategy requires a measurement field")
         if (measurement != null && measurement.type !in NUMERIC_TYPES) issue("$path.measurementFieldId", "Control measurements must be numeric")
+        if (needsMeasurement && target != null && measurement != null &&
+            !subsystemControlUnitsCompatible(target.unit, measurement.unit)
+        ) {
+            issue(
+                "$path.measurementFieldId",
+                "Target '${target.fieldId}' uses ${target.unit} but feedback '${measurement.fieldId}' uses ${measurement.unit}. Convert both to the same unit before control.",
+            )
+        }
         if (loop.strategy == SubsystemControlStrategy.SERVO_POSITION && actuator?.kind != SubsystemHardwareKind.POSITIONAL_SERVO) {
             issue("$path.strategy", "Servo-position control requires a positional servo")
         }
@@ -1003,8 +1083,28 @@ private fun validateFeedforward(
             issue("$path.feedforward.$name", "Feedforward fields must reference numeric state values")
         }
     }
+    feedforward.velocityFieldId?.let { id ->
+        val field = fieldsById[id]
+        if (field != null && !subsystemUnitCanRepresentVelocity(field.unit)) {
+            issue("$path.feedforward.velocityFieldId", "Desired velocity must use m/s, rad/s, rot/s, or an explicitly unitless advanced field")
+        }
+    }
+    feedforward.accelerationFieldId?.let { id ->
+        val field = fieldsById[id]
+        if (field != null && !subsystemUnitCanRepresentAcceleration(field.unit)) {
+            issue("$path.feedforward.accelerationFieldId", "Desired acceleration must use m/s², rad/s², rot/s², or an explicitly unitless advanced field")
+        }
+    }
     if (feedforward.kind == SubsystemFeedforwardKind.ARM && feedforward.gravityAngleFieldId == null) {
         issue("$path.feedforward.gravityAngleFieldId", "Arm feedforward requires an angle measurement in radians")
+    }
+    if (feedforward.kind == SubsystemFeedforwardKind.ARM) {
+        feedforward.gravityAngleFieldId?.let { id ->
+            val field = fieldsById[id]
+            if (field != null && !subsystemUnitIsCanonicalAngle(field.unit)) {
+                issue("$path.feedforward.gravityAngleFieldId", "Arm gravity angle must declare canonical radians (rad)")
+            }
+        }
     }
     if (feedforward.kind != SubsystemFeedforwardKind.ARM && feedforward.gravityAngleFieldId != null) {
         issue("$path.feedforward.gravityAngleFieldId", "Only arm feedforward uses a gravity angle field")

@@ -673,7 +673,12 @@ class SubsystemKotlinGeneratorTest {
                 gravityAngleFieldId = "position",
             )
         )
-        val document = base.copy(controlLoops = listOf(loop))
+        val document = base.copy(
+            stateFields = base.stateFields.map { field ->
+                if (field.fieldId in setOf("target", "position")) field.copy(unit = "rad") else field
+            },
+            controlLoops = listOf(loop),
+        )
         val files = SubsystemKotlinGenerator.generate(
             document,
             SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),

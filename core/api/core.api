@@ -8829,6 +8829,11 @@ public final class com/areslib/subsystem/SubsystemDocumentKt {
 	public static final field ARES_SUBSYSTEM_SCHEMA_VERSION I
 	public static final fun canonicalUnit (Lcom/areslib/subsystem/SubsystemMeasurementSource;)Ljava/lang/String;
 	public static final fun compatibleMeasurementSources (Lcom/areslib/subsystem/SubsystemHardwareKind;)Ljava/util/List;
+	public static final fun subsystemControlUnitsCompatible (Ljava/lang/String;Ljava/lang/String;)Z
+	public static final fun subsystemMotorMeasurementScale (DDD)D
+	public static final fun subsystemUnitCanRepresentAcceleration (Ljava/lang/String;)Z
+	public static final fun subsystemUnitCanRepresentVelocity (Ljava/lang/String;)Z
+	public static final fun subsystemUnitIsCanonicalAngle (Ljava/lang/String;)Z
 	public static final fun supportsPlatform (Lcom/areslib/subsystem/SubsystemHardwareKind;Lcom/areslib/subsystem/SubsystemPlatform;)Z
 	public static final fun supportsPlatform (Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemPlatform;)Z
 	public static final fun validateSubsystemDocument (Lcom/areslib/subsystem/SubsystemDocument;)Ljava/util/List;

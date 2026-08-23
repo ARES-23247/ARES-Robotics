@@ -210,6 +210,96 @@ class SubsystemDocumentTest {
     }
 
     @Test
+    fun `validation rejects multiple controllers that would overwrite one actuator output`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
+            "arm",
+            "Arm",
+            SubsystemPlatform.FTC,
+        )
+        val duplicate = base.copy(
+            controlLoops = base.controlLoops + base.controlLoops.single().copy(
+                loopId = "second",
+                uid = "second",
+                displayName = "Conflicting controller",
+            )
+        )
+
+        val issues = validateSubsystemDocument(duplicate)
+
+        assertTrue(issues.any { it.path == "controlLoops" && it.message.contains("exactly one controller") })
+    }
+
+    @Test
+    fun `validation rejects feedback expressed in a different declared unit`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            "arm",
+            "Arm",
+            SubsystemPlatform.FTC,
+        )
+        val incompatible = base.copy(
+            stateFields = base.stateFields.map { field ->
+                if (field.fieldId == "position") field.copy(unit = "deg") else field
+            }
+        )
+
+        val issues = validateSubsystemDocument(incompatible)
+
+        assertTrue(issues.any { it.path.endsWith("measurementFieldId") && it.message.contains("same unit") })
+        assertTrue(subsystemControlUnitsCompatible("radians", "rad"))
+        assertTrue(!subsystemControlUnitsCompatible("deg", "rad"))
+    }
+
+    @Test
+    fun `motor conversion uses encoder resolution gearing and mechanism travel`() {
+        assertEquals(
+            0.10 / (537.7 * 5.0),
+            subsystemMotorMeasurementScale(
+                nativeUnitsPerMotorRevolution = 537.7,
+                motorRevolutionsPerMechanismRevolution = 5.0,
+                stateUnitsPerMechanismRevolution = 0.10,
+            ),
+            1e-12,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            subsystemMotorMeasurementScale(0.0, 5.0, 0.10)
+        }
+    }
+
+    @Test
+    fun `feedforward fields reject numeric values with unrelated units`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.FLYWHEEL_SHOOTER,
+            "flywheel",
+            "Flywheel",
+            SubsystemPlatform.FTC,
+        )
+        val invalidVelocity = base.copy(controlLoops = base.controlLoops.map { loop ->
+            loop.copy(feedforward = loop.feedforward.copy(velocityFieldId = "currentAmps"))
+        })
+        val arm = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            "arm",
+            "Arm",
+            SubsystemPlatform.FTC,
+        ).let { document ->
+            document.copy(stateFields = document.stateFields.map { field ->
+                if (field.fieldId == "position") field.copy(unit = "deg") else field
+            })
+        }
+
+        assertTrue(validateSubsystemDocument(invalidVelocity).any {
+            it.path.endsWith("velocityFieldId") && it.message.contains("rad/s")
+        })
+        assertTrue(validateSubsystemDocument(arm).any {
+            it.path.endsWith("gravityAngleFieldId") && it.message.contains("radians")
+        })
+        assertTrue(subsystemUnitCanRepresentVelocity("radians/second"))
+        assertTrue(subsystemUnitCanRepresentAcceleration("m/s²"))
+    }
+
+    @Test
     fun `homed template declares every safety input including current`() {
         val document = SubsystemTemplates.create(
             SubsystemTemplate.HOMED_MECHANISM,
