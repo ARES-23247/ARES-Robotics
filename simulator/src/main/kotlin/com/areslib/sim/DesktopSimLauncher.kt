@@ -156,6 +156,21 @@ object DesktopSimLauncher {
         // 4. Mecanum Robot Double & OpMode Execution
         val robotDouble = MecanumRobotDouble()
         physicsWorld.loadedFieldConfig?.let(robotDouble::configureField)
+        val primeRobotSensorsFromPhysics = {
+            val robotInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
+            val isPinpointCcwPositive = robotInstance?.pinpointIsCcwPositive ?: true
+            robotDouble.updateSensors(
+                dt = SIM_TIMESTEP_SECONDS,
+                actualVx = 0.0,
+                actualVy = 0.0,
+                actualOmega = 0.0,
+                trueX = physicsWorld.robotBody.transform.translationX,
+                trueY = physicsWorld.robotBody.transform.translationY,
+                trueHeadingRad = physicsWorld.robotBody.transform.rotationAngle,
+                isPinpointCcwPositive = isPinpointCcwPositive,
+            )
+            Unit
+        }
         val synchronizeDriverStationState = {
             com.areslib.ftc.FtcBaseRobot.activeInstance?.let { robotInstance ->
                 val alliance = if (driverStation.effectiveIsRedAlliance) {
@@ -232,6 +247,10 @@ object DesktopSimLauncher {
         opModeSlot.activeMode?.let { initialMode ->
             driverStation.resetInjectionState()
             initialMode.initialize(robotDouble.hardwareMap)
+            // The Pinpoint mock captures its native origin during robot construction. Prime it
+            // with the alliance spawn before the first OpMode observation and explicit pose reset;
+            // otherwise a non-zero spawn becomes a permanent truth/odometry offset.
+            primeRobotSensorsFromPhysics()
 
             // Give INIT one effective alliance/frame sample before choosing pose ownership. An
             // autonomous may intentionally seed (0, 0, 0), which is data rather than a sentinel.
@@ -308,6 +327,7 @@ object DesktopSimLauncher {
                             physicsWorld.setupSpawnPose(driverStation.effectiveIsRedAlliance)
                             driverStation.resetInjectionState()
                             newOpMode.initialize(robotDouble.hardwareMap)
+                            primeRobotSensorsFromPhysics()
                             driverStation.writeEffectiveGamepads(newOpMode.gamepad1, newOpMode.gamepad2)
                             synchronizeDriverStationState()
                             // The final INIT callback synchronizes an unlocked auto selector and

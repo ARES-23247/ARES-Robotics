@@ -151,6 +151,9 @@ object AresProjectCodegenCli {
             parameterlessActionKeys,
             options,
         )
+        if (!options.subsystemsOnly) {
+            FtcStarterContractMigration.reconcile(projectRoot, options.platform, options.checkOnly)
+        }
         return generated
     }
 

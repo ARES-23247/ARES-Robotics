@@ -108,6 +108,12 @@ class DrivetrainKotlinGeneratorTest {
         assertTrue(generated.content.contains("val frontRightDirection: DcMotorSimple.Direction"))
         assertTrue(generated.content.contains("hardwareMap.get(com.qualcomm.hardware.gobilda.GoBildaPinpointDriver::class.java"))
         assertTrue(generated.content.contains("fun supportsRuntimeParameter"))
+        assertTrue(generated.content.contains("motorGains = tuning.drive.ftc.motorGains?.takeUnless(::isDefaultMotorPidf)"))
+        assertTrue(generated.content.contains("Zero custom gains mean: retain the motor type's FTC SDK controller defaults."))
+        assertTrue(generated.content.contains("headingMaxOutputLimit = number("))
+        assertTrue(generated.content.contains("positionHoldGains = PIDFCoefficients(number("))
+        assertTrue(generated.content.contains("positionHoldDeadzoneMeters = number("))
+        assertTrue(generated.content.contains("positionHoldMaxOutputLimit = number("))
         assertEquals(
             generated,
             DrivetrainKotlinGenerator.generateFtcMecanumRuntime(drivetrain, listOf(profile), "example.generated"),
@@ -336,6 +342,12 @@ class DrivetrainKotlinGeneratorTest {
         "drive.headingKi" to TuningParameterType.DOUBLE,
         "drive.headingKd" to TuningParameterType.DOUBLE,
         "drive.headingDeadzoneDeg" to TuningParameterType.DOUBLE,
+        "drive.headingMaxOutputLimit" to TuningParameterType.DOUBLE,
+        "drive.positionHoldKp" to TuningParameterType.DOUBLE,
+        "drive.positionHoldKi" to TuningParameterType.DOUBLE,
+        "drive.positionHoldKd" to TuningParameterType.DOUBLE,
+        "drive.positionHoldDeadzoneMeters" to TuningParameterType.DOUBLE,
+        "drive.positionHoldMaxOutputLimit" to TuningParameterType.DOUBLE,
         "drive.pathTranslationKp" to TuningParameterType.DOUBLE,
         "drive.pathTranslationKd" to TuningParameterType.DOUBLE,
         "drive.pathRotationKp" to TuningParameterType.DOUBLE,

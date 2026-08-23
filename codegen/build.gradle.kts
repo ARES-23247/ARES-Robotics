@@ -27,6 +27,7 @@ kotlin {
             kotlin.include(
                 "com/areslib/codegen/AresKotlinProjectGenerator.kt",
                 "com/areslib/codegen/AresProjectCodegenCli.kt",
+                "com/areslib/codegen/FtcStarterContractMigration.kt",
                 "com/areslib/codegen/SubsystemKotlinGenerator.kt",
                 "com/areslib/codegen/SubsystemStarterReconciler.kt",
                 "com/areslib/codegen/SuperstructureKotlinGenerator.kt",

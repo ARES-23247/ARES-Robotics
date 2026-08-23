@@ -195,10 +195,20 @@ object DrivetrainKotlinGenerator {
                 "FTC zero-code runtime parameter '$key' must be $type, not ${declaration.type}"
             }
         }
+        val assistParameterKeys = FTC_MECANUM_ASSIST_PARAMETER_TYPES.keys.filter(declarationByKey::containsKey)
+        require(assistParameterKeys.isEmpty() || assistParameterKeys.size == FTC_MECANUM_ASSIST_PARAMETER_TYPES.size) {
+            "FTC drive-assist tuning must declare the complete heading-output and position-hold parameter group"
+        }
+        assistParameterKeys.forEach { key ->
+            val declaration = requireNotNull(declarationByKey[key])
+            require(declaration.type == FTC_MECANUM_ASSIST_PARAMETER_TYPES.getValue(key)) {
+                "FTC zero-code runtime parameter '$key' has the wrong type"
+            }
+        }
         val canonical = requireNotNull(resolveTuningProfiles(profiles, declarations)[document.canonicalProfileUid]) {
             "Missing canonical profile '${document.canonicalProfileUid}'"
         }
-        requiredParameterTypes.keys.forEach { key ->
+        (requiredParameterTypes.keys + assistParameterKeys).forEach { key ->
             val declaration = requireNotNull(declarationByKey[key])
             require(canonical[declaration.uid] != null) { "Canonical profile has no value for '$key'" }
         }
@@ -279,6 +289,7 @@ object DrivetrainKotlinGenerator {
             }
         }.joinToString("\n") { "        $it" }
         val reduxKeys = FTC_MECANUM_COMMON_REDUX_KEYS +
+            FTC_MECANUM_ASSIST_PARAMETER_TYPES.keys.filter(declarationByKey::containsKey) +
             if (usesPinpoint) FTC_MECANUM_PINPOINT_REDUX_KEYS else emptySet()
         val reduxUids = reduxKeys.map { key ->
             requireNotNull(declarationByKey[key]).uid
@@ -376,7 +387,7 @@ object DrivetrainKotlinGenerator {
                 appendLine("            pinpointYDirection = encoderDirection(false),")
                 appendLine("            pinpointIsCcwPositive = true,")
             }
-            appendLine("            motorGains = tuning.drive.ftc.motorGains,")
+            appendLine("            motorGains = tuning.drive.ftc.motorGains?.takeUnless(::isDefaultMotorPidf),")
             appendLine("            ticksPerMeter = values.${constant("drive.ticksPerMeter")},")
             appendLine("            initialTuningState = tuning,")
             appendLine("        )")
@@ -392,6 +403,10 @@ object DrivetrainKotlinGenerator {
             appendLine()
             appendLine("    fun initialTuningState(): TuningState = tuningState(TuningState(), null)")
             appendLine()
+            appendLine("    /** Zero custom gains mean: retain the motor type's FTC SDK controller defaults. */")
+            appendLine("    private fun isDefaultMotorPidf(gains: PIDFCoefficients): Boolean =")
+            appendLine("        gains.kP == 0.0 && gains.kI == 0.0 && gains.kD == 0.0 && gains.kF == 0.0")
+            appendLine()
             appendLine("    fun withRuntimeValues(current: TuningState, runtime: TypedTuningRuntime): TuningState =")
             appendLine("        tuningState(current, runtime)")
             appendLine()
@@ -404,6 +419,12 @@ object DrivetrainKotlinGenerator {
             appendLine("            pathRotationGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.pathRotationKp").uid.q()}, values.${constant("drive.pathRotationKp")}), 0.0, number(${declarationByKey.getValue("drive.pathRotationKd").uid.q()}, values.${constant("drive.pathRotationKd")})),")
             appendLine("            headingGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.headingKp").uid.q()}, values.${constant("drive.headingKp")}), number(${declarationByKey.getValue("drive.headingKi").uid.q()}, values.${constant("drive.headingKi")}), number(${declarationByKey.getValue("drive.headingKd").uid.q()}, values.${constant("drive.headingKd")})),")
             appendLine("            headingDeadzoneDeg = number(${declarationByKey.getValue("drive.headingDeadzoneDeg").uid.q()}, values.${constant("drive.headingDeadzoneDeg")}),")
+            if (assistParameterKeys.isNotEmpty()) {
+                appendLine("            headingMaxOutputLimit = number(${declarationByKey.getValue("drive.headingMaxOutputLimit").uid.q()}, values.${constant("drive.headingMaxOutputLimit")}),")
+                appendLine("            positionHoldGains = PIDFCoefficients(number(${declarationByKey.getValue("drive.positionHoldKp").uid.q()}, values.${constant("drive.positionHoldKp")}), number(${declarationByKey.getValue("drive.positionHoldKi").uid.q()}, values.${constant("drive.positionHoldKi")}), number(${declarationByKey.getValue("drive.positionHoldKd").uid.q()}, values.${constant("drive.positionHoldKd")})),")
+                appendLine("            positionHoldDeadzoneMeters = number(${declarationByKey.getValue("drive.positionHoldDeadzoneMeters").uid.q()}, values.${constant("drive.positionHoldDeadzoneMeters")}),")
+                appendLine("            positionHoldMaxOutputLimit = number(${declarationByKey.getValue("drive.positionHoldMaxOutputLimit").uid.q()}, values.${constant("drive.positionHoldMaxOutputLimit")}),")
+            }
             appendLine("            driveFeedforward = SimpleFeedforwardCoeffs(number(${declarationByKey.getValue("drive.feedforwardKs").uid.q()}, values.${constant("drive.feedforwardKs")}), number(${declarationByKey.getValue("drive.feedforwardKv").uid.q()}, values.${constant("drive.feedforwardKv")}), number(${declarationByKey.getValue("drive.feedforwardKa").uid.q()}, values.${constant("drive.feedforwardKa")})),")
             appendLine("            pathVelocityScale = number(${declarationByKey.getValue("drive.pathVelocityScale").uid.q()}, values.${constant("drive.pathVelocityScale")}),")
             appendLine("            pathAccelerationLimit = number(${declarationByKey.getValue("drive.pathAccelerationLimit").uid.q()}, values.${constant("drive.pathAccelerationLimit")}),")
@@ -550,6 +571,16 @@ private val FTC_MECANUM_PINPOINT_PARAMETER_TYPES: Map<String, TuningParameterTyp
     "localization.pinpointEncoderResolution" to TuningParameterType.DOUBLE,
     "localization.pinpointXReversed" to TuningParameterType.BOOLEAN,
     "localization.pinpointYReversed" to TuningParameterType.BOOLEAN,
+)
+
+/** Optional as a group so already-authored projects retain their library defaults until reviewed. */
+private val FTC_MECANUM_ASSIST_PARAMETER_TYPES: Map<String, TuningParameterType> = linkedMapOf(
+    "drive.headingMaxOutputLimit" to TuningParameterType.DOUBLE,
+    "drive.positionHoldKp" to TuningParameterType.DOUBLE,
+    "drive.positionHoldKi" to TuningParameterType.DOUBLE,
+    "drive.positionHoldKd" to TuningParameterType.DOUBLE,
+    "drive.positionHoldDeadzoneMeters" to TuningParameterType.DOUBLE,
+    "drive.positionHoldMaxOutputLimit" to TuningParameterType.DOUBLE,
 )
 
 private val FTC_MECANUM_COMMON_REDUX_KEYS: Set<String> = setOf(
