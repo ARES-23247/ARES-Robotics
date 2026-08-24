@@ -31,6 +31,11 @@ and generated mechanism adapters simulated on a real RoboRIO until a reviewed pr
 installs physical adapters. A generic project must not guess CAN IDs, inversions, gearing, current
 limits, neutral modes, encoder relationships, or approval state.
 
+The starter's CTRE swerve descriptor therefore uses CAN IDs 1–13 only as a complete, unique
+simulation address set. Those values let a new student build and drive the simulator immediately;
+they are not evidence about a real robot. Robot Studio keeps physical deployment blocked until the
+team imports its own CTRE Tuner output and completes the hardware review.
+
 ## Build sources
 
 Normal builds resolve immutable ARES artifacts from Maven Central or the ARES GitHub Maven channel.
