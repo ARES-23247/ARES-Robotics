@@ -26,6 +26,7 @@ import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
 import com.areslib.subsystem.SubsystemValueType
+import com.areslib.subsystem.supportsPlatform
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystem
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -104,6 +105,78 @@ class SubsystemKotlinGeneratorTest {
                     assertEquals("ok", outcome, document.controlLoops.single().strategy.name)
                 }
             }
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `every selectable template compiles its domain control and simulator sources`() {
+        val root = Files.createTempDirectory("ares-subsystem-template-compilation")
+        try {
+            val portableArtifacts = setOf(
+                SubsystemArtifact.DEFINITION,
+                SubsystemArtifact.STATE,
+                SubsystemArtifact.IO_CONTRACT,
+                SubsystemArtifact.CONTROLLER,
+                SubsystemArtifact.MOCK_IO,
+            )
+            val cases = SubsystemTemplate.entries.map { template ->
+                val platform = if (template.supportsPlatform(SubsystemPlatform.FTC)) {
+                    SubsystemPlatform.FTC
+                } else {
+                    SubsystemPlatform.FRC
+                }
+                val typeName = template.name.lowercase().split('_').joinToString("") { token ->
+                    token.replaceFirstChar(Char::uppercaseChar)
+                }
+                val documentId = "template-${template.name.lowercase().replace('_', '-')}"
+                val document = SubsystemTemplates.create(template, documentId, typeName, platform)
+                val target = SubsystemKotlinCodegenTarget(
+                    platform,
+                    "org.example.templates.${platform.name.lowercase()}",
+                )
+                document to target
+            }
+            val generatedSources = cases.flatMap { (document, target) ->
+                SubsystemKotlinGenerator.generate(document, target)
+                    .filter { it.artifact in portableArtifacts }
+            }
+            val sourceFiles = generatedSources.map { generated ->
+                root.resolve(generated.relativePath).toFile().apply {
+                    parentFile.mkdirs()
+                    writeText(generated.content)
+                }
+            }
+
+            val classes = root.resolve("classes")
+            Files.createDirectories(classes)
+            val messages = mutableListOf<String>()
+            val arguments = K2JVMCompilerArguments().apply {
+                freeArgs = sourceFiles.map { it.path }
+                destination = classes.toString()
+                classpath = System.getProperty("java.class.path")
+                jvmTarget = "17"
+                noStdlib = true
+                noReflect = true
+            }
+            val result = K2JVMCompiler().exec(object : MessageCollector {
+                override fun clear() = messages.clear()
+                override fun hasErrors(): Boolean = messages.isNotEmpty()
+                override fun report(
+                    severity: CompilerMessageSeverity,
+                    message: String,
+                    location: CompilerMessageSourceLocation?,
+                ) {
+                    if (severity.isError) messages += "${location?.path.orEmpty()}:${location?.line ?: 0}: $message"
+                }
+            }, Services.EMPTY, arguments)
+
+            assertEquals(ExitCode.OK, result, messages.joinToString("\n"))
+            assertEquals(
+                SubsystemTemplate.entries.size * portableArtifacts.size,
+                sourceFiles.size,
+            )
         } finally {
             root.toFile().deleteRecursively()
         }
