@@ -26,6 +26,7 @@ internal fun physicalOutputsPermitted(isReal: Boolean, adapterInstalled: Boolean
 class AresStarterRobot : TimedRobot() {
     private lateinit var robot: StarterRobotRuntime
     private lateinit var generatedControls: FrcGeneratedControlsRuntime
+    private var studioSimulationBridge: FrcStudioSimulationBridge? = null
     private val simulation = StarterDriveSimulation()
     private var lastSimulationSeconds = 0.0
     private var lastAlliance: Alliance? = null
@@ -64,7 +65,15 @@ class AresStarterRobot : TimedRobot() {
             robot = robot,
             drivePermitted = physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
         )
-        generatedControls = FrcGeneratedControlsRuntime(
+        studioSimulationBridge = if (RobotBase.isSimulation()) FrcStudioSimulationBridge() else null
+        generatedControls = studioSimulationBridge?.let { bridge ->
+            FrcGeneratedControlsRuntime(
+                stateProvider = { robot.store.state },
+                dispatch = robot.store::dispatch,
+                capabilities = capabilities,
+                portSampler = bridge,
+            )
+        } ?: FrcGeneratedControlsRuntime(
             stateProvider = { robot.store.state },
             dispatch = robot.store::dispatch,
             capabilities = capabilities,
@@ -118,6 +127,7 @@ class AresStarterRobot : TimedRobot() {
     }
 
     override fun simulationPeriodic() {
+        studioSimulationBridge?.update()
         val nowMs = RobotClock.currentTimeMillis()
         val nowSeconds = nowMs / 1000.0
         val dt = (nowSeconds - lastSimulationSeconds).coerceIn(0.0, 0.05)
@@ -152,6 +162,7 @@ class AresStarterRobot : TimedRobot() {
             }
         }
         if (::generatedControls.isInitialized) attempt { generatedControls.cancelAll("Robot closing") }
+        studioSimulationBridge?.let { bridge -> attempt(bridge::close) }
         if (::robot.isInitialized) attempt { robot.close() }
         attempt { super.close() }
         failure?.let { throw it }
