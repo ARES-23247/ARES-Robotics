@@ -16,9 +16,12 @@ On Windows, launch simulation from the WPILib terminal or configure Gradle to us
 `C:\Users\Public\wpilib\2026\jdk`. A different JDK can bundle an older Microsoft C++ runtime and
 WPILib will fail before robot code starts; ARES should report that as a workstation setup problem.
 
-The checked-in starter has no vendor motor-controller dependency and cannot energize physical drive
-hardware. This is deliberate: a generic project must not guess CAN IDs, inversions, gearing, current
-limits, neutral modes, or encoder relationships.
+The starter includes the Phoenix 6 API required by the current GUI-generated TalonFX mechanism
+adapter, so a saved FRC subsystem compiles in the same project that created it. That dependency is
+hardware capability, not hardware authorization. The checked-in composition keeps both drivetrain
+and generated mechanism adapters simulated on a real RoboRIO until a reviewed project explicitly
+installs physical adapters. A generic project must not guess CAN IDs, inversions, gearing, current
+limits, neutral modes, encoder relationships, or approval state.
 
 ## Build sources
 

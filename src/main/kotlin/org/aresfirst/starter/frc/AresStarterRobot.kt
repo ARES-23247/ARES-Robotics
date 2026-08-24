@@ -18,8 +18,8 @@ import org.aresfirst.starter.frc.generated.subsystems.superstructure.GeneratedSu
 import org.aresfirst.starter.frc.generatedruntime.FrcGeneratedControlsRuntime
 import kotlin.io.path.readBytes
 
-/** True only for desktop simulation; this starter intentionally contains no physical motor adapter. */
-internal fun physicalDriveOutputsPermitted(isReal: Boolean, adapterInstalled: Boolean): Boolean =
+/** True in simulation or after the project explicitly installs reviewed physical adapters. */
+internal fun physicalOutputsPermitted(isReal: Boolean, adapterInstalled: Boolean): Boolean =
     !isReal || adapterInstalled
 
 /** Generic, simulation-first FRC composition root generated projects can extend without hand code. */
@@ -50,7 +50,10 @@ class AresStarterRobot : TimedRobot() {
 
         robot = StarterRobotRuntime()
         try {
-            installGeneratedSubsystems(RobotBase.isReal(), robot::registerSubsystem)
+            installGeneratedSubsystems(
+                usePhysicalAdapters = physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
+                register = robot::registerSubsystem,
+            )
             installGeneratedSuperstructures(robot::registerSubsystem)
         } catch (failure: Throwable) {
             runCatching { robot.close() }.exceptionOrNull()?.let(failure::addSuppressed)
@@ -59,7 +62,7 @@ class AresStarterRobot : TimedRobot() {
 
         val capabilities = StarterGeneratedCapabilities(
             robot = robot,
-            drivePermitted = physicalDriveOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
+            drivePermitted = physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
         )
         generatedControls = FrcGeneratedControlsRuntime(
             stateProvider = { robot.store.state },
@@ -88,7 +91,7 @@ class AresStarterRobot : TimedRobot() {
     }
 
     override fun teleopPeriodic() {
-        if (physicalDriveOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled)) {
+        if (physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled)) {
             generatedControls.update()
         } else {
             robot.safeHardware()
@@ -156,10 +159,10 @@ class AresStarterRobot : TimedRobot() {
 }
 
 internal fun installGeneratedSubsystems(
-    isReal: Boolean,
+    usePhysicalAdapters: Boolean,
     register: (Subsystem) -> Unit,
     createAll: (Boolean) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(isReal).also { created -> created.forEach(register) }
+): List<Subsystem> = createAll(usePhysicalAdapters).also { created -> created.forEach(register) }
 
 internal fun installGeneratedSuperstructures(
     register: (Subsystem) -> Unit,
