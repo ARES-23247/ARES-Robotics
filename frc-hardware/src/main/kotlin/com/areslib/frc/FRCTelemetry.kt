@@ -1,31 +1,35 @@
 package com.areslib.frc
 
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.TelemetryTopicNormalizer
 import edu.wpi.first.wpilibj.DataLogManager
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import edu.wpi.first.networktables.NetworkTableEntry
 import edu.wpi.first.networktables.NetworkTableInstance
 
 /**
  * FRC-specific implementation of the telemetry interface ([ITelemetry]).
  *
- * Routes all published telemetry key-value pairs to WPILib's SmartDashboard (NetworkTables 4).
+ * Routes canonical slash-free ARES topic keys directly through WPILib NetworkTables 4.
  * By initializing WPILib's [DataLogManager], all NT4 key updates, joystick inputs, and console outputs are automatically saved to `.wpilog` files on the RoboRIO.
  *
  * @see ITelemetry
- * @see SmartDashboard
  * @see DataLogManager
  */
-class FRCTelemetry : ITelemetry {
+class FRCTelemetry internal constructor(
+    private val instance: NetworkTableInstance = NetworkTableInstance.getDefault(),
+    startDataLog: Boolean = true,
+) : ITelemetry {
+    private val entries = HashMap<String, NetworkTableEntry>()
+
+    /** Creates the production adapter over WPILib's process-owned NT4 instance. */
+    constructor() : this(NetworkTableInstance.getDefault(), true)
 
     init {
         // Starts the deterministic logger (logs all NT4 values, joystick inputs, and console output to a .wpilog)
-        DataLogManager.start()
-        
-        // Explicitly start NT4 Server for AdvantageScope to connect to
-        NetworkTableInstance.getDefault().startServer()
-        
-        // Log custom strings or events if necessary
-        DataLogManager.log("ARESLib: FRC Telemetry Initialized")
+        if (startDataLog) {
+            DataLogManager.start()
+            DataLogManager.log("ARESLib: FRC Telemetry Initialized")
+        }
     }
 
     /**
@@ -35,7 +39,7 @@ class FRCTelemetry : ITelemetry {
      * @param value Double scalar value.
      */
     override fun putNumber(key: String, value: Double) {
-        SmartDashboard.putNumber(key, value)
+        entry(key).setDouble(value)
     }
 
     /**
@@ -45,7 +49,7 @@ class FRCTelemetry : ITelemetry {
      * @param value Boolean flag value.
      */
     override fun putBoolean(key: String, value: Boolean) {
-        SmartDashboard.putBoolean(key, value)
+        entry(key).setBoolean(value)
     }
 
     /**
@@ -55,7 +59,7 @@ class FRCTelemetry : ITelemetry {
      * @param value String message.
      */
     override fun putString(key: String, value: String) {
-        SmartDashboard.putString(key, value)
+        entry(key).setString(value)
     }
 
     /**
@@ -65,7 +69,7 @@ class FRCTelemetry : ITelemetry {
      * @param value Array of doubles.
      */
     override fun putDoubleArray(key: String, value: DoubleArray) {
-        SmartDashboard.putNumberArray(key, value)
+        entry(key).setDoubleArray(value)
     }
 
     /**
@@ -76,7 +80,7 @@ class FRCTelemetry : ITelemetry {
      * @return Double scalar value.
      */
     override fun getNumber(key: String, defaultValue: Double): Double {
-        return SmartDashboard.getNumber(key, defaultValue)
+        return entry(key).getDouble(defaultValue)
     }
 
     /**
@@ -87,7 +91,7 @@ class FRCTelemetry : ITelemetry {
      * @return Boolean flag value.
      */
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
-        return SmartDashboard.getBoolean(key, defaultValue)
+        return entry(key).getBoolean(defaultValue)
     }
 
     /**
@@ -98,7 +102,20 @@ class FRCTelemetry : ITelemetry {
      * @return String message.
      */
     override fun getString(key: String, defaultValue: String): String {
-        return SmartDashboard.getString(key, defaultValue)
+        return entry(key).getString(defaultValue)
+    }
+
+    override fun update() {
+        instance.flushLocal()
+    }
+
+    override fun close() {
+        entries.values.forEach(NetworkTableEntry::close)
+        entries.clear()
+    }
+
+    private fun entry(key: String): NetworkTableEntry {
+        val canonical = TelemetryTopicNormalizer.normalizeTopic(key)
+        return entries.getOrPut(canonical) { instance.getEntry(canonical) }
     }
 }
-
