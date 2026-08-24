@@ -308,6 +308,8 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(io.contains("fun commandAutomaticRecovery(value: Double): Boolean"))
         assertTrue(physical.contains("override fun latchOutputFault()"))
         assertTrue(mock.contains("SimAppliedOutputRegistry.register"))
+        assertTrue(mock.contains("HardwareRegistry.registerDevice"))
+        assertTrue(mock.contains("override var configurationHealthy: Boolean = true"))
     }
 
     @Test

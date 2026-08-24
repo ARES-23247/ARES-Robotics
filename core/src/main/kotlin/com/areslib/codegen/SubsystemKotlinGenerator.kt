@@ -1718,9 +1718,14 @@ $telemetry
             $commandFields
             $simSignalFields
             ${linkagePlantFields.prependIndent("    ")}
+                init {
+                    com.areslib.hardware.HardwareRegistry.registerDevice(${("Subsystems/${document.documentId}").quoted()}, this)
+                }
+
                 override var feedbackValid: Boolean = false
                 override var feedbackTimestampMs: Long = 0L
-                override var configurationHealthy: Boolean = ${(!document.safety.requiresConfigurationHealth)}
+                /** Simulated wiring starts configured; tests and fault injection may set this false. */
+                override var configurationHealthy: Boolean = true
                 override var homed: Boolean = ${(!document.requiresHoming())}
                 override var homingConditionMet: Boolean = false
                 override var homingFaultLatched: Boolean = false
