@@ -95,13 +95,17 @@ object AresProjectCodegenCli {
                     errors.joinToString("; ") { "${it.path}: ${it.message}" }
             }
         }
-        val superstructureActionKeys = superstructures.flatMap { document ->
+        val superstructureActionOwners = superstructures.flatMap { document ->
             document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
-                .mapNotNull { it.actionKey }
+                .mapNotNull { transition -> transition.actionKey?.let { it to document.superstructureId } }
         }
-        require(superstructureActionKeys.distinct().size == superstructureActionKeys.size) {
-            "A superstructure action key may be owned by only one state machine"
+        val multiplyOwnedAction = superstructureActionOwners.groupBy(Pair<String, String>::first)
+            .entries.firstOrNull { (_, owners) -> owners.map { it.second }.distinct().size > 1 }
+        require(multiplyOwnedAction == null) {
+            "Superstructure action '${multiplyOwnedAction?.key}' is owned by multiple state machines: " +
+                multiplyOwnedAction?.value.orEmpty().map { it.second }.distinct().sorted().joinToString()
         }
+        val superstructureActionKeys = superstructureActionOwners.map(Pair<String, String>::first).distinct()
         val superstructurePackage = options.superstructurePackage
             ?: options.subsystemsPackage?.let { "$it.superstructure" }
             ?: options.packageName

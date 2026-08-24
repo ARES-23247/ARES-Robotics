@@ -2337,6 +2337,35 @@ $evidenceAssignments
 
             """.trimIndent()
         } else ""
+        val staleFeedbackTest = document.safety.feedbackTimeoutMs?.let { feedbackTimeoutMs ->
+            """
+                @Test
+                fun `stale feedback is rejected by the immutable state contract`() {
+                    val io = Mock${document.kotlinTypeName}IO()
+                    val subsystem = ${document.kotlinTypeName}Subsystem(io)
+                    val store = Store(RobotState(superstructure = SuperstructureState(
+                        subsystems = mapOf(${document.kotlinTypeName}Subsystem.ID to ${document.kotlinTypeName}State())
+                    )))
+                    io.configurationHealthy = true
+                    io.homed = true
+                    io.calibrated = true
+                    io.refresh()
+                    subsystem.readSensors(store, io.feedbackTimestampMs + ${feedbackTimeoutMs + 1L}L)
+                    assertFalse(${document.kotlinTypeName}Subsystem.state(store.state).feedbackValid)
+                    val controller = ${document.kotlinTypeName}Controller(io)
+                    controller.update(${document.kotlinTypeName}State(
+                        feedbackValid = false,
+                        configurationHealthy = true,
+                        homed = true,
+                        calibrated = true,
+                        currentReadingValid = true,
+                        $firstTargetOverride
+                    ), 1.0)
+                    $controllerNeutralAssertion
+                }
+
+            """.trimIndent()
+        }.orEmpty()
         return """
             package $pkg
 
@@ -2381,30 +2410,7 @@ $evidenceAssignments
 
             $targetSetterSequenceTest
 
-                @Test
-                fun `stale feedback is rejected by the immutable state contract`() {
-                    val io = Mock${document.kotlinTypeName}IO()
-                    val subsystem = ${document.kotlinTypeName}Subsystem(io)
-                    val store = Store(RobotState(superstructure = SuperstructureState(
-                        subsystems = mapOf(${document.kotlinTypeName}Subsystem.ID to ${document.kotlinTypeName}State())
-                    )))
-                    io.configurationHealthy = true
-                    io.homed = true
-                    io.calibrated = true
-                    io.refresh()
-                    subsystem.readSensors(store, io.feedbackTimestampMs + ${(document.safety.feedbackTimeoutMs ?: 250L) + 1L}L)
-                    assertFalse(${document.kotlinTypeName}Subsystem.state(store.state).feedbackValid)
-                    val controller = ${document.kotlinTypeName}Controller(io)
-                    controller.update(${document.kotlinTypeName}State(
-                        feedbackValid = false,
-                        configurationHealthy = true,
-                        homed = true,
-                        calibrated = true,
-                        currentReadingValid = true,
-                        $firstTargetOverride
-                    ), 1.0)
-                    $controllerNeutralAssertion
-                }
+            $staleFeedbackTest
 
                 @Test
                 fun `zero scale models disabled and commands neutral`() {

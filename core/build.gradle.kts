@@ -70,6 +70,7 @@ kotlin {
                 "com/areslib/codegen/AresProjectCodegenCliTest.kt",
                 "com/areslib/codegen/FtcStarterContractMigrationTest.kt",
                 "com/areslib/codegen/SubsystemKotlinGeneratorTest.kt",
+                "com/areslib/codegen/RepresentativeZeroCodeRobotTest.kt",
                 "com/areslib/codegen/SubsystemStarterReconcilerTest.kt",
                 "com/areslib/codegen/SuperstructureKotlinGeneratorTest.kt",
             )
