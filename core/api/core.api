@@ -2525,6 +2525,7 @@ public final class com/areslib/hardware/HardwareRegistry {
 	public final fun registerServo (Ljava/lang/String;Lcom/areslib/hardware/actuator/ServoIO;)V
 	public final fun registerServo (Ljava/lang/String;Lcom/areslib/hardware/actuator/ServoIO;Ljava/lang/String;I)V
 	public final fun registerSyncPolledDevice (Lcom/areslib/hardware/SyncPolledDevice;)V
+	public final fun registerTelemetryDevice (Ljava/lang/String;Lcom/areslib/hardware/LoggableDevice;)V
 	public final fun safeAll ()V
 	public final fun setPollingIntervalMs (J)V
 }

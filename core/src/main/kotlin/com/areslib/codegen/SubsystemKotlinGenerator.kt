@@ -243,13 +243,14 @@ $factories
             val target = documents.single { it.uid == interlock.targetSubsystemUid }
             val field = target.stateFields.single { it.fieldId == interlock.targetFieldId }
             val snapshot = "interlockState$index"
+            val numericValue = field.numericExpression(snapshot)
             val lockoutCondition = when (interlock.comparison) {
-                InterlockComparison.LESS_THAN -> "$snapshot.${field.fieldId}.toDouble() < ${interlock.thresholdValue.kotlinDouble()}"
-                InterlockComparison.GREATER_THAN -> "$snapshot.${field.fieldId}.toDouble() > ${interlock.thresholdValue.kotlinDouble()}"
+                InterlockComparison.LESS_THAN -> "$numericValue < ${interlock.thresholdValue.kotlinDouble()}"
+                InterlockComparison.GREATER_THAN -> "$numericValue > ${interlock.thresholdValue.kotlinDouble()}"
                 InterlockComparison.EQUALS_STATE -> when (field.type) {
                     SubsystemValueType.DOUBLE,
                     SubsystemValueType.INT ->
-                        "kotlin.math.abs($snapshot.${field.fieldId}.toDouble() - ${interlock.thresholdValue.kotlinDouble()}) <= 1e-9"
+                        "kotlin.math.abs($numericValue - ${interlock.thresholdValue.kotlinDouble()}) <= 1e-9"
                     SubsystemValueType.BOOLEAN ->
                         "$snapshot.${field.fieldId} == ${interlock.targetStateName!!.lowercase()}"
                     SubsystemValueType.STRING ->
@@ -258,7 +259,7 @@ $factories
                 InterlockComparison.NOT_EQUALS_STATE -> when (field.type) {
                     SubsystemValueType.DOUBLE,
                     SubsystemValueType.INT ->
-                        "kotlin.math.abs($snapshot.${field.fieldId}.toDouble() - ${interlock.thresholdValue.kotlinDouble()}) > 1e-9"
+                        "kotlin.math.abs($numericValue - ${interlock.thresholdValue.kotlinDouble()}) > 1e-9"
                     SubsystemValueType.BOOLEAN ->
                         "$snapshot.${field.fieldId} != ${interlock.targetStateName!!.lowercase()}"
                     SubsystemValueType.STRING ->
@@ -831,7 +832,7 @@ $continuousInputHelper
     private fun controllerLoop(document: SubsystemDocument, loop: SubsystemControlLoopDocument): String {
         val actuator = document.hardware.first { it.hardwareId == loop.actuatorId }
         val targetField = document.stateFields.first { it.fieldId == loop.targetFieldId }
-        val rawTarget = "state.${loop.targetFieldId}.toDouble()"
+        val rawTarget = targetField.numericExpression("state")
         val target = targetField.clampedExpression(rawTarget)
         val command = "io.${actuator.commandName()}"
         return when (loop.strategy) {
@@ -840,7 +841,7 @@ $continuousInputHelper
             SubsystemControlStrategy.SERVO_POSITION ->
                 "        $command((($target).takeIf(Double::isFinite) ?: 0.0).coerceIn(0.0, 1.0))"
             SubsystemControlStrategy.BANG_BANG -> {
-                val measurement = "state.${requireNotNull(loop.measurementFieldId)}.toDouble()"
+                val measurement = document.numericStateExpression(requireNotNull(loop.measurementFieldId))
                 """        val ${loop.loopId}Target = $target
         val ${loop.loopId}Measurement = $measurement
         val ${loop.loopId}Error = ${loop.loopId}Target - ${loop.loopId}Measurement
@@ -857,7 +858,7 @@ $continuousInputHelper
             SubsystemControlStrategy.POSITION_PID,
             SubsystemControlStrategy.PROFILED_POSITION_PID,
             SubsystemControlStrategy.VELOCITY_PID -> {
-                val measurement = "state.${requireNotNull(loop.measurementFieldId)}.toDouble()"
+                val measurement = document.numericStateExpression(requireNotNull(loop.measurementFieldId))
                 val feedforward = feedforwardExpression(document, loop)
                 val continuousPeriod = loop.continuousInput.maximumInput - loop.continuousInput.minimumInput
                 val errorExpression = if (loop.continuousInput.enabled) {
@@ -1245,7 +1246,7 @@ $feedforward
                     } catch (_: Exception) {
                         false
                     }
-                    HardwareRegistry.registerDevice(${("Subsystems/${document.documentId}").quoted()}, this)
+                    HardwareRegistry.registerTelemetryDevice(${("Subsystems/${document.documentId}").quoted()}, this)
                 }
 
                 override fun refresh() {
@@ -1553,7 +1554,7 @@ $telemetry
                     } catch (_: Exception) {
                         false
                     }
-                    HardwareRegistry.registerDevice(${("Subsystems/${document.documentId}").quoted()}, this)
+                    HardwareRegistry.registerTelemetryDevice(${("Subsystems/${document.documentId}").quoted()}, this)
                 }
 
                 override fun refresh() {
@@ -1719,7 +1720,7 @@ $telemetry
             $simSignalFields
             ${linkagePlantFields.prependIndent("    ")}
                 init {
-                    com.areslib.hardware.HardwareRegistry.registerDevice(${("Subsystems/${document.documentId}").quoted()}, this)
+                    com.areslib.hardware.HardwareRegistry.registerTelemetryDevice(${("Subsystems/${document.documentId}").quoted()}, this)
                 }
 
                 override var feedbackValid: Boolean = false
@@ -1811,7 +1812,7 @@ $telemetry
         val actuator = document.hardware.single { it.hardwareId == recovery.actuatorId }
         val outputScale = if (actuator.kind == SubsystemHardwareKind.MOTOR) 12.0 else 1.0
         val recoveryOutput = (recovery.reverseDutyCycle * outputScale).kotlinDouble()
-        val evidence = "state.${requireNotNull(recovery.currentFieldId)}.toDouble()"
+        val evidence = document.numericStateExpression(requireNotNull(recovery.currentFieldId))
         val action = when (recovery.recoveryAction) {
             FaultRecoveryActionKind.REVERSE_BRIEFLY -> """
         if (automaticRecoveryRetries >= ${recovery.maxRetries}) {
@@ -2599,6 +2600,17 @@ private fun SubsystemStateFieldDocument.clampedExpression(expression: String): S
     }
 }
 
+/** Emits the narrowest numeric expression allowed by the descriptor's declared state type. */
+private fun SubsystemStateFieldDocument.numericExpression(receiver: String): String = when (type) {
+    SubsystemValueType.DOUBLE -> "$receiver.$fieldId"
+    SubsystemValueType.INT -> "$receiver.$fieldId.toDouble()"
+    SubsystemValueType.BOOLEAN,
+    SubsystemValueType.STRING -> error("State field '$fieldId' is not numeric")
+}
+
+private fun SubsystemDocument.numericStateExpression(fieldId: String, receiver: String = "state"): String =
+    requireNotNull(field(fieldId)) { "State field '$fieldId' does not exist" }.numericExpression(receiver)
+
 private fun homingDsl(document: SubsystemDocument): String {
         val homing = document.safety.homing
         val actuator = homing.actuatorId ?: return ""
@@ -2645,18 +2657,18 @@ private fun feedforwardExpression(document: SubsystemDocument, loop: SubsystemCo
             SubsystemControlStrategy.PROFILED_POSITION_PID -> "${loop.loopId}ProfileVelocity"
             else -> "0.0"
         }
-        val velocity = ff.velocityFieldId?.let { "state.$it.toDouble()" } ?: defaultVelocity
-        val acceleration = ff.accelerationFieldId?.let { "state.$it.toDouble()" }
+        val velocity = ff.velocityFieldId?.let(document::numericStateExpression) ?: defaultVelocity
+        val acceleration = ff.accelerationFieldId?.let(document::numericStateExpression)
             ?: if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) "${loop.loopId}ProfileAcceleration" else "0.0"
         val gravity = when (ff.kind) {
             SubsystemFeedforwardKind.NONE, SubsystemFeedforwardKind.SIMPLE_MOTOR -> "0.0"
             SubsystemFeedforwardKind.ELEVATOR -> ff.kG.kotlinDouble()
             SubsystemFeedforwardKind.ARM ->
-                "${ff.kG.kotlinDouble()} * kotlin.math.cos(state.${requireNotNull(ff.gravityAngleFieldId)}.toDouble())"
+                "${ff.kG.kotlinDouble()} * kotlin.math.cos(${document.numericStateExpression(requireNotNull(ff.gravityAngleFieldId))})"
             SubsystemFeedforwardKind.TWO_DOF_ARM -> {
                 val linkage = document.linkage
-                val theta1 = "state.${requireNotNull(linkage.joint1AngleFieldId)}.toDouble()"
-                val theta2 = "state.${requireNotNull(linkage.joint2AngleFieldId)}.toDouble()"
+                val theta1 = document.numericStateExpression(requireNotNull(linkage.joint1AngleFieldId))
+                val theta2 = document.numericStateExpression(requireNotNull(linkage.joint2AngleFieldId))
                 val sharedDistal = "(${linkage.link2MassKg.kotlinDouble()} * ${linkage.link2CenterOfMassMeters.kotlinDouble()} * 9.80665 * kotlin.math.cos($theta1 + $theta2))"
                 val torque = if (ff.linkageJoint == 1) {
                     "((${linkage.link1MassKg.kotlinDouble()} * ${linkage.link1CenterOfMassMeters.kotlinDouble()} + ${linkage.link2MassKg.kotlinDouble()} * ${linkage.link1LengthMeters.kotlinDouble()}) * 9.80665 * kotlin.math.cos($theta1) + $sharedDistal)"

@@ -19,8 +19,10 @@ class HardwareRegistryTest {
 
     class MockLoggableDevice : LoggableDevice {
         var logTelemetryCalled = false
+        var telemetryPrefix: String? = null
         override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
             logTelemetryCalled = true
+            telemetryPrefix = prefix
         }
     }
 
@@ -70,8 +72,37 @@ class HardwareRegistryTest {
 
         HardwareRegistry.publishAll(telemetry)
         assertTrue(device.logTelemetryCalled)
+        assertEquals("Hardware/test_device", device.telemetryPrefix)
 
         HardwareRegistry.clear()
+    }
+
+    @Test
+    fun `domain telemetry registration preserves its canonical prefix`() {
+        val device = MockLoggableDevice()
+        HardwareRegistry.registerTelemetryDevice("Subsystems/elevator", device)
+        val publishedNumbers = mutableListOf<Pair<String, Double>>()
+        val telemetry = object : ITelemetry {
+            override fun putNumber(key: String, value: Double) { publishedNumbers += key to value }
+            override fun putBoolean(key: String, value: Boolean) {}
+            override fun putString(key: String, value: String) {}
+            override fun putDoubleArray(key: String, value: DoubleArray) {}
+            override fun getNumber(key: String, defaultValue: Double): Double = defaultValue
+            override fun getBoolean(key: String, defaultValue: Boolean): Boolean = defaultValue
+            override fun getString(key: String, defaultValue: String): String = defaultValue
+        }
+
+        HardwareRegistry.publishAll(telemetry)
+        HardwareRegistry.publishAll(telemetry)
+
+        assertEquals("Subsystems/elevator", device.telemetryPrefix)
+        assertEquals(
+            listOf(
+                "Subsystems/elevator/TelemetryHeartbeat" to 1.0,
+                "Subsystems/elevator/TelemetryHeartbeat" to 2.0,
+            ),
+            publishedNumbers,
+        )
     }
 
     @Test

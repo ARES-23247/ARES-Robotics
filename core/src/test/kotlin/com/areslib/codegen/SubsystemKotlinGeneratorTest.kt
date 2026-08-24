@@ -308,7 +308,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(io.contains("fun commandAutomaticRecovery(value: Double): Boolean"))
         assertTrue(physical.contains("override fun latchOutputFault()"))
         assertTrue(mock.contains("SimAppliedOutputRegistry.register"))
-        assertTrue(mock.contains("HardwareRegistry.registerDevice"))
+        assertTrue(mock.contains("HardwareRegistry.registerTelemetryDevice(\"Subsystems/jam-safe-intake\", this)"))
         assertTrue(mock.contains("override var configurationHealthy: Boolean = true"))
     }
 
@@ -346,6 +346,8 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(registry.contains("as? ArmState ?: return false"))
         assertTrue(registry.contains("if (!interlockState0.feedbackValid"))
         assertTrue(registry.contains("> 0.75) return false"))
+        assertTrue(registry.contains("interlockState0.target > 0.75"))
+        assertTrue(!registry.contains("interlockState0.target.toDouble()"))
         assertTrue(lifecycle.contains("GeneratedSubsystemRegistry.interlocksPermitIntake(state)"))
 
         val missingTarget = owner.copy(
@@ -355,6 +357,52 @@ class SubsystemKotlinGeneratorTest {
             SubsystemKotlinGenerator.generateRegistry(listOf(missingTarget, target), codegenTarget)
         }
         assertTrue(error.message.orEmpty().contains("does not resolve to exactly one subsystem"))
+    }
+
+    @Test
+    fun `generated numeric expressions convert integer fields but not double fields`() {
+        val baseTarget = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "arm",
+            kotlinTypeName = "Arm",
+            platform = SubsystemPlatform.FTC,
+        )
+        val integerField = baseTarget.stateFields.first().copy(
+            fieldId = "positionCount",
+            displayName = "Position count",
+            type = SubsystemValueType.INT,
+            role = SubsystemFieldRole.STATUS,
+            defaultNumber = null,
+            defaultInt = 0,
+            minimum = null,
+            maximum = null,
+            uid = "position-count-field",
+        )
+        val target = baseTarget.copy(stateFields = baseTarget.stateFields + integerField)
+        val owner = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "intake",
+            kotlinTypeName = "Intake",
+            platform = SubsystemPlatform.FTC,
+        ).copy(
+            interlocks = listOf(
+                SubsystemInterlockDocument(
+                    interlockId = "arm-count-clear",
+                    targetSubsystemUid = target.uid,
+                    targetFieldId = integerField.fieldId,
+                    comparison = InterlockComparison.GREATER_THAN,
+                    thresholdValue = 10.0,
+                    forbiddenZoneDescription = "Intake cannot move past the arm count threshold",
+                ),
+            ),
+        )
+
+        val registry = SubsystemKotlinGenerator.generateRegistry(
+            listOf(owner, target),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        ).content
+
+        assertTrue(registry.contains("interlockState0.positionCount.toDouble() > 10.0"))
     }
 
     @Test
@@ -423,7 +471,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(definition.contains("val document = subsystem("))
         assertTrue(definition.contains("Student \\\"intake\\\"\\nwith notes"))
         assertTrue(io.contains("value.takeIf(Double::isFinite) ?: 0.0"))
-        assertTrue(io.contains("HardwareRegistry.registerDevice"))
+        assertTrue(io.contains("HardwareRegistry.registerTelemetryDevice(\"Subsystems/intake\", this)"))
         assertTrue(io.contains("outputFaultLatched"))
         assertTrue(io.contains("recoverWithNeutral"))
         assertTrue(io.contains("configurationHealthy"))
@@ -842,7 +890,8 @@ class SubsystemKotlinGeneratorTest {
 
         assertTrue(definition.contains("feedforward.kind = com.areslib.subsystem.SubsystemFeedforwardKind.ARM"))
         assertTrue(definition.contains("feedforward.kG = 0.6"))
-        assertTrue(controller.contains("0.6 * kotlin.math.cos(state.position.toDouble())"))
+        assertTrue(controller.contains("0.6 * kotlin.math.cos(state.position)"))
+        assertTrue(!controller.contains("state.position.toDouble()"))
         assertTrue(controller.contains("primaryStatic"))
         assertTrue(controller.contains("primaryFeedforward"))
     }
