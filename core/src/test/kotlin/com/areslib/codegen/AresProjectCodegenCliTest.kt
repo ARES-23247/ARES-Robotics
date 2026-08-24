@@ -4,7 +4,7 @@ import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.controls.ControllerInputPlatform
-import com.areslib.drivetrain.DrivetrainPlatform
+import com.areslib.drivetrain.*
 import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineStep
@@ -22,6 +22,9 @@ import com.areslib.superstructure.SuperstructureDocument
 import com.areslib.superstructure.SuperstructureDocumentCodec
 import com.areslib.superstructure.SuperstructureStatePreset
 import com.areslib.superstructure.SuperstructureSubsystemTarget
+import com.areslib.tuning.TuningProfileAuthority
+import com.areslib.tuning.TuningProfileDocument
+import com.areslib.tuning.TuningProfileDocumentCodec
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
@@ -211,6 +214,83 @@ class AresProjectCodegenCliTest {
     }
 
     @Test
+    fun `one state machine may reuse a request action from different legal source states`() {
+        val ares = Files.createDirectories(temporary.resolve(".ares"))
+        val subsystemRoot = Files.createDirectories(ares.resolve("subsystems"))
+        val superstructureRoot = Files.createDirectories(ares.resolve("superstructures"))
+        val subsystem = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "arm",
+            kotlinTypeName = "Arm",
+            platform = SubsystemPlatform.FTC,
+        )
+        Files.writeString(subsystemRoot.resolve("arm.aressubsystem"), SubsystemDocumentCodec.encode(subsystem))
+        val target = subsystem.stateFields.single { it.role == SubsystemFieldRole.TARGET }
+        fun preset(id: String) = SuperstructureStatePreset(
+            stateId = id,
+            subsystemTargets = listOf(
+                SuperstructureSubsystemTarget(
+                    target = com.areslib.superstructure.SuperstructureFieldReference(subsystem.uid, target.uid),
+                    constantDoubleValue = target.defaultNumber ?: 0.0,
+                ),
+            ),
+        )
+        val document = SuperstructureDocument(
+            superstructureId = "machine",
+            initialStateId = "STOW",
+            faultStateId = "FAULT",
+            states = listOf(preset("STOW"), preset("READY"), preset("SCORE"), preset("FAULT")),
+            transitions = listOf(
+                StateTransitionEdge("ready", "STOW", "READY", actionKey = "machine.ready"),
+                StateTransitionEdge("score", "READY", "SCORE", actionKey = "machine.score"),
+                StateTransitionEdge("stow-ready", "READY", "STOW", actionKey = "machine.stow"),
+                StateTransitionEdge("stow-score", "SCORE", "STOW", actionKey = "machine.stow"),
+                StateTransitionEdge("recover", "FAULT", "STOW", actionKey = "machine.recover"),
+            ),
+        )
+        Files.writeString(superstructureRoot.resolve("machine.aressuperstructure"), SuperstructureDocumentCodec.encode(document))
+        Files.writeString(
+            ares.resolve("action-catalog.json"),
+            CapabilityCatalogCodec.encode(
+                CapabilityCatalogDocument(
+                    projectId = "test",
+                    actions = listOf("ready", "score", "stow", "recover").map { suffix ->
+                        ActionDescriptor("machine.$suffix", suffix, "Machine request")
+                    },
+                ),
+            ),
+        )
+        Files.writeString(ares.resolve("project.json"), projectMetadata())
+
+        val starterRoot = temporary.resolve("src/main/kotlin")
+        SubsystemKotlinGenerator.generate(
+            subsystem,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        ).filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }.forEach { file ->
+            val destination = starterRoot.resolve(file.relativePath)
+            Files.createDirectories(destination.parent)
+            Files.writeString(destination, file.content)
+        }
+        val output = temporary.resolve("build/generated/project/GeneratedAresProject.kt")
+        AresProjectCodegenCli.run(
+            arrayOf(
+                "--project", temporary.toString(),
+                "--output", output.toString(),
+                "--package", "org.example.generated",
+                "--platform", "FTC",
+                "--subsystems-package", "org.example.subsystems",
+                "--subsystems-starter-output", starterRoot.toString(),
+                "--subsystems-generated-output", temporary.resolve("build/generated/subsystems").toString(),
+                "--subsystems-generated-test-output", temporary.resolve("build/generated/tests").toString(),
+                "--superstructure-output", temporary.resolve("build/generated/superstructure").toString(),
+                "--superstructure-package", "org.example.superstructure",
+            ),
+        )
+
+        assertTrue(Files.readString(output).contains("machine.stow"))
+    }
+
+    @Test
     fun `rejects generated output outside selected project`() {
         Files.createDirectories(temporary.resolve(".ares"))
         val outside = temporary.parent.resolve("outside.kt")
@@ -260,6 +340,78 @@ class AresProjectCodegenCliTest {
 
         assertFalse(Files.exists(stale))
         assertFalse(Files.exists(generatedRoot.resolve(".ares-drivebase-manifest")))
+    }
+
+    @Test
+    fun `zero parameter drivebase still loads its canonical ownership profile`() {
+        val ares = Files.createDirectories(temporary.resolve(".ares"))
+        Files.writeString(ares.resolve("action-catalog.json"), CapabilityCatalogCodec.encode(CapabilityCatalogDocument(projectId = "test")))
+        Files.writeString(ares.resolve("project.json"), projectMetadata())
+        val drivetrainRoot = Files.createDirectories(ares.resolve("drivetrains"))
+        val tuningRoot = Files.createDirectories(ares.resolve("tuning"))
+        val motorIds = listOf("fl", "fr", "rl", "rr")
+        val motors = motorIds.mapIndexed { index, hardwareId ->
+            DrivetrainComponentDocument(
+                uid = "drive.$hardwareId",
+                displayName = hardwareId,
+                role = DrivetrainComponentRole.DRIVE_MOTOR,
+                hardwareId = hardwareId,
+                currentMeasurementRequired = true,
+                currentMeasurementAvailable = true,
+                xMeters = if (index < 2) 0.18 else -0.18,
+                yMeters = if (index % 2 == 0) 0.18 else -0.18,
+            )
+        }
+        val odometry = DrivetrainComponentDocument(
+            uid = "drive.pinpoint",
+            displayName = "Pinpoint",
+            role = DrivetrainComponentRole.ODOMETRY_SENSOR,
+            hardwareId = "pinpoint",
+        )
+        val drivetrain = DrivetrainDocument(
+            uid = "drive.primary",
+            drivebaseId = "primary",
+            displayName = "Zero parameter mecanum",
+            description = "Ownership-only profile fixture",
+            kind = DrivetrainKind.FTC_MECANUM,
+            platform = DrivetrainPlatform.FTC,
+            components = motors + odometry,
+            geometry = DrivetrainGeometryDocument(0.096, 0.36, 0.36, 19.2, null, 1.0, 3.0),
+            localization = DrivetrainLocalizationDocument(
+                DrivetrainLocalizationSourceDocument("localization.pinpoint", LocalizationSourceKind.PINPOINT, listOf(odometry.uid)),
+                odometry.uid,
+            ),
+            control = DrivetrainControlDocument(listOf(DrivetrainControlKind.OPEN_LOOP), DrivetrainControlKind.OPEN_LOOP),
+            simulation = DrivetrainSimulationDocument("example.Model", "example.Adapter"),
+            parameters = emptyList(),
+            canonicalProfileUid = "project.ftc.profile.simulation",
+        )
+        val profile = TuningProfileDocument(
+            uid = drivetrain.canonicalProfileUid,
+            profileId = "simulation",
+            displayName = "Simulation",
+            description = "Ownership with no assignments",
+            projectUid = "project.ftc",
+            drivebaseUid = drivetrain.uid,
+            authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+            values = emptyList(),
+        )
+        Files.writeString(drivetrainRoot.resolve("primary.aresdrivetrain"), DrivetrainDocumentCodec.encode(drivetrain))
+        Files.writeString(tuningRoot.resolve("simulation.arestuning"), TuningProfileDocumentCodec.encode(profile, emptyList()))
+
+        val drivebaseOutput = temporary.resolve("build/generated/drivebase")
+        AresProjectCodegenCli.run(
+            arrayOf(
+                "--project", temporary.toString(),
+                "--output", temporary.resolve("build/generated/project/GeneratedAresProject.kt").toString(),
+                "--package", "example.generated",
+                "--platform", "FTC",
+                "--drivebase-output", drivebaseOutput.toString(),
+                "--drivebase-package", "example.generated.drivebase",
+            ),
+        )
+
+        assertTrue(Files.isRegularFile(drivebaseOutput.resolve("GeneratedAresTuningConfig.kt")))
     }
 
     private fun projectMetadata(): String = AresProjectMetadataCodec.encode(

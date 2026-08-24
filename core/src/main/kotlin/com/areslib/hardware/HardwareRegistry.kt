@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.Collections
 import java.util.IdentityHashMap
+import java.util.concurrent.atomic.AtomicLong
 import com.areslib.hardware.actuator.*
 
 /**
@@ -26,6 +27,7 @@ object HardwareRegistry {
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
     private val devicesNamesList = CopyOnWriteArrayList<String>()
     private val devicesPrefixList = CopyOnWriteArrayList<String>()
+    private val devicesHeartbeatTopicList = CopyOnWriteArrayList<String>()
     private val deviceIndices = ConcurrentHashMap<String, Int>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
     private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
@@ -38,6 +40,7 @@ object HardwareRegistry {
     private val syncPolledDevices = CopyOnWriteArrayList<SyncPolledDevice>()
     private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
     private val pollingFailureCounts = ConcurrentHashMap<SyncPolledDevice, Long>()
+    private val telemetryPublishSequence = AtomicLong(0L)
     
     @Volatile private var pollingGeneration = 0L
     private var pollingThread: Thread? = null
@@ -142,16 +145,43 @@ object HardwareRegistry {
      */
     @Synchronized
     fun registerDevice(name: String, device: LoggableDevice) {
+        registerDevice(name, "Hardware/$name", device)
+    }
+
+    /**
+     * Registers a diagnostic producer whose canonical topic prefix is outside `Hardware/`.
+     *
+     * Generated subsystem health is a domain-level contract (`Subsystems/<id>/...`), not a
+     * physical-device address. Keeping this explicit prevents the registry's normal `Hardware/`
+     * namespace from silently changing that public telemetry contract.
+     */
+    @Synchronized
+    fun registerTelemetryDevice(prefix: String, device: LoggableDevice) {
+        registerDevice(prefix, prefix, device)
+    }
+
+    private fun registerDevice(name: String, telemetryPrefix: String, device: LoggableDevice) {
         require(name.isNotBlank()) { "Hardware device name must not be blank" }
+        require(telemetryPrefix.isNotBlank() && !telemetryPrefix.startsWith('/')) {
+            "Telemetry prefix must be non-blank and omit the leading slash"
+        }
         val prior = devices.put(name, device)
+        val heartbeatTopic = if (telemetryPrefix.startsWith("Subsystems/")) {
+            "$telemetryPrefix/TelemetryHeartbeat"
+        } else {
+            ""
+        }
         val existingIndex = deviceIndices[name]
         if (existingIndex == null) {
             deviceIndices[name] = devicesList.size
             devicesList.add(device)
             devicesNamesList.add(name)
-            devicesPrefixList.add("Hardware/$name")
+            devicesPrefixList.add(telemetryPrefix)
+            devicesHeartbeatTopicList.add(heartbeatTopic)
         } else {
             devicesList[existingIndex] = device
+            devicesPrefixList[existingIndex] = telemetryPrefix
+            devicesHeartbeatTopicList[existingIndex] = heartbeatTopic
         }
 
         val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
@@ -375,11 +405,13 @@ object HardwareRegistry {
         devicesList.clear()
         devicesNamesList.clear()
         devicesPrefixList.clear()
+        devicesHeartbeatTopicList.clear()
         deviceIndices.clear()
         topologyNodes.clear()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
         cachedCurrentSourcesList.clear()
+        telemetryPublishSequence.set(0L)
     }
 
     /**
@@ -395,12 +427,20 @@ object HardwareRegistry {
      */
     fun publishAll(telemetry: ITelemetry) {
         try {
-            val count = kotlin.math.min(devicesList.size, devicesPrefixList.size)
+            val count = kotlin.math.min(
+                devicesList.size,
+                kotlin.math.min(devicesPrefixList.size, devicesHeartbeatTopicList.size),
+            )
+            val publishSequence = telemetryPublishSequence.incrementAndGet().toDouble()
             for (i in 0 until count) {
                 try {
                     val device = devicesList[i]
                     val prefix = devicesPrefixList[i]
                     device.logTelemetry(telemetry, prefix)
+                    val heartbeatTopic = devicesHeartbeatTopicList[i]
+                    if (heartbeatTopic.isNotEmpty()) {
+                        telemetry.putNumber(heartbeatTopic, publishSequence)
+                    }
                 } catch (_: IndexOutOfBoundsException) { break }
             }
         } catch (_: Throwable) {}

@@ -210,6 +210,96 @@ class SubsystemDocumentTest {
     }
 
     @Test
+    fun `validation rejects multiple controllers that would overwrite one actuator output`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
+            "arm",
+            "Arm",
+            SubsystemPlatform.FTC,
+        )
+        val duplicate = base.copy(
+            controlLoops = base.controlLoops + base.controlLoops.single().copy(
+                loopId = "second",
+                uid = "second",
+                displayName = "Conflicting controller",
+            )
+        )
+
+        val issues = validateSubsystemDocument(duplicate)
+
+        assertTrue(issues.any { it.path == "controlLoops" && it.message.contains("exactly one controller") })
+    }
+
+    @Test
+    fun `validation rejects feedback expressed in a different declared unit`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            "arm",
+            "Arm",
+            SubsystemPlatform.FTC,
+        )
+        val incompatible = base.copy(
+            stateFields = base.stateFields.map { field ->
+                if (field.fieldId == "position") field.copy(unit = "deg") else field
+            }
+        )
+
+        val issues = validateSubsystemDocument(incompatible)
+
+        assertTrue(issues.any { it.path.endsWith("measurementFieldId") && it.message.contains("same unit") })
+        assertTrue(subsystemControlUnitsCompatible("radians", "rad"))
+        assertTrue(!subsystemControlUnitsCompatible("deg", "rad"))
+    }
+
+    @Test
+    fun `motor conversion uses encoder resolution gearing and mechanism travel`() {
+        assertEquals(
+            0.10 / (537.7 * 5.0),
+            subsystemMotorMeasurementScale(
+                nativeUnitsPerMotorRevolution = 537.7,
+                motorRevolutionsPerMechanismRevolution = 5.0,
+                stateUnitsPerMechanismRevolution = 0.10,
+            ),
+            1e-12,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            subsystemMotorMeasurementScale(0.0, 5.0, 0.10)
+        }
+    }
+
+    @Test
+    fun `feedforward fields reject numeric values with unrelated units`() {
+        val base = SubsystemTemplates.create(
+            SubsystemTemplate.FLYWHEEL_SHOOTER,
+            "flywheel",
+            "Flywheel",
+            SubsystemPlatform.FTC,
+        )
+        val invalidVelocity = base.copy(controlLoops = base.controlLoops.map { loop ->
+            loop.copy(feedforward = loop.feedforward.copy(velocityFieldId = "currentAmps"))
+        })
+        val arm = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            "arm",
+            "Arm",
+            SubsystemPlatform.FTC,
+        ).let { document ->
+            document.copy(stateFields = document.stateFields.map { field ->
+                if (field.fieldId == "position") field.copy(unit = "deg") else field
+            })
+        }
+
+        assertTrue(validateSubsystemDocument(invalidVelocity).any {
+            it.path.endsWith("velocityFieldId") && it.message.contains("rad/s")
+        })
+        assertTrue(validateSubsystemDocument(arm).any {
+            it.path.endsWith("gravityAngleFieldId") && it.message.contains("radians")
+        })
+        assertTrue(subsystemUnitCanRepresentVelocity("radians/second"))
+        assertTrue(subsystemUnitCanRepresentAcceleration("m/s²"))
+    }
+
+    @Test
     fun `homed template declares every safety input including current`() {
         val document = SubsystemTemplates.create(
             SubsystemTemplate.HOMED_MECHANISM,
@@ -339,17 +429,59 @@ class SubsystemDocumentTest {
     }
 
     @Test
+    fun `continuous position and bang bang hysteresis contracts validate explicitly`() {
+        val arm = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            "continuous-arm",
+            "ContinuousArm",
+            SubsystemPlatform.FTC,
+        )
+        val wrapped = arm.copy(controlLoops = arm.controlLoops.map { loop ->
+            loop.copy(continuousInput = SubsystemContinuousInputDocument(enabled = true))
+        })
+        assertTrue(validateSubsystemDocument(wrapped).isEmpty())
+
+        val wrongPeriod = wrapped.copy(controlLoops = wrapped.controlLoops.map { loop ->
+            loop.copy(continuousInput = loop.continuousInput.copy(maximumInput = Math.PI / 2.0))
+        })
+        assertTrue(validateSubsystemDocument(wrongPeriod).any {
+            it.path.endsWith("continuousInput") && it.message.contains("2π")
+        })
+
+        val wrongStrategy = wrapped.copy(controlLoops = wrapped.controlLoops.map { loop ->
+            loop.copy(strategy = SubsystemControlStrategy.VELOCITY_PID)
+        })
+        assertTrue(validateSubsystemDocument(wrongStrategy).any {
+            it.path.endsWith("continuousInput.enabled")
+        })
+
+        val onOff = arm.copy(controlLoops = arm.controlLoops.map { loop ->
+            loop.copy(
+                strategy = SubsystemControlStrategy.BANG_BANG,
+                feedforward = SubsystemFeedforwardDocument(),
+                continuousInput = SubsystemContinuousInputDocument(),
+                tolerance = 0.05,
+                hysteresis = 0.02,
+            )
+        })
+        assertTrue(validateSubsystemDocument(onOff).isEmpty())
+        assertTrue(validateSubsystemDocument(arm.copy(controlLoops = arm.controlLoops.map { it.copy(hysteresis = 0.02) })).any {
+            it.path.endsWith("hysteresis")
+        })
+    }
+
+    @Test
     fun `codec requires explicit current schema implementation and homing metadata`() {
         val encoded = SubsystemDocumentCodec.encode(handAuthoredPrismDocument())
 
         val oldSchema = assertThrows(IllegalArgumentException::class.java) {
-            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 10", "\"schemaVersion\": 9"))
+            SubsystemDocumentCodec.decode(encoded.replace("\"schemaVersion\": 11", "\"schemaVersion\": 10"))
         }
-        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 9"))
+        assertTrue(oldSchema.message.orEmpty().contains("Unsupported subsystem schema 10"))
 
         val withoutImplementation = assertThrows(IllegalArgumentException::class.java) {
             SubsystemDocumentCodec.decode(
-                """{"schemaVersion":10,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
+                """{"schemaVersion":11,"documentId":"prism","displayName":"Prism","kotlinTypeName":"Prism","platform":"FTC"}"""
             )
         }
         assertTrue(withoutImplementation.message.orEmpty().contains("implementation metadata is required"))
@@ -419,7 +551,7 @@ class SubsystemDocumentTest {
     fun `decode normalizes missing optional string fields so copy operations succeed`() {
         val legacyJson = """
             {
-              "schemaVersion": 10,
+              "schemaVersion": 11,
               "documentId": "indicator-lights",
               "displayName": "Indicator lights",
               "kotlinTypeName": "IndicatorLightSubsystem",

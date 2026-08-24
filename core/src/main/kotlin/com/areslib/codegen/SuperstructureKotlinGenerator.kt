@@ -130,8 +130,11 @@ object SuperstructureKotlinGenerator {
             document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
                 .mapNotNull { edge -> edge.actionKey?.let { it to document } }
         }
-        val duplicates = owners.groupBy { it.first }.filterValues { it.size > 1 }.keys
-        require(duplicates.isEmpty()) { "A superstructure action key must have one owner: ${duplicates.sorted().joinToString()}" }
+        val duplicates = owners.groupBy { it.first }
+            .filterValues { candidates -> candidates.map { it.second.superstructureId }.distinct().size > 1 }
+            .keys
+        require(duplicates.isEmpty()) { "A superstructure action key must have one state-machine owner: ${duplicates.sorted().joinToString()}" }
+        val routes = owners.distinctBy { it.first }
         val sorted = documents.sortedBy { it.superstructureId }
         val source = buildString {
             appendLine("// ARES OWNERSHIP: GENERATED - DO NOT EDIT")
@@ -150,11 +153,11 @@ object SuperstructureKotlinGenerator {
                 appendLine("    )")
             }
             appendLine()
-            if (owners.isEmpty()) {
+            if (routes.isEmpty()) {
                 appendLine("    fun createActionTask(@Suppress(\"UNUSED_PARAMETER\") actionKey: String): Task? = null")
             } else {
                 appendLine("    fun createActionTask(actionKey: String): Task? = when (actionKey) {")
-                owners.sortedBy { it.first }.forEach { (key, document) ->
+                routes.sortedBy { it.first }.forEach { (key, document) ->
                     appendLine("        ${key.quoted()} -> create${document.superstructureId.pascalCase()}SuperstructureAction(actionKey)")
                 }
                 appendLine("        else -> null")
