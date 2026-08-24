@@ -72,7 +72,9 @@ object AresProjectCodegenCli {
         require(declarations.map { it.key }.distinct().size == declarations.size) {
             "Typed tuning parameter keys must be unique across drivebase, subsystem, and project components"
         }
-        val tuningProfiles = if (declarations.isNotEmpty()) {
+        // A canonical profile also establishes project/drivebase ownership. It remains required
+        // for a zero-parameter drivebase, even though there are no assignments to decode.
+        val tuningProfiles = if (declarations.isNotEmpty() || drivetrains.isNotEmpty()) {
             readDocuments(aresRoot.resolve("tuning"), "arestuning") {
                 TuningProfileDocumentCodec.decode(it, declarations)
             }.also { loadedProfiles ->
