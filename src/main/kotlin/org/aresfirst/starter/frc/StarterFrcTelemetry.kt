@@ -1,8 +1,10 @@
 package org.aresfirst.starter.frc
 
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.TelemetryTopicNormalizer
+import edu.wpi.first.networktables.NetworkTableEntry
+import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.DataLogManager
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 
 /**
  * Publishes ARES topics through WPILib's process-owned NetworkTables instance.
@@ -11,34 +13,58 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
  * does not create ARESLib's standalone FTC/simulator NT4 server, so there is one transport owner and
  * one port-5810 lifecycle.
  */
-internal class StarterFrcTelemetry : ITelemetry {
+internal class StarterFrcTelemetry(
+    private val instance: NetworkTableInstance = NetworkTableInstance.getDefault(),
+    startDataLog: Boolean = true,
+) : ITelemetry {
+    private val entries = HashMap<String, NetworkTableEntry>()
+
     init {
-        DataLogManager.start()
-        DataLogManager.log("ARES FRC Starter telemetry initialized")
+        if (startDataLog) {
+            DataLogManager.start()
+            DataLogManager.log("ARES FRC Starter telemetry initialized")
+        }
     }
 
     override fun putNumber(key: String, value: Double) {
-        SmartDashboard.putNumber(key, value)
+        entry(key).setDouble(value)
     }
 
     override fun putBoolean(key: String, value: Boolean) {
-        SmartDashboard.putBoolean(key, value)
+        entry(key).setBoolean(value)
     }
 
     override fun putString(key: String, value: String) {
-        SmartDashboard.putString(key, value)
+        entry(key).setString(value)
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
-        SmartDashboard.putNumberArray(key, value)
+        entry(key).setDoubleArray(value)
     }
 
     override fun getNumber(key: String, defaultValue: Double): Double =
-        SmartDashboard.getNumber(key, defaultValue)
+        entry(key).getDouble(defaultValue)
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean =
-        SmartDashboard.getBoolean(key, defaultValue)
+        entry(key).getBoolean(defaultValue)
 
     override fun getString(key: String, defaultValue: String): String =
-        SmartDashboard.getString(key, defaultValue)
+        entry(key).getString(defaultValue)
+
+    override fun update() {
+        instance.flushLocal()
+    }
+
+    override fun close() {
+        entries.values.forEach(NetworkTableEntry::close)
+        entries.clear()
+    }
+
+    private fun entry(key: String): NetworkTableEntry {
+        val canonical = canonicalStarterFrcTelemetryTopic(key)
+        return entries.getOrPut(canonical) { instance.getEntry(canonical) }
+    }
 }
+
+internal fun canonicalStarterFrcTelemetryTopic(key: String): String =
+    TelemetryTopicNormalizer.normalizeTopic(key)
