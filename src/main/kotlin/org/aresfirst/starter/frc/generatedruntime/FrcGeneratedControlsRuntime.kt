@@ -20,7 +20,7 @@ internal interface FrcControllerPortSampler {
 }
 
 /** Production sampler that owns one reusable WPILib adapter for each active generated port. */
-private class WpilibFrcControllerPortSampler : FrcControllerPortSampler {
+internal class WpilibFrcControllerPortSampler : FrcControllerPortSampler {
     private val devices = arrayOfNulls<GenericHID>(MAX_FRC_CONTROLLER_PORTS)
 
     override fun prepare(port: Int) {

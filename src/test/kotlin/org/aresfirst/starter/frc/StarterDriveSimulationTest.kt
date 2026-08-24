@@ -31,8 +31,24 @@ class StarterDriveSimulationTest {
 
     @Test
     fun `physical output is fail closed until an adapter is installed`() {
-        assertFalse(physicalDriveOutputsPermitted(isReal = true, adapterInstalled = false))
-        assertTrue(physicalDriveOutputsPermitted(isReal = true, adapterInstalled = true))
-        assertTrue(physicalDriveOutputsPermitted(isReal = false, adapterInstalled = false))
+        assertFalse(physicalOutputsPermitted(isReal = true, adapterInstalled = false))
+        assertTrue(physicalOutputsPermitted(isReal = true, adapterInstalled = true))
+        assertTrue(physicalOutputsPermitted(isReal = false, adapterInstalled = false))
+    }
+
+    @Test
+    fun `generated mechanisms stay simulated until physical adapters are permitted`() {
+        var requestedPhysicalAdapters: Boolean? = null
+
+        installGeneratedSubsystems(
+            usePhysicalAdapters = false,
+            register = {},
+            createAll = { physical ->
+                requestedPhysicalAdapters = physical
+                emptyList()
+            },
+        )
+
+        assertEquals(false, requestedPhysicalAdapters)
     }
 }

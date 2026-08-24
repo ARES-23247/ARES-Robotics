@@ -1,43 +1,57 @@
 {
   "schemaVersion": 1,
   "uid": "ares.starter.frc.drivebase",
-  "drivebaseId": "starter-holonomic",
-  "displayName": "Starter FRC holonomic drivebase",
-  "description": "Hardware-neutral holonomic model for desktop simulation. Replace it with a reviewed swerve, mecanum, differential, or custom hardware contract before deployment.",
-  "kind": "ADVANCED_CUSTOM",
+  "drivebaseId": "starter-ctre-swerve",
+  "displayName": "Starter FRC CTRE swerve",
+  "description": "Simulation-ready four-module CTRE swerve. The bundled CAN IDs are unique simulation placeholders; import and review the team's CTRE Tuner configuration before physical deployment.",
+  "kind": "FRC_CTRE_SWERVE",
   "platform": "FRC",
   "components": [
-    {"uid":"frc.drivebase","displayName":"Starter drivebase","role":"OTHER","hardwareId":"drivebase"},
-    {"uid":"frc.drive.fl","displayName":"Front-left drive","role":"DRIVE_MOTOR","hardwareId":"front-left","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":0.35,"yMeters":0.3,"inverted":false,"required":true},
-    {"uid":"frc.drive.fr","displayName":"Front-right drive","role":"DRIVE_MOTOR","hardwareId":"front-right","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":0.35,"yMeters":-0.3,"inverted":true,"required":true},
-    {"uid":"frc.drive.rl","displayName":"Rear-left drive","role":"DRIVE_MOTOR","hardwareId":"rear-left","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":-0.35,"yMeters":0.3,"inverted":false,"required":true},
-    {"uid":"frc.drive.rr","displayName":"Rear-right drive","role":"DRIVE_MOTOR","hardwareId":"rear-right","controllerModel":"Select in Hardware Setup","encoderModel":"Select in Hardware Setup","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":-0.35,"yMeters":-0.3,"inverted":true,"required":true},
-    {"uid":"frc.localization.gyro","displayName":"Robot gyro","role":"GYRO","hardwareId":"gyro","controllerModel":"Select in Hardware Setup","required":true}
+    {"uid":"frc.drivebase","displayName":"Starter CTRE swerve drivebase","role":"OTHER","hardwareId":"rio","required":true},
+    {"uid":"frc.drive.front-left","displayName":"Front-left drive motor","role":"DRIVE_MOTOR","hardwareId":"1","moduleUid":"module.front-left","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.front-left","displayName":"Front-left steer motor","role":"STEER_MOTOR","hardwareId":"2","moduleUid":"module.front-left","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.front-left","displayName":"Front-left absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"3","moduleUid":"module.front-left","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.front-right","displayName":"Front-right drive motor","role":"DRIVE_MOTOR","hardwareId":"4","moduleUid":"module.front-right","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.front-right","displayName":"Front-right steer motor","role":"STEER_MOTOR","hardwareId":"5","moduleUid":"module.front-right","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.front-right","displayName":"Front-right absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"6","moduleUid":"module.front-right","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.rear-left","displayName":"Rear-left drive motor","role":"DRIVE_MOTOR","hardwareId":"7","moduleUid":"module.rear-left","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.rear-left","displayName":"Rear-left steer motor","role":"STEER_MOTOR","hardwareId":"8","moduleUid":"module.rear-left","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.rear-left","displayName":"Rear-left absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"9","moduleUid":"module.rear-left","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.rear-right","displayName":"Rear-right drive motor","role":"DRIVE_MOTOR","hardwareId":"10","moduleUid":"module.rear-right","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.rear-right","displayName":"Rear-right steer motor","role":"STEER_MOTOR","hardwareId":"11","moduleUid":"module.rear-right","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.rear-right","displayName":"Rear-right absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"12","moduleUid":"module.rear-right","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.gyro","displayName":"Pigeon 2 gyro","role":"GYRO","hardwareId":"13","controllerModel":"Pigeon 2 (simulation placeholder)","required":true}
   ],
-  "modules": [],
+  "modules": [
+    {"uid":"module.front-left","displayName":"Front-left module","componentUids":["frc.drive.front-left","frc.steer.front-left","frc.encoder.front-left"],"xMeters":0.35,"yMeters":0.3},
+    {"uid":"module.front-right","displayName":"Front-right module","componentUids":["frc.drive.front-right","frc.steer.front-right","frc.encoder.front-right"],"xMeters":0.35,"yMeters":-0.3},
+    {"uid":"module.rear-left","displayName":"Rear-left module","componentUids":["frc.drive.rear-left","frc.steer.rear-left","frc.encoder.rear-left"],"xMeters":-0.35,"yMeters":0.3},
+    {"uid":"module.rear-right","displayName":"Rear-right module","componentUids":["frc.drive.rear-right","frc.steer.rear-right","frc.encoder.rear-right"],"xMeters":-0.35,"yMeters":-0.3}
+  ],
   "geometry": {
-    "wheelDiameterMeters": 0.1524,
+    "wheelDiameterMeters": 0.1016,
     "trackWidthMeters": 0.6,
     "wheelBaseMeters": 0.7,
-    "driveGearRatio": 10.71,
+    "driveGearRatio": 6.75,
+    "steerGearRatio": 12.8,
     "maxLinearSpeedMetersPerSecond": 2.0,
     "maxAngularSpeedRadiansPerSecond": 4.0
   },
   "localization": {
     "primaryOdometry": {
-      "uid": "frc.localization.wheel-imu",
-      "source": "WHEEL_ENCODERS_IMU",
-      "componentUids": ["frc.drive.fl", "frc.drive.fr", "frc.drive.rl", "frc.drive.rr", "frc.localization.gyro"],
+      "uid": "frc.localization.ctre",
+      "source": "CTRE_VENDOR",
+      "componentUids": ["frc.drive.front-left","frc.steer.front-left","frc.encoder.front-left","frc.drive.front-right","frc.steer.front-right","frc.encoder.front-right","frc.drive.rear-left","frc.steer.rear-left","frc.encoder.rear-left","frc.drive.rear-right","frc.steer.rear-right","frc.encoder.rear-right","frc.drive.gyro"],
       "implementationClassName": "org.aresfirst.starter.frc.StarterDriveSimulation"
     },
-    "headingSourceUid": "frc.localization.wheel-imu",
+    "headingSourceUid": "frc.drive.gyro",
     "visionFusion": [],
     "headingCcwPositive": true,
     "cachedInputsRequired": true
   },
   "control": {
     "supported": ["OPEN_LOOP", "CHASSIS_VELOCITY", "TRAJECTORY"],
-    "defaultControl": "OPEN_LOOP",
+    "defaultControl": "CHASSIS_VELOCITY",
     "fieldCentric": true
   },
   "safety": {
@@ -75,5 +89,14 @@
     }
   ],
   "calibrationProvenance": [],
+  "ctreImport": {
+    "vendorSourcePath": "src/main/java/frc/robot/generated/TunerConstants.java",
+    "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "generatorName": "ARES simulation placeholder",
+    "generatorVersion": "9.11.0",
+    "drivetrainConstantsClassName": "frc.robot.generated.TunerConstants",
+    "canBusName": "rio",
+    "ownership": "READ_ONLY_VENDOR"
+  },
   "canonicalProfileUid": "ares.starter.frc.profile.simulation"
 }
