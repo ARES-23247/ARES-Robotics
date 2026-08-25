@@ -1,6 +1,7 @@
 package org.aresfirst.starter.frc
 
 import com.areslib.action.RobotAction
+import com.areslib.control.feedback.PIDController
 import com.areslib.math.coordinate.AllianceMirroring
 import com.areslib.math.coordinate.CoordinateTransformers
 import com.areslib.math.coordinate.FieldOrigin
@@ -200,15 +201,30 @@ internal class StarterFrcDriveToPoseTask(
     private val commandResult = listOf<RobotAction>(command)
     private val neutral = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0, isFieldCentric = true)
     private val neutralResult = listOf<RobotAction>(neutral)
+    private val xController = PIDController(0.0, 0.0, 0.0)
+    private val yController = PIDController(0.0, 0.0, 0.0)
+    private val headingController = PIDController(0.0, 0.0, 0.0)
     private var settledSamples = 0
+    private var lastControllerTimestampMs = -1L
+    private var previousXVelocity = 0.0
+    private var previousYVelocity = 0.0
+    private var previousAngularVelocity = 0.0
 
     init {
         withTimeout(MAX_DRIVE_DURATION_MS)
+        headingController.enableContinuousInput(-PI, PI)
     }
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         settledSamples = 0
+        lastControllerTimestampMs = -1L
+        previousXVelocity = 0.0
+        previousYVelocity = 0.0
+        previousAngularVelocity = 0.0
+        xController.reset()
+        yController.reset()
+        headingController.reset()
         return emptyList()
     }
 
@@ -238,10 +254,49 @@ internal class StarterFrcDriveToPoseTask(
             preset.speedScale * tunedScale
         val maximumAngular = GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND *
             preset.speedScale * tunedScale
-        command.targetXVelocity = ((target.x - pose.x) * TRANSLATION_KP).coerceIn(-maximumLinear, maximumLinear)
-        command.targetYVelocity = ((target.y - pose.y) * TRANSLATION_KP).coerceIn(-maximumLinear, maximumLinear)
-        command.targetAngularVelocity = (wrapRadians(target.heading.radians - pose.heading.radians) * HEADING_KP)
-            .coerceIn(-maximumAngular, maximumAngular)
+        val dtSeconds = if (lastControllerTimestampMs < 0L || now <= lastControllerTimestampMs) {
+            NOMINAL_DT_SECONDS
+        } else {
+            ((now - lastControllerTimestampMs) / 1000.0).coerceIn(MIN_DT_SECONDS, MAX_DT_SECONDS)
+        }
+        lastControllerTimestampMs = now
+        val translationGains = state.tuning.drive.pathTranslationGains
+        xController.p = translationGains.kP
+        xController.i = translationGains.kI
+        xController.d = translationGains.kD
+        yController.p = translationGains.kP
+        yController.i = translationGains.kI
+        yController.d = translationGains.kD
+        xController.setOutputLimits(-maximumLinear, maximumLinear)
+        yController.setOutputLimits(-maximumLinear, maximumLinear)
+        val rotationGains = state.tuning.drive.pathRotationGains
+        headingController.p = rotationGains.kP
+        headingController.i = rotationGains.kI
+        headingController.d = rotationGains.kD
+        headingController.setOutputLimits(-maximumAngular, maximumAngular)
+
+        val requestedX = xController.calculate(pose.x, target.x, dtSeconds)
+        val requestedY = yController.calculate(pose.y, target.y, dtSeconds)
+        val requestedOmega = headingController.calculate(pose.heading.radians, target.heading.radians, dtSeconds)
+        val accelerationLimit = state.tuning.drive.pathAccelerationLimit.coerceIn(0.05, 20.0)
+        val translationDeltaLimit = accelerationLimit * dtSeconds
+        val deltaX = requestedX - previousXVelocity
+        val deltaY = requestedY - previousYVelocity
+        val deltaMagnitude = hypot(deltaX, deltaY)
+        val translationScale = if (deltaMagnitude > translationDeltaLimit && deltaMagnitude > 0.0) {
+            translationDeltaLimit / deltaMagnitude
+        } else 1.0
+        val angularAccelerationLimit = accelerationLimit *
+            (GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND /
+                GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND.coerceAtLeast(0.01))
+        val angularDeltaLimit = angularAccelerationLimit * dtSeconds
+        command.targetXVelocity = previousXVelocity + deltaX * translationScale
+        command.targetYVelocity = previousYVelocity + deltaY * translationScale
+        command.targetAngularVelocity = previousAngularVelocity +
+            (requestedOmega - previousAngularVelocity).coerceIn(-angularDeltaLimit, angularDeltaLimit)
+        previousXVelocity = command.targetXVelocity
+        previousYVelocity = command.targetYVelocity
+        previousAngularVelocity = command.targetAngularVelocity
         command.timestampMs = now
         return commandResult
     }
@@ -254,16 +309,24 @@ internal class StarterFrcDriveToPoseTask(
 
     override fun releaseRuntimeState() {
         settledSamples = 0
+        lastControllerTimestampMs = -1L
+        previousXVelocity = 0.0
+        previousYVelocity = 0.0
+        previousAngularVelocity = 0.0
+        xController.reset()
+        yController.reset()
+        headingController.reset()
         super.releaseRuntimeState()
     }
 
     private companion object {
-        const val TRANSLATION_KP = 1.8
-        const val HEADING_KP = 3.0
         const val POSITION_TOLERANCE_METERS = 0.05
         val HEADING_TOLERANCE_RADIANS = Math.toRadians(2.0)
         const val REQUIRED_SETTLED_SAMPLES = 3
         const val MAX_DRIVE_DURATION_MS = 10_000L
+        const val NOMINAL_DT_SECONDS = 0.02
+        const val MIN_DT_SECONDS = 0.001
+        const val MAX_DT_SECONDS = 0.05
     }
 }
 

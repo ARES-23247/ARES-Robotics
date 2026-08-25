@@ -143,7 +143,7 @@ class StarterFrcAutonomousRuntimeTest {
     }
 
     @Test
-    fun `closed-loop starter task consumes the typed path velocity scale`() {
+    fun `closed-loop starter task consumes typed velocity and acceleration limits`() {
         RobotClock.useMockTime(20L)
         try {
             val store = Store()
@@ -161,7 +161,18 @@ class StarterFrcAutonomousRuntimeTest {
             )
             val executor = TaskExecutor().also { it.addTask(task) }
 
-            executor.update(store.state, 20L).forEach(store::dispatch)
+            var previousVelocity = 0.0
+            repeat(10) { index ->
+                val now = 20L + index * 20L
+                RobotClock.useMockTime(now)
+                store.dispatch(poseUpdate(0.0, 0.0, 0.0, now))
+                executor.update(store.state, now).forEach(store::dispatch)
+                assertTrue(
+                    store.state.drive.xVelocityMetersPerSecond - previousVelocity <= 0.0600000001,
+                    "acceleration limit must bound each 20 ms command change",
+                )
+                previousVelocity = store.state.drive.xVelocityMetersPerSecond
+            }
 
             assertEquals(0.425, store.state.drive.xVelocityMetersPerSecond, 1e-12)
         } finally {
