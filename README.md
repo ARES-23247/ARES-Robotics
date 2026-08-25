@@ -58,7 +58,7 @@ Run commands from this repository root:
 .\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
-Normal FTC, FRC, and Analytics builds consume immutable releases from Maven Central. To test an unpublished library change against a sibling consumer without composite substitution, publish the isolated bundle and pass its repository explicitly:
+Normal FTC, FRC, and Analytics builds consume immutable releases from the ARES GitHub Maven repository, with Maven Central retained as an optional secondary distribution channel. To test an unpublished library change against a sibling consumer without composite substitution, publish the isolated bundle and pass its repository explicitly:
 
 ```powershell
 .\gradlew.bat publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"

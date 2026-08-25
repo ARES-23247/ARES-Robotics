@@ -1,50 +1,53 @@
-# Publishing ARESLib to Maven Central
+# Publishing ARESLib
 
-ARESLib publishes ten coordinated artifacts under the verified `org.aresfirst.ares` namespace. `aresVersion` in `gradle.properties` is the local source of truth; the protected release workflow overrides it with its reviewed input. Kotlin package names remain `com.areslib.*` for source and binary compatibility.
+ARESLib publishes ten coordinated artifacts under the verified `org.aresfirst.ares` namespace. `aresVersion` in `gradle.properties` is the source of truth. Kotlin package names remain `com.areslib.*` for source and binary compatibility.
 
-## Release gate
+The primary release channel is the immutable ARES GitHub Maven repository at `https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven`. Maven Central is an optional secondary channel and must never block local development or the primary GitHub release.
 
-Before staging a release:
+## Candidate validation
+
+Before assigning final coordinates:
 
 1. Update and review the public `.api` baselines with `./gradlew apiDump` when an intentional public API change was made.
-2. Choose a unique candidate version such as `8.0.0-rc.<commit>`, then run
-   `./gradlew clean test apiCheck publishReleaseValidation -ParesVersion=<candidate> --no-parallel`.
-3. Build FTC, FRC, and Analytics with composite substitution disabled and `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`.
-4. Confirm the release version is semantic and does not end in `-SNAPSHOT`.
+2. Choose one unique candidate such as `9.12.0-rc.<commit>` and run `./gradlew clean test apiCheck publishReleaseValidation -ParesVersion=<candidate> --no-parallel`.
+3. Build FTC, FRC, Analytics, and the starter repositories with composite substitution disabled and both `-ParesVersion=<candidate>` and `-ParesRepository=<absolute build/release-repository URI>`.
+4. Merge the implementation through a protected pull request only after its build and CodeQL checks pass.
 
-`publishReleaseValidation` writes a complete unsigned local Maven repository to `build/release-repository`. Ordinary validation rejects final release coordinates so a local candidate can never impersonate an immutable Central artifact. The protected release workflow is the only caller allowed to validate the exact final version; it first rejects versions already present on Maven Central. In that workflow, signing is enabled, so validation also proves that the in-memory key can sign every required file before any upload occurs.
+`publishReleaseValidation` writes a complete unsigned local Maven repository to `build/release-repository`. Ordinary validation rejects final release coordinates, so a developer repository cannot impersonate an immutable release.
 
-## Protected GitHub environment
+## Primary GitHub Maven release
 
-The `maven-central` GitHub Environment supplies exactly these secrets:
+1. Bump `aresVersion` to a new semantic version. Never reuse a version that exists on either release channel.
+2. Merge that version through a protected pull request.
+3. From the protected commit, confirm the requested version is absent from the remote `maven` branch.
+4. Run `./gradlew clean test apiCheck publishGitHubRepository -ParesVersion=<final> --no-parallel`.
+5. Add the generated `build/github-repository` content to the existing `maven` branch without deleting prior artifacts.
+6. Commit and push the repository update, then resolve the BOM and representative modules from the remote GitHub URL in a clean consumer build.
+7. Tag the protected source commit only after remote resolution succeeds.
 
-- `MAVEN_CENTRAL_USERNAME`
-- `MAVEN_CENTRAL_PASSWORD`
-- `SIGNING_KEY` (the complete ASCII-armored private key)
-- `SIGNING_PASSWORD`
+The `maven` branch is append-only release storage. Every version identifies one immutable byte sequence. Repository ordering or caches must never produce two different binaries with the same coordinate.
 
-Do not add these values to repository secrets, Gradle files, logs, or local source control. Configure required reviewers on the environment so an accidental workflow dispatch cannot upload a deployment.
+## Optional Maven Central staging
 
-## Stage and publish
+Central publication is separate from the primary release. The protected `maven-central` GitHub Environment supplies `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY`, and `SIGNING_PASSWORD`. Do not place these values in Gradle files, logs, or source control.
 
-1. Open **Actions → Stage Maven Central Release → Run workflow**.
-2. Enter the exact semantic version, such as `8.0.0`.
-3. Approve the protected `maven-central` environment deployment.
-4. Wait for tests, API checks, signed local publication, and `stageMavenCentral` to succeed.
-5. Open Maven Central Portal **Deployments**, wait for the status to become **Validated**, review the deployment, and click **Publish**.
-
-The workflow deliberately stages rather than automatically publishing. Maven Central releases are immutable, so the human review is the final safety gate. If validation fails, fix the source/configuration and stage a new deployment; never reuse a version that Central has already published.
+When Central quota and authorization are available, dispatch **Stage Maven Central Release** for the same already-released version, approve the protected environment, review the validated deployment in the Central Portal, and publish it. Never change the artifacts or reuse a coordinate merely because Central staging failed.
 
 ## Student consumption
 
-Season projects import the BOM once and omit versions from individual modules:
+Season projects declare the ARES GitHub Maven repository and import the BOM once:
 
 ```kotlin
+repositories {
+    maven("https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven")
+    mavenCentral()
+}
+
 dependencies {
-    implementation(platform("org.aresfirst.ares:ares-bom:8.0.0"))
+    implementation(platform("org.aresfirst.ares:ares-bom:9.12.0"))
     implementation("org.aresfirst.ares:core")
     implementation("org.aresfirst.ares:ftc-hardware")
 }
 ```
 
-Desktop simulation also selects exactly one native runtime for its host OS. The checked-in FTC/FRC build logic performs that selection automatically. Library developers may opt into the sibling source build with `-ParesUseSiblingLib=true`; student builds do not need the ARESLib checkout.
+Desktop simulation selects exactly one native runtime for its host OS. Checked-in FTC/FRC build logic performs that selection automatically. Library developers may opt into sibling source development with `-ParesUseSiblingLib=true`; student builds do not need an ARESLib checkout.
