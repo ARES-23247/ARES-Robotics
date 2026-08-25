@@ -9,15 +9,21 @@ on every build and user-owned source is never silently replaced.
 1. Open the project in ARES Robotics Studio.
 2. Use **Field Studio** to import the current season's official WPILib AprilTag JSON.
 3. Use **Robot Studio** to configure the drivetrain, controllers, mechanisms, safety, and simulation.
-4. Choose **Local Sim**, launch the simulator, and select **Start driving**. ARES Studio safely
-   enables the simulation-only FRC Driver Station and establishes a leased control connection; no
-   separate WPILib window is required.
+4. Choose **Local Sim** and launch the simulator. Select **Start driving** for TeleOp, or choose a
+   compiled routine in the simulator strip and select **Run auto**. ARES Studio safely enables the
+   simulation-only FRC Driver Station and establishes a leased control connection; no separate
+   WPILib window is required. For autonomous, confirm the robot locks the exact requested routine
+   ID before motion begins.
 5. Complete **Hardware Review** before adding a physical adapter or deploying to a RoboRIO.
 
 ARES Studio discovers a compatible JDK 17 installation, including the WPILib JDK, for project
 verification and simulation. Advanced users can still run `./gradlew simulateJava` directly. A
 different JDK can bundle an older Microsoft C++ runtime and cause WPILib to fail before robot code
 starts; ARES reports that as a workstation setup problem instead of treating it as a robot defect.
+
+The simulator still uses WPILib HAL underneath Studio. This preserves RoboRIO timing, mode
+transitions, and WPILib device behavior. The separate HALSim control GUI is an opt-in mentor
+diagnostic; it is not needed and does not open in the normal student workflow.
 
 The Studio control bridge exists only in desktop simulation. It requires a neutral first frame,
 rejects stale or out-of-order commands, expires after 500 ms of receiver time, publishes an atomic

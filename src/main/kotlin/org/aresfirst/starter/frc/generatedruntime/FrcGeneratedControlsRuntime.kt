@@ -7,6 +7,8 @@ import org.aresfirst.starter.frc.generated.GeneratedAresProjectControlTaskSink
 import com.areslib.input.ControllerBindingRuntime
 import com.areslib.input.InputFrame
 import com.areslib.routine.RoutineManager
+import com.areslib.routine.RoutineRequestResult
+import com.areslib.routine.RoutineStartPolicy
 import com.areslib.sequencer.Task
 import com.areslib.sequencer.TaskExecutor
 import com.areslib.state.RobotState
@@ -134,6 +136,15 @@ internal class FrcGeneratedControlsRuntime(
             val actions = directTaskExecutor.update(stateProvider(), RobotClock.currentTimeMillis())
             for (index in actions.indices) dispatch(actions[index])
         }
+        updateRoutines()
+    }
+
+    /** Starts one checked-in generated routine; callers own the surrounding robot mode lifecycle. */
+    fun requestRoutine(routineId: String): RoutineRequestResult =
+        routineManager.request(routineId, RoutineStartPolicy.RESTART_EXISTING)
+
+    /** Advances generated routines without sampling TeleOp controls. */
+    fun updateRoutines() {
         if (routineManager.activeCount > 0 || routineManager.queuedCount > 0) routineManager.update()
     }
 

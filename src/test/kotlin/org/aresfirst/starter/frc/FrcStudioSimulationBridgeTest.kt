@@ -1,6 +1,9 @@
 package org.aresfirst.starter.frc
 
 import com.areslib.input.InputFrame
+import com.areslib.state.FieldType
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldDocument
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -8,6 +11,14 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class FrcStudioSimulationBridgeTest {
+    @Test
+    fun `Studio mode command keeps autonomous distinct from leased TeleOp`() {
+        assertEquals(FrcStudioRequestedMode.TELEOP, decodeFrcStudioRequestedMode(" ENABLE_TELEOP "))
+        assertEquals(FrcStudioRequestedMode.AUTONOMOUS, decodeFrcStudioRequestedMode("enable_autonomous"))
+        assertEquals(FrcStudioRequestedMode.DISABLED, decodeFrcStudioRequestedMode("DISABLE"))
+        assertEquals(FrcStudioRequestedMode.DISABLED, decodeFrcStudioRequestedMode("unexpected"))
+    }
+
     @Test
     fun `new session requires neutral then accepts fresh motion`() {
         val gate = FrcStudioDriveFrameGate()
@@ -70,6 +81,49 @@ class FrcStudioSimulationBridgeTest {
         assertTrue(frame.button(0))
         assertFalse(frame.button(1))
         assertTrue(frame.button(2))
+    }
+
+    @Test
+    fun `field gate accepts exact retry but rejects stale and conflicting revisions`() {
+        val gate = FrcStudioFieldGate()
+        val revisionFive = RobotFieldConfig(
+            id = "practice-field",
+            name = "Practice field",
+            revision = 5L,
+            fieldType = FieldType.FRC,
+            widthMeters = 16.541,
+            heightMeters = 8.211,
+        )
+        val payload = RobotFieldDocument.encode(revisionFive)
+
+        assertTrue(gate.accept(payload)?.changed == true)
+        assertFalse(gate.accept(payload)?.changed ?: true)
+        assertNull(gate.accept(RobotFieldDocument.encode(revisionFive.copy(name = "Conflicting bytes"))))
+        assertTrue(gate.rejectionReason?.contains("reused") == true)
+        assertNull(gate.accept(RobotFieldDocument.encode(revisionFive.copy(revision = 4L))))
+        assertTrue(gate.rejectionReason?.contains("stale") == true)
+    }
+
+    @Test
+    fun `FRC field receipt uses the shared exact-apply contract`() {
+        val config = RobotFieldConfig(
+            id = "practice-field",
+            name = "Practice field",
+            revision = 5L,
+            fieldType = FieldType.FRC,
+            widthMeters = 16.541,
+            heightMeters = 8.211,
+        )
+        val application = requireNotNull(FrcStudioFieldGate().accept(RobotFieldDocument.encode(config)))
+
+        val receipt = encodeFrcStudioFieldReceipt(application, "frc-sim", 3L)
+
+        assertTrue(receipt.contains("\"session\":\"frc-sim\""))
+        assertFalse(receipt.contains("simulatorSession"))
+        assertTrue(receipt.contains("\"configId\":\"practice-field\""))
+        assertTrue(receipt.contains("\"revision\":5"))
+        assertTrue(receipt.contains("\"sequence\":3"))
+        assertTrue(receipt.contains("\"sha256\":\"${application.sha256}\""))
     }
 
     private fun frame(
