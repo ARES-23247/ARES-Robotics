@@ -8,6 +8,15 @@ import org.junit.jupiter.api.Test
 
 class StarterFrcGuidedTuningTest {
     @Test
+    fun `generic starter explicitly advertises no live SysId motion capability`() {
+        val telemetry = MemoryTelemetry()
+        val robot = StarterRobotRuntime(telemetry = telemetry)
+
+        assertEquals("", telemetry.getString("SysId/SupportedMechanisms", "missing"))
+        robot.close()
+    }
+
+    @Test
     fun `canonical generated tuning initializes the consumed Redux value`() {
         val robot = StarterRobotRuntime(
             telemetry = MemoryTelemetry(),
@@ -15,6 +24,13 @@ class StarterFrcGuidedTuningTest {
         )
 
         assertEquals(0.5, robot.store.state.tuning.drive.pathVelocityScale, 0.0)
+        assertEquals(
+            true,
+            (robot.telemetry as MemoryTelemetry).getBoolean(
+                "${TuningTopics.ROOT}/Parameters/frc.starter.path.velocity-scale/ConsumerSupported",
+                false,
+            ),
+        )
         robot.close()
     }
 
