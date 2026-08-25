@@ -93,9 +93,11 @@ class SimPhysicsWorld {
             activeObstacles.addAll(obstacles)
             val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)
             gamePieces.addAll(elements)
-            NT4FieldPublisher.publishConfigId(activeConfig.id)
             NT4FieldPublisher.publishObstacles(activeConfig.obstacles)
             NT4FieldPublisher.publishAprilTags(activeConfig.apriltags)
+            // Publish the receipt last: it is the application-level acknowledgement that every
+            // field body and dashboard-facing field topic above now represents this exact document.
+            NT4FieldPublisher.publishAppliedConfig(activeConfig)
         } else {
             val canonicalConfigPaths = canonicalFieldConfigPaths(
                 workingDirectory = File(System.getProperty("user.dir")),
