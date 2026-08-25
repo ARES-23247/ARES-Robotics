@@ -13,6 +13,8 @@ import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresDrivebaseConfig
 import org.aresfirst.starter.frc.generatedruntime.FrcControllerPortSampler
 import org.aresfirst.starter.frc.generatedruntime.WpilibFrcControllerPortSampler
+import java.security.MessageDigest
+import java.util.UUID
 import kotlin.math.abs
 
 /** One fresh, validated ARES Studio control frame for the FRC desktop simulator. */
@@ -27,6 +29,15 @@ internal data class FrcStudioDriveCommand(
     val buttonX: Boolean,
     val receivedAtMs: Long,
 )
+
+internal enum class FrcStudioRequestedMode { DISABLED, TELEOP, AUTONOMOUS }
+
+internal fun decodeFrcStudioRequestedMode(command: String?): FrcStudioRequestedMode =
+    when (command?.trim()?.uppercase()) {
+        FrcStudioSimulationBridge.DRIVER_STATION_ENABLE_TELEOP -> FrcStudioRequestedMode.TELEOP
+        FrcStudioSimulationBridge.DRIVER_STATION_ENABLE_AUTONOMOUS -> FrcStudioRequestedMode.AUTONOMOUS
+        else -> FrcStudioRequestedMode.DISABLED
+    }
 
 /**
  * Fail-closed receiver for the shared ARES Studio v2 drive frame.
@@ -229,6 +240,91 @@ internal fun FrcStudioDriveCommand.copyIntoControllerFrame(
     frame.setButton(2, buttonX)
 }
 
+/** A validated field update plus the exact payload digest Studio expects in its receipt. */
+internal data class FrcStudioFieldApplication(
+    val contract: StarterFieldContract,
+    val sha256: String,
+    val changed: Boolean,
+)
+
+internal fun encodeFrcStudioFieldReceipt(
+    application: FrcStudioFieldApplication,
+    simulatorSession: String,
+    sequence: Long,
+): String {
+    require(simulatorSession.isNotBlank()) { "simulator field receipt session must not be blank" }
+    require(sequence > 0L) { "simulator field receipt sequence must be positive" }
+    val config = application.contract.config
+    return buildString(320) {
+        append("{\"session\":\"")
+        append(simulatorSession.replace("\\", "\\\\").replace("\"", "\\\""))
+        append("\",\"sequence\":")
+        append(sequence)
+        append(",\"configId\":\"")
+        append(config.id.replace("\\", "\\\\").replace("\"", "\\\""))
+        append("\",\"revision\":")
+        append(config.revision)
+        append(",\"sha256\":\"")
+        append(application.sha256)
+        append("\",\"obstacleCount\":")
+        append(config.obstacles.size)
+        append(",\"elementCount\":")
+        append(config.elements.size)
+        append(",\"aprilTagCount\":")
+        append(config.apriltags.size)
+        append('}')
+    }
+}
+
+/**
+ * Deterministic revision gate for canonical FRC field documents received from Studio.
+ *
+ * Re-sending the exact active revision is accepted so a reconnected UI can obtain a fresh
+ * receipt without resetting physics. Reusing one revision for different bytes or sending an
+ * older revision for the same field ID fails closed.
+ */
+internal class FrcStudioFieldGate(
+    private val loader: (ByteArray) -> StarterFieldContract? = ::loadStarterFieldContract,
+) {
+    private var activeConfigId = ""
+    private var activeRevision = Long.MIN_VALUE
+    private var activeSha256 = ""
+
+    var rejectionReason: String? = null
+        private set
+
+    fun accept(payload: String): FrcStudioFieldApplication? {
+        rejectionReason = null
+        if (payload.isBlank()) return reject("Canonical field payload is empty")
+        val contract = loader(payload.toByteArray(Charsets.UTF_8))
+            ?: return reject(StarterFieldContractLoader.error ?: "Canonical FRC field is invalid")
+        val config = contract.config
+        val digest = sha256(payload)
+        if (config.id == activeConfigId) {
+            if (config.revision < activeRevision) {
+                return reject("Ignored stale field revision ${config.revision}; active revision is $activeRevision")
+            }
+            if (config.revision == activeRevision && digest != activeSha256) {
+                return reject("Field revision ${config.revision} was reused with different content")
+            }
+        }
+        val changed = config.id != activeConfigId || config.revision != activeRevision || digest != activeSha256
+        activeConfigId = config.id
+        activeRevision = config.revision
+        activeSha256 = digest
+        return FrcStudioFieldApplication(contract, digest, changed)
+    }
+
+    private fun reject(reason: String): FrcStudioFieldApplication? {
+        rejectionReason = reason
+        return null
+    }
+
+    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(Charsets.UTF_8))
+        .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+}
+
 /**
  * Simulation-only ARES Studio bridge for the generic FRC starter.
  *
@@ -240,6 +336,8 @@ internal class FrcStudioSimulationBridge(
     instance: NetworkTableInstance = NetworkTableInstance.getDefault(),
     private val fallbackSampler: FrcControllerPortSampler = WpilibFrcControllerPortSampler(),
     private val gate: FrcStudioDriveFrameGate = FrcStudioDriveFrameGate(),
+    private val fieldGate: FrcStudioFieldGate = FrcStudioFieldGate(),
+    private val onFieldApplied: (StarterFieldContract) -> Unit = {},
 ) : FrcControllerPortSampler, AutoCloseable {
     private val driveSubscriber: DoubleArraySubscriber = instance
         .getDoubleArrayTopic(DRIVE_FRAME_TOPIC)
@@ -253,6 +351,18 @@ internal class FrcStudioSimulationBridge(
     private val statePublisher: StringPublisher = instance
         .getStringTopic(DRIVER_STATION_STATE_TOPIC)
         .publish()
+    private val fieldSubscriber: StringSubscriber = instance
+        .getStringTopic(FIELD_CONFIG_TOPIC)
+        .subscribe("", PubSubOption.keepDuplicates(true), PubSubOption.pollStorage(8))
+    private val fieldReceiptPublisher: StringPublisher = instance
+        .getStringTopic(FIELD_APPLIED_RECEIPT_TOPIC)
+        .publish()
+    private val fieldErrorPublisher: StringPublisher = instance
+        .getStringTopic(FIELD_APPLY_ERROR_TOPIC)
+        .publish()
+    private val networkTables = instance
+    private val simulatorSession = UUID.randomUUID().toString()
+    private var fieldReceiptSequence = 0L
     private val acknowledgement = DoubleArray(FrcStudioDriveFrameGate.ACK_VALUE_COUNT)
     private var studioControlRequested = false
     private var latestCommand: FrcStudioDriveCommand? = null
@@ -286,45 +396,70 @@ internal class FrcStudioSimulationBridge(
     /** Polls commands, applies simulated Driver Station state, and publishes one atomic ack. */
     fun update(nowMs: Long = RobotClock.currentTimeMillis()) {
         check(!closed) { "FRC Studio simulation bridge is closed" }
+        updateFieldDocuments()
         for (update in driveSubscriber.readQueue()) gate.accept(update.value, nowMs)
         latestCommand = gate.current(nowMs)
 
-        studioControlRequested = when (commandSubscriber.get().trim().uppercase()) {
-            DRIVER_STATION_ENABLE_TELEOP -> true
-            DRIVER_STATION_DISABLE -> false
-            else -> false
-        }
-        val shouldEnable = studioControlRequested &&
+        val requestedMode = decodeFrcStudioRequestedMode(commandSubscriber.get())
+        studioControlRequested = requestedMode == FrcStudioRequestedMode.TELEOP
+        val autonomousRequested = requestedMode == FrcStudioRequestedMode.AUTONOMOUS
+        val shouldEnableTeleOp = studioControlRequested &&
             gate.receiverReady(nowMs) &&
             latestCommand?.isTeleopMode == true &&
             latestCommand?.isFieldCentric == true
-        applyDriverStationState(shouldEnable)
+        applyDriverStationState(
+            enabled = shouldEnableTeleOp || autonomousRequested,
+            autonomous = autonomousRequested,
+        )
 
         gate.copyAcknowledgement(acknowledgement, nowMs)
         acknowledgementPublisher.set(acknowledgement)
         statePublisher.set(
             when {
-                shouldEnable -> DRIVER_STATION_TELEOP_ENABLED
+                autonomousRequested -> DRIVER_STATION_AUTONOMOUS_ENABLED
+                shouldEnableTeleOp -> DRIVER_STATION_TELEOP_ENABLED
                 studioControlRequested -> DRIVER_STATION_WAITING_FOR_CONTROL
                 else -> DRIVER_STATION_DISABLED
             }
         )
     }
 
+    /** Applies queued canonical field documents independently of Driver Station state. */
+    internal fun updateFieldDocuments() {
+        for (update in fieldSubscriber.readQueue()) {
+            val application = fieldGate.accept(update.value)
+            if (application == null) {
+                fieldErrorPublisher.set(fieldGate.rejectionReason ?: "Canonical FRC field was rejected")
+                networkTables.flush()
+                continue
+            }
+            if (application.changed) onFieldApplied(application.contract)
+            fieldErrorPublisher.set("")
+            fieldReceiptSequence++
+            fieldReceiptPublisher.set(
+                encodeFrcStudioFieldReceipt(application, simulatorSession, fieldReceiptSequence)
+            )
+            networkTables.flush()
+        }
+    }
+
     override fun close() {
         if (closed) return
         closed = true
-        applyDriverStationState(enabled = false)
+        applyDriverStationState(enabled = false, autonomous = false)
         statePublisher.set(DRIVER_STATION_DISABLED)
         driveSubscriber.close()
         commandSubscriber.close()
+        fieldSubscriber.close()
         acknowledgementPublisher.close()
         statePublisher.close()
+        fieldReceiptPublisher.close()
+        fieldErrorPublisher.close()
     }
 
-    private fun applyDriverStationState(enabled: Boolean) {
+    private fun applyDriverStationState(enabled: Boolean, autonomous: Boolean) {
         DriverStationSim.setDsAttached(true)
-        DriverStationSim.setAutonomous(false)
+        DriverStationSim.setAutonomous(autonomous)
         DriverStationSim.setTest(false)
         DriverStationSim.setEnabled(enabled)
         DriverStationSim.notifyNewData()
@@ -334,10 +469,15 @@ internal class FrcStudioSimulationBridge(
         const val DRIVER_STATION_COMMAND_TOPIC = "ARES/Simulation/FrcDriverStationCommand"
         const val DRIVER_STATION_STATE_TOPIC = "ARES/Simulation/FrcDriverStationState"
         const val DRIVER_STATION_ENABLE_TELEOP = "ENABLE_TELEOP"
+        const val DRIVER_STATION_ENABLE_AUTONOMOUS = "ENABLE_AUTONOMOUS"
         const val DRIVER_STATION_DISABLE = "DISABLE"
         const val DRIVER_STATION_TELEOP_ENABLED = "TELEOP_ENABLED"
+        const val DRIVER_STATION_AUTONOMOUS_ENABLED = "AUTONOMOUS_ENABLED"
         const val DRIVER_STATION_WAITING_FOR_CONTROL = "WAITING_FOR_CONTROL"
         const val DRIVER_STATION_DISABLED = "DISABLED"
+        const val FIELD_CONFIG_TOPIC = "ARES/Input/fieldConfig"
+        const val FIELD_APPLIED_RECEIPT_TOPIC = "ARES/Field/AppliedReceipt"
+        const val FIELD_APPLY_ERROR_TOPIC = "ARES/Field/ApplyError"
         private const val DRIVE_FRAME_TOPIC = "ARES/Input/driveFrame"
         private const val DRIVE_ACK_TOPIC = "ARES/Control/DriveInputAck"
     }

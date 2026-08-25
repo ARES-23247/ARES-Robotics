@@ -81,7 +81,10 @@ dependencies {
 }
 
 wpi.java.debugJni = false
-wpi.sim.addGui().defaultEnabled = true
+def aresFrcHalGuiEnabled = providers.gradleProperty('aresFrcHalGui')
+    .map { it.toBoolean() }
+    .getOrElse(false)
+wpi.sim.addGui().defaultEnabled = aresFrcHalGuiEnabled
 wpi.sim.addDriverstation()
 
 jar {
@@ -93,6 +96,11 @@ jar {
 tasks.withType(JavaExec).configureEach {
     mainClass = ROBOT_MAIN_CLASS
     classpath = sourceSets.main.runtimeClasspath
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        def requestedJava = providers.gradleProperty('aresFrcJavaExecutable').orNull
+        def wpilibJava = file(requestedJava ?: 'C:/Users/Public/wpilib/2026/jdk/bin/java.exe')
+        if (wpilibJava.isFile()) executable = wpilibJava.absolutePath
+    }
 }
 
 test {
