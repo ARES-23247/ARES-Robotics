@@ -71,7 +71,7 @@ After a cross-repository library change:
 .\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
 ```
 
-Then build and test each affected sibling with `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`. Normal builds resolve the pinned release from Maven Central; `-ParesUseSiblingLib=true` is the explicit source-substitution escape hatch.
+Then build and test each affected sibling with `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`. Normal builds resolve the pinned release from the ARES GitHub Maven repository, with Maven Central as an optional secondary channel; `-ParesUseSiblingLib=true` is the explicit source-substitution escape hatch.
 
 ## Common failures
 
