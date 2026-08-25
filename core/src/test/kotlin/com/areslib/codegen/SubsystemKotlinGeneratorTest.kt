@@ -30,6 +30,10 @@ import com.areslib.subsystem.supportsPlatform
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystem
 import com.areslib.subsystem.subsystemTargetCapabilities
+import com.areslib.tuning.TuningApplyPolicy
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningValue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
@@ -131,7 +135,24 @@ class SubsystemKotlinGeneratorTest {
                     token.replaceFirstChar(Char::uppercaseChar)
                 }
                 val documentId = "template-${template.name.lowercase().replace('_', '-')}"
-                val document = SubsystemTemplates.create(template, documentId, typeName, platform)
+                val source = SubsystemTemplates.create(template, documentId, typeName, platform)
+                val document = if (template == SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM) {
+                    val loop = source.controlLoops.single()
+                    source.copy(
+                        tuningParameters = listOf(
+                            TuningParameterDeclaration(
+                                uid = "$documentId.primary.kp",
+                                key = "subsystem.${documentId.replace("-", "")}.primary.kp",
+                                componentUid = loop.uid,
+                                displayName = "Generated kP",
+                                description = "Compiled tuning consumer coverage",
+                                type = TuningParameterType.DOUBLE,
+                                defaultValue = TuningValue(doubleValue = loop.kP),
+                                applyPolicy = TuningApplyPolicy.DISABLED_ONLY,
+                            )
+                        )
+                    )
+                } else source
                 val target = SubsystemKotlinCodegenTarget(
                     platform,
                     "org.example.templates.${platform.name.lowercase()}",
@@ -814,7 +835,31 @@ class SubsystemKotlinGeneratorTest {
                     velocityFieldId = "target",
                 ),
             )
-            source.copy(controlLoops = listOf(loop))
+            source.copy(
+                controlLoops = listOf(loop),
+                tuningParameters = listOf(
+                    TuningParameterDeclaration(
+                        uid = "shooter.primary.kp",
+                        key = "subsystem.shooter.primary.kp",
+                        componentUid = loop.uid,
+                        displayName = "Shooter kP",
+                        description = "Velocity proportional gain",
+                        type = TuningParameterType.DOUBLE,
+                        defaultValue = TuningValue(doubleValue = 4.0),
+                        applyPolicy = TuningApplyPolicy.DISABLED_ONLY,
+                    ),
+                    TuningParameterDeclaration(
+                        uid = "shooter.primary.ks",
+                        key = "subsystem.shooter.primary.ks",
+                        componentUid = loop.uid,
+                        displayName = "Shooter kS",
+                        description = "Static feedforward",
+                        type = TuningParameterType.DOUBLE,
+                        defaultValue = TuningValue(doubleValue = 0.3),
+                        applyPolicy = TuningApplyPolicy.DISABLED_ONLY,
+                    ),
+                ),
+            )
         }
 
         val files = SubsystemKotlinGenerator.generate(
@@ -829,6 +874,12 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(controller.contains("primaryStatic"))
         assertTrue(controller.contains("primaryFeedforward"))
         assertTrue(controller.contains("0.01 * primaryDesiredAcceleration"))
+        assertTrue(controller.contains("private var primaryKp = 4.0"))
+        assertTrue(controller.contains("private var primaryKs = 0.3"))
+        assertTrue(controller.contains("\"shooter.primary.kp\" -> true"))
+        assertTrue(controller.contains("primaryKp * primaryError"))
+        assertTrue(controller.contains("primaryKs * sign(primaryDesiredVelocity)"))
+        assertTrue(controller.contains("override fun applyTuningParameter"))
     }
 
     @Test
@@ -935,11 +986,28 @@ class SubsystemKotlinGeneratorTest {
             maximumOutput = 1.0,
         )
         val angularFields = if (continuous) setOfNotNull(loop.targetFieldId, loop.measurementFieldId) else emptySet()
+        val tuningParameters = if (strategy == SubsystemControlStrategy.VELOCITY_PID) {
+            listOf(
+                TuningParameterDeclaration(
+                    uid = "$documentId.primary.kp",
+                    key = "subsystem.${documentId.replace("-", "")}.primary.kp",
+                    componentUid = loop.uid,
+                    displayName = "Velocity kP",
+                    description = "Behavioral generated tuning-consumer coverage",
+                    type = TuningParameterType.DOUBLE,
+                    defaultValue = TuningValue(doubleValue = loop.kP),
+                    applyPolicy = TuningApplyPolicy.LIVE_SAFE,
+                )
+            )
+        } else {
+            emptyList()
+        }
         return base.copy(
             stateFields = base.stateFields.map { field ->
                 if (field.fieldId in angularFields) field.copy(unit = "rad", minimum = null, maximum = null) else field
             },
             controlLoops = listOf(loop),
+            tuningParameters = tuningParameters,
         )
     }
 
@@ -1000,6 +1068,19 @@ class SubsystemKotlinGeneratorTest {
             SubsystemControlStrategy.VELOCITY_PID -> """
                 controller.update(state(2.0, 0.5), scale = 1.0)
                 require(closeTo(io.lastCommand, 1.0)) { "velocity clamp: ${'$'}{io.lastCommand}" }
+                val parameterUid = "${document.documentId}.primary.kp"
+                require(controller.supportsTuningParameter(parameterUid)) { "generated kP binding is not advertised" }
+                require(controller.applyTuningParameter(parameterUid, TuningValue(doubleValue = 0.25))) {
+                    "generated kP binding rejected a finite value"
+                }
+                controller.update(state(1.0, 0.0), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.25)) { "live generated kP was not consumed: ${'$'}{io.lastCommand}" }
+                require(!controller.applyTuningParameter(parameterUid, TuningValue(doubleValue = Double.NaN))) {
+                    "generated kP binding accepted a non-finite value"
+                }
+                require(!controller.applyTuningParameter("unknown", TuningValue(doubleValue = 1.0))) {
+                    "generated controller accepted an unknown parameter"
+                }
                 controller.update(state(0.0, Double.NaN), scale = 1.0)
                 require(closeTo(io.lastCommand, 0.0)) { "velocity invalid feedback: ${'$'}{io.lastCommand}" }
             """.trimIndent()
@@ -1031,6 +1112,7 @@ class SubsystemKotlinGeneratorTest {
         return """
             package $packageName
 
+            import com.areslib.tuning.TuningValue
             import com.areslib.util.RobotClock
             import kotlin.math.abs
 

@@ -21,6 +21,14 @@ class TypedTuningRuntimeTest {
         assertEquals(TuningUpdateResult.SESSION_NOT_ARMED, runtime.apply("p.live", TuningValue(doubleValue = 2.0), disarmed))
         assertEquals(TuningUpdateResult.APPLIED, runtime.apply("p.live", TuningValue(doubleValue = 2.0), TuningApplyContext(true, false)))
         assertEquals(TuningUpdateResult.ROBOT_MUST_BE_DISABLED, runtime.apply("p.disabled", TuningValue(intValue = 2), TuningApplyContext(true, false)))
+        assertEquals(
+            TuningUpdateResult.APPLIED,
+            runtime.apply(
+                "p.disabled",
+                TuningValue(intValue = 2),
+                TuningApplyContext(true, false, outputsNeutralAndInhibited = true),
+            ),
+        )
         assertEquals(TuningUpdateResult.APPLIED, runtime.apply("p.disabled", TuningValue(intValue = 2), TuningApplyContext(true, true)))
         assertEquals(TuningUpdateResult.RESTART_REQUIRED, runtime.apply("p.restart", TuningValue(booleanValue = false), TuningApplyContext(true, true)))
         assertEquals(TuningUpdateResult.REBUILD_REQUIRED, runtime.apply("p.rebuild", TuningValue(textValue = "b"), TuningApplyContext(true, true)))

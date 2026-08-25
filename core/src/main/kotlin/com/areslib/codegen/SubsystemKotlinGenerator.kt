@@ -583,6 +583,10 @@ $fieldLines
     }
 
     private fun controllerSource(document: SubsystemDocument, pkg: String): String {
+        val tuningBindings = document.controllerTuningBindings()
+        val tuningStateFields = tuningBindings.joinToString("\n") { binding ->
+            "    private var ${binding.variableName} = ${binding.initialValue.kotlinDouble()}"
+        }
         val pidStateFields = document.controlLoops.filter { it.strategy in PID_STRATEGIES }.joinToString("\n") { loop ->
             "    private var ${loop.loopId}Integral = 0.0\n" +
                 "    private var ${loop.loopId}PreviousError = 0.0\n" +
@@ -599,7 +603,7 @@ $fieldLines
         val bangBangStateFields = document.controlLoops
             .filter { it.strategy == SubsystemControlStrategy.BANG_BANG }
             .joinToString("\n") { loop -> "    private var ${loop.loopId}BangBangOutput = 0.0" }
-        val stateFields = listOf(pidStateFields, profileStateFields, bangBangStateFields)
+        val stateFields = listOf(tuningStateFields, pidStateFields, profileStateFields, bangBangStateFields)
             .filter(String::isNotBlank)
             .joinToString("\n")
         val loopBodies = document.controlLoops.joinToString("\n\n") { loop -> controllerLoop(document, loop) }
@@ -733,15 +737,46 @@ ${if (document.safety.faultRecovery.enabled) "                            resetA
                 }
             """.trimEnd()
         } else ""
+        val tuningSupportBody = tuningBindings.joinToString("\n") { binding ->
+            "        ${binding.parameterUid.quoted()} -> true"
+        }
+        val tuningSupport = if (tuningBindings.isEmpty()) {
+            "    override fun supportsTuningParameter(parameterUid: String): Boolean = false"
+        } else {
+            """    override fun supportsTuningParameter(parameterUid: String): Boolean = when (parameterUid) {
+$tuningSupportBody
+        else -> false
+    }"""
+        }
+        val tuningApplyCases = tuningBindings.joinToString("\n") { binding ->
+            """            ${binding.parameterUid.quoted()} -> {
+                ${binding.variableName} = candidate
+                reset()
+                true
+            }"""
+        }
+        val tuningApply = if (tuningBindings.isEmpty()) {
+            "    override fun applyTuningParameter(parameterUid: String, value: TuningValue): Boolean = false"
+        } else {
+            """    override fun applyTuningParameter(parameterUid: String, value: TuningValue): Boolean {
+        val candidate = value.doubleValue?.takeIf(Double::isFinite) ?: return false
+        return when (parameterUid) {
+$tuningApplyCases
+            else -> false
+        }
+    }"""
+        }
         return """
             package $pkg
 
+            import com.areslib.tuning.TuningValue
+            import com.areslib.tuning.TypedTuningConsumer
             import com.areslib.util.RobotClock
             import kotlin.math.abs
             import kotlin.math.sign
 
             /** Allocation-free controller generated from the visual/hand-authored subsystem DSL. */
-            class ${document.kotlinTypeName}Controller(private val io: ${document.kotlinTypeName}IO) {
+            class ${document.kotlinTypeName}Controller(private val io: ${document.kotlinTypeName}IO) : TypedTuningConsumer {
                 private var lastTimestampMs = 0L
                 private var homingStartedAtMs = Long.MIN_VALUE
                 private var homingEvidenceSinceMs = Long.MIN_VALUE
@@ -786,6 +821,10 @@ $automaticRecoveryHandling
 ${if (document.safety.faultRecovery.enabled) "                    resetAutomaticRecovery()" else ""}
             $reset
                 }
+
+            $tuningSupport
+
+            $tuningApply
 $continuousInputHelper
 
                 private fun updateHoming(state: ${document.kotlinTypeName}State, scale: Double, now: Long) {
@@ -887,9 +926,9 @@ $continuousInputHelper
         val ${loop.loopId}PreviousProfileVelocity = ${loop.loopId}ProfileVelocity
         if (${loop.loopId}Goal.isFinite() && ${loop.loopId}Measurement.isFinite()) {
             val ${loop.loopId}Remaining = $remainingExpression
-            val ${loop.loopId}StoppingVelocity = kotlin.math.sqrt(2.0 * ${loop.motionProfile.maximumAcceleration.kotlinDouble()} * abs(${loop.loopId}Remaining))
-            val ${loop.loopId}DesiredVelocity = sign(${loop.loopId}Remaining) * minOf(${loop.motionProfile.maximumVelocity.kotlinDouble()}, ${loop.loopId}StoppingVelocity)
-            val ${loop.loopId}VelocityStep = ${loop.motionProfile.maximumAcceleration.kotlinDouble()} * dtSeconds
+            val ${loop.loopId}StoppingVelocity = kotlin.math.sqrt(2.0 * ${document.controllerTuningExpression(loop, "maxacceleration", loop.motionProfile.maximumAcceleration)} * abs(${loop.loopId}Remaining))
+            val ${loop.loopId}DesiredVelocity = sign(${loop.loopId}Remaining) * minOf(${document.controllerTuningExpression(loop, "maxvelocity", loop.motionProfile.maximumVelocity)}, ${loop.loopId}StoppingVelocity)
+            val ${loop.loopId}VelocityStep = ${document.controllerTuningExpression(loop, "maxacceleration", loop.motionProfile.maximumAcceleration)} * dtSeconds
             ${loop.loopId}ProfileVelocity += (${loop.loopId}DesiredVelocity - ${loop.loopId}ProfileVelocity).coerceIn(-${loop.loopId}VelocityStep, ${loop.loopId}VelocityStep)
             val ${loop.loopId}PositionStep = ${loop.loopId}ProfileVelocity * dtSeconds
             if (abs(${loop.loopId}PositionStep) >= abs(${loop.loopId}Remaining)) {
@@ -925,7 +964,7 @@ $continuousInputHelper
             ${loop.loopId}HasPreviousError = true
             val ${loop.loopId}CandidateIntegral = ${loop.loopId}Integral + ${loop.loopId}Error * dtSeconds
 $feedforward
-            val ${loop.loopId}Unclamped = ${loop.kP.kotlinDouble()} * ${loop.loopId}Error + ${loop.kI.kotlinDouble()} * ${loop.loopId}CandidateIntegral + ${loop.kD.kotlinDouble()} * ${loop.loopId}Derivative + ${loop.loopId}Feedforward
+            val ${loop.loopId}Unclamped = ${document.controllerTuningExpression(loop, "kp", loop.kP)} * ${loop.loopId}Error + ${document.controllerTuningExpression(loop, "ki", loop.kI)} * ${loop.loopId}CandidateIntegral + ${document.controllerTuningExpression(loop, "kd", loop.kD)} * ${loop.loopId}Derivative + ${loop.loopId}Feedforward
             val ${loop.loopId}Output = ${loop.loopId}Unclamped.coerceIn(${loop.minimumOutput.kotlinDouble()}, ${loop.maximumOutput.kotlinDouble()})
             if (${loop.loopId}Unclamped == ${loop.loopId}Output || sign(${loop.loopId}Error) != sign(${loop.loopId}Unclamped - ${loop.loopId}Output)) {
                 ${loop.loopId}Integral = ${loop.loopId}CandidateIntegral
@@ -973,10 +1012,12 @@ $feedforward
             import com.areslib.action.RobotAction
             import com.areslib.state.RobotState
             import com.areslib.subsystem.Subsystem
+            import com.areslib.tuning.TuningValue
+            import com.areslib.tuning.TypedTuningConsumer
             import $registryPackage.GeneratedSubsystemRegistry
 
             /** Robot-loop host. Hardware reads, Redux updates, and output writes remain separated. */
-            class ${document.kotlinTypeName}Subsystem(private val io: ${document.kotlinTypeName}IO) : Subsystem {
+            class ${document.kotlinTypeName}Subsystem(private val io: ${document.kotlinTypeName}IO) : Subsystem, TypedTuningConsumer {
                 private val controller = ${document.kotlinTypeName}Controller(io)
 
                 /** Copies the already-refreshed hardware snapshot into immutable Redux state. */
@@ -1004,6 +1045,12 @@ $feedforward
                 override fun writeOutputs(state: RobotState, scale: Double) {
                     controller.update(state(state), scale, $interlockPermit)
                 }
+
+                override fun supportsTuningParameter(parameterUid: String): Boolean =
+                    controller.supportsTuningParameter(parameterUid)
+
+                override fun applyTuningParameter(parameterUid: String, value: TuningValue): Boolean =
+                    controller.applyTuningParameter(parameterUid, value)
 
             $setters
 
@@ -2662,9 +2709,9 @@ private fun feedforwardExpression(document: SubsystemDocument, loop: SubsystemCo
             ?: if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) "${loop.loopId}ProfileAcceleration" else "0.0"
         val gravity = when (ff.kind) {
             SubsystemFeedforwardKind.NONE, SubsystemFeedforwardKind.SIMPLE_MOTOR -> "0.0"
-            SubsystemFeedforwardKind.ELEVATOR -> ff.kG.kotlinDouble()
+            SubsystemFeedforwardKind.ELEVATOR -> document.controllerTuningExpression(loop, "kg", ff.kG)
             SubsystemFeedforwardKind.ARM ->
-                "${ff.kG.kotlinDouble()} * kotlin.math.cos(${document.numericStateExpression(requireNotNull(ff.gravityAngleFieldId))})"
+                "${document.controllerTuningExpression(loop, "kg", ff.kG)} * kotlin.math.cos(${document.numericStateExpression(requireNotNull(ff.gravityAngleFieldId))})"
             SubsystemFeedforwardKind.TWO_DOF_ARM -> {
                 val linkage = document.linkage
                 val theta1 = document.numericStateExpression(requireNotNull(linkage.joint1AngleFieldId))
@@ -2675,17 +2722,80 @@ private fun feedforwardExpression(document: SubsystemDocument, loop: SubsystemCo
                 } else {
                     sharedDistal
                 }
-                "${ff.kG.kotlinDouble()} * $torque"
+                "${document.controllerTuningExpression(loop, "kg", ff.kG)} * $torque"
             }
             SubsystemFeedforwardKind.FOUR_BAR_LINKAGE ->
                 error("Generated four-bar feedforward requires a closed-chain model and is intentionally unsupported")
         }
         return """            val ${loop.loopId}DesiredVelocity = $velocity
             val ${loop.loopId}DesiredAcceleration = $acceleration
-            val ${loop.loopId}Static = if (${loop.loopId}DesiredVelocity == 0.0) 0.0 else ${ff.kS.kotlinDouble()} * sign(${loop.loopId}DesiredVelocity)
-            val ${loop.loopId}Feedforward = ${loop.loopId}Static + ${ff.kV.kotlinDouble()} * ${loop.loopId}DesiredVelocity +
-                ${ff.kA.kotlinDouble()} * ${loop.loopId}DesiredAcceleration + $gravity"""
+            val ${loop.loopId}Static = if (${loop.loopId}DesiredVelocity == 0.0) 0.0 else ${document.controllerTuningExpression(loop, "ks", ff.kS)} * sign(${loop.loopId}DesiredVelocity)
+            val ${loop.loopId}Feedforward = ${loop.loopId}Static + ${document.controllerTuningExpression(loop, "kv", ff.kV)} * ${loop.loopId}DesiredVelocity +
+                ${document.controllerTuningExpression(loop, "ka", ff.kA)} * ${loop.loopId}DesiredAcceleration + $gravity"""
 }
+
+private data class GeneratedControllerTuningBinding(
+    val parameterUid: String,
+    val variableName: String,
+    val initialValue: Double,
+)
+
+private fun SubsystemDocument.controllerTuningBindings(): List<GeneratedControllerTuningBinding> {
+    val bindings = controlLoops.flatMap { loop ->
+        val supportedDefaults = buildMap {
+            if (loop.strategy in PID_STRATEGIES) {
+                put("kp", loop.kP)
+                put("ki", loop.kI)
+                put("kd", loop.kD)
+            }
+            if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) {
+                put("maxvelocity", loop.motionProfile.maximumVelocity)
+                put("maxacceleration", loop.motionProfile.maximumAcceleration)
+            }
+            if (loop.feedforward.kind != SubsystemFeedforwardKind.NONE) {
+                put("ks", loop.feedforward.kS)
+                put("kv", loop.feedforward.kV)
+                put("ka", loop.feedforward.kA)
+                if (loop.feedforward.kind != SubsystemFeedforwardKind.SIMPLE_MOTOR) {
+                    put("kg", loop.feedforward.kG)
+                }
+            }
+        }
+        tuningParameters.mapNotNull { declaration ->
+            if (declaration.componentUid != loop.uid ||
+                declaration.type != com.areslib.tuning.TuningParameterType.DOUBLE
+            ) return@mapNotNull null
+            val suffix = declaration.key.substringAfterLast('.').lowercase()
+            val fallback = supportedDefaults[suffix] ?: return@mapNotNull null
+            GeneratedControllerTuningBinding(
+                parameterUid = declaration.uid,
+                variableName = "${loop.loopId}${suffix.replaceFirstChar(Char::uppercaseChar)}",
+                initialValue = declaration.defaultValue.doubleValue ?: fallback,
+            )
+        }
+    }.distinctBy { it.parameterUid }.sortedBy { it.parameterUid }
+
+    val duplicateRuntimeBinding = bindings.groupBy(GeneratedControllerTuningBinding::variableName)
+        .entries
+        .firstOrNull { (_, declarations) -> declarations.size > 1 }
+    require(duplicateRuntimeBinding == null) {
+        val (variableName, declarations) = requireNotNull(duplicateRuntimeBinding)
+        "Subsystem '$documentId' declares multiple tuning parameters for generated controller binding " +
+            "'$variableName': ${declarations.joinToString { it.parameterUid }}"
+    }
+    return bindings
+}
+
+private fun SubsystemDocument.controllerTuningExpression(
+    loop: SubsystemControlLoopDocument,
+    suffix: String,
+    fallback: Double,
+): String = controllerTuningBindings()
+    .firstOrNull {
+        it.variableName == "${loop.loopId}${suffix.replaceFirstChar(Char::uppercaseChar)}"
+    }
+    ?.variableName
+    ?: fallback.kotlinDouble()
 
 private fun SubsystemDocument.actuatorLeaders(): List<SubsystemHardwareDocument> =
     hardware.filter { it.kind.isActuator() && it.following == null }
