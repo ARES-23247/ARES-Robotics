@@ -3,14 +3,21 @@ package org.aresfirst.starter.frc
 import com.areslib.action.RobotAction
 import com.areslib.Store
 import com.areslib.state.Alliance
+import com.areslib.state.RobotState
 import com.areslib.state.RobotFieldManager
+import com.areslib.state.TuningState
 import com.areslib.subsystem.Subsystem
 import com.areslib.telemetry.ARESNetworkStatePublisher
+import com.areslib.telemetry.ITelemetry
+import com.areslib.tuning.TuningApplyContext
+import com.areslib.tuning.TuningManager
+import com.areslib.tuning.TypedTuningRuntime
 import com.areslib.util.RobotClock
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Filesystem
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.TimedRobot
+import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresTuningConfig
 import org.aresfirst.starter.frc.generated.subsystems.GeneratedSubsystemRegistry
 import org.aresfirst.starter.frc.generated.subsystems.superstructure.GeneratedSuperstructureRegistry
 import org.aresfirst.starter.frc.generatedruntime.FrcGeneratedControlsRuntime
@@ -199,10 +206,33 @@ internal fun installGeneratedSuperstructures(
 ): List<Subsystem> = createAll().also { created -> created.forEach(register) }
 
 /** Minimal vendor-neutral Redux/subsystem host used by the generic starter. */
-internal class StarterRobotRuntime {
-    val store = Store()
-    val telemetry = StarterFrcTelemetry()
+internal class StarterRobotRuntime(
+    val telemetry: ITelemetry = StarterFrcTelemetry(),
+    private val tuningContextProvider: () -> TuningApplyContext = {
+        TuningApplyContext(
+            // Studio may mutate the generic starter only inside the local WPILib simulator.
+            // A real robot remains fail-closed until a deliberate operator-arming workflow exists.
+            sessionArmed = RobotBase.isSimulation(),
+            robotDisabled = DriverStation.isDisabled(),
+        )
+    },
+) {
+    private val tuningRuntime = GeneratedAresTuningConfig.createRuntime()
+    private val pathVelocityScaleUid = tuningRuntime.metadata.declarations.single {
+        it.key == PATH_VELOCITY_SCALE_KEY
+    }.uid
+    val store = Store(
+        initialState = RobotState(
+            tuning = withStarterRuntimeTuning(TuningState(), tuningRuntime, pathVelocityScaleUid),
+        ),
+    )
     private val publisher = ARESNetworkStatePublisher(telemetry)
+    private val tuningManager = TuningManager(
+        runtime = tuningRuntime,
+        telemetry = telemetry,
+        contextProvider = tuningContextProvider,
+        onApplied = { parameterUid, _ -> applyTuningToConsumer(parameterUid) },
+    )
     private val subsystems = ArrayList<Subsystem>()
     private var lastUpdateMs = 0L
     private var closed = false
@@ -224,9 +254,25 @@ internal class StarterRobotRuntime {
         for (index in subsystems.indices) subsystems[index].readSensors(store, now)
         val outputScale = if (DriverStation.isEnabled()) 1.0 else 0.0
         for (index in subsystems.indices) subsystems[index].writeOutputs(store.state, outputScale)
+        tuningManager.update(now)
         publisher.publish(store.state, dtSeconds = dt, flush = false)
         telemetry.putBoolean("ARES/Starter/PhysicalHardwareReady", false)
         telemetry.update()
+    }
+
+    /** Test seam for proving transport acknowledgement without starting a WPILib robot loop. */
+    internal fun updateTuningForTest(timestampMs: Long) {
+        tuningManager.update(timestampMs)
+    }
+
+    private fun applyTuningToConsumer(parameterUid: String): Boolean {
+        if (parameterUid != pathVelocityScaleUid) return false
+        store.dispatch(
+            RobotAction.UpdateTuningState(
+                withStarterRuntimeTuning(store.state.tuning, tuningRuntime, pathVelocityScaleUid),
+            ),
+        )
+        return true
     }
 
     fun safeHardware() {
@@ -254,4 +300,19 @@ internal class StarterRobotRuntime {
         attempt(telemetry::close)
         failure?.let { throw it }
     }
+
+    private companion object {
+        const val PATH_VELOCITY_SCALE_KEY = "drive.pathVelocityScale"
+    }
 }
+
+/** Explicit consumer map: a value is acknowledged only when Redux and the controller can use it. */
+internal fun withStarterRuntimeTuning(
+    current: TuningState,
+    runtime: TypedTuningRuntime,
+    pathVelocityScaleUid: String = runtime.metadata.declarations.single {
+        it.key == "drive.pathVelocityScale"
+    }.uid,
+): TuningState = current.copy(
+    drive = current.drive.copy(pathVelocityScale = runtime.double(pathVelocityScaleUid)),
+)

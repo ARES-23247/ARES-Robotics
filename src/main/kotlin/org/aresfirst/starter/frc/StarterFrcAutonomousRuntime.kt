@@ -231,8 +231,13 @@ internal class StarterFrcDriveToPoseTask(
             return neutralResult
         }
         val pose = state.drive.poseEstimator.estimatedPose
-        val maximumLinear = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND * preset.speedScale
-        val maximumAngular = GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND * preset.speedScale
+        // The generated typed profile is the experiment boundary. Presets remain conservative
+        // envelopes within that reviewed global scale, so a live-safe change affects real behavior.
+        val tunedScale = state.tuning.drive.pathVelocityScale.coerceIn(0.0, 1.0)
+        val maximumLinear = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND *
+            preset.speedScale * tunedScale
+        val maximumAngular = GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND *
+            preset.speedScale * tunedScale
         command.targetXVelocity = ((target.x - pose.x) * TRANSLATION_KP).coerceIn(-maximumLinear, maximumLinear)
         command.targetYVelocity = ((target.y - pose.y) * TRANSLATION_KP).coerceIn(-maximumLinear, maximumLinear)
         command.targetAngularVelocity = (wrapRadians(target.heading.radians - pose.heading.radians) * HEADING_KP)

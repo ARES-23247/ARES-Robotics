@@ -143,6 +143,33 @@ class StarterFrcAutonomousRuntimeTest {
     }
 
     @Test
+    fun `closed-loop starter task consumes the typed path velocity scale`() {
+        RobotClock.useMockTime(20L)
+        try {
+            val store = Store()
+            store.dispatch(poseUpdate(0.0, 0.0, 0.0, 20L))
+            store.dispatch(
+                RobotAction.UpdateTuningState(
+                    store.state.tuning.copy(
+                        drive = store.state.tuning.drive.copy(pathVelocityScale = 0.25),
+                    ),
+                ),
+            )
+            val task = StarterFrcDriveToPoseTask(
+                Pose2d(10.0, 0.0, Rotation2d()),
+                StarterFrcMotionPreset.FAST,
+            )
+            val executor = TaskExecutor().also { it.addTask(task) }
+
+            executor.update(store.state, 20L).forEach(store::dispatch)
+
+            assertEquals(0.425, store.state.drive.xVelocityMetersPerSecond, 1e-12)
+        } finally {
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
     fun `blocked closed-loop drive times out and commands neutral`() {
         RobotClock.useMockTime(0L)
         try {
