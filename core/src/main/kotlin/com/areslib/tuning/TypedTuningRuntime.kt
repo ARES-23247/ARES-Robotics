@@ -16,6 +16,12 @@ data class TuningApplyContext(
     val sessionArmed: Boolean,
     val robotDisabled: Boolean,
     val calibrationParameterUids: Set<String> = emptySet(),
+    /**
+     * Platform-specific disabled equivalent: every owned actuator is neutral and the normal
+     * control path is actively inhibited. FTC uses an acknowledged, fresh STOP lease because an
+     * active OpMode has no WPILib-style Disabled lifecycle.
+     */
+    val outputsNeutralAndInhibited: Boolean = false,
 )
 
 /** Immutable UI/transport metadata. Runtime access uses pre-indexed arrays and does not serialize state. */
@@ -70,7 +76,8 @@ class TypedTuningRuntime(
             TuningApplyPolicy.LIVE_SAFE -> if (context.sessionArmed) null else TuningUpdateResult.SESSION_NOT_ARMED
             TuningApplyPolicy.DISABLED_ONLY -> when {
                 !context.sessionArmed -> TuningUpdateResult.SESSION_NOT_ARMED
-                !context.robotDisabled -> TuningUpdateResult.ROBOT_MUST_BE_DISABLED
+                !context.robotDisabled && !context.outputsNeutralAndInhibited ->
+                    TuningUpdateResult.ROBOT_MUST_BE_DISABLED
                 else -> null
             }
             TuningApplyPolicy.RESTART_REQUIRED -> TuningUpdateResult.RESTART_REQUIRED

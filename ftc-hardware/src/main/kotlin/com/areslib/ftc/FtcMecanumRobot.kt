@@ -237,6 +237,9 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** True after the enabled OpMode receives a fresh neutral dashboard handshake. */
     val isCalibrationModeArmed: Boolean get() = calibrationController.networkArmed
 
+    /** True only while a fresh FTC calibration STOP lease owns and holds neutral outputs. */
+    val isCalibrationNeutralOutputHoldActive: Boolean get() = calibrationController.neutralOutputHoldActive
+
     /** True when drivetrain writes are blocked pending explicit neutral recovery. */
     val isDriveOutputFaultLatched: Boolean get() = mecanumIO.outputFaultLatched
 
@@ -290,9 +293,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     override fun updateHardwareInputs() {
         com.areslib.hardware.HardwareRegistry.refreshAll()
-        if (isLiveTuningEnabled) {
-            tuningManager?.update()
-        }
         calibrationController.updateHardwareInputs(
             store = store,
             telemetryManager = telemetryManager,
@@ -300,6 +300,11 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
             pinpointIO = pinpointIO,
             onResetTuning = { lastTuning = null }
         )
+        // Process STOP/token/lease state first. A disabled-only tuning request must never use an
+        // arm state that expired or changed earlier in this same robot frame.
+        if (isLiveTuningEnabled) {
+            tuningManager?.update()
+        }
     }
 
     /**

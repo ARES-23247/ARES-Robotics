@@ -17,6 +17,14 @@ class TuningManager(
     private val contextProvider: () -> TuningApplyContext,
     /** Returns true only after the robot consumer committed the value to its Redux/control boundary. */
     private val onApplied: (parameterUid: String, value: TuningValue) -> Boolean,
+    /**
+     * Declares whether the running robot has a compiled consumer for this parameter.
+     *
+     * The default preserves compatibility with existing robots. Generated/runtime composition
+     * roots should pass their real capability predicate so authoring tools can hide impossible
+     * live experiments before a student sends a request.
+     */
+    private val isConsumerSupported: (parameterUid: String) -> Boolean = { true },
     private val localProjectRoot: Path? = null,
     private val localOverlayFile: Path? = null,
 ) {
@@ -45,6 +53,7 @@ class TuningManager(
             telemetry.putString("$root/Type", declaration.type.name)
             telemetry.putString("$root/Unit", declaration.unit.orEmpty())
             telemetry.putString("$root/ApplyPolicy", declaration.applyPolicy.name)
+            telemetry.putBoolean("$root/ConsumerSupported", isConsumerSupported(declaration.uid))
             telemetry.putNumber("$root/Minimum", declaration.minimum ?: Double.NaN)
             telemetry.putNumber("$root/Maximum", declaration.maximum ?: Double.NaN)
             telemetry.putString("$root/EnumOptions", declaration.enumOptions.joinToString("\u001f"))
@@ -76,7 +85,12 @@ class TuningManager(
             if (nonce != null && nonce > lastRequestNonce[index]) {
                 lastRequestNonce[index] = nonce
                 val candidate = readValue("$root/Requested", declaration.type, current)
-                val result = runtime.apply(declaration.uid, candidate, context)
+                val consumerSupported = isConsumerSupported(declaration.uid)
+                val result = if (consumerSupported) {
+                    runtime.apply(declaration.uid, candidate, context)
+                } else {
+                    TuningUpdateResult.CONSUMER_REJECTED
+                }
                 if (result == TuningUpdateResult.APPLIED) {
                     try {
                         if (onApplied(declaration.uid, candidate)) {

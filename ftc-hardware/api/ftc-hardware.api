@@ -164,6 +164,7 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 	public final fun getWheelBaseMeters ()D
 	public final fun isCalibrationModeArmed ()Z
 	public final fun isCalibrationModeEnabled ()Z
+	public final fun isCalibrationNeutralOutputHoldActive ()Z
 	public final fun isDriveOutputFaultLatched ()Z
 	protected fun prepareFallbackOdometry (Lcom/areslib/math/geometry/Pose2d;D)V
 	protected fun publishRobotTelemetry (J)V
@@ -253,6 +254,7 @@ public final class com/areslib/ftc/calibration/FtcMecanumCalibrationController {
 	public final fun getFlywheelIO ()Lcom/areslib/hardware/actuator/FlywheelIO;
 	public final fun getModeEnabled ()Z
 	public final fun getNetworkArmed ()Z
+	public final fun getNeutralOutputHoldActive ()Z
 	public final fun getSysIdManager ()Lcom/areslib/control/assist/SysIdManager;
 	public final fun publishRobotTelemetry (JLcom/areslib/Store;Lcom/areslib/ftc/telemetry/FtcTelemetryManager;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/ftc/vision/FtcVisionTracker;DD)V
 	public final fun setCustomSysIdVelocityProvider (Lkotlin/jvm/functions/Function0;)V

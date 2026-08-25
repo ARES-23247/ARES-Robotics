@@ -15,6 +15,7 @@ class TuningManagerTest {
         assertEquals("drive.heading.kP", fixture.telemetry.strings["$root/Key"])
         assertEquals("drive.main", fixture.telemetry.strings["$root/ComponentUid"])
         assertEquals("LIVE_SAFE", fixture.telemetry.strings["$root/ApplyPolicy"])
+        assertEquals(true, fixture.telemetry.booleans["$root/ConsumerSupported"])
         assertEquals(0.0, fixture.telemetry.numbers["$root/Minimum"])
         assertEquals(10.0, fixture.telemetry.numbers["$root/Maximum"])
         assertEquals(1.0, fixture.telemetry.numbers["$root/Default"])
@@ -116,6 +117,33 @@ class TuningManagerTest {
 
         manager.update(1_000L)
 
+        assertEquals(2.0, runtime.double("drive.heading.kp"))
+        assertEquals(2.0, telemetry.numbers["$root/Current"])
+        assertEquals("CONSUMER_REJECTED", telemetry.strings["$root/LastResult"])
+        assertEquals(1.0, telemetry.numbers["$root/ProcessedNonce"])
+    }
+
+    @Test
+    fun `unsupported consumer is advertised and rejected before runtime mutation or callback`() {
+        val declaration = declaration(TuningApplyPolicy.LIVE_SAFE)
+        val runtime = runtime(declaration)
+        val telemetry = MockTelemetry()
+        var callbackCount = 0
+        val manager = TuningManager(
+            runtime,
+            telemetry,
+            { TuningApplyContext(sessionArmed = true, robotDisabled = false) },
+            { _, _ -> callbackCount += 1; true },
+            isConsumerSupported = { false },
+        )
+        val root = "Tuning/Parameters/drive.heading.kp"
+        assertEquals(false, telemetry.booleans["$root/ConsumerSupported"])
+        telemetry.numbers["$root/Requested"] = 3.0
+        telemetry.numbers["$root/RequestNonce"] = 1.0
+
+        manager.update(1_000L)
+
+        assertEquals(0, callbackCount)
         assertEquals(2.0, runtime.double("drive.heading.kp"))
         assertEquals(2.0, telemetry.numbers["$root/Current"])
         assertEquals("CONSUMER_REJECTED", telemetry.strings["$root/LastResult"])

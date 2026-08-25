@@ -50,8 +50,10 @@ class FtcMecanumCalibrationController {
         set(value) {
             field = value
             flywheelSysIdAdapter = value?.let(::FlywheelSysIdAdapter)
+            supportedMechanismsTelemetry = if (value == null) DRIVE_SYSID_MECHANISMS else DRIVE_AND_FLYWHEEL_SYSID_MECHANISMS
         }
     private var flywheelSysIdAdapter: SysIdMechanismIO? = null
+    private var supportedMechanismsTelemetry = DRIVE_SYSID_MECHANISMS
     private var lastCommandProcessed = ""
     private var enableToken = ""
     private var neutralizedDuringInputPass = false
@@ -66,6 +68,15 @@ class FtcMecanumCalibrationController {
      */
     var networkArmed = false
         private set
+
+    /**
+     * Disabled-equivalent window for typed tuning. This is true only after the current client has
+     * a fresh lease, STOP is the processed command, every calibration routine is inactive, and
+     * calibration still owns the neutral output path.
+     */
+    val neutralOutputHoldActive: Boolean
+        get() = modeEnabled && networkArmed && lastCommandProcessed == STOP_COMMAND &&
+            !sysIdManager.isActive() && activeCalibration == "NONE"
     private var enableLeaseSequence = INVALID_LEASE_SEQUENCE
     private var lastEnableLeaseAtMs = 0L
 
@@ -392,6 +403,7 @@ class FtcMecanumCalibrationController {
     ) {
         telemetryManager.nt4.putBoolean("SysId/ModeEnabled", modeEnabled)
         telemetryManager.nt4.putBoolean("SysId/Armed", networkArmed)
+        telemetryManager.nt4.putString("SysId/SupportedMechanisms", supportedMechanismsTelemetry)
         val dataLogging = telemetryManager.dataLoggingTelemetry
         if (sysIdManager.isActive()) {
             dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
@@ -538,6 +550,8 @@ class FtcMecanumCalibrationController {
         value.isFinite() && value >= 0.0 && value <= MAX_SAFE_INTEGER && value == kotlin.math.floor(value)
 
     private companion object {
+        val DRIVE_SYSID_MECHANISMS = "LINEAR,ANGULAR"
+        val DRIVE_AND_FLYWHEEL_SYSID_MECHANISMS = "LINEAR,ANGULAR,FLYWHEEL"
         const val COMMAND_TOPIC = "SysId/Command"
         const val STATUS_TOPIC = "SysId/Status"
         const val ENABLE_TOKEN_TOPIC = "SysId/EnableToken"

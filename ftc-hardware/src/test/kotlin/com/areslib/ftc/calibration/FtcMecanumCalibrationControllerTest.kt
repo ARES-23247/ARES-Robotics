@@ -74,6 +74,7 @@ class FtcMecanumCalibrationControllerTest {
         clientWriteDouble(server, client, LEASE_PUBLISHER, 11.0)
         controller.updateHardwareInputs(store, telemetry, mecanumIO, pinpointIO = null) {}
         assertTrue(controller.networkArmed)
+        assertTrue(controller.neutralOutputHoldActive)
         assertTrue(
             controller.updateSubsystems(store, 12.0, mecanumIO, telemetry) {},
             "fresh arming neutral must own its current output pass"
@@ -88,6 +89,7 @@ class FtcMecanumCalibrationControllerTest {
         clientWriteDouble(server, client, LEASE_PUBLISHER, 12.0)
         controller.updateHardwareInputs(store, telemetry, mecanumIO, pinpointIO = null) {}
         assertEquals("LINEAR_DRIVE", controller.activeCalibration)
+        assertFalse(controller.neutralOutputHoldActive)
 
         RobotClock.useMockTime(4_001L)
         assertTrue(controller.updateSubsystems(store, 12.0, mecanumIO, telemetry) {})
@@ -108,6 +110,7 @@ class FtcMecanumCalibrationControllerTest {
         clientWrite(server, client, COMMAND_PUBLISHER, STOP_COMMAND)
         clientWriteDouble(server, client, LEASE_PUBLISHER, 13.0)
         controller.updateHardwareInputs(store, telemetry, mecanumIO, pinpointIO = null) {}
+        assertTrue(controller.neutralOutputHoldActive)
         clientWrite(server, client, COMMAND_PUBLISHER, "START_TRACK_WIDTH_SPIN")
         clientWriteDouble(server, client, LEASE_PUBLISHER, 14.0)
         controller.updateHardwareInputs(store, telemetry, mecanumIO, pinpointIO = null) {}
