@@ -31,13 +31,14 @@ data class SwerveOffsetData(
         private val REQUIRED_KEYS = setOf("frontLeft", "frontRight", "backLeft", "backRight")
 
         /** Parses exactly four finite numeric keys. Missing, duplicate-shim, or unknown data fails. */
+        @Suppress("DEPRECATION")
         fun fromJsonString(json: String): SwerveOffsetData {
             require(json.isNotBlank()) { "Swerve offset JSON must not be blank" }
             require(json.length <= MAX_JSON_CHARS) { "Swerve offset JSON exceeds $MAX_JSON_CHARS characters" }
             val values = HashMap<String, Double>(REQUIRED_KEYS.size)
             try {
                 JsonReader(StringReader(json)).use { reader ->
-                    reader.strictness = com.google.gson.Strictness.LEGACY_STRICT
+                    reader.isLenient = false
                     require(reader.peek() == JsonToken.BEGIN_OBJECT) { "Swerve offsets must be a JSON object" }
                     reader.beginObject()
                     while (reader.hasNext()) {

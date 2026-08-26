@@ -15,6 +15,7 @@ import com.areslib.superstructure.SuperstructureIssueSeverity
 import com.areslib.superstructure.TransitionTriggerKind
 import com.areslib.superstructure.validateSuperstructureProject
 import com.areslib.subsystem.SubsystemPlatform
+import com.areslib.subsystem.isAresGenerated
 import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystemTargetCapabilities
 import com.areslib.tuning.TuningProfileAuthority
@@ -132,22 +133,42 @@ object AresProjectCodegenCli {
                 generatedActionRegistryBindings = superstructureActionBindings,
             )
         )
+        val projectVerification = options.subsystemsGeneratedTestOutput?.let {
+            val platform = requireNotNull(options.platform) {
+                "Generated project verification requires --platform FTC or FRC"
+            }
+            ProjectVerificationKotlinGenerator.generate(
+                ProjectVerificationCodegenRequest(
+                    packageName = options.packageName,
+                    platform = platform,
+                    projectJson = AresProjectMetadataCodec.encode(metadata),
+                    catalogJson = CapabilityCatalogCodec.encode(catalog),
+                    drivetrainJson = drivetrains.map(DrivetrainDocumentCodec::encode),
+                    subsystemJson = subsystems.map(SubsystemDocumentCodec::encode),
+                    superstructureJson = superstructures.map(SuperstructureDocumentCodec::encode),
+                    controllerProfileJson = profiles.map(ControllerProfileCodec::encode),
+                    controlSchemeJson = controls.map(ControlSchemeCodec::encode),
+                    routineJson = routines.map(AresRoutineCodec::encode),
+                    autonomousCatalogJson = autonomousCatalog?.let(AutonomousCatalogCodec::encode),
+                )
+            )
+        }
 
         if (options.subsystemsOnly) {
-            // The caller requested only subsystem reconciliation/materialization. The canonical
-            // project source remains untouched and retains its independent checked-in verification.
+            // The caller requested only subsystem reconciliation/materialization. Full project
+            // plumbing is recreated by the ordinary generation/verification task.
         } else if (options.checkOnly) {
             require(Files.isRegularFile(output)) {
                 "Generated source is missing at $output. Run the ARES generation task."
             }
             val current = Files.readString(output)
             require(current == generated.source && AresKotlinProjectGenerator.hasValidEmbeddedSourceHash(current)) {
-                "Generated source is stale at $output. Regenerate and commit it before building."
+                "Generated source is stale at $output. Regenerate it before building."
             }
         } else if (!Files.isRegularFile(output) || Files.readString(output) != generated.source) {
             writeAtomically(output, generated.source)
         }
-        syncSubsystemSources(projectRoot, subsystems, options)
+        syncSubsystemSources(projectRoot, subsystems, options, projectVerification)
         syncDrivebaseSources(projectRoot, drivetrains, tuningProfiles, declarations, options)
         syncSuperstructureSources(
             projectRoot,
@@ -318,6 +339,7 @@ object AresProjectCodegenCli {
         projectRoot: Path,
         subsystems: List<com.areslib.subsystem.SubsystemDocument>,
         options: CliOptions,
+        projectVerification: GeneratedProjectVerificationFile?,
     ) {
         if (subsystems.isEmpty() &&
             options.subsystemsGeneratedOutput == null && options.subsystemsGeneratedTestOutput == null &&
@@ -332,9 +354,7 @@ object AresProjectCodegenCli {
             "--subsystems-package is required when generating subsystem sources"
         }
         val target = SubsystemKotlinCodegenTarget(platform, basePackage)
-        val files = subsystems.filter {
-            it.implementation.kind == com.areslib.subsystem.SubsystemImplementationKind.GENERATED_STARTER
-        }.flatMap { document ->
+        val files = subsystems.filter { it.implementation.kind.isAresGenerated() }.flatMap { document ->
             SubsystemKotlinGenerator.generate(document, target)
         } + SubsystemKotlinGenerator.generateRegistry(subsystems, target)
         val duplicate = files.groupBy { it.sourceSet to it.relativePath }.filterValues { it.size > 1 }.keys
@@ -366,15 +386,17 @@ object AresProjectCodegenCli {
                 files.filter {
                     it.sourceSet == GeneratedSubsystemSourceSet.MAIN &&
                         it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
-                },
+                }.associate { it.relativePath to it.content },
                 options.checkOnly,
             )
+            val generatedTests = files.filter {
+                it.sourceSet == GeneratedSubsystemSourceSet.TEST &&
+                    it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
+            }.associate { it.relativePath to it.content }.toMutableMap()
+            projectVerification?.let { generatedTests[it.relativePath] = it.content }
             syncSourceSet(
                 generatedTestRoot,
-                files.filter {
-                    it.sourceSet == GeneratedSubsystemSourceSet.TEST &&
-                        it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
-                },
+                generatedTests,
                 options.checkOnly,
             )
             return
@@ -383,19 +405,22 @@ object AresProjectCodegenCli {
         error("Subsystem generation requires --subsystems-starter-output and split generated-source outputs")
     }
 
-    private fun syncSourceSet(root: Path, files: List<GeneratedSubsystemFile>, checkOnly: Boolean) {
+    private fun syncSourceSet(root: Path, expected: Map<String, String>, checkOnly: Boolean) {
         val manifest = root.resolve(".ares-subsystems-manifest")
-        val expected = files.associate { file -> file.relativePath.replace('\\', '/') to file.content }
-        val expectedManifest = expected.keys.sorted().joinToString(separator = "\n", postfix = if (expected.isEmpty()) "" else "\n")
+        val normalizedExpected = expected.entries.associate { (relativePath, content) ->
+            relativePath.replace('\\', '/') to content
+        }
+        val expectedManifest = normalizedExpected.keys.sorted()
+            .joinToString(separator = "\n", postfix = if (normalizedExpected.isEmpty()) "" else "\n")
         if (checkOnly) {
-            require(Files.isRegularFile(manifest) || expected.isEmpty()) {
+            require(Files.isRegularFile(manifest) || normalizedExpected.isEmpty()) {
                 "Generated subsystem manifest is missing at $manifest"
             }
             val actualManifest = if (Files.isRegularFile(manifest)) Files.readString(manifest) else ""
             require(actualManifest == expectedManifest) {
                 "Generated subsystem file list is stale at $root. Run the ARES generation task."
             }
-            expected.forEach { (relative, content) ->
+            normalizedExpected.forEach { (relative, content) ->
                 val path = safeGeneratedPath(root, relative)
                 require(Files.isRegularFile(path) && Files.readString(path) == content) {
                     "Generated subsystem source is stale at $path. Run the ARES generation task."
@@ -405,14 +430,14 @@ object AresProjectCodegenCli {
         }
 
         val previous = if (Files.isRegularFile(manifest)) Files.readAllLines(manifest).filter(String::isNotBlank) else emptyList()
-        previous.filterNot(expected::containsKey).forEach { relative ->
+        previous.filterNot(normalizedExpected::containsKey).forEach { relative ->
             Files.deleteIfExists(safeGeneratedPath(root, relative))
         }
-        expected.forEach { (relative, content) ->
+        normalizedExpected.forEach { (relative, content) ->
             val path = safeGeneratedPath(root, relative)
             if (!Files.isRegularFile(path) || Files.readString(path) != content) writeAtomically(path, content)
         }
-        if (expected.isEmpty()) {
+        if (normalizedExpected.isEmpty()) {
             Files.deleteIfExists(manifest)
         } else if (!Files.isRegularFile(manifest) || Files.readString(manifest) != expectedManifest) {
             writeAtomically(manifest, expectedManifest)

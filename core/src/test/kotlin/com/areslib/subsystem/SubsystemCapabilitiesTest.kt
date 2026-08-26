@@ -3,6 +3,7 @@ package com.areslib.subsystem
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CapabilityContext
+import com.areslib.catalog.CapabilityParameterType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -100,6 +101,36 @@ class SubsystemCapabilitiesTest {
             )
         }
         assertTrue(error.message.orEmpty().contains("conflicts"))
+    }
+
+    @Test
+    fun `lighting hardware exposes named novice choices instead of raw pulse values`() {
+        val indicator = SubsystemTemplates.create(
+            SubsystemTemplate.INDICATOR_LIGHT_PWM,
+            documentId = "status-light",
+            kotlinTypeName = "StatusLight",
+            platform = SubsystemPlatform.FTC,
+        )
+        val prism = SubsystemTemplates.create(
+            SubsystemTemplate.PRISM_LED_DRIVER,
+            documentId = "prism",
+            kotlinTypeName = "Prism",
+            platform = SubsystemPlatform.FTC,
+        )
+
+        val actions = subsystemTargetCapabilities(listOf(indicator, prism)).associateBy { it.descriptor.key }
+        val indicatorParameter = requireNotNull(actions["subsystem.status-light.set.targetColor"])
+            .descriptor.parameters.single()
+        val prismParameter = requireNotNull(actions["subsystem.prism.set.targetPulseWidthUs"])
+            .descriptor.parameters.single()
+
+        assertEquals(CapabilityParameterType.ENUM, indicatorParameter.type)
+        assertTrue("GREEN" in indicatorParameter.options)
+        assertTrue("RAINBOW" !in indicatorParameter.options)
+        assertEquals("OFF", indicatorParameter.defaultText)
+        assertEquals(CapabilityParameterType.ENUM, prismParameter.type)
+        assertTrue("FTC_TIMER" in prismParameter.options)
+        assertTrue("SOLID_OFF" in prismParameter.options)
     }
 
     @Test

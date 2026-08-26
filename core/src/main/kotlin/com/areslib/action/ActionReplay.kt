@@ -5,7 +5,7 @@ import com.areslib.state.RobotState
 import com.areslib.state.SubsystemState
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.areslib.util.parseJsonElement
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -234,7 +234,7 @@ object ActionReplay {
 
     private fun deserializeAction(jsonLine: String): RobotAction {
         val parsed = try {
-            JsonParser.parseString(jsonLine)
+            parseJsonElement(jsonLine)
         } catch (e: Exception) {
             throw ActionReplayException("Malformed JSON: ${e.message}", e)
         }

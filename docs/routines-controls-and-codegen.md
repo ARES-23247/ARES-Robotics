@@ -80,10 +80,10 @@ at an event, and reviewers can see exactly what will be compiled onto the robot.
 Each season repository exposes two Gradle tasks:
 
 ```powershell
-# Rewrite checked-in output after a GUI/document edit
+# Regenerate disposable output after a GUI/document edit
 .\gradlew.bat generateAresProject
 
-# Fail if the checked-in output is missing or stale
+# Fail if canonical input is invalid or disposable output does not regenerate deterministically
 .\gradlew.bat verifyAresProject
 ```
 

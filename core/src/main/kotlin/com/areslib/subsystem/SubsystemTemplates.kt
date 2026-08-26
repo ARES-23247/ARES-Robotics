@@ -9,8 +9,8 @@ import com.areslib.tuning.TuningValue
  * Documented, capability-oriented subsystem starters.
  *
  * Templates deliberately preserve domain, controller, IO, hardware, simulation, lifecycle, and
- * verification boundaries. They provide safe declarations; teams still review every generated
- * starter before it becomes user-owned code.
+ * verification boundaries. New Builder documents default to fully declarative ownership; callers
+ * may explicitly request an editable generated starter when teaching Kotlin is the goal.
  */
 object SubsystemTemplates {
     fun create(
@@ -19,6 +19,29 @@ object SubsystemTemplates {
         kotlinTypeName: String,
         platform: SubsystemPlatform,
         displayName: String = kotlinTypeName.toDisplayWords(),
+    ): SubsystemDocument = createWithOwnership(
+        template = template,
+        documentId = documentId,
+        kotlinTypeName = kotlinTypeName,
+        platform = platform,
+        displayName = displayName,
+        implementationKind = SubsystemImplementationKind.DECLARATIVE_GENERATED,
+    )
+
+    /**
+     * Creates a template with an explicit source-ownership model.
+     *
+     * Most Robot Builder callers should use [create], which produces deterministic generated
+     * runtime and tests. This entry point exists for the documented Kotlin teaching workflow that
+     * deliberately creates an editable generated starter.
+     */
+    fun createWithOwnership(
+        template: SubsystemTemplate,
+        documentId: String,
+        kotlinTypeName: String,
+        platform: SubsystemPlatform,
+        displayName: String = kotlinTypeName.toDisplayWords(),
+        implementationKind: SubsystemImplementationKind,
     ): SubsystemDocument = when (template) {
         SubsystemTemplate.SIMPLE_ACTUATOR -> actuator(documentId, displayName, kotlinTypeName, platform, SubsystemControlStrategy.DIRECT)
         SubsystemTemplate.POSITION_CONTROLLED_MECHANISM ->
@@ -52,7 +75,31 @@ object SubsystemTemplates {
         SubsystemTemplate.INDICATOR_LIGHT_PWM -> indicatorLight(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.PRISM_LED_DRIVER -> prismDriver(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.ADVANCED_CUSTOM -> advanced(documentId, displayName, kotlinTypeName, platform)
-    }.withRecommendedTuningParameters()
+    }.withRecommendedTuningParameters().withTemplateOwnership(implementationKind)
+
+    private fun SubsystemDocument.withTemplateOwnership(kind: SubsystemImplementationKind): SubsystemDocument = when (kind) {
+        SubsystemImplementationKind.DECLARATIVE_GENERATED -> copy(
+            generateMockIo = true,
+            generateTest = true,
+            implementation = SubsystemImplementationDocument(
+                kind = kind,
+                ownership = SubsystemSourceOwnership.GENERATED_DO_NOT_EDIT,
+                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.GENERATED_MOCK),
+            ),
+        )
+        SubsystemImplementationKind.GENERATED_STARTER -> copy(
+            implementation = SubsystemImplementationDocument(
+                kind = kind,
+                ownership = SubsystemSourceOwnership.GENERATED_STARTER,
+                simulation = SubsystemSimulationDocument(
+                    if (generateMockIo) SubsystemSimulationSupport.GENERATED_MOCK else SubsystemSimulationSupport.UNAVAILABLE,
+                ),
+            ),
+        )
+        SubsystemImplementationKind.HAND_AUTHORED -> error(
+            "Hand-authored subsystem metadata must explicitly declare module, source, runtime types, and simulation support",
+        )
+    }
 
     private fun motorConnection(platform: SubsystemPlatform, name: String, canId: Int = 1) =
         if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = name)
@@ -525,6 +572,10 @@ object SubsystemTemplates {
                 if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "light")
                 else SubsystemHardwareConnection(channel = 0),
                 safeOutput = 0.0,
+                visualPlacement = SubsystemVisualPlacementDocument(
+                    anchor = SubsystemVisualAnchor.LEFT_SIDE,
+                    leftFraction = 0.5,
+                ),
             )
         ),
         stateFields = listOf(
@@ -559,6 +610,9 @@ object SubsystemTemplates {
                 if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "prism")
                 else SubsystemHardwareConnection(channel = 0),
                 safeOutput = 1000.0,
+                visualPlacement = SubsystemVisualPlacementDocument(
+                    anchor = SubsystemVisualAnchor.UNDERBODY,
+                ),
             )
         ),
         stateFields = listOf(

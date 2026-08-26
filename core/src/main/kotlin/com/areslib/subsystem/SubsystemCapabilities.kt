@@ -6,6 +6,8 @@ import com.areslib.catalog.CapabilityContext
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.ResourceClaim
+import com.areslib.hardware.actuator.IndicatorLightColor
+import com.areslib.hardware.actuator.PrismPwmPreset
 
 /**
  * One automatically exposed generated-subsystem action.
@@ -63,7 +65,7 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                         displayName = "Set ${document.displayName} ${field.displayName}",
                         description = "Sets ${field.displayName.lowercase()} on the ${document.displayName} subsystem.",
                         category = document.displayName,
-                        parameters = listOf(field.asCapabilityParameter()),
+                        parameters = listOf(field.asCapabilityParameter(document)),
                         resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
                         allowedContexts = CapabilityContext.entries,
                     ),
@@ -170,8 +172,61 @@ fun mergeSubsystemCapabilities(
     )
 }
 
-private fun SubsystemStateFieldDocument.asCapabilityParameter(): CapabilityParameterDescriptor =
-    CapabilityParameterDescriptor(
+private fun SubsystemStateFieldDocument.asCapabilityParameter(
+    document: SubsystemDocument,
+): CapabilityParameterDescriptor {
+    val actuatorKind = document.controlLoops
+        .firstOrNull { it.targetFieldId == fieldId }
+        ?.let { loop -> document.hardware.firstOrNull { it.hardwareId == loop.actuatorId } }
+        ?.kind
+    val namedOptions = when (actuatorKind) {
+        SubsystemHardwareKind.INDICATOR_LIGHT -> IndicatorLightColor.entries
+            .asSequence()
+            .filter { it != IndicatorLightColor.RAINBOW }
+            .filter { option -> minimum == null || option.position >= minimum }
+            .filter { option -> maximum == null || option.position <= maximum }
+            .map { it.name }
+            .toList()
+        SubsystemHardwareKind.PRISM_DRIVER -> PrismPwmPreset.entries
+            .asSequence()
+            .filter { option -> minimum == null || option.pulseWidthUs >= minimum }
+            .filter { option -> maximum == null || option.pulseWidthUs <= maximum }
+            .map { it.name }
+            .toList()
+        else -> emptyList()
+    }
+    val defaultOption = when (actuatorKind) {
+        SubsystemHardwareKind.INDICATOR_LIGHT -> defaultNumber?.let { default ->
+            IndicatorLightColor.entries.firstOrNull {
+                it != IndicatorLightColor.RAINBOW && kotlin.math.abs(it.position - default) <= 1e-9
+            }?.name
+        }
+        SubsystemHardwareKind.PRISM_DRIVER -> when (type) {
+            SubsystemValueType.DOUBLE -> defaultNumber?.let { default ->
+                PrismPwmPreset.entries.firstOrNull { kotlin.math.abs(it.pulseWidthUs - default) <= 1e-9 }?.name
+            }
+            SubsystemValueType.INT -> defaultInt?.let { default ->
+                PrismPwmPreset.entries.firstOrNull { it.pulseWidthUs == default }?.name
+            }
+            else -> null
+        }
+        else -> null
+    }
+    if (namedOptions.isNotEmpty()) {
+        return CapabilityParameterDescriptor(
+            key = "value",
+            displayName = displayName,
+            description = when (actuatorKind) {
+                SubsystemHardwareKind.INDICATOR_LIGHT -> "Choose the named indicator-light color."
+                SubsystemHardwareKind.PRISM_DRIVER -> "Choose the named goBILDA Prism pattern or color."
+                else -> error("Named options require a supported actuator")
+            },
+            type = CapabilityParameterType.ENUM,
+            defaultText = defaultOption ?: namedOptions.first(),
+            options = namedOptions,
+        )
+    }
+    return CapabilityParameterDescriptor(
         key = "value",
         displayName = displayName,
         description = "New $displayName value for the subsystem target.",
@@ -191,6 +246,7 @@ private fun SubsystemStateFieldDocument.asCapabilityParameter(): CapabilityParam
         defaultBoolean = defaultBoolean,
         defaultText = defaultText,
     )
+}
 
 private fun explicitConfirmationParameter(displayName: String): CapabilityParameterDescriptor =
     CapabilityParameterDescriptor(

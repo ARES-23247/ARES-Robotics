@@ -33,6 +33,7 @@ import com.areslib.project.AresFtcHubCommandTransport
 import com.areslib.project.AresFtcRuntimeOptionsDocument
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresRuntimeOptionsDocument
 import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.SubsystemValueType
@@ -53,6 +54,7 @@ class AresKotlinProjectGeneratorTest {
                 routines = emptyList(),
                 projectMetadata = AresProjectMetadataDocument(
                     projectId = "test-project",
+                    identity = AresProjectIdentityDocument("99999", "2026", "test-robot", "Test Robot"),
                     league = AresLeague.FTC,
                     coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
                     robotLengthMeters = 0.44,

@@ -7,6 +7,7 @@ import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemFeedforwardKind
+import com.areslib.subsystem.SubsystemGeneratedTestNames
 import com.areslib.subsystem.SubsystemFollowerDocument
 import com.areslib.subsystem.SubsystemFollowerTransform
 import com.areslib.subsystem.FaultRecoveryActionKind
@@ -16,6 +17,7 @@ import com.areslib.subsystem.SubsystemHomingComparison
 import com.areslib.subsystem.SubsystemHomingMethod
 import com.areslib.subsystem.SubsystemImplementationKind
 import com.areslib.subsystem.InterlockComparison
+import com.areslib.subsystem.isAresGenerated
 import com.areslib.subsystem.SubsystemMeasurementSource
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemStateFieldDocument
@@ -63,8 +65,8 @@ object SubsystemKotlinGenerator {
     fun generate(document: SubsystemDocument, target: SubsystemKotlinCodegenTarget): List<GeneratedSubsystemFile> {
         val issues = validateSubsystemDocument(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
-        require(document.implementation.kind == SubsystemImplementationKind.GENERATED_STARTER) {
-            "Subsystem '${document.documentId}' is hand-authored USER-OWNED source; ARES will not generate or replace its Kotlin starters"
+        require(document.implementation.kind.isAresGenerated()) {
+            "Subsystem '${document.documentId}' is hand-authored USER-OWNED source; ARES will not generate or replace its Kotlin implementation"
         }
         require(document.platform == target.platform) {
             "Subsystem '${document.documentId}' targets ${document.platform}, not ${target.platform}"
@@ -79,20 +81,20 @@ object SubsystemKotlinGenerator {
         val files = mutableListOf(
             generated("$directory/${document.kotlinTypeName}Definition.kt", definitionSource(document, pkg), SubsystemArtifact.DEFINITION,
                 SubsystemArtifactGroup.GENERATED_PLUMBING, "Declarative DSL mirror used for review and content hashing."),
-            starter("$directory/${document.kotlinTypeName}State.kt", stateSource(document, pkg), SubsystemArtifact.STATE,
+            implementationSource(document, "$directory/${document.kotlinTypeName}State.kt", stateSource(document, pkg), SubsystemArtifact.STATE,
                 SubsystemArtifactGroup.DOMAIN, "Immutable Redux state and safety observations owned by the subsystem."),
-            starter("$directory/${document.kotlinTypeName}IO.kt", ioSource(document, pkg), SubsystemArtifact.IO_CONTRACT,
+            implementationSource(document, "$directory/${document.kotlinTypeName}IO.kt", ioSource(document, pkg), SubsystemArtifact.IO_CONTRACT,
                 SubsystemArtifactGroup.HARDWARE, "Cached, fail-closed boundary shared by physical and simulated adapters."),
-            starter("$directory/${document.kotlinTypeName}Controller.kt", controllerSource(document, pkg), SubsystemArtifact.CONTROLLER,
+            implementationSource(document, "$directory/${document.kotlinTypeName}Controller.kt", controllerSource(document, pkg), SubsystemArtifact.CONTROLLER,
                 SubsystemArtifactGroup.CONTROL, "Allocation-free policy that converts immutable state into safe IO commands."),
-            starter("$directory/${document.kotlinTypeName}Subsystem.kt", subsystemSource(document, pkg), SubsystemArtifact.SUBSYSTEM_LIFECYCLE,
+            implementationSource(document, "$directory/${document.kotlinTypeName}Subsystem.kt", subsystemSource(document, pkg), SubsystemArtifact.SUBSYSTEM_LIFECYCLE,
                 SubsystemArtifactGroup.CONTROL, "Lifecycle bridge that separates cached reads, Redux updates, and output writes."),
-            starter("$directory/${platformPrefix(document.platform)}${document.kotlinTypeName}IO.kt", hardwareIoSource(document, pkg),
+            implementationSource(document, "$directory/${platformPrefix(document.platform)}${document.kotlinTypeName}IO.kt", hardwareIoSource(document, pkg),
                 SubsystemArtifact.PLATFORM_IO, SubsystemArtifactGroup.HARDWARE,
                 "Platform adapter that owns devices, cached reads, configuration, and output faults."),
         )
         if (document.generateMockIo) {
-            files += starter("$directory/Mock${document.kotlinTypeName}IO.kt", mockIoSource(document, pkg),
+            files += implementationSource(document, "$directory/Mock${document.kotlinTypeName}IO.kt", mockIoSource(document, pkg),
                 SubsystemArtifact.MOCK_IO, SubsystemArtifactGroup.SIMULATION,
                 "Deterministic simulator adapter with the same safety and recovery semantics as hardware.")
         }
@@ -124,9 +126,7 @@ object SubsystemKotlinGenerator {
             }
             require(validateSubsystemDocument(document).isEmpty()) { "Subsystem '${document.documentId}' is invalid" }
         }
-        val generatedDocuments = documents.filter {
-            it.implementation.kind == SubsystemImplementationKind.GENERATED_STARTER
-        }
+        val generatedDocuments = documents.filter { it.implementation.kind.isAresGenerated() }
         val handAuthoredDocuments = documents.filter {
             it.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED
         }
@@ -290,6 +290,22 @@ ${checks.prependIndent("    ")}
         ownership = SubsystemArtifactOwnership.GENERATED_STARTER,
         description = description,
     )
+
+    private fun implementationSource(
+        document: SubsystemDocument,
+        path: String,
+        source: String,
+        artifact: SubsystemArtifact,
+        group: SubsystemArtifactGroup,
+        description: String,
+    ): GeneratedSubsystemFile = when (document.implementation.kind) {
+        SubsystemImplementationKind.DECLARATIVE_GENERATED ->
+            generated(path, source, artifact, group, description)
+        SubsystemImplementationKind.GENERATED_STARTER ->
+            starter(path, source, artifact, group, description)
+        SubsystemImplementationKind.HAND_AUTHORED ->
+            error("Hand-authored subsystem '${document.documentId}' cannot emit generated implementation source")
+    }
 
     private fun generated(
         path: String,
@@ -875,8 +891,14 @@ $continuousInputHelper
         val target = targetField.clampedExpression(rawTarget)
         val command = "io.${actuator.commandName()}"
         return when (loop.strategy) {
-            SubsystemControlStrategy.DIRECT ->
-                "        $command((($target).takeIf(Double::isFinite) ?: 0.0).coerceIn(${loop.minimumOutput.kotlinDouble()}, ${loop.maximumOutput.kotlinDouble()}) * scale)"
+            SubsystemControlStrategy.DIRECT -> {
+                val neutral = requireNotNull(actuator.safeOutput).kotlinDouble()
+                val bounded = "(($target).takeIf(Double::isFinite) ?: $neutral).coerceIn(${loop.minimumOutput.kotlinDouble()}, ${loop.maximumOutput.kotlinDouble()})"
+                val applied = if (actuator.kind == SubsystemHardwareKind.MOTOR ||
+                    actuator.kind == SubsystemHardwareKind.CONTINUOUS_SERVO
+                ) "$bounded * scale" else bounded
+                "        $command($applied)"
+            }
             SubsystemControlStrategy.SERVO_POSITION ->
                 "        $command((($target).takeIf(Double::isFinite) ?: 0.0).coerceIn(0.0, 1.0))"
             SubsystemControlStrategy.BANG_BANG -> {
@@ -1131,6 +1153,9 @@ $feedforward
             "    private var cached${field.fieldId.pascalCase()}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}\n" +
                 "    override val ${field.fieldId}: ${field.kotlinType()} get() = cached${field.fieldId.pascalCase()}"
         }.distinct().joinToString("\n")
+        val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
+            "    private var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}"
+        }
         val configure = document.hardware.mapNotNull { device ->
             when {
                 (device.kind == SubsystemHardwareKind.MOTOR ||
@@ -1216,15 +1241,25 @@ $feedforward
             val assignment = (listOf(device to "requested") + document.followersOf(device.hardwareId).map { follower ->
                 follower to follower.following!!.transformedExpression("requested")
             }).joinToString("\n            ") { (target, expression) ->
-                when (target.kind) {
-                    SubsystemHardwareKind.MOTOR -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = (($expression) / 12.0).coerceIn(-1.0, 1.0)"
+                val bounded = when (target.kind) {
+                    SubsystemHardwareKind.MOTOR -> "($expression).coerceIn(-12.0, 12.0)"
                     SubsystemHardwareKind.POSITIONAL_SERVO,
-                    SubsystemHardwareKind.INDICATOR_LIGHT -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ($expression).coerceIn(0.0, 1.0)"
-                    SubsystemHardwareKind.PRISM_DRIVER -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ((($expression) - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
-                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = ($expression).coerceIn(-1.0, 1.0)"
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "($expression).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "($expression).coerceIn(500.0, 2500.0)"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "($expression).coerceIn(-1.0, 1.0)"
                     SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
                     else -> error("Not an actuator")
                 }
+                val write = when (target.kind) {
+                    SubsystemHardwareKind.MOTOR -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = ${target.hardwareId}Command / 12.0"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ${target.hardwareId}Command"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.position = ((${target.hardwareId}Command - 500.0) / 2000.0).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "requireNotNull(${target.hardwareId}) { ${("Missing ${target.displayName}").quoted()} }.power = ${target.hardwareId}Command"
+                    SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
+                    else -> error("Not an actuator")
+                }
+                "${target.hardwareId}Command = $bounded\n            $write"
             }
             """    override fun ${device.commandName()}(value: Double) {
         val requested = value.takeIf(Double::isFinite) ?: $neutral
@@ -1251,7 +1286,7 @@ $feedforward
                     SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
                     else -> error("Not an FTC actuator")
                 }
-                "        try { $assignment } catch (_: Exception) { succeeded = false }"
+                "        try { $assignment; ${device.hardwareId}Command = $neutral } catch (_: Exception) { succeeded = false }"
             }
             .ifBlank { "        // Sensor-only subsystem: neutral is already satisfied." }
         return """
@@ -1266,6 +1301,7 @@ $feedforward
             class Ftc${document.kotlinTypeName}IO(hardwareMap: HardwareMap) : ${document.kotlinTypeName}IO {
             $fields
             $cached
+            $commandFields
                 override var feedbackValid: Boolean = false
                     private set
                 override var feedbackTimestampMs: Long = 0L
@@ -1409,6 +1445,9 @@ $telemetry
             "    private var cached${field.fieldId.pascalCase()}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}\n" +
                 "    override val ${field.fieldId}: ${field.kotlinType()} get() = cached${field.fieldId.pascalCase()}"
         }.distinct().joinToString("\n")
+        val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
+            "    private var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}"
+        }
         val init = document.hardware.filter {
             it.kind == SubsystemHardwareKind.MOTOR ||
                 (it.kind == SubsystemHardwareKind.CONTINUOUS_SERVO && it.inverted) ||
@@ -1500,15 +1539,25 @@ $telemetry
                 } else {
                     expression
                 }
-                when (target.kind) {
-                    SubsystemHardwareKind.MOTOR -> "${target.hardwareId}.setVoltage(($applied).coerceIn(-12.0, 12.0))"
-                    SubsystemHardwareKind.POSITIONAL_SERVO -> "${target.hardwareId}.set(($applied).coerceIn(0.0, 1.0))"
-                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${target.hardwareId}.set(($applied).coerceIn(-1.0, 1.0))"
-                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${target.hardwareId}.set(($applied).coerceIn(0.0, 1.0))"
-                    SubsystemHardwareKind.PRISM_DRIVER -> "${target.hardwareId}.set(((($applied) - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
-                    SubsystemHardwareKind.SOLENOID -> "${target.hardwareId}.set(($applied) >= 0.5)"
+                val bounded = when (target.kind) {
+                    SubsystemHardwareKind.MOTOR -> "($applied).coerceIn(-12.0, 12.0)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "($applied).coerceIn(0.0, 1.0)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "($applied).coerceIn(500.0, 2500.0)"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "($applied).coerceIn(-1.0, 1.0)"
+                    SubsystemHardwareKind.SOLENOID -> "($applied).coerceIn(0.0, 1.0)"
                     else -> error("Not actuator")
                 }
+                val write = when (target.kind) {
+                    SubsystemHardwareKind.MOTOR -> "${target.hardwareId}.setVoltage(${target.hardwareId}Command)"
+                    SubsystemHardwareKind.POSITIONAL_SERVO,
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${target.hardwareId}.set(${target.hardwareId}Command)"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${target.hardwareId}.set(((${target.hardwareId}Command - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${target.hardwareId}.set(${target.hardwareId}Command)"
+                    SubsystemHardwareKind.SOLENOID -> "${target.hardwareId}.set(${target.hardwareId}Command >= 0.5)"
+                    else -> error("Not actuator")
+                }
+                "${target.hardwareId}Command = $bounded\n            $write"
             }
             """    override fun ${device.commandName()}(value: Double) {
         val requested = value.takeIf(Double::isFinite) ?: $neutral
@@ -1542,7 +1591,7 @@ $telemetry
                     SubsystemHardwareKind.SOLENOID -> "${device.hardwareId}.set($appliedNeutral >= 0.5)"
                     else -> error("Not an FRC actuator")
                 }
-                "        try { $command } catch (_: Exception) { succeeded = false }"
+                "        try { $command; ${device.hardwareId}Command = $appliedNeutral } catch (_: Exception) { succeeded = false }"
             }
             .ifBlank { "        // Sensor-only subsystem: neutral is already satisfied." }
         val close = document.hardware.joinToString("\n") { device ->
@@ -1574,6 +1623,7 @@ $telemetry
             class Frc${document.kotlinTypeName}IO : ${document.kotlinTypeName}IO {
             $fields
             $cached
+            $commandFields
                 override var feedbackValid: Boolean = false
                     private set
                 override var feedbackTimestampMs: Long = 0L
@@ -2122,17 +2172,28 @@ override fun latchOutputFault() {
                 val expected = follower.invertedExpression(requireNotNull(follower.safeOutput).kotlinDouble())
                 "        assertEquals($expected, io.${follower.hardwareId}Command, 0.0)"
             }
+            val postFailureAssertions = if (document.safety.latchOutputFaults) {
+                """
+                    assertTrue(io.outputFaultLatched)
+                    $command(3.0)
+                    assertEquals($neutral, $observed, 0.0)
+                """.trimIndent()
+            } else {
+                """
+                    assertFalse(io.outputFaultLatched)
+                    $command($validCommand)
+                    assertEquals(${device.invertedExpression(validCommand)}, $observed, 0.0)
+                """.trimIndent()
+            }
             """
                     $command($validCommand)
                     assertEquals(${device.invertedExpression(validCommand)}, $observed, 0.0)
             $followerActiveAssertions
                     io.failNextWrite = true
                     $command(4.0)
-                    assertTrue(io.outputFaultLatched)
                     assertEquals($neutral, $observed, 0.0)
             $followerNeutralAssertions
-                    $command(3.0)
-                    assertEquals($neutral, $observed, 0.0)
+            $postFailureAssertions
                     assertTrue(io.recoverWithNeutral())
                     assertFalse(io.outputFaultLatched)
             """.trimIndent()
@@ -2173,6 +2234,41 @@ $evidenceAssignments
             """.trimIndent()
         } ?: error("Validated current monitoring requires a current measurement")
         else "        assertTrue(io.currentReadingValid)"
+        val controlLimitAssertions = document.controlLoops.sortedBy { it.loopId }.joinToString("\n\n") { loop ->
+            val actuator = document.hardware.first { it.hardwareId == loop.actuatorId }
+            val target = requireNotNull(document.field(loop.targetFieldId))
+            val extremeTarget = when (target.type) {
+                SubsystemValueType.DOUBLE -> "1.0e9"
+                SubsystemValueType.INT -> "1000000000"
+                SubsystemValueType.BOOLEAN -> "true"
+                SubsystemValueType.STRING -> error("Validated control target must be numeric or boolean")
+            }
+            val low = actuator.invertedExpression(loop.minimumOutput.kotlinDouble())
+            val high = actuator.invertedExpression(loop.maximumOutput.kotlinDouble())
+            """
+                    run {
+                        val io = Mock${document.kotlinTypeName}IO()
+                        io.configurationHealthy = true
+                        io.homed = true
+                        io.calibrated = true
+                        io.refresh()
+                        val controller = ${document.kotlinTypeName}Controller(io)
+                        controller.update(${document.kotlinTypeName}State(
+                            ${target.fieldId} = $extremeTarget,
+                            feedbackValid = true,
+                            feedbackTimestampMs = io.feedbackTimestampMs,
+                            configurationHealthy = true,
+                            homed = true,
+                            calibrated = true,
+                            currentReadingValid = true,
+                        ), 1.0)
+                        val command = io.${actuator.hardwareId}Command
+                        assertTrue(command.isFinite())
+                        assertTrue(command >= minOf($low, $high))
+                        assertTrue(command <= maxOf($low, $high))
+                    }
+            """.trimIndent()
+        }
         val homingControllerTest = if (document.requiresHoming()) {
             val evidenceAssignments = document.safety.homing.evidence.joinToString("\n") { evidence ->
                 when (evidence.comparison) {
@@ -2187,7 +2283,7 @@ $evidenceAssignments
             val dwell = document.safety.homing.dwellMs
             """
                 @Test
-                fun `homing evidence must dwell before home is established`() {
+                fun `${SubsystemGeneratedTestNames.HOMING_DWELL}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     val controller = ${document.kotlinTypeName}Controller(io)
                     val state = ${document.kotlinTypeName}State(
@@ -2227,29 +2323,62 @@ $evidenceAssignments
                 SubsystemValueType.STRING -> "${field.fieldId} = \"active\","
             }
         }.orEmpty()
-        val targetSetterSequenceTest = if (firstTarget != null && document.hasSafetyRequestHandshake()) {
-            val value = when (firstTarget.type) {
-                SubsystemValueType.DOUBLE -> (firstTarget.maximum ?: 1.0).kotlinDouble()
-                SubsystemValueType.INT -> (firstTarget.maximum?.toInt() ?: 1).toString()
-                SubsystemValueType.BOOLEAN -> "true"
-                SubsystemValueType.STRING -> "\"active\""
+        val generatedCapabilities = subsystemTargetCapabilities(listOf(document))
+        val directSetterAssertions = document.stateFields
+            .filter { it.role == SubsystemFieldRole.TARGET }
+            .sortedBy { it.fieldId }
+            .joinToString("\n\n") { field ->
+                val value = when (field.type) {
+                    SubsystemValueType.DOUBLE -> (field.maximum ?: 1.0).kotlinDouble()
+                    SubsystemValueType.INT -> (field.maximum?.toInt() ?: 1).toString()
+                    SubsystemValueType.BOOLEAN -> "true"
+                    SubsystemValueType.STRING -> "\"generated-test-value\""
+                }
+                val assertion = if (field.type == SubsystemValueType.DOUBLE) {
+                    "assertEquals($value, ${document.kotlinTypeName}Subsystem.state(store.state).${field.fieldId}, 0.0)"
+                } else {
+                    "assertEquals($value, ${document.kotlinTypeName}Subsystem.state(store.state).${field.fieldId})"
+                }
+                """
+                    subsystem.set${field.fieldId.pascalCase()}(store, $value)
+                    $assertion
+                """.trimIndent()
             }
-            val setter = "set${firstTarget.fieldId.pascalCase()}"
-            val registry = "${pkg.substringBeforeLast('.')}.GeneratedSubsystemRegistry"
-            val key = subsystemTargetActionKey(document.documentId, firstTarget.fieldId)
+        val registeredActionAssertions = generatedCapabilities.joinToString("\n\n") { capability ->
+            val parameter = capability.descriptor.parameters.single()
+            val actionValue = when {
+                parameter.options.isNotEmpty() -> parameter.options.last().quoted()
+                capability.valueType == SubsystemValueType.DOUBLE ->
+                    (parameter.maximum ?: parameter.defaultNumber ?: 1.0).kotlinDouble()
+                capability.valueType == SubsystemValueType.INT ->
+                    (parameter.maximum ?: parameter.defaultNumber ?: 1.0).toInt().toString()
+                capability.valueType == SubsystemValueType.BOOLEAN -> "true"
+                else -> (parameter.defaultText ?: "generated-test-value").quoted()
+            }
+            """
+                    run {
+                        val before = store.state
+                        val task = requireNotNull(registry.createActionTask(${capability.descriptor.key.quoted()}, $actionValue))
+                        val actions = task.initialize(store.state)
+                        assertTrue(actions.isNotEmpty())
+                        actions.forEach { store.dispatch(it) }
+                        assertTrue(store.state !== before)
+                    }
+            """.trimIndent()
+        }
+        val targetSetterSequenceTest = if (generatedCapabilities.isNotEmpty()) {
             """
                 @Test
-                fun `direct and registered target actions advance the command sequence`() {
+                fun `${SubsystemGeneratedTestNames.GENERATED_ACTIONS}`() {
                     val subsystem = ${document.kotlinTypeName}Subsystem(Mock${document.kotlinTypeName}IO())
                     val store = Store(RobotState(superstructure = SuperstructureState(
                         subsystems = mapOf(${document.kotlinTypeName}Subsystem.ID to ${document.kotlinTypeName}State())
                     )))
-                    subsystem.$setter(store, $value)
-                    assertEquals(1L, ${document.kotlinTypeName}Subsystem.state(store.state).commandSequence)
+                    val registry = ${pkg.substringBeforeLast('.')}.GeneratedSubsystemRegistry
 
-                    val task = requireNotNull($registry.createActionTask(${key.quoted()}, $value))
-                    task.initialize(store.state).forEach { store.dispatch(it) }
-                    assertEquals(2L, ${document.kotlinTypeName}Subsystem.state(store.state).commandSequence)
+$directSetterAssertions
+
+$registeredActionAssertions
                 }
 
             """.trimIndent()
@@ -2260,7 +2389,7 @@ $evidenceAssignments
         val neutralRecoveryControllerTest = if (document.safety.requiresExplicitNeutralRecovery) {
             """
                 @Test
-                fun `neutral recovery requests are consumed once and failed neutral stays latched`() {
+                fun `${SubsystemGeneratedTestNames.NEUTRAL_RECOVERY}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     val controller = ${document.kotlinTypeName}Controller(io)
                     io.configurationHealthy = true
@@ -2320,7 +2449,7 @@ $evidenceAssignments
         val calibrationControllerTest = if (document.safety.requiresCalibration) {
             """
                 @Test
-                fun `calibration confirmation requires fresh healthy state and successful neutral`() {
+                fun `${SubsystemGeneratedTestNames.CALIBRATION}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     val controller = ${document.kotlinTypeName}Controller(io)
                     io.configurationHealthy = true
@@ -2393,7 +2522,7 @@ $evidenceAssignments
         val staleFeedbackTest = document.safety.feedbackTimeoutMs?.let { feedbackTimeoutMs ->
             """
                 @Test
-                fun `stale feedback is rejected by the immutable state contract`() {
+                fun `${SubsystemGeneratedTestNames.STALE_FEEDBACK}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     val subsystem = ${document.kotlinTypeName}Subsystem(io)
                     val store = Store(RobotState(superstructure = SuperstructureState(
@@ -2430,7 +2559,7 @@ $evidenceAssignments
 
             class ${document.kotlinTypeName}GeneratedTest {
                 @Test
-                fun `generated state and mock IO start safely`() {
+                fun `${SubsystemGeneratedTestNames.SAFE_STARTUP}`() {
                     val state = ${document.kotlinTypeName}State()
                     val io = Mock${document.kotlinTypeName}IO()
                     $assertion
@@ -2439,7 +2568,7 @@ $evidenceAssignments
                 }
 
                 @Test
-                fun `failed writes latch and require explicit neutral recovery`() {
+                fun `${SubsystemGeneratedTestNames.OUTPUT_FAULT_POLICY}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     io.configurationHealthy = true
                     io.homed = true
@@ -2449,10 +2578,15 @@ $evidenceAssignments
                 }
 
                 @Test
-                fun `homing and current validity are independent safety permits`() {
+                fun `${SubsystemGeneratedTestNames.HOMING_AND_CURRENT}`() {
                     val io = Mock${document.kotlinTypeName}IO()
             $homingAssertions
             $currentAssertions
+                }
+
+                @Test
+                fun `${SubsystemGeneratedTestNames.CONTROL_LIMITS}`() {
+$controlLimitAssertions
                 }
 
             $homingControllerTest
@@ -2466,7 +2600,7 @@ $evidenceAssignments
             $staleFeedbackTest
 
                 @Test
-                fun `zero scale models disabled and commands neutral`() {
+                fun `${SubsystemGeneratedTestNames.DISABLED_STOP}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     io.configurationHealthy = true
                     io.homed = true
@@ -2485,7 +2619,7 @@ $evidenceAssignments
                 }
 
                 @Test
-                fun `invalid feedback and cleanup fail closed`() {
+                fun `${SubsystemGeneratedTestNames.INVALID_AND_CLEANUP}`() {
                     val io = Mock${document.kotlinTypeName}IO()
                     io.failNextRefresh = true
                     io.refresh()
@@ -2522,7 +2656,10 @@ $evidenceAssignments
         telemetry.putBoolean("${'$'}prefix/CurrentReadingValid", currentReadingValid)
         telemetry.putBoolean("${'$'}prefix/OutputFaultLatched", outputFaultLatched)
         """.trimIndent()
-        return listOf(measurements, safety).filter(String::isNotBlank).joinToString("\n")
+        val appliedOutputs = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
+            "        telemetry.putNumber(\"${'$'}prefix/AppliedOutputs/${device.hardwareId}/${device.kind.name}\", ${device.hardwareId}Command)"
+        }
+        return listOf(measurements, appliedOutputs, safety).filter(String::isNotBlank).joinToString("\n")
     }
 }
 
@@ -2832,11 +2969,41 @@ private fun registryActionCase(
     resourceExpression: String,
 ): String {
     val key = subsystemTargetActionKey(document.documentId, field.fieldId)
+    val actuatorKind = document.controlLoops
+        .firstOrNull { it.targetFieldId == field.fieldId }
+        ?.let { loop -> document.hardware.firstOrNull { it.hardwareId == loop.actuatorId } }
+        ?.kind
+    val fieldMinimum = field.minimum
+    val fieldMaximum = field.maximum
     val numericBounds = buildList {
         field.minimum?.let { add("candidate >= ${it.kotlinDouble()}") }
         field.maximum?.let { add("candidate <= ${it.kotlinDouble()}") }
     }
-    val converted = when (field.type) {
+    val namedConversion = when (actuatorKind) {
+        SubsystemHardwareKind.INDICATOR_LIGHT -> com.areslib.hardware.actuator.IndicatorLightColor.entries
+            .filter { it != com.areslib.hardware.actuator.IndicatorLightColor.RAINBOW }
+            .filter { option -> fieldMinimum == null || option.position >= fieldMinimum }
+            .filter { option -> fieldMaximum == null || option.position <= fieldMaximum }
+            .joinToString(
+                prefix = "when (value as? String) {\n",
+                postfix = "\n        else -> null\n    }",
+                separator = "\n",
+            ) { option -> "        ${option.name.quoted()} -> ${option.position.kotlinDouble()}" }
+        SubsystemHardwareKind.PRISM_DRIVER -> com.areslib.hardware.actuator.PrismPwmPreset.entries
+            .filter { option -> fieldMinimum == null || option.pulseWidthUs >= fieldMinimum }
+            .filter { option -> fieldMaximum == null || option.pulseWidthUs <= fieldMaximum }
+            .joinToString(
+                prefix = "when (value as? String) {\n",
+                postfix = "\n        else -> null\n    }",
+                separator = "\n",
+            ) { option ->
+                val value = if (field.type == SubsystemValueType.INT) option.pulseWidthUs.toString()
+                else option.pulseWidthUs.toDouble().kotlinDouble()
+                "        ${option.name.quoted()} -> $value"
+            }
+        else -> null
+    }
+    val converted = namedConversion ?: when (field.type) {
         SubsystemValueType.DOUBLE -> {
             val checks = (listOf("candidate.isFinite()") + numericBounds).joinToString(" && ")
             "(value as? Number)?.toDouble()?.takeIf { candidate -> $checks }"
