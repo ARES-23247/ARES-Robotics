@@ -131,6 +131,41 @@ class SubsystemDocumentTest {
         assertTrue(loop.motionProfile.maximumVelocity > 0.0)
         assertTrue(loop.motionProfile.maximumAcceleration > 0.0)
         assertEquals(SubsystemFeedforwardKind.ELEVATOR, loop.feedforward.kind)
+        assertEquals(
+            setOf("kp", "ki", "kd", "ks", "kv", "ka", "kg", "maxvelocity", "maxacceleration"),
+            elevator.tuningParameters.map { it.key.substringAfterLast('.') }.toSet(),
+        )
+        assertTrue(elevator.tuningParameters.all { it.componentUid == loop.uid })
+        assertTrue(elevator.tuningParameters.all { it.description.contains("simulation") })
+        assertEquals(loop.kP, elevator.tuningParameters.single { it.key.endsWith(".kp") }.defaultValue.doubleValue)
+        assertEquals(loop.feedforward.kG, elevator.tuningParameters.single { it.key.endsWith(".kg") }.defaultValue.doubleValue)
+        assertEquals(loop.motionProfile.maximumVelocity, elevator.tuningParameters.single { it.key.endsWith(".maxvelocity") }.defaultValue.doubleValue)
+    }
+
+    @Test
+    fun `templates expose tuning only when generated runtime behavior consumes it`() {
+        val direct = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            "intake",
+            "Intake",
+            SubsystemPlatform.FTC,
+        )
+        val position = SubsystemTemplates.create(
+            SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
+            "turret",
+            "Turret",
+            SubsystemPlatform.FRC,
+        )
+        val flywheel = SubsystemTemplates.create(
+            SubsystemTemplate.FLYWHEEL_SHOOTER,
+            "flywheel",
+            "Flywheel",
+            SubsystemPlatform.FRC,
+        )
+
+        assertTrue(direct.tuningParameters.isEmpty())
+        assertEquals(setOf("kp", "ki", "kd"), position.tuningParameters.map { it.key.substringAfterLast('.') }.toSet())
+        assertEquals(setOf("kp", "ki", "kd", "ks", "kv", "ka"), flywheel.tuningParameters.map { it.key.substringAfterLast('.') }.toSet())
     }
 
     @Test

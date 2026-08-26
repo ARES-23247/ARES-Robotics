@@ -219,10 +219,10 @@ class SubsystemKotlinGeneratorTest {
 
         assertTrue(controller.contains("primaryProfilePosition"))
         assertTrue(controller.contains("primaryProfileVelocity"))
-        assertTrue(controller.contains("primaryVelocityStep = 1.5 * dtSeconds"))
-        assertTrue(controller.contains("minOf(0.8, primaryStoppingVelocity)"))
+        assertTrue(controller.contains("primaryVelocityStep = primaryMaxacceleration * dtSeconds"))
+        assertTrue(controller.contains("minOf(primaryMaxvelocity, primaryStoppingVelocity)"))
         assertTrue(controller.contains("primaryDesiredAcceleration = primaryProfileAcceleration"))
-        assertTrue(controller.contains("+ 0.6"))
+        assertTrue(controller.contains("+ primaryKg"))
         assertTrue(!controller.contains("mutableListOf"))
         assertTrue(!controller.contains("DoubleArray"))
     }
@@ -816,6 +816,29 @@ class SubsystemKotlinGeneratorTest {
         val mock = ftc.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
         assertTrue(mock.contains("armCommand = (1.0 - (requested)).coerceIn(0.0, 1.0)"))
         assertTrue(mock.contains("rollerCommand = (-(requested)).coerceIn(-1.0, 1.0)"))
+    }
+
+    @Test
+    fun `capability template tuning declarations bind to generated controller runtime`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.ARM_PIVOT,
+            documentId = "arm",
+            kotlinTypeName = "Arm",
+            platform = SubsystemPlatform.FTC,
+        )
+
+        val controller = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        ).single { it.artifact == SubsystemArtifact.CONTROLLER }.content
+
+        assertTrue(controller.contains("private var primaryKp = 6.0"))
+        assertTrue(controller.contains("private var primaryKg = 0.5"))
+        assertTrue(controller.contains("private var primaryMaxvelocity = 2.0"))
+        assertTrue(controller.contains("\"arm.tuning.primary.kp\" -> true"))
+        assertTrue(controller.contains("\"arm.tuning.primary.kg\" -> true"))
+        assertTrue(controller.contains("primaryKp * primaryError"))
+        assertTrue(controller.contains("primaryKg * kotlin.math.cos"))
     }
 
     @Test
