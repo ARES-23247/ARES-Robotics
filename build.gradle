@@ -113,7 +113,7 @@ test {
     testLogging { events 'passed', 'skipped', 'failed' }
 }
 
-def checkedInProject = file('src/main/kotlin/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt')
+def generatedProject = file("${generatedMain}/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt")
 def starterSource = file('src/main/kotlin/org/aresfirst/starter/frc/generated/subsystems')
 def subsystemArgs = [
     '--subsystems-starter-output', starterSource.absolutePath,
@@ -132,7 +132,7 @@ tasks.register('generateAresProject', JavaExec) {
     classpath = configurations.aresCodegen
     mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
     args '--project', projectDir.absolutePath,
-        '--output', checkedInProject.absolutePath,
+        '--output', generatedProject.absolutePath,
         '--package', 'org.aresfirst.starter.frc.generated',
         '--platform', 'FRC'
     args subsystemArgs
@@ -144,9 +144,9 @@ tasks.register('prepareAresSubsystemPlumbing', JavaExec) {
     classpath = configurations.aresCodegen
     mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
     args '--project', projectDir.absolutePath,
-        '--output', checkedInProject.absolutePath,
+        '--output', generatedProject.absolutePath,
         '--package', 'org.aresfirst.starter.frc.generated',
-        '--platform', 'FRC', '--subsystems-only'
+        '--platform', 'FRC'
     args subsystemArgs
     args drivebaseArgs
 }
@@ -157,7 +157,7 @@ tasks.register('verifyAresProject', JavaExec) {
     classpath = configurations.aresCodegen
     mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
     args '--project', projectDir.absolutePath,
-        '--output', checkedInProject.absolutePath,
+        '--output', generatedProject.absolutePath,
         '--package', 'org.aresfirst.starter.frc.generated',
         '--platform', 'FRC', '--check'
     args subsystemArgs
@@ -169,7 +169,7 @@ tasks.register('previewSubsystemChanges', JavaExec) {
     classpath = configurations.aresCodegen
     mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
     args '--project', projectDir.absolutePath,
-        '--output', checkedInProject.absolutePath,
+        '--output', generatedProject.absolutePath,
         '--package', 'org.aresfirst.starter.frc.generated',
         '--platform', 'FRC', '--subsystems-only', '--preview-subsystem-starters'
     args subsystemArgs
@@ -181,7 +181,7 @@ tasks.register('generateSubsystemStarters', JavaExec) {
     classpath = configurations.aresCodegen
     mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
     args '--project', projectDir.absolutePath,
-        '--output', checkedInProject.absolutePath,
+        '--output', generatedProject.absolutePath,
         '--package', 'org.aresfirst.starter.frc.generated',
         '--platform', 'FRC', '--subsystems-only', '--apply-subsystem-starters'
     args subsystemArgs
@@ -193,7 +193,7 @@ tasks.register('replaceSubsystemStarters', JavaExec) {
     classpath = configurations.aresCodegen
     mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
     args '--project', projectDir.absolutePath,
-        '--output', checkedInProject.absolutePath,
+        '--output', generatedProject.absolutePath,
         '--package', 'org.aresfirst.starter.frc.generated',
         '--platform', 'FRC', '--subsystems-only', '--apply-subsystem-starters'
     args subsystemArgs
