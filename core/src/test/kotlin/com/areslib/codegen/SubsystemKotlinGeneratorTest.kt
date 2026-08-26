@@ -15,6 +15,7 @@ import com.areslib.subsystem.SubsystemFaultRecoveryDocument
 import com.areslib.subsystem.SubsystemFeedforwardDocument
 import com.areslib.subsystem.SubsystemHardwareScaffolding
 import com.areslib.subsystem.SubsystemHardwareKind
+import com.areslib.subsystem.SubsystemGeneratedTestNames
 import com.areslib.subsystem.SubsystemMotionProfileDocument
 import com.areslib.subsystem.SubsystemSafetyDocument
 import com.areslib.subsystem.SubsystemFeedforwardKind
@@ -509,7 +510,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(controller.contains("neutralHoldCommandSequence = state.commandSequence"))
         assertTrue(controller.contains("feedbackAgeMs"))
         assertTrue(contractTest.contains("requests are consumed once and failed neutral stays latched"))
-        assertTrue(contractTest.contains("direct and registered target actions advance the command sequence"))
+        assertTrue(contractTest.contains(SubsystemGeneratedTestNames.GENERATED_ACTIONS))
         assertTrue(files.any { it.sourceSet == GeneratedSubsystemSourceSet.TEST })
         assertTrue(files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
             .all { it.content.startsWith("// ARES OWNERSHIP: GENERATED STARTER") })
@@ -544,8 +545,8 @@ class SubsystemKotlinGeneratorTest {
         )
 
         assertEquals(8, files.size)
-        assertEquals(6, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER })
-        assertEquals(2, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT })
+        assertEquals(0, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER })
+        assertEquals(8, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT })
         assertEquals(1, files.count { it.group == SubsystemArtifactGroup.DOMAIN })
         assertEquals(2, files.count { it.group == SubsystemArtifactGroup.CONTROL })
         assertEquals(2, files.count { it.group == SubsystemArtifactGroup.HARDWARE })
@@ -568,7 +569,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(physical.contains("if (!applyNeutral()) outputFaultLatched = true"))
         assertTrue(mock.contains("failNextRefresh"))
         assertTrue(mock.contains("failNextWrite"))
-        assertTrue(test.contains("failed writes latch and require explicit neutral recovery"))
+        assertTrue(test.contains(SubsystemGeneratedTestNames.OUTPUT_FAULT_POLICY))
         assertTrue(test.contains("invalid feedback and cleanup fail closed"))
         assertTrue(test.contains("homing evidence must dwell before home is established"))
         assertTrue(test.contains("neutral recovery requests are consumed once"))
@@ -584,6 +585,53 @@ class SubsystemKotlinGeneratorTest {
             it.descriptor.key == "subsystem.prototype-elevator.set.homingRequested" &&
                 it.operation.name == "SET_HOMING_REQUEST"
         })
+    }
+
+    @Test
+    fun `editable teaching starter retains reviewed starter ownership`() {
+        val document = SubsystemTemplates.createWithOwnership(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "teaching-arm",
+            kotlinTypeName = "TeachingArm",
+            platform = SubsystemPlatform.FTC,
+            implementationKind = SubsystemImplementationKind.GENERATED_STARTER,
+        )
+
+        val files = SubsystemKotlinGenerator.generate(
+            document,
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        )
+
+        assertEquals(6, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER })
+        assertEquals(2, files.count { it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT })
+        assertTrue(files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
+            .all { it.content.startsWith("// ARES OWNERSHIP: GENERATED STARTER") })
+    }
+
+    @Test
+    fun `lighting registry converts named choices to generated numeric state`() {
+        val indicator = SubsystemTemplates.create(
+            SubsystemTemplate.INDICATOR_LIGHT_PWM,
+            documentId = "status-light",
+            kotlinTypeName = "StatusLight",
+            platform = SubsystemPlatform.FTC,
+        )
+        val prism = SubsystemTemplates.create(
+            SubsystemTemplate.PRISM_LED_DRIVER,
+            documentId = "prism",
+            kotlinTypeName = "Prism",
+            platform = SubsystemPlatform.FTC,
+        )
+        val registry = SubsystemKotlinGenerator.generateRegistry(
+            listOf(indicator, prism),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.subsystems"),
+        ).content
+
+        assertTrue(registry.contains("\"GREEN\" -> 0.472"))
+        assertTrue(registry.contains("\"FTC_TIMER\" -> 615.0"))
+        assertTrue(registry.contains("when (value as? String)"))
+        assertTrue(registry.contains("current.copy(targetColor = typedValue"))
+        assertTrue(registry.contains("current.copy(targetPulseWidthUs = typedValue"))
     }
 
     @Test
@@ -705,7 +753,8 @@ class SubsystemKotlinGeneratorTest {
         val io = files.single { it.relativePath.endsWith("FrcClawIO.kt") }.content
         val mock = files.single { it.relativePath.endsWith("MockClawIO.kt") }.content
         assertTrue(io.contains("Solenoid(1, PneumaticsModuleType.REVPH, 0)"))
-        assertTrue(io.contains("solenoid.set((requested) >= 0.5)"))
+        assertTrue(io.contains("solenoidCommand = (requested).coerceIn(0.0, 1.0)"))
+        assertTrue(io.contains("solenoid.set(solenoidCommand >= 0.5)"))
         assertTrue(mock.contains("solenoidCommand = 0.0"))
     }
 
@@ -811,7 +860,8 @@ class SubsystemKotlinGeneratorTest {
 
         val frcPhysical = frc.single { it.artifact == SubsystemArtifact.PLATFORM_IO }.content
         assertTrue(frcPhysical.contains("roller.setInverted(true)"))
-        assertTrue(frcPhysical.contains("arm.set((1.0 - (requested)).coerceIn(0.0, 1.0))"))
+        assertTrue(frcPhysical.contains("armCommand = (1.0 - (requested)).coerceIn(0.0, 1.0)"))
+        assertTrue(frcPhysical.contains("arm.set(armCommand)"))
 
         val mock = ftc.single { it.artifact == SubsystemArtifact.MOCK_IO }.content
         assertTrue(mock.contains("armCommand = (1.0 - (requested)).coerceIn(0.0, 1.0)"))

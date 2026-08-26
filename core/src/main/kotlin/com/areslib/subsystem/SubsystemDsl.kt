@@ -4,7 +4,12 @@ package com.areslib.subsystem
 @DslMarker
 annotation class AresSubsystemDsl
 
+// Retain the historical public copy() ABI even though construction is limited to the DSL.
+@ExposedCopyVisibility
 data class SubsystemFieldRef internal constructor(val id: String)
+
+// Retain the historical public copy() ABI even though construction is limited to the DSL.
+@ExposedCopyVisibility
 data class SubsystemHardwareRef internal constructor(val id: String)
 
 /**
@@ -105,7 +110,7 @@ class SubsystemImplementationBuilder internal constructor() {
 
     internal fun build(generateMockIo: Boolean): SubsystemImplementationDocument {
         val effectiveSimulation = if (
-            kind == SubsystemImplementationKind.GENERATED_STARTER &&
+            kind.isAresGenerated() &&
             simulationSupport == SubsystemSimulationSupport.GENERATED_MOCK &&
             !generateMockIo
         ) {

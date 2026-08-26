@@ -164,7 +164,7 @@ object AresRoutineCodec {
     }
 
     private fun requireExactFields(value: JsonObject, allowed: Set<String>, path: String) {
-        val unknown = value.keySet() - allowed
+        val unknown = value.entrySet().mapTo(linkedSetOf()) { it.key } - allowed
         require(unknown.isEmpty()) { "Unknown fields at $path: ${unknown.sorted().joinToString()}" }
     }
 
@@ -252,10 +252,11 @@ object AresRoutineCodec {
     }
 
     /** Gson's object model keeps only the last duplicate member, so detect duplicates while streaming. */
+    @Suppress("DEPRECATION")
     private fun validateNoDuplicateKeys(json: String) {
         try {
             JsonReader(StringReader(json)).use { reader ->
-                reader.strictness = com.google.gson.Strictness.LEGACY_STRICT
+                reader.isLenient = false
                 scanJsonValue(reader, "routine document")
                 require(reader.peek() == JsonToken.END_DOCUMENT) { "Routine document contains trailing JSON" }
             }

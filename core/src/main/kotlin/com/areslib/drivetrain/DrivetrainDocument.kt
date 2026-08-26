@@ -3,7 +3,7 @@ package com.areslib.drivetrain
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonParser
+import com.areslib.util.parseJsonElement
 import java.security.MessageDigest
 
 const val ARES_DRIVETRAIN_SCHEMA_VERSION: Int = 1
@@ -334,7 +334,7 @@ object DrivetrainDocumentCodec {
         ))
     }
     fun decode(json: String): DrivetrainDocument {
-        val root = runCatching { JsonParser.parseString(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Drivetrain document is not valid JSON", it) }
+        val root = runCatching { parseJsonElement(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Drivetrain document is not valid JSON", it) }
         require(root.get("schemaVersion")?.asInt == ARES_DRIVETRAIN_SCHEMA_VERSION) { "Unsupported drivetrain schema ${root.get("schemaVersion")}" }
         REQUIRED_TOP_LEVEL.forEach { require(root.has(it)) { "Drivetrain field '$it' is required" } }
         val document = runCatching { gson.fromJson(root, DrivetrainDocument::class.java) }.getOrElse { throw IllegalArgumentException("Invalid drivetrain document: ${it.message}", it) }

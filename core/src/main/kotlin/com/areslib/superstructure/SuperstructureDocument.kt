@@ -6,10 +6,11 @@ import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemImplementationKind
 import com.areslib.subsystem.SubsystemStateFieldDocument
 import com.areslib.subsystem.SubsystemValueType
+import com.areslib.subsystem.isAresGenerated
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.areslib.util.parseJsonElement
 import java.security.MessageDigest
 import java.util.ArrayDeque
 
@@ -387,7 +388,7 @@ fun validateSuperstructureProject(
             error(path, "Subsystem UID '${reference.subsystemUid}' is not declared in .ares/subsystems")
             return null
         }
-        if (subsystem.implementation.kind != SubsystemImplementationKind.GENERATED_STARTER) {
+        if (!subsystem.implementation.kind.isAresGenerated()) {
             error(path, "Hand-authored subsystem '${subsystem.documentId}' requires an explicit typed superstructure adapter")
             return null
         }
@@ -516,7 +517,7 @@ object SuperstructureDocumentCodec {
 
     fun decode(json: String): SuperstructureDocument {
         val document = try {
-            val root = JsonParser.parseString(json)
+            val root = parseJsonElement(json)
             require(root.isJsonObject) { "Superstructure document must be an object" }
             validateJsonShape(root.asJsonObject)
             val parsed = gson.fromJson(root, SuperstructureDocument::class.java)
@@ -533,6 +534,10 @@ object SuperstructureDocumentCodec {
         .digest(encode(document).toByteArray(Charsets.UTF_8))
         .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 
+    // Gson can populate Kotlin non-null fields with null when older or hand-edited JSON omits a
+    // value. These Elvis branches are therefore a deliberate untrusted-data boundary even though
+    // Kotlin's static types make them look redundant to the compiler.
+    @Suppress("USELESS_ELVIS")
     private fun normalize(document: SuperstructureDocument): SuperstructureDocument = SuperstructureDocument(
         superstructureId = document.superstructureId ?: "",
         displayName = document.displayName ?: document.superstructureId ?: "",
@@ -688,7 +693,7 @@ object SuperstructureDocumentCodec {
     }
 
     private fun exact(value: JsonObject, fields: Set<String>, path: String) {
-        val unknown = value.keySet() - fields
+        val unknown = value.entrySet().mapTo(linkedSetOf()) { it.key } - fields
         require(unknown.isEmpty()) { "Unknown fields at $path: ${unknown.sorted().joinToString()}" }
     }
 

@@ -1,7 +1,7 @@
 package com.areslib.subsystem
 
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonParser
+import com.areslib.util.parseJsonElement
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import java.security.MessageDigest
@@ -10,11 +10,21 @@ const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 11
 
 enum class SubsystemPlatform { FTC, FRC }
 
-/** Whether ARES creates starter Kotlin or integrates an implementation owned by the project. */
-enum class SubsystemImplementationKind { GENERATED_STARTER, HAND_AUTHORED }
+/** Whether ARES owns runtime plumbing, creates an editable starter, or integrates project code. */
+enum class SubsystemImplementationKind {
+    /** Mechanical runtime and verification stay under Gradle generated-source directories. */
+    DECLARATIVE_GENERATED,
+    /** Documented Kotlin is created in normal source directories and may become a teaching example. */
+    GENERATED_STARTER,
+    /** The project owns the implementation and declares its integration points explicitly. */
+    HAND_AUTHORED,
+}
 
 /** Ownership is explicit so regeneration can never infer permission to replace Kotlin source. */
-enum class SubsystemSourceOwnership { GENERATED_STARTER, USER_OWNED }
+enum class SubsystemSourceOwnership { GENERATED_DO_NOT_EDIT, GENERATED_STARTER, USER_OWNED }
+
+/** True when ARES deterministically creates the runtime from the canonical descriptor. */
+fun SubsystemImplementationKind.isAresGenerated(): Boolean = this != SubsystemImplementationKind.HAND_AUTHORED
 
 enum class SubsystemSimulationSupport {
     GENERATED_MOCK,
@@ -397,6 +407,27 @@ enum class SubsystemFollowerTransform {
     MIRRORED_POSITION,
 }
 
+/** Beginner-facing robot placement used only by simulator/dashboard visualization. */
+enum class SubsystemVisualAnchor {
+    UNSPECIFIED,
+    LEFT_SIDE,
+    RIGHT_SIDE,
+    FRONT,
+    REAR,
+    CENTER,
+    UNDERBODY,
+}
+
+/**
+ * Location within the robot footprint. +X is forward and +Y is the robot's left side; values are
+ * normalized so ±0.5 reaches the footprint edge. Physical output behavior never depends on this.
+ */
+data class SubsystemVisualPlacementDocument(
+    val anchor: SubsystemVisualAnchor = SubsystemVisualAnchor.UNSPECIFIED,
+    val forwardFraction: Double = 0.0,
+    val leftFraction: Double = 0.0,
+)
+
 data class SubsystemHardwareDocument(
     val hardwareId: String,
     val displayName: String,
@@ -422,6 +453,8 @@ data class SubsystemHardwareDocument(
     val imuLogoFacingDirection: SubsystemHubFacingDirection? = null,
     /** FTC Control Hub USB direction; meaningful only for an IMU. */
     val imuUsbFacingDirection: SubsystemHubFacingDirection? = null,
+    /** Optional footprint location for simulator/dashboard rendering of visible hardware. */
+    val visualPlacement: SubsystemVisualPlacementDocument? = null,
 )
 
 /** A typed state value. Raw Kotlin expressions are deliberately not accepted. */
@@ -751,6 +784,20 @@ fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValida
         } else if (device.imuLogoFacingDirection != null || device.imuUsbFacingDirection != null) {
             issue(path, "Control Hub orientation is valid only for an FTC IMU")
         }
+        device.visualPlacement?.let { placement ->
+            if (device.kind != SubsystemHardwareKind.INDICATOR_LIGHT && device.kind != SubsystemHardwareKind.PRISM_DRIVER) {
+                issue("$path.visualPlacement", "Visible robot placement is currently supported only for indicator and Prism lights")
+            }
+            if (!placement.forwardFraction.isFinite() || placement.forwardFraction !in -0.5..0.5) {
+                issue("$path.visualPlacement.forwardFraction", "Forward placement must be finite and between -0.5 and 0.5")
+            }
+            if (!placement.leftFraction.isFinite() || placement.leftFraction !in -0.5..0.5) {
+                issue("$path.visualPlacement.leftFraction", "Left placement must be finite and between -0.5 and 0.5")
+            }
+            if (device.kind == SubsystemHardwareKind.PRISM_DRIVER && placement.anchor != SubsystemVisualAnchor.UNDERBODY) {
+                issue("$path.visualPlacement.anchor", "Prism lighting should use the underbody visual placement")
+            }
+        }
         device.currentLimitAmps?.let { limit ->
             if (!limit.isFinite() || limit <= 0.0) issue("$path.currentLimitAmps", "Current limit must be finite and positive")
             if (device.kind != SubsystemHardwareKind.MOTOR) issue("$path.currentLimitAmps", "Only motors use a current limit")
@@ -1047,7 +1094,7 @@ fun validateSubsystemDocuments(documents: List<SubsystemDocument>): List<Subsyst
                 )
                 return@forEachIndexed
             }
-            if (target.implementation.kind != SubsystemImplementationKind.GENERATED_STARTER) {
+            if (!target.implementation.kind.isAresGenerated()) {
                 add(
                     SubsystemValidationIssue(
                         "$path.targetSubsystemUid",
@@ -1395,6 +1442,35 @@ private fun validateImplementation(
     }
 
     when (implementation.kind) {
+        SubsystemImplementationKind.DECLARATIVE_GENERATED -> {
+            if (implementation.ownership != SubsystemSourceOwnership.GENERATED_DO_NOT_EDIT) {
+                issue("implementation.ownership", "Declarative generated runtimes must use GENERATED_DO_NOT_EDIT ownership")
+            }
+            if (implementation.modulePath != null || implementation.sourceFiles.isNotEmpty() ||
+                implementation.subsystemClassName != null || implementation.ioContractClassName != null ||
+                implementation.hardwareAdapterClassName != null
+            ) {
+                issue("implementation", "Declarative generated source locations come from the Gradle generated-source target")
+            }
+            if (!document.generateMockIo) {
+                issue("generateMockIo", "Declarative generated subsystems require a simulator/mock adapter")
+            }
+            if (!document.generateTest) {
+                issue("generateTest", "Declarative generated subsystems require baseline generated safety verification")
+            }
+            if (implementation.simulation.support != SubsystemSimulationSupport.GENERATED_MOCK ||
+                implementation.simulation.adapterClassName != null
+            ) {
+                issue(
+                    "implementation.simulation",
+                    "Declarative generated subsystems require the generated simulator/mock contract",
+                )
+            }
+            if (document.capabilityActionKeys.isNotEmpty()) {
+                issue("capabilityActionKeys", "Declarative generated actions are derived from target state fields")
+            }
+        }
+
         SubsystemImplementationKind.GENERATED_STARTER -> {
             if (implementation.ownership != SubsystemSourceOwnership.GENERATED_STARTER) {
                 issue("implementation.ownership", "Generated starters must use GENERATED_STARTER ownership")
@@ -1557,7 +1633,7 @@ object SubsystemDocumentCodec {
     @Suppress("USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "UNNECESSARY_NOT_NULL_ASSERTION") // Gson/Unsafe can deliver null for non-null fields; see the note below
     fun decode(json: String): SubsystemDocument {
         val document = try {
-            val root = JsonParser.parseString(json).asJsonObject
+            val root = parseJsonElement(json).asJsonObject
             val schemaVersion = root.get("schemaVersion")?.asInt
             require(schemaVersion == ARES_SUBSYSTEM_SCHEMA_VERSION) {
                 "Unsupported subsystem schema $schemaVersion"
@@ -1646,6 +1722,13 @@ object SubsystemDocumentCodec {
                 distanceMetersPerVolt = h.distanceMetersPerVolt,
                 imuLogoFacingDirection = h.imuLogoFacingDirection,
                 imuUsbFacingDirection = h.imuUsbFacingDirection,
+                visualPlacement = h.visualPlacement?.let { placement ->
+                    SubsystemVisualPlacementDocument(
+                        anchor = placement.anchor ?: SubsystemVisualAnchor.UNSPECIFIED,
+                        forwardFraction = placement.forwardFraction ?: 0.0,
+                        leftFraction = placement.leftFraction ?: 0.0,
+                    )
+                },
             )
         }
 
@@ -1778,6 +1861,7 @@ object SubsystemDocumentCodec {
             else -> true
         }
         val simSupport = when (impl?.kind) {
+            SubsystemImplementationKind.DECLARATIVE_GENERATED,
             SubsystemImplementationKind.GENERATED_STARTER -> if (genMock) SubsystemSimulationSupport.GENERATED_MOCK else SubsystemSimulationSupport.UNAVAILABLE
             SubsystemImplementationKind.HAND_AUTHORED -> sim?.support ?: SubsystemSimulationSupport.UNAVAILABLE
             null -> if (genMock) SubsystemSimulationSupport.GENERATED_MOCK else SubsystemSimulationSupport.UNAVAILABLE
@@ -1793,7 +1877,7 @@ object SubsystemDocumentCodec {
             hardwareAdapterClassName = impl?.hardwareAdapterClassName,
             simulation = SubsystemSimulationDocument(
                 support = simSupport,
-                adapterClassName = if (impl?.kind == SubsystemImplementationKind.GENERATED_STARTER) null else sim?.adapterClassName,
+                adapterClassName = if (impl?.kind?.isAresGenerated() != false) null else sim?.adapterClassName,
                 interaction = SubsystemSimInteractionDocument(
                     role = inter?.role ?: SimInteractionRole.NONE,
                     triggerActuatorId = inter?.triggerActuatorId,

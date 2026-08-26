@@ -73,7 +73,7 @@ data class KotlinProjectCodegenRequest(
     val generatedActionRegistryBindings: Map<String, String> = emptyMap(),
 )
 
-/** Generated source and the hashes a build can use to detect stale checked-in output. */
+/** Generated source and the hashes a build can use to verify deterministic disposable output. */
 data class GeneratedKotlinSource(
     val source: String,
     val contentHash: String,
@@ -158,7 +158,7 @@ object AresKotlinProjectGenerator {
             append("fun interface ${request.objectName}ControlTaskSink {\n")
             append("    fun submit(bindingId: String, task: Task)\n")
             append("}\n\n")
-            append("/** Generated from the project's checked-in ARES documents. Do not edit by hand. */\n")
+            append("/** Generated from the project's canonical ARES documents. Do not edit by hand. */\n")
             append("object ${request.objectName} {\n")
             append("    const val GENERATOR_VERSION: Int = $ARES_KOTLIN_CODEGEN_VERSION\n")
             append("    const val CATALOG_SHA256: String = ${stringLiteral(CapabilityCatalogCodec.contentHash(request.catalog))}\n")

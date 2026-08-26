@@ -1,7 +1,7 @@
 package com.areslib.tuning
 
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonParser
+import com.areslib.util.parseJsonElement
 import java.security.MessageDigest
 
 const val ARES_TUNING_PROFILE_SCHEMA_VERSION: Int = 1
@@ -158,7 +158,7 @@ object TuningProfileDocumentCodec {
         return gson.toJson(profile.copy(values = profile.values.sortedBy { it.parameterUid }))
     }
     fun decode(json: String, declarations: Collection<TuningParameterDeclaration>): TuningProfileDocument {
-        val root = runCatching { JsonParser.parseString(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Tuning profile is not valid JSON", it) }
+        val root = runCatching { parseJsonElement(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Tuning profile is not valid JSON", it) }
         require(root.get("schemaVersion")?.asInt == ARES_TUNING_PROFILE_SCHEMA_VERSION) { "Unsupported tuning profile schema ${root.get("schemaVersion")}" }
         REQUIRED.forEach { require(root.has(it)) { "Tuning profile field '$it' is required" } }
         val profile = runCatching { gson.fromJson(root, TuningProfileDocument::class.java) }.getOrElse { throw IllegalArgumentException("Invalid tuning profile: ${it.message}", it) }
@@ -180,7 +180,7 @@ object TuningComponentDocumentCodec {
         return gson.toJson(document.copy(parameters = document.parameters.sortedBy { it.uid }))
     }
     fun decode(json: String): TuningComponentDocument {
-        val root = runCatching { JsonParser.parseString(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Tuning component is not valid JSON", it) }
+        val root = runCatching { parseJsonElement(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Tuning component is not valid JSON", it) }
         require(root.get("schemaVersion")?.asInt == ARES_TUNING_COMPONENT_SCHEMA_VERSION) { "Unsupported tuning component schema ${root.get("schemaVersion")}" }
         setOf("schemaVersion", "uid", "projectUid", "displayName", "description", "parameters").forEach {
             require(root.has(it)) { "Tuning component field '$it' is required" }

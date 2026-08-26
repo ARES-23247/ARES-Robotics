@@ -114,6 +114,15 @@ public final class com/areslib/codegen/KotlinProjectCodegenRequest {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/codegen/ProjectGeneratedTestNames {
+	public static final field AUTONOMOUS Ljava/lang/String;
+	public static final field CONTROLS Ljava/lang/String;
+	public static final field DRIVETRAIN_SAFETY Ljava/lang/String;
+	public static final field INSTANCE Lcom/areslib/codegen/ProjectGeneratedTestNames;
+	public static final field PROJECT_IDENTITY Ljava/lang/String;
+	public static final field SUPERSTRUCTURE Ljava/lang/String;
+}
+
 public final class com/areslib/codegen/SubsystemArtifact : java/lang/Enum {
 	public static final field CONTRACT_TEST Lcom/areslib/codegen/SubsystemArtifact;
 	public static final field CONTROLLER Lcom/areslib/codegen/SubsystemArtifact;

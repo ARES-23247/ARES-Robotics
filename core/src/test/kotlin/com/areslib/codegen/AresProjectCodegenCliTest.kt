@@ -12,6 +12,7 @@ import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemPlatform
@@ -71,6 +72,7 @@ class AresProjectCodegenCliTest {
             AresProjectMetadataCodec.encode(
                 AresProjectMetadataDocument(
                     projectId = "test",
+                    identity = testIdentity(),
                     league = AresLeague.FTC,
                     coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
                     robotLengthMeters = 0.45,
@@ -207,6 +209,11 @@ class AresProjectCodegenCliTest {
 
         val projectSource = Files.readString(projectOutput)
         assertTrue(projectSource.contains("GeneratedSuperstructureRegistry.createActionTask(\"machine.activate\")"))
+        val projectVerification = Files.readString(
+            generatedTestRoot.resolve("project/GeneratedAresProjectContractTest.kt"),
+        )
+        assertTrue(projectVerification.contains(ProjectGeneratedTestNames.PROJECT_IDENTITY))
+        assertTrue(projectVerification.contains(ProjectGeneratedTestNames.SUPERSTRUCTURE))
         assertTrue(Files.readString(superstructureOutput.resolve("ScoringMachineSuperstructure.kt"))
             .contains("SuperstructureRuntimeBinding"))
         assertTrue(Files.isRegularFile(superstructureOutput.resolve("GeneratedSuperstructureRegistry.kt")))
@@ -316,7 +323,7 @@ class AresProjectCodegenCliTest {
             temporary.resolve(".ares/project.json"),
             AresProjectMetadataCodec.encode(
                 AresProjectMetadataDocument(
-                    projectId = "test", league = AresLeague.FTC,
+                    projectId = "test", identity = testIdentity(), league = AresLeague.FTC,
                     coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
                     robotLengthMeters = 0.45, robotWidthMeters = 0.45,
                     fieldLengthMeters = 3.6576, fieldWidthMeters = 3.6576,
@@ -417,6 +424,7 @@ class AresProjectCodegenCliTest {
     private fun projectMetadata(): String = AresProjectMetadataCodec.encode(
         AresProjectMetadataDocument(
             projectId = "test",
+            identity = testIdentity(),
             league = AresLeague.FTC,
             coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
             robotLengthMeters = 0.45,
@@ -425,4 +433,11 @@ class AresProjectCodegenCliTest {
             fieldWidthMeters = 3.6576,
         ),
     )
+
+private fun testIdentity() = AresProjectIdentityDocument(
+    teamId = "99999",
+    seasonId = "2026",
+    robotId = "test-robot",
+    displayName = "Test Robot",
+)
 }
