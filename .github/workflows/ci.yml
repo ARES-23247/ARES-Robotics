@@ -31,10 +31,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Verify immutable ARESLib 9.7.0
-        run: >-
-          curl --fail --silent --show-error --head
-          "https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven/org/aresfirst/ares/ares-bom/9.7.0/ares-bom-9.7.0.pom"
+      - name: Verify pinned immutable ARES release is available
+        shell: bash
+        run: |
+          version="$(sed -n 's/^aresVersion=//p' gradle.properties)"
+          test -n "$version"
+          curl --fail --silent --show-error --head \
+            "https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven/org/aresfirst/ares/ares-bom/$version/ares-bom-$version.pom"
 
       - name: Generate, verify, test, and build
         run: >-

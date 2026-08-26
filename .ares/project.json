@@ -1,6 +1,12 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "projectId": "ares-frc-starter",
+  "identity": {
+    "teamId": "0000",
+    "seasonId": "starter",
+    "robotId": "AresFrcStarter",
+    "displayName": "ARES FRC Starter"
+  },
   "league": "FRC",
   "coordinateConvention": "BLUE_CORNER_ORIGIN_CCW",
   "robotLengthMeters": 0.75,
