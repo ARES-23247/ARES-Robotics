@@ -23,9 +23,9 @@ env:
   ARES_VERSION: 11.0.0
   STUDIO_VERSION: 2.0.0
   FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FTC-Starter-11.0.0.zip
-  FTC_STARTER_SHA256: 0185ac5dc4ce6a69cfe585bd27a5d1c44c0c64646129824d3c4277962ad0a462
+  FTC_STARTER_SHA256: 8b86e1012073c4ab2e83e49adbd3fc13eaa4c4dad9de4a6867bf176b4cd45b02
   FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FRC-Starter-11.0.0.zip
-  FRC_STARTER_SHA256: d5fdc38da2250c6887c477da9b6332d44353a3f54c577d3ee9644291f1507c60
+  FRC_STARTER_SHA256: d996a45b610f6f1e252efdf2b9d4b42be70347265f028cdaeb3a7442f1219d7e
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}

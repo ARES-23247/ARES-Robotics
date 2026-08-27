@@ -27,6 +27,42 @@ New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
 $temporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) "ares-starter-archives-$([guid]::NewGuid())"
 $mirrorRoot = Join-Path $temporaryRoot 'mirrors'
 $fixedTimestamp = [DateTimeOffset]::new(2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
+$strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
+
+function Write-CanonicalEntryContent([string]$Path, [System.IO.Stream]$Output) {
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    $isUtf8Text = $true
+    try {
+        [void]$strictUtf8.GetString($bytes)
+    } catch [System.Text.DecoderFallbackException] {
+        $isUtf8Text = $false
+    }
+    if ($bytes -contains 0) {
+        $isUtf8Text = $false
+    }
+
+    if (-not $isUtf8Text) {
+        $Output.Write($bytes, 0, $bytes.Length)
+        return
+    }
+
+    # A Windows checkout may materialize CRLF or mixed endings depending on
+    # core.autocrlf and nested attributes. The release archive deliberately
+    # uses one canonical LF representation instead of machine-specific bytes.
+    $canonical = [System.IO.MemoryStream]::new($bytes.Length)
+    try {
+        for ($index = 0; $index -lt $bytes.Length; $index++) {
+            if ($bytes[$index] -eq 13 -and $index + 1 -lt $bytes.Length -and $bytes[$index + 1] -eq 10) {
+                continue
+            }
+            $canonical.WriteByte($bytes[$index])
+        }
+        $canonical.Position = 0
+        $canonical.CopyTo($Output)
+    } finally {
+        $canonical.Dispose()
+    }
+}
 
 try {
     & (Join-Path $PSScriptRoot 'export-starter-mirrors.ps1') -OutputRoot $mirrorRoot
@@ -69,13 +105,11 @@ try {
                         $isExecutable = $_.Name -eq 'gradlew' -or $_.Extension -eq '.sh'
                         $unixMode = if ($isExecutable) { 0x81ED } else { 0x81A4 } # 100755 / 100644
                         $entry.ExternalAttributes = $unixMode -shl 16
-                        $input = [System.IO.File]::OpenRead($_.FullName)
                         $output = $entry.Open()
                         try {
-                            $input.CopyTo($output)
+                            Write-CanonicalEntryContent -Path $_.FullName -Output $output
                         } finally {
                             $output.Dispose()
-                            $input.Dispose()
                         }
                     }
             } finally {
