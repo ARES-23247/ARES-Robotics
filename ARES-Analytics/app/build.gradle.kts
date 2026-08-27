@@ -9,7 +9,7 @@ import javax.imageio.ImageIO
 
 // Single source of truth for the application version. Consumed both by the native
 // distribution packaging below and by the generated BuildConfig (see generateBuildConfig).
-val aresAnalyticsVersion = providers.gradleProperty("aresAnalyticsVersion").get()
+val aresAnalyticsVersion = rootProject.extra["aresStudioVersion"] as String
 val aresProductName = "ARES Robotics Studio"
 val aresProductTagline = "Design • Simulate • Operate • Analyze"
 val aresLegacyProductName = "ARES Analytics"

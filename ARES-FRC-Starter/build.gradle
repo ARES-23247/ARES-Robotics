@@ -5,6 +5,15 @@ plugins {
     id 'edu.wpi.first.GradleRIO' version '2026.2.1'
 }
 
+def aresVersionPolicy = [
+    rootProject.file('../build-logic/ares-versioning.gradle'),
+    rootProject.file('build-logic/ares-versioning.gradle'),
+].find { it.isFile() }
+if (aresVersionPolicy == null) {
+    throw new GradleException('ARES build policy is missing; use the source monorepo or a generated standalone mirror.')
+}
+apply from: aresVersionPolicy
+
 repositories {
     def validationRepo = providers.gradleProperty('aresRepository').orNull
     if (validationRepo != null && !validationRepo.trim().isEmpty()) {
@@ -20,7 +29,7 @@ java {
 }
 kotlin { jvmToolchain(17) }
 
-def aresVersion = providers.gradleProperty('aresVersion').get()
+def aresVersion = rootProject.ext.aresReleaseVersion
 def generatedMain = file("${buildDir}/generated/ares/main/kotlin")
 def generatedTest = file("${buildDir}/generated/ares/test/kotlin")
 def generatedDrivebase = file("${buildDir}/generated/ares/drivebase/kotlin")

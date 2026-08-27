@@ -6,20 +6,17 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.9.9"
 }
 
+val aresVersionPolicy = listOf(
+    rootProject.file("../build-logic/ares-versioning.gradle"),
+    rootProject.file("build-logic/ares-versioning.gradle"),
+).firstOrNull(File::isFile)
+    ?: error("ARES build policy is missing; use the source monorepo or a generated standalone mirror.")
+apply(from = aresVersionPolicy)
+
 group = "com.ares.analytics"
-version = "1.0.0-SNAPSHOT"
+version = rootProject.extra["aresStudioVersion"] as String
 
-// Centralized ARES library version resolution
-// Priority: 1. CLI -ParesVersion  2. Sibling ../ARESLib-Kotlin/gradle.properties  3. Local gradle.properties
-val siblingAresProps = file("../ARESLib-Kotlin/gradle.properties")
-val siblingAresVersion = if (siblingAresProps.exists()) {
-    val props = java.util.Properties().apply { siblingAresProps.inputStream().use { load(it) } }
-    props.getProperty("aresVersion")
-} else null
-
-val resolvedAresVersion = providers.gradleProperty("aresVersion")
-    .orElse(providers.provider { siblingAresVersion })
-    .getOrElse("10.1.0")
+val resolvedAresVersion = rootProject.extra["aresReleaseVersion"] as String
 
 extra["aresVersion"] = resolvedAresVersion
 
@@ -30,7 +27,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
     group = "verification"
     description = "Fails fast when ARES, app, or bundled starter release pins disagree."
 
-    val releasePropertiesFile = file("gradle.properties")
+    val releasePropertiesFile = rootProject.extra["aresReleaseManifestFile"] as File
     val appBuildFile = file("app/build.gradle.kts")
     val templateServiceFile = file(
         "app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt",
@@ -69,11 +66,11 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         }
 
         val aresVersion = requiredProperty("aresVersion")
-        val appVersion = requiredProperty("aresAnalyticsVersion")
-        val ftcVersion = requiredProperty("aresFtcStarterVersion")
-        val ftcHash = requiredProperty("aresFtcStarterSha256").lowercase()
-        val frcVersion = requiredProperty("aresFrcStarterVersion")
-        val frcHash = requiredProperty("aresFrcStarterSha256").lowercase()
+        val appVersion = requiredProperty("studioVersion")
+        val ftcVersion = requiredProperty("ftcStarterVersion")
+        val ftcHash = requiredProperty("ftcStarterSha256").lowercase()
+        val frcVersion = requiredProperty("frcStarterVersion")
+        val frcHash = requiredProperty("frcStarterSha256").lowercase()
 
         if (resolvedAresVersion != aresVersion) {
             val validationRepository = providers.gradleProperty("aresRepository").orNull?.trim().orEmpty()
@@ -92,7 +89,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
 
         requireContains(
             appBuildFile,
-            "providers.gradleProperty(\"aresAnalyticsVersion\").get()",
+            "rootProject.extra[\"aresStudioVersion\"] as String",
             "application-version source",
         )
         requireContains(templateServiceFile, "id = \"ares-ftc-starter-$ftcVersion\"", "FTC template ID")

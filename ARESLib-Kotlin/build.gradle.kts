@@ -9,8 +9,15 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.34.0" apply false
 }
 
+val aresVersionPolicy = listOf(
+    rootProject.file("../build-logic/ares-versioning.gradle"),
+    rootProject.file("build-logic/ares-versioning.gradle"),
+).firstOrNull(File::isFile)
+    ?: error("ARES build policy is missing; use the source monorepo or a generated standalone mirror.")
+apply(from = aresVersionPolicy)
+
 val aresGroup = "org.aresfirst.ares"
-val aresVersion = providers.gradleProperty("aresVersion").orElse("8.0.0").get()
+val aresVersion = rootProject.extra["aresReleaseVersion"] as String
 val allowFinalReleaseValidation = providers.gradleProperty("allowFinalReleaseValidation")
     .map(String::toBoolean)
     .orElse(false)

@@ -60,9 +60,7 @@ configurations {
     aresCodegen
 }
 
-def siblingAresProps = file('../../ARESLib-Kotlin/gradle.properties')
-def siblingAresVersion = siblingAresProps.exists() ? (new Properties().with { p -> siblingAresProps.withInputStream { is -> p.load(is) }; p.getProperty('aresVersion') }) : null
-def aresVersion = providers.gradleProperty('aresVersion').orElse(providers.provider { siblingAresVersion }).getOrElse('9.13.0')
+def aresVersion = rootProject.ext.aresReleaseVersion
 def aresSimulatorRuntime = System.getProperty('os.name').toLowerCase().contains('windows')
     ? 'simulator-runtime-windows'
     : (System.getProperty('os.name').toLowerCase().contains('mac')

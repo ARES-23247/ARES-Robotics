@@ -1,0 +1,68 @@
+import java.util.Properties
+
+// Shared by every isolated Gradle root. In the source monorepo the manifest is one directory
+// above the component. Generated standalone mirrors carry build-logic/ and release/ locally.
+def manifestCandidates = [
+    new File(rootProject.rootDir.parentFile, 'release/ares-versions.properties'),
+    new File(rootProject.rootDir, 'release/ares-versions.properties'),
+]
+def manifestFile = manifestCandidates.find { it.isFile() }
+if (manifestFile == null) {
+    throw new GradleException(
+        "ARES release manifest not found. Expected ../release/ares-versions.properties in the " +
+            "source monorepo or release/ares-versions.properties in a generated standalone mirror."
+    )
+}
+
+def releaseProperties = new Properties()
+manifestFile.withInputStream { releaseProperties.load(it) }
+def requiredReleaseProperty = { String name ->
+    def value = releaseProperties.getProperty(name)?.trim()
+    if (value == null || value.isEmpty()) {
+        throw new GradleException("ARES release manifest ${manifestFile} is missing '${name}'.")
+    }
+    value
+}
+
+rootProject.ext.aresReleaseManifestFile = manifestFile
+rootProject.ext.aresReleaseProperties = releaseProperties
+rootProject.ext.aresReleaseVersion = providers.gradleProperty('aresVersion')
+    .getOrElse(requiredReleaseProperty('aresVersion'))
+rootProject.ext.aresPinnedReleaseVersion = requiredReleaseProperty('aresVersion')
+rootProject.ext.aresStudioVersion = requiredReleaseProperty('studioVersion')
+rootProject.ext.aresFtcStarterVersion = requiredReleaseProperty('ftcStarterVersion')
+rootProject.ext.aresFtcStarterSha256 = requiredReleaseProperty('ftcStarterSha256')
+rootProject.ext.aresFrcStarterVersion = requiredReleaseProperty('frcStarterVersion')
+rootProject.ext.aresFrcStarterSha256 = requiredReleaseProperty('frcStarterSha256')
+rootProject.ext.aresGitHubMavenRepository = requiredReleaseProperty('githubMavenRepository')
+
+tasks.register('verifyAresReleaseManifest') {
+    group = 'verification'
+    description = 'Validates dependency provenance against the canonical ARES release manifest.'
+    inputs.file(manifestFile)
+    doLast {
+        def resolved = rootProject.ext.aresReleaseVersion.toString()
+        def pinned = rootProject.ext.aresPinnedReleaseVersion.toString()
+        def repository = providers.gradleProperty('aresRepository').orNull?.trim()
+        if (resolved != pinned && (repository == null || repository.isEmpty())) {
+            throw new GradleException(
+                "ARES candidate ${resolved} requires an explicit isolated -ParesRepository. " +
+                    "Ordinary builds use immutable release ${pinned}."
+            )
+        }
+        if (resolved != pinned && !resolved.startsWith("${pinned}-")) {
+            throw new GradleException(
+                "ARES validation candidate ${resolved} must retain pinned base ${pinned}-*."
+            )
+        }
+        logger.lifecycle("ARES dependency provenance: ${resolved} via ${repository ?: rootProject.ext.aresGitHubMavenRepository}")
+    }
+}
+
+gradle.projectsEvaluated {
+    allprojects {
+        tasks.matching { it.name in ['check', 'test', 'build', 'assemble'] }.configureEach {
+            dependsOn rootProject.tasks.named('verifyAresReleaseManifest')
+        }
+    }
+}

@@ -63,7 +63,7 @@ configurations {
 // Released builds resolve the immutable version declared by this starter. Source substitution is
 // opt-in through -ParesUseSiblingLib=true; the mere presence of a sibling checkout must not change
 // dependency identity.
-def aresVersion = providers.gradleProperty('aresVersion').getOrElse('9.13.0')
+def aresVersion = rootProject.ext.aresReleaseVersion
 def aresSimulatorRuntime = System.getProperty('os.name').toLowerCase().contains('windows')
     ? 'simulator-runtime-windows'
     : (System.getProperty('os.name').toLowerCase().contains('mac')

@@ -1,0 +1,41 @@
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
+$manifest = Join-Path $root 'release/ares-versions.properties'
+if (-not (Test-Path -LiteralPath $manifest)) { throw 'Canonical release manifest is missing.' }
+$release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)
+foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'githubMavenRepository')) {
+    if ([string]::IsNullOrWhiteSpace($release[$required])) { throw "Release manifest is missing $required." }
+}
+
+$componentProperties = @(
+    'ARESLib-Kotlin/gradle.properties',
+    'ARES-FTC/gradle.properties',
+    'ARES-FRC/gradle.properties',
+    'ARES-FTC-Starter/gradle.properties',
+    'ARES-FRC-Starter/gradle.properties',
+    'ARES-Analytics/gradle.properties'
+)
+foreach ($path in $componentProperties) {
+    $content = Get-Content -Raw -LiteralPath (Join-Path $root $path)
+    if ($content -match '(?m)^aresVersion\s*=') { throw "$path duplicates the canonical ARES version." }
+}
+
+$buildFiles = Get-ChildItem -LiteralPath $root -Recurse -File -Include '*.gradle', '*.gradle.kts' |
+    Where-Object { $_.FullName -notmatch '[\\/]build[\\/]' -and $_.FullName -notmatch '[\\/]\.gradle[\\/]' }
+foreach ($buildFile in $buildFiles) {
+    $content = Get-Content -Raw -LiteralPath $buildFile.FullName
+    if ($content -match '\bmavenLocal\s*\(') {
+        throw "Ambient mavenLocal() is forbidden: $($buildFile.FullName)"
+    }
+}
+
+foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Starter', 'ARES-FRC-Starter', 'ARES-Analytics')) {
+    if (Test-Path -LiteralPath (Join-Path $root "$component/.git")) {
+        throw "$component is still a nested Git repository; source must be owned by the monorepo."
+    }
+}
+
+Write-Host "Monorepo policy verified: ARES $($release.aresVersion), Studio $($release.studioVersion)." -ForegroundColor Green

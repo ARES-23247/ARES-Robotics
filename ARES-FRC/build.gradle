@@ -6,6 +6,15 @@ plugins {
     id "org.jetbrains.kotlinx.kover" version "0.9.9"
 }
 
+def aresVersionPolicy = [
+    rootProject.file('../build-logic/ares-versioning.gradle'),
+    rootProject.file('build-logic/ares-versioning.gradle'),
+].find { it.isFile() }
+if (aresVersionPolicy == null) {
+    throw new GradleException('ARES build policy is missing; use the source monorepo or a generated standalone mirror.')
+}
+apply from: aresVersionPolicy
+
 repositories {
     def aresRepositoryUrl = providers.gradleProperty('aresRepository').orNull
     if (aresRepositoryUrl != null && !aresRepositoryUrl.trim().isEmpty()) {
@@ -77,7 +86,7 @@ wpi.java.debugJni = false
 
 // Set this to true to enable desktop support.
 def includeDesktopSupport = true
-def aresVersion = providers.gradleProperty('aresVersion').getOrElse('10.1.0')
+def aresVersion = rootProject.ext.aresReleaseVersion
 def aresOsName = System.getProperty('os.name').toLowerCase()
 def aresSimulatorRuntime = aresOsName.contains('windows')
     ? 'simulator-runtime-windows'

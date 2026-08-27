@@ -17,6 +17,15 @@ buildscript {
     }
 }
 
+def aresVersionPolicy = [
+    rootProject.file('../build-logic/ares-versioning.gradle'),
+    rootProject.file('build-logic/ares-versioning.gradle'),
+].find { it.isFile() }
+if (aresVersionPolicy == null) {
+    throw new GradleException('ARES build policy is missing; use the source monorepo or a generated standalone mirror.')
+}
+apply from: aresVersionPolicy
+
 // This is now required because aapt2 has to be downloaded from the
 // google() repository beginning with version 3.2 of the Android Gradle Plugin
 def aresRepositoryUrl = providers.gradleProperty('aresRepository').orNull

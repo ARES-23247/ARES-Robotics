@@ -5,7 +5,7 @@ plugins {
 
 // Keep normal builds tied to this repository's immutable release. A sibling ARESLib checkout is
 // used only when the caller explicitly supplies -ParesUseSiblingLib=true.
-val aresVersion = providers.gradleProperty("aresVersion").getOrElse("10.1.0")
+val aresVersion = rootProject.extra["aresReleaseVersion"] as String
 val aresSimulatorRuntime = when {
     System.getProperty("os.name").contains("windows", ignoreCase = true) -> "simulator-runtime-windows"
     System.getProperty("os.name").contains("mac", ignoreCase = true) -> "simulator-runtime-macos"
