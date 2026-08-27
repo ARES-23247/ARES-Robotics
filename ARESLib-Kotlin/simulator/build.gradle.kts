@@ -35,7 +35,7 @@ dependencies {
 
     // Java APIs are platform-neutral. JNI and LWJGL natives are supplied by one of the
     // simulator-runtime-{windows,linux,macos} artifacts.
-    val wpiVersion = "2024.3.2"
+    val wpiVersion = "2026.2.2"
 
     implementation("edu.wpi.first.wpilibj:wpilibj-java:$wpiVersion")
     implementation("edu.wpi.first.cameraserver:cameraserver-java:$wpiVersion")
