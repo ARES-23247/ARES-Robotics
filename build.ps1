@@ -16,8 +16,13 @@ function Invoke-GradleBuild {
     $projectRoot = Join-Path $workspaceRoot $Project
     $gradle = Join-Path $projectRoot 'gradlew.bat'
     Write-Host "`n==> $Project $($Arguments -join ' ')" -ForegroundColor Cyan
-    & $gradle @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Project failed with exit code $LASTEXITCODE" }
+    Push-Location -LiteralPath $projectRoot
+    try {
+        & $gradle @Arguments
+        if ($LASTEXITCODE -ne 0) { throw "$Project failed with exit code $LASTEXITCODE" }
+    } finally {
+        Pop-Location
+    }
 }
 
 function Ensure-AndroidSdkPath {
