@@ -1,0 +1,30 @@
+{
+  "profile": "smoke",
+  "metrics": {
+    "ingestion_frames_per_second": {
+      "direction": "higher",
+      "baseline": 170000.0,
+      "allowedRegressionFraction": 0.85
+    },
+    "query_p95_ms": {
+      "direction": "lower",
+      "baseline": 15.0,
+      "allowedRegressionFraction": 5.67
+    },
+    "replay_load_ms": {
+      "direction": "lower",
+      "baseline": 47.0,
+      "allowedRegressionFraction": 9.64
+    },
+    "replay_scrub_p95_ms": {
+      "direction": "lower",
+      "baseline": 10.0,
+      "allowedRegressionFraction": 9.0
+    },
+    "heap_growth_mb": {
+      "direction": "lower",
+      "baseline": 2.0,
+      "allowedRegressionFraction": 31.0
+    }
+  }
+}

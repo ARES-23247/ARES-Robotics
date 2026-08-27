@@ -1,0 +1,46 @@
+name: Deploy Analytics Gateway
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: analytics-gateway-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy protected gateway
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: gateway-production
+    steps:
+      - name: Checkout ARES-Analytics
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud with OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_GATEWAY_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and deploy from reviewed master
+        run: >-
+          gcloud builds submit .
+          --project=aresfirst-portal
+          --config=gateway/cloudbuild.yaml
+          --gcs-source-staging-dir=gs://aresfirst-portal_cloudbuild/source
+          --service-account=projects/aresfirst-portal/serviceAccounts/analytics-cloudbuild-deployer@aresfirst-portal.iam.gserviceaccount.com
+          --substitutions=COMMIT_SHA=${GITHUB_SHA}
+
+      - name: Verify deployed health endpoint
+        run: |
+          service_url="$(gcloud run services describe ares-analytics-gateway --project=aresfirst-portal --region=us-central1 --format='value(status.url)')"
+          test -n "$service_url"
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 "$service_url/health"

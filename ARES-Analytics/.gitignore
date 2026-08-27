@@ -1,0 +1,54 @@
+# ARES-Analytics Kotlin Project
+
+# Gradle
+.gradle/
+build/
+/dist/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code
+.vscode/
+
+# Kotlin
+.kotlin/
+/app/bin/
+/gateway/bin/
+/shared/bin/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.war
+*.nar
+*.ear
+*.zip
+!app/src/main/resources/project-templates/*.zip
+*.tar.gz
+*.rar
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Compose
+*.compose-*
+
+# Local configuration (sensitive)
+local.properties
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+*.db
+*.db-shm
+*.db-wal

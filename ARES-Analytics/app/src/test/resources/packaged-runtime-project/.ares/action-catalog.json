@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "projectId": "packaged-runtime-smoke",
+  "revision": 1,
+  "actions": [
+    {
+      "key": "smoke.run",
+      "displayName": "Run smoke action",
+      "description": "Exercises packaged capability-catalog decoding.",
+      "category": "Verification",
+      "parameters": [],
+      "resources": [],
+      "allowedContexts": ["AUTONOMOUS", "TELEOP", "TEST"]
+    }
+  ],
+  "conditions": []
+}

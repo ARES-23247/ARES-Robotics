@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper to check authentication
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Telemetry parquet logs storage path rules with strict team ID tenant isolation
+    match /{teamId}/telemetry/{sessionId} {
+      allow read: if isAuth() && request.auth.token.team_id == teamId;
+      allow write: if isAuth() && request.auth.token.team_id == teamId &&
+        request.resource.size < 50 * 1024 * 1024; // 50MB file size limit
+    }
+
+    match /telemetry/{sessionId} {
+      allow read: if isAuth() && (resource == null || resource.metadata.teamId == request.auth.token.team_id);
+      allow write: if isAuth() && request.auth.token.team_id != null &&
+        request.resource.metadata.teamId == request.auth.token.team_id &&
+        request.resource.size < 50 * 1024 * 1024;
+    }
+  }
+}

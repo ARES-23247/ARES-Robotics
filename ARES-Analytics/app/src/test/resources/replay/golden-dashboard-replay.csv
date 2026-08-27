@@ -1,0 +1,7 @@
+TimestampMs,ARES/SimulatorPoseFrame/0,ARES/SimulatorPoseFrame/1,ARES/SimulatorPoseFrame/2,ARES/SimulatorPoseFrame/3,ARES/SimulatorPoseFrame/4,ARES/SimulatorPoseFrame/5,ARES/SimulatorPoseFrame/6,ARES/SimulatorPoseFrame/7,ARES/SimulatorPoseFrame/8,ARES/SimulatorPoseFrame/9,Hardware/Motors/fl/Velocity,Hardware/Motors/fr/Velocity,Hardware/Motors/rl/Velocity,Hardware/Motors/rr/Velocity,Robot/BatteryVoltage,Robot/LoopTimeMs,Robot/Mode,Gamepad1/LeftStick_X,Gamepad1/LeftStick_Y
+0,0.0,0.0,0.0,0.02,-0.01,0.01,0.01,0.0,0.005,1,0.0,0.0,0.0,0.0,12.8,20.0,INIT,0.0,0.0
+250,0.25,0.0,0.0,0.24,0.01,0.02,0.26,-0.01,0.01,2,2.0,2.0,2.0,2.0,12.7,20.5,TELEOP,0.0,-1.0
+500,0.5,0.1,0.15,0.48,0.11,0.16,0.52,0.08,0.14,3,2.2,1.8,2.1,1.9,12.5,21.0,TELEOP,0.2,-0.8
+750,0.7,0.25,0.3,0.68,0.26,0.32,0.72,0.23,0.29,4,1.5,0.8,1.4,0.9,12.3,28.0,TELEOP,0.5,-0.5
+1000,0.8,0.4,0.45,0.79,0.39,0.46,0.82,0.38,0.44,5,0.5,-0.2,0.4,-0.1,12.2,20.0,TELEOP,0.0,0.0
+1250,0.8,0.4,0.45,0.79,0.39,0.46,0.82,0.38,0.44,6,0.0,0.0,0.0,0.0,12.4,19.8,STOP,0.0,0.0

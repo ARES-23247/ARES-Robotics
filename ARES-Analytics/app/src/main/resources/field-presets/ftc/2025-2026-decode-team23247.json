@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 2,
+  "revision": 1,
+  "id": "ftc-2025-2026-decode-team23247-tags",
+  "name": "2025-2026 DECODE Team 23247 Vision Targets",
+  "gameYear": "2025-2026",
+  "fieldType": "ftc",
+  "widthMeters": 3.6576,
+  "heightMeters": 3.6576,
+  "xAxisDirection": "up",
+  "yAxisDirection": "left",
+  "redDriverStation": "south",
+  "blueDriverStation": "north",
+  "allianceSymmetry": "mirrored",
+  "apriltags": [
+    {
+      "id": 20,
+      "name": "Blue target 20",
+      "family": "36h11",
+      "sizeMeters": 0.1651,
+      "x": -1.48266658,
+      "y": -1.4133195,
+      "z": 0.7493,
+      "roll": -90.0000032,
+      "pitch": 0.0,
+      "yaw": 144.0499447,
+      "editorId": "decode-blue-target-20",
+      "locked": true
+    },
+    {
+      "id": 24,
+      "name": "Red target 24",
+      "family": "36h11",
+      "sizeMeters": 0.1651,
+      "x": -1.48266658,
+      "y": 1.4133195,
+      "z": 0.7493,
+      "roll": -90.0000032,
+      "pitch": 0.0,
+      "yaw": 35.950059,
+      "editorId": "decode-red-target-24",
+      "locked": true
+    }
+  ],
+  "elementTypes": [],
+  "elements": [],
+  "obstacles": [],
+  "fieldWaypoints": [],
+  "image": {
+    "imagePath": "",
+    "rotationDegrees": 0.0,
+    "cropLeft": 0.0,
+    "cropRight": 1.0,
+    "cropTop": 0.0,
+    "cropBottom": 1.0,
+    "ftcCoordinateSystem": "square"
+  }
+}

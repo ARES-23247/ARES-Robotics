@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper to check if user is authenticated and belongs to the specified team
+    function isTeamMember(teamId) {
+      return request.auth != null && request.auth.token.team_id == teamId;
+    }
+
+    // Helper to check if user is registered as an Admin/Mentor in the team roster
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
+    // Rules for team-defined robot rosters
+    match /teams/{teamId}/robots/{robotId} {
+      allow read: if request.auth != null && isTeamMember(teamId);
+      allow write: if isTeamMember(teamId) && isAdmin();
+    }
+
+    // Rules for telemetry match summaries
+    match /summaries/{sessionId} {
+      allow read: if request.auth != null && isTeamMember(resource.data.teamId);
+      allow create: if request.auth != null && isTeamMember(request.resource.data.teamId);
+      allow update, delete: if request.auth != null && isTeamMember(resource.data.teamId) && isAdmin();
+    }
+  }
+}

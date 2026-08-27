@@ -1,0 +1,188 @@
+-- Sessions table
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id TEXT PRIMARY KEY NOT NULL,
+    team_id TEXT NOT NULL,
+    season_id TEXT NOT NULL,
+    robot_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    tags TEXT NOT NULL DEFAULT '[]',
+    match_number INTEGER,
+    alliance_color TEXT,
+    log_file_path TEXT
+);
+
+-- Session summaries table
+CREATE TABLE IF NOT EXISTS session_summaries (
+    session_id TEXT PRIMARY KEY NOT NULL,
+    team_id TEXT NOT NULL,
+    season_id TEXT NOT NULL,
+    robot_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    min_battery_voltage REAL NOT NULL DEFAULT 0.0,
+    max_ekf_drift REAL NOT NULL DEFAULT 0.0,
+    avg_loop_time_ms REAL NOT NULL DEFAULT 0.0,
+    p95_loop_time_ms REAL NOT NULL DEFAULT 0.0,
+    motor_current_averages TEXT NOT NULL DEFAULT '{}',
+    vision_acceptance_rate REAL NOT NULL DEFAULT 0.0,
+    avg_cross_track_error REAL NOT NULL DEFAULT 0.0,
+    avg_battery_resistance REAL NOT NULL DEFAULT 0.0,
+    max_motor_temps TEXT NOT NULL DEFAULT '{}',
+    avg_vision_latency_ms REAL NOT NULL DEFAULT 0.0,
+    tags TEXT NOT NULL DEFAULT '[]',
+    match_number INTEGER,
+    alliance_color TEXT
+);
+
+-- Telemetry frames table
+CREATE TABLE IF NOT EXISTS telemetry_frames (
+    timestamp_ms INTEGER NOT NULL,
+    session_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value REAL NOT NULL,
+    PRIMARY KEY (session_id, key, timestamp_ms)
+) WITHOUT ROWID;
+
+-- Session annotations table
+CREATE TABLE IF NOT EXISTS session_annotations (
+    annotation_id TEXT PRIMARY KEY NOT NULL,
+    session_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    author_id TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_annotations_session ON session_annotations(session_id);
+
+-- Alerts table
+CREATE TABLE IF NOT EXISTS alerts (
+    alert_id TEXT PRIMARY KEY NOT NULL,
+    session_id TEXT NOT NULL,
+    rule_key TEXT NOT NULL,
+    trigger_timestamp_ms INTEGER NOT NULL,
+    resolve_timestamp_ms INTEGER,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    peak_value REAL NOT NULL DEFAULT 0.0,
+    triaged INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_session ON alerts(session_id);
+
+-- Console messages table
+CREATE TABLE IF NOT EXISTS console_messages (
+    timestamp_ms INTEGER NOT NULL,
+    session_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    PRIMARY KEY (session_id, timestamp_ms, text)
+) WITHOUT ROWID;
+
+-- Cached Topologies table
+CREATE TABLE IF NOT EXISTS cached_topologies (
+    robot_id TEXT PRIMARY KEY NOT NULL,
+    topology_json TEXT NOT NULL
+);
+
+-- Sessions queries
+insertSession:
+INSERT OR REPLACE INTO sessions 
+(session_id, team_id, season_id, robot_id, created_at, duration_ms, tags, match_number, alliance_color) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getSessions:
+SELECT * FROM sessions ORDER BY created_at DESC;
+
+deleteSession:
+DELETE FROM sessions WHERE session_id = ?;
+
+updateSessionTags:
+UPDATE sessions SET tags = ? WHERE session_id = ?;
+
+updateSessionMatchDetails:
+UPDATE sessions SET match_number = ?, alliance_color = ? WHERE session_id = ?;
+
+updateSessionLogFilePath:
+UPDATE sessions SET log_file_path = ? WHERE session_id = ?;
+
+-- Session Summaries queries
+insertSessionSummary:
+INSERT OR REPLACE INTO session_summaries 
+(session_id, team_id, season_id, robot_id, created_at, duration_ms, min_battery_voltage, max_ekf_drift, avg_loop_time_ms, p95_loop_time_ms, motor_current_averages, vision_acceptance_rate, avg_cross_track_error, avg_battery_resistance, max_motor_temps, avg_vision_latency_ms, tags, match_number, alliance_color) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getSessionSummary:
+SELECT * FROM session_summaries WHERE session_id = ?;
+
+getAllSessionSummaries:
+SELECT * FROM session_summaries ORDER BY created_at DESC;
+
+deleteSessionSummary:
+DELETE FROM session_summaries WHERE session_id = ?;
+
+updateSessionSummaryTags:
+UPDATE session_summaries SET tags = ? WHERE session_id = ?;
+
+updateSessionSummaryMatchDetails:
+UPDATE session_summaries SET match_number = ?, alliance_color = ? WHERE session_id = ?;
+
+-- Telemetry Frames queries
+insertTelemetryFrame:
+INSERT OR REPLACE INTO telemetry_frames (timestamp_ms, session_id, key, value) VALUES (?, ?, ?, ?);
+
+getTelemetryRange:
+SELECT * FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? ORDER BY timestamp_ms ASC;
+
+getTelemetryRangeBatched:
+SELECT * FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? ORDER BY timestamp_ms ASC LIMIT ? OFFSET ?;
+
+countTelemetryFrames:
+SELECT COUNT(*) FROM telemetry_frames WHERE session_id = ?;
+
+getTelemetryForKey:
+SELECT * FROM telemetry_frames WHERE session_id = ? AND key = ? ORDER BY timestamp_ms ASC;
+
+deleteTelemetryFrames:
+DELETE FROM telemetry_frames WHERE session_id = ?;
+
+pruneTelemetryFrames:
+DELETE FROM telemetry_frames WHERE session_id = ? AND timestamp_ms < ?;
+
+-- Session Annotations queries
+insertAnnotation:
+INSERT OR REPLACE INTO session_annotations (annotation_id, session_id, text, created_at, author_id) VALUES (?, ?, ?, ?, ?);
+
+getAnnotations:
+SELECT * FROM session_annotations WHERE session_id = ? ORDER BY created_at ASC;
+
+deleteAnnotations:
+DELETE FROM session_annotations WHERE session_id = ?;
+
+-- Alerts queries
+insertAlert:
+INSERT OR REPLACE INTO alerts 
+(alert_id, session_id, rule_key, trigger_timestamp_ms, resolve_timestamp_ms, duration_ms, peak_value, triaged) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getAlerts:
+SELECT * FROM alerts WHERE session_id = ? ORDER BY trigger_timestamp_ms ASC;
+
+deleteAlerts:
+DELETE FROM alerts WHERE session_id = ?;
+
+-- Cached Topologies queries
+insertTopology:
+INSERT OR REPLACE INTO cached_topologies (robot_id, topology_json) VALUES (?, ?);
+
+getTopology:
+SELECT topology_json FROM cached_topologies WHERE robot_id = ?;
+
+-- Console Messages queries
+insertConsoleMessage:
+INSERT OR REPLACE INTO console_messages (timestamp_ms, session_id, text, severity) VALUES (?, ?, ?, ?);
+
+getConsoleMessages:
+SELECT * FROM console_messages WHERE session_id = ? ORDER BY timestamp_ms ASC;
+
+deleteConsoleMessages:
+DELETE FROM console_messages WHERE session_id = ?;
