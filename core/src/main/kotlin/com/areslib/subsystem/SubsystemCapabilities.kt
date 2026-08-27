@@ -224,18 +224,20 @@ private fun SubsystemStateFieldDocument.asCapabilityParameter(
     document: SubsystemDocument,
 ): CapabilityParameterDescriptor {
     val actuatorKind = document.actuatorKindForTarget(fieldId)
+    val minimumValue = minimum
+    val maximumValue = maximum
     val namedOptions = when (actuatorKind) {
         SubsystemHardwareKind.INDICATOR_LIGHT -> IndicatorLightColor.entries
             .asSequence()
             .filter { it != IndicatorLightColor.RAINBOW }
-            .filter { option -> minimum == null || option.position >= minimum }
-            .filter { option -> maximum == null || option.position <= maximum }
+            .filter { option -> minimumValue == null || option.position >= minimumValue }
+            .filter { option -> maximumValue == null || option.position <= maximumValue }
             .map { it.name }
             .toList()
         SubsystemHardwareKind.PRISM_DRIVER -> PrismPwmPreset.entries
             .asSequence()
-            .filter { option -> minimum == null || option.pulseWidthUs >= minimum }
-            .filter { option -> maximum == null || option.pulseWidthUs <= maximum }
+            .filter { option -> minimumValue == null || option.pulseWidthUs >= minimumValue }
+            .filter { option -> maximumValue == null || option.pulseWidthUs <= maximumValue }
             .map { it.name }
             .toList()
         else -> emptyList()
@@ -312,7 +314,7 @@ private fun SubsystemStateFieldDocument.indicatorCycleColors(): List<IndicatorLi
     IndicatorLightColor.entries
         .asSequence()
         .filter { it != IndicatorLightColor.OFF && it != IndicatorLightColor.RAINBOW }
-        .filter { option -> minimum == null || option.position >= minimum }
-        .filter { option -> maximum == null || option.position <= maximum }
+        .filter { option -> minimum?.let { option.position >= it } != false }
+        .filter { option -> maximum?.let { option.position <= it } != false }
         .distinctBy { it.position }
         .toList()

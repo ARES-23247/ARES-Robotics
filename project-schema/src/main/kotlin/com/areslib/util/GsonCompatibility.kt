@@ -10,4 +10,4 @@ import com.google.gson.JsonParser
  * convenience methods such as `JsonParser.parseString`.
  */
 @Suppress("DEPRECATION")
-internal fun parseJsonElement(json: String): JsonElement = JsonParser().parse(json)
+fun parseJsonElement(json: String): JsonElement = JsonParser().parse(json)

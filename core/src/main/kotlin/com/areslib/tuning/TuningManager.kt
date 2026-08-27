@@ -145,10 +145,10 @@ class TuningManager(
 
     private fun publishValue(topic: String, value: TuningValue) {
         when {
-            value.doubleValue != null -> telemetry.putNumber(topic, value.doubleValue)
-            value.intValue != null -> telemetry.putNumber(topic, value.intValue.toDouble())
-            value.booleanValue != null -> telemetry.putBoolean(topic, value.booleanValue)
-            value.textValue != null -> telemetry.putString(topic, value.textValue)
+            value.doubleValue != null -> telemetry.putNumber(topic, requireNotNull(value.doubleValue))
+            value.intValue != null -> telemetry.putNumber(topic, requireNotNull(value.intValue).toDouble())
+            value.booleanValue != null -> telemetry.putBoolean(topic, requireNotNull(value.booleanValue))
+            value.textValue != null -> telemetry.putString(topic, requireNotNull(value.textValue))
         }
     }
 

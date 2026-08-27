@@ -9,14 +9,14 @@ import com.areslib.drivetrain.DrivetrainPlatform
 import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.project.AresProjectMetadataCodec
+import com.areslib.project.model.ProjectModelSeverity
+import com.areslib.project.model.RobotProjectAssembler
+import com.areslib.project.model.RobotProjectSnapshot
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.superstructure.SuperstructureDocumentCodec
-import com.areslib.superstructure.SuperstructureIssueSeverity
 import com.areslib.superstructure.TransitionTriggerKind
-import com.areslib.superstructure.validateSuperstructureProject
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.isAresGenerated
-import com.areslib.subsystem.mergeSubsystemCapabilities
 import com.areslib.subsystem.subsystemTargetCapabilities
 import com.areslib.tuning.TuningProfileAuthority
 import com.areslib.tuning.TuningComponentDocumentCodec
@@ -84,20 +84,37 @@ object AresProjectCodegenCli {
                 }
             }
         } else emptyList()
-        val subsystemActions = subsystemTargetCapabilities(subsystems)
-        val catalog = mergeSubsystemCapabilities(baseCatalog, subsystems)
+        val effectiveProject = RobotProjectAssembler.assemble(
+            RobotProjectSnapshot(
+                projectRoot = projectRoot.toString(),
+                metadata = metadata,
+                baseCapabilityCatalog = baseCatalog,
+                autonomousCatalog = autonomousCatalog,
+                routines = routines,
+                controlSchemes = controls,
+                controllerProfiles = profiles,
+                subsystems = subsystems,
+                superstructures = superstructures,
+                drivetrains = drivetrains,
+                tuningComponents = tuningComponents,
+                tuningProfiles = tuningProfiles,
+            ),
+            inputPlatform = options.platform,
+        )
+        val modelErrors = effectiveProject.issues.filter { it.severity == ProjectModelSeverity.ERROR }
+        require(modelErrors.isEmpty()) {
+            "ARES project model is invalid: " + modelErrors.joinToString("; ") {
+                "${it.kind.name.lowercase()}:${it.documentId.orEmpty()}:${it.path}: ${it.message}"
+            }
+        }
+        val catalog = requireNotNull(effectiveProject.capabilityCatalog) {
+            "ARES project model did not produce an effective capability catalog"
+        }
         val catalogActionKeys = catalog.actions.mapTo(linkedSetOf()) { it.key }
         val parameterlessActionKeys = catalog.actions.asSequence()
             .filter { it.parameters.isEmpty() }
             .mapTo(linkedSetOf()) { it.key }
-        superstructures.forEach { document ->
-            val errors = validateSuperstructureProject(document, subsystems, catalogActionKeys, parameterlessActionKeys)
-                .filter { it.severity == SuperstructureIssueSeverity.ERROR }
-            require(errors.isEmpty()) {
-                "Superstructure '${document.superstructureId}' is invalid: " +
-                    errors.joinToString("; ") { "${it.path}: ${it.message}" }
-            }
-        }
+        val subsystemActions = subsystemTargetCapabilities(subsystems)
         val superstructureActionOwners = superstructures.flatMap { document ->
             document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
                 .mapNotNull { transition -> transition.actionKey?.let { it to document.superstructureId } }

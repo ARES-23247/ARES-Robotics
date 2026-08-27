@@ -17,6 +17,8 @@ javaPlatform {
 
 dependencies {
     constraints {
+        api(project(":project-schema"))
+        api(project(":project-model"))
         api(project(":core"))
         api(project(":codegen"))
         api(project(":ftc-mocks"))

@@ -660,9 +660,9 @@ private fun TuningValue.literal(type: TuningParameterType) = when (type) {
     TuningParameterType.TEXT, TuningParameterType.ENUM -> requireNotNull(textValue).q()
 }
 private fun TuningValue.constructor() = when {
-    doubleValue != null -> "TuningValue(doubleValue = ${doubleValue.literal()})"
-    intValue != null -> "TuningValue(intValue = $intValue)"
-    booleanValue != null -> "TuningValue(booleanValue = $booleanValue)"
-    textValue != null -> "TuningValue(textValue = ${textValue.q()})"
+    doubleValue != null -> "TuningValue(doubleValue = ${requireNotNull(doubleValue).literal()})"
+    intValue != null -> "TuningValue(intValue = ${requireNotNull(intValue)})"
+    booleanValue != null -> "TuningValue(booleanValue = ${requireNotNull(booleanValue)})"
+    textValue != null -> "TuningValue(textValue = ${requireNotNull(textValue).q()})"
     else -> error("Invalid empty tuning value")
 }

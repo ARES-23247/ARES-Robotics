@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    api(project(":project-schema"))
     implementation(kotlin("stdlib"))
     implementation("com.google.code.gson:gson:2.14.0")
     api("org.java-websocket:Java-WebSocket:1.6.0") // transitive dep of NT4Server (extends WebSocketServer)

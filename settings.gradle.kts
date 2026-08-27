@@ -49,6 +49,8 @@ if (!currentVersion.startsWith("17") && !currentVersion.startsWith("21") && !cur
 rootProject.name = "ARESLib-Kotlin"
 
 include("core")
+include("project-schema")
+include("project-model")
 include("codegen")
 include("ftc-mocks")
 include("ftc-hardware")

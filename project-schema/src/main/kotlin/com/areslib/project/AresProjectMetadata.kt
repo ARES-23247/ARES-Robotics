@@ -2,7 +2,6 @@ package com.areslib.project
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import com.areslib.util.parseJsonElement
 import com.google.gson.JsonPrimitive
 import java.security.MessageDigest
 
@@ -137,7 +136,7 @@ object AresProjectMetadataCodec {
 
     fun decode(json: String): AresProjectMetadataDocument {
         val root = try {
-            parseJsonElement(json).asJsonObject
+            gson.fromJson(json, JsonObject::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Project metadata is not valid JSON: ${error.message}", error)
         }
@@ -164,7 +163,7 @@ object AresProjectMetadataCodec {
     /** Decodes the retired root identity file solely for an explicit migration to schema 3. */
     fun decodeLegacyIdentity(json: String): AresLegacyRobotIdentityDocument {
         val root = try {
-            parseJsonElement(json).asJsonObject
+            gson.fromJson(json, JsonObject::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Legacy .ares-robot.json is not valid JSON: ${error.message}", error)
         }
@@ -183,7 +182,7 @@ object AresProjectMetadataCodec {
         legacyIdentity: AresLegacyRobotIdentityDocument,
     ): AresProjectMetadataDocument {
         val root = try {
-            parseJsonElement(projectJson).asJsonObject
+            gson.fromJson(projectJson, JsonObject::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Project metadata is not valid JSON: ${error.message}", error)
         }
