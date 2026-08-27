@@ -1,0 +1,12 @@
+.gradle/
+.idea/
+.vscode/
+.kotlin/
+build/
+bin/
+out/
+*.log
+*.wpilog
+*.hprof
+networktables.json
+src/main/deploy/.ares-local/

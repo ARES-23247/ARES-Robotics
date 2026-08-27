@@ -1,0 +1,211 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.jetbrains.kotlin.jvm' version '2.4.10'
+    id 'edu.wpi.first.GradleRIO' version '2026.2.1'
+}
+
+repositories {
+    def validationRepo = providers.gradleProperty('aresRepository').orNull
+    if (validationRepo != null && !validationRepo.trim().isEmpty()) {
+        maven { url uri(validationRepo) }
+    }
+    mavenCentral()
+    maven { url 'https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven' }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+kotlin { jvmToolchain(17) }
+
+def aresVersion = providers.gradleProperty('aresVersion').get()
+def generatedMain = file("${buildDir}/generated/ares/main/kotlin")
+def generatedTest = file("${buildDir}/generated/ares/test/kotlin")
+def generatedDrivebase = file("${buildDir}/generated/ares/drivebase/kotlin")
+sourceSets {
+    main.kotlin.srcDirs generatedMain, generatedDrivebase
+    test.kotlin.srcDir generatedTest
+}
+
+def ROBOT_MAIN_CLASS = 'org.aresfirst.starter.frc.Main'
+application { mainClass = ROBOT_MAIN_CLASS }
+
+configurations { aresCodegen }
+
+deploy {
+    targets {
+        roborio(getTargetTypeClass('RoboRIO')) {
+            team = providers.gradleProperty('teamNumber').map { it.toInteger() }.getOrElse(0)
+            debug = providers.gradleProperty('debug').map { it.toBoolean() }.getOrElse(false)
+            artifacts {
+                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
+                    jvmArgs.add('-Djava.library.path=/usr/local/frc/third-party/lib')
+                }
+                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    files = project.fileTree('src/main/deploy')
+                    directory = '/home/lvuser/deploy'
+                }
+            }
+        }
+    }
+}
+
+def deployArtifact = deploy.targets.roborio.artifacts.frcJava
+
+dependencies {
+    implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
+    implementation 'org.aresfirst.ares:core'
+    implementation 'org.aresfirst.ares:frc-runtime'
+    aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
+    aresCodegen 'org.aresfirst.ares:codegen'
+    aresCodegen 'com.google.code.gson:gson:2.10.1'
+
+    implementation wpi.java.deps.wpilib()
+    implementation wpi.java.vendor.java()
+    roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
+    roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
+    roborioRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.roborio)
+    roborioRelease wpi.java.vendor.jniRelease(wpi.platforms.roborio)
+    nativeDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop)
+    nativeDebug wpi.java.vendor.jniDebug(wpi.platforms.desktop)
+    simulationDebug wpi.sim.enableDebug()
+    nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
+    nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
+    simulationRelease wpi.sim.enableRelease()
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
+    testRuntimeOnly wpi.java.vendor.jniRelease(wpi.platforms.desktop)
+}
+
+wpi.java.debugJni = false
+def aresFrcHalGuiEnabled = providers.gradleProperty('aresFrcHalGui')
+    .map { it.toBoolean() }
+    .getOrElse(false)
+wpi.sim.addGui().defaultEnabled = aresFrcHalGuiEnabled
+wpi.sim.addDriverstation()
+
+jar {
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+tasks.withType(JavaExec).configureEach {
+    mainClass = ROBOT_MAIN_CLASS
+    classpath = sourceSets.main.runtimeClasspath
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        def requestedJava = providers.gradleProperty('aresFrcJavaExecutable').orNull
+        def wpilibJava = file(requestedJava ?: 'C:/Users/Public/wpilib/2026/jdk/bin/java.exe')
+        if (wpilibJava.isFile()) executable = wpilibJava.absolutePath
+    }
+}
+
+test {
+    useJUnitPlatform()
+    classpath += configurations.simulationRelease
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        def wpilibJdk = file('C:/Users/Public/wpilib/2026/jdk/bin/java.exe')
+        if (wpilibJdk.exists()) executable = wpilibJdk.absolutePath
+    }
+    testLogging { events 'passed', 'skipped', 'failed' }
+}
+
+def generatedProject = file("${generatedMain}/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt")
+def starterSource = file('src/main/kotlin/org/aresfirst/starter/frc/generated/subsystems')
+def subsystemArgs = [
+    '--subsystems-starter-output', starterSource.absolutePath,
+    '--subsystems-generated-output', generatedMain.absolutePath,
+    '--subsystems-generated-test-output', generatedTest.absolutePath,
+    '--subsystems-package', 'org.aresfirst.starter.frc.generated.subsystems',
+]
+def drivebaseArgs = [
+    '--drivebase-output', generatedDrivebase.absolutePath,
+    '--drivebase-package', 'org.aresfirst.starter.frc.generated.drivebase',
+]
+
+tasks.register('generateAresProject', JavaExec) {
+    group = 'ARES'
+    description = 'Generate deterministic project source and disposable plumbing without replacing starters.'
+    classpath = configurations.aresCodegen
+    mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
+    args '--project', projectDir.absolutePath,
+        '--output', generatedProject.absolutePath,
+        '--package', 'org.aresfirst.starter.frc.generated',
+        '--platform', 'FRC'
+    args subsystemArgs
+    args drivebaseArgs
+}
+
+tasks.register('prepareAresSubsystemPlumbing', JavaExec) {
+    group = 'build setup'
+    classpath = configurations.aresCodegen
+    mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
+    args '--project', projectDir.absolutePath,
+        '--output', generatedProject.absolutePath,
+        '--package', 'org.aresfirst.starter.frc.generated',
+        '--platform', 'FRC'
+    args subsystemArgs
+    args drivebaseArgs
+}
+
+tasks.register('verifyAresProject', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.named('prepareAresSubsystemPlumbing')
+    classpath = configurations.aresCodegen
+    mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
+    args '--project', projectDir.absolutePath,
+        '--output', generatedProject.absolutePath,
+        '--package', 'org.aresfirst.starter.frc.generated',
+        '--platform', 'FRC', '--check'
+    args subsystemArgs
+    args drivebaseArgs
+}
+
+tasks.register('previewSubsystemChanges', JavaExec) {
+    group = 'ARES'
+    classpath = configurations.aresCodegen
+    mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
+    args '--project', projectDir.absolutePath,
+        '--output', generatedProject.absolutePath,
+        '--package', 'org.aresfirst.starter.frc.generated',
+        '--platform', 'FRC', '--subsystems-only', '--preview-subsystem-starters'
+    args subsystemArgs
+    args drivebaseArgs
+}
+
+tasks.register('generateSubsystemStarters', JavaExec) {
+    group = 'ARES'
+    classpath = configurations.aresCodegen
+    mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
+    args '--project', projectDir.absolutePath,
+        '--output', generatedProject.absolutePath,
+        '--package', 'org.aresfirst.starter.frc.generated',
+        '--platform', 'FRC', '--subsystems-only', '--apply-subsystem-starters'
+    args subsystemArgs
+    args drivebaseArgs
+}
+
+tasks.register('replaceSubsystemStarters', JavaExec) {
+    group = 'ARES'
+    classpath = configurations.aresCodegen
+    mainClass = 'com.areslib.codegen.AresProjectCodegenCli'
+    args '--project', projectDir.absolutePath,
+        '--output', generatedProject.absolutePath,
+        '--package', 'org.aresfirst.starter.frc.generated',
+        '--platform', 'FRC', '--subsystems-only', '--apply-subsystem-starters'
+    args subsystemArgs
+    args drivebaseArgs
+    doFirst {
+        def token = providers.gradleProperty('ares.subsystemReplacementToken').orNull
+        if (token == null || token.trim().isEmpty()) {
+            throw new GradleException('Review previewSubsystemChanges, then provide -Pares.subsystemReplacementToken=<token>.')
+        }
+        args '--subsystems-confirmation-token', token
+    }
+}
+
+tasks.named('compileKotlin').configure { dependsOn tasks.named('verifyAresProject') }

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 2,
+  "id": "frc-season-not-selected",
+  "name": "FRC season field — import required",
+  "fieldType": "frc",
+  "widthMeters": 16.54175,
+  "heightMeters": 8.21055,
+  "apriltags": []
+}
