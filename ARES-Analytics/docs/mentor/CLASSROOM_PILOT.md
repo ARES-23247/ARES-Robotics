@@ -1,6 +1,6 @@
 # Robot Academy classroom pilot
 
-This guide runs a small, offline-first Robot Academy pilot before a team adopts the curriculum more broadly. It uses a verified ARES starter project, synthetic practice runs, written student reflections, and mentor review. It does not require Google Drive or a physical robot.
+This guide runs a small, offline-first Robot Academy pilot before a team adopts the curriculum more broadly. It uses a verified ARES starter project, synthetic practice runs, written student reflections, and optional team discussion. It does not require Google Drive, adult approval, or a physical robot.
 
 ## Prepare once
 

@@ -118,7 +118,7 @@ class GuidedTuningExperimentTest {
         assertEquals("Will a small kP increase reduce tracking error?", experiment.question)
         assertEquals(listOf("Same routine", "Same starting pose", "Same simulated load"), experiment.heldConstants)
         assertEquals(5.0, experiment.successThresholdPercent)
-        assertEquals(MentorReviewState.REQUESTED, experiment.mentorReviewState)
+        assertEquals(PeerReviewState.REQUESTED, experiment.peerReviewState)
         assertEquals(2, experiment.snapshot.configurationFiles.size)
         assertTrue(experiment.snapshot.configurationFiles.any { it.projectRelativePath == ".ares/project.json" })
         assertFalse(experiment.snapshot.configurationFiles.any { "/local/" in it.projectRelativePath || "/history/" in it.projectRelativePath })
@@ -399,7 +399,7 @@ class GuidedTuningExperimentTest {
             heldConstants = listOf("Same routine", "Same starting pose", "Same simulated load"),
             successThresholdPercent = 5.0,
             safetyNotes = "Local Sim only; stop on a fault or missing feedback.",
-            mentorReviewState = MentorReviewState.REQUESTED,
+            peerReviewState = PeerReviewState.REQUESTED,
             finding = ExperimentFindingEvidence("finding", "CORRELATION", "Finding", "Cause unproven", "baseline", 1_000L, 0L, listOf("topic")),
             snapshot = ExperimentSnapshot("profile.competition", "a".repeat(64), emptyList(), emptyList(), "b".repeat(64)),
             change = ExperimentParameterChange(
@@ -427,7 +427,7 @@ class GuidedTuningExperimentTest {
         heldConstants = listOf("Same routine", "Same starting pose", "Same simulated load"),
         successThresholdPercent = 5.0,
         safetyNotes = "Local Sim only; stop on a fault or missing feedback.",
-        mentorReviewState = MentorReviewState.REQUESTED,
+        peerReviewState = PeerReviewState.REQUESTED,
     )
 
     private fun evaluation(

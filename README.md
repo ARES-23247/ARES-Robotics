@@ -88,3 +88,6 @@ pre-migration commits and immutable release boundaries are recorded in
 [`MONOREPO_MIGRATION_BASELINE.md`](MONOREPO_MIGRATION_BASELINE.md). Legacy component repositories
 remain available as rollback and release-compatibility points until the generated-mirror and
 monorepo release process has completed its protected transition period.
+
+See [`RELEASE_TRANSITION.md`](RELEASE_TRANSITION.md) for the current dependency-ordered publication,
+legacy-repository retirement, and non-destructive local-checkout migration policy.

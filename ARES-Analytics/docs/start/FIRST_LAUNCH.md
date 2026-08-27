@@ -54,8 +54,9 @@ verified recovery fallback when a developer build does not contain the resource.
 See [Create a robot project](CREATE_ROBOT_PROJECT.md) for the safety and recovery contract.
 
 The starter and demo copy are generic and simulation-first. They do not contain Team 23247 season mechanisms,
-field routines, or calibration values. Physical deployment remains blocked until the generated
-hardware map, safety settings, commissioning steps, and mentor review are complete.
+field routines, or calibration values. Complete the generated hardware map, safety settings, and
+commissioning steps before physical deployment. Students may complete and record that evidence;
+ARES does not require approval from a mentor or another role.
 
 ### 2. Check the robot details
 

@@ -3,6 +3,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'verify-doc-links.ps1')
+if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
 $manifest = Join-Path $root 'release/ares-versions.properties'
 if (-not (Test-Path -LiteralPath $manifest)) { throw 'Canonical release manifest is missing.' }
 $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)

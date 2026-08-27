@@ -1,15 +1,21 @@
 # ARES Robotics Workspace — Agent Guide
 
-This workspace (`C:\Users\david\dev\robotics\ares`) contains **4 interconnected Kotlin projects** forming a unified, multi-league (FTC + FRC) robotics suite. The entire system — robot code, desktop dashboard, cloud gateway, shared math — is written in Kotlin. This guide is the map. Read it first.
+This repository is the authoritative **ARES Robotics source monorepo**. It contains six isolated
+Gradle products that form one multi-league (FTC + FRC) robotics suite. ARES-owned application code
+is Kotlin-first; upstream FTC controller sources and generated vendor bindings may remain Java.
+The isolated Gradle builds are deliberate: Android/FTC, GradleRIO/WPILib, Compose Desktop, and the
+published library have different toolchains and release boundaries.
 
-## 1. The Four Projects at a Glance
+## 1. Products at a Glance
 
 | Project | Role | Tech | Key entry points |
 |---|---|---|---|
-| **ARESLib-Kotlin/** | Shared core library (the foundation) | Kotlin 1.9.23, JDK 17, Gradle multi-project | `core/`, `ftc-hardware/`, `frc-hardware/`, `ftc-mocks/`, `simulator/` |
-| **ARES-FTC/** | FTC robot code (Android, DECODE 2025-26, team 23247) | FTC SDK 11.1, AGP 8.7, Kotlin 1.9.22 | `TeamCode/src/main/java/.../teamcode/`, `simulator/` |
-| **ARES-FRC/** | FRC robot code (RoboRIO, 2024 Crescendo) | WPILib 2026.2.1, CTRE Phoenix 6, dyn4j, Kotlin 1.9.22 | `src/main/kotlin/com/areslib/frc/` |
-| **ARES-Analytics/** | Desktop mission-control dashboard + cloud gateway | Compose Multiplatform 1.7.3, Ktor 3, DuckDB, JDK 17 | `app/`, `gateway/`, `shared/` |
+| **ARESLib-Kotlin/** | Published foundation, schema/model/compiler, codegen, hardware modules, and simulation foundations | Kotlin 2.4.10, JDK 17, Gradle 8.14.5 | `project-schema/`, `project-model/`, `project-compiler/`, `core/`, `codegen/`, hardware/runtime/simulator modules, `ares-bom/` |
+| **ARES-FTC/** | GUI-authored Lightbot reference robot and FTC season/simulator product | Kotlin 2.4.10, FTC SDK 11.1.0, AGP 8.7.0, Gradle 8.9 | `TeamCode/`, `simulator/`, `.ares/` |
+| **ARES-FRC/** | FRC season, roboRIO/vendor adapters, and WPILib/HAL simulator product | Kotlin 2.4.10, WPILib 2026.2.1, Phoenix 26.1.1, Gradle 8.11 | `src/main/kotlin/com/areslib/frc/`, `.ares/` |
+| **ARES-Analytics/** | ARES Robotics Studio desktop app, analytics database, cloud-optional services, and gateway | Kotlin 2.4.10, Compose 1.11.1, Ktor 3.5.2, DuckDB 1.1.3, Gradle 8.14.5 | `app/`, `gateway/`, `shared/` |
+| **ARES-FTC-Starter/** | Canonical standalone FTC starter source exported into deterministic release archives | Same FTC toolchain | project root |
+| **ARES-FRC-Starter/** | Canonical standalone FRC starter source exported into deterministic release archives | Same FRC toolchain | project root |
 
 ## 2. Dependency Graph (read this before changing anything)
 
@@ -28,17 +34,24 @@ This workspace (`C:\Users\david\dev\robotics\ares`) contains **4 interconnected 
                   bidirectional telemetry contract
 ```
 
-**Release-validation order matters.** Normal consumers resolve immutable ARESLib binaries from Maven Central **and the GitHub-hosted ARES Maven repository** (`https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven`, the `maven` branch of ARESLib-Kotlin) under identical `org.aresfirst.ares` coordinates. The GitHub channel exists because Central's free tier enforces monthly publishing quotas (file/release counts); publish new releases there with `.\gradlew.bat publishGitHubRepository -ParesVersion=<final>` and push `build/github-repository` to the `maven` branch, then optionally stage to Central when quota allows. After changing the library, publish its isolated validation repository before testing consumers:
+**Release-validation order matters.** Normal consumers resolve immutable ARESLib binaries from Maven
+Central and the monorepo's GitHub-hosted Maven branch at
+`https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven`. Existing releases in the former
+ARESLib repository remain immutable legacy artifacts. `release/ares-versions.properties` is the
+single final-version manifest. After changing the library, publish a unique isolated candidate
+before testing any consumer:
 
 ```powershell
-# 1. Always do this FIRST after changing ARESLib-Kotlin:
-cd ARESLib-Kotlin ; .\gradlew.bat apiCheck publishReleaseValidation
-# 2. Test consumers with -ParesRepository=<absolute path>/ARESLib-Kotlin/build/release-repository.
-#    Published coordinates use org.aresfirst.ares:<artifact>:<aresVersion>.
+# 1. Always do this FIRST after changing ARESLib-Kotlin.
+cd ARESLib-Kotlin
+.\gradlew.bat test apiCheck publishReleaseValidation --no-parallel "-ParesVersion=<final>-rc.<commit>"
+# 2. Test every consumer with the same candidate and an absolute file URI.
+"-ParesVersion=<final>-rc.<commit>"
+"-ParesRepository=file:///C:/absolute/path/ARESLib-Kotlin/build/release-repository"
 ```
 
 **Dependency mechanisms:**
-- **Normal builds:** all consumers import `org.aresfirst.ares:ares-bom:<aresVersion>` and versionless module coordinates from Maven Central.
+- **Normal builds:** consumers import `org.aresfirst.ares:ares-bom:<aresVersion>` and versionless modules from Maven Central and the monorepo Maven branch.
 - **Unpublished binary validation:** pass `-ParesRepository=<path>/build/release-repository` after running ARESLib's `publishReleaseValidation`.
 - **Focused source development:** pass `-ParesUseSiblingLib=true` to opt into the sibling composite build. This is never automatic.
 
@@ -59,12 +72,14 @@ Both robot repos are **thin season-specific shells** over ARESLib. Almost all ca
 
 ## 4. How Projects Communicate: the NT4 Contract
 
-The dashboard is a **passive NT4 WebSocket client**. Robots/simulator publish; dashboard subscribes. Topic keys are the integration surface.
+Studio is a **bidirectional NT4 WebSocket client**. Robots/simulators publish telemetry; Studio also
+publishes leased controls and field configuration. Topic keys are the integration surface.
 
 **Canonical topics (CCW-positive heading throughout):**
 | Topic | Source | Meaning |
 |---|---|---|
-| `ARES/EstimatedPose/[0,1,2]` | sim `TelemetryPublisher` | Ground-truth pose (X, Y, heading rad) |
+| `ARES/TruePose/[0,1,2]` | sim `DesktopSimLauncher` | Dyn4j ground-truth pose (X, Y, heading rad) |
+| `ARES/EstimatedPose/[0,1,2]` | sim/robot telemetry publisher | Redux EKF estimate (X, Y, heading rad) |
 | `Drive/Pose_X`, `Drive/Pose_Y`, `Drive/Pose_Heading` | robot `ARESNetworkStatePublisher` | EKF pose (`Drive/Drive_Heading` supported as alias) |
 | `Drive/Odom_*` | robot | Raw Pinpoint odometry |
 | `ARES/Input/driveFrame` | dashboard → sim / FTC Remote Drive | Atomic leased v2 control frame (`double[8]`) |
@@ -72,7 +87,9 @@ The dashboard is a **passive NT4 WebSocket client**. Robots/simulator publish; d
 | `Hardware/Motors/{name}/Velocity` | `velocities[i]` | MecanumVisualizer |
 | `Hardware/Motors/{name}/CurrentAmps` | `currents[i]` | MecanumVisualizer |
 
-> **Warning:** Both `ARES/EstimatedPose/2` and `Drive/Drive_Heading` map to `robotHeading`. The last-arriving value wins per render frame. Ensure both sources publish consistent data.
+> **Atomic simulator frames:** `ARES/SimulatorPoseFrame` carries truth, estimate, odometry, and a
+> sequence value. Studio commits that packed frame atomically and ignores legacy simulator pose
+> scalars once ownership is established. Never substitute truth for the EKF estimate.
 
 **Offline-first rule (CRITICAL):** Robots never push to the cloud. The `LogManagerServer` (NanoHTTPD, **port 5002**, in ARESLib core) exposes `/api/logs`, `/api/download?file=`, `POST /api/delete`. The desktop app *pulls* `.jsonl` logs over local Wi-Fi, parses to DuckDB, then the laptop handles GCS/Firestore sync via the gateway. Never add cloud calls inside robot code.
 
@@ -126,7 +143,10 @@ All hardware reads (voltage sensors, encoders, servo positions, analog inputs) m
 ## 6. Per-Project Quick Reference
 
 ### ARESLib-Kotlin (`C:\Users\david\dev\robotics\ares\ARESLib-Kotlin`)
-The foundation. **5 Gradle modules** (`settings.gradle.kts`): `core` → (`ftc-mocks` → `ftc-hardware`), `frc-hardware`, `simulator`. Maven group `com.areslib`, version `1.0-SNAPSHOT`.
+The foundation. Its authoritative module list is `settings.gradle.kts`; it includes the project
+schema/model/compiler, core, codegen, FTC/FRC hardware and runtime modules, mocks, simulation
+foundation and platform runtimes, and `ares-bom`. Published coordinates use
+`org.aresfirst.ares`; Kotlin packages remain `com.areslib`.
 
 - **`core/src/main/kotlin/com/areslib/`** packages:
   - `math/` — `geometry/` (Pose2d, Rotation2d, ChassisSpeeds, Matrix3x3), `kinematics/`, `filter/`, `coordinate/`, **`estimation/`** (EKF `PoseEstimator`, `KalmanFilter`, `OdometryFusionController`, `VisionMahalanobisFilter` — note: estimation lives under `math/`, not `control/`)
@@ -155,7 +175,9 @@ FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `
   - `hardware/` (`FtcIntakeIO`, `FtcFlywheelIO`, `SeasonInterfaces`)
   - `subsystems/` (`IntakeSubsystem`, `FlywheelSubsystem`, `PrismSubsystem`, `IndicatorLightSubsystem`)
   - `opmodes/` (`ARESMecanumTeleOp`, `IntakeShootTeleOp`, `ARESTuningTeleOp`, `ARESRemoteDriveOpOpMode`, `ARESAuto`, `TestAuto`, `NullOpMode`, `ARESMecanumDiagnostic`, `TeamStateStorage`) and `opmodes/robot/` (`AresRobot` facade, `AresDriveController`, `AresSuperstructureController`, `AresTelemetryHelper`)
-  - `test/tools/SubsystemGenerator.kt` — interactive 6-file subsystem scaffolder following the Redux pattern
+  - Subsystem authoring preserves domain, control, hardware, simulation, generated plumbing, and
+    verification responsibilities. File count is not a design goal; generated mechanical files and
+    tests belong under Gradle generated directories.
 - **Canonical autonomous assets:** `.ares/routines/`, `.ares/autonomous-catalog.json`, `.ares/action-catalog.json`, and the generated project source. Loose PathPlanner/`.aresauto` deployment is unsupported.
 - **`simulator/` module** (desktop JVM, JDK 21): shares `TeamCode/src/main/java`, runs real OpModes against mocks. `runSim` → `DesktopSimLauncher --headless`; `CalibrationVerificationApp` exercises all SysId routines.
 - **`.ares/project.json`** — canonical team/season/robot, authoring-model, coordinate, footprint, and runtime identity. Older split identity files are unsupported. **`ares_tuning.json`** — live-tuning config.
@@ -175,7 +197,8 @@ FRC RoboRIO code, **2024 Crescendo** ("Marvin XIX"), WPILib **2026.2.1**, CTRE P
 - **Build/test:** `.\gradlew.bat simulateJava` (sim), `deploy` (RIO). Kover coverage; JUnit 5 tests under `src/test/kotlin/com/areslib/frc/` incl. `pathing/E2EAutonomousSimulationTest`.
 
 ### ARES-Analytics (`C:\Users\david\dev\robotics\ares\ARES-Analytics`)
-Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Compose 1.7.3. **3 Gradle modules** (`:shared` → `:app`, `:gateway`). JDK 17.
+ARES Robotics Studio plus its Ktor gateway. Kotlin 2.4.10, Compose 1.11.1, Ktor 3.5.2, DuckDB
+1.1.3. The isolated build contains `:shared`, `:app`, and `:gateway`; the gateway targets JRE 17.
 
 - **`app/src/main/kotlin/com/ares/analytics/`** (MVI: `XxxState` + `sealed XxxIntent` + `XxxViewModel`):
   - `Main.kt` (thin composition root: 1440×900 window + wiring) delegating lifecycle to `desktop/` (`DesktopInstanceLock`, `DesktopCrashHandler`, `DesktopWindowPresentationController`, `NativeWindowProbe`, `DesktopStartupMachine`, `DesktopShutdownCoordinator`), `di/ServiceRegistry.kt` (~25 services, lazy tiers — **the index into all business logic**)

@@ -19,6 +19,14 @@ on:
 permissions:
   contents: read
 
+env:
+  ARES_VERSION: 11.0.0
+  STUDIO_VERSION: 2.0.0
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FTC-Starter-11.0.0.zip
+  FTC_STARTER_SHA256: 2ce61f49bde9da4c1e7947db6e37e760c96ebfc1ee75806f3b6636c405fba374
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FRC-Starter-11.0.0.zip
+  FRC_STARTER_SHA256: d996a45b610f6f1e252efdf2b9d4b42be70347265f028cdaeb3a7442f1219d7e
+
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -29,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ares-version: ${{ steps.identity.outputs.ares-version }}
+      ares-candidate-version: ${{ steps.identity.outputs.ares-candidate-version }}
       studio-version: ${{ steps.identity.outputs.studio-version }}
     steps:
       - uses: actions/checkout@v7
@@ -43,11 +52,12 @@ jobs:
         shell: bash
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
+          PUBLISH: ${{ inputs.publish }}
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           ares_base="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
-          ares_version="${ares_base}-rc.${GITHUB_SHA::12}"
+          ares_candidate_version="${ares_base}-rc.${GITHUB_SHA::12}"
           if [[ -n "$REQUESTED_VERSION" ]]; then
             studio_version="$REQUESTED_VERSION"
           else
@@ -65,20 +75,46 @@ jobs:
             echo "Application version exceeds native package limits: $studio_version" >&2
             exit 1
           fi
-          echo "ares-version=$ares_version" >> "$GITHUB_OUTPUT"
+          manifest_studio="$(sed -n 's/^studioVersion=//p' release/ares-versions.properties)"
+          if [[ "$PUBLISH" == "true" && "$studio_version" != "$manifest_studio" ]]; then
+            echo "Published Studio version must equal release/ares-versions.properties ($manifest_studio)." >&2
+            exit 1
+          fi
+          echo "ares-version=$ares_base" >> "$GITHUB_OUTPUT"
+          echo "ares-candidate-version=$ares_candidate_version" >> "$GITHUB_OUTPUT"
           echo "studio-version=$studio_version" >> "$GITHUB_OUTPUT"
 
       - name: Publish isolated ARES candidate
         working-directory: ARESLib-Kotlin
         run: >-
           ./gradlew apiCheck publishReleaseValidation
-          -ParesVersion=${{ steps.identity.outputs.ares-version }}
+          -ParesVersion=${{ steps.identity.outputs.ares-candidate-version }}
           --no-parallel --no-daemon --console=plain
+
+      - name: Stage exact final ARES repository
+        working-directory: ARESLib-Kotlin
+        shell: bash
+        run: |
+          if git ls-remote --exit-code origin refs/heads/maven >/dev/null 2>&1; then
+            mkdir -p build/github-repository
+            git fetch --quiet origin refs/heads/maven:refs/remotes/origin/maven
+            git archive origin/maven | tar -x -C build/github-repository
+          fi
+          ./gradlew publishGitHubRepository \
+            -ParesVersion=${{ steps.identity.outputs.ares-version }} \
+            --no-parallel --no-daemon --console=plain
 
       - uses: actions/upload-artifact@v7
         with:
           name: package-validation-repository
           path: ARESLib-Kotlin/build/release-repository/
+          if-no-files-found: error
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: final-ares-repository
+          path: ARESLib-Kotlin/build/github-repository/
           if-no-files-found: error
           retention-days: 3
 
@@ -115,11 +151,11 @@ jobs:
           ARES_OFFICIAL_TEMPLATE_ARCHIVE_DIR: ${{ runner.temp }}\ares-official-templates
           ARES_OFFICIAL_TEMPLATE_OUTPUT_DIR: ${{ runner.temp }}\ares-zero-code-acceptance
           ARES_OFFICIAL_TEMPLATE_VALIDATION_REPOSITORY: ${{ github.workspace }}\.release-validation
-          ARES_OFFICIAL_TEMPLATE_VALIDATION_VERSION: ${{ needs.candidate.outputs.ares-version }}
+          ARES_OFFICIAL_TEMPLATE_VALIDATION_VERSION: ${{ needs.candidate.outputs.ares-candidate-version }}
         run: >-
           .\ARES-Analytics\gradlew.bat -p ARES-Analytics :app:test
           --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest'
-          "-ParesVersion=${{ needs.candidate.outputs.ares-version }}"
+          "-ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}"
           "-ParesRepository=file:///${{ github.workspace }}/.release-validation"
           --no-parallel --no-daemon --console=plain
 
@@ -153,7 +189,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
         with:
-          name: package-validation-repository
+          name: final-ares-repository
           path: .release-validation
 
       - name: Resolve validation repository URI
@@ -185,9 +221,41 @@ jobs:
           path: ${{ matrix.artifact-path }}
           if-no-files-found: error
 
+  starter-archives:
+    name: Deterministic starter archives
+    needs: candidate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build immutable starter archives
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'starter-release-assets'
+          .\scripts\build-starter-archives.ps1 -OutputDirectory $output
+      - uses: actions/upload-artifact@v7
+        with:
+          name: starter-release-assets
+          path: ${{ runner.temp }}/starter-release-assets/*.zip
+          if-no-files-found: error
+      - name: Verify immutable starter archive hashes
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'starter-release-assets'
+          $expected = ConvertFrom-StringData (Get-Content -Raw release/starter-artifacts.properties)
+          foreach ($league in @('FTC', 'FRC')) {
+            $key = "${league}StarterSha256"
+            $key = $key.Substring(0, 1).ToLowerInvariant() + $key.Substring(1)
+            $versionKey = "${league}StarterVersion"
+            $versionKey = $versionKey.Substring(0, 1).ToLowerInvariant() + $versionKey.Substring(1)
+            $release = ConvertFrom-StringData (Get-Content -Raw release/ares-versions.properties)
+            $archive = Join-Path $output "ARES-$league-Starter-$($release[$versionKey]).zip"
+            $actual = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+            if ($actual -ne $expected[$key]) { throw "$league starter archive hash changed: $actual" }
+          }
+
   publish-release:
     name: Publish verified Studio release
-    needs: [candidate, zero-code-project-acceptance, build-packages]
+    needs: [candidate, zero-code-project-acceptance, build-packages, starter-archives]
     if: github.event_name == 'workflow_dispatch' && inputs.publish
     runs-on: ubuntu-latest
     permissions:
@@ -199,16 +267,38 @@ jobs:
           echo 'Public releases may only be dispatched from the protected main branch.' >&2
           exit 1
 
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v8
         with:
           pattern: ARES-Robotics-Studio-*
           merge-multiple: true
           path: release-assets
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: starter-release-assets
+          path: release-assets
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: final-ares-repository
+          path: final-ares-repository
+
+      - name: Publish immutable ARES Maven content first
+        shell: pwsh
+        run: >-
+          .\scripts\publish-immutable-maven-repository.ps1
+          -StagedRepository final-ares-repository
+          -RepositoryRoot $env:GITHUB_WORKSPACE
+          -Push
+
       - name: Generate checksums
         shell: bash
         run: |
-          find release-assets -type f \( -name '*.msi' -o -name '*.dmg' \) -print0 |
+          find release-assets -type f \( -name '*.msi' -o -name '*.dmg' -o -name '*.zip' \) -print0 |
             while IFS= read -r -d '' asset; do sha256sum "$asset" > "$asset.sha256"; done
 
       - name: Publish immutable GitHub release
@@ -222,4 +312,5 @@ jobs:
           files: |
             release-assets/**/*.msi
             release-assets/**/*.dmg
+            release-assets/**/*.zip
             release-assets/**/*.sha256

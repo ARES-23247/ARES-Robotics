@@ -1,5 +1,8 @@
 # ARES Clean-Slate Architecture Completion Record
 
+> Historical completion record (2026-08-27). Current operational guidance lives in
+> [`RELEASE_TRANSITION.md`](RELEASE_TRANSITION.md) and [`AGENTS.md`](AGENTS.md).
+
 Recorded: 2026-08-27
 
 ## Outcome

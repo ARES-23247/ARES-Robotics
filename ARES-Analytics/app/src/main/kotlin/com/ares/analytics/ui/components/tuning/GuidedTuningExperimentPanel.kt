@@ -384,13 +384,13 @@ private fun PlanStep(
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
-                checked = state.requestMentorReview,
-                onCheckedChange = { viewModel.onIntent(GuidedTuningExperimentIntent.SetMentorReviewRequested(it)) },
+                checked = state.requestPeerReview,
+                onCheckedChange = { viewModel.onIntent(GuidedTuningExperimentIntent.SetPeerReviewRequested(it)) },
                 enabled = state.experiment == null,
             )
             Column {
-                Text("Request mentor review", color = AresTextPrimary)
-                Text("Records a review request; it does not invent a cloud role or approval.", color = AresTextSecondary, fontSize = 10.sp)
+                Text("Ask a teammate for a second review (optional)", color = AresTextPrimary)
+                Text("Records a collaboration prompt; it is never permission or approval.", color = AresTextSecondary, fontSize = 10.sp)
             }
         }
         Button(
@@ -573,7 +573,7 @@ private fun DecisionStep(
             value = nextTest,
             onValueChange = { nextTest = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("What is the next safe test or mentor review step?") },
+            label = { Text("What is the next safe test or optional peer-review step?") },
             minLines = 2,
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -43,7 +43,7 @@ A connected gamepad is also supported. Controls are converted to the same simula
 - NT4 WebSocket: port `5810`
 - Local log page/API: port `5002`
 
-ARES Analytics connects as a passive NT4 client and may publish `ARES/Input/*` control topics back to the simulator. Topic names do not use a leading slash. The simulator's alliance defaults to red, and the corresponding NT4 input defaults to `true`.
+ARES Robotics Studio connects as a bidirectional NT4 client: it subscribes to telemetry and publishes leased `ARES/Input/*` controls and field configuration back to the simulator. Topic names do not use a leading slash. The simulator's alliance defaults to red, and the corresponding NT4 input defaults to `true`.
 
 ## Deterministic state
 

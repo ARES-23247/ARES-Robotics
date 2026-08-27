@@ -46,7 +46,7 @@ enum class ExperimentDecision { UNDECIDED, ACCEPT, REVISE, REJECT, ROLL_BACK }
 enum class ExperimentOutcome { IMPROVED, REGRESSED, INCONCLUSIVE }
 
 @Serializable
-enum class MentorReviewState { NOT_REQUESTED, REQUESTED }
+enum class PeerReviewState { NOT_REQUESTED, REQUESTED }
 
 @Serializable
 enum class ExperimentPhase {
@@ -168,7 +168,7 @@ data class GuidedTuningExperiment(
     val heldConstants: List<String> = emptyList(),
     val successThresholdPercent: Double = 0.0,
     val safetyNotes: String = "",
-    val mentorReviewState: MentorReviewState = MentorReviewState.NOT_REQUESTED,
+    val peerReviewState: PeerReviewState = PeerReviewState.NOT_REQUESTED,
     val nextTest: String = "",
     val finding: ExperimentFindingEvidence,
     val snapshot: ExperimentSnapshot,
@@ -196,7 +196,7 @@ data class GuidedTuningExperimentPlan(
     val heldConstants: List<String>,
     val successThresholdPercent: Double,
     val safetyNotes: String,
-    val mentorReviewState: MentorReviewState,
+    val peerReviewState: PeerReviewState,
 )
 
 /** Rehydrates the evidence boundary needed by the UI without rerunning or altering old analysis. */
@@ -335,7 +335,7 @@ class GuidedTuningExperimentRepository(
             heldConstants = plan.heldConstants.map(String::trim).filter(String::isNotBlank).distinct(),
             successThresholdPercent = plan.successThresholdPercent,
             safetyNotes = plan.safetyNotes.trim(),
-            mentorReviewState = plan.mentorReviewState,
+            peerReviewState = plan.peerReviewState,
             finding = ExperimentFindingEvidence(
                 findingId = finding.id,
                 claimKind = finding.kind.name,

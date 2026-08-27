@@ -28,6 +28,7 @@ jobs:
         shell: pwsh
         run: |
           .\scripts\verify-imported-histories.ps1
+          .\scripts\verify-doc-links.ps1
           .\scripts\verify-monorepo-policy.ps1
 
       - name: Prove starter mirrors are deterministic
