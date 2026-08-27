@@ -98,8 +98,10 @@ val robotYaw = -robotPoseTargetSpace.rotation.y
 val robotYaw = robotPoseTargetSpace.rotation.z
 ```
 
-### Simulator State Sync Pitfall
-The sim's `DesktopSimLauncher` maintains a local `var state = RobotState()`. This is **NOT synced** with the OpMode's Redux store for drive data (only superstructure is synced). `TelemetryPublisher.publishEstimatedPose()` must use `currentPose` (Dyn4j ground truth), NOT `state.drive.poseEstimator.estimatedPose` (always default/zeroed).
+### Simulator Pose Telemetry Ownership
+`DesktopSimLauncher` publishes `ARES/TruePose/*` from Dyn4j ground truth. `TelemetryPublisher.publish(activeInstance.store.state)` is the **only** publisher of `Drive/Pose_*`, `Drive/Odom_*`, and `ARES/EstimatedPose/*`; those topics must expose the real Redux estimator and odometry state. Never call `publishEstimatedPose()` with Dyn4j truth after publishing the store, because that alternates two different values on the estimator topics and hides EKF behavior. Publish truth from the same pre-step observation consumed by the current OpMode tick so truth, odometry, and EKF are time-aligned while moving.
+
+The NT4 transport delivers pose components and pose sources sequentially, not as one Compose state transaction, and suppresses scalars that did not change. The simulator therefore publishes `ARES/SimulatorPoseFrame` as `[true x/y/h, EKF x/y/h, odom x/y/h, sequence]`; the changing final sequence forces one complete frame every loop. `FieldPoseFrameAccumulator` commits only after array element 9 and then ignores legacy simulator pose scalars. Do not replace this with a coordinate/heading end marker, restore per-scalar simulator `LivePoseState` updates, or make the UI substitute truth for EKF: unchanged headings do not arrive, per-scalar rendering paints a deterministic ghost, and truth substitution hides estimator defects.
 
 ### Vision & Kidnapped Robot Recovery
 - **FtcVisionTracker.kt**: Do NOT use `isInInit` flag. The snap triggers ONCE when `hasInitializedPoseWithVision` is false, then relies on `consecutiveVisionRejections >= 10` for further snaps during active play.
@@ -176,7 +178,7 @@ FRC RoboRIO code, **2024 Crescendo** ("Marvin XIX"), WPILib **2026.2.1**, CTRE P
 Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Compose 1.7.3. **3 Gradle modules** (`:shared` → `:app`, `:gateway`). JDK 17.
 
 - **`app/src/main/kotlin/com/ares/analytics/`** (MVI: `XxxState` + `sealed XxxIntent` + `XxxViewModel`):
-  - `Main.kt` (single-instance lock, crash handler, 1440×900 window), `di/ServiceRegistry.kt` (~25 services, lazy tiers — **the index into all business logic**)
+  - `Main.kt` (thin composition root: 1440×900 window + wiring) delegating lifecycle to `desktop/` (`DesktopInstanceLock`, `DesktopCrashHandler`, `DesktopWindowPresentationController`, `NativeWindowProbe`, `DesktopStartupMachine`, `DesktopShutdownCoordinator`), `di/ServiceRegistry.kt` (~25 services, lazy tiers — **the index into all business logic**)
   - `service/` — `Nt4ClientService`+`nt4/`, `DatabaseService` (DuckDB)+`db/`, `FrameBatcher`, log decoders (`log/`: Wpi/Jsonl/Csv/Parquet/Hoot/DSLog/Rlog/Revlog/RoadRunner), analytics engines (`SummaryEngineService`, `SysIdService`, `CalibrationService`+`calibration/`, `DriverAnalysisService`, `AlertEngineService`, `ReplayEngineService`, `TrajectoryEstimator`), desktop-owned OAuth/Google Drive sync, `ProcessManagerService`, `SimulationService`, and `GamepadService` (LWJGL)
   - `viewmodel/` — Main, Dashboard, FieldViewer, FieldEditor, PathPlanner, Tuning, SysId, Cloud, Profile, Settings, Onboarding, CameraStream, SubsystemGenerator + helpers (`field/`, `pathing/`, `sysid/`)
   - `ui/` — `theme/` (`AresTheme`, Colors, Type), `screens/` (16 screens), `components/dashboard/` (~40 widgets incl. FieldViewerCard, PoseViewerCard, TelemetryChartPanel, MecanumVisualizer, SwerveVisualizer, ControlLoopProfilerCard), `components/pathplanner/`, `components/core/`, `components/terminal/`, etc.
@@ -186,7 +188,150 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 - **Build/run:** `.\gradlew.bat :app:run` (mainClass `com.ares.analytics.MainKt`); `.\gradlew.bat run` (root) orchestrates gateway (bg) + app (fg). Native dist: `:app:packageReleaseMsi`.
 - **Audit status:** Never infer the live backlog from `AUDIT.md` severity counts; verify each dated finding against current source and tests.
 
-## 7. Working in This Workspace — Checklist
+## 7. ARES-Analytics Desktop Launch Reliability (MANDATORY)
+
+The desktop app has a single-instance lock and a native Compose/AWT window. A JVM can therefore be alive while no usable window exists, and a second launch can exit successfully without showing anything. Treat "the command is still running" and "the window is visible" as separate facts.
+
+### Do not conflate these seven failure modes
+
+| Failure mode | Observable evidence | Correct response |
+|---|---|---|
+| **Orphaned lock owner** | A prior `com.ares.analytics.MainKt` JVM is still alive; the next process prints `App is already running (failed to acquire app.lock). Exiting.` and shows no window. | Confirm the ARES process with `jps -lv`, then run `ARES-Analytics\.\gradlew.bat killExisting`. Do not kill every Java process and do not delete `app.lock`; the operating-system file lock, not the file's existence, is authoritative. |
+| **Missing desktop Main dispatcher** | Compose starts, but StateFlow/lifecycle collection fails or the window disappears. | Keep `org.jetbrains.kotlinx:kotlinx-coroutines-swing` beside `kotlinx-coroutines-core` and keep `DesktopCoroutineDispatcherTest`. `coroutines-core` alone is insufficient for Compose Desktop's Swing event thread. |
+| **Native window/rendering regression** | The JVM and UI coroutines remain alive but no visible top-level HWND is capturable, or the window is blank/intermittent. | Let Compose/Skiko select its renderer. Preserve the explicit window state and presentation behavior in `Main.kt`, then verify a real HWND with the Compose desktop capture workflow. |
+| **Windows activation race** | `Desktop window presented` reports a real HWND, but the developer never sees the window or only sees it intermittently. `SetForegroundWindow` may legally reject a Gradle-launched child process, and an immediate native topmost-then-demote sequence can put the window behind the terminal before it paints. | Keep startup topmost state owned by the Compose `Window`, release it after the bounded startup interval, and require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`. Do not force focus/Z-order with Win32 calls. |
+| **AWT event-thread crash** | The console reports `CRITICAL FAULT: Uncaught exception in thread 'AWT-EventQueue-0'` and names a `~/.ares-analytics/logs/crash-*.log`; the window may freeze or disappear while service threads keep the JVM and lock alive. | Read the newest crash log and fix the first relevant application stack frame. Then close through the verified window or use scoped `killExisting` cleanup. Treat the orphaned lock owner as a consequence, not the root cause. |
+| **Incomplete runtime class output** | A crash log reports `NoClassDefFoundError` / `ClassNotFoundException` for an application `*Kt` class even though its `.kt` source exists. | Stop the verified ARES process, then run `.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks`. Confirm the class is regenerated before relaunching. An ordinary incremental compile may reuse the same incomplete cache entry. |
+| **Concurrent agent rebuild/cleanup** | A healthy window vanishes while another task runs, or a delayed `NoClassDefFoundError` occurs after source/build output changed. Inspect concurrent Gradle command lines; the historical `clean -> killExisting` dependency forcibly closed the UI, while a mutable `build/classes` launch could lose lazy-loaded bytecode. | Preserve the isolated `:app:run` classpath and keep `clean` independent of `killExisting`. Only a new `run` may replace an existing ARES process. Compile/test/clean may run while the app is open; their new code takes effect only after the next launch. |
+
+Offline NT4 connection failures and Google Drive sign-in errors are expected when those services are unavailable. They are not evidence that desktop window creation failed.
+
+### Startup invariants agents must preserve
+
+- `app/build.gradle.kts` must retain `kotlinx-coroutines-swing` at the same version as `kotlinx-coroutines-core`.
+- Do **not** add `skiko.renderApi`, `skiko.renderApi.fallback`, forced Direct3D, forced OpenGL, or forced software-renderer JVM properties as a general startup fix. A renderer experiment requires its own branch, before/after captures on the affected machine, and a fallback/removal plan.
+- `Main.kt` must retain an explicit floating, centered `1440 x 900 dp` window, `visible = true`, and a `1100 x 700` AWT minimum size. The bounded Compose-owned startup `alwaysOnTop` state and the `toFront()` / `requestFocus()` presentation calls live in `DesktopWindowPresentationController` and must keep the same guarantees. Startup sequencing follows the explicit `DesktopStartupMachine` state order (CREATING→OPENED→PRESENTED→SETTLED; CLOSING→CLOSED on shutdown).
+- Keep the `Desktop window presented` diagnostic. It proves that the AWT peer reached the presentation hook; it does **not** replace screenshot verification.
+- Keep final visibility/focus presentation deferred through `EventQueue.invokeLater`; the Compose `Window` peer is created asynchronously. The diagnostic must report the final bounds and `showing=true` from that deferred event.
+- On Windows, a usable window means the exact HWND returned for the Compose `java.awt.Window` by `Native.getWindowPointer(window)` is simultaneously present in `EnumWindows`, owned by the current ARES PID, valid, and visible. AWT `isShowing=true`, any other same-process helper HWND, `IsWindowVisible` on a stale/reused handle, or a live JVM is not sufficient. Keep the exact-peer ownership check and recovery timer.
+- Native APIs in normal startup are observation-only. Do not call `AttachThreadInput`, `ShowWindow`, `SetWindowPos`, `BringWindowToTop`, or `SetForegroundWindow`, and do not toggle `java.awt.Window.isVisible` to recreate a peer. Those operations race Compose's native lifecycle and Windows may reject foreground activation without error. Compose owns visibility and the bounded always-on-top interval; the settled diagnostic must prove it later returned to `alwaysOnTop=false`.
+- The AWT-thread health check (`DesktopWindowPresentationController`, probing via `NativeWindowProbe`) must not call `GetWindowTextLength` / `GetWindowText` while enumerating desktop HWNDs. Those APIs can synchronously message AWT's toolkit window and deadlock the event queue. Match the peer handle by pointer identity; title matching belongs in the external capture/interaction scripts.
+- Initial native presentation must be scheduled from `windowOpened` after that lifecycle callback returns. A generic startup `EventQueue.invokeLater` can run before `componentShown` / `windowOpened` and validate a transient peer. Keep the bounded delayed fallback for the case where listeners attach after the opened event. A valid startup trace orders `Desktop window shown` and `Desktop window opened` before `Desktop window presented after ...`.
+- A fatal uncaught `AWT-EventQueue` exception or unexpected disposal of the only Compose window must terminate the process after logging. An unusable desktop JVM must not remain alive solely to hold `app.lock`.
+- Keep the single-instance lock, bounded service disposal, and hard-exit watchdog unless the replacement is tested for normal close, hung shutdown, relaunch, and stale-process recovery.
+- Keep `kotlin.incremental=false` in `ARES-Analytics/gradle.properties`. Large Compose source changes have twice produced delayed missing-class crashes (`SuperstructureStudioScreenKt` and a nested `FieldCanvas...WhenMappings`) from incomplete incremental outputs.
+- Keep the `:app:run` runtime snapshot in `app/build.gradle.kts`. A running JVM must load project classes, classpath resources, project-owned artifacts, and `compose.application.resources.dir` from its unique `ares-analytics-run-*` temp snapshot, never mutable `build/` paths that another agent can clean or replace. Keep the finalizer that removes the snapshot after exit.
+- `clean` must **never** depend on `killExisting`. Only `run` may depend on the scoped replacement task. A compile, test, or clean performed by another agent is not authority to close a developer's visible app.
+- In the `:app:run` task graph, `killExisting` must run after `:app:jar`. A broken replacement build must fail before terminating the current healthy window.
+- A direct packaged-app launch does not run Gradle's `killExisting` task. Do not assume that behavior exists outside `:app:run`.
+
+### Mandatory launch/debug workflow for every agent
+
+1. Run `git status --short --branch` in `ARES-Analytics` and preserve all unrelated or in-progress edits.
+2. Separate compilation from presentation: run `.\gradlew.bat :app:compileKotlin` first. A successful compile does not prove a window exists.
+3. Before killing anything, inspect Java command lines with `jps -lv | Select-String 'com\.ares\.analytics\.MainKt'`.
+4. If a verified ARES JVM owns the lock but has no usable window, run `.\gradlew.bat killExisting` from `ARES-Analytics` and report the PID that was terminated.
+5. If the crash is `NoClassDefFoundError` / `ClassNotFoundException` for an application class whose source exists, run `.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks`; do not trust an incremental `FROM-CACHE` result for that recovery.
+6. Launch with `.\gradlew.bat :app:run` for released dependencies, or add `"-ParesUseSiblingLib=true"` only when intentionally validating sibling ARESLib source. Require the `Isolated desktop runtime classpath at ...ares-analytics-run-*` log; otherwise concurrent builds can corrupt the running app.
+7. Require `Desktop window shown` and `Desktop window opened` before a `Desktop window presented after windowOpened` (or explicit startup-fallback) log ending in `showing=true, nativeVisible=true, hwnd=<value>`. Then require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`. This second line proves the window remained presented after the bounded topmost interval instead of briefly flashing and falling behind the launcher.
+   Strict capture must return that same HWND for the visible `ARES Analytics` window. A different same-process HWND or full-desktop fallback image is not proof. If the launcher and capture helper are isolated onto different Windows desktops/window stations, set `ARES_ANALYTICS_STARTUP_CAPTURE=<absolute-png-path>` and `ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE=true` for that verification run. The app then captures its own window after settled state and posts `WM_CLOSE` to the exact HWND; both variables are opt-in and normal launches perform no capture I/O.
+8. Inspect the captured image for actual app content rather than accepting a process ID, Gradle task state, or blank frame.
+   If the exact ARES HWND has a black client area on the first capture, keep that same process alive, check for an AWT/render error, wait one paint interval, and capture the same HWND again. A rendered recapture is delayed painting; a persistently blank capture is a startup failure.
+9. If the console reports an uncaught `AWT-EventQueue-0` exception, inspect the named crash log before cleanup. The first relevant application frame is evidence of the initiating UI defect; the remaining process and lock are secondary effects.
+10. Close the app through its window so `disposeAndJoin()` and the shutdown watchdog are exercised. Use the tester skill's native `-CloseWindow` action; do not automate Alt+F4 through `SendKeys`, which can be delivered to a focused Compose text field as input. Use `killExisting` only as cleanup if graceful close fails.
+11. Confirm `jps -lv` no longer lists `com.ares.analytics.MainKt`.
+12. If startup, `Main.kt`, `ServiceRegistry`, Compose/coroutines dependencies, or Skiko settings changed, launch and capture a second time after a clean shutdown. This catches invisible lock owners and one-launch-only success.
+
+Never report "the app launches" based only on `BUILD SUCCESSFUL`, a long-running Gradle process, `MainScreen` logs, or a screenshot tool's full-screen fallback. The required evidence is a visible ARES HWND containing rendered UI, followed by a shutdown that leaves no ARES JVM.
+
+When multiple agents are active, inspect `jps -lv` / `Win32_Process.CommandLine` before attributing a disappearance to Compose. Another agent's build may explain the timing. Do not revert that agent's source edits; first verify whether their task is still writing, wait for a coherent compile boundary, then validate the combined tree. The isolated runtime intentionally does not hot-reload those edits.
+
+Only one Gradle invocation may compile/clean the same Analytics module at a time. The running app is isolated from those outputs, but two compiler processes can still contend over `app/build/classes` and fail with `Could not delete ...build\classes\kotlin\main`. Wait for the existing wrapper command to finish; do not kill its compiler daemon or delete its outputs underneath it.
+
+The detailed diagnostic decision tree and exact capture/cleanup commands live in `.agents/skills/compose-desktop-tester/references/startup-recovery.md`.
+
+## 7A. FTC Simulator Runtime and Control Reliability (MANDATORY)
+
+`ARES-FTC\TeamCode:runSim` starts a **headless physics/NT4 server**, not a ready-to-drive
+OpMode. “Port 5810 is online” proves only that the server is listening. A controllable robot
+requires all of these states in order:
+
+1. Analytics is connected to `127.0.0.1:5810` with Local Sim selected.
+2. A published TeleOp is selected and the Driver Station sends `INIT`, then `START`.
+3. Dashboard local control is explicitly armed.
+
+Preserve these invariants:
+
+- `TeamCode/build.gradle` must keep the unique `ares-ftc-sim-run-*` runtime snapshot for
+  `runSim`. The simulator must not load TeamCode/FtcRobotController classes or jars from mutable
+  workspace `build/` output. On Windows a live mutable classpath locks `classes.jar`; concurrent
+  compile/verification can then fail or replace lazily loaded bytecode.
+- Require the launch line `[ARES-FTC] Isolated simulator runtime classpath at ...` before treating
+  a developer run as rebuild-safe. A green compile or `:simulator:test` does not exercise this
+  long-running runtime contract.
+- Never start a second simulator merely because Analytics does not own the process. If Local Sim is
+  already online on port 5810, use the existing server or stop it from the process that launched it.
+  A second `runSim` can fail during compilation or NT4 binding while the first server remains alive.
+- Keep `LocalSimulatorControlBar` visible above the configurable Dashboard grid for an FTC Local
+  Sim target. Saved/custom layouts may omit or place the full Driver Station and Gamepad Monitor
+  widgets below the fold; those layouts must not hide the required start/arm path.
+- When Local Sim is offline, that strip's primary action must be the labeled **Launch simulator**
+  button wired to the same guarded `ProcessManagerService.runSimulation` path as the execution
+  toolbar. Do not send users to an icon-only toolbar control or leave a disabled **Start driving**
+  button as the only apparent action. While the managed process starts, show the connecting state;
+  after NT4 connects, replace the primary action with **Start driving**.
+- A fresh Analytics session has no successful build evidence. If the current authored project is
+  eligible for verification but simulation is blocked only by that missing evidence, the strip must
+  offer **Verify & launch**. It runs the existing compile-only verification, launches automatically
+  only after a successful result, and leaves the simulator stopped after failure or cancellation.
+- Keep the window-level `DesktopDriveKeyDispatcher`. Compose buttons, dropdowns, and text fields may
+  own focus and consume keys before a root `onPreviewKeyEvent` modifier observes them. The dispatcher
+  must remain inert unless Dashboard is active, Local Sim is selected and connected through a
+  loopback host, local control is armed, and keyboard mode is selected. Focus, target, connection,
+  page, and arm-state changes must neutralize every latched input immediately.
+- Dashboard/simulator drive publication is a loopback-only capability. Keep the non-loopback rejection
+  inside `Nt4ClientService.publishDriveFrame`, in addition to UI gating, so stale Compose state cannot
+  send motion to a physical Control Hub or roboRIO. Do not broaden this allowlist beyond
+  `127.0.0.1`, `localhost`, and `::1`.
+- Do not weaken the neutral v2 `ARES/Input/driveFrame` handshake, session/sequence monotonicity,
+  receiver lease, or explicit arm to make a demo move. If publication pauses long enough to exceed
+  the receiver lease, begin a new session and publish at least five neutral frames (100 ms at 50 Hz)
+  before resuming motion. A single 20 ms neutral frame can fall entirely between receiver polls and
+  permanently disarm that session.
+- Treat control, raw telemetry, and UI telemetry as three independent rate domains. The
+  `ARES/Input/driveFrame` control heartbeat is safety-critical and stays at 50 Hz; its send path must
+  never synchronously write `TelemetryStore`, touch a database, update Compose state, or wait behind
+  inbound telemetry. `Nt4ClientService.telemetryFlow` is the full-rate stream for recording and
+  analysis services. Compose UI consumers must use `Nt4ClientService.uiTelemetryFlow`, which keeps
+  only the latest value per topic and fans it out at 20 Hz.
+- `DriveFrameTelemetryRecorder` is intentionally a lossy, background side channel. It records only
+  `vx`, `vy`, and `omega` at 10 Hz for charts/history. Do not restore the previous behavior that
+  flattened all eight drive-frame fields into synchronous telemetry writes on every 50 Hz control
+  tick; that created hundreds of contended writes per second and periodically expired the simulator
+  input lease.
+- `VisionState.measurements` is ordered oldest to newest. Any current-pose telemetry derived from
+  that buffer must select a fresh `lastOrNull()` measurement, never `firstOrNull()`. Publishing the
+  oldest entry produces the visibly trailing dotted EKF/vision ghost even though estimation itself
+  is current.
+
+### Mandatory FTC simulator verification
+
+1. Preserve unrelated edits, especially `ARES-FTC/TeamCode/src/main/assets/paths/field.json`.
+2. Launch `ARES-FTC\.\gradlew.bat :TeamCode:runSim` and require the isolated-runtime line, NT4
+   startup on 5810, Driver Station Server Mode, and the published TeleOp/Auto counts.
+3. While that exact simulator remains alive, rerun
+   `:FtcRobotController:bundleLibCompileToJarDebug --rerun-tasks`. It must succeed and the simulator
+   must remain alive; otherwise the runtime is still using mutable build output.
+4. Launch/capture Analytics through the §7 workflow. On Dashboard, require the Local Simulator strip
+   to name a TeleOp and explain that an online server can still be waiting for a TeleOp.
+5. Choose a drive-capable TeleOp, use **Start driving**, and require simulator logs for the selected
+   class, `INIT`, successful initialization, `START`, and `OpMode STARTED`.
+6. Verify the strip reports `TELEOP RUNNING` and `ARMED`. Hold W briefly, release W,
+   and prove `ARES/TruePose` changed and then settled. A button state, transmitted frame, changing
+   chart, or live JVM alone is not proof of physical simulated motion.
+7. Stop the OpMode, close Analytics through its window, stop `runSim`, and confirm neither JVM remains.
+
+## 8. Working in This Workspace — Checklist
 
 - **Fresh checkout?** Run `.\setup.ps1` (Windows) or `./setup.sh` (macOS/Linux) to clone all four subprojects as siblings of this file. Idempotent — existing dirs are skipped.
 - **Changing ARESLib?** Run `apiCheck publishReleaseValidation` in `ARESLib-Kotlin/`, then rebuild consumers with `-ParesRepository=<absolute validation-repository path>`. Source substitution requires explicit `-ParesUseSiblingLib=true`.
@@ -195,9 +340,10 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 - **Writing a hot-path (robot or sim)?** Zero allocations. Use buffers/pools, `RobotClock`, `when` over nested `if`.
 - **Adding a subsystem?** Follow the 6-file Redux pattern (State/Action/Reducer/IO interface/Ftc-or-Frc IO/Mock IO/Controller). See `ARES-FTC/TeamCode/.../test/tools/SubsystemGenerator.kt`.
 - **Cloud/sync code?** Remember offline-first: robot serves `LogManagerServer:5002`; the laptop pulls then syncs. Never push from robot.
+- **Analytics launches but shows no window?** Follow §7 and the Compose desktop tester startup-recovery reference. Check for an orphaned lock owner before changing rendering or UI code.
 - **Tests:** JUnit 5 everywhere. ARESLib has tiered E2E + `ZeroGcRegressionTest`; ARES-FRC/FTC have subsystem & sim tests. Run with `.\gradlew.bat test` (per-module: `:core:test`, `:TeamCode:test`, etc.).
 
-## 8. Key File Lookup
+## 9. Key File Lookup
 
 | Need | Go to |
 |---|---|
@@ -215,7 +361,7 @@ Compose Multiplatform desktop dashboard + Ktor cloud gateway. Kotlin 2.0.21, Com
 | Gateway HTTP surface | `ARES-Analytics/gateway/.../Application.kt`, `routes/DiagnosticsRoutes.kt` |
 | PathPlanner file format | `ARES-Analytics/shared/.../PathPlannerModels.kt`, `ARESLib-Kotlin/core/.../pathing/PathPlannerParser.kt` |
 
-## 9. Engineering Truthfulness & Anti-Hallucination Directives
+## 10. Engineering Truthfulness & Anti-Hallucination Directives
 
 All agents operating in this workspace must adhere to strict factual precision:
 - **Zero Hyperbole:** Never use promotional or celebratory adjectives (e.g. "PERFECT TUNE!", "flawless", "100% no-code"). State exact engineering facts, line numbers, and limitations.
