@@ -31,20 +31,6 @@ class ProjectMetadataRepository {
 
     fun rawContentHash(projectPath: String): String = sha256(file(projectPath).readBytes())
 
-    /** Builds a reviewed schema migration candidate without changing either legacy file. */
-    fun legacyMigrationCandidate(projectPath: String): Result<AresProjectMetadataDocument> = runCatching {
-        val projectFile = file(projectPath)
-        require(projectFile.isFile) { "Legacy .ares/project.json is missing." }
-        val identityFile = resolveProjectPath(projectPath, ".ares-robot.json")
-        require(identityFile.isFile) {
-            "This project uses an older identity schema, but .ares-robot.json is missing. Restore it or enter a reviewed repair manually."
-        }
-        AresProjectMetadataCodec.migrateLegacy(
-            projectJson = projectFile.readText(),
-            legacyIdentity = AresProjectMetadataCodec.decodeLegacyIdentity(identityFile.readText()),
-        )
-    }
-
     fun save(projectPath: String, document: AresProjectMetadataDocument): String {
         val encoded = AresProjectMetadataCodec.encode(document)
         AtomicProjectFileWriter.write(file(projectPath), encoded, replaceExisting = true)
@@ -127,7 +113,6 @@ class ProjectMetadataRepository {
                 )
             }
             AtomicProjectFileWriter.write(target, AresProjectMetadataCodec.encode(normalized), replaceExisting = true)
-            retireLegacyIdentity(projectPath)
             SavedProjectMetadata(
                 document = normalized,
                 contentHash = AresProjectMetadataCodec.contentHash(normalized),
@@ -142,22 +127,6 @@ class ProjectMetadataRepository {
         decodeProjectMetadata(bytes.toString(Charsets.UTF_8))
     }.isFailure
 
-    private fun retireLegacyIdentity(projectPath: String) {
-        val legacy = resolveProjectPath(projectPath, ".ares-robot.json")
-        if (!legacy.isFile) return
-        val bytes = legacy.readBytes()
-        val hash = sha256(bytes)
-        val recovery = resolveProjectPath(projectPath, ".ares/recovery/identity/$hash.ares-robot.json")
-        when {
-            !recovery.exists() -> AtomicProjectFileWriter.write(recovery, bytes, replaceExisting = false)
-            !recovery.readBytes().contentEquals(bytes) -> error(
-                "Legacy identity recovery collision at ${recovery.path}; the retired file was not removed.",
-            )
-        }
-        check(legacy.delete()) {
-            "The canonical identity was repaired, but the retired .ares-robot.json could not be removed. Its recovery copy is at ${recovery.path}."
-        }
-    }
 }
 
 /** Adds a stable, student-facing shape check before the library codec touches non-null Kotlin fields. */
@@ -170,12 +139,15 @@ internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
     val required = listOf(
         "schemaVersion",
         "projectId",
+        "identity",
         "league",
         "coordinateConvention",
         "robotLengthMeters",
         "robotWidthMeters",
         "fieldLengthMeters",
         "fieldWidthMeters",
+        "authoringModel",
+        "runtimeOptions",
     )
     val missing = required.filter { field -> objectValue[field] == null || objectValue[field] is JsonNull }
     require(missing.isEmpty()) {
@@ -197,7 +169,7 @@ internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
     require(convention == "CENTER_ORIGIN_CCW" || convention == "BLUE_CORNER_ORIGIN_CCW") {
         "Project metadata field 'coordinateConvention' is not supported."
     }
-    required.takeLast(4).forEach { field ->
+    listOf("robotLengthMeters", "robotWidthMeters", "fieldLengthMeters", "fieldWidthMeters").forEach { field ->
         val value = primitive(field)
         require(!value.isString && value.doubleOrNull != null) {
             "Project metadata field '$field' must be a number in meters."

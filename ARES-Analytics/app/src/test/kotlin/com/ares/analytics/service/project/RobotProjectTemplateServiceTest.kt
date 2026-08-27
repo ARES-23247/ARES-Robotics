@@ -143,26 +143,6 @@ class RobotProjectTemplateServiceTest {
     }
 
     @Test
-    fun `bundled legacy starter is migrated before personalization and never publishes duplicate identity`() = runBlocking {
-        val root = Files.createTempDirectory("ares-project-legacy-template-test").toFile()
-        try {
-            val archive = validLegacyFtcArchive()
-            val service = service(root, archive)
-            val parent = File(root, "robots").apply { mkdirs() }
-
-            val result = service.create(request(parent, "migrated-student-robot"))
-
-            assertFalse(File(result.destination, ".ares-robot.json").exists())
-            val metadata = AresProjectMetadataCodec.decode(File(result.destination, ".ares/project.json").readText())
-            assertEquals(3, metadata.schemaVersion)
-            assertEquals("23247", metadata.identity.teamId)
-            assertEquals("StudentBot", metadata.identity.robotId)
-        } finally {
-            root.deleteRecursively()
-        }
-    }
-
-    @Test
     fun `staged project preparation completes before publish and rolls back atomically on failure`() = runBlocking {
         val root = Files.createTempDirectory("ares-project-history-staging-test").toFile()
         try {
@@ -522,49 +502,6 @@ class RobotProjectTemplateServiceTest {
             "fixture-root/.ares/drivetrains/template.aresdrivetrain" to DrivetrainDocumentCodec.encode(drivebase),
             "fixture-root/.ares/tuning/competition.arestuning" to
                 TuningProfileDocumentCodec.encode(profile, drivebase.parameters),
-            "fixture-root/.ares-robot.json" to "{}\n",
-        )
-    }
-
-    private fun validLegacyFtcArchive(): ByteArray {
-        val metadata = """{
-          "schemaVersion": 2,
-          "projectId": "template-project",
-          "league": "FTC",
-          "coordinateConvention": "CENTER_ORIGIN_CCW",
-          "robotLengthMeters": 0.45,
-          "robotWidthMeters": 0.45,
-          "fieldLengthMeters": 3.65,
-          "fieldWidthMeters": 3.65,
-          "runtimeOptions": {"ftc": {"hubCommandTransport": "STANDARD_SDK", "limelightProxyEnabled": false}}
-        }""".trimIndent()
-        val drivebase = defaultDrivebase("template-project", DrivebaseKind.FTC_MECANUM).toCanonicalDrivebase()
-        val profile = TuningProfileDocument(
-            uid = drivebase.canonicalProfileUid,
-            profileId = "competition",
-            displayName = "Competition",
-            description = "Reviewed fixture tuning",
-            projectUid = drivebase.canonicalProfileUid.substringBefore(".profile."),
-            drivebaseUid = drivebase.uid,
-            authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
-            values = emptyList(),
-        )
-        return zipOf(
-            "fixture-root/settings.gradle" to "include ':TeamCode'\n",
-            "fixture-root/gradle.properties" to "aresVersion=test\n",
-            "fixture-root/TeamCode/src/main/java/example/Robot.kt" to "package example\nclass Robot\n",
-            "fixture-root/.ares/project.json" to metadata,
-            "fixture-root/.ares/action-catalog.json" to CapabilityCatalogCodec.encode(
-                CapabilityCatalogDocument(projectId = "template-project"),
-            ),
-            "fixture-root/.ares/autonomous-catalog.json" to AutonomousCatalogCodec.encode(
-                AutonomousCatalogDocument(projectId = "template-project", entries = emptyList()),
-            ),
-            "fixture-root/.ares/drivetrains/template.aresdrivetrain" to DrivetrainDocumentCodec.encode(drivebase),
-            "fixture-root/.ares/tuning/competition.arestuning" to
-                TuningProfileDocumentCodec.encode(profile, drivebase.parameters),
-            "fixture-root/.ares-robot.json" to
-                """{"teamId":"99999","seasonId":"2026","robotId":"template-robot","name":"Template Robot","league":"FTC"}""",
         )
     }
 

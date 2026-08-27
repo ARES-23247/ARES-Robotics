@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "projectId": "team23247-marvin-xix",
   "identity": {
     "teamId": "23247",
@@ -13,5 +13,6 @@
   "robotWidthMeters": 0.8,
   "fieldLengthMeters": 16.54175,
   "fieldWidthMeters": 8.21055,
+  "authoringModel": "HYBRID",
   "runtimeOptions": {}
 }

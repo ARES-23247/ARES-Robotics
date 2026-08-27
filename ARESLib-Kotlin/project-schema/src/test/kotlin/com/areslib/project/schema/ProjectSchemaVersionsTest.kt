@@ -21,14 +21,11 @@ class ProjectSchemaVersionsTest {
     }
 
     @Test
-    fun `legacy metadata is the only currently declared migration path`() {
+    fun `all non-current metadata versions are unsupported`() {
         assertEquals(ARES_PROJECT_METADATA_SCHEMA_VERSION, ProjectSchemaVersions.policy(ProjectDocumentKind.PROJECT_METADATA)?.currentVersion)
-        assertEquals(ProjectSchemaDisposition.MIGRATION_REQUIRED, ProjectSchemaVersions.disposition(ProjectDocumentKind.PROJECT_METADATA, 1))
-        assertEquals(ProjectSchemaDisposition.MIGRATION_REQUIRED, ProjectSchemaVersions.disposition(ProjectDocumentKind.PROJECT_METADATA, 2))
+        assertEquals(ProjectSchemaDisposition.UNSUPPORTED, ProjectSchemaVersions.disposition(ProjectDocumentKind.PROJECT_METADATA, 1))
+        assertEquals(ProjectSchemaDisposition.UNSUPPORTED, ProjectSchemaVersions.disposition(ProjectDocumentKind.PROJECT_METADATA, 2))
+        assertEquals(ProjectSchemaDisposition.UNSUPPORTED, ProjectSchemaVersions.disposition(ProjectDocumentKind.PROJECT_METADATA, 3))
         assertEquals(ProjectSchemaDisposition.UNSUPPORTED, ProjectSchemaVersions.disposition(ProjectDocumentKind.PROJECT_METADATA, 0))
-
-        ProjectDocumentKind.entries
-            .filterNot { it == ProjectDocumentKind.PROJECT_METADATA || it == ProjectDocumentKind.FIELD }
-            .forEach { kind -> assertEquals(emptySet<Int>(), ProjectSchemaVersions.policy(kind)?.migratableFrom, kind.name) }
     }
 }

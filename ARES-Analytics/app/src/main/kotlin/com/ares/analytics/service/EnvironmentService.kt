@@ -107,17 +107,10 @@ class EnvironmentService(
                 // unbounded filesystem crawl.
                 .take(MAX_PROJECT_SEARCH_ENTRIES)
                 .filter { file ->
-                    file.isFile && (
-                        (file.name == PROJECT_METADATA_FILE && file.parentFile?.name == ".ares") ||
-                            file.name == LEGACY_ARES_ROBOT_FILE
-                        )
+                    file.isFile && file.name == PROJECT_METADATA_FILE && file.parentFile?.name == ".ares"
                 }
                 .mapNotNull { identityFile ->
-                    val candidate = if (identityFile.name == PROJECT_METADATA_FILE) {
-                        identityFile.parentFile?.parentFile?.canonicalFile
-                    } else {
-                        identityFile.parentFile?.canonicalFile
-                    } ?: return@mapNotNull null
+                    val candidate = identityFile.parentFile?.parentFile?.canonicalFile ?: return@mapNotNull null
                     val identity = readProjectIdentityBlocking(candidate.path) ?: return@mapNotNull null
                     candidate.takeIf {
                         identity.matches(config) && ProjectLayout.containsRobotSource(candidate, config.league)
@@ -146,8 +139,7 @@ class EnvironmentService(
      * project exists, .ares/project.json wins and the cache is refreshed before use or save.
      */
     private fun synchronizeCanonicalIdentity(config: WorkspaceConfig): WorkspaceConfig {
-        val identity = readProjectIdentityBlocking(config.projectPath)?.takeIf { it.canonical }
-            ?: return config
+        val identity = readProjectIdentityBlocking(config.projectPath) ?: return config
         return config.copy(
             teamId = identity.teamId,
             seasonId = identity.seasonId,
@@ -260,7 +252,7 @@ class EnvironmentService(
         }
     }
 
-    /** Reads the canonical identity first; the retired root file is migration-only fallback. */
+    /** Reads the one canonical project identity. Unsupported schemas fail closed. */
     suspend fun readProjectIdentity(projectPath: String): DetectedProjectIdentity? = withContext(Dispatchers.IO) {
         readProjectIdentityBlocking(projectPath)
     }
@@ -275,15 +267,10 @@ class EnvironmentService(
                     robotId = project.identity.robotId,
                     name = project.identity.displayName,
                     league = project.league.name,
-                    canonical = true,
                 )
             }
         }
-        val legacy = File(projectPath, LEGACY_ARES_ROBOT_FILE)
-        if (!legacy.isFile) return null
-        return runCatching { json.decodeFromString<LegacyAresRobotConfig>(legacy.readText()) }
-            .getOrNull()
-            ?.let { DetectedProjectIdentity(it.teamId, it.seasonId, it.robotId, it.name, it.league, canonical = false) }
+        return null
     }
 }
 
@@ -299,19 +286,8 @@ data class DetectedProjectIdentity(
     val robotId: String,
     val name: String = "",
     val league: String = "FTC",
-    val canonical: Boolean,
 )
 
-@kotlinx.serialization.Serializable
-private data class LegacyAresRobotConfig(
-    val teamId: String,
-    val seasonId: String,
-    val robotId: String,
-    val name: String = "",
-    val league: String = "FTC",
-)
-
-private const val LEGACY_ARES_ROBOT_FILE = ".ares-robot.json"
 private const val PROJECT_METADATA_FILE = "project.json"
 private const val PROJECT_SEARCH_DEPTH = 4
 private const val MAX_PROJECT_SEARCH_ENTRIES = 5_000

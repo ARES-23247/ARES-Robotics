@@ -35,7 +35,7 @@ left absent.
 ## What is personalized
 
 - `.ares/project.json`: the single canonical team, season, robot, display-name, league, coordinate,
-  and stable-project identity source, while retaining the reviewed league coordinate convention
+  authoring model, and stable-project identity source, while retaining the reviewed league coordinate convention
   and starter geometry until the student measures and reviews the real robot dimensions.
 - `.ares/drivetrains/*.aresdrivetrain` and `.ares/tuning/*.arestuning`: robot-, drivebase-, and
   profile-level UIDs are rebound to this team, league, season, and robot. Parameter/component IDs
@@ -44,9 +44,9 @@ left absent.
 - FTC `local.properties`: when an installed Android SDK is found, ARES records its machine-local
   path so the new project can build without copying settings from another repository.
 
-No Kotlin source file is rewritten during personalization. Retired `.ares-robot.json` identity is
-never created for a new project. Canonical documents are decoded,
-rewritten through their typed codecs, and validated as one identity graph. Generated mechanisms
+No Kotlin source file is rewritten during personalization. Canonical documents are decoded,
+rewritten through their typed codecs, and validated as one identity graph; unsupported schemas
+fail closed rather than entering a legacy migration path. Generated mechanisms
 still use Robot Studio's normal preview, ownership headers, confirmation tokens, tests, and
 generated-source boundaries.
 

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.security.MessageDigest
 
-const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 3
+const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 4
 
 enum class AresLeague { FTC, FRC }
 
@@ -27,15 +27,6 @@ data class AresProjectIdentityDocument(
     val seasonId: String,
     val robotId: String,
     val displayName: String,
-)
-
-/** Input used only to migrate the retired root `.ares-robot.json` document. */
-data class AresLegacyRobotIdentityDocument(
-    val teamId: String,
-    val seasonId: String,
-    val robotId: String,
-    val name: String,
-    val league: AresLeague,
 )
 
 /** FTC hub-command transport selected by the canonical project document. */
@@ -154,17 +145,10 @@ object AresProjectMetadataCodec {
             throw IllegalArgumentException("Project metadata is not valid JSON: ${error.message}", error)
         }
         val schemaVersion = root.requiredInt("schemaVersion")
-        val document = when (schemaVersion) {
-            ARES_PROJECT_METADATA_SCHEMA_VERSION -> decodeCommon(
-                root,
-                schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,
-                legacy = false,
-            )
-            1, 2 -> throw IllegalArgumentException(
-                "Project metadata schema $schemaVersion requires migration from .ares-robot.json to canonical .ares/project.json identity",
-            )
-            else -> throw IllegalArgumentException("Unsupported project metadata schema $schemaVersion")
+        require(schemaVersion == ARES_PROJECT_METADATA_SCHEMA_VERSION) {
+            "Unsupported project metadata schema $schemaVersion; create or export a current ARES project"
         }
+        val document = decodeCurrent(root)
         requireValid(document)
         return document
     }
@@ -172,51 +156,6 @@ object AresProjectMetadataCodec {
     fun contentHash(document: AresProjectMetadataDocument): String = MessageDigest.getInstance("SHA-256")
         .digest(encode(document).toByteArray(Charsets.UTF_8))
         .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
-
-    /** Decodes the retired root identity file solely for an explicit migration to schema 3. */
-    fun decodeLegacyIdentity(json: String): AresLegacyRobotIdentityDocument {
-        val root = try {
-            gson.fromJson(json, JsonObject::class.java)
-        } catch (error: Exception) {
-            throw IllegalArgumentException("Legacy .ares-robot.json is not valid JSON: ${error.message}", error)
-        }
-        return AresLegacyRobotIdentityDocument(
-            teamId = root.requiredString("teamId"),
-            seasonId = root.requiredString("seasonId"),
-            robotId = root.requiredString("robotId"),
-            name = root.requiredString("name"),
-            league = root.requiredEnum("league"),
-        )
-    }
-
-    /** Deterministically combines legacy geometry and identity without guessing missing values. */
-    fun migrateLegacy(
-        projectJson: String,
-        legacyIdentity: AresLegacyRobotIdentityDocument,
-    ): AresProjectMetadataDocument {
-        val root = try {
-            gson.fromJson(projectJson, JsonObject::class.java)
-        } catch (error: Exception) {
-            throw IllegalArgumentException("Project metadata is not valid JSON: ${error.message}", error)
-        }
-        val version = root.requiredInt("schemaVersion")
-        require(version == 1 || version == 2) { "Project metadata schema $version is not a legacy identity document" }
-        val legacyDocument = decodeCommon(root, schemaVersion = version, legacy = version == 1, requireIdentity = false)
-        require(legacyDocument.league == legacyIdentity.league) {
-            "Legacy identity league ${legacyIdentity.league} conflicts with project league ${legacyDocument.league}"
-        }
-        return normalize(
-            legacyDocument.copy(
-                schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,
-                identity = AresProjectIdentityDocument(
-                    teamId = legacyIdentity.teamId,
-                    seasonId = legacyIdentity.seasonId,
-                    robotId = legacyIdentity.robotId,
-                    displayName = legacyIdentity.name,
-                ),
-            ),
-        ).also(::requireValid)
-    }
 
     private fun requireValid(document: AresProjectMetadataDocument) {
         val issues = validateAresProjectMetadata(document)
@@ -231,50 +170,32 @@ object AresProjectMetadataCodec {
         AresLeague.FRC -> document.copy(schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION)
     }
 
-    private fun decodeCommon(
-        root: JsonObject,
-        schemaVersion: Int,
-        legacy: Boolean,
-        requireIdentity: Boolean = true,
-    ): AresProjectMetadataDocument {
+    private fun decodeCurrent(root: JsonObject): AresProjectMetadataDocument {
         val league = root.requiredEnum<AresLeague>("league")
-        val identity = root.get("identity")?.takeUnless { it.isJsonNull }?.let { element ->
-            require(element.isJsonObject) { "Project metadata field 'identity' must be an object" }
-            val value = element.asJsonObject
+        val identity = root.requiredObject("identity").let { value ->
             AresProjectIdentityDocument(
                 teamId = value.requiredString("teamId"),
                 seasonId = value.requiredString("seasonId"),
                 robotId = value.requiredString("robotId"),
                 displayName = value.requiredString("displayName"),
             )
-        } ?: run {
-            require(!requireIdentity) { "Project metadata is missing required field 'identity'" }
-            AresProjectIdentityDocument("", "", "", "")
         }
-        val runtimeOptions = if (legacy) {
-            if (league == AresLeague.FTC) {
-                AresRuntimeOptionsDocument(ftc = AresFtcRuntimeOptionsDocument())
-            } else {
-                AresRuntimeOptionsDocument()
-            }
-        } else {
-            val runtime = root.requiredObject("runtimeOptions")
-            val ftc = runtime.get("ftc")?.takeUnless { it.isJsonNull }?.let { element ->
-                require(element.isJsonObject) { "Project metadata field 'runtimeOptions.ftc' must be an object or null" }
-                val value = element.asJsonObject
-                AresFtcRuntimeOptionsDocument(
-                    hubCommandTransport = value.requiredEnum("hubCommandTransport"),
-                    limelightProxyEnabled = value.requiredBoolean("limelightProxyEnabled"),
-                )
-            }
-            require(league != AresLeague.FTC || ftc != null) {
-                "FTC project metadata must declare 'runtimeOptions.ftc'"
-            }
-            AresRuntimeOptionsDocument(ftc = ftc)
+        val runtime = root.requiredObject("runtimeOptions")
+        val ftc = runtime.get("ftc")?.takeUnless { it.isJsonNull }?.let { element ->
+            require(element.isJsonObject) { "Project metadata field 'runtimeOptions.ftc' must be an object or null" }
+            val value = element.asJsonObject
+            AresFtcRuntimeOptionsDocument(
+                hubCommandTransport = value.requiredEnum("hubCommandTransport"),
+                limelightProxyEnabled = value.requiredBoolean("limelightProxyEnabled"),
+            )
         }
+        require(league != AresLeague.FTC || ftc != null) {
+            "FTC project metadata must declare 'runtimeOptions.ftc'"
+        }
+        val runtimeOptions = AresRuntimeOptionsDocument(ftc = ftc)
         return normalize(
             AresProjectMetadataDocument(
-                schemaVersion = schemaVersion,
+                schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,
                 projectId = root.requiredString("projectId"),
                 identity = identity,
                 league = league,
@@ -283,7 +204,7 @@ object AresProjectMetadataCodec {
                 robotWidthMeters = root.requiredDouble("robotWidthMeters"),
                 fieldLengthMeters = root.requiredDouble("fieldLengthMeters"),
                 fieldWidthMeters = root.requiredDouble("fieldWidthMeters"),
-                authoringModel = root.optionalEnum("authoringModel") ?: AresProjectAuthoringModel.GUI_OWNED,
+                authoringModel = root.requiredEnum("authoringModel"),
                 runtimeOptions = runtimeOptions,
             ),
         )
@@ -328,16 +249,6 @@ private fun JsonObject.requiredDouble(name: String): Double = requiredPrimitive(
 
 private inline fun <reified T : Enum<T>> JsonObject.requiredEnum(name: String): T {
     val raw = requiredString(name)
-    return enumValues<T>().firstOrNull { it.name == raw }
-        ?: throw IllegalArgumentException("Project metadata field '$name' has unsupported value '$raw'")
-}
-
-private inline fun <reified T : Enum<T>> JsonObject.optionalEnum(name: String): T? {
-    val element = get(name)?.takeUnless { it.isJsonNull } ?: return null
-    require(element.isJsonPrimitive && element.asJsonPrimitive.isString) {
-        "Project metadata field '$name' must be a string"
-    }
-    val raw = element.asString
     return enumValues<T>().firstOrNull { it.name == raw }
         ?: throw IllegalArgumentException("Project metadata field '$name' has unsupported value '$raw'")
 }

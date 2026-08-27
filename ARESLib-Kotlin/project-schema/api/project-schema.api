@@ -1120,25 +1120,6 @@ public final class com/areslib/project/AresLeague : java/lang/Enum {
 	public static fun values ()[Lcom/areslib/project/AresLeague;
 }
 
-public final class com/areslib/project/AresLegacyRobotIdentityDocument {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/AresLeague;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Lcom/areslib/project/AresLeague;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/AresLeague;)Lcom/areslib/project/AresLegacyRobotIdentityDocument;
-	public static synthetic fun copy$default (Lcom/areslib/project/AresLegacyRobotIdentityDocument;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/AresLeague;ILjava/lang/Object;)Lcom/areslib/project/AresLegacyRobotIdentityDocument;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getLeague ()Lcom/areslib/project/AresLeague;
-	public final fun getName ()Ljava/lang/String;
-	public final fun getRobotId ()Ljava/lang/String;
-	public final fun getSeasonId ()Ljava/lang/String;
-	public final fun getTeamId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/areslib/project/AresProjectAuthoringModel : java/lang/Enum {
 	public static final field CODE_FIRST Lcom/areslib/project/AresProjectAuthoringModel;
 	public static final field GUI_OWNED Lcom/areslib/project/AresProjectAuthoringModel;
@@ -1169,9 +1150,7 @@ public final class com/areslib/project/AresProjectMetadataCodec {
 	public static final field INSTANCE Lcom/areslib/project/AresProjectMetadataCodec;
 	public final fun contentHash (Lcom/areslib/project/AresProjectMetadataDocument;)Ljava/lang/String;
 	public final fun decode (Ljava/lang/String;)Lcom/areslib/project/AresProjectMetadataDocument;
-	public final fun decodeLegacyIdentity (Ljava/lang/String;)Lcom/areslib/project/AresLegacyRobotIdentityDocument;
 	public final fun encode (Lcom/areslib/project/AresProjectMetadataDocument;)Ljava/lang/String;
-	public final fun migrateLegacy (Ljava/lang/String;Lcom/areslib/project/AresLegacyRobotIdentityDocument;)Lcom/areslib/project/AresProjectMetadataDocument;
 }
 
 public final class com/areslib/project/AresProjectMetadataDocument {
@@ -1320,7 +1299,6 @@ public final class com/areslib/project/schema/ProjectIdentityKt {
 
 public final class com/areslib/project/schema/ProjectSchemaDisposition : java/lang/Enum {
 	public static final field CURRENT Lcom/areslib/project/schema/ProjectSchemaDisposition;
-	public static final field MIGRATION_REQUIRED Lcom/areslib/project/schema/ProjectSchemaDisposition;
 	public static final field UNSUPPORTED Lcom/areslib/project/schema/ProjectSchemaDisposition;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/schema/ProjectSchemaDisposition;
@@ -1328,16 +1306,13 @@ public final class com/areslib/project/schema/ProjectSchemaDisposition : java/la
 }
 
 public final class com/areslib/project/schema/ProjectSchemaVersionPolicy {
-	public fun <init> (ILjava/util/Set;)V
-	public synthetic fun <init> (ILjava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (I)V
 	public final fun component1 ()I
-	public final fun component2 ()Ljava/util/Set;
-	public final fun copy (ILjava/util/Set;)Lcom/areslib/project/schema/ProjectSchemaVersionPolicy;
-	public static synthetic fun copy$default (Lcom/areslib/project/schema/ProjectSchemaVersionPolicy;ILjava/util/Set;ILjava/lang/Object;)Lcom/areslib/project/schema/ProjectSchemaVersionPolicy;
+	public final fun copy (I)Lcom/areslib/project/schema/ProjectSchemaVersionPolicy;
+	public static synthetic fun copy$default (Lcom/areslib/project/schema/ProjectSchemaVersionPolicy;IILjava/lang/Object;)Lcom/areslib/project/schema/ProjectSchemaVersionPolicy;
 	public final fun disposition (I)Lcom/areslib/project/schema/ProjectSchemaDisposition;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCurrentVersion ()I
-	public final fun getMigratableFrom ()Ljava/util/Set;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

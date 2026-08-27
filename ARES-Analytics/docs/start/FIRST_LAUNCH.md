@@ -14,8 +14,8 @@ Have these ready:
 - Your team number, season, and robot name or ID.
 
 Choose the robot project itself, not the four-project `ares` workspace and not the `ARES-Analytics`
-folder. A current project contains canonical `.ares/project.json`. Studio can offer a reviewed,
-recoverable migration when an older project still has `.ares-robot.json`.
+folder. A current project contains canonical schema-4 `.ares/project.json` with an explicit
+authoring model. Older project schemas are intentionally unsupported before public rollout.
 
 If you are developing from source, launch from `ARES-Analytics`:
 

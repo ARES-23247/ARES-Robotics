@@ -313,11 +313,8 @@ class OnboardingViewModel(
                     robotName = robotConfig.name,
                     league = detectedLeague,
                     nt4Host = environmentService.getDefaultNt4Host(detectedLeague, robotConfig.teamId),
-                    projectDetectionMessage = if (robotConfig.canonical) {
-                        "Project found. We filled in the ${detectedLeague.name} robot details from canonical .ares/project.json."
-                    } else {
-                        "Legacy project found. Review the identity migration in Robot Studio before generating code."
-                    },
+                    projectDetectionMessage =
+                        "Project found. We filled in the ${detectedLeague.name} robot details from canonical .ares/project.json.",
                     fieldErrors = OnboardingFieldErrors(),
                     currentStep = advanceAfterDetection(it.currentStep, recognizedProject = true),
                 )

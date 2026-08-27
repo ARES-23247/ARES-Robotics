@@ -140,7 +140,7 @@ class ProjectIdentityViewModel(
         val current = _state.value
         if (field in STABLE_IDENTITY_FIELDS && current.currentDocument != null) {
             _state.value = current.copy(
-                message = "The saved project ID is stable. Create a reviewed migration instead of renaming it here.",
+                message = "The saved project ID is stable. Create a new project instead of renaming this identity.",
                 messageIsError = false,
             )
             return
@@ -355,12 +355,9 @@ class ProjectIdentityViewModel(
         }
         val corruptError = currentResult.exceptionOrNull()?.takeIf { file.isFile }
         val corruptHash = corruptError?.let { repository.rawContentHash(config.projectPath) }
-        val migrationCandidate = corruptError?.let {
-            repository.legacyMigrationCandidate(config.projectPath).getOrNull()
-        }
         val projectSourceError = ProjectLayout.validationError(config.projectPath, config.league)
         val mismatch = current?.takeIf { it.league != config.league.toAresLeague() }
-        val draft = projectIdentityDraft(config, current ?: migrationCandidate)
+        val draft = projectIdentityDraft(config, current)
         val validation = validateProjectIdentityDraft(config.league, draft)
         return ProjectIdentityEditorState(
             loading = false,
@@ -375,11 +372,7 @@ class ProjectIdentityViewModel(
             projectSourceError = projectSourceError,
             protectedError = when {
                 corruptError != null ->
-                    if (migrationCandidate != null) {
-                        "This project uses the retired split identity format. Review the migration: ARES will preserve both legacy files under .ares/recovery, replace .ares/project.json, and remove the duplicate root identity."
-                    } else {
-                        "The existing .ares/project.json cannot be used: ${corruptError.message}. Its exact bytes remain unchanged. Enter the measured robot dimensions, review the repair, and ARES will preserve the original under .ares/recovery/project before replacing it."
-                    }
+                    "The existing .ares/project.json cannot be used: ${corruptError.message}. Its exact bytes remain unchanged. Enter the measured robot dimensions, review the repair, and ARES will preserve the original under .ares/recovery/project before replacing it."
                 mismatch != null ->
                     "The canonical project is ${mismatch.league}, but this workspace is ${config.league}. Select the correct workspace league; ARES will not rewrite platform identity automatically."
                 else -> null

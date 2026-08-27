@@ -250,22 +250,7 @@ class RobotProjectTemplateService(
 
         val metadataFile = File(root, ".ares/project.json")
         check(metadataFile.isFile) { "The reviewed starter is missing .ares/project.json." }
-        val retiredIdentity = File(root, ".ares-robot.json")
-        val metadataText = metadataFile.readText()
-        val oldMetadata = runCatching { AresProjectMetadataCodec.decode(metadataText) }.getOrElse { decodeError ->
-            check(retiredIdentity.isFile) {
-                "The starter's canonical project identity is invalid and no reviewed legacy identity is available: ${decodeError.message}"
-            }
-            runCatching {
-                AresProjectMetadataCodec.migrateLegacy(
-                    projectJson = metadataText,
-                    legacyIdentity = AresProjectMetadataCodec.decodeLegacyIdentity(retiredIdentity.readText()),
-                )
-            }.getOrElse { migrationError ->
-                migrationError.addSuppressed(decodeError)
-                throw migrationError
-            }
-        }
+        val oldMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
         val expectedLeague = if (request.league == League.FTC) AresLeague.FTC else AresLeague.FRC
         check(oldMetadata.league == expectedLeague) { "The starter's project metadata has the wrong league." }
         val personalizedProjectId = projectId(request.teamId, request.robotId)
@@ -280,9 +265,6 @@ class RobotProjectTemplateService(
             authoringModel = request.authoringModel,
         )
         writeTextAtomically(metadataFile, AresProjectMetadataCodec.encode(personalizedMetadata))
-        check(!retiredIdentity.exists() || retiredIdentity.delete()) {
-            "The starter's retired .ares-robot.json could not be removed from the staging project."
-        }
 
         val actionCatalogFile = File(root, ".ares/action-catalog.json")
         check(actionCatalogFile.isFile) { "The reviewed starter is missing .ares/action-catalog.json." }

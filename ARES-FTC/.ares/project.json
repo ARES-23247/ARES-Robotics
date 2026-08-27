@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "projectId": "team23247-gobilda",
   "identity": {
     "teamId": "23247",
@@ -13,6 +13,7 @@
   "robotWidthMeters": 0.4572,
   "fieldLengthMeters": 3.6576,
   "fieldWidthMeters": 3.6576,
+  "authoringModel": "GUI_OWNED",
   "runtimeOptions": {
     "ftc": {
       "hubCommandTransport": "ARES_PHOTON",

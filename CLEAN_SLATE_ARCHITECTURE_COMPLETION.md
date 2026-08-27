@@ -45,6 +45,9 @@ wizard labels this boundary as **Create standalone robot project** / **Export st
 - `CODE_FIRST`: project Kotlin is authoritative and Studio displays only declared registrations.
 - `HYBRID`: `.ares` owns drivetrain and routines while registered Kotlin owns selected mechanisms.
 
+Project metadata schema 4 requires that field. Schemas 1-3 and the retired `.ares-robot.json`
+split identity are unsupported; Studio contains no legacy identity decoder or migration branch.
+
 ARES never reverse-engineers arbitrary Kotlin. A hand-authored subsystem's `.aressubsystem`
 registration must declare its user-owned module/source files, runtime and IO types, action keys,
 telemetry, typed tunables, safety and verification evidence, and simulator/mock capability. Missing

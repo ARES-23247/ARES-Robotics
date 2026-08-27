@@ -8,7 +8,7 @@ turning generated Kotlin into a second source of truth.
 
 | Location | Owner | Purpose |
 | --- | --- | --- |
-| `.ares/project.json` | Robot Studio | The single project, team, season, robot, display-name, league, coordinate, footprint, and runtime-options identity document. |
+| `.ares/project.json` | Robot Studio | The single project, team, season, robot, display-name, league, coordinate, footprint, authoring-model, and runtime-options identity document. |
 | `.ares/drivetrains/*.aresdrivetrain` | Drivebase Builder | Hardware names, geometry, localization, control modes, limits, and safety policy. |
 | `.ares/subsystems/*.aressubsystem` | Subsystem Builder | Mechanism state, hardware, controls, safety, simulation, telemetry, and generated verification intent. |
 | `.ares/superstructures/*.aressuperstructure` | Superstructure Studio | Cross-mechanism presets, typed targets, guarded transitions, interlocks, and fallback policy. |
@@ -16,9 +16,8 @@ turning generated Kotlin into a second source of truth.
 | `.ares/routines/*.aresroutine` plus catalogs | Autonomous editor | Deterministic routine graphs, selectable autonomous entries, and named capabilities. |
 | `.ares/tuning/*.arestuning` | Tuning tools | Typed, bounded runtime parameters and reviewed values. |
 
-New projects never create `.ares-robot.json`. Studio can migrate a legacy project through a
-reviewed diff, preserves both original files under `.ares/recovery/identity/`, then retires the
-duplicate identity file.
+ARES supports only the current project schema. Missing ownership or older schema versions fail
+closed; create/export a current project instead of carrying duplicate identity or migration paths.
 
 The desktop `workspaces.json` file keeps a display cache so Studio can list projects before opening
 them, but it is not another identity authority. On load and save, Studio refreshes that cache from
@@ -66,7 +65,7 @@ Evidence is not canonical robot configuration:
 - `.ares/local/verification/<run-id>/report.json` contains one normalized local build/test report
   with the canonical content hash, dependency and generator versions, Git revision, exact command,
   timestamps, and exit result. `.ares/local/` is ignored by Git.
-- `.ares/history/` and `.ares/recovery/` preserve reviewed replacements and migrations.
+- `.ares/history/` and `.ares/recovery/` preserve reviewed replacements and invalid-file repairs.
 
 Changing a drivetrain or subsystem invalidates matching evidence by content hash; ARES retains the
 old record as history and does not silently relabel it as current.

@@ -94,9 +94,7 @@ class EnvironmentServiceWorkspaceMigrationTest {
                 parentFile.mkdirs()
                 writeText("class Robot")
             }
-            File(sourceRoot, ".ares-robot.json").writeText(
-                """{"teamId":"23247","seasonId":"2026","robotId":"GoBilda","name":"Test","league":"FTC"}"""
-            )
+            writeCanonicalIdentity(sourceRoot)
 
             val config = WorkspaceConfig(
                 id = "robot",
@@ -134,9 +132,7 @@ class EnvironmentServiceWorkspaceMigrationTest {
                     parentFile.mkdirs()
                     writeText("class Robot")
                 }
-                File(candidate, ".ares-robot.json").writeText(
-                    """{"teamId":"23247","seasonId":"2026","robotId":"GoBilda","league":"FTC"}"""
-                )
+                writeCanonicalIdentity(candidate)
             }
             val config = WorkspaceConfig(
                 id = "robot",
@@ -172,9 +168,7 @@ class EnvironmentServiceWorkspaceMigrationTest {
                 parentFile.mkdirs()
                 writeText("class Robot")
             }
-            File(matchingRoot, ".ares-robot.json").writeText(
-                """{"teamId":"23247","seasonId":"2026","robotId":"GoBilda","league":"FTC"}"""
-            )
+            writeCanonicalIdentity(matchingRoot)
             val config = WorkspaceConfig(
                 id = "robot",
                 teamId = "23247",
@@ -196,6 +190,26 @@ class EnvironmentServiceWorkspaceMigrationTest {
             assertEquals(incompleteRoot.path, loaded.workspaces.single().projectPath)
         } finally {
             root.deleteRecursively()
+        }
+    }
+
+    private fun writeCanonicalIdentity(root: File) {
+        File(root, ".ares/project.json").apply {
+            parentFile.mkdirs()
+            writeText(
+                AresProjectMetadataCodec.encode(
+                    AresProjectMetadataDocument(
+                        projectId = "team23247-gobilda",
+                        identity = AresProjectIdentityDocument("23247", "2026", "GoBilda", "Test"),
+                        league = AresLeague.FTC,
+                        coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
+                        robotLengthMeters = 0.44,
+                        robotWidthMeters = 0.44,
+                        fieldLengthMeters = 3.6576,
+                        fieldWidthMeters = 3.6576,
+                    ),
+                ),
+            )
         }
     }
 }

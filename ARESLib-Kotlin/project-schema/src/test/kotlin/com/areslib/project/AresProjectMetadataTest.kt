@@ -1,7 +1,6 @@
 package com.areslib.project
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
@@ -23,7 +22,7 @@ class AresProjectMetadataTest {
     }
 
     @Test
-    fun `authoring ownership round trips and older schema three projects default to GUI ownership`() {
+    fun `authoring ownership round trips and is required`() {
         val codeFirst = AresProjectMetadataDocument(
             projectId = "code-first-frc",
             identity = identity("9999", "2027", "code-first-frc", "Code First FRC"),
@@ -37,12 +36,16 @@ class AresProjectMetadataTest {
         )
         assertEquals(codeFirst, AresProjectMetadataCodec.decode(AresProjectMetadataCodec.encode(codeFirst)))
 
-        val priorSchemaThree = AresProjectMetadataCodec.encode(codeFirst)
+        val missingOwnership = AresProjectMetadataCodec.encode(codeFirst)
             .replace("  \"authoringModel\": \"CODE_FIRST\",\n", "")
-        assertEquals(
-            AresProjectAuthoringModel.GUI_OWNED,
-            AresProjectMetadataCodec.decode(priorSchemaThree).authoringModel,
-        )
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.decode(missingOwnership)
+        }
+        val priorSchemaThree = AresProjectMetadataCodec.encode(codeFirst)
+            .replace("\"schemaVersion\": 4", "\"schemaVersion\": 3")
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.decode(priorSchemaThree)
+        }
     }
 
     @Test
@@ -62,7 +65,7 @@ class AresProjectMetadataTest {
     }
 
     @Test
-    fun `legacy FTC metadata migrates to explicit safe runtime defaults`() {
+    fun `older project schemas fail closed`() {
         val legacyJson =
             """{
               "schemaVersion": 1,
@@ -78,22 +81,12 @@ class AresProjectMetadataTest {
             AresProjectMetadataCodec.decode(legacyJson)
         }
 
-        val migrated = AresProjectMetadataCodec.migrateLegacy(
-            projectJson = legacyJson,
-            legacyIdentity = AresLegacyRobotIdentityDocument(
-                teamId = "99999",
-                seasonId = "2026",
-                robotId = "student-robot",
-                name = "Student Robot",
-                league = AresLeague.FTC,
-            ),
-        )
-
-        assertEquals(ARES_PROJECT_METADATA_SCHEMA_VERSION, migrated.schemaVersion)
-        assertEquals(AresFtcHubCommandTransport.STANDARD_SDK, migrated.resolvedFtcRuntimeOptions().hubCommandTransport)
-        assertFalse(migrated.resolvedFtcRuntimeOptions().limelightProxyEnabled)
-        val encoded = AresProjectMetadataCodec.encode(migrated)
-        assertEquals(migrated, AresProjectMetadataCodec.decode(encoded))
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.decode(legacyJson.replace("\"schemaVersion\": 1", "\"schemaVersion\": 2"))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.decode(legacyJson.replace("\"schemaVersion\": 1", "\"schemaVersion\": 3"))
+        }
     }
 
     @Test
@@ -143,42 +136,6 @@ class AresProjectMetadataTest {
 
         assertThrows(IllegalArgumentException::class.java) { AresProjectMetadataCodec.decode(missingPolicy) }
         assertThrows(IllegalArgumentException::class.java) { AresProjectMetadataCodec.decode(stringBoolean) }
-    }
-
-    @Test
-    fun `legacy migration rejects conflicting league identity`() {
-        val legacyJson = """{
-          "schemaVersion": 2,
-          "projectId": "student-robot",
-          "league": "FTC",
-          "coordinateConvention": "CENTER_ORIGIN_CCW",
-          "robotLengthMeters": 0.44,
-          "robotWidthMeters": 0.44,
-          "fieldLengthMeters": 3.6576,
-          "fieldWidthMeters": 3.6576,
-          "runtimeOptions": {"ftc": {"hubCommandTransport": "STANDARD_SDK", "limelightProxyEnabled": false}}
-        }"""
-
-        assertThrows(IllegalArgumentException::class.java) {
-            AresProjectMetadataCodec.migrateLegacy(
-                legacyJson,
-                AresLegacyRobotIdentityDocument("99999", "2026", "student-robot", "Student Robot", AresLeague.FRC),
-            )
-        }
-    }
-
-    @Test
-    fun `legacy identity decoder is strict and reusable at migration boundaries`() {
-        val identity = AresProjectMetadataCodec.decodeLegacyIdentity(
-            """{"teamId":"23247","seasonId":"2026","robotId":"Lightbot","name":"Lightbot","league":"FTC"}""",
-        )
-
-        assertEquals(AresLegacyRobotIdentityDocument("23247", "2026", "Lightbot", "Lightbot", AresLeague.FTC), identity)
-        assertThrows(IllegalArgumentException::class.java) {
-            AresProjectMetadataCodec.decodeLegacyIdentity(
-                """{"teamId":"23247","seasonId":"2026","robotId":"Lightbot","name":"Lightbot"}""",
-            )
-        }
     }
 
     private fun identity(team: String, season: String, robot: String, name: String) =

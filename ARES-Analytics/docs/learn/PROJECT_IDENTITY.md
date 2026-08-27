@@ -11,6 +11,7 @@ Open **Robot Studio**, then choose **Set up project identity** when the first st
   evidence, imports, and optional backups. They are stored here—not in a second root identity file.
 - **Friendly name** is the student-facing label and can change without changing those stable IDs.
 - **League** comes from the selected workspace. FTC and FRC projects use different generated adapters, so Project Identity will not silently change the platform of an existing project.
+- **Authoring model** declares whether `.ares` documents, team Kotlin, or an explicit hybrid boundary owns robot behavior. The field is required; Studio never guesses ownership from source files.
 - **Coordinate convention** is derived from the league. FTC uses a center origin with counter-clockwise-positive heading. FRC uses the blue-corner origin with counter-clockwise-positive heading.
 - **Robot length and width** are measured bumper-to-bumper dimensions in meters. Do not enter wheelbase or track width here.
 - **Field length and width** define autonomous bounds in meters. ARES pre-fills its current league preset, but a student or mentor must verify it for the selected season.
@@ -31,7 +32,7 @@ Project Identity does not store CAN IDs, motor names, tuning gains, credentials,
 
 When updating a valid file, ARES preserves the previous canonical content under `.ares/history/project/<content-hash>.json` before replacing it atomically. If the file changes after preview, the save is rejected and you must reload and review again.
 
-An unreadable existing `.ares/project.json` is protected. ARES will not overwrite it. Preserve the file, repair it or restore a known-good revision, then reload. A workspace/canonical league mismatch is also protected rather than rewritten. Older schema 1/2 projects use an explicit reviewed migration: Studio copies the original project and retired `.ares-robot.json` under `.ares/recovery/identity/`, writes schema 3, then removes the duplicate root identity file.
+An unreadable existing `.ares/project.json` is protected. ARES will not overwrite it. Preserve the file, repair it or restore a known-good revision, then reload. A workspace/canonical league mismatch is also protected rather than rewritten. Older schemas are unsupported; create or export a current project so ownership is explicit instead of carrying a compatibility layer.
 
 ## Success check
 

@@ -134,54 +134,6 @@ class ProjectDocumentRepositoriesTest {
     }
 
     @Test
-    fun `reviewed legacy migration preserves both old files and removes duplicate identity`() {
-        withProject { project ->
-            val repository = ProjectMetadataRepository()
-            val projectFile = repository.file(project.path).apply {
-                parentFile.mkdirs()
-                writeText(
-                    """{
-                      "schemaVersion": 2,
-                      "projectId": "legacy-project",
-                      "league": "FTC",
-                      "coordinateConvention": "CENTER_ORIGIN_CCW",
-                      "robotLengthMeters": 0.45,
-                      "robotWidthMeters": 0.43,
-                      "fieldLengthMeters": 3.6576,
-                      "fieldWidthMeters": 3.6576,
-                      "runtimeOptions": {"ftc": {"hubCommandTransport": "STANDARD_SDK", "limelightProxyEnabled": false}}
-                    }""",
-                )
-            }
-            val legacyIdentity = File(project, ".ares-robot.json").apply {
-                writeText(
-                    """{"teamId":"23247","seasonId":"2026","robotId":"lightbot","name":"Lightbot","league":"FTC"}""",
-                )
-            }
-            val oldProjectBytes = projectFile.readBytes()
-            val oldIdentityBytes = legacyIdentity.readBytes()
-
-            val candidate = repository.legacyMigrationCandidate(project.path).getOrThrow()
-            val saved = repository.repairReviewed(project.path, repository.rawContentHash(project.path), candidate)
-
-            assertTrue(saved.repaired)
-            assertEquals("Lightbot", saved.document.identity.displayName)
-            assertFalse(legacyIdentity.exists())
-            assertTrue(
-                File(project, ".ares/recovery/project").walkTopDown()
-                    .filter(File::isFile)
-                    .any { it.readBytes().contentEquals(oldProjectBytes) },
-            )
-            assertTrue(
-                File(project, ".ares/recovery/identity").walkTopDown()
-                    .filter(File::isFile)
-                    .any { it.readBytes().contentEquals(oldIdentityBytes) },
-            )
-            assertEquals(candidate, repository.load(project.path).getOrThrow())
-        }
-    }
-
-    @Test
     fun `routine saves are atomic deterministic and restorable as new revisions`() {
         withProject { project ->
             val repository = RoutineProjectRepository()
