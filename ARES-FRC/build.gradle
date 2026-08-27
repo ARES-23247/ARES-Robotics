@@ -118,7 +118,7 @@ dependencies {
     implementation 'org.aresfirst.ares:frc-hardware'
     aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
     aresCodegen 'org.aresfirst.ares:codegen'
-    aresCodegen 'com.google.code.gson:gson:2.10.1'
+    aresCodegen 'com.google.code.gson:gson:2.14.0'
     implementation 'org.dyn4j:dyn4j:4.2.2'
     
     implementation wpi.java.deps.wpilib()
