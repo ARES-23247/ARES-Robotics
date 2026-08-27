@@ -12,6 +12,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class ManagedToolchainServiceTest {
@@ -143,16 +144,41 @@ class ManagedToolchainServiceTest {
         }
     }
 
-    private fun fakeJdkArchive(): ByteArray {
+    @Test
+    fun `managed JDK extraction rejects entries outside its private staging directory`() {
+        val parent = Files.createTempDirectory("ares-managed-jdk-zip-slip").toFile()
+        val archive = File(parent, "hostile.zip")
+        val destination = File(parent, "staging")
+        val escaped = File(parent, "escaped.txt")
+        try {
+            archive.writeBytes(
+                zipArchive(
+                    "../escaped.txt" to "must not be written",
+                    "jdk-21-test/bin/java.exe" to "java",
+                ),
+            )
+
+            assertFailsWith<SecurityException> {
+                extractZipSafely(archive, destination)
+            }
+            assertTrue(!escaped.exists(), "A hostile ZIP entry must never escape the staging directory")
+        } finally {
+            parent.deleteRecursively()
+        }
+    }
+
+    private fun fakeJdkArchive(): ByteArray = zipArchive(
+        "jdk-21-test/bin/java.exe" to "java",
+        "jdk-21-test/bin/javac.exe" to "javac",
+        "jdk-21-test/bin/java" to "java",
+        "jdk-21-test/bin/javac" to "javac",
+        "jdk-21-test/release" to "JAVA_VERSION=\"21\"",
+    )
+
+    private fun zipArchive(vararg entries: Pair<String, String>): ByteArray {
         val bytes = ByteArrayOutputStream()
         ZipOutputStream(bytes).use { zip ->
-            listOf(
-                "jdk-21-test/bin/java.exe" to "java",
-                "jdk-21-test/bin/javac.exe" to "javac",
-                "jdk-21-test/bin/java" to "java",
-                "jdk-21-test/bin/javac" to "javac",
-                "jdk-21-test/release" to "JAVA_VERSION=\"21\"",
-            ).forEach { (name, content) ->
+            entries.forEach { (name, content) ->
                 zip.putNextEntry(ZipEntry(name))
                 zip.write(content.toByteArray())
                 zip.closeEntry()

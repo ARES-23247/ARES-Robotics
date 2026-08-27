@@ -117,8 +117,7 @@ object FakeControllerClient {
                             dlConn.requestMethod = "GET"
                             if (dlConn.responseCode == 200) {
                                 val downloadRoot = File("ares-downloads").canonicalFile.also { it.mkdirs() }
-                                val destFile = File(downloadRoot, safeName).canonicalFile
-                                require(destFile.parentFile == downloadRoot) { "Log destination escaped download root" }
+                                val destFile = File(downloadRoot, localLogFilename(safeName))
                                 dlConn.inputStream.use { input ->
                                     destFile.outputStream().use { output ->
                                         input.copyTo(output)
@@ -236,5 +235,11 @@ object FakeControllerClient {
             "Unsupported log filename"
         }
         return serverName
+    }
+
+    internal fun localLogFilename(serverName: String): String = when {
+        serverName.endsWith(".jsonl", ignoreCase = true) -> "downloaded-log.jsonl"
+        serverName.endsWith(".csv", ignoreCase = true) -> "downloaded-log.csv"
+        else -> error("A validated remote log must use a supported extension")
     }
 }

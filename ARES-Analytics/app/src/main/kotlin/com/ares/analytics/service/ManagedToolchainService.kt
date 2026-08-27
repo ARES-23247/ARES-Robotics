@@ -508,9 +508,9 @@ private fun verifyInstalledJdk(javaHome: File) {
     check(process.waitFor() == 0 && output.contains("21")) { "The downloaded JDK did not report Java 21." }
 }
 
-private fun extractZipSafely(archive: File, destination: File) {
+internal fun extractZipSafely(archive: File, destination: File) {
     check(destination.mkdirs()) { "Could not create the private JDK staging directory." }
-    val root = destination.canonicalFile
+    val root = destination.toPath().toAbsolutePath().normalize()
     var entries = 0
     var total = 0L
     ZipInputStream(BufferedInputStream(archive.inputStream())).use { zip ->
@@ -518,13 +518,19 @@ private fun extractZipSafely(archive: File, destination: File) {
             val entry = zip.nextEntry ?: break
             entries++
             check(entries <= ManagedToolchainService.MAX_JDK_ENTRIES) { "The JDK archive contains too many files." }
-            val output = File(root, entry.name).canonicalFile
-            check(output.toPath().startsWith(root.toPath())) { "The JDK archive attempted to write outside its staging directory." }
+            val entryPath = root.fileSystem.getPath(entry.name)
+            if (entryPath.isAbsolute) {
+                throw SecurityException("The JDK archive contains an absolute path.")
+            }
+            val output = root.resolve(entryPath).normalize()
+            if (!output.startsWith(root)) {
+                throw SecurityException("The JDK archive attempted to write outside its staging directory.")
+            }
             if (entry.isDirectory) {
-                check(output.mkdirs() || output.isDirectory) { "Could not create a JDK directory." }
+                Files.createDirectories(output)
             } else {
-                check(output.parentFile.mkdirs() || output.parentFile.isDirectory) { "Could not create a JDK parent directory." }
-                BufferedOutputStream(FileOutputStream(output)).use { target ->
+                Files.createDirectories(output.parent)
+                BufferedOutputStream(Files.newOutputStream(output)).use { target ->
                     val buffer = ByteArray(64 * 1024)
                     while (true) {
                         val read = zip.read(buffer)
