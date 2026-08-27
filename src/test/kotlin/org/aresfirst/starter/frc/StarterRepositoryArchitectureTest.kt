@@ -23,4 +23,14 @@ class StarterRepositoryArchitectureTest {
         assertFalse(build.contains("mavenLocal"))
         assertFalse(File(root, "src/main/kotlin/org/aresfirst/starter/frc/generated").exists())
     }
+
+    @Test
+    fun `FRC starter simulator remains free of FTC OpMode and Control Hub APIs`() {
+        val sources = File(root, "src/main").walkTopDown()
+            .filter { it.isFile && it.extension in setOf("kt", "java") }
+            .joinToString("\n") { it.readText() }
+
+        assertFalse(sources.contains("import com.qualcomm.robotcore"))
+        assertFalse(sources.contains("import org.firstinspires.ftc"))
+    }
 }
