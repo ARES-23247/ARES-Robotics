@@ -33,9 +33,35 @@ function Get-RelativeFileHashes([string]$Root) {
     $result
 }
 
+function Get-TrackedRelativeFileHashes([string]$Root) {
+    $result = [ordered]@{}
+    $rootRelativeToWorkspace = [System.IO.Path]::GetRelativePath($workspaceRoot, $Root).Replace('\', '/')
+    $trackedFiles = @(git -C $workspaceRoot ls-files -- $rootRelativeToWorkspace)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to enumerate tracked starter files under $rootRelativeToWorkspace."
+    }
+    foreach ($trackedPath in $trackedFiles | Sort-Object) {
+        $fullPath = Join-Path $workspaceRoot $trackedPath
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            throw "Tracked starter file is missing from the worktree: $trackedPath"
+        }
+        $relative = [System.IO.Path]::GetRelativePath($Root, $fullPath).Replace('\', '/')
+        $segments = $relative.Split('/')
+        if ($excludedFiles -contains [System.IO.Path]::GetFileName($relative) -or
+            ($segments | Where-Object { $excludedDirectories -contains $_ })) {
+            continue
+        }
+        $result[$relative] = (Get-FileHash -Algorithm SHA256 -LiteralPath $fullPath).Hash.ToLowerInvariant()
+    }
+    $result
+}
+
 foreach ($template in $templates) {
     $destination = Join-Path $outputRootPath $template.Name
-    $sourceHashes = Get-RelativeFileHashes $template.Source
+    # Release mirrors are made only from canonical, tracked source. Ignored
+    # simulator logs, IDE state, caches, and other local files must never leak
+    # into an installer or public starter archive.
+    $sourceHashes = Get-TrackedRelativeFileHashes $template.Source
     $sourceHashes['release/ares-versions.properties'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'release/ares-versions.properties')).Hash.ToLowerInvariant()
     $sourceHashes['build-logic/ares-versioning.gradle'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'build-logic/ares-versioning.gradle')).Hash.ToLowerInvariant()
     if ($template.Name -eq 'ARES-FTC-Starter') {
