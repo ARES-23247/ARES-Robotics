@@ -54,6 +54,7 @@ import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.viewmodel.OnboardingFieldErrors
 import com.ares.analytics.viewmodel.OnboardingStep
 import com.ares.analytics.viewmodel.ProjectSetupMode
+import com.areslib.project.AresProjectAuthoringModel
 import java.io.File
 
 /** Project, robot, advanced, and review content shared by the staged onboarding wizard. */
@@ -68,6 +69,8 @@ fun SyncStep(
     projectTemplateName: String,
     projectTemplateVersion: String,
     projectCreationMessage: String?,
+    authoringModel: AresProjectAuthoringModel,
+    onAuthoringModelChange: (AresProjectAuthoringModel) -> Unit,
     onProjectSetupModeChange: (ProjectSetupMode) -> Unit,
     onProjectPathChange: (String) -> Unit,
     onBrowseProject: () -> Unit,
@@ -106,6 +109,8 @@ fun SyncStep(
             templateName = projectTemplateName,
             templateVersion = projectTemplateVersion,
             creationMessage = projectCreationMessage,
+            authoringModel = authoringModel,
+            onAuthoringModelChange = onAuthoringModelChange,
             error = fieldErrors.projectPath,
             league = league,
             onLeagueChange = onLeagueChange,
@@ -164,6 +169,8 @@ private fun ProjectSelection(
     templateName: String,
     templateVersion: String,
     creationMessage: String?,
+    authoringModel: AresProjectAuthoringModel,
+    onAuthoringModelChange: (AresProjectAuthoringModel) -> Unit,
     error: String?,
     league: League,
     onLeagueChange: (League) -> Unit,
@@ -178,8 +185,8 @@ private fun ProjectSelection(
         Text("How would you like to begin?", color = AresTextPrimary, fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProjectModeCard(
-                title = "Create a new robot",
-                description = "Start from a reviewed project, customize it in Robot Studio, build it, and run its desktop simulator.",
+                title = "Create standalone robot project",
+                description = "Export a complete FTC or FRC repository that works in Studio, an IDE, or the terminal.",
                 selected = mode == ProjectSetupMode.CREATE_NEW,
                 onClick = { onModeChange(ProjectSetupMode.CREATE_NEW) },
                 modifier = Modifier.weight(1f),
@@ -202,6 +209,29 @@ private fun ProjectSelection(
 
         if (mode.createsProject) {
             if (mode == ProjectSetupMode.CREATE_NEW) LeagueSelector(league, onLeagueChange)
+            if (mode == ProjectSetupMode.CREATE_NEW) {
+                Text("Who owns robot behavior?", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AuthoringModelCard(
+                        title = "GUI-owned robot",
+                        description = "Robot Studio owns canonical .ares documents and generates runtime code and tests.",
+                        selected = authoringModel == AresProjectAuthoringModel.GUI_OWNED,
+                        onClick = { onAuthoringModelChange(AresProjectAuthoringModel.GUI_OWNED) },
+                    )
+                    AuthoringModelCard(
+                        title = "Code-first Kotlin robot",
+                        description = "Your Kotlin is authoritative. Register actions, telemetry, tunables, safety evidence, and simulation support so Studio can display it.",
+                        selected = authoringModel == AresProjectAuthoringModel.CODE_FIRST,
+                        onClick = { onAuthoringModelChange(AresProjectAuthoringModel.CODE_FIRST) },
+                    )
+                    AuthoringModelCard(
+                        title = "Hybrid robot",
+                        description = "Studio owns drivetrain and routines; explicitly registered team Kotlin owns selected mechanisms.",
+                        selected = authoringModel == AresProjectAuthoringModel.HYBRID,
+                        onClick = { onAuthoringModelChange(AresProjectAuthoringModel.HYBRID) },
+                    )
+                }
+            }
             Card(
                 colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
                 border = androidx.compose.foundation.BorderStroke(1.dp, AresBorder),
@@ -276,6 +306,25 @@ private fun ProjectSelection(
                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AresGreen)
                 Text(detectionMessage, color = AresGreen, style = MaterialTheme.typography.bodySmall)
             }
+        }
+    }
+}
+
+@Composable
+private fun AuthoringModelCard(
+    title: String,
+    description: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = if (selected) AresCyanGlow else AresSurfaceElevated),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) AresCyan else AresBorder),
+    ) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, color = AresTextPrimary, fontWeight = FontWeight.SemiBold)
+            Text(description, color = AresTextSecondary, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -15,6 +15,7 @@ import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.schema.ProjectDocumentId
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
@@ -94,7 +95,9 @@ class RobotProjectTemplateServiceTest {
             val service = service(root, archive)
             val parent = File(root, "robots").apply { mkdirs() }
 
-            val result = service.create(request(parent, "student-robot"))
+            val result = service.create(
+                request(parent, "student-robot").copy(authoringModel = AresProjectAuthoringModel.CODE_FIRST),
+            )
 
             assertEquals(RobotProjectTemplateSource.VERIFIED_DOWNLOAD, result.source)
             assertTrue(result.destination.isDirectory)
@@ -106,6 +109,7 @@ class RobotProjectTemplateServiceTest {
             assertEquals("2026", metadata.identity.seasonId)
             assertEquals("StudentBot", metadata.identity.robotId)
             assertEquals("Student Robot", metadata.identity.displayName)
+            assertEquals(AresProjectAuthoringModel.CODE_FIRST, metadata.authoringModel)
             assertEquals(
                 metadata.projectId,
                 CapabilityCatalogCodec.decode(File(result.destination, ".ares/action-catalog.json").readText()).projectId,

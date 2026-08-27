@@ -1139,6 +1139,15 @@ public final class com/areslib/project/AresLegacyRobotIdentityDocument {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/project/AresProjectAuthoringModel : java/lang/Enum {
+	public static final field CODE_FIRST Lcom/areslib/project/AresProjectAuthoringModel;
+	public static final field GUI_OWNED Lcom/areslib/project/AresProjectAuthoringModel;
+	public static final field HYBRID Lcom/areslib/project/AresProjectAuthoringModel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/AresProjectAuthoringModel;
+	public static fun values ()[Lcom/areslib/project/AresProjectAuthoringModel;
+}
+
 public final class com/areslib/project/AresProjectIdentityDocument {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -1166,10 +1175,11 @@ public final class com/areslib/project/AresProjectMetadataCodec {
 }
 
 public final class com/areslib/project/AresProjectMetadataDocument {
-	public fun <init> (ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;)V
-	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresProjectAuthoringModel;Lcom/areslib/project/AresRuntimeOptionsDocument;)V
+	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresProjectAuthoringModel;Lcom/areslib/project/AresRuntimeOptionsDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
-	public final fun component10 ()Lcom/areslib/project/AresRuntimeOptionsDocument;
+	public final fun component10 ()Lcom/areslib/project/AresProjectAuthoringModel;
+	public final fun component11 ()Lcom/areslib/project/AresRuntimeOptionsDocument;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/areslib/project/AresProjectIdentityDocument;
 	public final fun component4 ()Lcom/areslib/project/AresLeague;
@@ -1178,9 +1188,10 @@ public final class com/areslib/project/AresProjectMetadataDocument {
 	public final fun component7 ()D
 	public final fun component8 ()D
 	public final fun component9 ()D
-	public final fun copy (ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;)Lcom/areslib/project/AresProjectMetadataDocument;
-	public static synthetic fun copy$default (Lcom/areslib/project/AresProjectMetadataDocument;ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresRuntimeOptionsDocument;ILjava/lang/Object;)Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun copy (ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresProjectAuthoringModel;Lcom/areslib/project/AresRuntimeOptionsDocument;)Lcom/areslib/project/AresProjectMetadataDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresProjectMetadataDocument;ILjava/lang/String;Lcom/areslib/project/AresProjectIdentityDocument;Lcom/areslib/project/AresLeague;Lcom/areslib/project/AresCoordinateConvention;DDDDLcom/areslib/project/AresProjectAuthoringModel;Lcom/areslib/project/AresRuntimeOptionsDocument;ILjava/lang/Object;)Lcom/areslib/project/AresProjectMetadataDocument;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthoringModel ()Lcom/areslib/project/AresProjectAuthoringModel;
 	public final fun getCoordinateConvention ()Lcom/areslib/project/AresCoordinateConvention;
 	public final fun getFieldLengthMeters ()D
 	public final fun getFieldWidthMeters ()D

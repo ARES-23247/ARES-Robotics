@@ -8,6 +8,7 @@ import com.ares.analytics.service.RobotProjectReadinessEvidence
 import com.ares.analytics.service.verification.RobotVerificationReport
 import com.ares.analytics.service.hardware.HardwareReviewStatus
 import com.areslib.simulation.SimulationProductId
+import com.areslib.project.AresProjectAuthoringModel
 import java.io.File
 
 enum class RobotStudioStageId {
@@ -87,6 +88,7 @@ data class RobotStudioState(
     val loading: Boolean = true,
     val projectName: String = "",
     val projectPath: String = "",
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val stages: List<RobotStudioStage> = emptyList(),
     val hardwareReadiness: RobotStudioHardwareReadiness? = null,
     val verificationReport: RobotVerificationReport? = null,

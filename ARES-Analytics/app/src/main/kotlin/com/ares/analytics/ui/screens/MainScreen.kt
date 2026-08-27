@@ -1191,6 +1191,13 @@ fun MainScreen(services: ServiceRegistry) {
                                 onRunVerification = {
                                     executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                                 },
+                                onOpenInIde = {
+                                    services.projectIdeLauncher.open(currentConfig.projectPath, currentConfig.league).message
+                                },
+                                onCreateStandaloneProject = {
+                                    requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                    mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                                },
                             )
                             NavigationTarget.CONTROLS -> com.ares.analytics.ui.components.controls.ControlsEditorPanel(
                                 state = controlsEditorState,

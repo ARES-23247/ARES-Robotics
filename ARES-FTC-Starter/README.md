@@ -41,4 +41,5 @@ different states; a simulator cannot validate the experimental REV Hub intercept
 
 See [docs/STARTER_ARCHITECTURE.md](docs/STARTER_ARCHITECTURE.md) and
 [docs/PHYSICAL_COMMISSIONING.md](docs/PHYSICAL_COMMISSIONING.md). Field and camera setup is covered
-in [docs/APRILTAG_FIELDS.md](docs/APRILTAG_FIELDS.md).
+in [docs/APRILTAG_FIELDS.md](docs/APRILTAG_FIELDS.md). Teams that prefer normal Kotlin development
+can close Studio and follow [Code-first and hybrid projects](docs/CODE_FIRST_AND_HYBRID.md).

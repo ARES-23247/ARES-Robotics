@@ -69,6 +69,7 @@ class RobotStudioViewModel(
             loading = false,
             projectName = selected.robotName.ifBlank { selected.robotId },
             projectPath = inspected.projectPath,
+            authoringModel = inspected.authoringModel,
             stages = evaluateRobotStudioStages(inspected, runtime),
             hardwareReadiness = evaluateRobotStudioHardwareReadiness(inspected),
             verificationReport = runtime.build.verificationReport,

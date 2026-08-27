@@ -23,6 +23,29 @@ class AresProjectMetadataTest {
     }
 
     @Test
+    fun `authoring ownership round trips and older schema three projects default to GUI ownership`() {
+        val codeFirst = AresProjectMetadataDocument(
+            projectId = "code-first-frc",
+            identity = identity("9999", "2027", "code-first-frc", "Code First FRC"),
+            league = AresLeague.FRC,
+            coordinateConvention = AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW,
+            robotLengthMeters = 0.8,
+            robotWidthMeters = 0.8,
+            fieldLengthMeters = 16.5,
+            fieldWidthMeters = 8.2,
+            authoringModel = AresProjectAuthoringModel.CODE_FIRST,
+        )
+        assertEquals(codeFirst, AresProjectMetadataCodec.decode(AresProjectMetadataCodec.encode(codeFirst)))
+
+        val priorSchemaThree = AresProjectMetadataCodec.encode(codeFirst)
+            .replace("  \"authoringModel\": \"CODE_FIRST\",\n", "")
+        assertEquals(
+            AresProjectAuthoringModel.GUI_OWNED,
+            AresProjectMetadataCodec.decode(priorSchemaThree).authoringModel,
+        )
+    }
+
+    @Test
     fun `league coordinate mismatch and impossible footprint fail closed`() {
         val invalid = AresProjectMetadataDocument(
             projectId = "ftc-project",

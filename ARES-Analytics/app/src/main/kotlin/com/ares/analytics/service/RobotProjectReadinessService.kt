@@ -17,6 +17,7 @@ import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.ProjectDocumentKind
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresLeague
+import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.simulation.SimulationProductId
 import com.ares.analytics.viewmodel.controls.controlsCoverage
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,7 @@ data class RobotProjectReadinessEvidence(
     val projectError: String? = null,
     val metadataPresent: Boolean = false,
     val metadataLeagueMatches: Boolean = false,
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val metadataErrors: List<String> = emptyList(),
     val documentErrors: List<String> = emptyList(),
     val hardwareItemCount: Int = 0,
@@ -173,6 +175,7 @@ class RobotProjectReadinessService(
             projectError = snapshotFailure,
             metadataPresent = project?.metadata != null,
             metadataLeagueMatches = project?.metadata?.league == expectedLeague,
+            authoringModel = project?.metadata?.authoringModel ?: AresProjectAuthoringModel.GUI_OWNED,
             metadataErrors = metadataErrors,
             documentErrors = diagnostics.map { "${it.file.name}: ${it.message}" },
             hardwareItemCount = hardware?.items?.size ?: 0,

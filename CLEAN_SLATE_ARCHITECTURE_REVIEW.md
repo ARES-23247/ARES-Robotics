@@ -440,3 +440,6 @@ No robot control behavior should change in this phase.
 - Every supported target names its real simulator and physical-validation boundary.
 - A beginner can create, verify, and simulate a robot without seeing infrastructure complexity.
 - Advanced teams retain explicit, documented platform extension points.
+- Studio-created repositories work without the monorepo or a running Studio process and explicitly
+  distinguish GUI-owned, code-first Kotlin, and hybrid ownership. Studio consumes declared
+  registration metadata and never attempts to infer behavior from arbitrary Kotlin source.

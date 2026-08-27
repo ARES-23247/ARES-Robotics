@@ -13,6 +13,7 @@ import com.ares.analytics.shared.DriveDestinationType
 import com.ares.analytics.shared.League
 import com.ares.analytics.shared.RobotProfile
 import com.ares.analytics.shared.WorkspaceConfig
+import com.areslib.project.AresProjectAuthoringModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,6 +57,7 @@ data class OnboardingState(
     val projectTemplateName: String = "ARES FTC",
     val projectTemplateVersion: String = "6.1.0",
     val projectCreationMessage: String? = null,
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val teamId: String = "",
     val seasonId: String = "",
     val robotId: String = "",
@@ -94,6 +96,7 @@ sealed class OnboardingIntent {
     data class UpdateProjectPath(val projectPath: String) : OnboardingIntent()
     data class UpdateProjectParentPath(val path: String) : OnboardingIntent()
     data class UpdateProjectFolderName(val name: String) : OnboardingIntent()
+    data class SetAuthoringModel(val model: AresProjectAuthoringModel) : OnboardingIntent()
     data class UpdateTeamId(val teamId: String) : OnboardingIntent()
     data class UpdateSeasonId(val seasonId: String) : OnboardingIntent()
     data class UpdateRobotId(val robotId: String) : OnboardingIntent()
@@ -219,6 +222,9 @@ class OnboardingViewModel(
                         fieldErrors = current.fieldErrors.copy(projectPath = null),
                     )
                     next.copy(projectPath = plannedProjectPath(next))
+                }
+                is OnboardingIntent.SetAuthoringModel -> _state.update {
+                    it.copy(authoringModel = intent.model, errorMessage = null)
                 }
                 is OnboardingIntent.UpdateTeamId -> updateRequiredField {
                     it.copy(teamId = intent.teamId, selectedOptionText = "Select a saved robot...")
@@ -409,6 +415,7 @@ class OnboardingViewModel(
                         seasonId = current.seasonId,
                         robotId = current.robotId,
                         robotName = current.robotName,
+                        authoringModel = current.authoringModel,
                     ),
                     onProgress = { message -> _state.update { it.copy(projectCreationMessage = message) } },
                     prepareStagedProject = { staged ->

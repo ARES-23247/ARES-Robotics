@@ -13,5 +13,6 @@
   "robotWidthMeters": 0.65,
   "fieldLengthMeters": 16.54175,
   "fieldWidthMeters": 8.21055,
+  "authoringModel": "GUI_OWNED",
   "runtimeOptions": {}
 }

@@ -7,6 +7,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.areslib.project.AresProjectAuthoringModel
 
 class OnboardingModelTest {
     @Test
@@ -165,6 +166,18 @@ class OnboardingModelTest {
         } finally {
             parent.deleteRecursively()
         }
+    }
+
+    @Test
+    fun `standalone projects support explicit GUI code-first and hybrid ownership`() {
+        assertEquals(AresProjectAuthoringModel.GUI_OWNED, OnboardingState().authoringModel)
+        assertTrue(
+            listOf(
+                AresProjectAuthoringModel.GUI_OWNED,
+                AresProjectAuthoringModel.CODE_FIRST,
+                AresProjectAuthoringModel.HYBRID,
+            ).all { model -> OnboardingState(authoringModel = model).projectSetupMode.createsProject },
+        )
     }
 
     @Test

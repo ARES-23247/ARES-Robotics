@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ARES: Verify FTC project",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": ["generateAresProject", ":TeamCode:verifyAresProject", ":TeamCode:testDebugUnitTest", ":simulator:test"],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "ARES: Build FTC APK",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": ["generateAresProject", ":TeamCode:assembleDebug"],
+      "group": "build",
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "ARES: Run FTC simulator",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": [":TeamCode:runSim"],
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "ARES: Install FTC APK",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": [":TeamCode:installDebug"],
+      "problemMatcher": ["$gradle"]
+    }
+  ]
+}

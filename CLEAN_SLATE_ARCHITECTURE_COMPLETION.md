@@ -31,6 +31,28 @@ file repository. Final releases must use a new version.
 | Versions, repository identity, build ordering and release policy | `release/ares-versions.properties`, root build scripts and protected workflows |
 | Public starter contents | Deterministic exports from `templates/ftc` and `templates/frc` |
 
+## Standalone and code-first development
+
+Studio-created FTC and FRC robots are complete standalone repositories, not monorepo worktrees.
+Their Gradle wrappers, immutable ARES dependency pin, platform configuration, canonical `.ares`
+documents, generated-source/test directories, IDE tasks, verification, simulation, and deployment
+tasks remain functional after Studio closes. Robot Studio exposes **Open in IDE** and the project
+wizard labels this boundary as **Create standalone robot project** / **Export standalone repository**.
+
+`.ares/project.json` explicitly selects one authoring model:
+
+- `GUI_OWNED`: canonical `.ares` documents own all robot behavior.
+- `CODE_FIRST`: project Kotlin is authoritative and Studio displays only declared registrations.
+- `HYBRID`: `.ares` owns drivetrain and routines while registered Kotlin owns selected mechanisms.
+
+ARES never reverse-engineers arbitrary Kotlin. A hand-authored subsystem's `.aressubsystem`
+registration must declare its user-owned module/source files, runtime and IO types, action keys,
+telemetry, typed tunables, safety and verification evidence, and simulator/mock capability. Missing
+declarations fail closed and remain visibly unavailable. Each starter contains a clearly
+`USER-OWNED` extension package and league-appropriate IDE guidance: Android Studio for FTC, and
+WPILib VS Code or IntelliJ/GradleRIO for FRC. Local Git history is created automatically; GitHub
+backup is optional.
+
 Every imported component retains its original Git history as an ancestor. The exact import commits
 and source tree hashes are recorded in `MONOREPO_MIGRATION_BASELINE.md` and enforced by
 `scripts/verify-imported-histories.ps1` and its POSIX equivalent. The user's original dirty primary

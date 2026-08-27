@@ -90,3 +90,7 @@ simulator/ares_run_summary.json
 
 # Local ARES editor undo/revision snapshots. Canonical routines and catalogs remain tracked.
 .ares/history/
+
+# Reviewed editor tasks are part of the standalone starter.
+!.vscode/
+!.vscode/tasks.json

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +51,7 @@ import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.project.AresProjectAuthoringModel
 import kotlinx.coroutines.delay
 
 /**
@@ -72,6 +74,8 @@ fun RobotStudioScreen(
     config: WorkspaceConfig,
     onOpenPitDiagnostics: () -> Unit,
     onRunVerification: () -> Unit,
+    onOpenInIde: () -> String,
+    onCreateStandaloneProject: () -> Unit,
     initialSelection: RobotStudioSelection = RobotStudioSelection.Identity,
 ) {
     val state by viewModel.state.collectAsState()
@@ -197,6 +201,8 @@ fun RobotStudioScreen(
             subsystemViewModel.newSubsystem(SubsystemTemplate.SIMPLE_ACTUATOR)
             selection = RobotStudioSelection.Subsystem(subsystemViewModel.state.value.selectedDocumentId.orEmpty())
         },
+        onOpenInIde = onOpenInIde,
+        onCreateStandaloneProject = onCreateStandaloneProject,
     ) { selected ->
         when (selected) {
             RobotStudioSelection.Identity -> ProjectIdentityScreen(
@@ -259,6 +265,8 @@ internal fun RobotStudioWorkspace(
     selection: RobotStudioSelection,
     onSelect: (RobotStudioSelection) -> Unit,
     onAddSubsystem: () -> Unit,
+    onOpenInIde: (() -> String)? = null,
+    onCreateStandaloneProject: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     centerContent: @Composable (RobotStudioSelection) -> Unit,
 ) {
@@ -273,6 +281,40 @@ internal fun RobotStudioWorkspace(
         }
 
         Column(Modifier.fillMaxSize()) {
+            if (onOpenInIde != null || onCreateStandaloneProject != null) {
+                var ideMessage by remember(state.projectPath) { mutableStateOf<String?>(null) }
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        when (state.authoringModel) {
+                            AresProjectAuthoringModel.GUI_OWNED -> "GUI-owned standalone repository"
+                            AresProjectAuthoringModel.CODE_FIRST -> "Code-first Kotlin repository"
+                            AresProjectAuthoringModel.HYBRID -> "Hybrid Studio + Kotlin repository"
+                        },
+                        color = AresTextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    onOpenInIde?.let { open ->
+                        OutlinedButton(onClick = { ideMessage = open() }) { Text("Open in IDE") }
+                    }
+                    onCreateStandaloneProject?.let { create ->
+                        OutlinedButton(onClick = create) { Text("Export standalone repository") }
+                    }
+                }
+                ideMessage?.let { message ->
+                    Text(
+                        message,
+                        color = AresTextPrimary,
+                        fontSize = 11.sp,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    )
+                }
+            }
             state.error?.let { error ->
                 Surface(color = AresRed.copy(alpha = 0.14f), modifier = Modifier.fillMaxWidth()) {
                     Text(

@@ -9,6 +9,18 @@ const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 3
 
 enum class AresLeague { FTC, FRC }
 
+/** Which source is authoritative when Studio and project-owned Kotlin coexist. */
+enum class AresProjectAuthoringModel {
+    /** Canonical `.ares` documents own the robot; Kotlin runtime and tests are generated. */
+    GUI_OWNED,
+
+    /** Team-owned Kotlin owns robot behavior; Studio consumes explicit registration metadata. */
+    CODE_FIRST,
+
+    /** `.ares` owns drivetrain/routines while registered team Kotlin owns selected mechanisms. */
+    HYBRID,
+}
+
 /** Human and competition identity stored with the stable project ID in `.ares/project.json`. */
 data class AresProjectIdentityDocument(
     val teamId: String,
@@ -72,6 +84,7 @@ data class AresProjectMetadataDocument(
     val robotWidthMeters: Double,
     val fieldLengthMeters: Double,
     val fieldWidthMeters: Double,
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val runtimeOptions: AresRuntimeOptionsDocument = AresRuntimeOptionsDocument(),
 )
 
@@ -270,6 +283,7 @@ object AresProjectMetadataCodec {
                 robotWidthMeters = root.requiredDouble("robotWidthMeters"),
                 fieldLengthMeters = root.requiredDouble("fieldLengthMeters"),
                 fieldWidthMeters = root.requiredDouble("fieldWidthMeters"),
+                authoringModel = root.optionalEnum("authoringModel") ?: AresProjectAuthoringModel.GUI_OWNED,
                 runtimeOptions = runtimeOptions,
             ),
         )
@@ -314,6 +328,16 @@ private fun JsonObject.requiredDouble(name: String): Double = requiredPrimitive(
 
 private inline fun <reified T : Enum<T>> JsonObject.requiredEnum(name: String): T {
     val raw = requiredString(name)
+    return enumValues<T>().firstOrNull { it.name == raw }
+        ?: throw IllegalArgumentException("Project metadata field '$name' has unsupported value '$raw'")
+}
+
+private inline fun <reified T : Enum<T>> JsonObject.optionalEnum(name: String): T? {
+    val element = get(name)?.takeUnless { it.isJsonNull } ?: return null
+    require(element.isJsonPrimitive && element.asJsonPrimitive.isString) {
+        "Project metadata field '$name' must be a string"
+    }
+    val raw = element.asString
     return enumValues<T>().firstOrNull { it.name == raw }
         ?: throw IllegalArgumentException("Project metadata field '$name' has unsupported value '$raw'")
 }

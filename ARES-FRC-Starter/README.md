@@ -54,4 +54,6 @@ Library contributors may use `-ParesUseSiblingLib=true`, or an isolated release-
 
 Do not use `mavenLocal()` for validation.
 
-See [Hardware Review](docs/HARDWARE_REVIEW.md) and [AprilTag fields](docs/APRILTAG_FIELDS.md).
+See [Hardware Review](docs/HARDWARE_REVIEW.md), [AprilTag fields](docs/APRILTAG_FIELDS.md), and
+[Code-first and hybrid projects](docs/CODE_FIRST_AND_HYBRID.md). A generated project does not need
+Studio to remain open for normal WPILib development, simulation, verification, or deployment.

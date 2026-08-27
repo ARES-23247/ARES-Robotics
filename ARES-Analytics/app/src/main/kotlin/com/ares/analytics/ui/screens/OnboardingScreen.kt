@@ -147,6 +147,10 @@ fun OnboardingScreen(
                     projectTemplateName = state.projectTemplateName,
                     projectTemplateVersion = state.projectTemplateVersion,
                     projectCreationMessage = state.projectCreationMessage,
+                    authoringModel = state.authoringModel,
+                    onAuthoringModelChange = {
+                        viewModel.handleIntent(OnboardingIntent.SetAuthoringModel(it))
+                    },
                     onProjectSetupModeChange = {
                         viewModel.handleIntent(OnboardingIntent.SetProjectSetupMode(it))
                     },
@@ -233,7 +237,7 @@ fun OnboardingScreen(
                     finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
                         "Create demo copy"
                     } else {
-                        "Create workspace"
+                        "Create standalone project"
                     },
                     onCancel = onCancel,
                     onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },

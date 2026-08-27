@@ -10,6 +10,7 @@ import com.ares.analytics.util.ProjectLayout
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresLeague
+import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.routine.AutonomousCatalogCodec
@@ -66,6 +67,7 @@ data class RobotProjectCreationRequest(
     val seasonId: String,
     val robotId: String,
     val robotName: String,
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
 )
 
 data class RobotProjectCreationPlan(
@@ -275,6 +277,7 @@ class RobotProjectTemplateService(
                 robotId = request.robotId.trim(),
                 displayName = request.robotName.trim(),
             ),
+            authoringModel = request.authoringModel,
         )
         writeTextAtomically(metadataFile, AresProjectMetadataCodec.encode(personalizedMetadata))
         check(!retiredIdentity.exists() || retiredIdentity.delete()) {
