@@ -17,6 +17,7 @@ val allowFinalReleaseValidation = providers.gradleProperty("allowFinalReleaseVal
 val publishedProjectPaths = listOf(
     ":project-schema",
     ":project-model",
+    ":project-compiler",
     ":core",
     ":codegen",
     ":ftc-mocks",

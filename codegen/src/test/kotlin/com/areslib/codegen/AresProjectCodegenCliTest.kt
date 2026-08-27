@@ -105,6 +105,16 @@ class AresProjectCodegenCliTest {
         assertTrue(generatedSource.contains("const val ROBOT_LENGTH_METERS: Double = 0.45"))
         AresProjectCodegenCli.run(baseArguments + "--check")
 
+        val verificationManifest = temporary.resolve(
+            "build/generated/ares/verification/ares-project-verification.json"
+        )
+        val manifestContent = Files.readString(verificationManifest)
+        assertTrue(manifestContent.contains("\"canonicalProjectSha256\""))
+        assertTrue(manifestContent.contains("\"id\": \"project.runtime\""))
+        Files.writeString(verificationManifest, "$manifestContent\n")
+        assertThrows<IllegalArgumentException> { AresProjectCodegenCli.run(baseArguments + "--check") }
+        AresProjectCodegenCli.run(baseArguments)
+
         Files.writeString(output, Files.readString(output) + "// stale")
         assertThrows<IllegalArgumentException> { AresProjectCodegenCli.run(baseArguments + "--check") }
     }

@@ -33,6 +33,7 @@ import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.AutonomousCatalogEntry
+import com.areslib.routine.CapabilityArgumentReader
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
@@ -43,16 +44,30 @@ import com.areslib.routine.RoutineValidationSeverity
 import com.areslib.routine.validateRoutineSet
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.compiler.RobotProjectIr
 import com.areslib.project.resolvedFtcRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import com.areslib.subsystem.SubsystemTargetCapability
+import com.areslib.subsystem.subsystemTargetCapabilities
 import java.security.MessageDigest
 
 /** Generator format version embedded in every emitted Kotlin source file. */
 const val ARES_KOTLIN_CODEGEN_VERSION: Int = 8
 
-/** Complete, hermetic input to the Kotlin robot-project generator. */
-data class KotlinProjectCodegenRequest(
+/** Renderer layout applied only after an effective project has been lowered to typed compiler IR. */
+data class KotlinProjectCompilationRequest(
+    val project: RobotProjectIr,
+    val packageName: String,
+    val objectName: String = "GeneratedAresProject",
+    val registryInterfaceName: String = "GeneratedAresProjectCapabilities",
+    /** Fully-qualified generated registry that creates the corresponding Redux tasks. */
+    val subsystemRegistryFqn: String? = null,
+    /** Parameterless action keys implemented by generated orchestration registries. */
+    val generatedActionRegistryBindings: Map<String, String> = emptyMap(),
+)
+
+/** Internal renderer input retained while focused renderers are extracted from the legacy file. */
+internal data class KotlinProjectCodegenRequest(
     val packageName: String,
     val objectName: String = "GeneratedAresProject",
     val registryInterfaceName: String = "GeneratedAresProjectCapabilities",
@@ -89,7 +104,28 @@ data class GeneratedKotlinSource(
  * generated as a closed `when`, so an unknown capability can never fall through to arbitrary code.
  */
 object AresKotlinProjectGenerator {
-    fun generate(request: KotlinProjectCodegenRequest): GeneratedKotlinSource {
+    fun generate(request: KotlinProjectCompilationRequest): GeneratedKotlinSource {
+        val project = request.project
+        return generate(
+            KotlinProjectCodegenRequest(
+                packageName = request.packageName,
+                objectName = request.objectName,
+                registryInterfaceName = request.registryInterfaceName,
+                catalog = project.capabilityCatalog,
+                routines = project.routines.map { it.document },
+                autonomousCatalog = project.autonomousCatalog,
+                controlSchemes = project.controlSchemes.map { it.document },
+                controllerProfiles = project.controllerProfiles.map { it.document },
+                targetInputPlatform = project.inputPlatform,
+                projectMetadata = project.metadata,
+                subsystemActions = subsystemTargetCapabilities(project.subsystems.map { it.document }),
+                subsystemRegistryFqn = request.subsystemRegistryFqn,
+                generatedActionRegistryBindings = request.generatedActionRegistryBindings,
+            )
+        )
+    }
+
+    internal fun generate(request: KotlinProjectCodegenRequest): GeneratedKotlinSource {
         validateRequest(request)
         val canonicalRoutines = request.routines.sortedBy { it.documentId }
         val canonicalActions = request.catalog.actions.sortedBy { it.key }
@@ -113,7 +149,7 @@ object AresKotlinProjectGenerator {
         val template = buildString {
             append("@file:Suppress(\"MagicNumber\", \"LongMethod\")\n\n")
             append("package ${request.packageName}\n\n")
-            append("import com.areslib.codegen.CapabilityArgumentReader\n")
+            append("import com.areslib.routine.CapabilityArgumentReader\n")
             append("import com.areslib.routine.AutonomousCatalogEntry\n")
             append("import com.areslib.routine.RoutineDocument\n")
             append("import com.areslib.routine.RoutineDriveMarker\n")

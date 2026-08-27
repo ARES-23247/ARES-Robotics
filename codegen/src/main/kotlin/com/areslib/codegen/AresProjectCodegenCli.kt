@@ -12,12 +12,15 @@ import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.model.ProjectModelSeverity
 import com.areslib.project.model.RobotProjectAssembler
 import com.areslib.project.model.RobotProjectSnapshot
+import com.areslib.project.compiler.ProjectVerificationManifestBuilder
+import com.areslib.project.compiler.ProjectVerificationManifestCodec
+import com.areslib.project.compiler.ProjectArtifactOwnership
+import com.areslib.project.compiler.RobotProjectCompiler
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.superstructure.SuperstructureDocumentCodec
 import com.areslib.superstructure.TransitionTriggerKind
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.isAresGenerated
-import com.areslib.subsystem.subsystemTargetCapabilities
 import com.areslib.tuning.TuningProfileAuthority
 import com.areslib.tuning.TuningComponentDocumentCodec
 import com.areslib.tuning.TuningProfileDocumentCodec
@@ -107,14 +110,7 @@ object AresProjectCodegenCli {
                 "${it.kind.name.lowercase()}:${it.documentId.orEmpty()}:${it.path}: ${it.message}"
             }
         }
-        val catalog = requireNotNull(effectiveProject.capabilityCatalog) {
-            "ARES project model did not produce an effective capability catalog"
-        }
-        val catalogActionKeys = catalog.actions.mapTo(linkedSetOf()) { it.key }
-        val parameterlessActionKeys = catalog.actions.asSequence()
-            .filter { it.parameters.isEmpty() }
-            .mapTo(linkedSetOf()) { it.key }
-        val subsystemActions = subsystemTargetCapabilities(subsystems)
+        val compilerIr = RobotProjectCompiler.lower(effectiveProject, options.platform)
         val superstructureActionOwners = superstructures.flatMap { document ->
             document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
                 .mapNotNull { transition -> transition.actionKey?.let { it to document.superstructureId } }
@@ -133,41 +129,20 @@ object AresProjectCodegenCli {
             "$superstructurePackage.GeneratedSuperstructureRegistry"
         }
 
-        val generated = AresKotlinProjectGenerator.generate(
-            KotlinProjectCodegenRequest(
-                packageName = options.packageName,
-                objectName = options.objectName,
-                registryInterfaceName = options.registryInterfaceName,
-                catalog = catalog,
-                routines = routines,
-                autonomousCatalog = autonomousCatalog,
-                controlSchemes = controls,
-                controllerProfiles = profiles,
-                targetInputPlatform = options.platform,
-                projectMetadata = metadata,
-                subsystemActions = subsystemActions,
-                subsystemRegistryFqn = options.subsystemsPackage?.let { "$it.GeneratedSubsystemRegistry" },
-                generatedActionRegistryBindings = superstructureActionBindings,
-            )
+        val (projectRuntimeArtifact, generated) = ProjectRuntimeKotlinRenderer.render(
+            project = compilerIr,
+            relativePath = projectRelativePath(projectRoot, output),
+            packageName = options.packageName,
+            objectName = options.objectName,
+            registryInterfaceName = options.registryInterfaceName,
+            subsystemRegistryFqn = options.subsystemsPackage?.let { "$it.GeneratedSubsystemRegistry" },
+            generatedActionRegistryBindings = superstructureActionBindings,
         )
-        val projectVerification = options.subsystemsGeneratedTestOutput?.let {
-            val platform = requireNotNull(options.platform) {
-                "Generated project verification requires --platform FTC or FRC"
-            }
-            ProjectVerificationKotlinGenerator.generate(
-                ProjectVerificationCodegenRequest(
-                    packageName = options.packageName,
-                    platform = platform,
-                    projectJson = AresProjectMetadataCodec.encode(metadata),
-                    catalogJson = CapabilityCatalogCodec.encode(catalog),
-                    drivetrainJson = drivetrains.map(DrivetrainDocumentCodec::encode),
-                    subsystemJson = subsystems.map(SubsystemDocumentCodec::encode),
-                    superstructureJson = superstructures.map(SuperstructureDocumentCodec::encode),
-                    controllerProfileJson = profiles.map(ControllerProfileCodec::encode),
-                    controlSchemeJson = controls.map(ControlSchemeCodec::encode),
-                    routineJson = routines.map(AresRoutineCodec::encode),
-                    autonomousCatalogJson = autonomousCatalog?.let(AutonomousCatalogCodec::encode),
-                )
+        val projectVerificationArtifact = options.subsystemsGeneratedTestOutput?.let { testRoot ->
+            ProjectVerificationKotlinRenderer.render(
+                compilerIr,
+                projectRelativePath(projectRoot, testRoot.toAbsolutePath().normalize()),
+                options.packageName,
             )
         }
 
@@ -185,89 +160,43 @@ object AresProjectCodegenCli {
         } else if (!Files.isRegularFile(output) || Files.readString(output) != generated.source) {
             writeAtomically(output, generated.source)
         }
-        syncSubsystemSources(projectRoot, subsystems, options, projectVerification)
-        syncDrivebaseSources(projectRoot, drivetrains, tuningProfiles, declarations, options)
-        syncSuperstructureSources(
-            projectRoot,
-            superstructures,
-            subsystems,
-            catalogActionKeys,
-            parameterlessActionKeys,
-            options,
-        )
+        val renderedArtifacts = buildList {
+            add(projectRuntimeArtifact)
+            addAll(syncSubsystemSources(projectRoot, compilerIr, options, projectVerificationArtifact))
+            addAll(syncDrivebaseSources(projectRoot, compilerIr, options))
+            addAll(syncSuperstructureSources(projectRoot, compilerIr, options))
+        }
         if (!options.subsystemsOnly) {
             FtcStarterContractMigration.reconcile(projectRoot, options.platform, options.checkOnly)
+            syncVerificationManifest(projectRoot, compilerIr, renderedArtifacts, options)
         }
         return generated
     }
 
     private fun syncDrivebaseSources(
         projectRoot: Path,
-        drivetrains: List<com.areslib.drivetrain.DrivetrainDocument>,
-        profiles: List<com.areslib.tuning.TuningProfileDocument>,
-        declarations: List<com.areslib.tuning.TuningParameterDeclaration>,
+        project: com.areslib.project.compiler.RobotProjectIr,
         options: CliOptions,
-    ) {
-        if (drivetrains.isEmpty() && declarations.isEmpty() && options.drivebaseOutput == null) return
+    ): List<RenderedKotlinArtifact> {
+        if (project.drivetrain == null && project.tuningDeclarations.isEmpty() && options.drivebaseOutput == null) {
+            return emptyList()
+        }
         val root = requireNotNull(options.drivebaseOutput) {
             "--drivebase-output is required when drivetrain or typed tuning documents exist"
         }.toAbsolutePath().normalize()
         require(root.startsWith(projectRoot)) { "Generated drivebase output must stay inside the selected project" }
-        val files = drivetrains.singleOrNull()?.let { drivetrain ->
-            val packageName = requireNotNull(options.drivebasePackage) {
-                "--drivebase-package is required when generating drivebase plumbing"
-            }
-            val projectUid = requireNotNull(profiles.firstOrNull()?.projectUid) {
-                "Drivebase '${drivetrain.uid}' requires at least one checked-in canonical profile in .ares/tuning"
-            }
-            val additional = declarations.filterNot { candidate -> drivetrain.parameters.any { it.uid == candidate.uid } }
-            buildList {
-                add(
-                    DrivetrainKotlinGenerator.generate(drivetrain, profiles, packageName, additional),
-                )
-                add(
-                    DrivetrainKotlinGenerator.generateProjectTuning(
-                        projectUid = projectUid,
-                        canonicalProfileUid = drivetrain.canonicalProfileUid,
-                        drivebaseUid = drivetrain.uid,
-                        declarations = declarations,
-                        profiles = profiles,
-                        packageName = packageName,
-                    ),
-                )
-                if (options.ftcZeroCodeRuntime) {
-                    require(options.platform == ControllerInputPlatform.FTC) {
-                        "--ftc-zero-code-runtime requires --platform FTC"
-                    }
-                    add(
-                        DrivetrainKotlinGenerator.generateFtcMecanumRuntime(
-                            drivetrain,
-                            profiles,
-                            packageName,
-                            additional,
-                        ),
-                    )
-                }
-            }
-        } ?: if (declarations.isNotEmpty()) {
-            val packageName = requireNotNull(options.drivebasePackage) {
-                "--drivebase-package is required when generating typed tuning plumbing"
-            }
-            val canonicalProfile = profiles.singleOrNull { it.baseProfileUid == null }
-                ?: error("A project without a drivebase requires exactly one root canonical tuning profile")
-            listOf(
-                DrivetrainKotlinGenerator.generateProjectTuning(
-                    projectUid = canonicalProfile.projectUid,
-                    canonicalProfileUid = canonicalProfile.uid,
-                    drivebaseUid = null,
-                    declarations = declarations,
-                    profiles = profiles,
-                    packageName = packageName,
-                ),
-            )
-        } else emptyList()
+        val packageName = requireNotNull(options.drivebasePackage) {
+            "--drivebase-package is required when generating drivebase or typed tuning plumbing"
+        }
+        val artifacts = DrivebaseKotlinArtifactRenderer.render(
+            project,
+            projectRelativePath(projectRoot, root),
+            packageName,
+            options.ftcZeroCodeRuntime,
+        )
         val manifest = root.resolve(".ares-drivebase-manifest")
-        val expected = files.associate { it.relativePath to it.content }
+        val prefix = projectRelativePath(projectRoot, root)
+        val expected = artifacts.associate { relativeToPrefix(prefix, it.plan.relativePath) to it.content }
         val expectedManifest = expected.keys.sorted().joinToString("\n", postfix = if (expected.isEmpty()) "" else "\n")
         if (options.checkOnly) {
             val actual = if (Files.isRegularFile(manifest)) Files.readString(manifest) else ""
@@ -278,7 +207,7 @@ object AresProjectCodegenCli {
                     "Generated drivebase source is stale at $path"
                 }
             }
-            return
+            return artifacts
         }
         val previous = if (Files.isRegularFile(manifest)) Files.readAllLines(manifest).filter(String::isNotBlank) else emptyList()
         previous.filterNot(expected::containsKey).forEach { Files.deleteIfExists(safeGeneratedPath(root, it)) }
@@ -292,21 +221,19 @@ object AresProjectCodegenCli {
             if (!exists || Files.readString(path) != content) writeAtomically(path, content)
         }
         if (expected.isEmpty()) Files.deleteIfExists(manifest) else writeAtomically(manifest, expectedManifest)
+        return artifacts
     }
 
     private fun syncSuperstructureSources(
         projectRoot: Path,
-        superstructures: List<com.areslib.superstructure.SuperstructureDocument>,
-        subsystems: List<com.areslib.subsystem.SubsystemDocument>,
-        actionKeys: Set<String>,
-        parameterlessActionKeys: Set<String>,
+        project: com.areslib.project.compiler.RobotProjectIr,
         options: CliOptions,
-    ) {
-        if (superstructures.isEmpty() && options.superstructureOutput == null &&
+    ): List<RenderedKotlinArtifact> {
+        if (project.superstructures.isEmpty() && options.superstructureOutput == null &&
             options.subsystemsGeneratedOutput == null
-        ) return
+        ) return emptyList()
         val root = (options.superstructureOutput ?: options.subsystemsGeneratedOutput?.resolve("superstructure"))
-            ?.toAbsolutePath()?.normalize() ?: return
+            ?.toAbsolutePath()?.normalize() ?: return emptyList()
         require(root.startsWith(projectRoot)) { "Generated superstructure output must stay inside the selected project" }
         val packageName = options.superstructurePackage
             ?: options.subsystemsPackage?.let { "$it.superstructure" }
@@ -314,18 +241,15 @@ object AresProjectCodegenCli {
         val subsystemRegistryFqn = requireNotNull(options.subsystemsPackage) {
             "--subsystems-package is required when superstructure documents exist"
         } + ".GeneratedSubsystemRegistry"
-        val files = superstructures.map { superstructure ->
-            SuperstructureKotlinGenerator.generate(
-                document = superstructure,
-                packageName = packageName,
-                subsystemRegistryFqn = subsystemRegistryFqn,
-                subsystems = subsystems,
-                actionKeys = actionKeys,
-                parameterlessActionKeys = parameterlessActionKeys,
-            )
-        } + SuperstructureKotlinGenerator.generateRegistry(superstructures, packageName)
+        val prefix = projectRelativePath(projectRoot, root)
+        val artifacts = SuperstructureKotlinArtifactRenderer.render(
+            project,
+            prefix,
+            packageName,
+            subsystemRegistryFqn,
+        )
         val manifest = root.resolve(".ares-superstructure-manifest")
-        val expected = files.associate { it.relativePath to it.content }
+        val expected = artifacts.associate { relativeToPrefix(prefix, it.plan.relativePath) to it.content }
         val expectedManifest = expected.keys.sorted().joinToString("\n", postfix = if (expected.isEmpty()) "" else "\n")
         if (options.checkOnly) {
             val actual = if (Files.isRegularFile(manifest)) Files.readString(manifest) else ""
@@ -336,7 +260,7 @@ object AresProjectCodegenCli {
                     "Generated superstructure source is stale at $path"
                 }
             }
-            return
+            return artifacts
         }
         val previous = if (Files.isRegularFile(manifest)) Files.readAllLines(manifest).filter(String::isNotBlank) else emptyList()
         previous.filterNot(expected::containsKey).forEach { Files.deleteIfExists(safeGeneratedPath(root, it)) }
@@ -350,76 +274,73 @@ object AresProjectCodegenCli {
             if (!exists || Files.readString(path) != content) writeAtomically(path, content)
         }
         if (expected.isEmpty()) Files.deleteIfExists(manifest) else writeAtomically(manifest, expectedManifest)
+        return artifacts
     }
 
     private fun syncSubsystemSources(
         projectRoot: Path,
-        subsystems: List<com.areslib.subsystem.SubsystemDocument>,
+        project: com.areslib.project.compiler.RobotProjectIr,
         options: CliOptions,
-        projectVerification: GeneratedProjectVerificationFile?,
-    ) {
-        if (subsystems.isEmpty() &&
+        projectVerification: RenderedKotlinArtifact?,
+    ): List<RenderedKotlinArtifact> {
+        if (project.subsystems.isEmpty() &&
             options.subsystemsGeneratedOutput == null && options.subsystemsGeneratedTestOutput == null &&
             options.subsystemsStarterOutput == null
-        ) return
-        val platform = when (options.platform) {
-            ControllerInputPlatform.FTC -> SubsystemPlatform.FTC
-            ControllerInputPlatform.FRC -> SubsystemPlatform.FRC
-            ControllerInputPlatform.DESKTOP_GLFW, null -> error("Subsystem generation requires --platform FTC or FRC")
-        }
+        ) return emptyList()
         val basePackage = requireNotNull(options.subsystemsPackage) {
             "--subsystems-package is required when generating subsystem sources"
         }
-        val target = SubsystemKotlinCodegenTarget(platform, basePackage)
-        val files = subsystems.filter { it.implementation.kind.isAresGenerated() }.flatMap { document ->
-            SubsystemKotlinGenerator.generate(document, target)
-        } + SubsystemKotlinGenerator.generateRegistry(subsystems, target)
-        val duplicate = files.groupBy { it.sourceSet to it.relativePath }.filterValues { it.size > 1 }.keys
-        require(duplicate.isEmpty()) { "Generated subsystem paths collide: ${duplicate.joinToString()}" }
-        if (options.subsystemsStarterOutput != null) {
-            val starterRoot = options.subsystemsStarterOutput.toAbsolutePath().normalize()
-            require(starterRoot.startsWith(projectRoot)) { "Subsystem starter output must stay inside the selected project" }
-            val plan = SubsystemStarterReconciler.plan(starterRoot, files)
-            if (options.previewSubsystemStarters) {
-                println(plan.render())
-                return
-            }
-            if (options.applySubsystemStarters) {
-                println(SubsystemStarterReconciler.apply(starterRoot, files, options.subsystemConfirmationToken).render())
-            } else {
-                SubsystemStarterReconciler.requirePresent(starterRoot, files)
-            }
-            val generatedRoot = requireNotNull(options.subsystemsGeneratedOutput) {
-                "--subsystems-generated-output is required with --subsystems-starter-output"
-            }.toAbsolutePath().normalize()
-            val generatedTestRoot = requireNotNull(options.subsystemsGeneratedTestOutput) {
-                "--subsystems-generated-test-output is required with --subsystems-starter-output"
-            }.toAbsolutePath().normalize()
-            require(generatedRoot.startsWith(projectRoot) && generatedTestRoot.startsWith(projectRoot)) {
-                "Generated subsystem output must stay inside the selected project"
-            }
-            syncSourceSet(
-                generatedRoot,
-                files.filter {
-                    it.sourceSet == GeneratedSubsystemSourceSet.MAIN &&
-                        it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
-                }.associate { it.relativePath to it.content },
-                options.checkOnly,
-            )
-            val generatedTests = files.filter {
-                it.sourceSet == GeneratedSubsystemSourceSet.TEST &&
-                    it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
-            }.associate { it.relativePath to it.content }.toMutableMap()
-            projectVerification?.let { generatedTests[it.relativePath] = it.content }
-            syncSourceSet(
-                generatedTestRoot,
-                generatedTests,
-                options.checkOnly,
-            )
-            return
+        val starterRoot = requireNotNull(options.subsystemsStarterOutput) {
+            "--subsystems-starter-output is required when generating subsystem sources"
+        }.toAbsolutePath().normalize()
+        val generatedRoot = requireNotNull(options.subsystemsGeneratedOutput) {
+            "--subsystems-generated-output is required when generating subsystem sources"
+        }.toAbsolutePath().normalize()
+        val generatedTestRoot = requireNotNull(options.subsystemsGeneratedTestOutput) {
+            "--subsystems-generated-test-output is required when generating subsystem sources"
+        }.toAbsolutePath().normalize()
+        require(starterRoot.startsWith(projectRoot) && generatedRoot.startsWith(projectRoot) &&
+            generatedTestRoot.startsWith(projectRoot)
+        ) { "Subsystem starter and generated outputs must stay inside the selected project" }
+        val rendered = SubsystemKotlinArtifactRenderer.render(
+            project,
+            basePackage,
+            projectRelativePath(projectRoot, starterRoot),
+            projectRelativePath(projectRoot, generatedRoot),
+            projectRelativePath(projectRoot, generatedTestRoot),
+        )
+        val artifacts = rendered.artifacts
+        val files = rendered.legacyFiles
+        val plan = SubsystemStarterReconciler.plan(starterRoot, files)
+        if (options.previewSubsystemStarters) {
+            println(plan.render())
+            return artifacts
         }
-
-        error("Subsystem generation requires --subsystems-starter-output and split generated-source outputs")
+        if (options.applySubsystemStarters) {
+            println(SubsystemStarterReconciler.apply(starterRoot, files, options.subsystemConfirmationToken).render())
+        } else {
+            SubsystemStarterReconciler.requirePresent(starterRoot, files)
+        }
+        syncSourceSet(
+            generatedRoot,
+            files.filter {
+                it.sourceSet == GeneratedSubsystemSourceSet.MAIN &&
+                    it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
+            }.associate { it.relativePath to it.content },
+            options.checkOnly,
+        )
+        val generatedTests = files.filter {
+            it.sourceSet == GeneratedSubsystemSourceSet.TEST &&
+                it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT
+        }.associate { it.relativePath to it.content }.toMutableMap()
+        projectVerification?.let {
+            generatedTests[relativeToPrefix(
+                projectRelativePath(projectRoot, generatedTestRoot),
+                it.plan.relativePath,
+            )] = it.content
+        }
+        syncSourceSet(generatedTestRoot, generatedTests, options.checkOnly)
+        return artifacts + listOfNotNull(projectVerification)
     }
 
     private fun syncSourceSet(root: Path, expected: Map<String, String>, checkOnly: Boolean) {
@@ -465,6 +386,51 @@ object AresProjectCodegenCli {
         val path = root.resolve(relative).normalize()
         require(path.startsWith(root) && relative.isNotBlank()) { "Invalid generated subsystem path '$relative'" }
         return path
+    }
+
+    private fun projectRelativePath(projectRoot: Path, path: Path): String {
+        val normalizedRoot = projectRoot.toAbsolutePath().normalize()
+        val normalizedPath = path.toAbsolutePath().normalize()
+        require(normalizedPath.startsWith(normalizedRoot)) {
+            "Generated artifact must stay inside the selected project: $normalizedPath"
+        }
+        return normalizedRoot.relativize(normalizedPath).toString().replace('\\', '/')
+    }
+
+    private fun relativeToPrefix(prefix: String, fullPath: String): String {
+        val normalizedPrefix = prefix.replace('\\', '/').trim('/')
+        val normalizedPath = fullPath.replace('\\', '/').trim('/')
+        require(normalizedPath.startsWith("$normalizedPrefix/") || normalizedPath == normalizedPrefix) {
+            "Generated artifact '$fullPath' is outside '$prefix'"
+        }
+        return normalizedPath.removePrefix(normalizedPrefix).trimStart('/')
+    }
+
+    private fun syncVerificationManifest(
+        projectRoot: Path,
+        project: com.areslib.project.compiler.RobotProjectIr,
+        artifacts: List<RenderedKotlinArtifact>,
+        options: CliOptions,
+    ) {
+        val manifestPath = (options.verificationManifestOutput
+            ?: projectRoot.resolve("build/generated/ares/verification/ares-project-verification.json"))
+            .toAbsolutePath().normalize()
+        require(manifestPath.startsWith(projectRoot)) {
+            "Generated verification manifest must stay inside the selected project"
+        }
+        val ownedArtifacts = artifacts.filter { it.plan.ownership == ProjectArtifactOwnership.GENERATED_DO_NOT_EDIT }
+        val uniqueArtifacts = ownedArtifacts.distinctBy { it.plan.relativePath.replace('\\', '/') }
+        require(uniqueArtifacts.size == ownedArtifacts.size) { "Generated artifact paths must be unique" }
+        val content = ProjectVerificationManifestCodec.encode(
+            ProjectVerificationManifestBuilder.build(project, uniqueArtifacts.map(RenderedKotlinArtifact::manifestEntry))
+        )
+        if (options.checkOnly) {
+            require(Files.isRegularFile(manifestPath) && Files.readString(manifestPath) == content) {
+                "Generated verification manifest is stale at $manifestPath. Run the ARES generation task."
+            }
+        } else if (!Files.isRegularFile(manifestPath) || Files.readString(manifestPath) != content) {
+            writeAtomically(manifestPath, content)
+        }
     }
 
     private fun readRequired(path: Path): String {
@@ -527,6 +493,7 @@ object AresProjectCodegenCli {
         val ftcZeroCodeRuntime: Boolean,
         val superstructureOutput: Path?,
         val superstructurePackage: String?,
+        val verificationManifestOutput: Path?,
     ) {
         companion object {
             fun parse(args: Array<String>): CliOptions {
@@ -585,6 +552,7 @@ object AresProjectCodegenCli {
                     ftcZeroCodeRuntime,
                     values["--superstructure-output"]?.let(Path::of),
                     values["--superstructure-package"],
+                    values["--verification-manifest-output"]?.let(Path::of),
                 )
             }
 
@@ -594,6 +562,7 @@ object AresProjectCodegenCli {
                 "--subsystems-generated-test-output", "--subsystems-confirmation-token",
                 "--drivebase-output", "--drivebase-package",
                 "--superstructure-output", "--superstructure-package",
+                "--verification-manifest-output",
             )
             private val FLAG_OPTIONS = setOf(
                 "--check", "--subsystems-only", "--preview-subsystem-starters", "--apply-subsystem-starters",

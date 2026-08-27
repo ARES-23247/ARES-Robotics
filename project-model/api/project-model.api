@@ -34,6 +34,35 @@ public final class com/areslib/project/model/EffectiveRobotProject {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/project/model/EffectiveRobotProjectQueries {
+	public fun <init> (Lcom/areslib/project/model/EffectiveRobotProject;)V
+	public final fun action (Ljava/lang/String;)Lcom/areslib/catalog/ActionDescriptor;
+	public final fun controlScheme (Ljava/lang/String;)Lcom/areslib/controls/ControlSchemeDocument;
+	public final fun controllerProfile (Ljava/lang/String;)Lcom/areslib/controls/ControllerProfileDocument;
+	public final fun drivetrain (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun getActions ()Ljava/util/List;
+	public final fun getAutonomousCatalog ()Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun getCapabilityCatalog ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun getControlSchemes ()Ljava/util/List;
+	public final fun getControllerProfiles ()Ljava/util/List;
+	public final fun getDrivetrains ()Ljava/util/List;
+	public final fun getField ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getMetadata ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun getRoutines ()Ljava/util/List;
+	public final fun getSubsystems ()Ljava/util/List;
+	public final fun getSuperstructures ()Ljava/util/List;
+	public final fun getTuningComponents ()Ljava/util/List;
+	public final fun getTuningProfiles ()Ljava/util/List;
+	public final fun isValid ()Z
+	public final fun routine (Ljava/lang/String;)Lcom/areslib/routine/RoutineDocument;
+	public final fun subsystem (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun superstructure (Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureDocument;
+}
+
+public final class com/areslib/project/model/EffectiveRobotProjectQueriesKt {
+	public static final fun queries (Lcom/areslib/project/model/EffectiveRobotProject;)Lcom/areslib/project/model/EffectiveRobotProjectQueries;
+}
+
 public final class com/areslib/project/model/ProjectModelIssue {
 	public fun <init> (Lcom/areslib/project/model/ProjectModelSeverity;Lcom/areslib/project/schema/ProjectDocumentKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Lcom/areslib/project/model/ProjectModelSeverity;Lcom/areslib/project/schema/ProjectDocumentKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V

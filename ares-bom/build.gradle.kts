@@ -19,6 +19,7 @@ dependencies {
     constraints {
         api(project(":project-schema"))
         api(project(":project-model"))
+        api(project(":project-compiler"))
         api(project(":core"))
         api(project(":codegen"))
         api(project(":ftc-mocks"))

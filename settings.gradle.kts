@@ -51,6 +51,7 @@ rootProject.name = "ARESLib-Kotlin"
 include("core")
 include("project-schema")
 include("project-model")
+include("project-compiler")
 include("codegen")
 include("ftc-mocks")
 include("ftc-hardware")

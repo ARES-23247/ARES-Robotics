@@ -1,4 +1,4 @@
-package com.areslib.codegen
+package com.areslib.routine
 
 /**
  * Strict, allocation-light argument decoder used by generated capability dispatchers.

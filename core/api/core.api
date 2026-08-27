@@ -620,48 +620,6 @@ public final class com/areslib/action/StartCalibrationSweep : com/areslib/action
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/areslib/codegen/CapabilityArgumentReader {
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;)V
-	public final fun optionalBoolean (Ljava/lang/String;Ljava/lang/Boolean;)Ljava/lang/Boolean;
-	public static synthetic fun optionalBoolean$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Ljava/lang/Boolean;
-	public final fun optionalEnum (Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;)Ljava/lang/String;
-	public static synthetic fun optionalEnum$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
-	public final fun optionalNumber (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)Ljava/lang/Double;
-	public static synthetic fun optionalNumber$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Ljava/lang/Double;
-	public final fun optionalText (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-	public static synthetic fun optionalText$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
-	public final fun requiredBoolean (Ljava/lang/String;Ljava/lang/Boolean;)Z
-	public static synthetic fun requiredBoolean$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Z
-	public final fun requiredEnum (Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;)Ljava/lang/String;
-	public static synthetic fun requiredEnum$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
-	public final fun requiredNumber (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)D
-	public static synthetic fun requiredNumber$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)D
-	public final fun requiredText (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-	public static synthetic fun requiredText$default (Lcom/areslib/codegen/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
-}
-
-public final class com/areslib/codegen/DrivetrainKotlinGenerator {
-	public static final field INSTANCE Lcom/areslib/codegen/DrivetrainKotlinGenerator;
-	public final fun generate (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-	public static synthetic fun generate$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-	public final fun generateFtcMecanumRuntime (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-	public static synthetic fun generateFtcMecanumRuntime$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-	public final fun generateProjectTuning (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-}
-
-public final class com/areslib/codegen/GeneratedDrivebaseFile {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-	public static synthetic fun copy$default (Lcom/areslib/codegen/GeneratedDrivebaseFile;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getContent ()Ljava/lang/String;
-	public final fun getRelativePath ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public abstract interface class com/areslib/control/assist/Action {
 	public fun end (Z)V
 	public abstract fun isFinished ()Z
@@ -5154,6 +5112,26 @@ public final class com/areslib/reducer/controller/VisionMeasurementController {
 }
 
 public abstract interface annotation class com/areslib/routine/AresRoutineDsl : java/lang/annotation/Annotation {
+}
+
+public final class com/areslib/routine/CapabilityArgumentReader {
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Set;)V
+	public final fun optionalBoolean (Ljava/lang/String;Ljava/lang/Boolean;)Ljava/lang/Boolean;
+	public static synthetic fun optionalBoolean$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Ljava/lang/Boolean;
+	public final fun optionalEnum (Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun optionalEnum$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun optionalNumber (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)Ljava/lang/Double;
+	public static synthetic fun optionalNumber$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)Ljava/lang/Double;
+	public final fun optionalText (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun optionalText$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun requiredBoolean (Ljava/lang/String;Ljava/lang/Boolean;)Z
+	public static synthetic fun requiredBoolean$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Z
+	public final fun requiredEnum (Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun requiredEnum$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/util/Set;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun requiredNumber (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)D
+	public static synthetic fun requiredNumber$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILjava/lang/Object;)D
+	public final fun requiredText (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun requiredText$default (Lcom/areslib/routine/CapabilityArgumentReader;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
 }
 
 public final class com/areslib/routine/DriveStepBuilder {

@@ -29,6 +29,16 @@ class RobotProjectAssemblerTest {
     }
 
     @Test
+    fun `feature query API reads the validated effective catalog`() {
+        val queries = RobotProjectAssembler.assemble(validSnapshot()).queries()
+
+        assertEquals("lightbot", queries.metadata?.projectId)
+        assertEquals(listOf("lights.cycleForward"), queries.actions.map { it.key })
+        assertEquals("Cycle lights forward", queries.action("lights.cycleForward")?.displayName)
+        assertEquals(null, queries.action("invalid key with spaces"))
+    }
+
+    @Test
     fun `project identity mismatch and cross league assembly fail before generation`() {
         val mismatched = validSnapshot().copy(
             baseCapabilityCatalog = CapabilityCatalogDocument(projectId = "another-project"),

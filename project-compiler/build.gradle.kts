@@ -10,15 +10,13 @@ mavenPublishing {
     configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
 }
 
-description = "ARES project, autonomous, controls, and subsystem Kotlin code generation tools."
+description = "Pure ARES effective-project lowering, typed compiler IR, and artifact planning contracts."
 
 dependencies {
-    api(project(":core"))
     api(project(":project-model"))
-    api(project(":project-compiler"))
+    implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
-    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
 }
 
 kotlin {

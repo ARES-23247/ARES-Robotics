@@ -1,4 +1,4 @@
-package com.areslib.codegen
+package com.areslib.routine
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

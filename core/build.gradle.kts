@@ -54,29 +54,4 @@ tasks.register<JavaExec>("fitLocalizationCalibration") {
 
 kotlin {
     jvmToolchain(17)
-    sourceSets {
-        main {
-            kotlin.exclude(
-                "com/areslib/codegen/AresKotlinProjectGenerator.kt",
-                "com/areslib/codegen/AresProjectCodegenCli.kt",
-                "com/areslib/codegen/FtcStarterContractMigration.kt",
-                "com/areslib/codegen/ProjectVerificationKotlinGenerator.kt",
-                "com/areslib/codegen/SubsystemKotlinGenerator.kt",
-                "com/areslib/codegen/SubsystemStarterReconciler.kt",
-                "com/areslib/codegen/SuperstructureKotlinGenerator.kt",
-            )
-        }
-        test {
-            kotlin.exclude(
-                "com/areslib/codegen/AresKotlinProjectGeneratorTest.kt",
-                "com/areslib/codegen/AresProjectCodegenCliTest.kt",
-                "com/areslib/codegen/FtcStarterContractMigrationTest.kt",
-                "com/areslib/codegen/ProjectVerificationKotlinGeneratorTest.kt",
-                "com/areslib/codegen/SubsystemKotlinGeneratorTest.kt",
-                "com/areslib/codegen/RepresentativeZeroCodeRobotTest.kt",
-                "com/areslib/codegen/SubsystemStarterReconcilerTest.kt",
-                "com/areslib/codegen/SuperstructureKotlinGeneratorTest.kt",
-            )
-        }
-    }
 }
