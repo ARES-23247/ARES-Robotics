@@ -5,6 +5,7 @@ import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject
 import org.firstinspires.ftc.teamcode.generated.drivebase.GeneratedAresDrivebaseConfig
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 import java.io.File
 
@@ -37,10 +38,18 @@ class StarterProjectContractTest {
         val workingDirectory = requireNotNull(System.getProperty("user.dir"))
         val root = generateSequence(File(workingDirectory).canonicalFile, File::getParentFile)
             .first { File(it, "TeamCode").isDirectory && File(it, ".ares/project.json").isFile }
-        val runtime = File(
-            root,
-            "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
-        ).readText()
+        val runtimeFile = listOf(
+            File(
+                root,
+                "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
+            ),
+            File(
+                root.parentFile,
+                "templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
+            ),
+        ).firstOrNull(File::isFile)
+        assertNotNull("FTC runtime must come from the standalone mirror or canonical monorepo template", runtimeFile)
+        val runtime = requireNotNull(runtimeFile).readText()
 
         assertTrue(runtime.contains("GeneratedProjectControlRuntime"))
         assertTrue(runtime.contains("GeneratedAresProject.runtimeDefinition"))

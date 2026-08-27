@@ -37,6 +37,7 @@ import org.firstinspires.ftc.teamcode.dsl.segmentsIntersect
 import org.firstinspires.ftc.teamcode.dsl.validateFtcAutonomousBounds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -349,10 +350,18 @@ class GeneratedDriveCommandTest {
         val workingDirectory = requireNotNull(System.getProperty("user.dir"))
         val root = generateSequence(java.io.File(workingDirectory).canonicalFile, java.io.File::getParentFile)
             .first { java.io.File(it, "TeamCode").isDirectory && java.io.File(it, ".ares/project.json").isFile }
-        val runtime = java.io.File(
-            root,
-            "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
-        ).readText()
+        val runtimeFile = listOf(
+            java.io.File(
+                root,
+                "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
+            ),
+            java.io.File(
+                root.parentFile,
+                "templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
+            ),
+        ).firstOrNull(java.io.File::isFile)
+        assertNotNull("FTC runtime must come from the standalone mirror or canonical monorepo template", runtimeFile)
+        val runtime = requireNotNull(runtimeFile).readText()
 
         assertTrue(runtime.contains("GeneratedProjectControlRuntime"))
         assertTrue(runtime.contains("GeneratedAresProject.runtimeDefinition"))

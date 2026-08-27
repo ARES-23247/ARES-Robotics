@@ -381,8 +381,11 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
 
     private fun rebuildSelectedConfiguration(activeRobot: R, cancellationReason: String) {
         generatedRuntime?.cancelAll(cancellationReason)
-        selector.selected?.let { requireNoValidationErrors(activeRobot, it) }
+        // Alliance and authored start pose are selection state, not evidence that the routine is
+        // runnable. Apply them before validation so INIT, diagnostics, and locked validation
+        // OpModes remain truthful even when missing hardware correctly blocks execution.
         seedSelectedPose(activeRobot)
+        selector.selected?.let { requireNoValidationErrors(activeRobot, it) }
         generatedRuntime = createGeneratedRuntime(activeRobot, selector.selected, selector.alliance)
     }
 

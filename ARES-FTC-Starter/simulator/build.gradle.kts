@@ -11,6 +11,8 @@ val aresSimulatorRuntime = when {
     System.getProperty("os.name").contains("mac", ignoreCase = true) -> "simulator-runtime-macos"
     else -> "simulator-runtime-linux"
 }
+val canonicalMonorepoFtcRuntimeDir = rootProject.projectDir.parentFile
+    .resolve("templates/ftc/runtime/src/main/kotlin")
 
 dependencies {
     implementation(platform("org.aresfirst.ares:ares-bom:$aresVersion"))
@@ -37,6 +39,9 @@ sourceSets {
             "../TeamCode/build/generated/ares/drivebase/kotlin",
             "src/main/kotlin",
         )
+        if (canonicalMonorepoFtcRuntimeDir.isDirectory) {
+            java.srcDir(canonicalMonorepoFtcRuntimeDir)
+        }
     }
 }
 
