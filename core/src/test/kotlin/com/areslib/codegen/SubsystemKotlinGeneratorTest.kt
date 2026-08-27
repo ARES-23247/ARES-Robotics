@@ -982,6 +982,40 @@ class SubsystemKotlinGeneratorTest {
     }
 
     @Test
+    fun `indicator registry and project expose parameterless forward and backward color cycles`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.INDICATOR_LIGHT_PWM,
+            documentId = "status-light",
+            kotlinTypeName = "StatusLight",
+            platform = SubsystemPlatform.FTC,
+        )
+        val actions = subsystemTargetCapabilities(listOf(document))
+        val catalog = mergeSubsystemCapabilities(CapabilityCatalogDocument(projectId = "robot"), listOf(document))
+        val registry = SubsystemKotlinGenerator.generateRegistry(
+            listOf(document),
+            SubsystemKotlinCodegenTarget(SubsystemPlatform.FTC, "org.example.generated.subsystems"),
+        ).content
+        val project = AresKotlinProjectGenerator.generate(
+            KotlinProjectCodegenRequest(
+                packageName = "org.example.generated",
+                catalog = catalog,
+                routines = emptyList(),
+                subsystemActions = actions,
+                subsystemRegistryFqn = "org.example.generated.subsystems.GeneratedSubsystemRegistry",
+            )
+        ).source
+
+        assertTrue(registry.contains("fun createActionTask(actionKey: String, value: Any?)"))
+        assertTrue(registry.contains("subsystem.status-light.cycleForward.targetColor"))
+        assertTrue(registry.contains("subsystem.status-light.cycleBackward.targetColor"))
+        assertTrue(registry.contains("current.targetColor < 0.279 -> 0.279"))
+        assertTrue(registry.contains("current.targetColor > 0.833 -> 0.833"))
+        assertTrue(project.contains("fun actionSubsystemStatusLightCycleForwardTargetColor(): Task"))
+        assertTrue(project.contains("createActionTask(\"subsystem.status-light.cycleForward.targetColor\", null)"))
+        assertTrue(project.contains("fun actionSubsystemStatusLightCycleBackwardTargetColor(): Task"))
+    }
+
+    @Test
     fun `arm feedforward generates cosine gravity compensation and bounds velocity`() {
         val base = SubsystemTemplates.create(
             SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,

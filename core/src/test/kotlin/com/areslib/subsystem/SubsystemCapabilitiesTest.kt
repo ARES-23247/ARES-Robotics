@@ -121,6 +121,8 @@ class SubsystemCapabilitiesTest {
         val actions = subsystemTargetCapabilities(listOf(indicator, prism)).associateBy { it.descriptor.key }
         val indicatorParameter = requireNotNull(actions["subsystem.status-light.set.targetColor"])
             .descriptor.parameters.single()
+        val cycleForward = requireNotNull(actions["subsystem.status-light.cycleForward.targetColor"])
+        val cycleBackward = requireNotNull(actions["subsystem.status-light.cycleBackward.targetColor"])
         val prismParameter = requireNotNull(actions["subsystem.prism.set.targetPulseWidthUs"])
             .descriptor.parameters.single()
 
@@ -128,6 +130,12 @@ class SubsystemCapabilitiesTest {
         assertTrue("GREEN" in indicatorParameter.options)
         assertTrue("RAINBOW" !in indicatorParameter.options)
         assertEquals("OFF", indicatorParameter.defaultText)
+        assertTrue(cycleForward.descriptor.parameters.isEmpty())
+        assertEquals("Cycle Target color forward", cycleForward.descriptor.displayName)
+        assertEquals(SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_FORWARD, cycleForward.operation)
+        assertTrue(cycleBackward.descriptor.parameters.isEmpty())
+        assertEquals("Cycle Target color backward", cycleBackward.descriptor.displayName)
+        assertEquals(SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_BACKWARD, cycleBackward.operation)
         assertEquals(CapabilityParameterType.ENUM, prismParameter.type)
         assertTrue("FTC_TIMER" in prismParameter.options)
         assertTrue("SOLID_OFF" in prismParameter.options)

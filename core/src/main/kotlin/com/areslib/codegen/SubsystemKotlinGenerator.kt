@@ -158,6 +158,20 @@ object SubsystemKotlinGenerator {
                 when (capability.operation) {
                     SubsystemCapabilityOperation.SET_FIELD ->
                         registryActionCase(document, requireNotNull(document.field(capability.fieldId)), resourceExpression)
+                    SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_FORWARD ->
+                        registryIndicatorCycleActionCase(
+                            document,
+                            requireNotNull(document.field(capability.fieldId)),
+                            resourceExpression,
+                            forward = true,
+                        )
+                    SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_BACKWARD ->
+                        registryIndicatorCycleActionCase(
+                            document,
+                            requireNotNull(document.field(capability.fieldId)),
+                            resourceExpression,
+                            forward = false,
+                        )
                     SubsystemCapabilityOperation.SET_HOMING_REQUEST -> registryHomingActionCase(document, resourceExpression)
                     SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY ->
                         registryNeutralRecoveryActionCase(document, resourceExpression)
@@ -168,9 +182,9 @@ object SubsystemKotlinGenerator {
         }.joinToString("\n")
         val actionFactory = if (actionCases.isBlank()) {
             """@Suppress("UNUSED_PARAMETER")
-fun createActionTask(actionKey: String, value: Any): Task? = null"""
+fun createActionTask(actionKey: String, value: Any?): Task? = null"""
         } else {
-            """fun createActionTask(actionKey: String, value: Any): Task? = when (actionKey) {
+            """fun createActionTask(actionKey: String, value: Any?): Task? = when (actionKey) {
 $actionCases
     else -> null
 }"""
@@ -2345,8 +2359,9 @@ $evidenceAssignments
                 """.trimIndent()
             }
         val registeredActionAssertions = generatedCapabilities.joinToString("\n\n") { capability ->
-            val parameter = capability.descriptor.parameters.single()
+            val parameter = capability.descriptor.parameters.singleOrNull()
             val actionValue = when {
+                parameter == null -> "null"
                 parameter.options.isNotEmpty() -> parameter.options.last().quoted()
                 capability.valueType == SubsystemValueType.DOUBLE ->
                     (parameter.maximum ?: parameter.defaultNumber ?: 1.0).kotlinDouble()
@@ -3037,11 +3052,71 @@ private fun registryActionCase(
         """.trimIndent()
     }
     return """    ${key.quoted()} -> $converted?.let { typedValue ->
-        StateActionTask(${("Set ${document.displayName} ${field.displayName}").quoted()}, $resourceExpression) { robotState ->
+        StateActionTask(${("Set ${field.displayName}").quoted()}, $resourceExpression) { robotState ->
             val current = ${document.kotlinTypeName}Subsystem.state(robotState)
             $commandSequence
         }
     }"""
+}
+
+private fun registryIndicatorCycleActionCase(
+    document: SubsystemDocument,
+    field: SubsystemStateFieldDocument,
+    resourceExpression: String,
+    forward: Boolean,
+): String {
+    require(field.type == SubsystemValueType.DOUBLE) {
+        "Indicator-light cycle target '${document.documentId}.${field.fieldId}' must be a Double"
+    }
+    val fieldMinimum = field.minimum
+    val fieldMaximum = field.maximum
+    val positions = com.areslib.hardware.actuator.IndicatorLightColor.entries
+        .asSequence()
+        .filter {
+            it != com.areslib.hardware.actuator.IndicatorLightColor.OFF &&
+                it != com.areslib.hardware.actuator.IndicatorLightColor.RAINBOW
+        }
+        .filter { option -> fieldMinimum == null || option.position >= fieldMinimum }
+        .filter { option -> fieldMaximum == null || option.position <= fieldMaximum }
+        .distinctBy { it.position }
+        .map { it.position }
+        .toList()
+    require(positions.isNotEmpty()) {
+        "Indicator-light cycle target '${document.documentId}.${field.fieldId}' has no visible colors inside its bounds"
+    }
+    val traversal = if (forward) positions else positions.asReversed()
+    val wrap = if (forward) positions.first() else positions.last()
+    val comparison = if (forward) "<" else ">"
+    val nextValue = traversal.joinToString(
+        prefix = "when {\n",
+        postfix = "\n                else -> ${wrap.kotlinDouble()}\n            }",
+        separator = "\n",
+    ) { position ->
+        "                current.${field.fieldId} $comparison ${position.kotlinDouble()} -> ${position.kotlinDouble()}"
+    }
+    val stateUpdate = if (document.hasSafetyRequestHandshake()) {
+        """val nextCommandSequence = if (current.commandSequence == Long.MAX_VALUE) 1L else current.commandSequence + 1L
+            RobotAction.UpdateNamedSubsystemState(
+                ${document.kotlinTypeName}Subsystem.ID,
+                current.copy(${field.fieldId} = nextValue, commandSequence = nextCommandSequence),
+            )"""
+    } else {
+        """RobotAction.UpdateNamedSubsystemState(
+                ${document.kotlinTypeName}Subsystem.ID,
+                current.copy(${field.fieldId} = nextValue),
+            )"""
+    }
+    val key = if (forward) {
+        com.areslib.subsystem.subsystemIndicatorCycleForwardActionKey(document.documentId, field.fieldId)
+    } else {
+        com.areslib.subsystem.subsystemIndicatorCycleBackwardActionKey(document.documentId, field.fieldId)
+    }
+    val direction = if (forward) "forward" else "backward"
+    return """    ${key.quoted()} -> StateActionTask(${("Cycle ${field.displayName} $direction").quoted()}, $resourceExpression) { robotState ->
+            val current = ${document.kotlinTypeName}Subsystem.state(robotState)
+            val nextValue = $nextValue
+            $stateUpdate
+        }"""
 }
 
 private fun registryHomingActionCase(document: SubsystemDocument, resourceExpression: String): String {

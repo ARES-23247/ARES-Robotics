@@ -25,6 +25,8 @@ data class SubsystemTargetCapability(
 
 enum class SubsystemCapabilityOperation {
     SET_FIELD,
+    CYCLE_INDICATOR_COLOR_FORWARD,
+    CYCLE_INDICATOR_COLOR_BACKWARD,
     SET_HOMING_REQUEST,
     REQUEST_NEUTRAL_RECOVERY,
     CONFIRM_CALIBRATION,
@@ -33,6 +35,14 @@ enum class SubsystemCapabilityOperation {
 /** Stable action key shared by the subsystem builder, controls editor, routines, and codegen. */
 fun subsystemTargetActionKey(subsystemId: String, fieldId: String): String =
     "subsystem.$subsystemId.set.$fieldId"
+
+/** Stable action key for advancing one generated indicator-light target to its next named color. */
+fun subsystemIndicatorCycleForwardActionKey(subsystemId: String, fieldId: String): String =
+    "subsystem.$subsystemId.cycleForward.$fieldId"
+
+/** Stable action key for moving one generated indicator-light target to its previous named color. */
+fun subsystemIndicatorCycleBackwardActionKey(subsystemId: String, fieldId: String): String =
+    "subsystem.$subsystemId.cycleBackward.$fieldId"
 
 /** Stable action key for the explicit, one-shot neutral recovery handshake. */
 fun subsystemNeutralRecoveryActionKey(subsystemId: String): String =
@@ -51,10 +61,10 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
         if (document.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED) {
             return@flatMap emptyList()
         }
-        val targets = document.stateFields
+        val targetFields = document.stateFields
             .filter { it.role == SubsystemFieldRole.TARGET }
             .sortedBy { it.fieldId }
-            .map { field ->
+        val targets = targetFields.map { field ->
                 val key = subsystemTargetActionKey(document.documentId, field.fieldId)
                 SubsystemTargetCapability(
                     subsystemId = document.documentId,
@@ -62,7 +72,7 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                     valueType = field.type,
                     descriptor = ActionDescriptor(
                         key = key,
-                        displayName = "Set ${document.displayName} ${field.displayName}",
+                        displayName = "Set ${field.displayName}",
                         description = "Sets ${field.displayName.lowercase()} on the ${document.displayName} subsystem.",
                         category = document.displayName,
                         parameters = listOf(field.asCapabilityParameter(document)),
@@ -71,6 +81,44 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                     ),
                 )
             }
+        val indicatorCycles = targetFields.flatMap { field ->
+            if (field.type != SubsystemValueType.DOUBLE ||
+                document.actuatorKindForTarget(field.fieldId) != SubsystemHardwareKind.INDICATOR_LIGHT ||
+                field.indicatorCycleColors().isEmpty()
+            ) return@flatMap emptyList()
+            listOf(
+                SubsystemTargetCapability(
+                    subsystemId = document.documentId,
+                    fieldId = field.fieldId,
+                    valueType = field.type,
+                    operation = SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_FORWARD,
+                    descriptor = ActionDescriptor(
+                        key = subsystemIndicatorCycleForwardActionKey(document.documentId, field.fieldId),
+                        displayName = "Cycle ${field.displayName} forward",
+                        description = "Advances ${field.displayName.lowercase()} to the next visible named color and wraps from white to red.",
+                        category = document.displayName,
+                        parameters = emptyList(),
+                        resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
+                        allowedContexts = CapabilityContext.entries,
+                    ),
+                ),
+                SubsystemTargetCapability(
+                    subsystemId = document.documentId,
+                    fieldId = field.fieldId,
+                    valueType = field.type,
+                    operation = SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_BACKWARD,
+                    descriptor = ActionDescriptor(
+                        key = subsystemIndicatorCycleBackwardActionKey(document.documentId, field.fieldId),
+                        displayName = "Cycle ${field.displayName} backward",
+                        description = "Moves ${field.displayName.lowercase()} to the previous visible named color and wraps from red to white.",
+                        category = document.displayName,
+                        parameters = emptyList(),
+                        resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
+                        allowedContexts = CapabilityContext.entries,
+                    ),
+                ),
+            )
+        }
         val homing = if (document.safety.homing.method != SubsystemHomingMethod.NONE) {
             val key = subsystemTargetActionKey(document.documentId, "homingRequested")
             listOf(
@@ -137,7 +185,7 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                 )
             )
         } else emptyList()
-        targets + homing + neutralRecovery + calibrationConfirmation
+        targets + indicatorCycles + homing + neutralRecovery + calibrationConfirmation
     }
 
 /**
@@ -175,10 +223,7 @@ fun mergeSubsystemCapabilities(
 private fun SubsystemStateFieldDocument.asCapabilityParameter(
     document: SubsystemDocument,
 ): CapabilityParameterDescriptor {
-    val actuatorKind = document.controlLoops
-        .firstOrNull { it.targetFieldId == fieldId }
-        ?.let { loop -> document.hardware.firstOrNull { it.hardwareId == loop.actuatorId } }
-        ?.kind
+    val actuatorKind = document.actuatorKindForTarget(fieldId)
     val namedOptions = when (actuatorKind) {
         SubsystemHardwareKind.INDICATOR_LIGHT -> IndicatorLightColor.entries
             .asSequence()
@@ -256,3 +301,18 @@ private fun explicitConfirmationParameter(displayName: String): CapabilityParame
         type = CapabilityParameterType.BOOLEAN,
         required = true,
     )
+
+private fun SubsystemDocument.actuatorKindForTarget(fieldId: String): SubsystemHardwareKind? = controlLoops
+    .firstOrNull { it.targetFieldId == fieldId }
+    ?.let { loop -> hardware.firstOrNull { it.hardwareId == loop.actuatorId } }
+    ?.kind
+
+/** OFF remains a separate explicit choice; cycling walks only colors visible to students. */
+private fun SubsystemStateFieldDocument.indicatorCycleColors(): List<IndicatorLightColor> =
+    IndicatorLightColor.entries
+        .asSequence()
+        .filter { it != IndicatorLightColor.OFF && it != IndicatorLightColor.RAINBOW }
+        .filter { option -> minimum == null || option.position >= minimum }
+        .filter { option -> maximum == null || option.position <= maximum }
+        .distinctBy { it.position }
+        .toList()

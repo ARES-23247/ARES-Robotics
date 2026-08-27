@@ -491,10 +491,17 @@ object AresKotlinProjectGenerator {
             append(renderSignatureParameters(descriptor.parameters))
             if (descriptor.key in subsystemActions) {
                 val registry = requireNotNull(request.subsystemRegistryFqn)
-                val valueName = assignParameterNames(descriptor.parameters).getValue("value")
                 append("): Task = requireNotNull($registry.createActionTask(")
                 append(stringLiteral(descriptor.key))
-                append(", $valueName)) { ")
+                if (descriptor.parameters.isEmpty()) {
+                    append(", null)) { ")
+                } else {
+                    require(descriptor.parameters.size == 1 && descriptor.parameters.single().key == "value") {
+                        "Generated subsystem action '${descriptor.key}' must be parameterless or expose one 'value' parameter"
+                    }
+                    val valueName = assignParameterNames(descriptor.parameters).getValue("value")
+                    append(", $valueName)) { ")
+                }
                 append(stringLiteral("Generated subsystem action '${descriptor.key}' rejected its value"))
                 append(" }\n\n")
             } else {

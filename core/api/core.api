@@ -8719,6 +8719,8 @@ public final class com/areslib/subsystem/SubsystemBuilder {
 public final class com/areslib/subsystem/SubsystemCapabilitiesKt {
 	public static final fun mergeSubsystemCapabilities (Lcom/areslib/catalog/CapabilityCatalogDocument;Ljava/util/Collection;)Lcom/areslib/catalog/CapabilityCatalogDocument;
 	public static final fun subsystemCalibrationConfirmationActionKey (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun subsystemIndicatorCycleBackwardActionKey (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static final fun subsystemIndicatorCycleForwardActionKey (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public static final fun subsystemNeutralRecoveryActionKey (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun subsystemTargetActionKey (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public static final fun subsystemTargetCapabilities (Ljava/util/Collection;)Ljava/util/List;
@@ -8726,6 +8728,8 @@ public final class com/areslib/subsystem/SubsystemCapabilitiesKt {
 
 public final class com/areslib/subsystem/SubsystemCapabilityOperation : java/lang/Enum {
 	public static final field CONFIRM_CALIBRATION Lcom/areslib/subsystem/SubsystemCapabilityOperation;
+	public static final field CYCLE_INDICATOR_COLOR_BACKWARD Lcom/areslib/subsystem/SubsystemCapabilityOperation;
+	public static final field CYCLE_INDICATOR_COLOR_FORWARD Lcom/areslib/subsystem/SubsystemCapabilityOperation;
 	public static final field REQUEST_NEUTRAL_RECOVERY Lcom/areslib/subsystem/SubsystemCapabilityOperation;
 	public static final field SET_FIELD Lcom/areslib/subsystem/SubsystemCapabilityOperation;
 	public static final field SET_HOMING_REQUEST Lcom/areslib/subsystem/SubsystemCapabilityOperation;
