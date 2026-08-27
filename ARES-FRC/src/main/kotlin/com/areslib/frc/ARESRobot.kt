@@ -35,7 +35,9 @@ import com.areslib.frc.robot.FrcLocalizationCalibrationControls
 import com.areslib.frc.robot.FrcAutoCapabilities
 import com.areslib.frc.robot.FRCTeleOpDriveController
 import com.areslib.frc.robot.FrcSysIdController
-import com.areslib.frc.generatedruntime.FrcGeneratedControlsRuntime
+import com.areslib.frc.generated.GeneratedAresProject
+import com.areslib.frc.generated.GeneratedAresProjectCapabilities
+import com.areslib.frc.runtime.FrcGeneratedProjectControlsRuntime
 import com.areslib.frc.vision.FrcLocalizationCalibrationSession
 import com.areslib.frc.vision.FrcVisionTracker
 import com.areslib.frc.generated.subsystems.GeneratedSubsystemRegistry
@@ -150,7 +152,7 @@ class ARESRobot : TimedRobot() {
 
     private lateinit var teleOpController: FRCTeleOpDriveController
     private lateinit var autoOrchestrator: FRCAutoOrchestrator
-    private lateinit var generatedControlsRuntime: FrcGeneratedControlsRuntime
+    private lateinit var generatedControlsRuntime: FrcGeneratedProjectControlsRuntime<GeneratedAresProjectCapabilities>
     private lateinit var teleopGeneratedCapabilities: com.areslib.frc.generatedruntime.FrcGeneratedRoutineCapabilities
     private lateinit var sysIdController: FrcSysIdController
     private var localizationCalibration: FrcLocalizationCalibrationSession? = null
@@ -545,7 +547,8 @@ class ARESRobot : TimedRobot() {
         applyAlliance(DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue))
         FrcAutoCapabilities.register()
         teleopGeneratedCapabilities = com.areslib.frc.generatedruntime.FrcGeneratedRoutineCapabilities(robot)
-        generatedControlsRuntime = FrcGeneratedControlsRuntime(
+        generatedControlsRuntime = FrcGeneratedProjectControlsRuntime(
+            definition = GeneratedAresProject.runtimeDefinition,
             stateProvider = { robot.store.state },
             dispatch = robot.store::dispatch,
             capabilities = teleopGeneratedCapabilities,

@@ -1,6 +1,8 @@
 package org.aresfirst.starter.frc
 
 import com.areslib.input.InputFrame
+import com.areslib.frc.runtime.FrcControllerPortSampler
+import com.areslib.frc.runtime.WpilibFrcControllerPortSampler
 import com.areslib.util.RobotClock
 import edu.wpi.first.networktables.DoubleArrayPublisher
 import edu.wpi.first.networktables.DoubleArraySubscriber
@@ -11,8 +13,6 @@ import edu.wpi.first.networktables.StringSubscriber
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresDrivebaseConfig
-import org.aresfirst.starter.frc.generatedruntime.FrcControllerPortSampler
-import org.aresfirst.starter.frc.generatedruntime.WpilibFrcControllerPortSampler
 import java.security.MessageDigest
 import java.util.UUID
 import kotlin.math.abs

@@ -28,10 +28,10 @@ import com.areslib.state.RoutineExecutionStatus
 import com.areslib.util.RobotClock
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.DriverStation
+import com.areslib.frc.runtime.FrcGeneratedProjectControlsRuntime
 import org.aresfirst.starter.frc.generated.GeneratedAresProject
 import org.aresfirst.starter.frc.generated.GeneratedAresProjectCapabilities
 import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresDrivebaseConfig
-import org.aresfirst.starter.frc.generatedruntime.FrcGeneratedControlsRuntime
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -383,7 +383,7 @@ private class StarterFrcDriveMarkerTask(
 internal class StarterFrcAutonomousRuntime(
     private val robot: StarterRobotRuntime,
     private val simulation: StarterDriveSimulation,
-    private val generatedControls: FrcGeneratedControlsRuntime,
+    private val generatedControls: FrcGeneratedProjectControlsRuntime<GeneratedAresProjectCapabilities>,
     private val capabilities: StarterGeneratedCapabilities,
     private val isSimulation: Boolean,
     entries: List<AutonomousCatalogEntry> = GeneratedAresProject.autonomousEntries,

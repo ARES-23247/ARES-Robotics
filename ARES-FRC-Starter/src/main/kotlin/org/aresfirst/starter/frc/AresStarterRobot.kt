@@ -20,10 +20,12 @@ import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Filesystem
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.TimedRobot
+import com.areslib.frc.runtime.FrcGeneratedProjectControlsRuntime
+import org.aresfirst.starter.frc.generated.GeneratedAresProject
+import org.aresfirst.starter.frc.generated.GeneratedAresProjectCapabilities
 import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresTuningConfig
 import org.aresfirst.starter.frc.generated.subsystems.GeneratedSubsystemRegistry
 import org.aresfirst.starter.frc.generated.subsystems.superstructure.GeneratedSuperstructureRegistry
-import org.aresfirst.starter.frc.generatedruntime.FrcGeneratedControlsRuntime
 import kotlin.io.path.readBytes
 
 /** True in simulation or after the project explicitly installs reviewed physical adapters. */
@@ -33,7 +35,7 @@ internal fun physicalOutputsPermitted(isReal: Boolean, adapterInstalled: Boolean
 /** Generic, simulation-first FRC composition root generated projects can extend without hand code. */
 class AresStarterRobot : TimedRobot() {
     private lateinit var robot: StarterRobotRuntime
-    private lateinit var generatedControls: FrcGeneratedControlsRuntime
+    private lateinit var generatedControls: FrcGeneratedProjectControlsRuntime<GeneratedAresProjectCapabilities>
     private lateinit var generatedCapabilities: StarterGeneratedCapabilities
     private lateinit var autonomousRuntime: StarterFrcAutonomousRuntime
     private var studioSimulationBridge: FrcStudioSimulationBridge? = null
@@ -85,13 +87,15 @@ class AresStarterRobot : TimedRobot() {
             )
         } else null
         generatedControls = studioSimulationBridge?.let { bridge ->
-            FrcGeneratedControlsRuntime(
+            FrcGeneratedProjectControlsRuntime(
+                definition = GeneratedAresProject.runtimeDefinition,
                 stateProvider = { robot.store.state },
                 dispatch = robot.store::dispatch,
                 capabilities = generatedCapabilities,
                 portSampler = bridge,
             )
-        } ?: FrcGeneratedControlsRuntime(
+        } ?: FrcGeneratedProjectControlsRuntime(
+            definition = GeneratedAresProject.runtimeDefinition,
             stateProvider = { robot.store.state },
             dispatch = robot.store::dispatch,
             capabilities = generatedCapabilities,

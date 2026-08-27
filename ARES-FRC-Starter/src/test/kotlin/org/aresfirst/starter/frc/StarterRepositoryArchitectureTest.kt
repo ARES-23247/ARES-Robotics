@@ -10,15 +10,18 @@ class StarterRepositoryArchitectureTest {
 
     @Test
     fun `starter delegates generated scheduling and has explicit dependency provenance`() {
-        val runtime = File(
+        val lifecycle = File(
             root,
-            "src/main/kotlin/org/aresfirst/starter/frc/generatedruntime/FrcGeneratedControlsRuntime.kt",
+            "src/main/kotlin/org/aresfirst/starter/frc/AresStarterRobot.kt",
         ).readText()
         val build = File(root, "build.gradle").readText()
 
-        assertTrue(runtime.contains("FrcGeneratedProjectControlsRuntime"))
-        assertTrue(runtime.contains("definition = GeneratedAresProject.runtimeDefinition"))
-        assertFalse(runtime.contains("TaskExecutor"))
+        assertTrue(lifecycle.contains("FrcGeneratedProjectControlsRuntime"))
+        assertTrue(lifecycle.contains("definition = GeneratedAresProject.runtimeDefinition"))
+        assertFalse(lifecycle.contains("TaskExecutor"))
+        assertFalse(
+            File(root, "src/main/kotlin/org/aresfirst/starter/frc/generatedruntime/FrcGeneratedControlsRuntime.kt").exists()
+        )
         assertTrue(build.contains("org.aresfirst.ares:frc-runtime"))
         assertFalse(build.contains("mavenLocal"))
         assertFalse(File(root, "src/main/kotlin/org/aresfirst/starter/frc/generated").exists())

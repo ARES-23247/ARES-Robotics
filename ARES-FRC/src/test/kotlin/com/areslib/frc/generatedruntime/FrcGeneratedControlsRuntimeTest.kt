@@ -2,6 +2,9 @@ package com.areslib.frc.generatedruntime
 
 import com.areslib.action.RobotAction
 import com.areslib.frc.generated.GeneratedAresProjectCapabilities
+import com.areslib.frc.generated.GeneratedAresProject
+import com.areslib.frc.runtime.FrcControllerPortSampler
+import com.areslib.frc.runtime.FrcGeneratedProjectControlsRuntime
 import com.areslib.frc.robot.FrcAutoCapabilities
 import com.areslib.input.InputFrame
 import com.areslib.state.RobotState
@@ -31,7 +34,8 @@ class FrcGeneratedControlsRuntimeTest {
                 assertEquals(true, active, "the checked-in scheme binds drivetrain axes")
             }
         }
-        val runtime = FrcGeneratedControlsRuntime(
+        val runtime = FrcGeneratedProjectControlsRuntime(
+            definition = GeneratedAresProject.runtimeDefinition,
             stateProvider = { RobotState() },
             dispatch = dispatched::add,
             capabilities = capabilities,

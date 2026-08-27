@@ -1,6 +1,8 @@
 package com.areslib.frc.generatedruntime
 
 import com.areslib.frc.robot.FrcAutoCapabilities
+import com.areslib.frc.generated.GeneratedAresProject
+import com.areslib.frc.runtime.FrcGeneratedProjectControlsRuntime
 import com.areslib.state.Alliance
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -50,7 +52,8 @@ class GeneratedDriveSinkTest {
                 driveEmissions++
             }
         }
-        val runtime = FrcGeneratedControlsRuntime(
+        val runtime = FrcGeneratedProjectControlsRuntime(
+            definition = GeneratedAresProject.runtimeDefinition,
             stateProvider = { com.areslib.state.RobotState() },
             dispatch = dispatched::add,
             capabilities = capabilities,

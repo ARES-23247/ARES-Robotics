@@ -58,15 +58,13 @@ class RepositorySafetyContractTest {
             projectRoot,
             "src/main/kotlin/com/areslib/frc/ARESRobot.kt"
         ).readText()
-        val runtimeSource = File(
-            projectRoot,
-            "src/main/kotlin/com/areslib/frc/generatedruntime/FrcGeneratedControlsRuntime.kt"
-        ).readText()
         assertTrue(lifecycleSource.contains("generatedControlsRuntime.update()"))
         assertTrue(lifecycleSource.contains("cancelGeneratedControls(\"FRC disabled\")"))
-        assertTrue(runtimeSource.contains("FrcGeneratedProjectControlsRuntime"))
-        assertTrue(runtimeSource.contains("definition = GeneratedAresProject.runtimeDefinition"))
-        assertFalse(runtimeSource.contains("TaskExecutor"))
+        assertTrue(lifecycleSource.contains("FrcGeneratedProjectControlsRuntime"))
+        assertTrue(lifecycleSource.contains("definition = GeneratedAresProject.runtimeDefinition"))
+        assertFalse(
+            File(projectRoot, "src/main/kotlin/com/areslib/frc/generatedruntime/FrcGeneratedControlsRuntime.kt").exists()
+        )
         assertFalse(File(projectRoot, "build.gradle").readText().contains("mavenLocal"))
         assertFalse(File(projectRoot, "settings.gradle").readText().contains("mavenLocal"))
     }
