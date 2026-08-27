@@ -57,6 +57,7 @@ def deployArtifact = deploy.targets.roborio.artifacts.frcJava
 dependencies {
     implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
     implementation 'org.aresfirst.ares:core'
+    implementation 'org.aresfirst.ares:frc-runtime'
     aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
     aresCodegen 'org.aresfirst.ares:codegen'
     aresCodegen 'com.google.code.gson:gson:2.10.1'
