@@ -7,11 +7,14 @@ This file is the repository-specific guide for automated contributors. Read it b
 ARESLib-Kotlin is the shared foundation for ARES-FTC, ARES-FRC, ARES-Analytics, and the desktop simulator. It is organized as:
 
 - `core`: SDK-independent state, math, estimation, control, safety, pathing, sequencing, IO contracts, NT4, telemetry, and logging.
+- `project-schema`, `project-model`, `project-compiler`: canonical documents, the validated effective project, and deterministic compiler IR.
+- `simulation-foundation`: simulator product/capability selection and deterministic fault-timeline contracts; it contains no FTC/FRC physics engine.
 - `codegen`: generated API/source support published alongside the runtime modules.
 - `ftc-hardware`: FTC hardware adapters and base robot/facade classes.
 - `frc-hardware`: WPILib/vendor adapters and base robot/facade classes.
 - `ftc-mocks`: desktop FTC/Android API mocks.
-- `simulator`: Dyn4j physics, OpMode runner, replay, virtual driver station, and NT4 bridge.
+- `frc-runtime`: vendor-neutral FRC lifecycle and generated-project host adapters.
+- `simulator`: FTC Dyn4j physics, OpMode runner, virtual Driver Station, FTC device doubles, and NT4 bridge. FRC simulation remains in the FRC product.
 - `simulator-runtime-windows`, `simulator-runtime-linux`, `simulator-runtime-macos`: platform-specific simulator native runtime artifacts.
 - `ares-bom`: published dependency constraints for all ARES artifacts.
 

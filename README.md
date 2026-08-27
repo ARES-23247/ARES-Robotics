@@ -6,12 +6,17 @@ ARESLib-Kotlin is the shared Kotlin foundation for the ARES FTC, FRC, simulator,
 
 | Module | Purpose | Depends on |
 |---|---|---|
+| `project-schema` | Canonical `.ares` document schemas and stable project/target identities | Kotlin/JVM libraries only |
+| `simulation-foundation` | Simulator product selection, capability validation, and deterministic fault timelines | `project-schema`, `core` |
+| `project-model` | Whole-project assembly, validation, effective indexes, and simulator plan derivation | `project-schema`, `simulation-foundation`, `core` |
+| `project-compiler` | Deterministic typed compiler IR and generated-artifact manifest | `project-model` |
 | `core` | State, reducers, geometry, EKF localization, controllers, safety, pathing, sequencer, NT4, telemetry, and logging | Kotlin/JVM libraries only |
 | `codegen` | Project, controls, autonomous, and subsystem Kotlin generation CLI | `core` |
 | `ftc-mocks` | Desktop implementations of the FTC and Android APIs used by library code | `core` |
 | `ftc-hardware` | FTC SDK adapters, mecanum robot base classes, Pinpoint, Limelight, cached hardware, and power management | `core`; mocks for compilation/tests |
-| `frc-hardware` | WPILib and vendor adapters, swerve robot base classes, Limelight, telemetry, and power management | `core` |
-| `simulator` | Dyn4j desktop physics, virtual driver station, OpMode runner, replay, and NT4 bridge | `core`, `ftc-hardware`, `ftc-mocks` |
+| `frc-runtime` | Vendor-neutral FRC lifecycle and generated-project host adapters | `core` |
+| `frc-hardware` | WPILib and vendor adapters, swerve robot base classes, Limelight, telemetry, and power management | `core`, `frc-runtime` |
+| `simulator` | FTC Dyn4j physics, virtual Driver Station, OpMode runner, FTC device doubles, and NT4 bridge | `core`, `ftc-hardware`, `ftc-mocks` |
 | `simulator-runtime-*` | Windows, Linux, or macOS JNI/LWJGL runtime selected by the consumer | `simulator` |
 | `ares-bom` | One version constraint for every published ARES artifact | all published modules |
 
@@ -71,11 +76,12 @@ All artifacts use the verified `org.aresfirst.ares` Maven namespace and one vers
 | Module | Coordinates |
 |---|---|
 | BOM | `org.aresfirst.ares:ares-bom:8.0.0` |
+| Project model | `org.aresfirst.ares:project-schema`, `simulation-foundation`, `project-model`, `project-compiler` |
 | Core | `org.aresfirst.ares:core` |
 | Code generation | `org.aresfirst.ares:codegen` |
 | FTC | `org.aresfirst.ares:ftc-hardware`, `org.aresfirst.ares:ftc-mocks` |
-| FRC | `org.aresfirst.ares:frc-hardware` |
-| Simulator | `org.aresfirst.ares:simulator` |
+| FRC | `org.aresfirst.ares:frc-runtime`, `org.aresfirst.ares:frc-hardware` |
+| FTC simulator | `org.aresfirst.ares:simulator` |
 | Simulator natives | `org.aresfirst.ares:simulator-runtime-{windows,linux,macos}` |
 
 Consumer builds pin the BOM version with the `aresVersion` Gradle property. Source substitution is an explicit library-development option: `-ParesUseSiblingLib=true`.
@@ -90,7 +96,7 @@ Consumer builds pin the BOM version with the `aresVersion` Gradle property. Sour
 .\gradlew.bat :simulator:run -PappArgs="--headless --opmode org.example.MyOpMode"
 ```
 
-The simulator serves NT4 on port `5810` and the local log browser/API on port `5002`. A season repository normally adds the real OpMode classes to the simulator runtime; the library by itself provides the physics and runner infrastructure.
+The FTC simulator serves NT4 on port `5810` and the local log browser/API on port `5002`. An FTC season repository adds its real OpMode classes to this runtime. FRC projects instead launch their separate WPILib/HAL simulator; `simulation-foundation` selects and validates these products but deliberately does not merge their lifecycles or device models.
 
 ## Non-negotiable contracts
 

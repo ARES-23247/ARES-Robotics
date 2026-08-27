@@ -15,10 +15,15 @@ val allowFinalReleaseValidation = providers.gradleProperty("allowFinalReleaseVal
     .map(String::toBoolean)
     .orElse(false)
 val publishedProjectPaths = listOf(
+    ":project-schema",
+    ":simulation-foundation",
+    ":project-model",
+    ":project-compiler",
     ":core",
     ":codegen",
     ":ftc-mocks",
     ":ftc-hardware",
+    ":frc-runtime",
     ":frc-hardware",
     ":simulator",
     ":simulator-runtime-windows",

@@ -17,10 +17,15 @@ javaPlatform {
 
 dependencies {
     constraints {
+        api(project(":project-schema"))
+        api(project(":simulation-foundation"))
+        api(project(":project-model"))
+        api(project(":project-compiler"))
         api(project(":core"))
         api(project(":codegen"))
         api(project(":ftc-mocks"))
         api(project(":ftc-hardware"))
+        api(project(":frc-runtime"))
         api(project(":frc-hardware"))
         api(project(":simulator"))
         api(project(":simulator-runtime-windows"))

@@ -136,46 +136,6 @@ public final class com/areslib/frc/hardware/TalonFXExtensionsKt {
 	public static final fun setUpdateFrequencies (D[Lcom/ctre/phoenix6/BaseStatusSignal;)V
 }
 
-public final class com/areslib/frc/input/FrcButtonIndex {
-	public static final field COUNT_WITH_PRIMARY_POV I
-	public static final field INSTANCE Lcom/areslib/frc/input/FrcButtonIndex;
-	public static final field MAX_RAW_BUTTON_COUNT I
-	public static final field POV_DOWN I
-	public static final field POV_LEFT I
-	public static final field POV_RIGHT I
-	public static final field POV_UP I
-	public final fun fromWpilibRawButton (I)I
-}
-
-public abstract interface class com/areslib/frc/input/FrcHidSource {
-	public abstract fun axisCount ()I
-	public abstract fun buttonCount ()I
-	public abstract fun isConnected ()Z
-	public abstract fun pov (I)I
-	public abstract fun povCount ()I
-	public abstract fun rawAxis (I)D
-	public abstract fun rawButton (I)Z
-}
-
-public final class com/areslib/frc/input/FrcInputFrameAdapter {
-	public static final field POV_NOT_PRESSED I
-	public fun <init> (Lcom/areslib/frc/input/FrcHidSource;)V
-	public fun <init> (Ledu/wpi/first/wpilibj/GenericHID;)V
-	public final fun sampleInto (Lcom/areslib/input/InputFrame;J)V
-	public static synthetic fun sampleInto$default (Lcom/areslib/frc/input/FrcInputFrameAdapter;Lcom/areslib/input/InputFrame;JILjava/lang/Object;)V
-}
-
-public final class com/areslib/frc/input/WpilibGenericHidSource : com/areslib/frc/input/FrcHidSource {
-	public fun <init> (Ledu/wpi/first/wpilibj/GenericHID;)V
-	public fun axisCount ()I
-	public fun buttonCount ()I
-	public fun isConnected ()Z
-	public fun pov (I)I
-	public fun povCount ()I
-	public fun rawAxis (I)D
-	public fun rawButton (I)Z
-}
-
 public final class com/areslib/frc/power/FrcPowerManager : com/areslib/subsystem/PowerManager {
 	public static final field CURRENT_CRITICAL_AMPS D
 	public static final field CURRENT_HYSTERESIS_AMPS D

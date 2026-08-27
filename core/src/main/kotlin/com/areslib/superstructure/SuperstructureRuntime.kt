@@ -583,11 +583,12 @@ class SuperstructureRuntime(
             val matches = when {
                 guard.expectedDoubleValue != null -> {
                     val actual = binding.readNumeric(port, state)
+                    val expected = requireNotNull(guard.expectedDoubleValue)
                     if (!actual.isFinite()) false else when (guard.comparison) {
-                        InterlockComparison.LESS_THAN -> actual < guard.expectedDoubleValue
-                        InterlockComparison.GREATER_THAN -> actual > guard.expectedDoubleValue
-                        InterlockComparison.EQUALS_STATE -> abs(actual - guard.expectedDoubleValue) <= guard.tolerance
-                        InterlockComparison.NOT_EQUALS_STATE -> abs(actual - guard.expectedDoubleValue) > guard.tolerance
+                        InterlockComparison.LESS_THAN -> actual < expected
+                        InterlockComparison.GREATER_THAN -> actual > expected
+                        InterlockComparison.EQUALS_STATE -> abs(actual - expected) <= guard.tolerance
+                        InterlockComparison.NOT_EQUALS_STATE -> abs(actual - expected) > guard.tolerance
                     }
                 }
                 guard.expectedBooleanValue != null -> {

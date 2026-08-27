@@ -1598,6 +1598,83 @@ public final class com/areslib/ftc/power/FtcPowerManager : com/areslib/subsystem
 	public fun update (DJ)D
 }
 
+public final class com/areslib/ftc/runtime/FtcAutoTerminalDecision : java/lang/Enum {
+	public static final field CANCELLED Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+	public static final field COMPLETED Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+	public static final field FAILED Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+	public static final field RUNNING Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+	public static fun values ()[Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+}
+
+public final class com/areslib/ftc/runtime/FtcAutonomousProjectDefinition {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/ftc/runtime/FtcAutonomousProjectDefinition;
+	public static synthetic fun copy$default (Lcom/areslib/ftc/runtime/FtcAutonomousProjectDefinition;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/ftc/runtime/FtcAutonomousProjectDefinition;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContentSha256 ()Ljava/lang/String;
+	public final fun getDefaultEntryId ()Ljava/lang/String;
+	public final fun getEntries ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/ftc/runtime/FtcAutonomousSelector {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Lcom/areslib/state/Alliance;Ljava/lang/String;Lcom/areslib/state/Alliance;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lcom/areslib/state/Alliance;Ljava/lang/String;Lcom/areslib/state/Alliance;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAlliance ()Lcom/areslib/state/Alliance;
+	public final fun getEntries ()Ljava/util/List;
+	public final fun getSelected ()Lcom/areslib/routine/AutonomousCatalogEntry;
+	public final fun selectAlliance (Lcom/areslib/state/Alliance;)Z
+	public final fun selectEntry (Ljava/lang/String;)Z
+	public final fun update (ZZZ)Z
+}
+
+public abstract class com/areslib/ftc/runtime/FtcGeneratedAutonomousOpMode : com/qualcomm/robotcore/eventloop/opmode/OpMode, com/areslib/ftc/photon/AresFtcRuntimeOptionsProvider {
+	public static final field DEFAULT_MAXIMUM_RUNTIME_SECONDS D
+	public static final field LOOP_TELEMETRY_PERIOD_MS J
+	public static final field OVERRUN_THRESHOLD_MS J
+	public fun <init> ()V
+	protected abstract fun buildRobot ()Ljava/lang/Object;
+	protected abstract fun closeRobot (Ljava/lang/Object;)V
+	protected abstract fun createGeneratedRuntime (Ljava/lang/Object;Lcom/areslib/routine/AutonomousCatalogEntry;Lcom/areslib/state/Alliance;)Lcom/areslib/ftc/runtime/FtcGeneratedAutonomousRuntime;
+	protected abstract fun fatalUpdateFailure (Ljava/lang/Object;)Ljava/lang/Throwable;
+	public final fun getAresFtcRuntimeOptions ()Lcom/areslib/ftc/photon/AresFtcRuntimeOptions;
+	protected abstract fun getAutonomousProject ()Lcom/areslib/ftc/runtime/FtcAutonomousProjectDefinition;
+	protected abstract fun getConfiguredRuntimeOptions ()Lcom/areslib/ftc/photon/AresFtcRuntimeOptions;
+	protected fun getLockedAutonomousAlliance ()Lcom/areslib/state/Alliance;
+	protected fun getLockedAutonomousEntryId ()Ljava/lang/String;
+	protected fun getMaximumRuntimeSeconds ()D
+	protected abstract fun getMecanumRobot (Ljava/lang/Object;)Lcom/areslib/ftc/FtcMecanumRobot;
+	public final fun init ()V
+	public final fun init_loop ()V
+	public final fun loop ()V
+	protected fun resolveAutonomousPose (Lcom/areslib/routine/AutonomousCatalogEntry;Lcom/areslib/state/Alliance;Lcom/areslib/routine/RoutinePose;)Lcom/areslib/math/geometry/Pose2d;
+	public static synthetic fun resolveAutonomousPose$default (Lcom/areslib/ftc/runtime/FtcGeneratedAutonomousOpMode;Lcom/areslib/routine/AutonomousCatalogEntry;Lcom/areslib/state/Alliance;Lcom/areslib/routine/RoutinePose;ILjava/lang/Object;)Lcom/areslib/math/geometry/Pose2d;
+	protected fun safeRobot (Ljava/lang/Object;)V
+	public final fun start ()V
+	public final fun stop ()V
+	protected abstract fun updateRobot (Ljava/lang/Object;)V
+	protected abstract fun validateAutonomousSelection (Ljava/lang/Object;Lcom/areslib/routine/AutonomousCatalogEntry;Lcom/areslib/state/Alliance;)Ljava/util/List;
+}
+
+public final class com/areslib/ftc/runtime/FtcGeneratedAutonomousOpModeKt {
+	public static final fun classifyFtcAutoTerminal (JLcom/areslib/state/RoutineExecutionState;)Lcom/areslib/ftc/runtime/FtcAutoTerminalDecision;
+	public static final fun resolveFtcAutonomousPose (Lcom/areslib/routine/AutonomousCatalogEntry;Lcom/areslib/state/Alliance;Lcom/areslib/routine/RoutinePose;Lcom/areslib/math/coordinate/FieldSymmetry;)Lcom/areslib/math/geometry/Pose2d;
+	public static synthetic fun resolveFtcAutonomousPose$default (Lcom/areslib/routine/AutonomousCatalogEntry;Lcom/areslib/state/Alliance;Lcom/areslib/routine/RoutinePose;Lcom/areslib/math/coordinate/FieldSymmetry;ILjava/lang/Object;)Lcom/areslib/math/geometry/Pose2d;
+	public static final fun shouldPersistFtcAutoPose (ZZZLjava/lang/String;)Z
+}
+
+public abstract interface class com/areslib/ftc/runtime/FtcGeneratedAutonomousRuntime {
+	public abstract fun cancelAll (Ljava/lang/String;)V
+	public abstract fun getRoutineManager ()Lcom/areslib/routine/RoutineManager;
+	public abstract fun updateTasks ()V
+}
+
 public abstract interface class com/areslib/ftc/sim/FtcSimMechanismStateProvider : com/areslib/hardware/SimMechanismOutputProvider {
 	public abstract fun getFlywheelAccepted ()Z
 	public abstract fun getIntakeAccepted ()Z
