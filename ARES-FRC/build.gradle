@@ -119,7 +119,7 @@ dependencies {
     aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
     aresCodegen 'org.aresfirst.ares:codegen'
     aresCodegen 'com.google.code.gson:gson:2.10.1'
-    implementation 'org.dyn4j:dyn4j:4.2.2'
+    implementation 'org.dyn4j:dyn4j:6.0.0'
     
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
