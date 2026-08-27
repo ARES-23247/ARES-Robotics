@@ -1,0 +1,71 @@
+// Auto-detect and configure Java 17 if running on an older version
+def currentVersion = System.getProperty("java.version")
+if (!currentVersion.startsWith("17") && !currentVersion.startsWith("21") && !currentVersion.startsWith("22")) {
+    def homeDir = System.getProperty("user.home")
+    def gradlePropertiesFile = new File(homeDir, ".gradle/gradle.properties")
+    def standardJdk17 = new File("C:/Program Files/Java/jdk-17")
+    def androidStudioJdk = new File("C:/Program Files/Android/Android Studio/jbr")
+    
+    def detectedJdk = null
+    if (standardJdk17.exists()) {
+        detectedJdk = standardJdk17
+    } else if (androidStudioJdk.exists()) {
+        detectedJdk = androidStudioJdk
+    }
+    
+    if (detectedJdk != null) {
+        gradlePropertiesFile.parentFile.mkdirs()
+        gradlePropertiesFile.append("\norg.gradle.java.home=${detectedJdk.absolutePath.replace('\\', '/')}\n")
+        throw new GradleException(
+            "\n" +
+            "=================================================================================\n" +
+            "ARES BUILD ENVIRONMENT AUTO-CONFIGURED\n" +
+            "=================================================================================\n" +
+            "We detected that you were running with Java $currentVersion, but AGP requires Java 17.\n" +
+            "We have automatically configured your local user-level gradle.properties file at:\n" +
+            "  ${gradlePropertiesFile.absolutePath}\n" +
+            "to use the detected JDK 17 at:\n" +
+            "  ${detectedJdk.absolutePath}\n\n" +
+            "Please run your command again now!\n" +
+            "=================================================================================\n"
+        )
+    } else {
+        throw new GradleException(
+            "\n" +
+            "=================================================================================\n" +
+            "ERROR: JAVA 17 REQUIRED\n" +
+            "=================================================================================\n" +
+            "Your current Gradle JVM is running on Java $currentVersion, but the Android Gradle\n" +
+            "Plugin requires Java 17 to build the project.\n\n" +
+            "Please install JDK 17 and either:\n" +
+            "  1. Set your JAVA_HOME environment variable to point to it, or\n" +
+            "  2. Add the following line to your local user-level gradle.properties file\n" +
+            "     (located at ${gradlePropertiesFile.absolutePath}):\n\n" +
+            "     org.gradle.java.home=C:/Program Files/Java/jdk-17\n" +
+            "=================================================================================\n"
+        )
+    }
+}
+
+include ':FtcRobotController'
+include ':TeamCode'
+include ':simulator'
+
+def useSiblingAresLib = providers.gradleProperty('aresUseSiblingLib')
+    .map { it.toBoolean() }
+    .getOrElse(false)
+if (useSiblingAresLib && file('../ARESLib-Kotlin').exists()) {
+    includeBuild('../ARESLib-Kotlin') {
+        dependencySubstitution {
+            substitute module('org.aresfirst.ares:core') using project(':core')
+            substitute module('org.aresfirst.ares:codegen') using project(':codegen')
+            substitute module('org.aresfirst.ares:ftc-hardware') using project(':ftc-hardware')
+            substitute module('org.aresfirst.ares:simulator') using project(':simulator')
+            substitute module('org.aresfirst.ares:ftc-mocks') using project(':ftc-mocks')
+            substitute module('org.aresfirst.ares:simulator-runtime-windows') using project(':simulator-runtime-windows')
+            substitute module('org.aresfirst.ares:simulator-runtime-linux') using project(':simulator-runtime-linux')
+            substitute module('org.aresfirst.ares:simulator-runtime-macos') using project(':simulator-runtime-macos')
+            substitute module('org.aresfirst.ares:ares-bom') using project(':ares-bom')
+        }
+    }
+}

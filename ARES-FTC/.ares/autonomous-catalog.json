@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "projectId": "team23247-gobilda",
+  "revision": 1,
+  "defaultEntryId": "test-path",
+  "entries": [
+    {"entryId":"test-path","displayName":"Test Path","description":"Drive forward half a meter.","routineId":"test-path","startingPose":{"xMeters":0.0,"yMeters":0.0,"headingRadians":0.0},"authoredAlliance":"RED","mirrorForOppositeAlliance":true,"sortOrder":0,"enabled":true},
+    {"entryId":"test-auto","displayName":"Light Practice","description":"Practice a simple sequence with Lightbot's two indicator lights and Prism.","routineId":"test-auto","startingPose":{"xMeters":0.0,"yMeters":0.0,"headingRadians":0.0},"authoredAlliance":"RED","mirrorForOppositeAlliance":true,"sortOrder":1,"enabled":true}
+  ]
+}

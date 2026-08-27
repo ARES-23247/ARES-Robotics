@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "documentId": "test-auto",
+  "revision": 3,
+  "name": "Light Practice",
+  "description": "Beginner routine that practices sequential actions with Lightbot's two independent indicators and Prism.",
+  "steps": [
+    {"kind":"ACTION","stepId":"step-left-green","actionKey":"subsystem.indicator-lights.set.leftColor","arguments":{"value":"GREEN"},"children":[],"elseChildren":[]},
+    {"kind":"WAIT","stepId":"step-wait-left-set","arguments":{},"durationSeconds":0.5,"children":[],"elseChildren":[]},
+    {"kind":"ACTION","stepId":"step-left-cycle-forward","actionKey":"subsystem.indicator-lights.cycleForward.leftColor","arguments":{},"children":[],"elseChildren":[]},
+    {"kind":"WAIT","stepId":"step-wait-left-cycle","arguments":{},"durationSeconds":0.5,"children":[],"elseChildren":[]},
+    {"kind":"ACTION","stepId":"step-right-blue","actionKey":"subsystem.indicator-lights.set.rightColor","arguments":{"value":"BLUE"},"children":[],"elseChildren":[]},
+    {"kind":"WAIT","stepId":"step-wait-right-set","arguments":{},"durationSeconds":0.5,"children":[],"elseChildren":[]},
+    {"kind":"ACTION","stepId":"step-right-cycle-backward","actionKey":"subsystem.indicator-lights.cycleBackward.rightColor","arguments":{},"children":[],"elseChildren":[]},
+    {"kind":"WAIT","stepId":"step-wait-right-cycle","arguments":{},"durationSeconds":0.5,"children":[],"elseChildren":[]},
+    {"kind":"ACTION","stepId":"step-prism-timer","actionKey":"subsystem.prism.set.pattern","arguments":{"value":"FTC_TIMER"},"children":[],"elseChildren":[]}
+  ]
+}

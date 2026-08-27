@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 3,
+  "projectId": "team23247-gobilda",
+  "identity": {
+    "teamId": "23247",
+    "seasonId": "2026",
+    "robotId": "Lightbot",
+    "displayName": "Lightbot"
+  },
+  "league": "FTC",
+  "coordinateConvention": "CENTER_ORIGIN_CCW",
+  "robotLengthMeters": 0.4572,
+  "robotWidthMeters": 0.4572,
+  "fieldLengthMeters": 3.6576,
+  "fieldWidthMeters": 3.6576,
+  "runtimeOptions": {
+    "ftc": {
+      "hubCommandTransport": "ARES_PHOTON",
+      "limelightProxyEnabled": true
+    }
+  }
+}

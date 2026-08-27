@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 11,
+  "documentId": "prism",
+  "uid": "prism",
+  "displayName": "Prism lights",
+  "kotlinTypeName": "PrismLights",
+  "description": "One goBILDA Prism RGB LED driver with named patterns, a safe off preset, generated simulation, and generated verification.",
+  "platform": "FTC",
+  "revision": 2,
+  "hardware": [
+    {"hardwareId":"prismDriver","uid":"prismDriver","displayName":"goBILDA Prism underbody lights","kind":"PRISM_DRIVER","connection":{"hardwareMapName":"prism"},"measurements":[],"required":false,"safeOutput":1055.0,"description":"PWM Prism output configured as 'prism' on the Control Hub and rendered as Lightbot underbody lighting.","visualPlacement":{"anchor":"UNDERBODY","forwardFraction":0.0,"leftFraction":0.0}}
+  ],
+  "stateFields": [
+    {"fieldId":"pattern","uid":"pattern","displayName":"Pattern or color","description":"Named Prism animation or solid-color preset represented by its documented PWM pulse width.","type":"INT","role":"TARGET","unit":"µs","defaultInt":1005,"minimum":500.0,"maximum":2500.0}
+  ],
+  "controlLoops": [
+    {"loopId":"patternOutput","uid":"patternOutput","displayName":"Prism pattern output","description":"Writes the selected named Prism preset as a bounded PWM pulse width.","strategy":"DIRECT","actuatorId":"prismDriver","targetFieldId":"pattern","feedforward":{"kind":"NONE"},"minimumOutput":500.0,"maximumOutput":2500.0}
+  ],
+  "tuningParameters": [],
+  "template": "PRISM_LED_DRIVER",
+  "implementation": {"kind":"DECLARATIVE_GENERATED","ownership":"GENERATED_DO_NOT_EDIT","simulation":{"support":"GENERATED_MOCK"},"teaching":{"level":"BEGINNER","summary":"Shows how a vendor-specific lighting device remains declarative, simulated, and selectable by named presets.","documentationPath":"docs/examples/GUI_OWNED_LIGHTING.md","concepts":["Vendor-specific hardware kind","Named pattern choices","Safe off output","FTC and simulator parity"]}},
+  "capabilityActionKeys": [],
+  "safety": {"feedbackTimeoutMs":null,"homing":{"method":"NONE"},"requiresCalibration":false,"requiresConfigurationHealth":false,"requiresCurrentMonitoring":false,"latchOutputFaults":false,"requiresExplicitNeutralRecovery":false,"telemetryEnabled":true,"zeroAllocationPeriodic":true},
+  "autonomousResourceKey": "prism",
+  "requiredAtStartup": false,
+  "generateMockIo": true,
+  "generateTest": true
+}

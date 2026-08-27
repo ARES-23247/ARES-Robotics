@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "uid": "team23247.ftc.season2026.gobilda.profile.competition",
+  "profileId": "competition",
+  "displayName": "Competition baseline",
+  "description": "Reviewed FTC mecanum baseline. Runtime calibration writes a local experimental overlay and never changes this file.",
+  "projectUid": "team23247.ftc.season2026.gobilda",
+  "drivebaseUid": "team23247.drivebase.gobilda-mecanum",
+  "authority": "CANONICAL_CHECKED_IN",
+  "values": [
+    {
+      "parameterUid": "ftc.drive.closed-loop-velocity",
+      "value": {
+        "booleanValue": false
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.feedforward.ka",
+      "value": {
+        "doubleValue": 0.02
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.feedforward.ks",
+      "value": {
+        "doubleValue": 0.05
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.feedforward.kv",
+      "value": {
+        "doubleValue": 0.638
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.heading.deadzone",
+      "value": {
+        "doubleValue": 2.5
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.heading.kd",
+      "value": {
+        "doubleValue": 0.08
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.heading.ki",
+      "value": {
+        "doubleValue": 0.0
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.heading.kp",
+      "value": {
+        "doubleValue": 1.8
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.heading.max-output",
+      "value": {
+        "doubleValue": 0.4
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.motor.kd",
+      "value": {
+        "doubleValue": 0.01
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.motor.kf",
+      "value": {
+        "doubleValue": 0.0
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.motor.ki",
+      "value": {
+        "doubleValue": 0.1
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.motor.kp",
+      "value": {
+        "doubleValue": 0.4
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.path-rotation.kd",
+      "value": {
+        "doubleValue": 0.05
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.path-rotation.kp",
+      "value": {
+        "doubleValue": 2.5
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.path-translation.kd",
+      "value": {
+        "doubleValue": 0.02
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.path-translation.kp",
+      "value": {
+        "doubleValue": 2.0
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.path.acceleration-limit",
+      "value": {
+        "doubleValue": 3.0
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.path.velocity-scale",
+      "value": {
+        "doubleValue": 0.85
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.position-hold.deadzone",
+      "value": {
+        "doubleValue": 0.02
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.position-hold.kd",
+      "value": {
+        "doubleValue": 0.1
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.position-hold.ki",
+      "value": {
+        "doubleValue": 0.0
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.position-hold.kp",
+      "value": {
+        "doubleValue": 1.5
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.position-hold.max-output",
+      "value": {
+        "doubleValue": 0.5
+      }
+    },
+    {
+      "parameterUid": "ftc.drive.ticks-per-meter",
+      "value": {
+        "doubleValue": 2000.0
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.ekf.qtheta",
+      "value": {
+        "doubleValue": 0.01
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.ekf.qx",
+      "value": {
+        "doubleValue": 0.01
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.ekf.qy",
+      "value": {
+        "doubleValue": 0.01
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.pinpoint.ccw",
+      "value": {
+        "booleanValue": true
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.pinpoint.encoder-resolution",
+      "value": {
+        "doubleValue": 0.0
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.pinpoint.x-offset",
+      "value": {
+        "doubleValue": 0.0
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.pinpoint.x-reversed",
+      "value": {
+        "booleanValue": false
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.pinpoint.y-offset",
+      "value": {
+        "doubleValue": 0.0
+      }
+    },
+    {
+      "parameterUid": "ftc.localization.pinpoint.y-reversed",
+      "value": {
+        "booleanValue": false
+      }
+    }
+  ]
+}

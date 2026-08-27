@@ -1,0 +1,39 @@
+{
+  "_schemaVersion": 2,
+  "drive": {
+    "trackWidthMeters": 0.45,
+    "wheelBaseMeters": 0.45,
+    "pathTranslationGains": { "kP": 2.0, "kI": 0.0, "kD": 0.02, "kF": 0.0 },
+    "pathRotationGains": { "kP": 2.5, "kI": 0.0, "kD": 0.05, "kF": 0.0 },
+    "headingGains": { "kP": 4.5, "kI": 0.0, "kD": 0.25, "kF": 0.0 },
+    "headingDeadzoneDeg": 0.5,
+    "driveFeedforward": { "kS": 0.05, "kV": 0.638, "kA": 0.02 },
+    "angularFeedforward": { "kS": 0.0, "kV": 0.0, "kA": 0.0 },
+    "ftc": {
+      "ticksPerMeter": 2000.0,
+      "motorGains": null
+    }
+  },
+  "vision": {
+    "stdDevsX": 0.05,
+    "stdDevsY": 0.05,
+    "stdDevsHeading": 0.1,
+    "maxDistanceMeters": 6.0,
+    "maxAmbiguity": 0.2,
+    "mahalanobisThreshold": 12.0
+  },
+  "localization": {
+    "ekfNoise": { "qX": 0.01, "qY": 0.01, "qTheta": 0.01 },
+    "ftcPinpoint": {
+      "xOffsetMm": -2.646690996383435,
+      "yOffsetMm": -0.013876460111646236,
+      "encoderResolution": 0.0
+    }
+  },
+  "driver": {
+    "deadbandExponent": 1.0,
+    "slewRateLimit": 999.0,
+    "triggerThreshold": 0.5
+  },
+  "subsystem": {}
+}
