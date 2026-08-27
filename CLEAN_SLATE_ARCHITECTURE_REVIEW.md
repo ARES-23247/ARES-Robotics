@@ -1,5 +1,11 @@
 # ARES Clean-Slate Architecture Review
 
+> **Implementation status (2026-08-27):** The architectural boundary program described here is
+> implemented in the ARES-Robotics source monorepo. See
+> [CLEAN_SLATE_ARCHITECTURE_COMPLETION.md](CLEAN_SLATE_ARCHITECTURE_COMPLETION.md) for the ownership,
+> rollback, verification, migration, and deliberately deferred-work record. This review remains the
+> design rationale; it is not a claim of physical robot validation.
+
 ## Executive recommendation
 
 ARES should be **restructured, not rewritten**. The core architectural ideas are appropriate for a
