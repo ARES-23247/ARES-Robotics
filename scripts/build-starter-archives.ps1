@@ -59,7 +59,12 @@ try {
                     ForEach-Object {
                         $relative = [System.IO.Path]::GetRelativePath($source, $_.FullName).Replace('\', '/')
                         $entryName = "$templateName-$version/$relative"
-                        $entry = $zip.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+                        # NoCompression is intentional. Deflate output is allowed to vary between
+                        # .NET runtime/zlib implementations even when file order and timestamps are
+                        # fixed, which made the release SHA machine-dependent. Stored ZIP entries
+                        # make the complete archive byte-for-byte reproducible across supported
+                        # Windows build agents.
+                        $entry = $zip.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::NoCompression)
                         $entry.LastWriteTime = $fixedTimestamp
                         $isExecutable = $_.Name -eq 'gradlew' -or $_.Extension -eq '.sh'
                         $unixMode = if ($isExecutable) { 0x81ED } else { 0x81A4 } # 100755 / 100644
