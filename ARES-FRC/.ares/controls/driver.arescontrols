@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 2,
+  "documentId": "driver",
+  "revision": 1,
+  "name": "Field-centric driver controls",
+  "description": "Starter scheme: left stick translates field-centric (X forward, Y left), right stick rotates CCW-positive. Axes invert to WPILib sign conventions and shape with the season 0.1 deadband; the sink scales to 4.5 m/s and pi rad/s and applies RED alliance translation mirroring.",
+  "controllers": [
+    {
+      "slot": "driver",
+      "displayName": "Driver",
+      "profileId": "frc-driver",
+      "devicePort": 0
+    }
+  ],
+  "bindings": [
+    {
+      "bindingId": "drive-forward",
+      "displayName": "Drive forward/back",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": ["left_stick_y"],
+        "transform": {
+          "inputMinimum": -1.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": -1.0,
+          "outputMaximum": 1.0,
+          "deadband": 0.1,
+          "exponent": 1.0,
+          "inverted": true
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "DRIVE",
+        "key": "vx",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": false,
+        "changeEpsilon": 1.0E-6,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "drive-strafe",
+      "displayName": "Strafe left/right",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": ["left_stick_x"],
+        "transform": {
+          "inputMinimum": -1.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": -1.0,
+          "outputMaximum": 1.0,
+          "deadband": 0.1,
+          "exponent": 1.0,
+          "inverted": true
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "DRIVE",
+        "key": "vy",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": false,
+        "changeEpsilon": 1.0E-6,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "drive-rotate",
+      "displayName": "Rotate",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": ["right_stick_x"],
+        "transform": {
+          "inputMinimum": -1.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": -1.0,
+          "outputMaximum": 1.0,
+          "deadband": 0.1,
+          "exponent": 1.0,
+          "inverted": true
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "DRIVE",
+        "key": "omega",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": false,
+        "changeEpsilon": 1.0E-6,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    }
+  ]
+}

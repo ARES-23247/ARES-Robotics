@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 3,
+  "projectId": "team23247-marvin-xix",
+  "identity": {
+    "teamId": "23247",
+    "seasonId": "2024",
+    "robotId": "Marvin-XIX",
+    "displayName": "Marvin XIX"
+  },
+  "league": "FRC",
+  "coordinateConvention": "BLUE_CORNER_ORIGIN_CCW",
+  "robotLengthMeters": 0.8,
+  "robotWidthMeters": 0.8,
+  "fieldLengthMeters": 16.54175,
+  "fieldWidthMeters": 8.21055,
+  "runtimeOptions": {}
+}
