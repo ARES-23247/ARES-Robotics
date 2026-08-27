@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 3,
+  "projectId": "ares-ftc-starter",
+  "identity": {
+    "teamId": "00000",
+    "seasonId": "starter",
+    "robotId": "AresFtcStarter",
+    "displayName": "ARES FTC Starter"
+  },
+  "league": "FTC",
+  "coordinateConvention": "CENTER_ORIGIN_CCW",
+  "robotLengthMeters": 0.45,
+  "robotWidthMeters": 0.45,
+  "fieldLengthMeters": 3.6576,
+  "fieldWidthMeters": 3.6576,
+  "runtimeOptions": {
+    "ftc": {
+      "hubCommandTransport": "STANDARD_SDK",
+      "limelightProxyEnabled": false
+    }
+  }
+}

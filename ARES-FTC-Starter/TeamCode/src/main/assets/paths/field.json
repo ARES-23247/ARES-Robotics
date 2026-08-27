@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "revision": 1,
+  "id": "ares-starter-empty-ftc-field",
+  "name": "ARES Starter Empty FTC Field",
+  "gameYear": "generic",
+  "fieldType": "ftc",
+  "widthMeters": 3.6576,
+  "heightMeters": 3.6576,
+  "xAxisDirection": "up",
+  "yAxisDirection": "left",
+  "redDriverStation": "south",
+  "blueDriverStation": "north",
+  "allianceSymmetry": "rotational",
+  "obstacles": [],
+  "apriltags": [],
+  "elementTypes": [],
+  "elements": [],
+  "fieldWaypoints": []
+}
