@@ -55,4 +55,4 @@ You have succeeded when you can state:
 - Opening help or source reference never enables a robot.
 - Do not infer physical safety from a green connection or passing unit test.
 - If a curated entry disagrees with source, trust source and tests, then report the stale entry.
-- Ask a mentor before using live tuning, remote drive, autonomous start, or deployment controls.
+- Complete the team's safety checklist before using live tuning, remote drive, autonomous start, or deployment controls.

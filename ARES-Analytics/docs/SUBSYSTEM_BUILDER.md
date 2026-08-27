@@ -361,7 +361,7 @@ A useful request describes the physical parts and the safe behavior, for example
 You do not need to know the descriptor field names. The assistant should translate the physical
 description into the form; hover or press the help icon beside any proposed field to learn what it
 means. If important information is unknown—such as a safe current threshold—leave it unresolved
-and ask a mentor rather than accepting a guess.
+and verify it with your team rather than accepting a guess.
 Students see plain-language reasoning, local validation results, and a structured before/after diff
 before choosing **Apply to form** or **Discard proposal**. Applying creates one normal Undo step;
 Save and Generate remain separate explicit actions. Protected platform, revision, source ownership,

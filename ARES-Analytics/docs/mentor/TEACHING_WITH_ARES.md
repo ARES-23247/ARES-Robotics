@@ -429,7 +429,7 @@ Move from simulator/replay to **Live Robot** only when all applicable items are 
 - [ ] People, tools, cables, and game pieces are outside the mechanism/drivetrain envelope.
 - [ ] Battery, radio/network, and driver-station state meet team standards.
 - [ ] The student knows which Analytics actions are observational and which publish commands.
-- [ ] Autonomous selection, remote drive, driver-station controls, and tuning pushes are mentor-approved.
+- [ ] Autonomous selection, remote drive, driver-station controls, and tuning pushes follow the team's documented safety checklist.
 - [ ] The team has a stop plan independent of the Analytics toolbar.
 
 The Analytics **Stop** button ends Analytics-managed desktop build/simulator processes. It is not a robot emergency stop.

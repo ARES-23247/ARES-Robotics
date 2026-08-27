@@ -49,7 +49,7 @@ class RobotProjectTemplateServiceTest {
 
         League.entries.forEach { league ->
             val template = service.templateFor(league)
-            assertEquals("10.1.0", template.aresVersion)
+            assertEquals("11.0.0", template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
             assertEquals(
                 RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
@@ -390,7 +390,7 @@ class RobotProjectTemplateServiceTest {
     }
 
     @Test
-    fun `hardware-review template policy blocks until the current canonical mapping is reviewed`() {
+    fun `hardware checklist policy blocks until the current canonical mapping is reviewed`() {
         val root = Files.createTempDirectory("ares-hardware-policy-test").toFile()
         try {
             val ares = File(root, ".ares").apply { mkdirs() }
@@ -421,7 +421,7 @@ class RobotProjectTemplateServiceTest {
             HardwareSetupService().saveReview(
                 root.path,
                 League.FTC,
-                HardwareReviewRequest("Mentor", true, true, true, true, true),
+                HardwareReviewRequest("Team member", true, true, true, true, true),
             )
             assertNull(templateDeploymentBlockReason(root))
         } finally {
@@ -490,7 +490,13 @@ class RobotProjectTemplateServiceTest {
         )
         return zipOf(
             "fixture-root/settings.gradle" to "include ':TeamCode'\n",
-            "fixture-root/gradle.properties" to "aresVersion=$aresVersion\n",
+            "fixture-root/release/ares-versions.properties" to """
+                aresVersion=$aresVersion
+                studioVersion=2.0.0
+                ftcStarterVersion=$aresVersion
+                frcStarterVersion=$aresVersion
+                githubMavenRepository=https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven
+            """.trimIndent() + "\n",
             "fixture-root/TeamCode/src/main/java/example/Robot.kt" to "package example\nclass Robot\n",
             "fixture-root/.ares/project.json" to metadata,
             "fixture-root/.ares/action-catalog.json" to CapabilityCatalogCodec.encode(

@@ -521,7 +521,7 @@ internal fun renderGuidedTuningExperimentReport(experiment: GuidedTuningExperime
         appendLine("- Held constant:")
         experiment.heldConstants.ifEmpty { listOf("Not recorded in this legacy experiment") }
             .forEach { appendLine("  - $it") }
-        appendLine("- Safety boundary: ${experiment.safetyNotes.ifBlank { "Local Sim only; physical validation requires a separate mentor-approved procedure." }}")
+        appendLine("- Safety boundary: ${experiment.safetyNotes.ifBlank { "Local Sim only; physical validation requires a separate documented safety procedure." }}")
         appendLine("- Mentor review: ${experiment.mentorReviewState.name.replace('_', ' ')}")
         appendLine()
         appendLine("## Baseline and candidate")

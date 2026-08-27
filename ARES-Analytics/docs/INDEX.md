@@ -60,7 +60,7 @@ ARES Robotics Studio can display data from several places. They are related, but
 
 The robot never uploads directly to the cloud. The laptop receives or pulls data, analyzes it locally, and may synchronize a copy later.
 
-> **New student rule:** if you are unsure which mode to use, choose **Local Sim**. Ask a mentor before using a live robot control, autonomous selection, or tuning action.
+> **New student rule:** if you are unsure which mode to use, choose **Local Sim**. Complete the team's safety checklist before using live robot control, autonomous selection, or tuning actions.
 
 ## A good first 15 minutes
 

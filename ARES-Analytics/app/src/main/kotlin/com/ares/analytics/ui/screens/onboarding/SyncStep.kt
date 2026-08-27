@@ -255,7 +255,7 @@ private fun ProjectSelection(
                         if (mode == ProjectSetupMode.EXPLORE_DEMO) {
                             "SIMULATION ONLY UNTIL REVIEWED — Explore, change, build, and simulate this copy. It is not evidence that any physical robot wiring, directions, limits, or calibration were validated."
                         } else {
-                            "SIMULATION FIRST — This generic starter contains no Team 23247 season mechanisms or calibration. Build and simulation are supported; physical deployment stays blocked until a mentor completes Hardware Setup and commissioning evidence."
+                            "SIMULATION FIRST — This generic starter contains no Team 23247 season mechanisms or calibration. Build and simulation are supported; complete Hardware Setup and the commissioning checklist before physical deployment."
                         },
                         color = AresError,
                         style = MaterialTheme.typography.bodySmall,

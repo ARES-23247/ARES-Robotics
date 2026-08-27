@@ -55,7 +55,7 @@ The importer checks locations including `/sdcard/FIRST/telemetry_logs/`, `/sdcar
 2. Confirm the laptop can reach the RoboRIO and that its SSH host key has already been verified.
 3. Stop the logger/run and leave Analytics open while it checks `/home/lvuser/logs/` and `/media/sda1/logs/`.
 
-Analytics refuses unknown or changed SSH host keys. Ask a mentor to verify the fingerprint; do not bypass that protection.
+Analytics refuses unknown or changed SSH host keys. Compare the fingerprint with a trusted team record or verify it with another team member; do not bypass that protection.
 
 For Driver Station evidence, keep the same-basename `.dslog` and `.dsevents` files together. Analytics treats them as one stable import, archives both, and changes the durable fingerprint if either companion changes.
 

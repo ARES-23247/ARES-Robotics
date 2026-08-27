@@ -31,9 +31,7 @@ rootProject.ext.aresReleaseVersion = providers.gradleProperty('aresVersion')
 rootProject.ext.aresPinnedReleaseVersion = requiredReleaseProperty('aresVersion')
 rootProject.ext.aresStudioVersion = requiredReleaseProperty('studioVersion')
 rootProject.ext.aresFtcStarterVersion = requiredReleaseProperty('ftcStarterVersion')
-rootProject.ext.aresFtcStarterSha256 = requiredReleaseProperty('ftcStarterSha256')
 rootProject.ext.aresFrcStarterVersion = requiredReleaseProperty('frcStarterVersion')
-rootProject.ext.aresFrcStarterSha256 = requiredReleaseProperty('frcStarterSha256')
 rootProject.ext.aresGitHubMavenRepository = requiredReleaseProperty('githubMavenRepository')
 
 tasks.register('verifyAresReleaseManifest') {

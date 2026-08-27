@@ -54,7 +54,7 @@ Work from the top of this table; do not repeatedly launch more simulator process
 | Symptom | Recovery |
 | --- | --- |
 | Terminal says the project folder is missing or has no Gradle wrapper | Switch to the correct robot workspace. The profile must point to `ARES-FTC` or `ARES-FRC`. |
-| The simulator task is unknown | Ask a mentor for the project's command and save it as **Simulator Command (Optional)** in the workspace profile. Defaults are league-specific. |
+| The simulator task is unknown | Check the project README or Gradle tasks, then save the command as **Simulator Command (Optional)** in the workspace profile. Defaults are league-specific. |
 | Port `5810` is already in use | Select **Stop**, close the older simulator/NT4 server, then launch once. |
 | The process runs but the dot stays gray | Confirm **Local Sim** is selected and look for an NT4 server startup line. Check that firewall rules are not blocking loopback. |
 | Connected, but the field pose stays at zero | Check whether the chosen OpMode/routine is initialized or started. Try another known changing topic before assuming the connection failed. |

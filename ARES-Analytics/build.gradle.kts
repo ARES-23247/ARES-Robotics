@@ -28,13 +28,14 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
     description = "Fails fast when ARES, app, or bundled starter release pins disagree."
 
     val releasePropertiesFile = rootProject.extra["aresReleaseManifestFile"] as File
+    val starterArtifactsFile = rootProject.file("../release/starter-artifacts.properties")
     val appBuildFile = file("app/build.gradle.kts")
     val templateServiceFile = file(
         "app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt",
     )
     val workflowFile = file(".github/workflows/build-distributions.yml")
     val templateDirectory = file("app/src/main/resources/project-templates")
-    inputs.files(releasePropertiesFile, appBuildFile, templateServiceFile, workflowFile)
+    inputs.files(releasePropertiesFile, starterArtifactsFile, appBuildFile, templateServiceFile, workflowFile)
     inputs.dir(templateDirectory)
     inputs.property("resolvedAresVersion", resolvedAresVersion)
 
@@ -42,9 +43,15 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         val properties = java.util.Properties().apply {
             releasePropertiesFile.inputStream().use(::load)
         }
+        val starterArtifacts = java.util.Properties().apply {
+            starterArtifactsFile.inputStream().use(::load)
+        }
         fun requiredProperty(name: String): String = properties.getProperty(name)?.trim()
             ?.takeIf(String::isNotEmpty)
             ?: throw GradleException("Release preflight: gradle.properties is missing '$name'.")
+        fun requiredArtifact(name: String): String = starterArtifacts.getProperty(name)?.trim()
+            ?.takeIf { it.matches(Regex("[0-9a-fA-F]{64}")) }
+            ?: throw GradleException("Release preflight: starter-artifacts.properties has no valid '$name'.")
         fun requireContains(file: File, token: String, label: String) {
             if (!file.readText().contains(token)) {
                 throw GradleException(
@@ -68,9 +75,9 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         val aresVersion = requiredProperty("aresVersion")
         val appVersion = requiredProperty("studioVersion")
         val ftcVersion = requiredProperty("ftcStarterVersion")
-        val ftcHash = requiredProperty("ftcStarterSha256").lowercase()
+        val ftcHash = requiredArtifact("ftcStarterSha256").lowercase()
         val frcVersion = requiredProperty("frcStarterVersion")
-        val frcHash = requiredProperty("frcStarterSha256").lowercase()
+        val frcHash = requiredArtifact("frcStarterSha256").lowercase()
 
         if (resolvedAresVersion != aresVersion) {
             val validationRepository = providers.gradleProperty("aresRepository").orNull?.trim().orEmpty()

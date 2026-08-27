@@ -11,8 +11,9 @@ source of truth. FTC and FRC retain distinct lifecycle, controller, hardware, de
 simulator products.
 
 The migration does not republish or mutate the already immutable ARES `10.1.0`, starter `10.1.0`,
-or Studio `1.7.0` artifacts. Validation uses a unique `10.1.0-rc.<commit>` identity and an isolated
-file repository. Final releases must use a new version.
+or Studio `1.7.0` artifacts. The incompatible schema-4 source line is explicitly versioned as ARES
+and starters `11.0.0` plus Studio `2.0.0`; validation uses a unique `11.0.0-rc.<commit>` identity and
+an isolated file repository. Those versions remain unpublished until every protected gate passes.
 
 ## Implemented ownership boundaries
 
@@ -28,7 +29,7 @@ file repository. Final releases must use a new version.
 | Deterministic simulator selection and shared contracts | `ARESLib-Kotlin:simulation-foundation` |
 | FTC and FRC physics/lifecycle products | Separate FTC and FRC simulator implementations |
 | Current immutable project state and save/generate/verify/simulate commands | Studio `ProjectSession` and service gateways |
-| Versions, repository identity, build ordering and release policy | `release/ares-versions.properties`, root build scripts and protected workflows |
+| Versions, repository identity, build ordering and release policy | `release/ares-versions.properties`, `release/starter-artifacts.properties`, root build scripts and protected workflows |
 | Public starter contents | Deterministic exports from `templates/ftc` and `templates/frc` |
 
 ## Standalone and code-first development
@@ -76,6 +77,8 @@ checkout was never reset or cleaned; the migration was performed in an isolated 
 - Checked-in consumer copies of generated FTC/FRC runtime plumbing are removed.
 - Normal builds use immutable published artifacts. Validation uses an explicit candidate version and
   isolated repository. Ambient `mavenLocal()` publication/resolution is rejected by policy.
+- Starter archive checksums are release-only metadata rather than self-referential fields copied
+  into the standalone project contained by that archive.
 - Starter repositories are reproducible mirrors, and a fresh-project acceptance job generates,
   compiles, tests, simulates, and packages their output.
 - Windows MSI and native macOS DMG builds are first-class protected gates.

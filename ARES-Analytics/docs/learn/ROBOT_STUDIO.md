@@ -91,7 +91,7 @@ Read the stage issue before editing files manually:
 
 - **Missing identity:** use Project Identity. Workspace setup selects a repository but does not silently invent measured geometry or create `.ares/project.json`.
 - **Wrong platform:** select the correct workspace or repair the canonical metadata; Project Identity will not rewrite the league of an existing project.
-- **Code required:** use a supported no-code drivebase for this season project, or ask a mentor/developer to implement and verify the missing runtime adapter.
+- **Code required:** use a supported no-code drivebase for this season project, or have a team developer implement and verify the missing runtime adapter.
 - **Invalid catalog or binding:** open the linked builder and fix the referenced stable ID or conflict.
 - **Incomplete controls:** create both a controller profile and a control scheme, or remove both to
   return to the reviewed season baseline. One without the other is blocked.

@@ -60,12 +60,16 @@ points are explicit and are never silently overwritten.
 
 ## Dependency and release policy
 
-`release/ares-versions.properties` is the only checked-in release identity. Ordinary consumers use
-immutable `org.aresfirst.ares` artifacts. Cross-project changes use one explicit prerelease version
-and one isolated validation repository; ambient `mavenLocal()` resolution is forbidden.
+`release/ares-versions.properties` is the canonical dependency and product-version identity.
+`release/starter-artifacts.properties` records the integrity hashes of Studio's immutable starter
+archives without copying a self-referential archive hash into standalone projects. Ordinary
+consumers use immutable `org.aresfirst.ares` artifacts. Cross-project changes use one explicit
+prerelease version and one isolated validation repository; ambient `mavenLocal()` resolution is
+forbidden.
 
-Public FTC and FRC starter repositories are release mirrors. Their bytes are exported
-deterministically with `scripts/export-starter-mirrors.ps1`; manual drift is rejected by CI.
+Public FTC and FRC starter repositories are release mirrors. Their bytes are exported with
+`scripts/export-starter-mirrors.ps1`, and reproducible release archives are built with
+`scripts/build-starter-archives.ps1`; manual drift or checksum mismatch is rejected by CI.
 
 Protected pull requests run:
 

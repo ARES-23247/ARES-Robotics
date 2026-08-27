@@ -391,7 +391,7 @@ class HardwareSetupService(
             snapshot.errorIssues.joinToString(" ") { it.message }.ifBlank { "Fix hardware mapping errors before recording a review." }
         }
         val reviewer = request.reviewerName.trim()
-        require(reviewer.length in 2..80) { "Enter the name of the student or mentor who compared the configuration with the robot." }
+        require(reviewer.length in 2..80) { "Enter the name of the team member who compared the configuration with the robot." }
         require(
             request.wiringMatched && request.addressesChecked && request.directionsChecked &&
                 request.neutralOutputsChecked && request.limitsChecked,
@@ -435,7 +435,7 @@ class HardwareSetupService(
         }
         val validator = request.validatedBy.trim()
         val evidence = request.evidenceSummary.trim()
-        require(validator.length in 2..80) { "Enter the student or mentor who performed the supervised physical checks." }
+        require(validator.length in 2..80) { "Enter the team member who performed the physical checks." }
         require(evidence.length in 20..1_000) {
             "Describe the robot, procedure, observed result, and any remaining limitation (20–1,000 characters)."
         }

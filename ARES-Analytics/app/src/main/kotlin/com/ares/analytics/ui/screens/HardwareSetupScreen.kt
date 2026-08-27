@@ -200,7 +200,7 @@ private fun PhysicalValidationSection(state: HardwareSetupState, viewModel: Hard
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Optional supervised physical validation", color = AresTextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(
-                "Do this only with a real robot, an adult/mentor-approved procedure, a clear test area, and an operator ready to stop. Studio records your evidence; it does not perform or infer the test.",
+                "Do this only with a real robot, your team's documented safety procedure, a clear test area, and an operator ready to stop. Studio records your evidence; it does not perform or infer the test.",
                 color = AresTextSecondary,
                 fontSize = 12.sp,
                 lineHeight = 18.sp,
@@ -227,7 +227,7 @@ private fun PhysicalValidationSection(state: HardwareSetupState, viewModel: Hard
                 onValueChange = viewModel::setPhysicalValidatorName,
                 enabled = ready,
                 label = { Text("Validated by") },
-                supportingText = { Text("Named student or mentor who directly observed the physical checks.") },
+                supportingText = { Text("Team member who directly observed the physical checks.") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -375,7 +375,7 @@ private fun CommissioningGuide(
                             when {
                                 check.followerOnly -> Text("Follower device: verify it with its leader; do not command it independently.", color = AresAmber, fontSize = 11.sp)
                                 check.pulseProposal != null -> Text(
-                                    "UNARMED PULSE PROPOSAL · mentor review required · ≤${check.pulseProposal.maximumDurationMs} ms · ≤${(check.pulseProposal.maximumTravelFromNeutralFraction * 100).toInt()}% from neutral ${check.pulseProposal.safeNeutralOutput}",
+                                    "UNARMED PULSE PROPOSAL · safety checklist required · ≤${check.pulseProposal.maximumDurationMs} ms · ≤${(check.pulseProposal.maximumTravelFromNeutralFraction * 100).toInt()}% from neutral ${check.pulseProposal.safeNeutralOutput}",
                                     color = AresAmber,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -576,7 +576,7 @@ private fun ReviewChecklist(
                 value = state.reviewerName,
                 onValueChange = viewModel::setReviewerName,
                 label = { Text("Reviewed by") },
-                supportingText = { Text("Student or mentor name; this does not create a cloud role or claim a hardware test.") },
+                supportingText = { Text("Team member name; this does not create a cloud role or claim a hardware test.") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )

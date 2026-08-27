@@ -295,29 +295,19 @@ class RobotProjectTemplateService(
     }
 
     private fun validateTemplateAresVersion(root: File, template: RobotProjectTemplate) {
-        val propertiesVersion = File(root, "gradle.properties")
-            .takeIf(File::isFile)
-            ?.useLines { lines ->
-                lines.map(String::trim)
-                    .firstOrNull { line -> line.startsWith("aresVersion=") }
-                    ?.substringAfter('=')
-                    ?.trim()
-                    ?.takeIf(String::isNotBlank)
-            }
-        val buildVersion = if (propertiesVersion == null) {
-            val pattern = Regex(
-                """gradleProperty\s*\(\s*['\"]aresVersion['\"]\s*\)\s*\.getOrElse\s*\(\s*['\"]([^'\"]+)['\"]\s*\)""",
-            )
-            sequenceOf(File(root, "build.gradle"), File(root, "build.gradle.kts"))
-                .filter(File::isFile)
-                .mapNotNull { file -> pattern.find(file.readText())?.groupValues?.get(1) }
-                .firstOrNull()
-        } else {
-            null
+        val releaseManifest = File(root, "release/ares-versions.properties")
+        check(releaseManifest.isFile) {
+            "The reviewed starter is missing its canonical release/ares-versions.properties manifest."
         }
-        val declaredVersion = propertiesVersion ?: buildVersion
+        val declaredVersion = releaseManifest.useLines { lines ->
+            lines.map(String::trim)
+                .firstOrNull { line -> line.startsWith("aresVersion=") }
+                ?.substringAfter('=')
+                ?.trim()
+                ?.takeIf(String::isNotBlank)
+        }
         check(declaredVersion != null) {
-            "The reviewed starter does not declare its ARES dependency version."
+            "The reviewed starter release manifest does not declare its ARES dependency version."
         }
         check(declaredVersion == template.aresVersion) {
             "The reviewed starter declares ARES $declaredVersion, but its pinned template requires ${template.aresVersion}."
@@ -477,25 +467,25 @@ class RobotProjectTemplateService(
 
         val OFFICIAL_PROJECT_TEMPLATES: List<RobotProjectTemplate> = listOf(
             RobotProjectTemplate(
-                id = "ares-ftc-starter-10.1.0",
+                id = "ares-ftc-starter-11.0.0",
                 displayName = "ARES FTC Starter",
                 league = League.FTC,
-                aresVersion = "10.1.0",
-                revision = "8db9f3651cea58cc0af038919f9b2b1f48fb67e3",
-                archiveUrl = "https://github.com/ARES-23247/ARES-FTC-Starter/releases/download/v10.1.0/ARES-FTC-Starter-10.1.0.zip",
-                archiveSha256 = "9c12080062ff128cef9b81abdb724119868fa070c7543132a8daba72bdef64e3",
-                bundledResourcePath = "/project-templates/ARES-FTC-Starter-10.1.0.zip",
+                aresVersion = "11.0.0",
+                revision = "schema4-standalone-v1",
+                archiveUrl = "https://github.com/ARES-23247/ARES-FTC-Starter/releases/download/v11.0.0/ARES-FTC-Starter-11.0.0.zip",
+                archiveSha256 = "a151a72a8a16e1397fb96954d4e964f6d8eb13bb8f468ffef2ccf2ad487aefe2",
+                bundledResourcePath = "/project-templates/ARES-FTC-Starter-11.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
             RobotProjectTemplate(
-                id = "ares-frc-starter-10.1.0",
+                id = "ares-frc-starter-11.0.0",
                 displayName = "ARES FRC Starter",
                 league = League.FRC,
-                aresVersion = "10.1.0",
-                revision = "eab3a8db8a19f7f9153a6eaa12192f78da673c8a",
-                archiveUrl = "https://github.com/ARES-23247/ARES-FRC-Starter/releases/download/v10.1.0/ARES-FRC-Starter-10.1.0.zip",
-                archiveSha256 = "6aa7b3e2fb5cd26b277a5085b4c342cba33065f12797259a28cf913e217085a9",
-                bundledResourcePath = "/project-templates/ARES-FRC-Starter-10.1.0.zip",
+                aresVersion = "11.0.0",
+                revision = "schema4-standalone-v1",
+                archiveUrl = "https://github.com/ARES-23247/ARES-FRC-Starter/releases/download/v11.0.0/ARES-FRC-Starter-11.0.0.zip",
+                archiveSha256 = "4b054fad4978c16be8a1cb56e05d4b53607d5de9b505c2e3e9fbbaf20ba83cc8",
+                bundledResourcePath = "/project-templates/ARES-FRC-Starter-11.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
         )
@@ -720,7 +710,7 @@ internal fun templateDeploymentBlockReason(projectRoot: File): String? {
     val provenance = runCatching {
         PROJECT_TEMPLATE_JSON.decodeFromString<RobotProjectTemplateProvenance>(provenanceFile.readText())
     }.getOrElse {
-        return "Template provenance is invalid. Deployment is blocked; create a fresh project or ask a mentor to inspect the repository."
+        return "Template provenance is invalid. Deployment is blocked; create a fresh project or inspect and restore the repository."
     }
     return when (provenance.deploymentPolicy) {
         RobotProjectDeploymentPolicy.DEPLOYMENT_READY -> null

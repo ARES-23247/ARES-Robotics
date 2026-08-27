@@ -228,7 +228,7 @@ If a simulator lesson gets stuck:
 2. confirm the selected target says **Local Sim**;
 3. use Analytics **Stop** for its managed process;
 4. preserve the terminal text; and
-5. ask a mentor before changing project or network settings.
+5. verify project or network settings against the team's documented configuration before changing them.
 
 The Analytics Stop action is not a physical robot emergency stop.
 

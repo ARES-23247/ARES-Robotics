@@ -864,7 +864,7 @@ object LearningCatalog {
                 "Export the mentor/student engineering report and explain what the simulation did—and did not—prove.",
             ),
             successLooksLike = "One saved experiment links its baseline finding, immutable configuration snapshot, bounded change, candidate run, comparison result, decision, limitations, and exported report.",
-            safetyNote = "Use Local Sim first. Guided apply is fail-closed to the loopback simulator; physical validation needs a separate mentor-approved safety procedure.",
+            safetyNote = "Use Local Sim first. Guided apply is fail-closed to the loopback simulator; physical validation needs a separate documented safety procedure.",
             keywords = setOf("tuning", "experiment", "pid", "feedforward", "motion profile", "nt4", "proposal", "simulation", "baseline", "rollback", "telemetry", "report"),
             prerequisiteLessonIds = setOf("control-challenges-lab", "compare-run-evidence"),
             checkpoints = listOf(

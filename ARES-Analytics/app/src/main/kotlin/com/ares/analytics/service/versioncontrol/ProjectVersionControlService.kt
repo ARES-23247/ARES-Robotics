@@ -1100,7 +1100,7 @@ class ProjectVersionControlService internal constructor(
                 walk.isMergedInto(remote, local) -> ProjectRestoreDisposition.LOCAL_AHEAD
                 else -> error(
                     "Both this computer and GitHub contain different saved versions. " +
-                        "ARES will not guess which work to replace; ask a mentor to reconcile the histories.",
+                        "ARES will not guess which work to replace; inspect and reconcile the histories before retrying.",
                 )
             }
         }
@@ -1426,7 +1426,7 @@ private fun pushWithJGit(git: Git, accessToken: String) {
     val failures = results.flatMap { it.remoteUpdates }
         .filter { update -> update.status.name !in setOf("OK", "UP_TO_DATE") }
     require(failures.isEmpty()) {
-        "GitHub rejected the backup update (${failures.joinToString { it.status.name }}). Nothing remote was overwritten; refresh or ask a mentor to resolve the history difference."
+        "GitHub rejected the backup update (${failures.joinToString { it.status.name }}). Nothing remote was overwritten; refresh and resolve the history difference before retrying."
     }
 }
 
