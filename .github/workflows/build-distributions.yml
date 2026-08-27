@@ -227,11 +227,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build and verify immutable starter archives
+      - name: Build immutable starter archives
         shell: pwsh
         run: |
           $output = Join-Path $env:RUNNER_TEMP 'starter-release-assets'
           .\scripts\build-starter-archives.ps1 -OutputDirectory $output
+      - uses: actions/upload-artifact@v7
+        with:
+          name: starter-release-assets
+          path: ${{ runner.temp }}/starter-release-assets/*.zip
+          if-no-files-found: error
+      - name: Verify immutable starter archive hashes
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'starter-release-assets'
           $expected = ConvertFrom-StringData (Get-Content -Raw release/starter-artifacts.properties)
           foreach ($league in @('FTC', 'FRC')) {
             $key = "${league}StarterSha256"
@@ -243,11 +252,6 @@ jobs:
             $actual = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
             if ($actual -ne $expected[$key]) { throw "$league starter archive hash changed: $actual" }
           }
-      - uses: actions/upload-artifact@v7
-        with:
-          name: starter-release-assets
-          path: ${{ runner.temp }}/starter-release-assets/*.zip
-          if-no-files-found: error
 
   publish-release:
     name: Publish verified Studio release
