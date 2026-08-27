@@ -44,7 +44,11 @@ tasks.register('verifyAresReleaseManifest') {
         def resolved = rootProject.ext.aresReleaseVersion.toString()
         def pinned = rootProject.ext.aresPinnedReleaseVersion.toString()
         def repository = providers.gradleProperty('aresRepository').orNull?.trim()
-        if (resolved != pinned && (repository == null || repository.isEmpty())) {
+        // The foundation build creates the isolated candidate repository; consumers resolve it.
+        // Detect that producer by its explicit publishing task instead of weakening provenance for
+        // every build or requiring ARESLib to resolve artifacts that do not exist yet.
+        def isReleaseProducer = rootProject.tasks.findByName('publishReleaseValidation') != null
+        if (resolved != pinned && !isReleaseProducer && (repository == null || repository.isEmpty())) {
             throw new GradleException(
                 "ARES candidate ${resolved} requires an explicit isolated -ParesRepository. " +
                     "Ordinary builds use immutable release ${pinned}."
@@ -55,7 +59,10 @@ tasks.register('verifyAresReleaseManifest') {
                 "ARES validation candidate ${resolved} must retain pinned base ${pinned}-*."
             )
         }
-        logger.lifecycle("ARES dependency provenance: ${resolved} via ${repository ?: rootProject.ext.aresGitHubMavenRepository}")
+        def provenance = isReleaseProducer && resolved != pinned
+            ? 'local isolated release producer'
+            : (repository ?: rootProject.ext.aresGitHubMavenRepository)
+        logger.lifecycle("ARES dependency provenance: ${resolved} via ${provenance}")
     }
 }
 
