@@ -89,7 +89,7 @@ class AresKotlinProjectGeneratorTest {
         )
         val golden = result.source
             .substringAfter("/** Stable robot boundary for capabilities referenced by generated project documents. */\n")
-            .substringBefore("\n\n/** Robot scheduler boundary used by generated direct-action controller bindings. */")
+            .substringBefore("\n\n/** Generated from the project's canonical ARES documents. Do not edit by hand. */")
 
         assertEquals(
             """interface GeneratedAresProjectCapabilities {
@@ -178,7 +178,7 @@ class AresKotlinProjectGeneratorTest {
             routines = emptyList(),
         ).source
             .substringAfter("/** Stable robot boundary for capabilities referenced by generated project documents. */\n")
-            .substringBefore("\n\n/** Robot scheduler boundary used by generated direct-action controller bindings. */")
+            .substringBefore("\n\n/** Generated from the project's canonical ARES documents. Do not edit by hand. */")
 
         val oneAction = listOf(action("intake.stop"))
         val twoActions = oneAction + action(
@@ -203,7 +203,8 @@ class AresKotlinProjectGeneratorTest {
             routines = listOf(simpleRoutine("stop", RoutineStep.action("intake.stop")))
         ).source
 
-        assertTrue(source.contains("GeneratedAresProjectControlTaskSink"))
+        assertTrue(source.contains("GeneratedControlTaskSink"))
+        assertTrue(source.contains("val runtimeDefinition = GeneratedProjectDefinition("))
         assertTrue(source.contains("knownControlSchemeIds: Set<String> = emptySet()"))
         assertTrue(source.contains("DEFAULT_CONTROL_SCHEME_ID: String? = null"))
         assertTrue(source.contains("createControllerRuntimes"))

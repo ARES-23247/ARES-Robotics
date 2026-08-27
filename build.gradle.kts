@@ -22,6 +22,7 @@ val publishedProjectPaths = listOf(
     ":codegen",
     ":ftc-mocks",
     ":ftc-hardware",
+    ":frc-runtime",
     ":frc-hardware",
     ":simulator",
     ":simulator-runtime-windows",

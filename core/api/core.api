@@ -5290,6 +5290,39 @@ public final class com/areslib/routine/RoutineStartPolicy : java/lang/Enum {
 	public static fun values ()[Lcom/areslib/routine/RoutineStartPolicy;
 }
 
+public abstract interface class com/areslib/runtime/GeneratedControlTaskSink {
+	public abstract fun submit (Ljava/lang/String;Lcom/areslib/sequencer/Task;)V
+}
+
+public final class com/areslib/runtime/GeneratedProjectControlRuntime : com/areslib/runtime/GeneratedControlTaskSink {
+	public fun <init> (Lcom/areslib/runtime/GeneratedProjectDefinition;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Ljava/lang/Object;I)V
+	public final fun cancelAll (Ljava/lang/String;)V
+	public final fun emitDriveCommand ()V
+	public final fun getActiveControllerPortCount ()I
+	public final fun getControllerPortCapacity ()I
+	public final fun getControlsSource ()Ljava/lang/String;
+	public final fun getHasGeneratedDriveBindings ()Z
+	public final fun getRoutineManager ()Lcom/areslib/routine/RoutineManager;
+	public final fun hasControllerPort (I)Z
+	public final fun requestRoutine (Ljava/lang/String;Lcom/areslib/routine/RoutineStartPolicy;)Lcom/areslib/routine/RoutineRequestResult;
+	public static synthetic fun requestRoutine$default (Lcom/areslib/runtime/GeneratedProjectControlRuntime;Ljava/lang/String;Lcom/areslib/routine/RoutineStartPolicy;ILjava/lang/Object;)Lcom/areslib/routine/RoutineRequestResult;
+	public fun submit (Ljava/lang/String;Lcom/areslib/sequencer/Task;)V
+	public final fun updatePort (ILcom/areslib/input/InputFrame;J)V
+	public final fun updateRoutines ()V
+	public final fun updateTasks ()V
+}
+
+public final class com/areslib/runtime/GeneratedProjectDefinition {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function1;)V
+	public final fun getContentSha256 ()Ljava/lang/String;
+	public final fun getCreateControllerRuntimes ()Lkotlin/jvm/functions/Function4;
+	public final fun getDefaultControlSchemeId ()Ljava/lang/String;
+	public final fun getEmitDriveCommand ()Lkotlin/jvm/functions/Function1;
+	public final fun getHasGeneratedDriveBindings ()Z
+	public final fun getRoutines ()Ljava/util/Map;
+	public final fun getRuntimeBindings ()Lkotlin/jvm/functions/Function1;
+}
+
 public final class com/areslib/sequencer/ActionDispatchTask : com/areslib/sequencer/Task {
 	public fun <init> (Lcom/areslib/action/RobotAction;)V
 	public fun <init> (Lcom/areslib/action/RobotAction;J)V

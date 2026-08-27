@@ -16,7 +16,7 @@ description = "FRC WPILib and Phoenix hardware adapters and robot foundations fo
 
 dependencies {
     implementation(kotlin("stdlib"))
-    api(project(":core"))
+    api(project(":frc-runtime"))
 
     // WPILib dependencies list iteration for Kotlin DSL
     wpi.java.deps.wpilib().forEach { dep ->

@@ -24,6 +24,7 @@ dependencies {
         api(project(":codegen"))
         api(project(":ftc-mocks"))
         api(project(":ftc-hardware"))
+        api(project(":frc-runtime"))
         api(project(":frc-hardware"))
         api(project(":simulator"))
         api(project(":simulator-runtime-windows"))
