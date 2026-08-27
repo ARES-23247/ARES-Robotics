@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "projectId": "team23247-marvin-xix",
+  "revision": 1,
+  "actions": [
+    {"key":"intake.collect","displayName":"Collect note","description":"Deploys the intake and runs the intake and floor rollers.","category":"Intake","parameters":[],"resources":[{"resourceKey":"intake","access":"EXCLUSIVE"},{"resourceKey":"floor","access":"EXCLUSIVE"}],"allowedContexts":["AUTONOMOUS","TELEOP","TEST"]},
+    {"key":"intake.stop","displayName":"Stop intake","description":"Stops the intake and floor rollers without moving the pivot.","category":"Intake","parameters":[],"resources":[{"resourceKey":"intake","access":"EXCLUSIVE"},{"resourceKey":"floor","access":"EXCLUSIVE"}],"allowedContexts":["AUTONOMOUS","TELEOP","TEST"]},
+    {"key":"intake.stow","displayName":"Stow intake","description":"Stops the rollers and retracts the intake pivot.","category":"Intake","parameters":[],"resources":[{"resourceKey":"intake","access":"EXCLUSIVE"},{"resourceKey":"floor","access":"EXCLUSIVE"}],"allowedContexts":["AUTONOMOUS","TELEOP","TEST"]},
+    {"key":"shooter.prepare","displayName":"Prepare shooter","description":"Commands the flywheel and cowl to the autonomous shooting preset.","category":"Shooter","parameters":[],"resources":[{"resourceKey":"shooter.flywheel","access":"EXCLUSIVE"},{"resourceKey":"shooter.cowl","access":"EXCLUSIVE"}],"allowedContexts":["AUTONOMOUS","TELEOP","TEST"]},
+    {"key":"shooter.feedWhenReady","displayName":"Shoot when ready","description":"Waits up to two seconds for fresh aligned flywheel RPM and cowl position, then runs one bounded transfer.","category":"Shooter","parameters":[],"resources":[{"resourceKey":"shooter.flywheel","access":"READ"},{"resourceKey":"shooter.cowl","access":"READ"},{"resourceKey":"shooter.feeder","access":"EXCLUSIVE"},{"resourceKey":"floor","access":"EXCLUSIVE"}],"allowedContexts":["AUTONOMOUS","TELEOP","TEST"]},
+    {"key":"shooter.stop","displayName":"Stop shooter","description":"Stops the flywheel, feeder, and floor roller and clears the transfer latch.","category":"Shooter","parameters":[],"resources":[{"resourceKey":"shooter.flywheel","access":"EXCLUSIVE"},{"resourceKey":"shooter.feeder","access":"EXCLUSIVE"},{"resourceKey":"floor","access":"EXCLUSIVE"}],"allowedContexts":["AUTONOMOUS","TELEOP","TEST"]}
+  ],
+  "conditions": [
+    {"key":"shooter.ready","displayName":"Shooter ready","description":"True only when fresh measured flywheel velocity and cowl position are within tolerance.","category":"Shooter","parameters":[],"resources":[{"resourceKey":"shooter.flywheel","access":"READ"},{"resourceKey":"shooter.cowl","access":"READ"}]}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "vscode-ares-robotics",
+  "displayName": "ARES Robotics AI & IDE Suite",
+  "description": "VS Code AI snippets, 1-click physics simulator launcher, and zero-GC code auditor for ARESLib, FTC, and FRC.",
+  "version": "1.0.0",
+  "publisher": "ARES-Robotics",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Snippets",
+    "Other"
+  ],
+  "contributes": {
+    "snippets": [
+      {
+        "language": "kotlin",
+        "path": "./snippets/kotlin.json"
+      }
+    ]
+  }
+}

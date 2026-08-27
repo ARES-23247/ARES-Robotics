@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "uid": "team23247.drivebase.marvin-ctre-swerve",
+  "drivebaseId": "marvin-ctre-swerve",
+  "displayName": "Marvin XIX CTRE Swerve",
+  "description": "Read-only CTRE Tuner X hardware contract with an ARES-owned path, simulation, and calibrated-offset overlay.",
+  "kind": "FRC_CTRE_SWERVE",
+  "platform": "FRC",
+  "components": [
+    {"uid":"frc.drivebase","displayName":"CTRE swerve drivebase","role":"OTHER","hardwareId":"CAN2"},
+    {"uid":"frc.module.fl.drive","displayName":"Front-left drive motor","role":"DRIVE_MOTOR","hardwareId":"drive:8","moduleUid":"frc.module.fl","controllerModel":"Kraken X60 TalonFX","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"currentLimitAmps":70.0,"inverted":true},
+    {"uid":"frc.module.fl.steer","displayName":"Front-left steer motor","role":"STEER_MOTOR","hardwareId":"steer:7","moduleUid":"frc.module.fl","controllerModel":"Kraken X60 TalonFX","currentLimitAmps":40.0},
+    {"uid":"frc.module.fl.encoder","displayName":"Front-left absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"encoder:14","moduleUid":"frc.module.fl","encoderModel":"CTRE CANcoder"},
+    {"uid":"frc.module.fr.drive","displayName":"Front-right drive motor","role":"DRIVE_MOTOR","hardwareId":"drive:2","moduleUid":"frc.module.fr","controllerModel":"Kraken X60 TalonFX","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"currentLimitAmps":70.0,"inverted":false},
+    {"uid":"frc.module.fr.steer","displayName":"Front-right steer motor","role":"STEER_MOTOR","hardwareId":"steer:1","moduleUid":"frc.module.fr","controllerModel":"Kraken X60 TalonFX","currentLimitAmps":40.0},
+    {"uid":"frc.module.fr.encoder","displayName":"Front-right absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"encoder:11","moduleUid":"frc.module.fr","encoderModel":"CTRE CANcoder"},
+    {"uid":"frc.module.bl.drive","displayName":"Back-left drive motor","role":"DRIVE_MOTOR","hardwareId":"drive:6","moduleUid":"frc.module.bl","controllerModel":"Kraken X60 TalonFX","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"currentLimitAmps":70.0,"inverted":true},
+    {"uid":"frc.module.bl.steer","displayName":"Back-left steer motor","role":"STEER_MOTOR","hardwareId":"steer:5","moduleUid":"frc.module.bl","controllerModel":"Kraken X60 TalonFX","currentLimitAmps":40.0},
+    {"uid":"frc.module.bl.encoder","displayName":"Back-left absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"encoder:13","moduleUid":"frc.module.bl","encoderModel":"CTRE CANcoder"},
+    {"uid":"frc.module.br.drive","displayName":"Back-right drive motor","role":"DRIVE_MOTOR","hardwareId":"drive:4","moduleUid":"frc.module.br","controllerModel":"Kraken X60 TalonFX","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"currentLimitAmps":70.0,"inverted":false},
+    {"uid":"frc.module.br.steer","displayName":"Back-right steer motor","role":"STEER_MOTOR","hardwareId":"steer:3","moduleUid":"frc.module.br","controllerModel":"Kraken X60 TalonFX","currentLimitAmps":40.0},
+    {"uid":"frc.module.br.encoder","displayName":"Back-right absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"encoder:12","moduleUid":"frc.module.br","encoderModel":"CTRE CANcoder"},
+    {"uid":"frc.gyro.pigeon","displayName":"Pigeon 2","role":"GYRO","hardwareId":"pigeon:9","controllerModel":"CTRE Pigeon 2"},
+    {"uid":"frc.vision.shooter","displayName":"Shooter Limelight","role":"OTHER","hardwareId":"limelight-shooter"},
+    {"uid":"frc.vision.back","displayName":"Back Limelight","role":"OTHER","hardwareId":"limelight-back"}
+  ],
+  "modules": [
+    {"uid":"frc.module.fl","displayName":"Front-left module","componentUids":["frc.module.fl.drive","frc.module.fl.steer","frc.module.fl.encoder"],"xMeters":0.276225,"yMeters":0.276225},
+    {"uid":"frc.module.fr","displayName":"Front-right module","componentUids":["frc.module.fr.drive","frc.module.fr.steer","frc.module.fr.encoder"],"xMeters":0.276225,"yMeters":-0.276225},
+    {"uid":"frc.module.bl","displayName":"Back-left module","componentUids":["frc.module.bl.drive","frc.module.bl.steer","frc.module.bl.encoder"],"xMeters":-0.276225,"yMeters":0.276225},
+    {"uid":"frc.module.br","displayName":"Back-right module","componentUids":["frc.module.br.drive","frc.module.br.steer","frc.module.br.encoder"],"xMeters":-0.276225,"yMeters":-0.276225}
+  ],
+  "geometry": {
+    "wheelDiameterMeters": 0.09906,
+    "trackWidthMeters": 0.55245,
+    "wheelBaseMeters": 0.55245,
+    "driveGearRatio": 5.2734375,
+    "steerGearRatio": 26.09090909090909,
+    "maxLinearSpeedMetersPerSecond": 5.85,
+    "maxAngularSpeedRadiansPerSecond": 14.9753811926556
+  },
+  "localization": {
+    "primaryOdometry": {
+      "uid": "frc.localization.ctre-source",
+      "source": "CTRE_VENDOR",
+      "componentUids": ["frc.module.fl.drive", "frc.module.fl.steer", "frc.module.fl.encoder", "frc.module.fr.drive", "frc.module.fr.steer", "frc.module.fr.encoder", "frc.module.bl.drive", "frc.module.bl.steer", "frc.module.bl.encoder", "frc.module.br.drive", "frc.module.br.steer", "frc.module.br.encoder", "frc.gyro.pigeon"],
+      "implementationClassName": "com.areslib.frc.FRCSwerveHardwareIO"
+    },
+    "headingSourceUid": "frc.gyro.pigeon",
+    "visionFusion": [
+      {"uid":"frc.localization.shooter-vision","source":"EXTERNAL","componentUids":["frc.vision.shooter"],"implementationClassName":"com.areslib.frc.FrcLimelightIO"},
+      {"uid":"frc.localization.back-vision","source":"EXTERNAL","componentUids":["frc.vision.back"],"implementationClassName":"com.areslib.frc.FrcLimelightIO"}
+    ],
+    "headingCcwPositive": true,
+    "cachedInputsRequired": true
+  },
+  "control": {
+    "supported": ["OPEN_LOOP", "WHEEL_VELOCITY", "CHASSIS_VELOCITY", "TRAJECTORY"],
+    "defaultControl": "CHASSIS_VELOCITY",
+    "fieldCentric": true
+  },
+  "safety": {
+    "safeNeutralRequired": true,
+    "configurationHealthRequired": true,
+    "staleFeedbackTimeoutMs": 100,
+    "currentValidityRequired": true,
+    "faultLatchingRequired": true,
+    "explicitNeutralRecoveryRequired": true,
+    "disabledOutputIsNeutral": true,
+    "enabledNeutralMode": "BRAKE",
+    "disabledPolicy": "FORCE_NEUTRAL_BRAKE",
+    "zeroAllocationPeriodicRequired": true
+  },
+  "simulation": {
+    "modelClassName": "com.areslib.frc.Dyn4jSimulation",
+    "adapterClassName": "com.areslib.frc.sim.Dyn4jSwerveModuleSim",
+    "usesPhysicalGeometry": true,
+    "usesCanonicalProfile": true,
+    "behavioralParityRequired": true
+  },
+  "parameters": [
+    {"uid":"frc.vendor.can-bus","key":"vendor.canBus","componentUid":"frc.drivebase","displayName":"CTRE CAN bus","description":"CANivore bus imported from CTRE Tuner X; edit by regenerating TunerConstants.","type":"TEXT","defaultValue":{"textValue":"CAN2"},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.pigeon-id","key":"vendor.pigeonId","componentUid":"frc.gyro.pigeon","displayName":"Pigeon CAN ID","description":"Pigeon 2 CAN ID imported from CTRE Tuner X.","type":"INT","minimum":0.0,"maximum":62.0,"defaultValue":{"intValue":9},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.speed-at-12v","key":"vendor.speedAt12Volts","componentUid":"frc.drivebase","displayName":"Speed at 12 volts","description":"CTRE theoretical free speed at 12 V.","type":"DOUBLE","unit":"m/s","minimum":0.1,"maximum":15.0,"defaultValue":{"doubleValue":5.85},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.slip-current","key":"vendor.slipCurrentAmps","componentUid":"frc.drivebase","displayName":"Slip current","description":"CTRE stator-current estimate at wheel slip.","type":"DOUBLE","unit":"A","minimum":1.0,"maximum":200.0,"defaultValue":{"doubleValue":60.0},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.drive-supply-current","key":"vendor.driveSupplyCurrentAmps","componentUid":"frc.drivebase","displayName":"Drive supply current limit","description":"Enabled TalonFX drive supply-current limit imported from vendor source.","type":"DOUBLE","unit":"A","minimum":1.0,"maximum":200.0,"defaultValue":{"doubleValue":70.0},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.steer-stator-current","key":"vendor.steerStatorCurrentAmps","componentUid":"frc.drivebase","displayName":"Steer stator current limit","description":"Enabled TalonFX steer stator-current limit imported from vendor source.","type":"DOUBLE","unit":"A","minimum":1.0,"maximum":200.0,"defaultValue":{"doubleValue":60.0},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.steer-supply-current","key":"vendor.steerSupplyCurrentAmps","componentUid":"frc.drivebase","displayName":"Steer supply current limit","description":"Enabled TalonFX steer supply-current limit imported from vendor source.","type":"DOUBLE","unit":"A","minimum":1.0,"maximum":200.0,"defaultValue":{"doubleValue":40.0},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.drive-kp","key":"vendor.driveKp","componentUid":"frc.drivebase","displayName":"CTRE drive proportional gain","description":"Vendor drive Slot 0 proportional gain.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":0.0686955},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.drive-ks","key":"vendor.driveKs","componentUid":"frc.drivebase","displayName":"CTRE drive static feedforward","description":"Vendor drive Slot 0 static feedforward.","type":"DOUBLE","unit":"V","minimum":0.0,"maximum":12.0,"defaultValue":{"doubleValue":0.2},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.drive-kv","key":"vendor.driveKv","componentUid":"frc.drivebase","displayName":"CTRE drive velocity feedforward","description":"Vendor drive Slot 0 velocity feedforward.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.108255},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.steer-kp","key":"vendor.steerKp","componentUid":"frc.drivebase","displayName":"CTRE steer proportional gain","description":"Vendor steer Slot 0 proportional gain.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":20.375},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.steer-kd","key":"vendor.steerKd","componentUid":"frc.drivebase","displayName":"CTRE steer derivative gain","description":"Vendor steer Slot 0 derivative gain.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":0.2502},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.vendor.steer-ks","key":"vendor.steerKs","componentUid":"frc.drivebase","displayName":"CTRE steer static feedforward","description":"Vendor steer Slot 0 static feedforward.","type":"DOUBLE","unit":"V","minimum":0.0,"maximum":12.0,"defaultValue":{"doubleValue":0.1},"enumOptions":[],"applyPolicy":"READ_ONLY_VENDOR"},
+    {"uid":"frc.module.fl.offset","key":"calibration.frontLeftOffset","componentUid":"frc.module.fl","displayName":"Front-left azimuth offset","description":"Reviewed absolute-encoder offset overlay loaded after CTRE vendor defaults.","type":"DOUBLE","unit":"rotations","minimum":-1.0,"maximum":1.0,"defaultValue":{"doubleValue":-0.35498046875},"enumOptions":[],"applyPolicy":"CALIBRATION_ONLY"},
+    {"uid":"frc.module.fr.offset","key":"calibration.frontRightOffset","componentUid":"frc.module.fr","displayName":"Front-right azimuth offset","description":"Reviewed absolute-encoder offset overlay loaded after CTRE vendor defaults.","type":"DOUBLE","unit":"rotations","minimum":-1.0,"maximum":1.0,"defaultValue":{"doubleValue":-0.222900390625},"enumOptions":[],"applyPolicy":"CALIBRATION_ONLY"},
+    {"uid":"frc.module.bl.offset","key":"calibration.backLeftOffset","componentUid":"frc.module.bl","displayName":"Back-left azimuth offset","description":"Reviewed absolute-encoder offset overlay loaded after CTRE vendor defaults.","type":"DOUBLE","unit":"rotations","minimum":-1.0,"maximum":1.0,"defaultValue":{"doubleValue":0.36328125},"enumOptions":[],"applyPolicy":"CALIBRATION_ONLY"},
+    {"uid":"frc.module.br.offset","key":"calibration.backRightOffset","componentUid":"frc.module.br","displayName":"Back-right azimuth offset","description":"Reviewed absolute-encoder offset overlay loaded after CTRE vendor defaults.","type":"DOUBLE","unit":"rotations","minimum":-1.0,"maximum":1.0,"defaultValue":{"doubleValue":0.44287109375},"enumOptions":[],"applyPolicy":"CALIBRATION_ONLY"},
+    {"uid":"frc.ares.path.velocity-scale","key":"ares.pathVelocityScale","componentUid":"frc.drivebase","displayName":"Autonomous velocity scale","description":"ARES-owned fraction of the vendor maximum speed used by trajectory planning.","type":"DOUBLE","minimum":0.05,"maximum":1.0,"defaultValue":{"doubleValue":0.85},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"frc.ares.path.acceleration-limit","key":"ares.pathAccelerationLimit","componentUid":"frc.drivebase","displayName":"Autonomous acceleration limit","description":"ARES-owned trajectory acceleration bound.","type":"DOUBLE","unit":"m/s^2","minimum":0.05,"maximum":20.0,"defaultValue":{"doubleValue":3.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"frc.ares.sim.linear-kp","key":"simulation.linearKp","componentUid":"frc.drivebase","displayName":"Simulation linear tracking gain","description":"Dyn4j chassis force gain used only by the deterministic simulator.","type":"DOUBLE","minimum":0.1,"maximum":500.0,"defaultValue":{"doubleValue":50.0},"enumOptions":[],"applyPolicy":"REBUILD_REQUIRED"},
+    {"uid":"frc.ares.sim.angular-kp","key":"simulation.angularKp","componentUid":"frc.drivebase","displayName":"Simulation angular tracking gain","description":"Dyn4j chassis torque gain used only by the deterministic simulator.","type":"DOUBLE","minimum":0.1,"maximum":500.0,"defaultValue":{"doubleValue":20.0},"enumOptions":[],"applyPolicy":"REBUILD_REQUIRED"},
+    {"uid":"frc.ares.sim.robot-length","key":"simulation.robotLengthMeters","componentUid":"frc.drivebase","displayName":"Simulated bumper length","description":"Dyn4j collision length including bumpers.","type":"DOUBLE","unit":"m","minimum":0.1,"maximum":2.0,"defaultValue":{"doubleValue":0.8},"enumOptions":[],"applyPolicy":"REBUILD_REQUIRED"},
+    {"uid":"frc.ares.sim.robot-width","key":"simulation.robotWidthMeters","componentUid":"frc.drivebase","displayName":"Simulated bumper width","description":"Dyn4j collision width including bumpers.","type":"DOUBLE","unit":"m","minimum":0.1,"maximum":2.0,"defaultValue":{"doubleValue":0.8},"enumOptions":[],"applyPolicy":"REBUILD_REQUIRED"}
+  ],
+  "calibrationProvenance": [
+    {
+      "uid": "frc.provenance.swerve-offsets",
+      "kind": "MEASURED",
+      "parameterUids": ["frc.module.fl.offset", "frc.module.fr.offset", "frc.module.bl.offset", "frc.module.br.offset"],
+      "evidencePath": "src/main/deploy/swerve_offsets.json",
+      "evidenceSha256": "41cdc4a9509ec6456227eb5d7ca8533cbbfe44cb950e94bccfae0f9aa32e42cf",
+      "notes": "Validated, finite one-rotation offsets fetched atomically from the robot; promoting a later calibration requires new reviewed evidence."
+    }
+  ],
+  "ctreImport": {
+    "canBusName": "CAN2",
+    "vendorSourcePath": "src/main/java/frc/robot/generated/TunerConstants.java",
+    "sourceSha256": "be0da772cb17877eda193bf27a63662561e5ddffdffb859f0f7cebf31a369616",
+    "generatorName": "CTRE Tuner X Swerve Project Generator",
+    "generatorVersion": "2026",
+    "drivetrainConstantsClassName": "frc.robot.generated.TunerConstants",
+    "ownership": "READ_ONLY_VENDOR"
+  },
+  "canonicalProfileUid": "team23247.profile.marvin-competition"
+}

@@ -1,0 +1,25 @@
+<templateSet group="ARES Robotics">
+  <template name="aresMecanum" value="val robot = ftcMecanumRobot(hardwareMap) {&#10;    setHeadingDeadzone(1.0)&#10;    enablePositionHold(true)&#10;}&#10;robot.driveFieldCentric($VX$, $VY$, $OMEGA$)" description="Create FTC Mecanum Robot DSL block" toReformat="true" toShortenFQNames="true">
+    <variable name="VX" expression="" defaultValue="&quot;gamepad1.left_stick_x.toDouble()&quot;" alwaysStopAt="true" />
+    <variable name="VY" expression="" defaultValue="&quot;gamepad1.left_stick_y.toDouble()&quot;" alwaysStopAt="true" />
+    <variable name="OMEGA" expression="" defaultValue="&quot;gamepad1.right_stick_x.toDouble()&quot;" alwaysStopAt="true" />
+    <context>
+      <option name="KOTLIN" value="true" />
+    </context>
+  </template>
+
+  <template name="aresPositionHold" value="// Apply static friction feedforward (kS = 0.06) for foam tile breakout friction&#10;val kS = $KS_VAL$&#10;val normX = errX / distError&#10;val normY = errY / distError&#10;val feedforwardX = normX * kS&#10;val feedforwardY = normY * kS" description="Position hold static friction feedforward" toReformat="true" toShortenFQNames="true">
+    <variable name="KS_VAL" expression="" defaultValue="&quot;0.06&quot;" alwaysStopAt="true" />
+    <context>
+      <option name="KOTLIN" value="true" />
+    </context>
+  </template>
+
+  <template name="aresWhen" value="when {&#10;    $COND1$ -&gt; {&#10;        $END$&#10;    }&#10;    $COND2$ -&gt; {&#10;        &#10;    }&#10;    else -&gt; {&#10;        &#10;    }&#10;}" description="Zero-nested argument-less when expression" toReformat="true" toShortenFQNames="true">
+    <variable name="COND1" expression="" defaultValue="&quot;condition1&quot;" alwaysStopAt="true" />
+    <variable name="COND2" expression="" defaultValue="&quot;condition2&quot;" alwaysStopAt="true" />
+    <context>
+      <option name="KOTLIN" value="true" />
+    </context>
+  </template>
+</templateSet>

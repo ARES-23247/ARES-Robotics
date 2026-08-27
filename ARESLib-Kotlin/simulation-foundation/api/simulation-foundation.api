@@ -1,0 +1,215 @@
+public final class com/areslib/simulation/DeterministicSimulationScheduler {
+	public fun <init> (JLjava/util/Collection;J)V
+	public synthetic fun <init> (JLjava/util/Collection;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getStepNanos ()J
+	public final fun getTickSequence ()J
+	public final fun getTimestampNanos ()J
+	public final fun step ()V
+	public final fun step (I)V
+}
+
+public final class com/areslib/simulation/SimulationCapability : java/lang/Enum {
+	public static final field CTRE_SWERVE_DRIVETRAIN_PHYSICS Lcom/areslib/simulation/SimulationCapability;
+	public static final field FIELD_CONFIGURATION Lcom/areslib/simulation/SimulationCapability;
+	public static final field FRC_TIMED_ROBOT_LIFECYCLE Lcom/areslib/simulation/SimulationCapability;
+	public static final field FTC_OPMODE_LIFECYCLE Lcom/areslib/simulation/SimulationCapability;
+	public static final field GENERATED_SUBSYSTEM_ADAPTER Lcom/areslib/simulation/SimulationCapability;
+	public static final field HAND_AUTHORED_SUBSYSTEM_ADAPTER Lcom/areslib/simulation/SimulationCapability;
+	public static final field MECANUM_DRIVETRAIN_PHYSICS Lcom/areslib/simulation/SimulationCapability;
+	public static final field NT4_TELEMETRY Lcom/areslib/simulation/SimulationCapability;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/simulation/SimulationCapability;
+	public static fun values ()[Lcom/areslib/simulation/SimulationCapability;
+}
+
+public final class com/areslib/simulation/SimulationCompatibilityIssue {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/simulation/SimulationCompatibilityIssue;
+	public static synthetic fun copy$default (Lcom/areslib/simulation/SimulationCompatibilityIssue;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/simulation/SimulationCompatibilityIssue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCode ()Ljava/lang/String;
+	public final fun getDocumentId ()Ljava/lang/String;
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/simulation/SimulationDeviceHealth : java/lang/Enum {
+	public static final field BUS_FAULT Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static final field DISCONNECTED Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static final field HEALTHY Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static final field INVALID Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static final field STALE Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static final field WRITE_FAULT Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/simulation/SimulationDeviceHealth;
+	public static fun values ()[Lcom/areslib/simulation/SimulationDeviceHealth;
+}
+
+public abstract interface class com/areslib/simulation/SimulationDeviceModel {
+	public abstract fun close ()V
+	public abstract fun getDeviceId ()Ljava/lang/String;
+	public abstract fun neutralize (J)Z
+	public abstract fun sampleInto (JLcom/areslib/simulation/SimulationDeviceObservation;)V
+	public abstract fun write (DJ)Z
+}
+
+public final class com/areslib/simulation/SimulationDeviceObservation {
+	public fun <init> ()V
+	public final fun ageNanos (J)J
+	public final fun getConfigurationHealthy ()Z
+	public final fun getHealth ()Lcom/areslib/simulation/SimulationDeviceHealth;
+	public final fun getHomed ()Z
+	public final fun getSampleTimestampNanos ()J
+	public final fun getSequence ()J
+	public final fun getTargetVisible ()Z
+	public final fun getValid ()Z
+	public final fun getValue ()D
+	public final fun setConfigurationHealthy (Z)V
+	public final fun setHealth (Lcom/areslib/simulation/SimulationDeviceHealth;)V
+	public final fun setHomed (Z)V
+	public final fun setSampleTimestampNanos (J)V
+	public final fun setSequence (J)V
+	public final fun setTargetVisible (Z)V
+	public final fun setValue (D)V
+}
+
+public final class com/areslib/simulation/SimulationFaultCommand {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/SimulationFaultKind;JLjava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/SimulationFaultKind;JLjava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/simulation/SimulationFaultKind;
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/SimulationFaultKind;JLjava/lang/Long;)Lcom/areslib/simulation/SimulationFaultCommand;
+	public static synthetic fun copy$default (Lcom/areslib/simulation/SimulationFaultCommand;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/SimulationFaultKind;JLjava/lang/Long;ILjava/lang/Object;)Lcom/areslib/simulation/SimulationFaultCommand;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCommandId ()Ljava/lang/String;
+	public final fun getEndsAtMillis ()Ljava/lang/Long;
+	public final fun getKind ()Lcom/areslib/simulation/SimulationFaultKind;
+	public final fun getStartsAtMillis ()J
+	public final fun getTargetId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isActiveAt (J)Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/simulation/SimulationFaultKind : java/lang/Enum {
+	public static final field BROWNOUT Lcom/areslib/simulation/SimulationFaultKind;
+	public static final field BUS_DISCONNECTED Lcom/areslib/simulation/SimulationFaultKind;
+	public static final field DEVICE_DISCONNECTED Lcom/areslib/simulation/SimulationFaultKind;
+	public static final field FROZEN_INPUT Lcom/areslib/simulation/SimulationFaultKind;
+	public static final field INVALID_INPUT Lcom/areslib/simulation/SimulationFaultKind;
+	public static final field STALE_INPUT Lcom/areslib/simulation/SimulationFaultKind;
+	public static final field WRITE_REJECTED Lcom/areslib/simulation/SimulationFaultKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/simulation/SimulationFaultKind;
+	public static fun values ()[Lcom/areslib/simulation/SimulationFaultKind;
+}
+
+public final class com/areslib/simulation/SimulationFaultTimeline {
+	public fun <init> (Ljava/util/Collection;)V
+	public final fun activeFault (Ljava/lang/String;J)Lcom/areslib/simulation/SimulationFaultCommand;
+	public static synthetic fun activeFault$default (Lcom/areslib/simulation/SimulationFaultTimeline;Ljava/lang/String;JILjava/lang/Object;)Lcom/areslib/simulation/SimulationFaultCommand;
+	public final fun getSize ()I
+}
+
+public final class com/areslib/simulation/SimulationProductContract {
+	public fun <init> (Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Ljava/util/Set;)V
+	public final fun component1 ()Lcom/areslib/simulation/SimulationProductId;
+	public final fun component2 ()Lcom/areslib/project/schema/AresControllerTarget;
+	public final fun component3 ()Lcom/areslib/project/schema/AresSimulatorTarget;
+	public final fun component4 ()Ljava/util/Set;
+	public final fun copy (Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Ljava/util/Set;)Lcom/areslib/simulation/SimulationProductContract;
+	public static synthetic fun copy$default (Lcom/areslib/simulation/SimulationProductContract;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Ljava/util/Set;ILjava/lang/Object;)Lcom/areslib/simulation/SimulationProductContract;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCapabilities ()Ljava/util/Set;
+	public final fun getController ()Lcom/areslib/project/schema/AresControllerTarget;
+	public final fun getId ()Lcom/areslib/simulation/SimulationProductId;
+	public final fun getSimulator ()Lcom/areslib/project/schema/AresSimulatorTarget;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/simulation/SimulationProductId : java/lang/Enum {
+	public static final field FRC_WPILIB_DESKTOP Lcom/areslib/simulation/SimulationProductId;
+	public static final field FTC_DESKTOP_OPMODE Lcom/areslib/simulation/SimulationProductId;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getStableId ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/simulation/SimulationProductId;
+	public static fun values ()[Lcom/areslib/simulation/SimulationProductId;
+}
+
+public final class com/areslib/simulation/SimulationProducts {
+	public static final field INSTANCE Lcom/areslib/simulation/SimulationProducts;
+	public final fun forTarget (Lcom/areslib/project/schema/AresProjectTarget;)Lcom/areslib/simulation/SimulationProductContract;
+	public final fun getFRC ()Lcom/areslib/simulation/SimulationProductContract;
+	public final fun getFTC ()Lcom/areslib/simulation/SimulationProductContract;
+}
+
+public final class com/areslib/simulation/SimulationProjectPlan {
+	public fun <init> (Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductContract;Ljava/util/Set;Ljava/util/List;)V
+	public final fun component1 ()Lcom/areslib/project/schema/AresProjectTarget;
+	public final fun component2 ()Lcom/areslib/simulation/SimulationProductContract;
+	public final fun component3 ()Ljava/util/Set;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductContract;Ljava/util/Set;Ljava/util/List;)Lcom/areslib/simulation/SimulationProjectPlan;
+	public static synthetic fun copy$default (Lcom/areslib/simulation/SimulationProjectPlan;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductContract;Ljava/util/Set;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/simulation/SimulationProjectPlan;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getIssues ()Ljava/util/List;
+	public final fun getProduct ()Lcom/areslib/simulation/SimulationProductContract;
+	public final fun getRequiredCapabilities ()Ljava/util/Set;
+	public final fun getTarget ()Lcom/areslib/project/schema/AresProjectTarget;
+	public fun hashCode ()I
+	public final fun isSupported ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/simulation/SimulationProjectPlanner {
+	public static final field INSTANCE Lcom/areslib/simulation/SimulationProjectPlanner;
+	public static final fun plan (Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/Collection;)Lcom/areslib/simulation/SimulationProjectPlan;
+}
+
+public abstract interface class com/areslib/simulation/SimulationTickParticipant {
+	public abstract fun tick (J)V
+}
+
+public final class com/areslib/simulation/SimulationVerificationEvidence {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/VerificationEvidenceLevel;ZJLjava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public final fun component4 ()Z
+	public final fun component5 ()J
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/VerificationEvidenceLevel;ZJLjava/lang/String;Ljava/lang/String;)Lcom/areslib/simulation/SimulationVerificationEvidence;
+	public static synthetic fun copy$default (Lcom/areslib/simulation/SimulationVerificationEvidence;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/simulation/VerificationEvidenceLevel;ZJLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/simulation/SimulationVerificationEvidence;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCheckId ()Ljava/lang/String;
+	public final fun getLevel ()Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getPassed ()Z
+	public final fun getProjectContentSha256 ()Ljava/lang/String;
+	public final fun getTimestampNanos ()J
+	public final fun getVerificationRunId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/simulation/VerificationEvidenceLevel : java/lang/Enum {
+	public static final field COMPILED_SUCCESSFULLY Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public static final field CONFIGURATION_REVIEWED Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public static final field PHYSICALLY_VALIDATED Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public static final field READY_FOR_PHYSICAL_VALIDATION Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public static final field SIMULATION_VERIFIED Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/simulation/VerificationEvidenceLevel;
+	public static fun values ()[Lcom/areslib/simulation/VerificationEvidenceLevel;
+}
+

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "documentId": "do-nothing",
+  "revision": 1,
+  "name": "Do Nothing",
+  "description": "Match-safe routine that intentionally leaves the robot stationary.",
+  "steps": [
+    {"kind":"WAIT","stepId":"step-hold-position","arguments":{},"durationSeconds":0.0,"children":[],"elseChildren":[]}
+  ]
+}

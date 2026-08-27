@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "projectId": "team23247-marvin-xix",
+  "revision": 1,
+  "defaultEntryId": "do-nothing",
+  "entries": [
+    {"entryId":"do-nothing","displayName":"Do Nothing","description":"Safe fallback; hold position and run no mechanisms.","routineId":"do-nothing","startingPose":{"xMeters":0.5,"yMeters":0.5,"headingRadians":0.0},"authoredAlliance":"BLUE","mirrorForOppositeAlliance":true,"sortOrder":0,"enabled":true}
+  ]
+}

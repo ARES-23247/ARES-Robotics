@@ -1,0 +1,61 @@
+{
+  "version": "26.0.0",
+  "tabs": [
+    {
+      "name": "3D Field",
+      "type": "3D Field",
+      "config": {
+        "axes": "NWU",
+        "robot": {
+          "poseTopic": "Robot/Pose3d",
+          "components": [
+            {
+              "name": "Intake",
+              "poseTopic": "Robot/Superstructure/3D/Intake",
+              "model": "Intake"
+            },
+            {
+              "name": "Cowl",
+              "poseTopic": "Robot/Superstructure/3D/Cowl",
+              "model": "Cowl"
+            },
+            {
+              "name": "Flywheel",
+              "poseTopic": "Robot/Superstructure/3D/Flywheel",
+              "model": "Flywheel"
+            }
+          ]
+        },
+        "gamePieces": {
+          "poseTopic": "Robot/FuelPoses"
+        }
+      }
+    },
+    {
+      "name": "Swerve Drivetrain",
+      "type": "Swerve",
+      "config": {
+        "statesTopic": "Robot/SwerveStates"
+      }
+    },
+    {
+      "name": "Odometry & Diagnostics",
+      "type": "Line Graph",
+      "config": {
+        "fields": [
+          "Robot/Odometry/X",
+          "Robot/Odometry/Y",
+          "Robot/Odometry/Heading",
+          "Robot/Odometry/Covariance",
+          "Robot/Superstructure/FlywheelRPM",
+          "Robot/Superstructure/FlywheelTargetRPM",
+          "Robot/Superstructure/CowlAngle",
+          "Robot/Superstructure/CowlTargetAngle",
+          "Robot/Superstructure/IntakeAngle",
+          "Robot/Superstructure/IntakeTargetAngle",
+          "Robot/Superstructure/InventoryCount"
+        ]
+      }
+    }
+  ]
+}

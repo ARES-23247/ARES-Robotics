@@ -1,0 +1,62 @@
+{
+  "name": "DECODE Season Field",
+  "fieldType": "ftc",
+  "obstacles": [
+    {
+      "id": "red-ramp",
+      "name": "Red Ramp",
+      "x": -0.9144,
+      "y": 0.0,
+      "width": 0.6096,
+      "height": 0.6096,
+      "isBlocking": false,
+      "obstacleType": "ramp",
+      "shape": "rectangle",
+      "friction": 0.5,
+      "restitution": 0.3,
+      "rotation": 0.0
+    },
+    {
+      "id": "blue-ramp",
+      "name": "Blue Ramp",
+      "x": 0.9144,
+      "y": 0.0,
+      "width": 0.6096,
+      "height": 0.6096,
+      "isBlocking": false,
+      "obstacleType": "ramp",
+      "shape": "rectangle",
+      "friction": 0.5,
+      "restitution": 0.3,
+      "rotation": 0.0
+    },
+    {
+      "id": "gate-1",
+      "name": "Gate 1",
+      "x": 0.0,
+      "y": 1.6764,
+      "width": 0.6096,
+      "height": 0.3048,
+      "isBlocking": true,
+      "obstacleType": "blocking",
+      "shape": "rectangle",
+      "friction": 0.5,
+      "restitution": 0.3,
+      "rotation": 0.0
+    },
+    {
+      "id": "gate-2",
+      "name": "Gate 2",
+      "x": 0.0,
+      "y": -1.6764,
+      "width": 0.6096,
+      "height": 0.3048,
+      "isBlocking": true,
+      "obstacleType": "blocking",
+      "shape": "rectangle",
+      "friction": 0.5,
+      "restitution": 0.3,
+      "rotation": 0.0
+    }
+  ]
+}

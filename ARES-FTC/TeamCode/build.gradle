@@ -1,0 +1,338 @@
+//
+// build.gradle in TeamCode
+//
+// Most of the definitions for building your module reside in a common, shared
+// file 'build.common.gradle'. Being factored in this way makes it easier to
+// integrate updates to the FTC into your code. If you really need to customize
+// the build definitions, you can place those customizations in this file, but
+// please think carefully as to whether such customizations are really necessary
+// before doing so.
+
+
+// Custom definitions may go here
+
+// Include common definitions from above.
+apply from: '../build.common.gradle'
+apply from: '../build.dependencies.gradle'
+apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.kotlinx.kover'
+
+// All document-derived project/runtime registration and contract tests are disposable build
+// products. Editable starters and platform adapters stay under src/ and retain explicit ownership.
+def generatedAresSubsystemMainDir = file("${buildDir}/generated/ares/main/kotlin")
+def generatedAresSubsystemTestDir = file("${buildDir}/generated/ares/test/kotlin")
+def generatedAresDrivebaseMainDir = file("${buildDir}/generated/ares/drivebase/kotlin")
+def canonicalMonorepoFtcRuntimeDir = new File(
+    rootProject.projectDir.parentFile,
+    "templates/ftc/runtime/src/main/kotlin"
+)
+
+android {
+    namespace = 'org.firstinspires.ftc.teamcode'
+
+    sourceSets {
+        main.java.srcDir generatedAresSubsystemMainDir
+        main.java.srcDir generatedAresDrivebaseMainDir
+        if (canonicalMonorepoFtcRuntimeDir.isDirectory()) {
+            main.java.srcDir canonicalMonorepoFtcRuntimeDir
+        }
+        test.java.srcDir generatedAresSubsystemTestDir
+    }
+
+    packagingOptions {
+        jniLibs.useLegacyPackaging true
+        excludes += ['META-INF/**/*.sha1', 'META-INF/**/*.dylib', 'META-INF/**/*.dll', 'META-INF/**/*.so']
+        resources.pickFirsts += [
+            'META-INF/LICENSE',
+            'META-INF/NOTICE',
+            'META-INF/THIRD_PARTY_NOTICES.md',
+        ]
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+configurations {
+    simRun {
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+    }
+    aresCodegen
+}
+
+def aresVersion = rootProject.ext.aresReleaseVersion
+def aresSimulatorRuntime = System.getProperty('os.name').toLowerCase().contains('windows')
+    ? 'simulator-runtime-windows'
+    : (System.getProperty('os.name').toLowerCase().contains('mac')
+        ? 'simulator-runtime-macos'
+        : 'simulator-runtime-linux')
+
+dependencies {
+    implementation project(':FtcRobotController')
+    implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
+    implementation 'org.aresfirst.ares:core'
+    implementation 'org.aresfirst.ares:ftc-hardware'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0'
+    simRun platform("org.aresfirst.ares:ares-bom:$aresVersion")
+    simRun 'org.aresfirst.ares:simulator'
+    simRun "org.aresfirst.ares:$aresSimulatorRuntime"
+    // RobotCore carries an older Gson on the Android compile classpath. The desktop simulator
+    // decodes current ARES descriptors and therefore needs the current Gson API first on its
+    // isolated runtime classpath; this dependency is not packaged into the Robot Controller APK.
+    simRun 'com.google.code.gson:gson:2.10.1'
+    aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
+    aresCodegen 'org.aresfirst.ares:codegen'
+    aresCodegen 'com.google.code.gson:gson:2.10.1'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.23.0'
+}
+
+// A long-running JavaExec process must not load TeamCode/FtcRobotController classes from mutable
+// build/ output. On Windows those open jars block later verification builds; replacing class
+// directories concurrently can also produce delayed missing-class crashes. Snapshot only
+// workspace-owned entries (Gradle/Android caches are immutable inputs) before starting the JVM.
+def activeSimRuntimeSnapshot = [dir: null]
+def cleanupRunSimRuntimeSnapshot = tasks.register("cleanupRunSimRuntimeSnapshot") {
+    doLast {
+        def snapshotDir = activeSimRuntimeSnapshot.dir as File
+        if (snapshotDir != null && snapshotDir.exists()) {
+            project.delete(snapshotDir)
+        }
+        activeSimRuntimeSnapshot.dir = null
+    }
+}
+
+android.applicationVariants.all { variant ->
+    if (variant.name == "debug") {
+        def runSimRuntimeClasspath = files(
+            configurations.simRun, // Place simRun (mocks) first so they override real FTC SDK classes!
+            variant.javaCompileProvider.get().destinationDirectory,
+            "${buildDir}/tmp/kotlin-classes/${variant.name}",
+            variant.getCompileClasspath(null),
+            project.android.bootClasspath
+        )
+        def runSimTask = task("runSim", type: JavaExec) {
+            dependsOn variant.javaCompileProvider
+            dependsOn "compile${variant.name.capitalize()}Kotlin"
+            mainClass = 'com.areslib.sim.DesktopSimLauncher'
+
+            // Use getCompileClasspath for Android libs, and simRun for transitive JVM dependencies
+            classpath = runSimRuntimeClasspath
+
+            // Convert the split array to a List before concatenation. Otherwise Groovy appends the
+            // String[] as one Java object and the launcher receives "[Ljava.lang.String;@...".
+            def appArgs = project.hasProperty("appArgs")
+                ? project.property("appArgs").toString().split(" ").toList()
+                : []
+            args(["--headless"] + appArgs)
+            def summaryFile = file("${buildDir}/sim-run/ares_run_summary.json")
+            systemProperty 'ares.sim.summary.path', summaryFile.absolutePath
+            doFirst {
+                summaryFile.parentFile.mkdirs()
+                def snapshotDir = java.nio.file.Files.createTempDirectory("ares-ftc-sim-run-").toFile()
+                activeSimRuntimeSnapshot.dir = snapshotDir
+                def workspaceRoot = rootProject.projectDir.parentFile.canonicalFile.toPath()
+                def isolatedEntries = []
+
+                runSimRuntimeClasspath.files.eachWithIndex { source, index ->
+                    if (!source.exists()) return
+                    def sourcePath = source.canonicalFile.toPath()
+                    if (!sourcePath.startsWith(workspaceRoot)) {
+                        isolatedEntries.add(source)
+                        return
+                    }
+
+                    def target = new File(snapshotDir, String.format("%03d-%s", index, source.name))
+                    if (source.isDirectory()) {
+                        project.copy {
+                            from source
+                            into target
+                        }
+                    } else {
+                        target.parentFile.mkdirs()
+                        java.nio.file.Files.copy(
+                            source.toPath(),
+                            target.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                        )
+                    }
+                    isolatedEntries.add(target)
+                }
+
+                classpath = files(isolatedEntries)
+                println "[ARES-FTC] Isolated simulator runtime classpath at ${snapshotDir.absolutePath}"
+            }
+        }
+        runSimTask.finalizedBy(cleanupRunSimRuntimeSnapshot)
+
+        task("runVerification", type: JavaExec) {
+            dependsOn variant.javaCompileProvider
+            dependsOn "compile${variant.name.capitalize()}Kotlin"
+            mainClass = 'com.areslib.sim.VerificationAppKt'
+
+            classpath = files(
+                configurations.simRun,
+                variant.javaCompileProvider.get().destinationDirectory,
+                "${buildDir}/tmp/kotlin-classes/${variant.name}",
+                variant.getCompileClasspath(null),
+                project.android.bootClasspath
+            )
+            
+            args = []
+            def summaryFile = file("${buildDir}/verification/ares_run_summary.json")
+            systemProperty 'ares.sim.summary.path', summaryFile.absolutePath
+            doFirst { summaryFile.parentFile.mkdirs() }
+        }
+    }
+}
+
+configurations.configureEach { configuration ->
+    if (configuration.name != 'aresCodegen' && configuration.name != 'simRun') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'org.java-websocket', module: 'Java-WebSocket'
+        exclude group: 'com.google.code.gson', module: 'gson'
+        exclude group: 'org.nanohttpd', module: 'nanohttpd'
+    }
+}
+
+// The build-time generator runs on the desktop JVM and needs its full transitive classpath. Robot
+// packaging exclusions above remain unchanged for every Android/runtime configuration.
+
+def generatedAresSource = file(
+    "${generatedAresSubsystemMainDir}/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt"
+)
+def subsystemStarterSource = file(
+    "src/main/java/org/firstinspires/ftc/teamcode/subsystems"
+)
+// Keep split roots configured even with no subsystem documents: generation then removes stale
+// manifests/sources and emits the empty registry deterministically after the final definition is
+// deleted. No ordinary build task creates or replaces editable starters.
+def subsystemCodegenArgs = [
+    "--subsystems-starter-output", subsystemStarterSource.absolutePath,
+    "--subsystems-generated-output", generatedAresSubsystemMainDir.absolutePath,
+    "--subsystems-generated-test-output", generatedAresSubsystemTestDir.absolutePath,
+    "--subsystems-package", "org.firstinspires.ftc.teamcode.subsystems",
+]
+def drivebaseCodegenArgs = [
+    "--drivebase-output", generatedAresDrivebaseMainDir.absolutePath,
+    "--drivebase-package", "org.firstinspires.ftc.teamcode.generated.drivebase",
+    "--ftc-zero-code-runtime",
+]
+tasks.register("generateAresProject", JavaExec) {
+    group = "ARES"
+    description = "Generate disposable project/runtime plumbing and tests; never replace editable starters."
+    classpath = configurations.aresCodegen
+    mainClass = "com.areslib.codegen.AresProjectCodegenCli"
+    args "--project", rootProject.projectDir.absolutePath,
+        "--output", generatedAresSource.absolutePath,
+        "--package", "org.firstinspires.ftc.teamcode.generated",
+        "--platform", "FTC"
+    args subsystemCodegenArgs
+    args drivebaseCodegenArgs
+}
+
+tasks.register("prepareAresSubsystemPlumbing", JavaExec) {
+    group = "build setup"
+    description = "Materialize all disposable project/subsystem plumbing without modifying editable starters."
+    classpath = configurations.aresCodegen
+    mainClass = "com.areslib.codegen.AresProjectCodegenCli"
+    args "--project", rootProject.projectDir.absolutePath,
+        "--output", generatedAresSource.absolutePath,
+        "--package", "org.firstinspires.ftc.teamcode.generated",
+        "--platform", "FTC"
+    args subsystemCodegenArgs
+    args drivebaseCodegenArgs
+}
+
+tasks.register("previewSubsystemChanges", JavaExec) {
+    group = "ARES"
+    description = "Preview categorized subsystem starter changes and safety warnings without writing files."
+    classpath = configurations.aresCodegen
+    mainClass = "com.areslib.codegen.AresProjectCodegenCli"
+    args "--project", rootProject.projectDir.absolutePath,
+        "--output", generatedAresSource.absolutePath,
+        "--package", "org.firstinspires.ftc.teamcode.generated",
+        "--platform", "FTC",
+        "--subsystems-only",
+        "--preview-subsystem-starters"
+    args subsystemCodegenArgs
+    args drivebaseCodegenArgs
+}
+
+tasks.register("generateSubsystemStarters", JavaExec) {
+    group = "ARES"
+    description = "Create missing editable subsystem starters and generated plumbing; refuse replacements."
+    classpath = configurations.aresCodegen
+    mainClass = "com.areslib.codegen.AresProjectCodegenCli"
+    args "--project", rootProject.projectDir.absolutePath,
+        "--output", generatedAresSource.absolutePath,
+        "--package", "org.firstinspires.ftc.teamcode.generated",
+        "--platform", "FTC",
+        "--subsystems-only",
+        "--apply-subsystem-starters"
+    args subsystemCodegenArgs
+    args drivebaseCodegenArgs
+}
+
+tasks.register("replaceSubsystemStarters", JavaExec) {
+    group = "ARES"
+    description = "Replace changed generated starters only with the exact token printed by preview."
+    classpath = configurations.aresCodegen
+    mainClass = "com.areslib.codegen.AresProjectCodegenCli"
+    args "--project", rootProject.projectDir.absolutePath,
+        "--output", generatedAresSource.absolutePath,
+        "--package", "org.firstinspires.ftc.teamcode.generated",
+        "--platform", "FTC",
+        "--subsystems-only",
+        "--apply-subsystem-starters"
+    args subsystemCodegenArgs
+    args drivebaseCodegenArgs
+    doFirst {
+        def token = providers.gradleProperty("ares.subsystemReplacementToken").orNull
+        if (token == null || token.trim().isEmpty()) {
+            throw new GradleException(
+                "Run previewSubsystemChanges, review its structured diff, then pass " +
+                    "-Pares.subsystemReplacementToken=<exact-token>."
+            )
+        }
+        args "--subsystems-confirmation-token", token
+    }
+}
+
+tasks.register("verifyAresProject", JavaExec) {
+    group = "verification"
+    description = "Regenerate disposable plumbing and fail when canonical documents or protected starters are invalid."
+    dependsOn tasks.named("prepareAresSubsystemPlumbing")
+    classpath = configurations.aresCodegen
+    mainClass = "com.areslib.codegen.AresProjectCodegenCli"
+    args "--project", rootProject.projectDir.absolutePath,
+        "--output", generatedAresSource.absolutePath,
+        "--package", "org.firstinspires.ftc.teamcode.generated",
+        "--platform", "FTC",
+        "--check"
+    args subsystemCodegenArgs
+    args drivebaseCodegenArgs
+}
+
+tasks.matching { task -> task.name.startsWith("compile") && task.name.endsWith("Kotlin") }.configureEach {
+    dependsOn tasks.named("verifyAresProject")
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("org.firstinspires.ftc.teamcode.opmodes.*")
+            }
+        }
+    }
+}
+

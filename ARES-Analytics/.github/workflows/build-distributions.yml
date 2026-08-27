@@ -1,0 +1,331 @@
+name: Build Desktop Packages
+
+on:
+  pull_request:
+    branches:
+      - master
+  merge_group:
+  push:
+    tags:
+      - 'v*' # Triggers when you push a version tag (e.g. v1.1.1)
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Application version to package (for example, 1.1.1)
+        required: true
+        type: string
+      publish:
+        description: Create the version tag and public GitHub Release after all package checks pass
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  ARES_VERSION: 11.0.0
+
+jobs:
+  release-preflight:
+    name: Verify release version alignment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Checkout ARES-Analytics
+        uses: actions/checkout@v7
+        with:
+          path: 'ARES-Analytics'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Fail fast on stale release pins
+        shell: bash
+        run: |
+          cd ARES-Analytics
+          ./gradlew verifyReleaseVersionAlignment --no-daemon --console=plain
+
+  zero-code-project-acceptance:
+    name: Verify fresh zero-code robot projects
+    needs: release-preflight
+    runs-on: windows-latest
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Checkout ARES-Analytics
+        uses: actions/checkout@v7
+        with:
+          path: 'ARES-Analytics'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Download hash-pinned robot templates
+        shell: pwsh
+        run: |
+          $archiveDirectory = Join-Path $env:RUNNER_TEMP 'ares-official-templates'
+          New-Item -ItemType Directory -Force -Path $archiveDirectory | Out-Null
+          Invoke-WebRequest -UseBasicParsing `
+            -Uri 'https://github.com/ARES-23247/ARES-FTC-Starter/releases/download/v11.0.0/ARES-FTC-Starter-11.0.0.zip' `
+            -OutFile (Join-Path $archiveDirectory 'ftc.zip')
+          Invoke-WebRequest -UseBasicParsing `
+            -Uri 'https://github.com/ARES-23247/ARES-FRC-Starter/releases/download/v11.0.0/ARES-FRC-Starter-11.0.0.zip' `
+            -OutFile (Join-Path $archiveDirectory 'frc.zip')
+          $expectedHashes = @{
+            'ftc.zip' = 'a151a72a8a16e1397fb96954d4e964f6d8eb13bb8f468ffef2ccf2ad487aefe2'
+            'frc.zip' = '4b054fad4978c16be8a1cb56e05d4b53607d5de9b505c2e3e9fbbaf20ba83cc8'
+          }
+          foreach ($entry in $expectedHashes.GetEnumerator()) {
+            $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $archiveDirectory $entry.Key)).Hash.ToLowerInvariant()
+            if ($actual -ne $entry.Value) {
+              throw "Pinned $($entry.Key) hash mismatch: expected $($entry.Value), received $actual"
+            }
+          }
+
+      - name: Create, generate, test, simulate, and package fresh projects
+        shell: pwsh
+        run: |
+          $archiveDirectory = Join-Path $env:RUNNER_TEMP 'ares-official-templates'
+          $outputDirectory = Join-Path $env:RUNNER_TEMP 'ares-zero-code-acceptance'
+          Set-Location ARES-Analytics
+          .\gradlew.bat :app:test `
+            --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest' `
+            "-Dares.officialTemplateArchiveDir=$archiveDirectory" `
+            "-Dares.officialTemplateOutputDir=$outputDirectory" `
+            '-Dares.officialTemplateValidateProjects=true' `
+            --no-daemon --console=plain
+
+      - name: Upload zero-code project logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zero-code-project-acceptance-logs
+          path: ${{ runner.temp }}/ares-zero-code-acceptance/**/official-template-validation.log
+          if-no-files-found: warn
+
+  build-packages:
+    name: Build package for ${{ matrix.os }}
+    needs: release-preflight
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            task: ':app:packageReleaseMsi'
+            artifact-path: 'app/build/compose/binaries/main-release/msi/'
+          - os: macos-latest
+            task: ':app:packageReleaseDmg'
+            artifact-path: 'app/build/compose/binaries/main-release/dmg/'
+
+    steps:
+      - name: Resolve package version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [[ -n "$REQUESTED_VERSION" ]]; then
+            version="$REQUESTED_VERSION"
+          elif [[ "$EVENT_NAME" == "push" && "$REF_NAME" == v* ]]; then
+            version="${REF_NAME#v}"
+          else
+            # Pull-request and merge-queue package builds are never published. Give jpackage a
+            # valid, high-range synthetic version without colliding with immutable releases.
+            build=$((10#$RUN_NUMBER % 65535))
+            version="254.0.$build"
+          fi
+          if [[ ! "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Invalid application version: $version (expected MAJOR.MINOR.BUILD)" >&2
+            exit 1
+          fi
+          major=$((10#${BASH_REMATCH[1]}))
+          minor=$((10#${BASH_REMATCH[2]}))
+          build=$((10#${BASH_REMATCH[3]}))
+          if (( major > 255 || minor > 255 || build > 65535 )); then
+            echo "Application version exceeds MSI limits: $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Checkout ARES-Analytics
+        uses: actions/checkout@v7
+        with:
+          path: 'ARES-Analytics'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Verify immutable ARES release is available
+        shell: bash
+        run: >-
+          curl --fail --silent --show-error --head
+          "https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven/org/aresfirst/ares/ares-bom/${ARES_VERSION}/ares-bom-${ARES_VERSION}.pom"
+
+      - name: Build native package
+        env:
+          ARES_GOOGLE_OAUTH_CLIENT_ID: ${{ vars.ARES_GOOGLE_OAUTH_CLIENT_ID }}
+          ARES_GOOGLE_OAUTH_BROKER_URL: ${{ vars.ARES_GOOGLE_OAUTH_BROKER_URL }}
+          ARES_GITHUB_APP_CLIENT_ID: ${{ vars.ARES_GITHUB_APP_CLIENT_ID }}
+          ARES_GITHUB_APP_SLUG: ${{ vars.ARES_GITHUB_APP_SLUG }}
+        run: |
+          cd ARES-Analytics
+          chmod +x ./gradlew
+          # Public OAuth application identity and broker endpoint are supplied through protected
+          # repository variables. Keeping them out of command arguments avoids unnecessary logs.
+          ./gradlew ${{ matrix.task }} "-ParesAnalyticsVersion=${{ steps.version.outputs.version }}" --no-daemon
+        shell: bash
+
+      - name: Verify a real Windows upgrade and repair transaction
+        if: >-
+          runner.os == 'Windows' &&
+          (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $headers = @{
+            Accept = 'application/vnd.github+json'
+            Authorization = "Bearer $env:GH_TOKEN"
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+          $releases = Invoke-RestMethod `
+            -Headers $headers `
+            -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/releases?per_page=100"
+          $currentTag = "v$env:CURRENT_VERSION"
+          if ($releases | Where-Object { $_.tag_name -eq $currentTag }) {
+            throw "Release $currentTag already exists. Published versions are immutable; choose a newer version."
+          }
+
+          $current = [version]$env:CURRENT_VERSION
+          $candidates = foreach ($release in $releases) {
+            if ($release.draft -or $release.prerelease) { continue }
+            if ($release.tag_name -match '^v(?<version>\d+\.\d+\.\d+)$') {
+              $candidateVersion = [version]$Matches.version
+              if ($candidateVersion -lt $current) {
+                [pscustomobject]@{
+                  Version = $candidateVersion
+                  Release = $release
+                }
+              }
+            }
+          }
+          $previous = $candidates | Sort-Object Version -Descending | Select-Object -First 1
+          if ($null -eq $previous) {
+            throw "No earlier stable MSI release exists for an upgrade test before $currentTag."
+          }
+          $msiAssets = @($previous.Release.assets | Where-Object { $_.name -match '\.msi$' })
+          if ($msiAssets.Count -ne 1) {
+            throw "Expected one MSI on $($previous.Release.tag_name), found $($msiAssets.Count)."
+          }
+
+          $previousMsi = Join-Path $env:RUNNER_TEMP "ARES-Robotics-Studio-$($previous.Version).msi"
+          Invoke-WebRequest -UseBasicParsing -Uri $msiAssets[0].browser_download_url -OutFile $previousMsi
+          $currentMsi = @(Get-ChildItem `
+            -LiteralPath 'ARES-Analytics/app/build/compose/binaries/main-release/msi' `
+            -Filter '*.msi')
+          if ($currentMsi.Count -ne 1) {
+            throw "Expected exactly one newly built MSI, found $($currentMsi.Count)."
+          }
+
+          & 'ARES-Analytics/scripts/verify-windows-installer-upgrade.ps1' `
+            -PreviousMsi $previousMsi `
+            -CurrentMsi $currentMsi[0].FullName `
+            -ExpectedProductName 'ARES Robotics Studio' `
+            -PreviousVersion $previous.Version.ToString() `
+            -CurrentVersion $env:CURRENT_VERSION `
+            -ExpectedUpgradeCode '{A3E52324-7000-4224-8700-1C7B8D9E2A3C}'
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ARES-Robotics-Studio-${{ matrix.os }}
+          path: ARES-Analytics/${{ matrix.artifact-path }}
+
+  publish-release:
+    name: Publish verified desktop release
+    needs: [zero-code-project-acceptance, build-packages]
+    if: >-
+      startsWith(github.ref, 'refs/tags/') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Resolve release identity
+        id: release
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$REF" != "refs/heads/master" ]]; then
+            echo "Public releases may only be dispatched from the protected master branch (received $REF)." >&2
+            exit 1
+          fi
+          version="${REQUESTED_VERSION:-${REF_NAME#v}}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release version: $version" >&2
+            exit 1
+          fi
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "name=ARES Robotics Studio $version" >> "$GITHUB_OUTPUT"
+
+      - name: Download verified packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ARES-Robotics-Studio-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Inventory release assets
+        shell: bash
+        run: find release-assets -maxdepth 4 -type f -print
+
+      - name: Generate SHA-256 checksums
+        shell: bash
+        run: |
+          find release-assets -type f \( -name '*.msi' -o -name '*.dmg' \) -print0 |
+            while IFS= read -r -d '' asset; do
+              sha256sum "$asset" > "$asset.sha256"
+            done
+
+      - name: Create GitHub Release and upload packages
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/**/*.msi
+            release-assets/**/*.dmg
+            release-assets/**/*.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

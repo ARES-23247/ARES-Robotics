@@ -1,0 +1,20 @@
+#!/bin/sh
+# ARESLib-Kotlin pre-push hook: runs the full test suite.
+#
+# Enable (one-time):   git config core.hooksPath githooks
+#   (Unix: also run)   chmod +x githooks/pre-push
+# Bypass (emergency):  git push --no-verify
+#
+# This is a local convenience. The real enforcement is the GitHub Actions
+# CI workflow in .github/workflows/ci.yml, which gates every pull request.
+
+echo "[ARESLib] pre-push: running ./gradlew test ..."
+
+if ./gradlew test --console=plain; then
+  echo "[ARESLib] pre-push: tests passed."
+  exit 0
+else
+  echo "[ARESLib] pre-push: TESTS FAILED — push aborted."
+  echo "[ARESLib] To bypass in an emergency, run: git push --no-verify"
+  exit 1
+fi

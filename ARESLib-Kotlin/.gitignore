@@ -1,0 +1,30 @@
+# Build folders
+build/
+bin/
+
+# Gradle
+.gradle/
+local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Ignore nested build dirs
+*/build/
+*/bin/
+
+# Logs and generated reports
+*.csv
+**/logs/
+ares_run_summary.json
+
+# Local experiments
+scratch/
+# Scratch crash-test main, never shipped
+simulator/src/main/kotlin/com/areslib/sim/TestCrash.kt

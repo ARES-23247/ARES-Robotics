@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 11,
+  "documentId": "indicator-lights",
+  "uid": "indicator-lights",
+  "displayName": "Indicator lights",
+  "kotlinTypeName": "IndicatorLights",
+  "description": "Two independently controlled goBILDA RGB indicator lights with named color choices and a safe off state.",
+  "platform": "FTC",
+  "revision": 3,
+  "hardware": [
+    {"hardwareId":"leftIndicator","uid":"leftIndicator","displayName":"Left indicator light","kind":"INDICATOR_LIGHT","connection":{"hardwareMapName":"indicator"},"measurements":[],"required":false,"safeOutput":0.0,"description":"Independently controlled PWM indicator on the left side of Lightbot.","visualPlacement":{"anchor":"LEFT_SIDE","forwardFraction":0.0,"leftFraction":0.5}},
+    {"hardwareId":"rightIndicator","uid":"rightIndicator","displayName":"Right indicator light","kind":"INDICATOR_LIGHT","connection":{"hardwareMapName":"indicator2"},"measurements":[],"required":false,"safeOutput":0.0,"description":"Independently controlled PWM indicator on the right side of Lightbot.","visualPlacement":{"anchor":"RIGHT_SIDE","forwardFraction":0.0,"leftFraction":-0.5}}
+  ],
+  "stateFields": [
+    {"fieldId":"leftColor","uid":"leftColor","displayName":"Left light color","description":"The one named color currently displayed by Lightbot's left indicator light.","type":"DOUBLE","role":"TARGET","unit":"normalized","defaultNumber":0.472,"minimum":0.0,"maximum":1.0},
+    {"fieldId":"rightColor","uid":"rightColor","displayName":"Right light color","description":"The one named color currently displayed by Lightbot's right indicator light.","type":"DOUBLE","role":"TARGET","unit":"normalized","defaultNumber":0.611,"minimum":0.0,"maximum":1.0}
+  ],
+  "controlLoops": [
+    {"loopId":"leftColorOutput","uid":"leftColorOutput","displayName":"Left indicator color","description":"Writes the left color target only to the left indicator light.","strategy":"DIRECT","actuatorId":"leftIndicator","targetFieldId":"leftColor","feedforward":{"kind":"NONE"},"minimumOutput":0.0,"maximumOutput":1.0},
+    {"loopId":"rightColorOutput","uid":"rightColorOutput","displayName":"Right indicator color","description":"Writes the right color target only to the right indicator light.","strategy":"DIRECT","actuatorId":"rightIndicator","targetFieldId":"rightColor","feedforward":{"kind":"NONE"},"minimumOutput":0.0,"maximumOutput":1.0}
+  ],
+  "tuningParameters": [],
+  "template": "INDICATOR_LIGHT_PWM",
+  "implementation": {"kind":"DECLARATIVE_GENERATED","ownership":"GENERATED_DO_NOT_EDIT","simulation":{"support":"GENERATED_MOCK"},"teaching":{"level":"BEGINNER","summary":"Shows how two write-only devices remain independently addressable through immutable generated state.","documentationPath":"docs/examples/GUI_OWNED_LIGHTING.md","concepts":["Independent actuator targets","Named color choices","Safe off output","FTC and simulator parity"]}},
+  "capabilityActionKeys": [],
+  "safety": {"feedbackTimeoutMs":null,"homing":{"method":"NONE"},"requiresCalibration":false,"requiresConfigurationHealth":false,"requiresCurrentMonitoring":false,"latchOutputFaults":false,"requiresExplicitNeutralRecovery":false,"telemetryEnabled":true,"zeroAllocationPeriodic":true},
+  "autonomousResourceKey": "indicator-lights",
+  "requiredAtStartup": false,
+  "generateMockIo": true,
+  "generateTest": true
+}

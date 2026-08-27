@@ -1,5 +1,11 @@
 # ARES Clean-Slate Architecture Review
 
+> **Implementation status (2026-08-27):** The architectural boundary program described here is
+> implemented in the ARES-Robotics source monorepo. See
+> [CLEAN_SLATE_ARCHITECTURE_COMPLETION.md](CLEAN_SLATE_ARCHITECTURE_COMPLETION.md) for the ownership,
+> rollback, verification, migration, and deliberately deferred-work record. This review remains the
+> design rationale; it is not a claim of physical robot validation.
+
 ## Executive recommendation
 
 ARES should be **restructured, not rewritten**. The core architectural ideas are appropriate for a
@@ -434,3 +440,6 @@ No robot control behavior should change in this phase.
 - Every supported target names its real simulator and physical-validation boundary.
 - A beginner can create, verify, and simulate a robot without seeing infrastructure complexity.
 - Advanced teams retain explicit, documented platform extension points.
+- Studio-created repositories work without the monorepo or a running Studio process and explicitly
+  distinguish GUI-owned, code-first Kotlin, and hybrid ownership. Studio consumes declared
+  registration metadata and never attempts to infer behavior from arbitrary Kotlin source.

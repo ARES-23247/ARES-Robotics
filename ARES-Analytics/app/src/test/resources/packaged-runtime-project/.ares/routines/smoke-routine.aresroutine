@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "documentId": "smoke-routine",
+  "revision": 1,
+  "name": "Packaged runtime smoke routine",
+  "description": "Exercises packaged routine decoding.",
+  "steps": [
+    {
+      "kind": "ACTION",
+      "stepId": "step-smoke-action",
+      "actionKey": "smoke.run",
+      "arguments": {},
+      "children": [],
+      "elseChildren": []
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "projectId": "packaged-runtime-smoke",
+  "revision": 1,
+  "defaultEntryId": "smoke-entry",
+  "entries": [
+    {
+      "entryId": "smoke-entry",
+      "displayName": "Smoke entry",
+      "description": "Exercises packaged autonomous-catalog decoding.",
+      "routineId": "smoke-routine",
+      "startingPose": {"xMeters": 0.0, "yMeters": 0.0, "headingRadians": 0.0},
+      "authoredAlliance": "RED",
+      "mirrorForOppositeAlliance": true,
+      "sortOrder": 0,
+      "enabled": true
+    }
+  ]
+}

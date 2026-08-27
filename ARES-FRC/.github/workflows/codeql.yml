@@ -1,0 +1,56 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: '29 5 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: frc-codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL Java/Kotlin
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out FRC
+        uses: actions/checkout@v4
+        with:
+          path: ARES-FRC
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          config: |
+            paths:
+              - ARES-FRC/src
+
+      - name: Verify immutable ARES 8 release is available
+        run: >-
+          curl --fail --silent --show-error --head
+          "https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven/org/aresfirst/ares/ares-bom/9.2.2/ares-bom-9.2.2.pom"
+
+      - name: Compile FRC sources
+        working-directory: ARES-FRC
+        run: ./gradlew classes testClasses --no-daemon
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4

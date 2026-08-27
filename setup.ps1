@@ -1,27 +1,28 @@
-# Clones the four ARES subprojects as siblings of this script.
-# Idempotent: existing directories are skipped (local work is never overwritten).
-#
-# Usage:  .\setup.ps1
+# Bootstraps a source-monorepo checkout without downloading or overwriting component source.
+# Usage: .\setup.ps1
 
 $ErrorActionPreference = 'Stop'
+$root = $PSScriptRoot
+$required = @(
+    'ARESLib-Kotlin',
+    'ARES-FTC',
+    'ARES-FRC',
+    'ARES-FTC-Starter',
+    'ARES-FRC-Starter',
+    'ARES-Analytics',
+    'release/ares-versions.properties',
+    'build-logic/ares-versioning.gradle'
+)
+$missing = $required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $root $_)) }
+if ($missing) { throw "Incomplete ARES-Robotics checkout. Missing: $($missing -join ', ')" }
 
-$Org = 'ARES-23247'
-$Repos = @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-Analytics')
-$Root = $PSScriptRoot
+& (Join-Path $root 'scripts/verify-imported-histories.ps1')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& (Join-Path $root 'scripts/verify-monorepo-policy.ps1')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-foreach ($repo in $Repos) {
-    $dest = Join-Path $Root $repo
-    if (Test-Path -LiteralPath $dest) {
-        Write-Host "skip   $repo (exists: $dest)" -ForegroundColor DarkGray
-        continue
-    }
-    $url = "https://github.com/$Org/$repo.git"
-    Write-Host "clone  $repo <- $url" -ForegroundColor Cyan
-    git clone $url $dest
-    if ($LASTEXITCODE -ne 0) { throw "Failed to clone $repo" }
-}
-
-Write-Host ""
-Write-Host "Workspace ready. Next steps:" -ForegroundColor Green
-Write-Host "  1. Build foundation first:  cd ARESLib-Kotlin ; .\gradlew.bat publishToMavenLocal"
-Write-Host "  2. Per-project build/test/run commands: see AGENTS.md"
+Write-Host "`nARES-Robotics source monorepo is ready." -ForegroundColor Green
+Write-Host '  Full test matrix:       .\build.ps1 -Task Test'
+Write-Host '  Studio compile only:    .\build.ps1 -Task Studio'
+Write-Host '  Studio launch:          cd ARES-Analytics; .\gradlew.bat :app:run'
+Write-Host '  Candidate validation:   .\build.ps1 -Task ReleaseValidation -CandidateVersion <version>-rc.<commit>'

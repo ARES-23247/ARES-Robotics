@@ -4,6 +4,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 $workspaceRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$releaseManifest = ConvertFrom-StringData (Get-Content -Raw -LiteralPath (Join-Path $workspaceRoot "release/ares-versions.properties"))
+$commit = (& git -C $workspaceRoot rev-parse --short=12 HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($commit)) {
+    throw "Unable to determine the source commit for the validation candidate."
+}
+$candidateVersion = "$($releaseManifest.aresVersion)-rc.$commit"
 
 function Invoke-AresGradle {
     param(
@@ -60,51 +66,56 @@ if ($Full) {
         "--console=plain"
     )
     Invoke-AresGradle "ARESLib-Kotlin" @(
-        ":frc-hardware:test",
+        ":frc-runtime:test",
         "--tests", "com.areslib.frc.input.FrcInputFrameAdapterTest",
         "--console=plain"
     )
 }
 
-# Consumers must see the exact library implementation just verified above.
-Invoke-AresGradle "ARESLib-Kotlin" @("publishToMavenLocal", "--console=plain")
+# Consumers must resolve the exact immutable candidate verified above. Never use ambient Maven Local.
+Invoke-AresGradle "ARESLib-Kotlin" @(
+    "publishReleaseValidation",
+    "-ParesVersion=$candidateVersion",
+    "--console=plain"
+)
+$validationRepositoryPath = (Resolve-Path -LiteralPath (Join-Path $workspaceRoot "ARESLib-Kotlin/build/release-repository")).Path
+$validationRepositoryUri = [Uri]::new($validationRepositoryPath).AbsoluteUri
+$consumerArguments = @(
+    "-ParesVersion=$candidateVersion",
+    "-ParesRepository=$validationRepositoryUri"
+)
 
 if ($Full) {
-    Invoke-AresGradle "ARES-Analytics" @(":app:test", "-ParesUseSiblingLib=true", "--console=plain")
-    Invoke-AresGradle "ARES-FTC" @(":TeamCode:verifyAresProject", "--console=plain")
-    Invoke-AresGradle "ARES-FTC" @(
-        ":TeamCode:testDebugUnitTest",
-        "--console=plain"
-    )
-    Invoke-AresGradle "ARES-FRC" @("verifyAresProject", "-Pares.usePublishedLib=true", "--console=plain")
-    Invoke-AresGradle "ARES-FRC" @("test", "-Pares.usePublishedLib=true", "--console=plain")
+    Invoke-AresGradle "ARES-Analytics" (@(":app:test") + $consumerArguments + @("--console=plain"))
+    Invoke-AresGradle "ARES-FTC" (@(":TeamCode:verifyAresProject") + $consumerArguments + @("--console=plain"))
+    Invoke-AresGradle "ARES-FTC" (@(":TeamCode:testDebugUnitTest") + $consumerArguments + @("--console=plain"))
+    Invoke-AresGradle "ARES-FRC" (@("verifyAresProject") + $consumerArguments + @("--console=plain"))
+    Invoke-AresGradle "ARES-FRC" (@("test") + $consumerArguments + @("--console=plain"))
 } else {
-    Invoke-AresGradle "ARES-Analytics" @(
+    Invoke-AresGradle "ARES-Analytics" (@(
         ":app:test",
-        "-ParesUseSiblingLib=true",
         "--tests", "com.ares.analytics.viewmodel.project.ProjectDocumentRepositoriesTest",
         "--tests", "com.ares.analytics.viewmodel.routine.RoutineEditorModelTest",
         "--tests", "com.ares.analytics.viewmodel.controls.ControlsEditorViewModelTest",
         "--console=plain"
-    )
-    Invoke-AresGradle "ARES-FTC" @(":TeamCode:verifyAresProject", "--console=plain")
-    Invoke-AresGradle "ARES-FTC" @(
+    ) + $consumerArguments)
+    Invoke-AresGradle "ARES-FTC" (@(":TeamCode:verifyAresProject") + $consumerArguments + @("--console=plain"))
+    Invoke-AresGradle "ARES-FTC" (@(
         ":TeamCode:testDebugUnitTest",
         "--tests", "org.firstinspires.ftc.teamcode.FtcFieldAssetContractTest",
         "--tests", "org.firstinspires.ftc.teamcode.FtcAutoLifecycleTest",
         "--tests", "org.firstinspires.ftc.teamcode.FtcGeneratedRuntimeTest",
         "--tests", "org.firstinspires.ftc.teamcode.FtcAutonomousSelectorTest",
         "--console=plain"
-    )
-    Invoke-AresGradle "ARES-FRC" @("verifyAresProject", "-Pares.usePublishedLib=true", "--console=plain")
-    Invoke-AresGradle "ARES-FRC" @(
+    ) + $consumerArguments)
+    Invoke-AresGradle "ARES-FRC" (@("verifyAresProject") + $consumerArguments + @("--console=plain"))
+    Invoke-AresGradle "ARES-FRC" (@(
         "test",
-        "-Pares.usePublishedLib=true",
         "--tests", "com.areslib.frc.robot.FrcNativeAutoContractTest",
         "--tests", "com.areslib.frc.robot.FRCAutoAllianceMirroringContractTest",
         "--tests", "com.areslib.frc.generatedruntime.FrcGeneratedRoutineRuntimeTest",
         "--console=plain"
-    )
+    ) + $consumerArguments)
 }
 
 Write-Host "`nARES routines, controls, code generation, and autonomous verification passed." -ForegroundColor Green

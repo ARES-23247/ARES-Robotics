@@ -1,0 +1,339 @@
+package com.areslib.frc
+
+import com.areslib.action.RobotAction
+import com.areslib.state.*
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.telemetry.ITelemetry
+import com.areslib.hardware.drive.SwerveHardwareIO
+import com.areslib.frc.telemetry.FrcTelemetryManager
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+
+/**
+ * FrcSwerveRobotTest declaration.
+ *
+ * @param args Standard arguments (if applicable).
+ * @return Corresponding output value or Unit.
+ */
+class FrcSwerveRobotTest {
+
+    companion object {
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            val jniDir = java.io.File("build/jni/release")
+            if (jniDir.exists()) {
+                val libs = listOf(
+                    "wpiutil",
+                    "wpinet",
+                    "ntcore",
+                    "wpiHal",
+                    "wpiHaljni"
+                )
+                val ext = if (System.getProperty("os.name").lowercase().contains("win")) ".dll" else ".so"
+                for (lib in libs) {
+                    val libFile = java.io.File(jniDir, "$lib$ext")
+                    if (libFile.exists()) {
+                        try {
+                            System.load(libFile.absolutePath)
+                        } catch (e: Throwable) {
+                            System.err.println("FrcSwerveRobotTest: Failed to load native library $lib: ${e.message}")
+                        }
+                    }
+                }
+            }
+            edu.wpi.first.hal.HAL.initialize(500, 0)
+        }
+    }
+
+    /**
+     * MockSwerveHardwareIO declaration.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
+    class MockSwerveHardwareIO : SwerveHardwareIO {
+        var mockPitch = 0.0
+        var mockRoll = 0.0
+        var mockCurrents = doubleArrayOf(5.0, 5.0, 5.0, 5.0)
+        var mockSpeeds = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
+        var mockPose = Pose2d(0.0, 0.0, Rotation2d(0.0))
+        var mockVx = 0.0
+        var mockVy = 0.0
+        var mockOmega = 0.0
+        var seedPoseCalledWith: Pose2d? = null
+        var currentsValid = true
+
+        override fun refresh() {}
+
+        override fun read(): DriveState {
+            return DriveState(
+                xVelocityMetersPerSecond = mockVx,
+                yVelocityMetersPerSecond = mockVy,
+                angularVelocityRadiansPerSecond = mockOmega,
+                odometryX = mockPose.x,
+                odometryY = mockPose.y,
+                odometryHeading = mockPose.heading.radians
+            )
+        }
+
+        override fun write(driveState: DriveState, powerScale: Double) {}
+
+        override fun addVisionMeasurement(pose: Pose2d, timestampSeconds: Double) {}
+
+        override fun getCurrents(out: DoubleArray) {
+            System.arraycopy(mockCurrents, 0, out, 0, out.size)
+        }
+
+        override val currentMeasurementsValid: Boolean
+            get() = currentsValid
+
+        override val pitchDegrees: Double
+            get() = mockPitch
+
+        override val rollDegrees: Double
+            get() = mockRoll
+
+        override fun getModuleSpeeds(out: DoubleArray) {
+            System.arraycopy(mockSpeeds, 0, out, 0, out.size)
+        }
+
+        override fun seedPose(pose: Pose2d) {
+            seedPoseCalledWith = pose
+        }
+    }
+
+    @Test
+    /**
+     * testBeachedOdometryFreezeAndRecovery declaration.
+     *
+     * @param args Standard arguments (if applicable).
+     * @return Corresponding output value or Unit.
+     */
+    fun testBeachedOdometryFreezeAndRecovery() {
+        val swerveIO = MockSwerveHardwareIO()
+        val mockTelemetry = object : ITelemetry {
+            override fun putNumber(key: String, value: Double) {}
+            override fun putBoolean(key: String, value: Boolean) {}
+            override fun putString(key: String, value: String) {}
+            override fun putDoubleArray(key: String, value: DoubleArray) {}
+            override fun getNumber(key: String, defaultValue: Double): Double = defaultValue
+            override fun getBoolean(key: String, defaultValue: Boolean): Boolean = defaultValue
+            override fun getString(key: String, defaultValue: String): String = defaultValue
+        }
+        val robot = FrcSwerveRobot(
+            swerveIO = swerveIO,
+            isSimulation = false,
+            baseTelemetry = mockTelemetry,
+            isEnabledProvider = { false },
+            robotModeProvider = { "Teleop" }
+        )
+
+        // Set initial pose
+        robot.store.dispatch(com.areslib.action.RobotAction.PoseUpdate(1.0, 2.0, Math.toRadians(45.0), timestampMs = 0L, isReset = true))
+        swerveIO.mockPose = Pose2d(1.0, 2.0, Rotation2d.fromDegrees(45.0))
+        robot.update()
+
+        // Verify initial state is registered in store
+        assertEquals(1.0, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
+        assertEquals(2.0, robot.store.state.drive.poseEstimator.estimatedPose.y, 1e-6)
+        assertEquals(Math.toRadians(45.0), robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
+        assertTrue(robot.store.state.drive.poseEstimateIsExternal)
+        assertFalse(robot.isBeached)
+
+        // 1. Move to a new pose under normal (unbeached) conditions
+        robot.store.dispatch(com.areslib.action.RobotAction.PoseUpdate(1.5, 2.2, Math.toRadians(50.0), timestampMs = 20L, isReset = true))
+        swerveIO.mockPose = Pose2d(1.5, 2.2, Rotation2d.fromDegrees(50.0))
+        robot.update()
+        assertEquals(1.5, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
+        assertEquals(2.2, robot.store.state.drive.poseEstimator.estimatedPose.y, 1e-6)
+        assertEquals(Math.toRadians(50.0), robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
+
+        // 2. Trigger beached condition (high tilt, high wheel speed, low motor current draw)
+        swerveIO.mockPitch = 10.0
+        swerveIO.mockSpeeds = doubleArrayOf(2.0, 2.0, 2.0, 2.0)
+        swerveIO.mockCurrents = doubleArrayOf(3.0, 3.0, 3.0, 3.0) // < 8.0 A
+        assertTrue(robot.isBeached, "Robot should be detected as beached")
+
+        // Now move the underlying hardware odometry (wheels are spinning)
+        // We simulate wheels spinning, claiming we traveled to (3.0, 4.0) and heading rotated to 90 degrees.
+        swerveIO.mockPose = Pose2d(3.0, 4.0, Rotation2d.fromDegrees(90.0))
+        robot.update()
+
+        // Verify that position (X/Y) remains FROZEN at the last known unbeached pose (1.5, 2.2),
+        // but the heading continues to update to 90 degrees.
+        assertEquals(1.5, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
+        assertEquals(2.2, robot.store.state.drive.poseEstimator.estimatedPose.y, 1e-6)
+        assertEquals(Math.toRadians(90.0), robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
+        assertNull(swerveIO.seedPoseCalledWith, "Should not seed pose while beached")
+
+        // 3. Exit beached condition (tilt drops back to normal)
+        swerveIO.mockPitch = 0.0
+        assertFalse(robot.isBeached, "Robot should no longer be beached")
+
+        // Update robot. On transition exit, it should seed the hardware SwerveDrivetrain back to the frozen Redux EKF pose
+        robot.update()
+
+        assertNotNull(swerveIO.seedPoseCalledWith, "Exiting beaching state must call seedPose")
+        val seeded = swerveIO.seedPoseCalledWith!!
+        assertEquals(1.5, seeded.x, 1e-6)
+        assertEquals(2.2, seeded.y, 1e-6)
+        assertEquals(Math.toRadians(90.0), seeded.heading.radians, 1e-6)
+
+        robot.close()
+    }
+
+    @Test
+    fun `swerve robot telemetry factory is called once and receives drivetrain IO`() {
+        val swerveIO = MockSwerveHardwareIO()
+        val telemetry = RecordingTelemetry()
+        var calls = 0
+        var observedIO: SwerveHardwareIO? = null
+        val robot = FrcSwerveRobot(
+            swerveIO = swerveIO,
+            baseTelemetry = telemetry,
+            isEnabledProvider = { false },
+            robotModeProvider = { "Disabled" },
+            telemetryManagerFactory = { store, base, driveIO ->
+                calls++
+                observedIO = driveIO
+                FrcTelemetryManager(base, store, driveIO)
+            }
+        )
+
+        assertEquals(1, calls)
+        assertSame(swerveIO, observedIO)
+        robot.close()
+    }
+
+    @Test
+    fun `beached detection requires fresh finite current speed and imu signals`() {
+        val swerveIO = MockSwerveHardwareIO().apply {
+            mockPitch = 10.0
+            mockSpeeds = doubleArrayOf(2.0, 2.0, 2.0, 2.0)
+            mockCurrents = doubleArrayOf(3.0, 3.0, 3.0, 3.0)
+        }
+        val telemetry = RecordingTelemetry()
+        val robot = FrcSwerveRobot(
+            swerveIO = swerveIO,
+            isSimulation = false,
+            baseTelemetry = telemetry,
+            isEnabledProvider = { false },
+            robotModeProvider = { "Disabled" }
+        )
+
+        swerveIO.currentsValid = false
+        assertFalse(robot.isBeached)
+        robot.update()
+        assertEquals(false, telemetry.booleans["Diagnostics/Drive/BeachedSignalsValid"])
+
+        swerveIO.currentsValid = true
+        swerveIO.mockSpeeds[2] = Double.NaN
+        assertFalse(robot.isBeached)
+
+        swerveIO.mockSpeeds[2] = 2.0
+        swerveIO.mockPitch = Double.POSITIVE_INFINITY
+        assertFalse(robot.isBeached)
+
+        swerveIO.mockPitch = 10.0
+        assertTrue(robot.isBeached)
+        robot.update()
+        assertEquals(true, telemetry.booleans["Diagnostics/Drive/BeachedSignalsValid"])
+        robot.close()
+    }
+
+    @Test
+    fun `unknown signals preserve an existing beached freeze until confirmed recovery`() {
+        val swerveIO = MockSwerveHardwareIO().apply {
+            mockPitch = 10.0
+            mockSpeeds = doubleArrayOf(2.0, 2.0, 2.0, 2.0)
+            mockCurrents = doubleArrayOf(3.0, 3.0, 3.0, 3.0)
+            mockPose = Pose2d(4.0, 5.0, Rotation2d(0.4))
+        }
+        val telemetry = RecordingTelemetry()
+        val robot = FrcSwerveRobot(
+            swerveIO = swerveIO,
+            isSimulation = false,
+            baseTelemetry = telemetry,
+            isEnabledProvider = { false },
+            robotModeProvider = { "Disabled" }
+        )
+        robot.store.dispatch(RobotAction.PoseUpdate(1.0, 2.0, 0.1, 0L, isReset = true))
+
+        robot.update()
+        assertTrue(robot.isBeached)
+        assertEquals(1.0, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+        assertEquals(2.0, robot.store.state.drive.poseEstimator.estimatedPose.y, 1e-9)
+        assertEquals(0.4, robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-9)
+        assertFalse(robot.store.state.drive.measuredMotionValid)
+
+        swerveIO.seedPoseCalledWith = null
+        swerveIO.currentsValid = false
+        swerveIO.mockPose = Pose2d(8.0, 9.0, Rotation2d(0.8))
+        robot.update()
+
+        assertTrue(robot.isBeached, "unknown signals must retain the prior beached state")
+        assertNull(swerveIO.seedPoseCalledWith, "unknown is not a confirmed recovery")
+        assertEquals(1.0, robot.store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+        assertEquals(2.0, robot.store.state.drive.poseEstimator.estimatedPose.y, 1e-9)
+        assertEquals(0.8, robot.store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-9)
+        assertFalse(robot.store.state.drive.measuredMotionValid)
+        assertEquals(false, telemetry.booleans["Diagnostics/Drive/BeachedSignalsValid"])
+        assertEquals(true, telemetry.booleans["Diagnostics/Drive/Beached"])
+
+        swerveIO.currentsValid = true
+        swerveIO.mockPitch = 0.0
+        swerveIO.mockSpeeds.fill(0.0)
+        robot.update()
+        assertNotNull(swerveIO.seedPoseCalledWith, "valid non-beached signals confirm recovery")
+        robot.close()
+    }
+
+    @Test
+    fun `invalid chassis motion and imu samples are zeroed with explicit validity`() {
+        val swerveIO = MockSwerveHardwareIO().apply {
+            mockPose = Pose2d(2.0, 3.0, Rotation2d(0.25))
+            mockVx = Double.NaN
+            mockVy = 1.0
+            mockOmega = 0.5
+        }
+        val robot = FrcSwerveRobot(
+            swerveIO = swerveIO,
+            isSimulation = false,
+            baseTelemetry = RecordingTelemetry(),
+            isEnabledProvider = { false },
+            robotModeProvider = { "Disabled" }
+        )
+
+        robot.update()
+        var drive = robot.store.state.drive
+        assertFalse(drive.measuredMotionValid)
+        assertEquals(0.0, drive.measuredFieldXVelocityMetersPerSecond)
+        assertEquals(0.0, drive.measuredFieldYVelocityMetersPerSecond)
+        assertEquals(0.0, drive.measuredAngularVelocityRadiansPerSecond)
+        assertTrue(drive.imuMeasurementsValid)
+
+        swerveIO.mockVx = 1.0
+        swerveIO.mockPitch = Double.POSITIVE_INFINITY
+        robot.update()
+        drive = robot.store.state.drive
+        assertTrue(drive.measuredMotionValid)
+        assertFalse(drive.imuMeasurementsValid)
+        assertEquals(0.0, drive.pitchDegrees)
+        assertEquals(0.0, drive.rollDegrees)
+        robot.close()
+    }
+
+    private class RecordingTelemetry : ITelemetry {
+        val booleans = mutableMapOf<String, Boolean>()
+        override fun putNumber(key: String, value: Double) = Unit
+        override fun putBoolean(key: String, value: Boolean) { booleans[key] = value }
+        override fun putString(key: String, value: String) = Unit
+        override fun putDoubleArray(key: String, value: DoubleArray) = Unit
+        override fun getNumber(key: String, defaultValue: Double): Double = defaultValue
+        override fun getBoolean(key: String, defaultValue: Boolean): Boolean = booleans[key] ?: defaultValue
+        override fun getString(key: String, defaultValue: String): String = defaultValue
+    }
+}

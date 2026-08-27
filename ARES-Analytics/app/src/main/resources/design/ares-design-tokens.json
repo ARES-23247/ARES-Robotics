@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "name": "ARES 23247 unified design tokens",
+  "source": "https://github.com/ARES-23247/ARESWEB/blob/master/design/ares-design-tokens.json",
+  "brand": {
+    "red": "#C00000",
+    "redReadableOnDark": "#FF6B6B",
+    "bronze": "#CD7F32",
+    "gold": "#FFB81C",
+    "technicalCyan": "#00E5FF",
+    "obsidian": "#1A1A1A",
+    "marble": "#F9F9F9"
+  },
+  "semanticDark": {
+    "background": "#0D0F14",
+    "surface": "#161A22",
+    "surfaceElevated": "#1E2330",
+    "textPrimary": "#E8ECF4",
+    "textSecondary": "#9CA3B4",
+    "textTertiary": "#8992A6",
+    "border": "#6B7B98",
+    "borderFocused": "#8B9BB8",
+    "onBrightAccent": "#05070A",
+    "error": "#FF5252",
+    "warning": "#FFB81C",
+    "success": "#66BB6A",
+    "colorblindError": "#FF6D00",
+    "colorblindSuccess": "#2979FF"
+  },
+  "productRoles": {
+    "website": {
+      "primaryAction": "brand.red",
+      "technicalAction": "brand.technicalCyan",
+      "focusRing": "brand.technicalCyan",
+      "foundation": "brand.obsidian"
+    },
+    "analytics": {
+      "primaryAction": "brand.technicalCyan",
+      "brandMoment": "brand.red",
+      "focusRing": "brand.technicalCyan",
+      "foundation": "semanticDark.background"
+    }
+  },
+  "typography": {
+    "display": "League Spartan",
+    "body": "Inter",
+    "data": "monospace"
+  },
+  "assets": {
+    "teamMarkSvg": "public/favicon.svg",
+    "teamMarkRaster": "public/favicon.webp"
+  },
+  "shape": {
+    "controlSmallPx": 4,
+    "controlMediumPx": 8,
+    "panelPx": 12,
+    "brandCut": "24px 4px"
+  },
+  "links": {
+    "teamWebsite": "https://aresfirst.org/",
+    "teamGitHub": "https://github.com/ARES-23247"
+  },
+  "accessibility": {
+    "normalTextMinimumContrast": 4.5,
+    "largeTextMinimumContrast": 3.0,
+    "nonTextMinimumContrast": 3.0,
+    "neverColorAlone": true,
+    "brightAccentForeground": "semanticDark.onBrightAccent"
+  }
+}

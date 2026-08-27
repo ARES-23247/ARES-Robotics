@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "documentId": "ftc-driver",
+  "revision": 1,
+  "displayName": "FTC Driver Station gamepad",
+  "deviceMatchers": [
+    {
+      "nameContains": "gamepad",
+      "minimumAxisCount": 4,
+      "minimumButtonCount": 8
+    }
+  ],
+  "controls": [
+    {
+      "controlId": "a",
+      "displayName": "A",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.81, "y": 0.44},
+      "mappings": [{"platform": "FTC", "buttonIndex": 0}],
+      "aliases": ["cross"]
+    },
+    {
+      "controlId": "b",
+      "displayName": "B",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.88, "y": 0.35},
+      "mappings": [{"platform": "FTC", "buttonIndex": 1}],
+      "aliases": ["circle"]
+    },
+    {
+      "controlId": "x",
+      "displayName": "X",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.74, "y": 0.35},
+      "mappings": [{"platform": "FTC", "buttonIndex": 2}],
+      "aliases": ["square"]
+    },
+    {
+      "controlId": "y",
+      "displayName": "Y",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.81, "y": 0.26},
+      "mappings": [{"platform": "FTC", "buttonIndex": 3}],
+      "aliases": ["triangle"]
+    },
+    {
+      "controlId": "left_bumper",
+      "displayName": "LB",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.23, "y": 0.10},
+      "mappings": [{"platform": "FTC", "buttonIndex": 4}],
+      "aliases": ["left_bumper", "lb"]
+    },
+    {
+      "controlId": "right_bumper",
+      "displayName": "RB",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.77, "y": 0.10},
+      "mappings": [{"platform": "FTC", "buttonIndex": 5}],
+      "aliases": ["right_bumper", "rb"]
+    },
+    {
+      "controlId": "back",
+      "displayName": "Back",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.43, "y": 0.40},
+      "mappings": [{"platform": "FTC", "buttonIndex": 6}],
+      "aliases": ["back", "share"]
+    },
+    {
+      "controlId": "start",
+      "displayName": "Start",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.57, "y": 0.40},
+      "mappings": [{"platform": "FTC", "buttonIndex": 7}],
+      "aliases": ["start", "options"]
+    },
+    {
+      "controlId": "left_stick_button",
+      "displayName": "L3",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.35, "y": 0.66},
+      "mappings": [{"platform": "FTC", "buttonIndex": 9}],
+      "aliases": ["left_stick_button", "l3"]
+    },
+    {
+      "controlId": "right_stick_button",
+      "displayName": "R3",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.65, "y": 0.66},
+      "mappings": [{"platform": "FTC", "buttonIndex": 10}],
+      "aliases": ["right_stick_button", "r3"]
+    },
+    {
+      "controlId": "dpad_up",
+      "displayName": "D-pad up",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.23, "y": 0.43},
+      "mappings": [{"platform": "FTC", "buttonIndex": 11}],
+      "aliases": ["dpad_up", "dpadup"]
+    },
+    {
+      "controlId": "dpad_down",
+      "displayName": "D-pad down",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.23, "y": 0.57},
+      "mappings": [{"platform": "FTC", "buttonIndex": 13}],
+      "aliases": ["dpad_down", "dpaddown"]
+    },
+    {
+      "controlId": "dpad_left",
+      "displayName": "D-pad left",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.16, "y": 0.50},
+      "mappings": [{"platform": "FTC", "buttonIndex": 14}],
+      "aliases": ["dpad_left", "dpadleft"]
+    },
+    {
+      "controlId": "dpad_right",
+      "displayName": "D-pad right",
+      "type": "BUTTON",
+      "surface": "FRONT",
+      "anchor": {"x": 0.30, "y": 0.50},
+      "mappings": [{"platform": "FTC", "buttonIndex": 12}],
+      "aliases": ["dpad_right", "dpadright"]
+    },
+    {
+      "controlId": "left_stick_x",
+      "displayName": "Left stick X",
+      "type": "AXIS",
+      "surface": "FRONT",
+      "anchor": {"x": 0.35, "y": 0.62},
+      "mappings": [{"platform": "FTC", "axisIndex": 0}],
+      "aliases": []
+    },
+    {
+      "controlId": "left_stick_y",
+      "displayName": "Left stick Y",
+      "type": "AXIS",
+      "surface": "FRONT",
+      "anchor": {"x": 0.35, "y": 0.72},
+      "mappings": [{"platform": "FTC", "axisIndex": 1}],
+      "aliases": []
+    },
+    {
+      "controlId": "right_stick_x",
+      "displayName": "Right stick X",
+      "type": "AXIS",
+      "surface": "FRONT",
+      "anchor": {"x": 0.65, "y": 0.62},
+      "mappings": [{"platform": "FTC", "axisIndex": 2}],
+      "aliases": []
+    },
+    {
+      "controlId": "right_stick_y",
+      "displayName": "Right stick Y",
+      "type": "AXIS",
+      "surface": "FRONT",
+      "anchor": {"x": 0.65, "y": 0.72},
+      "mappings": [{"platform": "FTC", "axisIndex": 3}],
+      "aliases": []
+    },
+    {
+      "controlId": "left_trigger",
+      "displayName": "LT",
+      "type": "AXIS",
+      "surface": "FRONT",
+      "anchor": {"x": 0.17, "y": 0.02},
+      "mappings": [{"platform": "FTC", "axisIndex": 4}],
+      "aliases": ["left_trigger", "lt"]
+    },
+    {
+      "controlId": "right_trigger",
+      "displayName": "RT",
+      "type": "AXIS",
+      "surface": "FRONT",
+      "anchor": {"x": 0.83, "y": 0.02},
+      "mappings": [{"platform": "FTC", "axisIndex": 5}],
+      "aliases": ["right_trigger", "rt"]
+    }
+  ]
+}

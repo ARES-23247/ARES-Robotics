@@ -1,0 +1,22 @@
+import org.gradle.internal.os.OperatingSystem
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        def publicFolder = System.getenv('PUBLIC') ?: 'C:\\Users\\Public'
+        def frcHome = OperatingSystem.current().isWindows()
+            ? new File(publicFolder, 'wpilib/2026')
+            : new File(System.getProperty('user.home'), 'wpilib/2026')
+        maven { name = 'frcHome'; url = new File(frcHome, 'maven') }
+    }
+}
+
+System.setProperty('org.gradle.internal.native.headers.unresolved.dependencies.ignore', 'true')
+
+// Source substitution is an explicit library-development choice, never an ambient dependency.
+if (providers.gradleProperty('aresUseSiblingLib').map { it.toBoolean() }.getOrElse(false) &&
+    file('../ARESLib-Kotlin').exists()) {
+    includeBuild('../ARESLib-Kotlin')
+}
+
+rootProject.name = 'ARES-FRC-Starter'

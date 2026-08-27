@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "projectId": "team23247-gobilda",
+  "revision": 3,
+  "actions": [
+    {"key":"drivetrain.recoverNeutral","displayName":"Recover drive after a fault","description":"Requires released drive controls, writes neutral to all four motors, then clears the drive fault latch.","category":"Drive safety","parameters":[],"resources":[{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],"allowedContexts":["TELEOP","TEST"]}
+  ],
+  "conditions": []
+}

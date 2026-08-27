@@ -1,0 +1,142 @@
+public final class com/areslib/project/model/EffectiveRobotProject {
+	public synthetic fun <init> (Lcom/areslib/project/model/RobotProjectSnapshot;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProjectPlan;Lcom/areslib/catalog/CapabilityCatalogDocument;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/project/model/RobotProjectSnapshot;
+	public final fun component10 ()Ljava/util/Map;
+	public final fun component11 ()Ljava/util/Map;
+	public final fun component12 ()Ljava/util/Map;
+	public final fun component13 ()Ljava/util/Map;
+	public final fun component14 ()Ljava/util/List;
+	public final fun component2-c1h943Q ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lcom/areslib/project/schema/AresProjectTarget;
+	public final fun component5 ()Lcom/areslib/simulation/SimulationProjectPlan;
+	public final fun component6 ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun component7 ()Ljava/util/Map;
+	public final fun component8 ()Ljava/util/Map;
+	public final fun component9 ()Ljava/util/Map;
+	public final fun copy-JMKBDb4 (Lcom/areslib/project/model/RobotProjectSnapshot;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProjectPlan;Lcom/areslib/catalog/CapabilityCatalogDocument;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;)Lcom/areslib/project/model/EffectiveRobotProject;
+	public static synthetic fun copy-JMKBDb4$default (Lcom/areslib/project/model/EffectiveRobotProject;Lcom/areslib/project/model/RobotProjectSnapshot;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProjectPlan;Lcom/areslib/catalog/CapabilityCatalogDocument;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/project/model/EffectiveRobotProject;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getActions ()Ljava/util/Map;
+	public final fun getCapabilityCatalog ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun getControlSchemes ()Ljava/util/Map;
+	public final fun getControllerProfiles ()Ljava/util/Map;
+	public final fun getDrivetrains ()Ljava/util/Map;
+	public final fun getIssues ()Ljava/util/List;
+	public final fun getProjectId-c1h943Q ()Ljava/lang/String;
+	public final fun getRaw ()Lcom/areslib/project/model/RobotProjectSnapshot;
+	public final fun getRoutines ()Ljava/util/Map;
+	public final fun getSimulationPlan ()Lcom/areslib/simulation/SimulationProjectPlan;
+	public final fun getSubsystems ()Ljava/util/Map;
+	public final fun getSuperstructures ()Ljava/util/Map;
+	public final fun getTarget ()Lcom/areslib/project/schema/AresProjectTarget;
+	public final fun getTuningScopeUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isValid ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/model/EffectiveRobotProjectQueries {
+	public fun <init> (Lcom/areslib/project/model/EffectiveRobotProject;)V
+	public final fun action (Ljava/lang/String;)Lcom/areslib/catalog/ActionDescriptor;
+	public final fun controlScheme (Ljava/lang/String;)Lcom/areslib/controls/ControlSchemeDocument;
+	public final fun controllerProfile (Ljava/lang/String;)Lcom/areslib/controls/ControllerProfileDocument;
+	public final fun drivetrain (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun getActions ()Ljava/util/List;
+	public final fun getAutonomousCatalog ()Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun getCapabilityCatalog ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun getControlSchemes ()Ljava/util/List;
+	public final fun getControllerProfiles ()Ljava/util/List;
+	public final fun getDrivetrains ()Ljava/util/List;
+	public final fun getField ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getMetadata ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun getRoutines ()Ljava/util/List;
+	public final fun getSimulationPlan ()Lcom/areslib/simulation/SimulationProjectPlan;
+	public final fun getSubsystems ()Ljava/util/List;
+	public final fun getSuperstructures ()Ljava/util/List;
+	public final fun getTuningComponents ()Ljava/util/List;
+	public final fun getTuningProfiles ()Ljava/util/List;
+	public final fun isValid ()Z
+	public final fun routine (Ljava/lang/String;)Lcom/areslib/routine/RoutineDocument;
+	public final fun subsystem (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun superstructure (Ljava/lang/String;)Lcom/areslib/superstructure/SuperstructureDocument;
+}
+
+public final class com/areslib/project/model/EffectiveRobotProjectQueriesKt {
+	public static final fun queries (Lcom/areslib/project/model/EffectiveRobotProject;)Lcom/areslib/project/model/EffectiveRobotProjectQueries;
+}
+
+public final class com/areslib/project/model/ProjectModelIssue {
+	public fun <init> (Lcom/areslib/project/model/ProjectModelSeverity;Lcom/areslib/project/schema/ProjectDocumentKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/areslib/project/model/ProjectModelSeverity;Lcom/areslib/project/schema/ProjectDocumentKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/project/model/ProjectModelSeverity;
+	public final fun component2 ()Lcom/areslib/project/schema/ProjectDocumentKind;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Lcom/areslib/project/model/ProjectModelSeverity;Lcom/areslib/project/schema/ProjectDocumentKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/project/model/ProjectModelIssue;
+	public static synthetic fun copy$default (Lcom/areslib/project/model/ProjectModelIssue;Lcom/areslib/project/model/ProjectModelSeverity;Lcom/areslib/project/schema/ProjectDocumentKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/model/ProjectModelIssue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCode ()Ljava/lang/String;
+	public final fun getDocumentId ()Ljava/lang/String;
+	public final fun getKind ()Lcom/areslib/project/schema/ProjectDocumentKind;
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getSeverity ()Lcom/areslib/project/model/ProjectModelSeverity;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/model/ProjectModelSeverity : java/lang/Enum {
+	public static final field ERROR Lcom/areslib/project/model/ProjectModelSeverity;
+	public static final field WARNING Lcom/areslib/project/model/ProjectModelSeverity;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/model/ProjectModelSeverity;
+	public static fun values ()[Lcom/areslib/project/model/ProjectModelSeverity;
+}
+
+public final class com/areslib/project/model/RobotProjectAssembler {
+	public static final field INSTANCE Lcom/areslib/project/model/RobotProjectAssembler;
+	public static final fun assemble (Lcom/areslib/project/model/RobotProjectSnapshot;Lcom/areslib/controls/ControllerInputPlatform;)Lcom/areslib/project/model/EffectiveRobotProject;
+	public static synthetic fun assemble$default (Lcom/areslib/project/model/RobotProjectSnapshot;Lcom/areslib/controls/ControllerInputPlatform;ILjava/lang/Object;)Lcom/areslib/project/model/EffectiveRobotProject;
+}
+
+public final class com/areslib/project/model/RobotProjectSnapshot {
+	public fun <init> (Ljava/lang/String;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/util/List;
+	public final fun component11 ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun component12 ()Ljava/util/List;
+	public final fun component13 ()Ljava/util/List;
+	public final fun component14 ()Ljava/util/List;
+	public final fun component2 ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun component3 ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun component4 ()Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Ljava/util/List;
+	public final fun component9 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lcom/areslib/project/model/RobotProjectSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/project/model/RobotProjectSnapshot;Ljava/lang/String;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/project/model/RobotProjectSnapshot;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAutonomousCatalog ()Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun getBaseCapabilityCatalog ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun getControlSchemes ()Ljava/util/List;
+	public final fun getControllerProfiles ()Ljava/util/List;
+	public final fun getDrivetrains ()Ljava/util/List;
+	public final fun getField ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getLoadIssues ()Ljava/util/List;
+	public final fun getMetadata ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun getProjectRoot ()Ljava/lang/String;
+	public final fun getRoutines ()Ljava/util/List;
+	public final fun getSubsystems ()Ljava/util/List;
+	public final fun getSuperstructures ()Ljava/util/List;
+	public final fun getTuningComponents ()Ljava/util/List;
+	public final fun getTuningProfiles ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

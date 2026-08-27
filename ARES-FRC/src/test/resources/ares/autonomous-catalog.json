@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "projectId": "team23247-marvin-xix-test",
+  "revision": 1,
+  "defaultEntryId": "sim-drive-and-shoot",
+  "entries": [
+    {"entryId":"sim-drive-and-shoot","displayName":"Simulation Drive and Shoot","description":"Test-only drive, prepare, collect, feed, and stop fixture.","routineId":"sim-drive-and-shoot","startingPose":{"xMeters":2.0,"yMeters":2.0,"headingRadians":0.0},"authoredAlliance":"BLUE","mirrorForOppositeAlliance":true,"sortOrder":0,"enabled":true}
+  ]
+}

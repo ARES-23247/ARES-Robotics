@@ -1,0 +1,7 @@
+.gradle/
+.git/
+build/
+app/build/
+gateway/build/
+shared/build/
+gradle.properties

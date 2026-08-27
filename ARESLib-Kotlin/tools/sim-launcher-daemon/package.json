@@ -1,0 +1,11 @@
+{
+  "name": "ares-sim-launcher-daemon",
+  "version": "1.0.0",
+  "description": "Local Gradle compile and run daemon for ARES-Scope Desktop Simulator",
+  "main": "daemon.js",
+  "private": true,
+  "dependencies": {
+    "selfsigned": "^5.5.0",
+    "ws": "^8.18.0"
+  }
+}

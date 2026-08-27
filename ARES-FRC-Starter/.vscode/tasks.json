@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ARES: Verify FRC project",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": ["verifyAresProject", "test"],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "ARES: Build FRC robot",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": ["build"],
+      "group": "build",
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "ARES: Run FRC simulation",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": ["simulateJava"],
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "ARES: Deploy to RoboRIO",
+      "type": "shell",
+      "command": "${workspaceFolder}/gradlew",
+      "windows": { "command": "${workspaceFolder}\\gradlew.bat" },
+      "args": ["deploy"],
+      "problemMatcher": ["$gradle"]
+    }
+  ]
+}

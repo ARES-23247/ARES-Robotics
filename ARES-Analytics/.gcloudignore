@@ -1,0 +1,9 @@
+.gcloudignore
+.git
+.gitignore
+.gradle
+gradle.properties
+app/build
+gateway/build
+shared/build
+build

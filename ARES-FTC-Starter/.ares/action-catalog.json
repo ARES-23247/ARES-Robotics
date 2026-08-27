@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ares-ftc-starter",
+  "revision": 1,
+  "actions": [
+    {
+      "key": "drivetrain.recoverNeutral",
+      "displayName": "Recover drive after a fault",
+      "description": "Requires released drive controls, writes neutral to all four motors, then clears the drive fault latch.",
+      "category": "Drive safety",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    },
+    {
+      "key": "drivetrain.headingLock.enable",
+      "displayName": "Enable rotation lock",
+      "description": "Holds the current CCW-positive heading whenever the driver releases the turn stick.",
+      "category": "Drive assists",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    },
+    {
+      "key": "drivetrain.headingLock.disable",
+      "displayName": "Disable rotation lock",
+      "description": "Returns rotation control entirely to the driver and releases the saved heading target.",
+      "category": "Drive assists",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    },
+    {
+      "key": "drivetrain.headingLock.toggle",
+      "displayName": "Toggle rotation lock",
+      "description": "Switches automatic heading hold on or off; rotation lock starts enabled.",
+      "category": "Drive assists",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    },
+    {
+      "key": "drivetrain.positionHold.enable",
+      "displayName": "Enable anti-push position hold",
+      "description": "Uses fresh, valid EKF feedback to resist displacement after the translation stick returns to neutral.",
+      "category": "Drive assists",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    },
+    {
+      "key": "drivetrain.positionHold.disable",
+      "displayName": "Disable anti-push position hold",
+      "description": "Releases the saved field position and leaves normal driver and rotation-lock control active.",
+      "category": "Drive assists",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    },
+    {
+      "key": "drivetrain.positionHold.toggle",
+      "displayName": "Toggle anti-push position hold",
+      "description": "Switches EKF position hold on or off; it remains fail-closed when pose feedback is stale or invalid.",
+      "category": "Drive assists",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    }
+  ],
+  "conditions": []
+}

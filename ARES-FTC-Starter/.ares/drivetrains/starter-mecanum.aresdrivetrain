@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "uid": "ares.starter.drivebase.mecanum",
+  "drivebaseId": "starter-mecanum",
+  "displayName": "Starter FTC mecanum",
+  "description": "Generic four-motor FTC mecanum model for desktop simulation. Hardware names and measurements must be reviewed before physical use.",
+  "kind": "FTC_MECANUM",
+  "platform": "FTC",
+  "components": [
+    {"uid":"ftc.drivebase","displayName":"Mecanum drivebase","role":"OTHER","hardwareId":"mecanum"},
+    {"uid":"ftc.motor.fl","displayName":"Front-left drive motor","role":"DRIVE_MOTOR","hardwareId":"fl","controllerModel":"REV Control Hub DcMotorEx","encoderModel":"Integrated quadrature encoder","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":0.18,"yMeters":0.18,"inverted":false,"required":true},
+    {"uid":"ftc.motor.fr","displayName":"Front-right drive motor","role":"DRIVE_MOTOR","hardwareId":"fr","controllerModel":"REV Control Hub DcMotorEx","encoderModel":"Integrated quadrature encoder","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":0.18,"yMeters":-0.18,"inverted":true,"required":true},
+    {"uid":"ftc.motor.rl","displayName":"Rear-left drive motor","role":"DRIVE_MOTOR","hardwareId":"rl","controllerModel":"REV Control Hub DcMotorEx","encoderModel":"Integrated quadrature encoder","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":-0.18,"yMeters":0.18,"inverted":false,"required":true},
+    {"uid":"ftc.motor.rr","displayName":"Rear-right drive motor","role":"DRIVE_MOTOR","hardwareId":"rr","controllerModel":"REV Control Hub DcMotorEx","encoderModel":"Integrated quadrature encoder","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"xMeters":-0.18,"yMeters":-0.18,"inverted":true,"required":true},
+    {"uid":"ftc.localization.imu","displayName":"Control Hub IMU","role":"GYRO","hardwareId":"imu","controllerModel":"REV Control Hub IMU","required":true}
+  ],
+  "modules": [],
+  "geometry": {
+    "wheelDiameterMeters": 0.096,
+    "trackWidthMeters": 0.36,
+    "wheelBaseMeters": 0.36,
+    "driveGearRatio": 1.0,
+    "maxLinearSpeedMetersPerSecond": 1.0,
+    "maxAngularSpeedRadiansPerSecond": 2.7777777777777777
+  },
+  "localization": {
+    "primaryOdometry": {
+      "uid": "ftc.localization.wheel-imu",
+      "source": "WHEEL_ENCODERS_IMU",
+      "componentUids": ["ftc.motor.fl", "ftc.motor.fr", "ftc.motor.rl", "ftc.motor.rr", "ftc.localization.imu"],
+      "implementationClassName": "com.areslib.ftc.drivetrain.MecanumHardwareIO"
+    },
+    "headingSourceUid": "ftc.localization.wheel-imu",
+    "visionFusion": [],
+    "headingCcwPositive": true,
+    "cachedInputsRequired": true
+  },
+  "control": {
+    "supported": ["OPEN_LOOP", "WHEEL_VELOCITY", "CHASSIS_VELOCITY", "TRAJECTORY"],
+    "defaultControl": "CHASSIS_VELOCITY",
+    "fieldCentric": true
+  },
+  "safety": {
+    "safeNeutralRequired": true,
+    "configurationHealthRequired": true,
+    "staleFeedbackTimeoutMs": 250,
+    "currentValidityRequired": true,
+    "faultLatchingRequired": true,
+    "explicitNeutralRecoveryRequired": true,
+    "disabledOutputIsNeutral": true,
+    "enabledNeutralMode": "BRAKE",
+    "disabledPolicy": "FORCE_NEUTRAL_BRAKE",
+    "zeroAllocationPeriodicRequired": true
+  },
+  "simulation": {
+    "modelClassName": "com.areslib.sim.model.MecanumRobotDouble",
+    "adapterClassName": "com.areslib.sim.model.MecanumRobotDouble",
+    "usesPhysicalGeometry": true,
+    "usesCanonicalProfile": true,
+    "behavioralParityRequired": true
+  },
+  "parameters": [
+    {"uid":"ftc.drive.ticks-per-meter","key":"drive.ticksPerMeter","componentUid":"ftc.drivebase","displayName":"Encoder ticks per meter","description":"Calibrated wheel-encoder conversion used by hardware, fallback odometry, and simulation.","type":"DOUBLE","unit":"ticks/m","minimum":1.0,"maximum":100000.0,"defaultValue":{"doubleValue":2000.0},"enumOptions":[],"applyPolicy":"CALIBRATION_ONLY"},
+    {"uid":"ftc.drive.closed-loop-velocity","key":"drive.closedLoopVelocity","componentUid":"ftc.drivebase","displayName":"Closed-loop wheel velocity","description":"Uses FTC SDK encoder velocity control; all-zero custom PIDF retains the motor-controller defaults.","type":"BOOLEAN","defaultValue":{"booleanValue":true},"enumOptions":[],"applyPolicy":"RESTART_REQUIRED"},
+    {"uid":"ftc.drive.feedforward.ks","key":"drive.feedforwardKs","componentUid":"ftc.drivebase","displayName":"Drive static feedforward","description":"Uncalibrated simulation placeholder; measure the voltage needed to overcome drivetrain static friction before physical use.","type":"DOUBLE","unit":"V","minimum":0.0,"maximum":12.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.feedforward.kv","key":"drive.feedforwardKv","componentUid":"ftc.drivebase","displayName":"Drive velocity feedforward","description":"Uncalibrated simulation placeholder; measure volts per meter per second before physical use.","type":"DOUBLE","unit":"V/(m/s)","minimum":0.000001,"maximum":20.0,"defaultValue":{"doubleValue":12.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.feedforward.ka","key":"drive.feedforwardKa","componentUid":"ftc.drivebase","displayName":"Drive acceleration feedforward","description":"Uncalibrated simulation placeholder; measure volts per meter per second squared before physical use.","type":"DOUBLE","unit":"V/(m/s^2)","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.motor.kp","key":"drive.motorKp","componentUid":"ftc.drivebase","displayName":"Wheel velocity proportional gain","description":"FTC SDK wheel-velocity proportional gain used only when closed-loop velocity is enabled.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.motor.ki","key":"drive.motorKi","componentUid":"ftc.drivebase","displayName":"Wheel velocity integral gain","description":"FTC SDK wheel-velocity integral gain used only when closed-loop velocity is enabled.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.motor.kd","key":"drive.motorKd","componentUid":"ftc.drivebase","displayName":"Wheel velocity derivative gain","description":"FTC SDK wheel-velocity derivative gain used only when closed-loop velocity is enabled.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.motor.kf","key":"drive.motorKf","componentUid":"ftc.drivebase","displayName":"Wheel velocity feedforward gain","description":"FTC SDK wheel-velocity feedforward gain used when closed-loop velocity is enabled.","type":"DOUBLE","minimum":0.0,"maximum":100.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"DISABLED_ONLY"},
+    {"uid":"ftc.drive.heading.kp","key":"drive.headingKp","componentUid":"ftc.drivebase","displayName":"Heading proportional gain","description":"Conservative simulation-first field-centric heading-hold proportional gain; verify on restrained hardware before competition use.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":1.8},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.heading.ki","key":"drive.headingKi","componentUid":"ftc.drivebase","displayName":"Heading integral gain","description":"Field-centric heading-hold integral gain.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.heading.kd","key":"drive.headingKd","componentUid":"ftc.drivebase","displayName":"Heading derivative gain","description":"Conservative simulation-first field-centric heading-hold derivative gain; verify on restrained hardware before competition use.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.08},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.heading.deadzone","key":"drive.headingDeadzoneDeg","componentUid":"ftc.drivebase","displayName":"Heading deadzone","description":"Angular error ignored by heading hold.","type":"DOUBLE","unit":"deg","minimum":0.0,"maximum":30.0,"defaultValue":{"doubleValue":3.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.heading.max-output","key":"drive.headingMaxOutputLimit","componentUid":"ftc.drivebase","displayName":"Rotation-lock maximum output","description":"Maximum fraction of rotational output that automatic heading hold may command.","type":"DOUBLE","minimum":0.05,"maximum":1.0,"defaultValue":{"doubleValue":0.4},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.position-hold.kp","key":"drive.positionHoldKp","componentUid":"ftc.drivebase","displayName":"Anti-push proportional gain","description":"Translation correction gain used while anti-push position hold is engaged.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":1.5},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.position-hold.ki","key":"drive.positionHoldKi","componentUid":"ftc.drivebase","displayName":"Anti-push integral gain","description":"Translation integral gain used while anti-push position hold is engaged.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.position-hold.kd","key":"drive.positionHoldKd","componentUid":"ftc.drivebase","displayName":"Anti-push derivative gain","description":"Translation derivative gain used while anti-push position hold is engaged.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.1},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.position-hold.deadzone","key":"drive.positionHoldDeadzoneMeters","componentUid":"ftc.drivebase","displayName":"Anti-push deadzone","description":"Position error below this distance is treated as settled.","type":"DOUBLE","unit":"m","minimum":0.0,"maximum":0.5,"defaultValue":{"doubleValue":0.02},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.position-hold.max-output","key":"drive.positionHoldMaxOutputLimit","componentUid":"ftc.drivebase","displayName":"Anti-push maximum output","description":"Maximum fraction of translation output that position hold may command.","type":"DOUBLE","minimum":0.05,"maximum":1.0,"defaultValue":{"doubleValue":0.5},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.path-translation.kp","key":"drive.pathTranslationKp","componentUid":"ftc.drivebase","displayName":"Path translation proportional gain","description":"Uncalibrated translation feedback gain for autonomous path following.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.path-translation.kd","key":"drive.pathTranslationKd","componentUid":"ftc.drivebase","displayName":"Path translation derivative gain","description":"Uncalibrated translation derivative gain for autonomous path following.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.path-rotation.kp","key":"drive.pathRotationKp","componentUid":"ftc.drivebase","displayName":"Path rotation proportional gain","description":"Uncalibrated heading feedback gain for autonomous path following.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.path-rotation.kd","key":"drive.pathRotationKd","componentUid":"ftc.drivebase","displayName":"Path rotation derivative gain","description":"Uncalibrated heading derivative gain for autonomous path following.","type":"DOUBLE","minimum":0.0,"maximum":20.0,"defaultValue":{"doubleValue":0.0},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.path.velocity-scale","key":"drive.pathVelocityScale","componentUid":"ftc.drivebase","displayName":"Autonomous velocity scale","description":"Conservative fraction of modeled speed available to simulation trajectories.","type":"DOUBLE","minimum":0.05,"maximum":1.0,"defaultValue":{"doubleValue":0.25},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.drive.path.acceleration-limit","key":"drive.pathAccelerationLimit","componentUid":"ftc.drivebase","displayName":"Autonomous acceleration limit","description":"Conservative simulation trajectory acceleration bound.","type":"DOUBLE","unit":"m/s^2","minimum":0.05,"maximum":20.0,"defaultValue":{"doubleValue":0.5},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.localization.ekf.qx","key":"localization.ekfQx","componentUid":"ftc.localization.imu","displayName":"EKF X process noise","description":"Pose-estimator X-axis process variance.","type":"DOUBLE","unit":"m^2","minimum":0.0,"maximum":10.0,"defaultValue":{"doubleValue":0.02},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.localization.ekf.qy","key":"localization.ekfQy","componentUid":"ftc.localization.imu","displayName":"EKF Y process noise","description":"Pose-estimator Y-axis process variance.","type":"DOUBLE","unit":"m^2","minimum":0.0,"maximum":10.0,"defaultValue":{"doubleValue":0.02},"enumOptions":[],"applyPolicy":"LIVE_SAFE"},
+    {"uid":"ftc.localization.ekf.qtheta","key":"localization.ekfQtheta","componentUid":"ftc.localization.imu","displayName":"EKF heading process noise","description":"Pose-estimator heading process variance.","type":"DOUBLE","unit":"rad^2","minimum":0.0,"maximum":10.0,"defaultValue":{"doubleValue":0.02},"enumOptions":[],"applyPolicy":"LIVE_SAFE"}
+  ],
+  "calibrationProvenance": [],
+  "canonicalProfileUid": "ares.starter.profile.simulation"
+}

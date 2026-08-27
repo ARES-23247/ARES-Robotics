@@ -1,0 +1,49 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: '23 5 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: frc-starter-codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL Java/Kotlin
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x gradlew
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          config: |
+            paths:
+              - src
+
+      - name: Compile starter sources
+        run: ./gradlew classes testClasses --no-parallel --no-daemon --console=plain
+
+      - uses: github/codeql-action/analyze@v4

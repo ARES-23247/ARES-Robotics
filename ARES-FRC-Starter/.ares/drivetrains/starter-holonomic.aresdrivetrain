@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "uid": "ares.starter.frc.drivebase",
+  "drivebaseId": "starter-ctre-swerve",
+  "displayName": "Starter FRC CTRE swerve",
+  "description": "Simulation-ready four-module CTRE swerve. The bundled CAN IDs are unique simulation placeholders; import and review the team's CTRE Tuner configuration before physical deployment.",
+  "kind": "FRC_CTRE_SWERVE",
+  "platform": "FRC",
+  "components": [
+    {"uid":"frc.drivebase","displayName":"Starter CTRE swerve drivebase","role":"OTHER","hardwareId":"rio","required":true},
+    {"uid":"frc.drive.front-left","displayName":"Front-left drive motor","role":"DRIVE_MOTOR","hardwareId":"1","moduleUid":"module.front-left","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.front-left","displayName":"Front-left steer motor","role":"STEER_MOTOR","hardwareId":"2","moduleUid":"module.front-left","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.front-left","displayName":"Front-left absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"3","moduleUid":"module.front-left","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.front-right","displayName":"Front-right drive motor","role":"DRIVE_MOTOR","hardwareId":"4","moduleUid":"module.front-right","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.front-right","displayName":"Front-right steer motor","role":"STEER_MOTOR","hardwareId":"5","moduleUid":"module.front-right","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.front-right","displayName":"Front-right absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"6","moduleUid":"module.front-right","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.rear-left","displayName":"Rear-left drive motor","role":"DRIVE_MOTOR","hardwareId":"7","moduleUid":"module.rear-left","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.rear-left","displayName":"Rear-left steer motor","role":"STEER_MOTOR","hardwareId":"8","moduleUid":"module.rear-left","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.rear-left","displayName":"Rear-left absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"9","moduleUid":"module.rear-left","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.rear-right","displayName":"Rear-right drive motor","role":"DRIVE_MOTOR","hardwareId":"10","moduleUid":"module.rear-right","controllerModel":"TalonFX (simulation placeholder)","currentMeasurementRequired":true,"currentMeasurementAvailable":true,"inverted":false,"required":true},
+    {"uid":"frc.steer.rear-right","displayName":"Rear-right steer motor","role":"STEER_MOTOR","hardwareId":"11","moduleUid":"module.rear-right","controllerModel":"TalonFX (simulation placeholder)","required":true},
+    {"uid":"frc.encoder.rear-right","displayName":"Rear-right absolute encoder","role":"ABSOLUTE_ENCODER","hardwareId":"12","moduleUid":"module.rear-right","encoderModel":"CANcoder (simulation placeholder)","required":true},
+    {"uid":"frc.drive.gyro","displayName":"Pigeon 2 gyro","role":"GYRO","hardwareId":"13","controllerModel":"Pigeon 2 (simulation placeholder)","required":true}
+  ],
+  "modules": [
+    {"uid":"module.front-left","displayName":"Front-left module","componentUids":["frc.drive.front-left","frc.steer.front-left","frc.encoder.front-left"],"xMeters":0.35,"yMeters":0.3},
+    {"uid":"module.front-right","displayName":"Front-right module","componentUids":["frc.drive.front-right","frc.steer.front-right","frc.encoder.front-right"],"xMeters":0.35,"yMeters":-0.3},
+    {"uid":"module.rear-left","displayName":"Rear-left module","componentUids":["frc.drive.rear-left","frc.steer.rear-left","frc.encoder.rear-left"],"xMeters":-0.35,"yMeters":0.3},
+    {"uid":"module.rear-right","displayName":"Rear-right module","componentUids":["frc.drive.rear-right","frc.steer.rear-right","frc.encoder.rear-right"],"xMeters":-0.35,"yMeters":-0.3}
+  ],
+  "geometry": {
+    "wheelDiameterMeters": 0.1016,
+    "trackWidthMeters": 0.6,
+    "wheelBaseMeters": 0.7,
+    "driveGearRatio": 6.75,
+    "steerGearRatio": 12.8,
+    "maxLinearSpeedMetersPerSecond": 2.0,
+    "maxAngularSpeedRadiansPerSecond": 4.0
+  },
+  "localization": {
+    "primaryOdometry": {
+      "uid": "frc.localization.ctre",
+      "source": "CTRE_VENDOR",
+      "componentUids": ["frc.drive.front-left","frc.steer.front-left","frc.encoder.front-left","frc.drive.front-right","frc.steer.front-right","frc.encoder.front-right","frc.drive.rear-left","frc.steer.rear-left","frc.encoder.rear-left","frc.drive.rear-right","frc.steer.rear-right","frc.encoder.rear-right","frc.drive.gyro"],
+      "implementationClassName": "org.aresfirst.starter.frc.StarterDriveSimulation"
+    },
+    "headingSourceUid": "frc.drive.gyro",
+    "visionFusion": [],
+    "headingCcwPositive": true,
+    "cachedInputsRequired": true
+  },
+  "control": {
+    "supported": ["OPEN_LOOP", "CHASSIS_VELOCITY", "TRAJECTORY"],
+    "defaultControl": "CHASSIS_VELOCITY",
+    "fieldCentric": true
+  },
+  "safety": {
+    "safeNeutralRequired": true,
+    "configurationHealthRequired": true,
+    "staleFeedbackTimeoutMs": 250,
+    "currentValidityRequired": true,
+    "faultLatchingRequired": true,
+    "explicitNeutralRecoveryRequired": true,
+    "disabledOutputIsNeutral": true,
+    "enabledNeutralMode": "BRAKE",
+    "disabledPolicy": "FORCE_NEUTRAL_BRAKE",
+    "zeroAllocationPeriodicRequired": true
+  },
+  "simulation": {
+    "modelClassName": "org.aresfirst.starter.frc.StarterDriveSimulation",
+    "adapterClassName": "org.aresfirst.starter.frc.StarterDriveSimulation",
+    "usesPhysicalGeometry": true,
+    "usesCanonicalProfile": true,
+    "behavioralParityRequired": true
+  },
+  "parameters": [
+    {
+      "uid": "frc.starter.path.translation-kp",
+      "key": "drive.pathTranslationKp",
+      "componentUid": "frc.drivebase",
+      "displayName": "Path translation proportional gain",
+      "description": "How strongly autonomous translation corrects position error. Start in simulation and change one gain at a time.",
+      "type": "DOUBLE",
+      "minimum": 0.0,
+      "maximum": 20.0,
+      "defaultValue": {"doubleValue": 1.8},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.translation-ki",
+      "key": "drive.pathTranslationKi",
+      "componentUid": "frc.drivebase",
+      "displayName": "Path translation integral gain",
+      "description": "Slow correction for persistent translation error. Leave at zero until proportional response is stable.",
+      "type": "DOUBLE",
+      "minimum": 0.0,
+      "maximum": 10.0,
+      "defaultValue": {"doubleValue": 0.0},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.translation-kd",
+      "key": "drive.pathTranslationKd",
+      "componentUid": "frc.drivebase",
+      "displayName": "Path translation derivative gain",
+      "description": "Damps translation as measured motion changes. Increase conservatively only when simulation shows overshoot.",
+      "type": "DOUBLE",
+      "minimum": 0.0,
+      "maximum": 10.0,
+      "defaultValue": {"doubleValue": 0.15},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.rotation-kp",
+      "key": "drive.pathRotationKp",
+      "componentUid": "frc.drivebase",
+      "displayName": "Path heading proportional gain",
+      "description": "How strongly autonomous driving corrects the shortest wrapped heading error.",
+      "type": "DOUBLE",
+      "minimum": 0.0,
+      "maximum": 20.0,
+      "defaultValue": {"doubleValue": 3.0},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.rotation-ki",
+      "key": "drive.pathRotationKi",
+      "componentUid": "frc.drivebase",
+      "displayName": "Path heading integral gain",
+      "description": "Slow correction for persistent heading error. Leave at zero until proportional response is stable.",
+      "type": "DOUBLE",
+      "minimum": 0.0,
+      "maximum": 10.0,
+      "defaultValue": {"doubleValue": 0.0},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.rotation-kd",
+      "key": "drive.pathRotationKd",
+      "componentUid": "frc.drivebase",
+      "displayName": "Path heading derivative gain",
+      "description": "Damps heading correction using measured rotation. Increase conservatively only when simulation shows overshoot.",
+      "type": "DOUBLE",
+      "minimum": 0.0,
+      "maximum": 10.0,
+      "defaultValue": {"doubleValue": 0.2},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.velocity-scale",
+      "key": "drive.pathVelocityScale",
+      "componentUid": "frc.drivebase",
+      "displayName": "Autonomous velocity scale",
+      "description": "Conservative fraction of the modeled maximum speed available to starter trajectories.",
+      "type": "DOUBLE",
+      "minimum": 0.05,
+      "maximum": 1.0,
+      "defaultValue": {"doubleValue": 0.5},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    },
+    {
+      "uid": "frc.starter.path.acceleration-limit",
+      "key": "drive.pathAccelerationLimit",
+      "componentUid": "frc.drivebase",
+      "displayName": "Autonomous acceleration limit",
+      "description": "Maximum rate of translation command change used by starter trajectories.",
+      "type": "DOUBLE",
+      "unit": "m/s^2",
+      "minimum": 0.05,
+      "maximum": 20.0,
+      "defaultValue": {"doubleValue": 2.0},
+      "enumOptions": [],
+      "applyPolicy": "LIVE_SAFE"
+    }
+  ],
+  "calibrationProvenance": [],
+  "ctreImport": {
+    "vendorSourcePath": "src/main/java/frc/robot/generated/TunerConstants.java",
+    "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "generatorName": "ARES simulation placeholder",
+    "generatorVersion": "9.11.0",
+    "drivetrainConstantsClassName": "frc.robot.generated.TunerConstants",
+    "canBusName": "rio",
+    "ownership": "READ_ONLY_VENDOR"
+  },
+  "canonicalProfileUid": "ares.starter.frc.profile.simulation"
+}

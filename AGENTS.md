@@ -158,7 +158,7 @@ FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `
   - `test/tools/SubsystemGenerator.kt` — interactive 6-file subsystem scaffolder following the Redux pattern
 - **Canonical autonomous assets:** `.ares/routines/`, `.ares/autonomous-catalog.json`, `.ares/action-catalog.json`, and the generated project source. Loose PathPlanner/`.aresauto` deployment is unsupported.
 - **`simulator/` module** (desktop JVM, JDK 21): shares `TeamCode/src/main/java`, runs real OpModes against mocks. `runSim` → `DesktopSimLauncher --headless`; `CalibrationVerificationApp` exercises all SysId routines.
-- **`.ares-robot.json`** — team/season/robot identity. **`ares_tuning.json`** — live-tuning config.
+- **`.ares/project.json`** — canonical team/season/robot, authoring-model, coordinate, footprint, and runtime identity. Older split identity files are unsupported. **`ares_tuning.json`** — live-tuning config.
 - **Build/deploy:** `.\gradlew.bat :TeamCode:assembleDebug`; deploy via `adb connect 192.168.43.1:5555` then `adb install -r`. Default FTC connection `192.168.43.1:5810`.
 
 ### ARES-FRC (`C:\Users\david\dev\robotics\ares\ARES-FRC`)

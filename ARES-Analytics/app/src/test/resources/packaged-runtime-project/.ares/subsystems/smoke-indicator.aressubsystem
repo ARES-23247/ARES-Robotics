@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 11,
+  "documentId": "smoke-indicator",
+  "uid": "smoke-indicator",
+  "displayName": "Smoke indicator",
+  "kotlinTypeName": "SmokeIndicator",
+  "description": "Exercises packaged subsystem decoding.",
+  "platform": "FTC",
+  "revision": 1,
+  "hardware": [
+    {
+      "hardwareId": "indicator",
+      "uid": "indicator",
+      "displayName": "Smoke indicator",
+      "kind": "POSITIONAL_SERVO",
+      "connection": {"hardwareMapName": "smokeIndicator"},
+      "measurements": [],
+      "required": false,
+      "safeOutput": 0.0
+    }
+  ],
+  "stateFields": [
+    {
+      "fieldId": "position",
+      "uid": "position",
+      "displayName": "Indicator position",
+      "type": "DOUBLE",
+      "role": "TARGET",
+      "unit": "normalized servo position",
+      "defaultNumber": 0.0,
+      "minimum": 0.0,
+      "maximum": 1.0
+    }
+  ],
+  "controlLoops": [
+    {
+      "loopId": "positionOutput",
+      "uid": "positionOutput",
+      "displayName": "Indicator output",
+      "strategy": "SERVO_POSITION",
+      "actuatorId": "indicator",
+      "targetFieldId": "position",
+      "feedforward": {"kind": "NONE"},
+      "minimumOutput": 0.0,
+      "maximumOutput": 1.0
+    }
+  ],
+  "tuningParameters": [],
+  "template": "SIMPLE_ACTUATOR",
+  "implementation": {
+    "kind": "GENERATED_STARTER",
+    "ownership": "GENERATED_STARTER",
+    "sourceFiles": [],
+    "simulation": {"support": "GENERATED_MOCK"},
+    "teaching": {
+      "level": "BEGINNER",
+      "summary": "Packaged runtime verification fixture.",
+      "concepts": ["project document decoding"]
+    }
+  },
+  "capabilityActionKeys": [],
+  "interlocks": [],
+  "safety": {
+    "feedbackTimeoutMs": null,
+    "homing": {"method": "NONE"},
+    "requiresCalibration": false,
+    "requiresConfigurationHealth": false,
+    "requiresCurrentMonitoring": false,
+    "latchOutputFaults": false,
+    "requiresExplicitNeutralRecovery": false,
+    "telemetryEnabled": true,
+    "zeroAllocationPeriodic": true
+  },
+  "requiredAtStartup": false,
+  "generateMockIo": true,
+  "generateTest": true
+}

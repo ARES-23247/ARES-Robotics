@@ -1,0 +1,58 @@
+/**
+ * Top-level build file for ftc_app project.
+ *
+ * It is extraordinarily rare that you will ever need to edit this file.
+ */
+
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        // Note for FTC Teams: Do not modify this yourself.
+        classpath 'com.android.tools.build:gradle:8.7.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10'
+        classpath 'org.jetbrains.kotlinx:kover-gradle-plugin:0.9.9'
+    }
+}
+
+def aresVersionPolicy = [
+    rootProject.file('../build-logic/ares-versioning.gradle'),
+    rootProject.file('build-logic/ares-versioning.gradle'),
+].find { it.isFile() }
+if (aresVersionPolicy == null) {
+    throw new GradleException('ARES build policy is missing; use the source monorepo or a generated standalone mirror.')
+}
+apply from: aresVersionPolicy
+
+// This is now required because aapt2 has to be downloaded from the
+// google() repository beginning with version 3.2 of the Android Gradle Plugin
+def aresRepositoryUrl = providers.gradleProperty('aresRepository').orNull
+allprojects {
+    repositories {
+        if (aresRepositoryUrl != null && !aresRepositoryUrl.trim().isEmpty()) {
+            maven { url uri(aresRepositoryUrl) }
+        }
+        mavenCentral()
+        maven { url 'https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven' }
+        google()
+        maven { url 'https://frcmaven.wpi.edu/artifactory/release/' }
+        maven { url 'https://maven.ctr-electronics.com/release/' }
+        maven { url 'https://repo.dairy.foundation/releases' }
+    }
+    configurations.all {
+        resolutionStrategy {
+            cacheChangingModulesFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
+            force 'org.jetbrains.kotlin:kotlin-stdlib:2.4.10'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.10'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.10'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.4.10'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}

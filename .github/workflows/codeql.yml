@@ -1,0 +1,75 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 5 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: monorepo-codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL Java/Kotlin monorepo
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          config: |
+            paths:
+              - ARESLib-Kotlin
+              - ARES-FTC/TeamCode/src
+              - ARES-FTC/simulator/src
+              - ARES-FRC/src
+              - ARES-FTC-Starter/TeamCode/src
+              - ARES-FTC-Starter/simulator/src
+              - ARES-FRC-Starter/src
+              - ARES-Analytics/app/src
+              - ARES-Analytics/shared/src
+              - ARES-Analytics/gateway/src
+            paths-ignore:
+              - ARES-FTC/FtcRobotController/**
+              - ARES-FTC-Starter/FtcRobotController/**
+              - '**/build/**'
+
+      - name: Compile all ARES-owned source boundaries
+        shell: bash
+        run: |
+          base="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
+          candidate="${base}-rc.codeql.${GITHUB_SHA::12}"
+          ./ARESLib-Kotlin/gradlew -p ARESLib-Kotlin classes testClasses publishReleaseValidation \
+            -ParesVersion="$candidate" --no-parallel --no-daemon --console=plain
+          repository="file://${GITHUB_WORKSPACE}/ARESLib-Kotlin/build/release-repository"
+          ./ARES-FTC/gradlew -p ARES-FTC :TeamCode:assembleDebug :simulator:compileKotlin \
+            -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
+          ./ARES-FRC/gradlew -p ARES-FRC classes testClasses \
+            -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
+          ./ARES-FTC-Starter/gradlew -p ARES-FTC-Starter :TeamCode:assembleDebug :simulator:compileKotlin \
+            -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
+          ./ARES-FRC-Starter/gradlew -p ARES-FRC-Starter classes testClasses \
+            -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
+          ./ARES-Analytics/gradlew -p ARES-Analytics :shared:classes :app:classes :gateway:classes \
+            -ParesVersion="$candidate" -ParesRepository="$repository" --no-parallel --no-daemon --console=plain
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4

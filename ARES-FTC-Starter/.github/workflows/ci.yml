@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ftc-starter-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build, test, and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x gradlew
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify pinned immutable ARES release is available
+        shell: bash
+        run: |
+          version="$(sed -n 's/^aresVersion=//p' gradle.properties)"
+          test -n "$version"
+          curl --fail --silent --show-error --head \
+            "https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven/org/aresfirst/ares/ares-bom/$version/ares-bom-$version.pom"
+
+      - name: Generate, verify, test, and assemble
+        run: >-
+          ./gradlew generateAresProject verifyAresProject
+          :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
+          --refresh-dependencies --no-parallel --no-daemon --console=plain
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ares-ftc-starter-debug-apk
+          path: TeamCode/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  headless-drive-verification:
+    name: Headless drive verification
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run deterministic drivetrain mission
+        run: >-
+          .\gradlew.bat :TeamCode:runVerification
+          --refresh-dependencies --no-parallel --no-daemon --console=plain

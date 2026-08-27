@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 2,
+  "revision": 125,
+  "id": "ftc-2025-2026-decode",
+  "name": "2025-2026 DECODE",
+  "gameYear": "2025-2026",
+  "fieldType": "ftc",
+  "widthMeters": 3.6576,
+  "heightMeters": 3.6576,
+  "xAxisDirection": "up",
+  "yAxisDirection": "left",
+  "redDriverStation": "south",
+  "blueDriverStation": "north",
+  "allianceSymmetry": "mirrored",
+  "obstacles": [
+    {
+      "id": "poly_1783296118778",
+      "name": "Polygon Obstacle 1",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.1,
+      "height": 0.1,
+      "isBlocking": true,
+      "obstacleType": "blocking",
+      "shape": "polygon",
+      "points": [
+        {
+          "x": -1.8231846478418445,
+          "y": -1.2069612904975657
+        },
+        {
+          "x": -1.1723287071450612,
+          "y": -1.6651638641546016
+        },
+        {
+          "x": -0.005994838790502404,
+          "y": -1.6859912439773326
+        },
+        {
+          "x": -7.880482240579956E-4,
+          "y": -1.80054194178083
+        },
+        {
+          "x": -1.8231846478418445,
+          "y": -1.80054194178083
+        },
+        {
+          "x": -1.817977801186498,
+          "y": -1.1965477093646768
+        }
+      ],
+      "friction": 0.5,
+      "restitution": 0.3,
+      "rotation": 0.0,
+      "locked": false,
+      "color": "#1E88E5"
+    },
+    {
+      "id": "poly_1783296160237_-1922455013",
+      "name": "Polygon Obstacle 1 Mirrored Y",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.1,
+      "height": 0.1,
+      "isBlocking": true,
+      "obstacleType": "blocking",
+      "shape": "polygon",
+      "points": [
+        {
+          "x": -1.808548387372866,
+          "y": 1.1988118564477197
+        },
+        {
+          "x": -1.1576924466760827,
+          "y": 1.6570144301047562
+        },
+        {
+          "x": 0.008641421678476152,
+          "y": 1.677841809927487
+        },
+        {
+          "x": 0.01384821224492056,
+          "y": 1.7923925077309846
+        },
+        {
+          "x": -1.808548387372866,
+          "y": 1.7923925077309846
+        },
+        {
+          "x": -1.8033415407175195,
+          "y": 1.1883982753148308
+        }
+      ],
+      "friction": 0.5,
+      "restitution": 0.3,
+      "rotation": 0.0,
+      "locked": false,
+      "color": "#E53935"
+    }
+  ],
+  "apriltags": [
+    {
+      "id": 20,
+      "name": "Blue target 20",
+      "family": "36h11",
+      "sizeMeters": 0.1651,
+      "x": -1.48266658,
+      "y": -1.4133195,
+      "z": 0.7493,
+      "roll": -90.0000032,
+      "pitch": 0.0,
+      "yaw": 144.0499447,
+      "editorId": "decode_blue_target_20",
+      "locked": true
+    },
+    {
+      "id": 24,
+      "name": "Red target 24",
+      "family": "36h11",
+      "sizeMeters": 0.1651,
+      "x": -1.48266658,
+      "y": 1.4133195,
+      "z": 0.7493,
+      "roll": -90.0000032,
+      "pitch": 0.0,
+      "yaw": 35.950059,
+      "editorId": "decode_red_target_24",
+      "locked": true
+    }
+  ],
+  "elementTypes": [
+    {
+      "id": "game-piece-decode-ball",
+      "name": "Decode (Ball)",
+      "shape": "sphere",
+      "width": 0.15,
+      "height": 0.15,
+      "depth": 0.15,
+      "diameter": 0.15,
+      "color": "#FFFFFF",
+      "massKg": 0.24,
+      "movable": true,
+      "friction": 0.6,
+      "restitution": 0.3
+    }
+  ],
+  "elements": [
+    {
+      "id": "piece_1783299552893",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 1",
+      "x": -0.30301517397165306,
+      "y": -1.2213758319616326,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783299553947",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 2",
+      "x": -0.29879282861948014,
+      "y": -1.0726443260908118,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354754245",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 3",
+      "x": -0.29262579350033746,
+      "y": 1.0837619236495843,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354755536",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 4",
+      "x": -0.2973738133907318,
+      "y": 1.2151571296155452,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354759928",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 5",
+      "x": -0.309449964761734,
+      "y": 1.3540322721004485,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354760991",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 6",
+      "x": 0.32991468734107937,
+      "y": 1.3636244720546518,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354761793",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 7",
+      "x": 1.615995960385771,
+      "y": 1.741646108013809,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354762625",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 8",
+      "x": 0.313376674434403,
+      "y": 1.0848039492208044,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354763876",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 9",
+      "x": 0.9214142058044683,
+      "y": 1.3428639255580483,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354764839",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 10",
+      "x": 0.916182059230051,
+      "y": 1.2085733667016068,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354765640",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 11",
+      "x": 0.9427470881317275,
+      "y": 1.0870583525567783,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354767053",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 12",
+      "x": 0.9184713944792751,
+      "y": -1.085339426994325,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354767785",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 13",
+      "x": 0.9119746543467044,
+      "y": -1.222475147247314,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354768516",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 14",
+      "x": 0.9162737973034382,
+      "y": -1.3570513099431991,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354769669",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 15",
+      "x": 0.29081038185395297,
+      "y": -1.065868405997753,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354770281",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 16",
+      "x": 0.309449964761734,
+      "y": -1.2211952596902846,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354770932",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 17",
+      "x": 0.32152600735425946,
+      "y": -1.3540322721004485,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354772064",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 18",
+      "x": -0.2973738133907318,
+      "y": -1.3781843572854995,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354773358",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 19",
+      "x": 1.4474023591727019,
+      "y": -1.771182888839394,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354773800",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 20",
+      "x": 1.6118627351999772,
+      "y": -1.7541960223694328,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354774331",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 21",
+      "x": 1.7725396130932496,
+      "y": -1.7539001083699985,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354775473",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 22",
+      "x": 1.4744207912124687,
+      "y": 1.7310220791958268,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354776015",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 23",
+      "x": 0.31952520106570104,
+      "y": 1.226839492596626,
+      "rotation": 0.0,
+      "locked": false
+    },
+    {
+      "id": "piece_1783354776697",
+      "elementTypeId": "game-piece-decode-ball",
+      "name": "Decode Ball 24",
+      "x": 1.742445384641178,
+      "y": 1.7447762753930873,
+      "rotation": 0.0,
+      "locked": false
+    }
+  ],
+  "fieldWaypoints": [
+    {
+      "id": "fieldwp_1783685740305",
+      "name": "TestWaypoint",
+      "x": 1.038250910490751,
+      "y": 0.002149571478366863,
+      "headingDegrees": 153.43495917797185,
+      "locked": false
+    }
+  ],
+  "image": {
+    "imagePath": "field_image.png",
+    "rotationDegrees": 270.0,
+    "cropLeft": 0.0,
+    "cropRight": 1.0,
+    "cropTop": 0.0,
+    "cropBottom": 1.0,
+    "ftcCoordinateSystem": "square"
+  }
+}

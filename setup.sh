@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
-# Clones the four ARES subprojects as siblings of this script.
-# Idempotent: existing directories are skipped (local work is never overwritten).
-#
-# Usage:  ./setup.sh
+# Validates a complete ARES-Robotics source-monorepo checkout.
+# Usage: ./setup.sh
 
 set -euo pipefail
 
-ORG="ARES-23247"
-REPOS=(ARESLib-Kotlin ARES-FTC ARES-FRC ARES-Analytics)
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REQUIRED=(
+  ARESLib-Kotlin
+  ARES-FTC
+  ARES-FRC
+  ARES-FTC-Starter
+  ARES-FRC-Starter
+  ARES-Analytics
+  release/ares-versions.properties
+  build-logic/ares-versioning.gradle
+)
 
-for repo in "${REPOS[@]}"; do
-  dest="$ROOT/$repo"
-  if [ -d "$dest" ]; then
-    echo "skip   $repo (exists: $dest)"
-    continue
+for path in "${REQUIRED[@]}"; do
+  if [[ ! -e "$ROOT/$path" ]]; then
+    echo "Incomplete ARES-Robotics checkout. Missing: $path" >&2
+    exit 1
   fi
-  url="https://github.com/$ORG/$repo.git"
-  echo "clone  $repo <- $url"
-  git clone "$url" "$dest"
 done
 
-echo ""
-echo "Workspace ready. Next steps:"
-echo "  1. Build foundation first:  cd ARESLib-Kotlin && ./gradlew publishToMavenLocal"
-echo "  2. Per-project build/test/run commands: see AGENTS.md"
+"$ROOT/scripts/verify-imported-histories.sh"
+
+if grep -R --include='*.gradle' --include='*.gradle.kts' -nE '\bmavenLocal[[:space:]]*\(' \
+  "$ROOT/ARESLib-Kotlin" "$ROOT/ARES-FTC" "$ROOT/ARES-FRC" \
+  "$ROOT/ARES-FTC-Starter" "$ROOT/ARES-FRC-Starter" "$ROOT/ARES-Analytics"; then
+  echo 'Ambient mavenLocal() is forbidden.' >&2
+  exit 1
+fi
+
+echo "ARES-Robotics source monorepo is ready."
+echo "  Windows full matrix: ./build.ps1 -Task Test"
+echo "  Per-platform commands: see AGENTS.md"

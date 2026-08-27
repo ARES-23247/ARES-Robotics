@@ -1,0 +1,34 @@
+steps:
+  # 1. Build the Docker container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/ares-analytics-gateway:$COMMIT_SHA',
+      '-f', 'gateway/Dockerfile',
+      '.'
+    ]
+
+  # 2. Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/ares-analytics-gateway:$COMMIT_SHA']
+
+  # 3. Deploy the public OAuth broker to Cloud Run.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'ares-analytics-gateway',
+      '--image', 'gcr.io/$PROJECT_ID/ares-analytics-gateway:$COMMIT_SHA',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--default-url',
+      '--no-invoker-iam-check',
+      '--max-instances', '5',
+      '--set-env-vars', 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1',
+      '--set-secrets', 'ARES_GOOGLE_OAUTH_CLIENT_ID=ares-google-oauth-client-id:latest,ARES_GOOGLE_OAUTH_CLIENT_SECRET=ares-google-oauth-client-secret:latest'
+    ]
+
+images:
+  - 'gcr.io/$PROJECT_ID/ares-analytics-gateway:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
