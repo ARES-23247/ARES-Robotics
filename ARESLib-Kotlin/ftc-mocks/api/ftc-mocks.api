@@ -1,0 +1,1189 @@
+public class android/content/Context {
+	public fun <init> ()V
+	public fun getAssets ()Landroid/content/res/AssetManager;
+}
+
+public class android/content/res/AssetManager {
+	public fun <init> ()V
+	public fun open (Ljava/lang/String;)Ljava/io/InputStream;
+}
+
+public final class android/os/Build {
+	public static final field FINGERPRINT Ljava/lang/String;
+	public static final field HARDWARE Ljava/lang/String;
+	public static final field INSTANCE Landroid/os/Build;
+	public static final field MANUFACTURER Ljava/lang/String;
+	public static final field MODEL Ljava/lang/String;
+	public static final field PRODUCT Ljava/lang/String;
+}
+
+public final class android/os/Build$VERSION {
+	public static final field CODENAME Ljava/lang/String;
+	public static final field Companion Landroid/os/Build$VERSION$Companion;
+	public static final field RELEASE Ljava/lang/String;
+	public static final field SDK_INT I
+	public fun <init> ()V
+}
+
+public final class android/os/Build$VERSION$Companion {
+}
+
+public final class android/util/Base64 {
+	public static final field INSTANCE Landroid/util/Base64;
+	public static final field NO_WRAP I
+	public static final fun encodeToString ([BI)Ljava/lang/String;
+}
+
+public final class android/util/Log {
+	public static final field ASSERT I
+	public static final field DEBUG I
+	public static final field ERROR I
+	public static final field INFO I
+	public static final field INSTANCE Landroid/util/Log;
+	public static final field VERBOSE I
+	public static final field WARN I
+	public static final fun d (Ljava/lang/String;Ljava/lang/String;)I
+	public static final fun e (Ljava/lang/String;Ljava/lang/String;)I
+	public static final fun e (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+	public static final fun getStackTraceString (Ljava/lang/Throwable;)Ljava/lang/String;
+	public static final fun i (Ljava/lang/String;Ljava/lang/String;)I
+	public static final fun isLoggable (Ljava/lang/String;I)Z
+	public static final fun println (ILjava/lang/String;Ljava/lang/String;)I
+	public static final fun v (Ljava/lang/String;Ljava/lang/String;)I
+	public static final fun w (Ljava/lang/String;Ljava/lang/String;)I
+	public static final fun w (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+}
+
+public final class com/acmerobotics/dashboard/FtcDashboard {
+	public static final field INSTANCE Lcom/acmerobotics/dashboard/FtcDashboard;
+	public static final fun getInstance ()Lcom/acmerobotics/dashboard/FtcDashboard;
+	public final fun sendTelemetryPacket (Lcom/acmerobotics/dashboard/telemetry/TelemetryPacket;)V
+}
+
+public class com/acmerobotics/dashboard/canvas/Canvas {
+	public fun <init> ()V
+	public final fun drawCircle (DDD)V
+	public final fun drawLine (DDDD)V
+	public final fun setStroke (Ljava/lang/String;)V
+}
+
+public class com/acmerobotics/dashboard/telemetry/TelemetryPacket {
+	public fun <init> ()V
+	public final fun getFieldOverlay ()Lcom/acmerobotics/dashboard/canvas/Canvas;
+	public final fun put (Ljava/lang/String;Ljava/lang/Object;)V
+}
+
+public final class com/areslib/ftc/MockIndicatorLightIO : com/areslib/hardware/actuator/IndicatorLightIO {
+	public fun <init> (Ljava/lang/String;)V
+	public fun getCurrentPosition ()D
+	public final fun getName ()Ljava/lang/String;
+	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+	public fun refresh ()V
+	public fun safe ()V
+	public fun setColor (Lcom/areslib/hardware/actuator/IndicatorLightColor;)V
+	public fun setPosition (D)V
+}
+
+public class com/qualcomm/ftccommon/FtcEventLoop {
+	public fun <init> ()V
+	public final fun getOpModeManager ()Lcom/qualcomm/robotcore/eventloop/opmode/OpModeManagerImpl;
+}
+
+public abstract interface class com/qualcomm/hardware/bosch/BNO055IMU {
+	public abstract fun getAngularOrientation (Lorg/firstinspires/ftc/robotcore/external/navigation/AxesReference;Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)Lorg/firstinspires/ftc/robotcore/external/navigation/Orientation;
+	public abstract fun initialize (Lcom/qualcomm/hardware/bosch/BNO055IMU$Parameters;)Z
+}
+
+public final class com/qualcomm/hardware/bosch/BNO055IMU$AngleUnit : java/lang/Enum {
+	public static final field DEGREES Lcom/qualcomm/hardware/bosch/BNO055IMU$AngleUnit;
+	public static final field RADIANS Lcom/qualcomm/hardware/bosch/BNO055IMU$AngleUnit;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/hardware/bosch/BNO055IMU$AngleUnit;
+	public static fun values ()[Lcom/qualcomm/hardware/bosch/BNO055IMU$AngleUnit;
+}
+
+public final class com/qualcomm/hardware/bosch/BNO055IMU$Parameters {
+	public fun <init> ()V
+	public final fun getAngleUnit ()Lcom/qualcomm/hardware/bosch/BNO055IMU$AngleUnit;
+	public final fun setAngleUnit (Lcom/qualcomm/hardware/bosch/BNO055IMU$AngleUnit;)V
+}
+
+public class com/qualcomm/hardware/gobilda/GoBildaPinpointDriver {
+	public fun <init> ()V
+	public final fun getConfiguredEncoderResolution ()Ljava/lang/Double;
+	public final fun getConfiguredPod ()Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods;
+	public final fun getHeading ()D
+	public final fun getHeading (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)D
+	public final fun getHeading (Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;)D
+	public final fun getHeadingVelocity ()D
+	public final fun getHeadingVelocity (Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;)D
+	public final fun getPosX ()D
+	public final fun getPosX (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)D
+	public final fun getPosY ()D
+	public final fun getPosY (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)D
+	public final fun getPosition ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose2D;
+	public final fun getTrueHeading ()D
+	public final fun getVelX ()D
+	public final fun getVelX (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)D
+	public final fun getVelY ()D
+	public final fun getVelY (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)D
+	public final fun getXOffsetMeters ()D
+	public final fun getYOffsetMeters ()D
+	public final fun recalibrateIMU ()V
+	public final fun resetPosAndIMU ()V
+	public final fun setEncoderDirections (Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;)V
+	public final fun setEncoderResolution (DLorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)V
+	public final fun setEncoderResolution (Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods;)V
+	public final fun setHeading (D)V
+	public final fun setHeadingVelocity (D)V
+	public final fun setOffsets (DDLorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)V
+	public final fun setPosX (D)V
+	public final fun setPosY (D)V
+	public final fun setTrueHeading (D)V
+	public final fun setVelX (D)V
+	public final fun setVelY (D)V
+	public final fun setXOffsetMeters (D)V
+	public final fun setYOffsetMeters (D)V
+	public final fun update ()V
+}
+
+public final class com/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection : java/lang/Enum {
+	public static final field FORWARD Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;
+	public static final field REVERSE Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;
+	public static fun values ()[Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$EncoderDirection;
+}
+
+public final class com/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods : java/lang/Enum {
+	public static final field goBILDA_4_BAR_POD Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods;
+	public static final field goBILDA_SWINGARM_POD Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods;
+	public static fun values ()[Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver$GoBildaOdometryPods;
+}
+
+public class com/qualcomm/hardware/limelightvision/LLResult {
+	public fun <init> ()V
+	public fun <init> (JDDDDD)V
+	public synthetic fun <init> (JDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getBotpose ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
+	public fun getBotposeAvgArea ()D
+	public fun getBotposeAvgDist ()D
+	public fun getBotposeSpan ()D
+	public fun getBotposeTagCount ()I
+	public fun getBotpose_MT2 ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
+	public fun getCaptureLatency ()D
+	public fun getControlHubTimeStamp ()J
+	public fun getFiducialResults ()Ljava/util/List;
+	public fun getStaleness ()J
+	public fun getStddevMt1 ()[D
+	public fun getStddevMt2 ()[D
+	public fun getTa ()D
+	public fun getTargetingLatency ()D
+	public fun getTx ()D
+	public fun getTy ()D
+	public fun isValid ()Z
+}
+
+public class com/qualcomm/hardware/limelightvision/LLResultTypes {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/limelightvision/LLResultTypes$FiducialResult {
+	public fun <init> (IDDLorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;D)V
+	public synthetic fun <init> (IDDLorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;DILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getFiducialId ()I
+	public fun getPose3D ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
+	public final fun getPoseAmbiguity ()D
+	public fun getRobotPoseTargetSpace ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
+	public fun getTx ()D
+	public fun getTy ()D
+}
+
+public class com/qualcomm/hardware/limelightvision/Limelight3A {
+	public fun <init> ()V
+	public fun getLatestResult ()Lcom/qualcomm/hardware/limelightvision/LLResult;
+	public final fun getSimulatedResult ()Lcom/qualcomm/hardware/limelightvision/LLResult;
+	public fun getTimeSinceLastUpdate ()J
+	public fun isConnected ()Z
+	public fun setLatestResult (Lcom/qualcomm/hardware/limelightvision/LLResult;)V
+	public final fun setSimulatedPose (DDDI)V
+	public static synthetic fun setSimulatedPose$default (Lcom/qualcomm/hardware/limelightvision/Limelight3A;DDDIILjava/lang/Object;)V
+	public final fun setSimulatedResult (Lcom/qualcomm/hardware/limelightvision/LLResult;)V
+	public fun start ()V
+	public fun stop ()V
+	public fun updateRobotOrientation (D)Z
+}
+
+public class com/qualcomm/hardware/lynx/LynxI2cDeviceSynch {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/LynxModule : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public fun <init> (Lcom/qualcomm/hardware/lynx/LynxUsbDevice;IZZ)V
+	public fun acquireNetworkTransmissionLock (Lcom/qualcomm/hardware/lynx/commands/LynxMessage;)V
+	public fun clearBulkCache ()V
+	public fun close ()V
+	public final fun getBulkCachingMode ()Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getDeviceName ()Ljava/lang/String;
+	public final fun getLynxUsbDevice ()Lcom/qualcomm/hardware/lynx/LynxUsbDevice;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public final fun getModuleAddress ()I
+	public fun getNewMessageNumber ()B
+	public final fun getSerialNumber ()Lcom/qualcomm/robotcore/util/SerialNumber;
+	public final fun getUnfinishedCommands ()Ljava/util/concurrent/ConcurrentHashMap;
+	public fun getVersion ()I
+	public final fun isParent ()Z
+	public final fun isUserModule ()Z
+	public fun releaseNetworkTransmissionLock (Lcom/qualcomm/hardware/lynx/commands/LynxMessage;)V
+	public fun removeConfiguredModule (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+	public fun resetDeviceConfigurationForOpMode ()V
+	public fun sendCommand (Lcom/qualcomm/hardware/lynx/commands/LynxMessage;)V
+	public final fun setBulkCachingMode (Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;)V
+	public final fun setUnfinishedCommands (Ljava/util/concurrent/ConcurrentHashMap;)V
+}
+
+public final class com/qualcomm/hardware/lynx/LynxModule$BulkCachingMode : java/lang/Enum {
+	public static final field AUTO Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;
+	public static final field MANUAL Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;
+	public static final field OFF Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;
+	public static fun values ()[Lcom/qualcomm/hardware/lynx/LynxModule$BulkCachingMode;
+}
+
+public final class com/qualcomm/hardware/lynx/LynxUnsupportedCommandException : java/lang/Exception {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/LynxUsbDevice {
+	public fun <init> ()V
+	public fun removeConfiguredModule (Lcom/qualcomm/hardware/lynx/LynxModule;)V
+}
+
+public class com/qualcomm/hardware/lynx/LynxUsbDeviceDelegate : com/qualcomm/hardware/lynx/LynxUsbDevice {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/LynxUsbDeviceImpl : com/qualcomm/hardware/lynx/LynxUsbDeviceDelegate {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/commands/LynxCommand : com/qualcomm/hardware/lynx/commands/LynxRespondable {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/commands/LynxDatagram {
+	public fun <init> ()V
+	public fun <init> (Lcom/qualcomm/hardware/lynx/commands/LynxMessage;)V
+	public final fun toByteArray ()[B
+}
+
+public class com/qualcomm/hardware/lynx/commands/LynxMessage {
+	public fun <init> ()V
+	public final fun getCommandNumber ()I
+	public final fun getDestModuleAddress ()I
+	public final fun getMessageNumber ()I
+	public final fun getModule ()Lcom/qualcomm/hardware/lynx/LynxModule;
+	public final fun getSerialization ()Lcom/qualcomm/hardware/lynx/commands/LynxDatagram;
+	public final fun isAckable ()Z
+	public final fun isResponseExpected ()Z
+	public final fun setAckable (Z)V
+	public final fun setDestModuleAddress (I)V
+	public final fun setMessageNumber (I)V
+	public final fun setModule (Lcom/qualcomm/hardware/lynx/LynxModule;)V
+	public final fun setResponseExpected (Z)V
+	public final fun setSerialization (Lcom/qualcomm/hardware/lynx/commands/LynxDatagram;)V
+}
+
+public class com/qualcomm/hardware/lynx/commands/LynxRespondable : com/qualcomm/hardware/lynx/commands/LynxMessage {
+	public fun <init> ()V
+	public fun onAckReceived (Lcom/qualcomm/hardware/lynx/commands/standard/LynxAck;)V
+	public fun onResponseReceived (Lcom/qualcomm/hardware/lynx/commands/LynxMessage;)V
+}
+
+public class com/qualcomm/hardware/lynx/commands/core/LynxSetMotorConstantPowerCommand : com/qualcomm/hardware/lynx/commands/LynxCommand {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/commands/core/LynxSetServoPulseWidthCommand : com/qualcomm/hardware/lynx/commands/LynxCommand {
+	public fun <init> ()V
+}
+
+public class com/qualcomm/hardware/lynx/commands/standard/LynxAck : com/qualcomm/hardware/lynx/commands/LynxMessage {
+	public fun <init> (Lcom/qualcomm/hardware/lynx/LynxModule;Z)V
+}
+
+public final class com/qualcomm/hardware/rev/RevHubOrientationOnRobot {
+	public fun <init> (Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;)V
+	public final fun getLogoFacingDirection ()Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public final fun getUsbFacingDirection ()Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+}
+
+public final class com/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection : java/lang/Enum {
+	public static final field BACKWARD Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static final field DOWN Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static final field FORWARD Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static final field LEFT Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static final field RIGHT Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static final field UP Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+	public static fun values ()[Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
+}
+
+public final class com/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection : java/lang/Enum {
+	public static final field BACKWARD Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static final field DOWN Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static final field FORWARD Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static final field LEFT Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static final field RIGHT Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static final field UP Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public static fun values ()[Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+}
+
+public abstract interface annotation class com/qualcomm/robotcore/eventloop/opmode/Autonomous : java/lang/annotation/Annotation {
+	public abstract fun group ()Ljava/lang/String;
+	public abstract fun name ()Ljava/lang/String;
+}
+
+public abstract interface annotation class com/qualcomm/robotcore/eventloop/opmode/Disabled : java/lang/annotation/Annotation {
+}
+
+public abstract class com/qualcomm/robotcore/eventloop/opmode/LinearOpMode {
+	public final field gamepad1 Lcom/qualcomm/robotcore/hardware/Gamepad;
+	public final field gamepad2 Lcom/qualcomm/robotcore/hardware/Gamepad;
+	public field hardwareMap Lcom/qualcomm/robotcore/hardware/HardwareMap;
+	public final field telemetry Lorg/firstinspires/ftc/robotcore/external/Telemetry;
+	public fun <init> ()V
+	public final fun idle ()V
+	public final fun isStarted ()Z
+	public final fun isStopRequested ()Z
+	public final fun opModeInInit ()Z
+	public final fun opModeIsActive ()Z
+	public abstract fun runOpMode ()V
+	public final fun setStarted (Z)V
+	public final fun setStopRequested (Z)V
+	public final fun sleep (J)V
+	public final fun waitForStart ()V
+}
+
+public abstract class com/qualcomm/robotcore/eventloop/opmode/OpMode {
+	public field gamepad1 Lcom/qualcomm/robotcore/hardware/Gamepad;
+	public field gamepad2 Lcom/qualcomm/robotcore/hardware/Gamepad;
+	public field hardwareMap Lcom/qualcomm/robotcore/hardware/HardwareMap;
+	public field telemetry Lorg/firstinspires/ftc/robotcore/external/Telemetry;
+	public fun <init> ()V
+	public abstract fun init ()V
+	public fun init_loop ()V
+	public final fun isStopRequested ()Z
+	public abstract fun loop ()V
+	public final fun requestOpModeStop ()V
+	public final fun setStopRequested (Z)V
+	public fun start ()V
+	public fun stop ()V
+}
+
+public abstract interface class com/qualcomm/robotcore/eventloop/opmode/OpModeManager {
+	public static final field Companion Lcom/qualcomm/robotcore/eventloop/opmode/OpModeManager$Companion;
+	public static final field DEFAULT_OP_MODE_NAME Ljava/lang/String;
+	public abstract fun getActiveOpModeName ()Ljava/lang/String;
+}
+
+public final class com/qualcomm/robotcore/eventloop/opmode/OpModeManager$Companion {
+	public static final field DEFAULT_OP_MODE_NAME Ljava/lang/String;
+}
+
+public class com/qualcomm/robotcore/eventloop/opmode/OpModeManagerImpl : com/qualcomm/robotcore/eventloop/opmode/OpModeManager, com/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier {
+	public fun <init> ()V
+	public fun getActiveOpModeName ()Ljava/lang/String;
+	public fun registerListener (Lcom/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier$Notifications;)V
+	public fun unregisterListener (Lcom/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier$Notifications;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier {
+	public abstract fun registerListener (Lcom/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier$Notifications;)V
+	public abstract fun unregisterListener (Lcom/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier$Notifications;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/eventloop/opmode/OpModeManagerNotifier$Notifications {
+	public abstract fun onOpModePostStop (Lcom/qualcomm/robotcore/eventloop/opmode/OpMode;)V
+	public abstract fun onOpModePreInit (Lcom/qualcomm/robotcore/eventloop/opmode/OpMode;)V
+	public abstract fun onOpModePreStart (Lcom/qualcomm/robotcore/eventloop/opmode/OpMode;)V
+}
+
+public abstract interface annotation class com/qualcomm/robotcore/eventloop/opmode/TeleOp : java/lang/annotation/Annotation {
+	public abstract fun group ()Ljava/lang/String;
+	public abstract fun name ()Ljava/lang/String;
+}
+
+public class com/qualcomm/robotcore/hardware/AnalogInput : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public fun <init> ()V
+	public fun close ()V
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getDeviceName ()Ljava/lang/String;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getVersion ()I
+	public fun getVoltage ()D
+	public fun resetDeviceConfigurationForOpMode ()V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/CRServo : com/qualcomm/robotcore/hardware/DcMotorSimple {
+}
+
+public final class com/qualcomm/robotcore/hardware/CRServo$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/CRServo;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/CRServo;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/CRServo;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/CRServo;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/CRServo;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/CRServo;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/ColorSensor : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun alpha ()I
+	public abstract fun blue ()I
+	public abstract fun green ()I
+	public abstract fun red ()I
+}
+
+public final class com/qualcomm/robotcore/hardware/ColorSensor$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/ColorSensor;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/ColorSensor;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/ColorSensor;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/ColorSensor;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/ColorSensor;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/ColorSensor;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/DcMotor : com/qualcomm/robotcore/hardware/DcMotorSimple {
+	public abstract fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public abstract fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public abstract fun setMode (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)V
+	public abstract fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotor$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/DcMotor;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DcMotor;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DcMotor;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DcMotor;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DcMotor;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DcMotor;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotor$RunMode : java/lang/Enum {
+	public static final field RUN_TO_POSITION Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public static final field RUN_USING_ENCODER Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public static final field RUN_WITHOUT_ENCODER Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public static final field STOP_AND_RESET_ENCODER Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior : java/lang/Enum {
+	public static final field BRAKE Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public static final field FLOAT Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/DcMotorEx : com/qualcomm/robotcore/hardware/DcMotor {
+	public abstract fun getCurrent (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
+	public abstract fun getCurrentPosition ()I
+	public abstract fun getVelocity ()D
+	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
+	public abstract fun setVelocity (D)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotorEx$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)V
+	public static fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/DcMotorSimple : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+	public abstract fun getPower ()D
+	public abstract fun setDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
+	public abstract fun setPower (D)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotorSimple$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/DcMotorSimple;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DcMotorSimple;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DcMotorSimple;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DcMotorSimple;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DcMotorSimple;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DcMotorSimple;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DcMotorSimple$Direction : java/lang/Enum {
+	public static final field FORWARD Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+	public static final field REVERSE Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+}
+
+public class com/qualcomm/robotcore/hardware/DeviceMapping : java/lang/Iterable, kotlin/jvm/internal/markers/KMappedMarker {
+	public fun <init> (Ljava/lang/Class;)V
+	public fun entrySet ()Ljava/util/Set;
+	public fun get (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/HardwareDevice;
+	public final fun getDeviceType ()Ljava/lang/Class;
+	public fun getSize ()I
+	public fun iterator ()Ljava/util/Iterator;
+	public fun put (Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/DigitalChannel : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getMode ()Lcom/qualcomm/robotcore/hardware/DigitalChannel$Mode;
+	public abstract fun getState ()Z
+	public abstract fun setMode (Lcom/qualcomm/robotcore/hardware/DigitalChannel$Mode;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DigitalChannel$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/DigitalChannel$Mode : java/lang/Enum {
+	public static final field INPUT Lcom/qualcomm/robotcore/hardware/DigitalChannel$Mode;
+	public static final field OUTPUT Lcom/qualcomm/robotcore/hardware/DigitalChannel$Mode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/DigitalChannel$Mode;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/DigitalChannel$Mode;
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/DistanceSensor : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getDistance (Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;)D
+}
+
+public final class com/qualcomm/robotcore/hardware/DistanceSensor$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)V
+}
+
+public class com/qualcomm/robotcore/hardware/Gamepad {
+	public static final field Companion Lcom/qualcomm/robotcore/hardware/Gamepad$Companion;
+	public static final field ID_UNASSOCIATED I
+	public field a Z
+	public field b Z
+	public field back Z
+	public field c Z
+	public field dpad_down Z
+	public field dpad_left Z
+	public field dpad_right Z
+	public field dpad_up Z
+	public field guide Z
+	public field id I
+	public field left_bumper Z
+	public field left_stick_button Z
+	public field left_stick_x F
+	public field left_stick_y F
+	public field left_trigger F
+	public field m1 Z
+	public field m2 Z
+	public field m3 Z
+	public field m4 Z
+	public field options Z
+	public field right_bumper Z
+	public field right_stick_button Z
+	public field right_stick_x F
+	public field right_stick_y F
+	public field right_trigger F
+	public field share Z
+	public field start Z
+	public field touchpad Z
+	public field x Z
+	public field y Z
+	public field z Z
+	public fun <init> ()V
+	public final fun copy (Lcom/qualcomm/robotcore/hardware/Gamepad;)V
+	public fun rumble (DDI)V
+	public fun rumble (I)V
+	public fun rumbleBlips (I)V
+	public fun stopRumble ()V
+}
+
+public final class com/qualcomm/robotcore/hardware/Gamepad$Companion {
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/HardwareDevice {
+	public fun close ()V
+	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getDeviceName ()Ljava/lang/String;
+	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getVersion ()I
+	public fun resetDeviceConfigurationForOpMode ()V
+}
+
+public final class com/qualcomm/robotcore/hardware/HardwareDevice$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer : java/lang/Enum {
+	public static final field AMS Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Adafruit Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Broadcom Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field GoBilda Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field HiTechnic Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field I2cDeviceSynchImpl Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field I2cDeviceSynchImplSimple Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Lego Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Lynx Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Matrix Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field MaxBotix Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field ModernRobotics Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Other Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Rev Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field STMicroelectronics Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field StepperMotor Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static final field Unknown Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+}
+
+public class com/qualcomm/robotcore/hardware/HardwareMap {
+	public final field appContext Landroid/content/Context;
+	public final field dcMotor Lcom/qualcomm/robotcore/hardware/DeviceMapping;
+	public final field dcMotorEx Lcom/qualcomm/robotcore/hardware/DeviceMapping;
+	public final field servo Lcom/qualcomm/robotcore/hardware/DeviceMapping;
+	public final field voltageSensor Lcom/qualcomm/robotcore/hardware/DeviceMapping;
+	public fun <init> ()V
+	public fun get (Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Object;
+	public fun getAll (Ljava/lang/Class;)Ljava/util/List;
+	public fun getNamesOf (Ljava/lang/Object;)Ljava/util/Set;
+	public fun put (Lcom/qualcomm/robotcore/util/SerialNumber;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+	public fun put (Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+	public fun put (Ljava/lang/String;Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/HardwareDevice;)V
+	public fun remove (Lcom/qualcomm/robotcore/util/SerialNumber;Lcom/qualcomm/robotcore/hardware/HardwareDevice;)Z
+	public fun remove (Lcom/qualcomm/robotcore/util/SerialNumber;Ljava/lang/String;)Z
+	public fun remove (Ljava/lang/String;Lcom/qualcomm/robotcore/hardware/HardwareDevice;)Z
+	public fun remove (Ljava/lang/String;Ljava/lang/String;)Z
+}
+
+public class com/qualcomm/robotcore/hardware/I2cAddr {
+	public static final field Companion Lcom/qualcomm/robotcore/hardware/I2cAddr$Companion;
+	public fun <init> ()V
+	public static final fun create7bit (I)Lcom/qualcomm/robotcore/hardware/I2cAddr;
+	public static final fun create8bit (I)Lcom/qualcomm/robotcore/hardware/I2cAddr;
+}
+
+public final class com/qualcomm/robotcore/hardware/I2cAddr$Companion {
+	public final fun create7bit (I)Lcom/qualcomm/robotcore/hardware/I2cAddr;
+	public final fun create8bit (I)Lcom/qualcomm/robotcore/hardware/I2cAddr;
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/I2cDeviceSynch : com/qualcomm/robotcore/hardware/I2cDeviceSynchSimple {
+	public abstract fun getI2cAddress ()Lcom/qualcomm/robotcore/hardware/I2cAddr;
+	public abstract fun getReadWindow ()Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadWindow;
+	public abstract fun read (II)[B
+	public abstract fun read8 (I)B
+	public abstract fun setI2cAddress (Lcom/qualcomm/robotcore/hardware/I2cAddr;)V
+	public abstract fun setReadWindow (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadWindow;)V
+	public abstract fun write (I[B)V
+}
+
+public final class com/qualcomm/robotcore/hardware/I2cDeviceSynch$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)V
+	public static fun write8 (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;II)V
+}
+
+public final class com/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode : java/lang/Enum {
+	public static final field BALANCED Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;
+	public static final field ONLY_ONCE Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;
+	public static final field REPEAT Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;
+}
+
+public final class com/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadWindow {
+	public fun <init> (IILcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;)V
+	public final fun getCreg ()I
+	public final fun getIreg ()I
+	public final fun getMode ()Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch$ReadMode;
+}
+
+public abstract class com/qualcomm/robotcore/hardware/I2cDeviceSynchDevice {
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;Z)V
+	public abstract fun doInitialize ()Z
+	public final fun getDeviceClient ()Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;
+	public abstract fun getDeviceName ()Ljava/lang/String;
+	public abstract fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public final fun initialize ()Z
+	public final fun isOwned ()Z
+}
+
+public final class com/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer : java/lang/Enum {
+	public static final field Adafruit Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static final field Broadcom Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static final field Lynx Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static final field Other Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static final field Rev Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static final field Unknown Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+	public static fun values ()[Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchDevice$Manufacturer;
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/I2cDeviceSynchSimple : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public fun read8 (I)B
+	public fun write8 (II)V
+}
+
+public final class com/qualcomm/robotcore/hardware/I2cDeviceSynchSimple$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;)I
+	public static fun read8 (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;I)B
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;)V
+	public static fun write8 (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynchSimple;II)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/IMU : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getRobotAngularVelocity (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)Lorg/firstinspires/ftc/robotcore/external/navigation/AngularVelocity;
+	public abstract fun getRobotYawPitchRollAngles ()Lorg/firstinspires/ftc/robotcore/external/navigation/YawPitchRollAngles;
+	public abstract fun initialize (Lcom/qualcomm/robotcore/hardware/IMU$Parameters;)Z
+	public abstract fun resetYaw ()V
+}
+
+public final class com/qualcomm/robotcore/hardware/IMU$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/IMU;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/IMU;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/IMU;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/IMU;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/IMU;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/IMU;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/IMU$Parameters {
+	public fun <init> (Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot;)V
+	public final fun getHubOrientationOnRobot ()Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot;
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/NormalizedColorSensor : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getNormalizedColors ()Lcom/qualcomm/robotcore/hardware/NormalizedRGBA;
+}
+
+public final class com/qualcomm/robotcore/hardware/NormalizedColorSensor$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/NormalizedColorSensor;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/NormalizedColorSensor;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/NormalizedColorSensor;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/NormalizedColorSensor;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/NormalizedColorSensor;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/NormalizedColorSensor;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/NormalizedRGBA {
+	public field alpha F
+	public field blue F
+	public field green F
+	public field red F
+	public fun <init> ()V
+}
+
+public class com/qualcomm/robotcore/hardware/PIDFCoefficients {
+	public field d D
+	public field f D
+	public field i D
+	public field p D
+	public fun <init> ()V
+	public fun <init> (DDDD)V
+	public synthetic fun <init> (DDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/Servo : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getPosition ()D
+	public abstract fun setPosition (D)V
+}
+
+public final class com/qualcomm/robotcore/hardware/Servo$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/Servo;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/Servo;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/Servo;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/Servo;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/Servo;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/Servo;)V
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/VoltageSensor : com/qualcomm/robotcore/hardware/HardwareDevice {
+	public abstract fun getVoltage ()D
+}
+
+public final class com/qualcomm/robotcore/hardware/VoltageSensor$DefaultImpls {
+	public static fun close (Lcom/qualcomm/robotcore/hardware/VoltageSensor;)V
+	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/VoltageSensor;)Ljava/lang/String;
+	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/VoltageSensor;)Ljava/lang/String;
+	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/VoltageSensor;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/VoltageSensor;)I
+	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/VoltageSensor;)V
+}
+
+public final class com/qualcomm/robotcore/hardware/configuration/LynxConstants {
+	public static final field INITIAL_MOTOR_PORT I
+	public static final field INITIAL_SERVO_PORT I
+	public static final field INSTANCE Lcom/qualcomm/robotcore/hardware/configuration/LynxConstants;
+	public static final field NUMBER_OF_MOTORS I
+	public static final field NUMBER_OF_SERVOS I
+	public final fun isEmbeddedSerialNumber (Lcom/qualcomm/robotcore/util/SerialNumber;)Z
+}
+
+public abstract interface annotation class com/qualcomm/robotcore/hardware/configuration/annotations/DeviceProperties : java/lang/annotation/Annotation {
+	public abstract fun description ()Ljava/lang/String;
+	public abstract fun name ()Ljava/lang/String;
+	public abstract fun xmlTag ()Ljava/lang/String;
+}
+
+public abstract interface annotation class com/qualcomm/robotcore/hardware/configuration/annotations/I2cDeviceType : java/lang/annotation/Annotation {
+}
+
+public class com/qualcomm/robotcore/hardware/usb/RobotUsbDevice {
+	public fun <init> ()V
+	public fun write ([B)V
+}
+
+public class com/qualcomm/robotcore/util/ElapsedTime {
+	public static final field Companion Lcom/qualcomm/robotcore/util/ElapsedTime$Companion;
+	public fun <init> ()V
+	public final fun milliseconds ()D
+	public final fun reset ()V
+	public final fun seconds ()D
+}
+
+public final class com/qualcomm/robotcore/util/ElapsedTime$Companion {
+}
+
+public final class com/qualcomm/robotcore/util/RobotLog {
+	public static final field INSTANCE Lcom/qualcomm/robotcore/util/RobotLog;
+	public static final fun d (Ljava/lang/String;)V
+	public static final fun d (Ljava/lang/String;[Ljava/lang/Object;)V
+	public static final fun dd (Ljava/lang/String;Ljava/lang/String;)V
+	public static final fun e (Ljava/lang/String;)V
+	public static final fun e (Ljava/lang/String;[Ljava/lang/Object;)V
+	public static final fun ee (Ljava/lang/String;Ljava/lang/String;)V
+	public static final fun ee (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;)V
+	public static final fun i (Ljava/lang/String;)V
+	public static final fun i (Ljava/lang/String;[Ljava/lang/Object;)V
+	public static final fun ii (Ljava/lang/String;Ljava/lang/String;)V
+	public static final fun v (Ljava/lang/String;)V
+	public static final fun v (Ljava/lang/String;[Ljava/lang/Object;)V
+	public static final fun vv (Ljava/lang/String;Ljava/lang/String;)V
+	public static final fun w (Ljava/lang/String;)V
+	public static final fun w (Ljava/lang/String;[Ljava/lang/Object;)V
+	public static final fun ww (Ljava/lang/String;Ljava/lang/String;)V
+}
+
+public class com/qualcomm/robotcore/util/SerialNumber {
+	public static final field Companion Lcom/qualcomm/robotcore/util/SerialNumber$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final fun fromString (Ljava/lang/String;)Lcom/qualcomm/robotcore/util/SerialNumber;
+	public final fun getSerialNumber ()Ljava/lang/String;
+	public final fun isEmbeddedSerialNumber ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/qualcomm/robotcore/util/SerialNumber$Companion {
+	public final fun fromString (Ljava/lang/String;)Lcom/qualcomm/robotcore/util/SerialNumber;
+}
+
+public class com/qualcomm/robotcore/util/WebHandlerManager {
+	public fun <init> ()V
+}
+
+public abstract interface annotation class org/firstinspires/ftc/ftccommon/external/OnCreateEventLoop : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class org/firstinspires/ftc/ftccommon/external/WebHandlerRegistrar : java/lang/annotation/Annotation {
+}
+
+public final class org/firstinspires/ftc/robotcore/external/MockTelemetry : org/firstinspires/ftc/robotcore/external/Telemetry {
+	public fun <init> ()V
+	public fun addData (Ljava/lang/String;Ljava/lang/Object;)Lorg/firstinspires/ftc/robotcore/external/Telemetry$Item;
+	public fun addData (Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Lorg/firstinspires/ftc/robotcore/external/Telemetry$Item;
+	public final fun getDisplayLines ()Ljava/util/List;
+	public fun update ()Z
+}
+
+public abstract interface class org/firstinspires/ftc/robotcore/external/Telemetry {
+	public abstract fun addData (Ljava/lang/String;Ljava/lang/Object;)Lorg/firstinspires/ftc/robotcore/external/Telemetry$Item;
+	public abstract fun addData (Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Lorg/firstinspires/ftc/robotcore/external/Telemetry$Item;
+	public abstract fun update ()Z
+}
+
+public abstract interface class org/firstinspires/ftc/robotcore/external/Telemetry$Item {
+}
+
+public final class org/firstinspires/ftc/robotcore/external/matrices/VectorF {
+	public fun <init> ([F)V
+	public final fun get (I)F
+	public final fun length ()I
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/AngleUnit : java/lang/Enum {
+	public static final field DEGREES Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+	public static final field RADIANS Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/AngularVelocity {
+	public fun <init> ()V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;FFFJ)V
+	public synthetic fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;FFFJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAcquisitionTime ()J
+	public final fun getUnit ()Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+	public final fun getXRotationRate ()F
+	public final fun getXRotationRate (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)F
+	public final fun getYRotationRate ()F
+	public final fun getYRotationRate (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)F
+	public final fun getZRotationRate ()F
+	public final fun getZRotationRate (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)F
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/AxesOrder : java/lang/Enum {
+	public static final field XYZ Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static final field XZY Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static final field YXZ Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static final field YZX Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static final field ZXY Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static final field ZYX Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/AxesOrder;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/AxesReference : java/lang/Enum {
+	public static final field EXTRINSIC Lorg/firstinspires/ftc/robotcore/external/navigation/AxesReference;
+	public static final field INTRINSIC Lorg/firstinspires/ftc/robotcore/external/navigation/AxesReference;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/AxesReference;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/AxesReference;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/CurrentUnit : java/lang/Enum {
+	public static final field AMPS Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;
+	public static final field MILLIAMPS Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/Distance : java/lang/Enum {
+	public static final field CM Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;
+	public static final field INCH Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;
+	public static final field METER Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;
+	public static final field MM Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/Distance;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/DistanceUnit : java/lang/Enum {
+	public static final field CM Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public static final field INCH Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public static final field METER Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public static final field MM Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public final fun fromUnit (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;D)D
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/Orientation {
+	public fun <init> ()V
+	public fun <init> (FFF)V
+	public synthetic fun <init> (FFFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getFirstAngle ()F
+	public final fun getSecondAngle ()F
+	public final fun getThirdAngle ()F
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/Pose2D {
+	public fun <init> ()V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;DDLorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;D)V
+	public final fun getAngleUnit ()Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+	public final fun getDistanceUnit ()Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public final fun getHeading ()D
+	public final fun getHeading (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)D
+	public final fun getX ()D
+	public final fun getX (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)D
+	public final fun getY ()D
+	public final fun getY (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)D
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/Pose3D {
+	public fun <init> ()V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/Position;Lorg/firstinspires/ftc/robotcore/external/navigation/YawPitchRollAngles;)V
+	public synthetic fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/Position;Lorg/firstinspires/ftc/robotcore/external/navigation/YawPitchRollAngles;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getOrientation ()Lorg/firstinspires/ftc/robotcore/external/navigation/YawPitchRollAngles;
+	public final fun getPosition ()Lorg/firstinspires/ftc/robotcore/external/navigation/Position;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/Position {
+	public final field acquisitionTime J
+	public final field unit Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public final field x D
+	public final field y D
+	public final field z D
+	public fun <init> ()V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;DDDJ)V
+	public synthetic fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;DDDJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun toUnit (Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;)Lorg/firstinspires/ftc/robotcore/external/navigation/Position;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/Quaternion {
+	public final field acquisitionTime J
+	public final field w F
+	public final field x F
+	public final field y F
+	public final field z F
+	public fun <init> (FFFFJ)V
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit : java/lang/Enum {
+	public static final field DEGREES Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
+	public static final field RADIANS Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
+	public static fun values ()[Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
+}
+
+public final class org/firstinspires/ftc/robotcore/external/navigation/YawPitchRollAngles {
+	public fun <init> ()V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;DDDJ)V
+	public synthetic fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;DDDJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAcquisitionTime ()J
+	public final fun getPitch ()D
+	public final fun getPitch (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)D
+	public final fun getRoll ()D
+	public final fun getRoll (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)D
+	public final fun getYaw ()D
+	public final fun getYaw (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)D
+	public final fun getYawUnit ()Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
+}
+
+public final class org/firstinspires/ftc/robotcore/internal/usb/exception/RobotUsbException : java/lang/Exception {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public class org/firstinspires/ftc/vision/VisionPortal {
+	public fun <init> ()V
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagDetection {
+	public fun <init> ()V
+	public final fun getFtcPose ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagPoseFtc;
+	public final fun getId ()I
+	public final fun setFtcPose (Lorg/firstinspires/ftc/vision/apriltag/AprilTagPoseFtc;)V
+	public final fun setId (I)V
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagLibrary {
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAllTags ()[Lorg/firstinspires/ftc/vision/apriltag/AprilTagMetadata;
+	public final fun lookupTag (I)Lorg/firstinspires/ftc/vision/apriltag/AprilTagMetadata;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagLibrary$Builder {
+	public fun <init> ()V
+	public final fun addTag (ILjava/lang/String;DLorg/firstinspires/ftc/robotcore/external/matrices/VectorF;Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary$Builder;
+	public final fun build ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
+	public final fun setAllowOverwrite (Z)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary$Builder;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagMetadata {
+	public final field distanceUnit Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;
+	public final field fieldOrientation Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
+	public final field fieldPosition Lorg/firstinspires/ftc/robotcore/external/matrices/VectorF;
+	public final field id I
+	public final field name Ljava/lang/String;
+	public final field tagsize D
+	public fun <init> (ILjava/lang/String;DLorg/firstinspires/ftc/robotcore/external/matrices/VectorF;Lorg/firstinspires/ftc/robotcore/external/navigation/DistanceUnit;Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;)V
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagPoseFtc {
+	public fun <init> ()V
+	public final fun getPitch ()D
+	public final fun getRoll ()D
+	public final fun getX ()D
+	public final fun getY ()D
+	public final fun getYaw ()D
+	public final fun getZ ()D
+	public final fun setPitch (D)V
+	public final fun setRoll (D)V
+	public final fun setX (D)V
+	public final fun setY (D)V
+	public final fun setYaw (D)V
+	public final fun setZ (D)V
+}
+
+public class org/firstinspires/ftc/vision/apriltag/AprilTagProcessor {
+	public fun <init> ()V
+	public final fun getFreshDetections ()Ljava/util/List;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder {
+	public fun <init> ()V
+	public final fun build ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;
+	public final fun getTagFamily ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public final fun getTagLibrary ()Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
+	public final fun setTagFamily (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+	public final fun setTagLibrary (Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+}
+
+public final class org/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily : java/lang/Enum {
+	public static final field TAG_16h5 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static final field TAG_25h9 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static final field TAG_36h11 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static final field TAG_standard41h12 Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+	public static fun values ()[Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$TagFamily;
+}
+
+public class org/json/JSONObject {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public final fun get (Ljava/lang/String;)Ljava/lang/Object;
+	public final fun optString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public final fun put (Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;
+	public fun toString ()Ljava/lang/String;
+}
+

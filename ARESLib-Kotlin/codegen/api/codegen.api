@@ -1,0 +1,299 @@
+public final class com/areslib/codegen/AresKotlinProjectGenerator {
+	public static final field INSTANCE Lcom/areslib/codegen/AresKotlinProjectGenerator;
+	public final fun calculateEmbeddedSourceHash (Ljava/lang/String;)Ljava/lang/String;
+	public final fun generate (Lcom/areslib/codegen/KotlinProjectCompilationRequest;)Lcom/areslib/codegen/GeneratedKotlinSource;
+	public final fun hasValidEmbeddedSourceHash (Ljava/lang/String;)Z
+}
+
+public final class com/areslib/codegen/AresKotlinProjectGeneratorKt {
+	public static final field ARES_KOTLIN_CODEGEN_VERSION I
+}
+
+public final class com/areslib/codegen/AresProjectCodegenCli {
+	public static final field INSTANCE Lcom/areslib/codegen/AresProjectCodegenCli;
+	public static final fun main ([Ljava/lang/String;)V
+	public final fun run ([Ljava/lang/String;)Lcom/areslib/codegen/GeneratedKotlinSource;
+}
+
+public final class com/areslib/codegen/DrivebaseKotlinArtifactRenderer {
+	public static final field INSTANCE Lcom/areslib/codegen/DrivebaseKotlinArtifactRenderer;
+	public final fun render (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Z)Ljava/util/List;
+}
+
+public final class com/areslib/codegen/DrivetrainKotlinGenerator {
+	public static final field INSTANCE Lcom/areslib/codegen/DrivetrainKotlinGenerator;
+	public final fun generate (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public static synthetic fun generate$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public final fun generateFtcMecanumRuntime (Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public static synthetic fun generateFtcMecanumRuntime$default (Lcom/areslib/codegen/DrivetrainKotlinGenerator;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public final fun generateProjectTuning (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+}
+
+public final class com/areslib/codegen/GeneratedDrivebaseFile {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/GeneratedDrivebaseFile;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedDrivebaseFile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/GeneratedKotlinSource {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedKotlinSource;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/GeneratedKotlinSource;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedKotlinSource;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContentHash ()Ljava/lang/String;
+	public final fun getSource ()Ljava/lang/String;
+	public final fun getSourceHash ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/GeneratedSubsystemFile {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/codegen/GeneratedSubsystemSourceSet;Lcom/areslib/codegen/SubsystemArtifact;Lcom/areslib/codegen/SubsystemArtifactGroup;Lcom/areslib/codegen/SubsystemArtifactOwnership;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/codegen/GeneratedSubsystemSourceSet;Lcom/areslib/codegen/SubsystemArtifact;Lcom/areslib/codegen/SubsystemArtifactGroup;Lcom/areslib/codegen/SubsystemArtifactOwnership;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/codegen/GeneratedSubsystemSourceSet;
+	public final fun component4 ()Lcom/areslib/codegen/SubsystemArtifact;
+	public final fun component5 ()Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public final fun component6 ()Lcom/areslib/codegen/SubsystemArtifactOwnership;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/codegen/GeneratedSubsystemSourceSet;Lcom/areslib/codegen/SubsystemArtifact;Lcom/areslib/codegen/SubsystemArtifactGroup;Lcom/areslib/codegen/SubsystemArtifactOwnership;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedSubsystemFile;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/GeneratedSubsystemFile;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/codegen/GeneratedSubsystemSourceSet;Lcom/areslib/codegen/SubsystemArtifact;Lcom/areslib/codegen/SubsystemArtifactGroup;Lcom/areslib/codegen/SubsystemArtifactOwnership;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedSubsystemFile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArtifact ()Lcom/areslib/codegen/SubsystemArtifact;
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getGroup ()Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public final fun getOwnership ()Lcom/areslib/codegen/SubsystemArtifactOwnership;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public final fun getSourceSet ()Lcom/areslib/codegen/GeneratedSubsystemSourceSet;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/GeneratedSubsystemSourceSet : java/lang/Enum {
+	public static final field MAIN Lcom/areslib/codegen/GeneratedSubsystemSourceSet;
+	public static final field TEST Lcom/areslib/codegen/GeneratedSubsystemSourceSet;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/codegen/GeneratedSubsystemSourceSet;
+	public static fun values ()[Lcom/areslib/codegen/GeneratedSubsystemSourceSet;
+}
+
+public final class com/areslib/codegen/GeneratedSuperstructureFile {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/GeneratedSuperstructureFile;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/KotlinProjectCompilationRequest {
+	public fun <init> (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/project/compiler/RobotProjectIr;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun copy (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/areslib/codegen/KotlinProjectCompilationRequest;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/KotlinProjectCompilationRequest;Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/areslib/codegen/KotlinProjectCompilationRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getGeneratedActionRegistryBindings ()Ljava/util/Map;
+	public final fun getObjectName ()Ljava/lang/String;
+	public final fun getPackageName ()Ljava/lang/String;
+	public final fun getProject ()Lcom/areslib/project/compiler/RobotProjectIr;
+	public final fun getRegistryInterfaceName ()Ljava/lang/String;
+	public final fun getSubsystemRegistryFqn ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/ProjectGeneratedTestNames {
+	public static final field AUTONOMOUS Ljava/lang/String;
+	public static final field CONTROLS Ljava/lang/String;
+	public static final field DRIVETRAIN_SAFETY Ljava/lang/String;
+	public static final field INSTANCE Lcom/areslib/codegen/ProjectGeneratedTestNames;
+	public static final field PROJECT_IDENTITY Ljava/lang/String;
+	public static final field SUPERSTRUCTURE Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/ProjectRuntimeKotlinRenderer {
+	public static final field INSTANCE Lcom/areslib/codegen/ProjectRuntimeKotlinRenderer;
+	public final fun render (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lkotlin/Pair;
+}
+
+public final class com/areslib/codegen/ProjectVerificationKotlinRenderer {
+	public static final field INSTANCE Lcom/areslib/codegen/ProjectVerificationKotlinRenderer;
+	public final fun render (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/RenderedKotlinArtifact;
+}
+
+public final class com/areslib/codegen/RenderedKotlinArtifact {
+	public fun <init> (Lcom/areslib/project/compiler/ProjectArtifactPlan;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/areslib/project/compiler/ProjectArtifactPlan;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lcom/areslib/project/compiler/ProjectArtifactPlan;Ljava/lang/String;)Lcom/areslib/codegen/RenderedKotlinArtifact;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/RenderedKotlinArtifact;Lcom/areslib/project/compiler/ProjectArtifactPlan;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/RenderedKotlinArtifact;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getPlan ()Lcom/areslib/project/compiler/ProjectArtifactPlan;
+	public fun hashCode ()I
+	public final fun manifestEntry ()Lcom/areslib/project/compiler/ProjectArtifactManifestEntry;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/SubsystemArtifact : java/lang/Enum {
+	public static final field CONTRACT_TEST Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field CONTROLLER Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field DEFINITION Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field IO_CONTRACT Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field MOCK_IO Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field PLATFORM_IO Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field REGISTRY Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field STATE Lcom/areslib/codegen/SubsystemArtifact;
+	public static final field SUBSYSTEM_LIFECYCLE Lcom/areslib/codegen/SubsystemArtifact;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/codegen/SubsystemArtifact;
+	public static fun values ()[Lcom/areslib/codegen/SubsystemArtifact;
+}
+
+public final class com/areslib/codegen/SubsystemArtifactGroup : java/lang/Enum {
+	public static final field CONTROL Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static final field DOMAIN Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static final field GENERATED_PLUMBING Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static final field HARDWARE Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static final field SIMULATION Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static final field VERIFICATION Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/codegen/SubsystemArtifactGroup;
+	public static fun values ()[Lcom/areslib/codegen/SubsystemArtifactGroup;
+}
+
+public final class com/areslib/codegen/SubsystemArtifactOwnership : java/lang/Enum {
+	public static final field GENERATED_DO_NOT_EDIT Lcom/areslib/codegen/SubsystemArtifactOwnership;
+	public static final field GENERATED_STARTER Lcom/areslib/codegen/SubsystemArtifactOwnership;
+	public static final field USER_OWNED Lcom/areslib/codegen/SubsystemArtifactOwnership;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/codegen/SubsystemArtifactOwnership;
+	public static fun values ()[Lcom/areslib/codegen/SubsystemArtifactOwnership;
+}
+
+public final class com/areslib/codegen/SubsystemKotlinArtifactRenderer {
+	public static final field INSTANCE Lcom/areslib/codegen/SubsystemKotlinArtifactRenderer;
+	public final fun render (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/SubsystemKotlinArtifactRenderer$Result;
+}
+
+public final class com/areslib/codegen/SubsystemKotlinArtifactRenderer$Result {
+	public fun <init> (Ljava/util/List;Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;Ljava/util/List;)Lcom/areslib/codegen/SubsystemKotlinArtifactRenderer$Result;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/SubsystemKotlinArtifactRenderer$Result;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/codegen/SubsystemKotlinArtifactRenderer$Result;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArtifacts ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/SubsystemKotlinCodegenTarget {
+	public fun <init> (Lcom/areslib/subsystem/SubsystemPlatform;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/areslib/subsystem/SubsystemPlatform;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lcom/areslib/subsystem/SubsystemPlatform;Ljava/lang/String;)Lcom/areslib/codegen/SubsystemKotlinCodegenTarget;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/SubsystemKotlinCodegenTarget;Lcom/areslib/subsystem/SubsystemPlatform;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/SubsystemKotlinCodegenTarget;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBasePackage ()Ljava/lang/String;
+	public final fun getPlatform ()Lcom/areslib/subsystem/SubsystemPlatform;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/SubsystemKotlinGenerator {
+	public static final field INSTANCE Lcom/areslib/codegen/SubsystemKotlinGenerator;
+	public final fun generate (Lcom/areslib/subsystem/SubsystemDocument;Lcom/areslib/codegen/SubsystemKotlinCodegenTarget;)Ljava/util/List;
+	public final fun generateRegistry (Ljava/util/List;Lcom/areslib/codegen/SubsystemKotlinCodegenTarget;)Lcom/areslib/codegen/GeneratedSubsystemFile;
+}
+
+public final class com/areslib/codegen/SubsystemStarterChange {
+	public fun <init> (Ljava/lang/String;Lcom/areslib/codegen/SubsystemStarterChangeKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lcom/areslib/codegen/SubsystemStarterChangeKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/codegen/SubsystemStarterChange;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/SubsystemStarterChange;Ljava/lang/String;Lcom/areslib/codegen/SubsystemStarterChangeKind;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/SubsystemStarterChange;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCurrentSha256 ()Ljava/lang/String;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getDiff ()Ljava/lang/String;
+	public final fun getKind ()Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public final fun getProposedSha256 ()Ljava/lang/String;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/SubsystemStarterChangeKind : java/lang/Enum {
+	public static final field ADD Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public static final field PROTECTED Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public static final field REPLACE Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public static final field UNCHANGED Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/codegen/SubsystemStarterChangeKind;
+	public static fun values ()[Lcom/areslib/codegen/SubsystemStarterChangeKind;
+}
+
+public final class com/areslib/codegen/SubsystemStarterPlan {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/SubsystemStarterPlan;
+	public static synthetic fun copy$default (Lcom/areslib/codegen/SubsystemStarterPlan;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/SubsystemStarterPlan;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChanges ()Ljava/util/List;
+	public final fun getConfirmationToken ()Ljava/lang/String;
+	public final fun getHasReplacements ()Z
+	public fun hashCode ()I
+	public final fun render ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/codegen/SubsystemStarterReconciler {
+	public static final field INSTANCE Lcom/areslib/codegen/SubsystemStarterReconciler;
+	public final fun apply (Ljava/nio/file/Path;Ljava/util/Collection;Ljava/lang/String;)Lcom/areslib/codegen/SubsystemStarterPlan;
+	public static synthetic fun apply$default (Lcom/areslib/codegen/SubsystemStarterReconciler;Ljava/nio/file/Path;Ljava/util/Collection;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/codegen/SubsystemStarterPlan;
+	public final fun plan (Ljava/nio/file/Path;Ljava/util/Collection;)Lcom/areslib/codegen/SubsystemStarterPlan;
+	public final fun requirePresent (Ljava/nio/file/Path;Ljava/util/Collection;)V
+}
+
+public final class com/areslib/codegen/SuperstructureKotlinArtifactRenderer {
+	public static final field INSTANCE Lcom/areslib/codegen/SuperstructureKotlinArtifactRenderer;
+	public final fun render (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+}
+
+public final class com/areslib/codegen/SuperstructureKotlinGenerator {
+	public static final field INSTANCE Lcom/areslib/codegen/SuperstructureKotlinGenerator;
+	public final fun generate (Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+	public static synthetic fun generate$default (Lcom/areslib/codegen/SuperstructureKotlinGenerator;Lcom/areslib/superstructure/SuperstructureDocument;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;ILjava/lang/Object;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+	public final fun generateRegistry (Ljava/util/List;Ljava/lang/String;)Lcom/areslib/codegen/GeneratedSuperstructureFile;
+}
+

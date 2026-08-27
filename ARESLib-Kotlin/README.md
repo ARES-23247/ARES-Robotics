@@ -1,0 +1,132 @@
+# ARESLib-Kotlin
+
+ARESLib-Kotlin is the shared Kotlin foundation for the ARES FTC, FRC, simulator, and analytics projects. It provides geometry, estimation, control, path planning, immutable robot state, hardware abstractions, telemetry, and local log transport. Season repositories supply the robot-specific hardware bindings and orchestration.
+
+## Repository structure
+
+| Module | Purpose | Depends on |
+|---|---|---|
+| `project-schema` | Canonical `.ares` document schemas and stable project/target identities | Kotlin/JVM libraries only |
+| `simulation-foundation` | Simulator product selection, capability validation, and deterministic fault timelines | `project-schema`, `core` |
+| `project-model` | Whole-project assembly, validation, effective indexes, and simulator plan derivation | `project-schema`, `simulation-foundation`, `core` |
+| `project-compiler` | Deterministic typed compiler IR and generated-artifact manifest | `project-model` |
+| `core` | State, reducers, geometry, EKF localization, controllers, safety, pathing, sequencer, NT4, telemetry, and logging | Kotlin/JVM libraries only |
+| `codegen` | Project, controls, autonomous, and subsystem Kotlin generation CLI | `core` |
+| `ftc-mocks` | Desktop implementations of the FTC and Android APIs used by library code | `core` |
+| `ftc-hardware` | FTC SDK adapters, mecanum robot base classes, Pinpoint, Limelight, cached hardware, and power management | `core`; mocks for compilation/tests |
+| `frc-runtime` | Vendor-neutral FRC lifecycle and generated-project host adapters | `core` |
+| `frc-hardware` | WPILib and vendor adapters, swerve robot base classes, Limelight, telemetry, and power management | `core`, `frc-runtime` |
+| `simulator` | FTC Dyn4j physics, virtual Driver Station, OpMode runner, FTC device doubles, and NT4 bridge | `core`, `ftc-hardware`, `ftc-mocks` |
+| `simulator-runtime-*` | Windows, Linux, or macOS JNI/LWJGL runtime selected by the consumer | `simulator` |
+| `ares-bom` | One version constraint for every published ARES artifact | all published modules |
+
+The important dependency rule is that platform and season code depend inward on `core`; `core` never imports FTC or WPILib APIs.
+
+```text
+                     core
+                 /     |     \
+          ftc-mocks  ftc-hardware  frc-hardware
+                 \     /
+                  simulator
+
+       ARES-FTC / ARES-FRC / ARES-Analytics
+                   consume published modules
+```
+
+See [Architecture](docs/architecture.md) for package ownership, the robot loop, and extension points.
+
+## Requirements
+
+- JDK 17
+- The checked-in Gradle Wrapper
+- Windows PowerShell examples below use `gradlew.bat`; use `./gradlew` on macOS or Linux
+- WPILib/vendor dependencies are resolved by Gradle when building `frc-hardware`
+
+## Build and test
+
+Run commands from this repository root:
+
+```powershell
+# Compile all production and test Kotlin sources
+.\gradlew.bat compileKotlin compileTestKotlin
+
+# Run all module tests
+.\gradlew.bat test
+
+# Run focused suites
+.\gradlew.bat :core:test
+.\gradlew.bat :ftc-hardware:test
+.\gradlew.bat :frc-hardware:test
+.\gradlew.bat :simulator:test
+
+# Build the complete Maven bundle under a unique, unpublished coordinate
+.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
+```
+
+Normal FTC, FRC, and Analytics builds consume immutable releases from the ARES GitHub Maven repository, with Maven Central retained as an optional secondary distribution channel. To test an unpublished library change against a sibling consumer without composite substitution, publish the isolated bundle and pass its repository explicitly:
+
+```powershell
+.\gradlew.bat publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
+cd ..\ARES-FTC
+.\gradlew.bat test "-ParesVersion=8.0.0-rc.<commit>" "-ParesRepository=file:///C:/absolute/path/ARESLib-Kotlin/build/release-repository"
+```
+
+All artifacts use the verified `org.aresfirst.ares` Maven namespace and one version:
+
+| Module | Coordinates |
+|---|---|
+| BOM | `org.aresfirst.ares:ares-bom:8.0.0` |
+| Project model | `org.aresfirst.ares:project-schema`, `simulation-foundation`, `project-model`, `project-compiler` |
+| Core | `org.aresfirst.ares:core` |
+| Code generation | `org.aresfirst.ares:codegen` |
+| FTC | `org.aresfirst.ares:ftc-hardware`, `org.aresfirst.ares:ftc-mocks` |
+| FRC | `org.aresfirst.ares:frc-runtime`, `org.aresfirst.ares:frc-hardware` |
+| FTC simulator | `org.aresfirst.ares:simulator` |
+| Simulator natives | `org.aresfirst.ares:simulator-runtime-{windows,linux,macos}` |
+
+Consumer builds pin the BOM version with the `aresVersion` Gradle property. Source substitution is an explicit library-development option: `-ParesUseSiblingLib=true`.
+
+## Run the simulator
+
+```powershell
+# Starts the simulator in OpMode discovery/server mode
+.\gradlew.bat :simulator:run
+
+# Pass a season OpMode and run without the Swing driver-station window
+.\gradlew.bat :simulator:run -PappArgs="--headless --opmode org.example.MyOpMode"
+```
+
+The FTC simulator serves NT4 on port `5810` and the local log browser/API on port `5002`. An FTC season repository adds its real OpMode classes to this runtime. FRC projects instead launch their separate WPILib/HAL simulator; `simulation-foundation` selects and validates these products but deliberately does not merge their lifecycles or device models.
+
+## Non-negotiable contracts
+
+- Coordinates are meters and headings are radians, CCW-positive: `0 = +X`, `pi/2 = +Y`.
+- Odometry deltas passed into `PoseEstimator` are robot-local SE(2) displacements.
+- Pinpoint heading polarity is corrected once in `PinpointIO`; do not negate it downstream.
+- Limelight target-space yaw is `-robotPoseTargetSpace.rotation.y`; `rotation.z` is not robot yaw.
+- Library time comes from `RobotClock`, never directly from wall-clock APIs.
+- Hardware is read once per loop into cached input objects; output and state getters do not read devices.
+- High-frequency update, sampling, and steering paths must not allocate.
+- Robots do not upload logs to cloud services. ARES Analytics pulls logs over the local network and performs cloud sync from the laptop.
+- NT4 topic names are normalized without a leading slash, and an announced topic's type does not change during its lifetime.
+
+The rationale and edge cases are documented in [Math and coordinate contracts](docs/math-and-coordinate-contracts.md) and [Telemetry and logging](docs/telemetry-and-logging.md).
+
+## Developer documentation
+
+- [Architecture](docs/architecture.md)
+- [Math and coordinate contracts](docs/math-and-coordinate-contracts.md)
+- [Telemetry and logging](docs/telemetry-and-logging.md)
+- [Routines, controls, and generated robot code](docs/routines-controls-and-codegen.md)
+- [Subsystem DSL and visual builder](docs/subsystem-dsl.md)
+- [Development, testing, and troubleshooting](docs/development.md)
+- [Redux onboarding](docs/onboarding/01_redux_basics.md)
+- [Desktop simulator onboarding](docs/onboarding/02_desktop_simulator.md)
+- [Pathing integration onboarding](docs/onboarding/03_pathing_and_analytics.md)
+- [Pit and hardware checklist](docs/onboarding/04_pit_operations_and_hardware.md)
+
+`GEMINI.md` contains repository rules for automated contributors. The documents above are the human-facing reference and should be updated with any contract or integration change.
+
+## License
+
+ARES-authored code is licensed under [Apache License 2.0](LICENSE). Third-party components retain their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The software license does not grant rights to ARES names or logos; see [TRADEMARKS.md](TRADEMARKS.md).

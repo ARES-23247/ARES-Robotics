@@ -1,0 +1,289 @@
+public final class com/areslib/project/compiler/ProjectActionIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/catalog/ActionDescriptor;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-aCGd8AM ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/catalog/ActionDescriptor;
+	public final fun copy-okpZ-_E (Ljava/lang/String;Lcom/areslib/catalog/ActionDescriptor;)Lcom/areslib/project/compiler/ProjectActionIr;
+	public static synthetic fun copy-okpZ-_E$default (Lcom/areslib/project/compiler/ProjectActionIr;Ljava/lang/String;Lcom/areslib/catalog/ActionDescriptor;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectActionIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescriptor ()Lcom/areslib/catalog/ActionDescriptor;
+	public final fun getKey-aCGd8AM ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactId {
+	public static final synthetic fun box-impl (Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectArtifactId;
+	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/String;)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactKind : java/lang/Enum {
+	public static final field DRIVEBASE_CONFIG Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field DRIVEBASE_RUNTIME Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field PROJECT_RUNTIME Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field PROJECT_VERIFICATION Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUBSYSTEM_CONTROL Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUBSYSTEM_DOMAIN Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUBSYSTEM_HARDWARE Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUBSYSTEM_PLUMBING Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUBSYSTEM_SIMULATION Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUBSYSTEM_VERIFICATION Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUPERSTRUCTURE_REGISTRY Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field SUPERSTRUCTURE_RUNTIME Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field TUNING_CONFIG Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static final field VERIFICATION_MANIFEST Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public static fun values ()[Lcom/areslib/project/compiler/ProjectArtifactKind;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactManifestEntry {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/compiler/ProjectArtifactSourceSet;Lcom/areslib/project/compiler/ProjectArtifactOwnership;Lcom/areslib/project/compiler/ProjectArtifactKind;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-rnf0rE8 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public final fun component4 ()Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public final fun component5 ()Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy-9r2kHd0 (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/compiler/ProjectArtifactSourceSet;Lcom/areslib/project/compiler/ProjectArtifactOwnership;Lcom/areslib/project/compiler/ProjectArtifactKind;Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectArtifactManifestEntry;
+	public static synthetic fun copy-9r2kHd0$default (Lcom/areslib/project/compiler/ProjectArtifactManifestEntry;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/compiler/ProjectArtifactSourceSet;Lcom/areslib/project/compiler/ProjectArtifactOwnership;Lcom/areslib/project/compiler/ProjectArtifactKind;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectArtifactManifestEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContentSha256 ()Ljava/lang/String;
+	public final fun getId-rnf0rE8 ()Ljava/lang/String;
+	public final fun getKind ()Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public final fun getOwnership ()Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public final fun getSourceSet ()Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactManifestKt {
+	public static final fun sha256 (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactOwnership : java/lang/Enum {
+	public static final field GENERATED_DO_NOT_EDIT Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public static final field GENERATED_STARTER Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public static final field USER_OWNED Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public static fun values ()[Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactPlan {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/compiler/ProjectArtifactSourceSet;Lcom/areslib/project/compiler/ProjectArtifactOwnership;Lcom/areslib/project/compiler/ProjectArtifactKind;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-rnf0rE8 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public final fun component4 ()Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public final fun component5 ()Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy-9r2kHd0 (Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/compiler/ProjectArtifactSourceSet;Lcom/areslib/project/compiler/ProjectArtifactOwnership;Lcom/areslib/project/compiler/ProjectArtifactKind;Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectArtifactPlan;
+	public static synthetic fun copy-9r2kHd0$default (Lcom/areslib/project/compiler/ProjectArtifactPlan;Ljava/lang/String;Ljava/lang/String;Lcom/areslib/project/compiler/ProjectArtifactSourceSet;Lcom/areslib/project/compiler/ProjectArtifactOwnership;Lcom/areslib/project/compiler/ProjectArtifactKind;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectArtifactPlan;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getId-rnf0rE8 ()Ljava/lang/String;
+	public final fun getKind ()Lcom/areslib/project/compiler/ProjectArtifactKind;
+	public final fun getOwnership ()Lcom/areslib/project/compiler/ProjectArtifactOwnership;
+	public final fun getRelativePath ()Ljava/lang/String;
+	public final fun getSourceSet ()Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectArtifactSourceSet : java/lang/Enum {
+	public static final field MAIN Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public static final field METADATA Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public static final field TEST Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+	public static fun values ()[Lcom/areslib/project/compiler/ProjectArtifactSourceSet;
+}
+
+public final class com/areslib/project/compiler/ProjectControlSchemeIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/controls/ControlSchemeDocument;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-gMOktJI ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/controls/ControlSchemeDocument;
+	public final fun copy-6MQHcyg (Ljava/lang/String;Lcom/areslib/controls/ControlSchemeDocument;)Lcom/areslib/project/compiler/ProjectControlSchemeIr;
+	public static synthetic fun copy-6MQHcyg$default (Lcom/areslib/project/compiler/ProjectControlSchemeIr;Ljava/lang/String;Lcom/areslib/controls/ControlSchemeDocument;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectControlSchemeIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Lcom/areslib/controls/ControlSchemeDocument;
+	public final fun getId-gMOktJI ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectControllerProfileIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/controls/ControllerProfileDocument;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-gMOktJI ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/controls/ControllerProfileDocument;
+	public final fun copy-6MQHcyg (Ljava/lang/String;Lcom/areslib/controls/ControllerProfileDocument;)Lcom/areslib/project/compiler/ProjectControllerProfileIr;
+	public static synthetic fun copy-6MQHcyg$default (Lcom/areslib/project/compiler/ProjectControllerProfileIr;Ljava/lang/String;Lcom/areslib/controls/ControllerProfileDocument;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectControllerProfileIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Lcom/areslib/controls/ControllerProfileDocument;
+	public final fun getId-gMOktJI ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectDrivetrainIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainDocument;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-gMOktJI ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun copy-6MQHcyg (Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainDocument;)Lcom/areslib/project/compiler/ProjectDrivetrainIr;
+	public static synthetic fun copy-6MQHcyg$default (Lcom/areslib/project/compiler/ProjectDrivetrainIr;Ljava/lang/String;Lcom/areslib/drivetrain/DrivetrainDocument;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectDrivetrainIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun getId-gMOktJI ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectRoutineIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/routine/RoutineDocument;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-gMOktJI ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/routine/RoutineDocument;
+	public final fun copy-6MQHcyg (Ljava/lang/String;Lcom/areslib/routine/RoutineDocument;)Lcom/areslib/project/compiler/ProjectRoutineIr;
+	public static synthetic fun copy-6MQHcyg$default (Lcom/areslib/project/compiler/ProjectRoutineIr;Ljava/lang/String;Lcom/areslib/routine/RoutineDocument;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectRoutineIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Lcom/areslib/routine/RoutineDocument;
+	public final fun getId-gMOktJI ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectSubsystemIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemDocument;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-gMOktJI ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun copy-6MQHcyg (Ljava/lang/String;Lcom/areslib/subsystem/SubsystemDocument;)Lcom/areslib/project/compiler/ProjectSubsystemIr;
+	public static synthetic fun copy-6MQHcyg$default (Lcom/areslib/project/compiler/ProjectSubsystemIr;Ljava/lang/String;Lcom/areslib/subsystem/SubsystemDocument;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectSubsystemIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Lcom/areslib/subsystem/SubsystemDocument;
+	public final fun getId-gMOktJI ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectSuperstructureIr {
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDocument;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-gMOktJI ()Ljava/lang/String;
+	public final fun component2 ()Lcom/areslib/superstructure/SuperstructureDocument;
+	public final fun copy-6MQHcyg (Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDocument;)Lcom/areslib/project/compiler/ProjectSuperstructureIr;
+	public static synthetic fun copy-6MQHcyg$default (Lcom/areslib/project/compiler/ProjectSuperstructureIr;Ljava/lang/String;Lcom/areslib/superstructure/SuperstructureDocument;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectSuperstructureIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Lcom/areslib/superstructure/SuperstructureDocument;
+	public final fun getId-gMOktJI ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectVerificationManifest {
+	public synthetic fun <init> (IILjava/lang/String;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Lcom/areslib/simulation/SimulationProductId;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (IILjava/lang/String;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Lcom/areslib/simulation/SimulationProductId;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3-eHhCgmk ()Ljava/lang/String;
+	public final fun component4 ()Lcom/areslib/project/schema/AresControllerTarget;
+	public final fun component5 ()Lcom/areslib/project/schema/AresSimulatorTarget;
+	public final fun component6 ()Lcom/areslib/simulation/SimulationProductId;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Ljava/util/List;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy-LRlRPg0 (IILjava/lang/String;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Lcom/areslib/simulation/SimulationProductId;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/project/compiler/ProjectVerificationManifest;
+	public static synthetic fun copy-LRlRPg0$default (Lcom/areslib/project/compiler/ProjectVerificationManifest;IILjava/lang/String;Lcom/areslib/project/schema/AresControllerTarget;Lcom/areslib/project/schema/AresSimulatorTarget;Lcom/areslib/simulation/SimulationProductId;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/compiler/ProjectVerificationManifest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArtifacts ()Ljava/util/List;
+	public final fun getCanonicalProjectSha256 ()Ljava/lang/String;
+	public final fun getCompilerIrVersion ()I
+	public final fun getControllerTarget ()Lcom/areslib/project/schema/AresControllerTarget;
+	public final fun getManifestSha256 ()Ljava/lang/String;
+	public final fun getProjectId-eHhCgmk ()Ljava/lang/String;
+	public final fun getSchemaVersion ()I
+	public final fun getSimulationProduct ()Lcom/areslib/simulation/SimulationProductId;
+	public final fun getSimulatorTarget ()Lcom/areslib/project/schema/AresSimulatorTarget;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/ProjectVerificationManifestBuilder {
+	public static final field INSTANCE Lcom/areslib/project/compiler/ProjectVerificationManifestBuilder;
+	public static final fun build (Lcom/areslib/project/compiler/RobotProjectIr;Ljava/util/Collection;)Lcom/areslib/project/compiler/ProjectVerificationManifest;
+}
+
+public final class com/areslib/project/compiler/ProjectVerificationManifestCodec {
+	public static final field INSTANCE Lcom/areslib/project/compiler/ProjectVerificationManifestCodec;
+	public static final fun encode (Lcom/areslib/project/compiler/ProjectVerificationManifest;)Ljava/lang/String;
+}
+
+public final class com/areslib/project/compiler/RobotProjectCompiler {
+	public static final field INSTANCE Lcom/areslib/project/compiler/RobotProjectCompiler;
+	public static final fun lower (Lcom/areslib/project/model/EffectiveRobotProject;Lcom/areslib/controls/ControllerInputPlatform;)Lcom/areslib/project/compiler/RobotProjectIr;
+	public static synthetic fun lower$default (Lcom/areslib/project/model/EffectiveRobotProject;Lcom/areslib/controls/ControllerInputPlatform;ILjava/lang/Object;)Lcom/areslib/project/compiler/RobotProjectIr;
+}
+
+public final class com/areslib/project/compiler/RobotProjectCompilerKt {
+	public static final field ARES_PROJECT_COMPILER_IR_VERSION I
+}
+
+public final class com/areslib/project/compiler/RobotProjectIr {
+	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component10 ()Ljava/util/List;
+	public final fun component11 ()Ljava/util/List;
+	public final fun component12 ()Ljava/util/List;
+	public final fun component13 ()Ljava/util/List;
+	public final fun component14 ()Ljava/util/List;
+	public final fun component15 ()Lcom/areslib/project/compiler/ProjectDrivetrainIr;
+	public final fun component16 ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun component17 ()Ljava/util/List;
+	public final fun component18 ()Ljava/util/List;
+	public final fun component19 ()Ljava/util/List;
+	public final fun component2-eHhCgmk ()Ljava/lang/String;
+	public final fun component20 ()Ljava/lang/String;
+	public final fun component21 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/areslib/project/schema/AresProjectTarget;
+	public final fun component4 ()Lcom/areslib/simulation/SimulationProductId;
+	public final fun component5 ()Lcom/areslib/controls/ControllerInputPlatform;
+	public final fun component6 ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun component7 ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun component8 ()Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun component9 ()Ljava/util/List;
+	public final fun copy-Id5s9N8 (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/project/compiler/RobotProjectIr;
+	public static synthetic fun copy-Id5s9N8$default (Lcom/areslib/project/compiler/RobotProjectIr;ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/compiler/RobotProjectIr;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getActions ()Ljava/util/List;
+	public final fun getAutonomousCatalog ()Lcom/areslib/routine/AutonomousCatalogDocument;
+	public final fun getCanonicalProjectSha256 ()Ljava/lang/String;
+	public final fun getCapabilityCatalog ()Lcom/areslib/catalog/CapabilityCatalogDocument;
+	public final fun getControlSchemes ()Ljava/util/List;
+	public final fun getControllerProfiles ()Ljava/util/List;
+	public final fun getDrivetrain ()Lcom/areslib/project/compiler/ProjectDrivetrainIr;
+	public final fun getField ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getInputPlatform ()Lcom/areslib/controls/ControllerInputPlatform;
+	public final fun getIrVersion ()I
+	public final fun getMetadata ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun getProjectId-eHhCgmk ()Ljava/lang/String;
+	public final fun getRoutines ()Ljava/util/List;
+	public final fun getSimulationProduct ()Lcom/areslib/simulation/SimulationProductId;
+	public final fun getSubsystems ()Ljava/util/List;
+	public final fun getSuperstructures ()Ljava/util/List;
+	public final fun getTarget ()Lcom/areslib/project/schema/AresProjectTarget;
+	public final fun getTuningComponents ()Ljava/util/List;
+	public final fun getTuningDeclarations ()Ljava/util/List;
+	public final fun getTuningProfiles ()Ljava/util/List;
+	public final fun getTuningScopeUid ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

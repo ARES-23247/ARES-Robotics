@@ -1,0 +1,685 @@
+package com.areslib.math.estimation
+
+import com.areslib.state.VisionMeasurement
+import com.areslib.math.coordinate.FieldLayouts
+import com.areslib.math.wrapAngle
+import com.areslib.math.geometry.*
+
+/**
+ * Pre-allocated single snapshot entry in the EKF state history ring buffer.
+ *
+ * Stores state estimates and associated covariance matrices at past timestamps to enable
+ * latency-compensated retroactive vision measurement updates.
+ *
+ * @property timestampMs System timestamp in milliseconds ($ms$).
+ * @property x Robot field-centric X position in meters ($m$).
+ * @property y Robot field-centric Y position in meters ($m$).
+ * @property headingRad Robot field-centric heading in radians ($rad$), **CCW-positive**.
+ * @property covariance 3x3 error covariance matrix $\mathbf{P}$ at [timestampMs].
+ * @property qScale Full process noise multiplier applied during this frame, including
+ * tilt, slip, translation-rate, and elapsed-time scaling.
+ */
+data class PoseHistoryEntry(
+    var timestampMs: Long = 0L,
+    var x: Double = 0.0,
+    var y: Double = 0.0,
+    var headingRad: Double = 0.0,
+    var covariance: Matrix3x3 = Matrix3x3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+    var qScale: Double = 1.0,
+    /** Heading process-noise scale, independently replayed from translation noise. */
+    var qHeadingScale: Double = qScale,
+    /** Robot-frame SE(2) twist integrated from the preceding history entry. */
+    var deltaXRobot: Double = 0.0,
+    var deltaYRobot: Double = 0.0,
+    var deltaHeadingRad: Double = 0.0,
+    var hasMotion: Boolean = false
+) {
+    val effectiveQHeadingScale: Double
+        get() = if (qHeadingScale.isFinite()) qHeadingScale else qScale
+
+    /** Gets or sets the [Pose2d] representation of this historical entry. */
+    var pose: Pose2d
+        get() = Pose2d(x, y, Rotation2d(headingRad))
+        set(value) {
+            x = value.x
+            y = value.y
+            headingRad = value.heading.radians
+        }
+}
+
+/**
+ * Fixed-capacity circular ring-buffer storing historical [PoseHistoryEntry] records.
+ *
+ * Enables $O(1)$ constant-time insertion and lookup during 100Hz odometry state propagation
+ * and retroactive vision rewind passes with zero heap allocations.
+ *
+ * ### Zero-GC Guarantee:
+ * Pre-allocates array entries upon construction (`Array(capacity) { PoseHistoryEntry() }`).
+ * Runtime rewind paths reuse caller-owned scratch buffers through [copyInto]. Snapshot copies
+ * intentionally allocate so their ownership cannot alias a later caller.
+ *
+ * @param capacity Maximum number of historical frames to retain (default $150$, corresponding to
+ * roughly $1.5$-$3.0\,\text{s}$ at 50-100 Hz).
+ */
+class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryEntry>() {
+    private var readOnly: Boolean = false
+
+    private constructor(capacity: Int, readOnly: Boolean) : this(capacity) {
+        this.readOnly = readOnly
+    }
+
+    private val entries = Array(capacity) { PoseHistoryEntry() }
+    private var head = 0
+    private var count = 0
+
+    override val size: Int get() = count
+
+    /**
+     * Gets the historical entry at [index] (0 = oldest entry in active history window, `size-1` = newest).
+     *
+     * @param index Logical index into the active history buffer $[0, \text{size}-1]$.
+     * @return Pre-allocated [PoseHistoryEntry] instance.
+     * @throws IndexOutOfBoundsException If [index] is negative or $\ge \text{size}$.
+     */
+    override fun get(index: Int): PoseHistoryEntry {
+        if (index < 0 || index >= count) throw IndexOutOfBoundsException("Index: $index, Size: $count")
+        val physicalIndex = (head - count + index + capacity) % capacity
+        return entries[physicalIndex]
+    }
+
+    /**
+     * Inserts an entry at a logical history index without allocating. If full, the
+     * oldest entry is discarded first. Returns the inserted entry's resulting index.
+     */
+    fun insertEntryDirect(
+        requestedIndex: Int,
+        timestampMs: Long,
+        x: Double,
+        y: Double,
+        headingRad: Double,
+        covariance: Matrix3x3,
+        qScale: Double,
+        deltaXRobot: Double,
+        deltaYRobot: Double,
+        deltaHeadingRad: Double,
+        hasMotion: Boolean,
+        qHeadingScale: Double = qScale
+    ): Int {
+        requireWritable()
+        require(requestedIndex in 0..count)
+        var insertionIndex = requestedIndex
+        if (count == capacity) {
+            count--
+            insertionIndex = (insertionIndex - 1).coerceAtLeast(0)
+        }
+        val start = (head - count + capacity) % capacity
+        for (logicalIndex in count downTo insertionIndex + 1) {
+            copyEntry(
+                entries[(start + logicalIndex - 1) % capacity],
+                entries[(start + logicalIndex) % capacity]
+            )
+        }
+        val entry = entries[(start + insertionIndex) % capacity]
+        entry.timestampMs = timestampMs
+        entry.x = x
+        entry.y = y
+        entry.headingRad = headingRad
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        entry.qHeadingScale = qHeadingScale
+        entry.deltaXRobot = deltaXRobot
+        entry.deltaYRobot = deltaYRobot
+        entry.deltaHeadingRad = deltaHeadingRad
+        entry.hasMotion = hasMotion && insertionIndex > 0
+        count++
+        head = (start + count) % capacity
+        return insertionIndex
+    }
+
+    private fun copyEntry(source: PoseHistoryEntry, destination: PoseHistoryEntry) {
+        destination.timestampMs = source.timestampMs
+        destination.x = source.x
+        destination.y = source.y
+        destination.headingRad = source.headingRad
+        destination.covariance.setTo(source.covariance)
+        destination.qScale = source.qScale
+        destination.qHeadingScale = source.qHeadingScale
+        destination.deltaXRobot = source.deltaXRobot
+        destination.deltaYRobot = source.deltaYRobot
+        destination.deltaHeadingRad = source.deltaHeadingRad
+        destination.hasMotion = source.hasMotion
+    }
+
+    /**
+     * Pushes a new historical pose entry into the ring buffer, overwriting the oldest entry if at full capacity.
+     *
+     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param pose Robot 2D pose in meters ($m$) and radians ($rad$).
+     * @param covariance 3x3 state error covariance matrix $\mathbf{P}$.
+     * @param qScale Process noise scaling factor.
+     */
+    fun addEntry(timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
+        requireWritable()
+        val entry = entries[head]
+        entry.timestampMs = timestampMs
+        entry.pose = pose
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        entry.qHeadingScale = qScale
+        entry.deltaXRobot = 0.0
+        entry.deltaYRobot = 0.0
+        entry.deltaHeadingRad = 0.0
+        entry.hasMotion = false
+        head = (head + 1) % capacity
+        if (count < capacity) count++
+    }
+
+    /**
+     * Pushes primitive scalar pose parameters directly into the ring buffer without creating intermediate [Pose2d] objects.
+     *
+     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param x Robot X position in meters ($m$).
+     * @param y Robot Y position in meters ($m$).
+     * @param headingRad Robot heading in radians ($rad$), CCW-positive.
+     * @param covariance 3x3 state error covariance matrix $\mathbf{P}$.
+     * @param qScale Process noise scaling factor.
+     */
+    fun addEntryDirect(
+        timestampMs: Long,
+        x: Double,
+        y: Double,
+        headingRad: Double,
+        covariance: Matrix3x3,
+        qScale: Double,
+        deltaXRobot: Double = 0.0,
+        deltaYRobot: Double = 0.0,
+        deltaHeadingRad: Double = 0.0,
+        hasMotion: Boolean = false,
+        qHeadingScale: Double = qScale
+    ) {
+        requireWritable()
+        val entry = entries[head]
+        entry.timestampMs = timestampMs
+        entry.x = x
+        entry.y = y
+        entry.headingRad = headingRad
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        entry.qHeadingScale = qHeadingScale
+        entry.deltaXRobot = deltaXRobot
+        entry.deltaYRobot = deltaYRobot
+        entry.deltaHeadingRad = deltaHeadingRad
+        entry.hasMotion = hasMotion
+        head = (head + 1) % capacity
+        if (count < capacity) count++
+    }
+
+    /**
+     * Creates a deep-copy of this history buffer.
+     *
+     * @return Independently owned [HistoryBuffer]. This method allocates and is not a hot-path API.
+     */
+    fun deepCopy(): HistoryBuffer {
+        if (readOnly && count == 0) return HistoryBuffer()
+        val newBuf = HistoryBuffer(capacity)
+        for (i in 0 until capacity) {
+            val src = entries[i]
+            val dest = newBuf.entries[i]
+            dest.timestampMs = src.timestampMs
+            dest.x = src.x
+            dest.y = src.y
+            dest.headingRad = src.headingRad
+            dest.covariance.setTo(src.covariance)
+            dest.qScale = src.qScale
+            dest.qHeadingScale = src.qHeadingScale
+            dest.deltaXRobot = src.deltaXRobot
+            dest.deltaYRobot = src.deltaYRobot
+            dest.deltaHeadingRad = src.deltaHeadingRad
+            dest.hasMotion = src.hasMotion
+        }
+        newBuf.head = head
+        newBuf.count = count
+        return newBuf
+    }
+
+    /**
+     * Copies the full state of this buffer into pre-allocated [destination] buffer without heap allocations.
+     *
+     * @param destination Target pre-allocated [HistoryBuffer] instance.
+     */
+    fun copyInto(destination: HistoryBuffer) {
+        destination.requireWritable()
+        if (destination.capacity != capacity) {
+            destination.head = 0
+            destination.count = 0
+            val firstIndex = (count - destination.capacity).coerceAtLeast(0)
+            for (i in firstIndex until count) {
+                val source = get(i)
+                destination.addEntryDirect(
+                    source.timestampMs,
+                    source.x,
+                    source.y,
+                    source.headingRad,
+                    source.covariance,
+                    source.qScale,
+                    source.deltaXRobot,
+                    source.deltaYRobot,
+                    source.deltaHeadingRad,
+                    source.hasMotion,
+                    source.effectiveQHeadingScale
+                )
+            }
+            return
+        }
+        destination.head = this.head
+        destination.count = this.count
+        for (i in 0 until capacity) {
+            val src = this.entries[i]
+            val dest = destination.entries[i]
+            dest.timestampMs = src.timestampMs
+            dest.x = src.x
+            dest.y = src.y
+            dest.headingRad = src.headingRad
+            dest.covariance.setTo(src.covariance)
+            dest.qScale = src.qScale
+            dest.qHeadingScale = src.qHeadingScale
+            dest.deltaXRobot = src.deltaXRobot
+            dest.deltaYRobot = src.deltaYRobot
+            dest.deltaHeadingRad = src.deltaHeadingRad
+            dest.hasMotion = src.hasMotion
+        }
+    }
+    
+    /**
+     * Updates an existing historical entry at [index] in-place with new pose data.
+     *
+     * @param index Logical history index $[0, \text{size}-1]$.
+     * @param timestampMs Updated timestamp in milliseconds ($ms$).
+     * @param pose Updated pose.
+     * @param covariance Updated 3x3 error covariance matrix.
+     * @param qScale Process noise scaling factor.
+     */
+    fun updateEntry(index: Int, timestampMs: Long, pose: Pose2d, covariance: Matrix3x3, qScale: Double) {
+        requireWritable()
+        val entry = get(index)
+        entry.timestampMs = timestampMs
+        entry.pose = pose
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        entry.qHeadingScale = qScale
+    }
+
+    /**
+     * Updates an existing historical entry at [index] in-place using primitive scalar values to enforce Zero-GC compliance.
+     *
+     * @param index Logical history index $[0, \text{size}-1]$.
+     * @param timestampMs Updated timestamp in milliseconds ($ms$).
+     * @param x Updated X coordinate in meters ($m$).
+     * @param y Updated Y coordinate in meters ($m$).
+     * @param headingRad Updated heading in radians ($rad$), CCW-positive.
+     * @param covariance Updated 3x3 error covariance matrix.
+     * @param qScale Process noise scaling factor.
+     */
+    fun updateEntryDirect(
+        index: Int,
+        timestampMs: Long,
+        x: Double,
+        y: Double,
+        headingRad: Double,
+        covariance: Matrix3x3,
+        qScale: Double,
+        qHeadingScale: Double = qScale
+    ) {
+        requireWritable()
+        val entry = get(index)
+        entry.timestampMs = timestampMs
+        entry.x = x
+        entry.y = y
+        entry.headingRad = headingRad
+        entry.covariance.setTo(covariance)
+        entry.qScale = qScale
+        entry.qHeadingScale = qHeadingScale
+    }
+
+    companion object {
+        /** Shared immutable marker used by published Redux snapshots; EKF history is runtime-owned. */
+        internal val READ_ONLY_EMPTY = HistoryBuffer(0, true)
+
+        /**
+         * Obtains an independently owned copy of [src].
+         *
+         * A former round-robin pool reused returned buffers after 256 calls without an ownership
+         * protocol, so retaining a valid earlier result could be corrupted by a later copy. The
+         * allocating behavior is deliberate; 50-100 Hz code must pre-allocate a destination and
+         * call [HistoryBuffer.copyInto] instead.
+         *
+         * @param src Source [HistoryBuffer] to clone.
+         * @return Newly allocated [HistoryBuffer] pre-populated with data from [src].
+         */
+        fun obtainCopy(src: HistoryBuffer): HistoryBuffer = src.deepCopy()
+    }
+
+    private fun requireWritable() {
+        check(!readOnly) { "Published estimator history is read-only and runtime-owned" }
+    }
+}
+
+
+/**
+ * Mutable, runtime-owned workspace for the pose estimator.
+ *
+ * This type exists to prevent high-frequency garbage collection on Android ART and RoboRIO by
+ * reusing primitive-backed matrices and history entries. It must never be placed in Redux state;
+ * publish [PoseEstimatorSnapshot] instead.
+ *
+ * @property estimatedPose The current best estimate of the robot's 2D field-centric position and heading.
+ * @property covariance The 3x3 error covariance matrix representing estimate uncertainty.
+ * @property history The rolling history of past state estimations used for retroactive latency compensation.
+ */
+data class PoseEstimatorState(
+    var estimatedPoseX: Double = 0.0,
+    var estimatedPoseY: Double = 0.0,
+    var estimatedPoseHeading: Double = 0.0,
+    val covarianceArray: DoubleArray = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+    val history: HistoryBuffer = HistoryBuffer(150), // Max size typically ~150
+    var isBeached: Boolean = false,
+    var lastUnbeachedTimeMs: Long = 0L,
+    var gyroBiasRadPerSec: Double = 0.0,
+    /** Start of the current stationary dwell used for safe gyro-bias learning. */
+    var stationarySinceMs: Long = 0L,
+    var lastInnovationX: Double = 0.0,
+    var lastInnovationY: Double = 0.0,
+    var lastInnovationTheta: Double = 0.0,
+    /** Normalized innovation squared (NIS) from the most recent vision observation. */
+    var lastNormalizedInnovationSquared: Double = 0.0,
+    var lastKalmanGain: DoubleArray = DoubleArray(9),
+    var lastMeasurementAccepted: Boolean = false,
+    var lastRejectionReason: String? = null
+) {
+    /** Timestamp of the newest accepted drive observation; history itself is runtime-owned. */
+    var lastObservationTimestampMs: Long = -1L
+    /**
+     * Creates an independently owned mutable estimator workspace.
+     *
+     * This is retained for direct estimator callers and tests. Redux reduction no longer invokes it
+     * per frame: each [com.areslib.Store] owns one [PoseEstimatorRuntime], and published snapshots
+     * contain the shared read-only empty-history marker instead of cloning the 150-frame buffer.
+     */
+    fun deepCopy(): PoseEstimatorState = copy(
+        covarianceArray = covarianceArray.copyOf(),
+        history = history.deepCopy(),
+        lastKalmanGain = lastKalmanGain.copyOf()
+    ).also { it.lastObservationTimestampMs = lastObservationTimestampMs }
+
+    val estimatedPose: Pose2d
+        get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))
+
+    // WARNING: This is a shared mutable reference. Do not mutate the returned instance or store it across frames.
+    private val _covarianceMatrix = Matrix3x3()
+
+    val covariance: Matrix3x3
+        get() {
+            _covarianceMatrix.m00 = covarianceArray[0]
+            _covarianceMatrix.m01 = covarianceArray[1]
+            _covarianceMatrix.m02 = covarianceArray[2]
+            _covarianceMatrix.m10 = covarianceArray[3]
+            _covarianceMatrix.m11 = covarianceArray[4]
+            _covarianceMatrix.m12 = covarianceArray[5]
+            _covarianceMatrix.m20 = covarianceArray[6]
+            _covarianceMatrix.m21 = covarianceArray[7]
+            _covarianceMatrix.m22 = covarianceArray[8]
+            return _covarianceMatrix
+        }
+}
+
+/**
+ * Championship-grade **Extended Kalman Filter (EKF) Pose Estimator**.
+ *
+ * Fuses high-rate wheel odometry ($100\text{ Hz}$) with asynchronous, latency-delayed 3D AprilTag vision observations.
+ * Integrates configurable normalized-innovation-squared (Mahalanobis) outlier filtering and
+ * retroactive observation rewind playback. The public vision APIs default to a threshold of
+ * $12.0$ for the 3-DOF $(x, y, \theta)$ innovation.
+ *
+ * ### EKF State Prediction & Innovation Equations:
+ * $$x_k = f(x_{k-1}, u_{k-1}), \quad P_k = F P_{k-1} F^T + Q$$
+ * $$y_k = z_k - h(\hat{x}_k), \quad S_k = H P_k H^T + R$$
+ * $$K_k = P_k H^T S_k^{-1}$$
+ * $$\hat{x}_k \leftarrow \hat{x}_k + K_k y_k, \quad P_k \leftarrow (I - K_k H) P_k$$
+ *
+ * ### Mahalanobis Outlier Filtering:
+ * $$d_M = \sqrt{y_k^T S_k^{-1} y_k} \quad (\text{Reject if } d_M^2 > \text{configured threshold})$$
+ *
+ * ### Physical Units & Guarantees:
+ * - **Position ($x, y$):** Field-centric meters ($m$)
+ * - **Heading ($\theta$):** Radians ($rad$, CCW-positive: $0 = +X$, $\frac{\pi}{2} = +Y$)
+ * - **Timestamps ($t$):** Milliseconds ($ms$)
+ * - **Memory Footprint:** Runtime rewind passes reuse thread-owned matrices and history scratchpads.
+ *   Explicit snapshot APIs such as [HistoryBuffer.deepCopy] allocate outside the hot path.
+ *
+ * @see VisionMeasurement
+ * @see HistoryBuffer
+ */
+object PoseEstimator {
+    private const val MAX_HISTORY_SIZE = 150
+
+    // Standard deviation of odometry (tune these for actual robot)
+    private val Q = Matrix3x3(
+        0.01, 0.0,  0.0,
+        0.0,  0.01, 0.0,
+        0.0,  0.0,  0.01
+    )
+
+    var qX: Double = 0.01
+        set(value) {
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m00 = safeValue
+        }
+
+    var qY: Double = 0.01
+        set(value) {
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m11 = safeValue
+        }
+
+    var qTheta: Double = 0.01
+        set(value) {
+            val safeValue = value.takeIf { it.isFinite() && it >= 0.0 } ?: 0.01
+            field = safeValue
+            Q.m22 = safeValue
+        }
+
+    private class ScratchpadContainer {
+        val scratchQ = Matrix3x3()
+        val scratchR = Matrix3x3()
+        val scratchS = Matrix3x3()
+        val scratchSInv = Matrix3x3()
+        val scratchK = Matrix3x3()
+        val scratchCov = Matrix3x3()
+        val scratchCov2 = Matrix3x3()
+        val scratchHistory = HistoryBuffer(MAX_HISTORY_SIZE)
+        val scratchInterpolatedEntry = PoseHistoryEntry()
+    }
+
+    private val threadScratchpad = ThreadLocal.withInitial { ScratchpadContainer() }
+
+    // Known AprilTag coordinates for distance calculations (configurable via FieldLayouts)
+    @JvmField
+    var activeTags: Map<Int, Pose3d> = FieldLayouts.SQUARE_STANDARD_TAGS
+
+    /**
+     * Integrates a high-rate dead-wheel odometry observation into the active EKF state.
+     *
+     * @param state Active EKF state snapshot.
+     * @param timestampMs Measurement timestamp in milliseconds ($ms$).
+     * @param deltaTranslation Robot-frame displacement vector in meters ($m$).
+     * @param deltaHeading Robot-frame rotation change in radians ($rad$).
+     * @param pitchDegrees IMU pitch angle in degrees ($^\circ$).
+     * @param rollDegrees IMU roll angle in degrees ($^\circ$).
+     * @param pitchVelocityDegPerSec IMU pitch rate in degrees per second ($^\circ/s$).
+     * @param rollVelocityDegPerSec IMU roll rate in degrees per second ($^\circ/s$).
+     * @param gyroRateRadPerSec Raw IMU yaw rate in radians per second ($rad/s$).
+     * @param dtSeconds Elapsed time since last update cycle in seconds ($\Delta t$).
+     * @return Updated [PoseEstimatorState].
+     */
+    fun addOdometryObservation(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        deltaTranslation: Translation2d,
+        deltaHeading: Rotation2d,
+        pitchDegrees: Double = 0.0,
+        rollDegrees: Double = 0.0,
+        pitchVelocityDegPerSec: Double = 0.0,
+        rollVelocityDegPerSec: Double = 0.0,
+        gyroRateRadPerSec: Double = 0.0,
+        dtSeconds: Double = 0.02,
+        applyGyroBiasCorrection: Boolean = true
+    ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
+        return OdometryFusionController.processOdometryDirect(
+            state, timestampMs, deltaTranslation.x, deltaTranslation.y, deltaHeading.radians,
+            pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
+            gyroRateRadPerSec, dtSeconds, applyGyroBiasCorrection, Q, scratch.scratchQ, scratch.scratchCov
+        )
+    }
+
+    /**
+     * Integrates primitive scalar dead-wheel odometry deltas directly with Zero-GC overhead.
+     *
+     * @param state Active EKF state snapshot.
+     * @param timestampMs Measurement timestamp in milliseconds ($ms$).
+     * @param deltaX Local X displacement in meters ($m$).
+     * @param deltaY Local Y displacement in meters ($m$).
+     * @param deltaHeadingRad Local heading change in radians ($rad$).
+     * @param pitchDegrees IMU pitch in degrees ($^\circ$).
+     * @param rollDegrees IMU roll in degrees ($^\circ$).
+     * @param pitchVelocityDegPerSec IMU pitch rate in degrees per second ($^\circ/s$).
+     * @param rollVelocityDegPerSec IMU roll rate in degrees per second ($^\circ/s$).
+     * @param gyroRateRadPerSec Raw IMU yaw rate in radians per second ($rad/s$).
+     * @param dtSeconds Elapsed time in seconds ($\Delta t$).
+     * @return Updated [PoseEstimatorState].
+     */
+    fun addOdometryObservationDirect(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        deltaX: Double,
+        deltaY: Double,
+        deltaHeadingRad: Double,
+        pitchDegrees: Double = 0.0,
+        rollDegrees: Double = 0.0,
+        pitchVelocityDegPerSec: Double = 0.0,
+        rollVelocityDegPerSec: Double = 0.0,
+        gyroRateRadPerSec: Double = 0.0,
+        dtSeconds: Double = 0.02,
+        applyGyroBiasCorrection: Boolean = true
+    ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
+        return OdometryFusionController.processOdometryDirect(
+            state, timestampMs, deltaX, deltaY, deltaHeadingRad,
+            pitchDegrees, rollDegrees, pitchVelocityDegPerSec, rollVelocityDegPerSec,
+            gyroRateRadPerSec, dtSeconds, applyGyroBiasCorrection, Q, scratch.scratchQ, scratch.scratchCov
+        )
+    }
+
+    /**
+     * Mirrors the output of an upstream authoritative pose estimator into the shared
+     * robot state without applying a second prediction or correction step.
+     *
+     * This is used by platforms such as CTRE swerve where wheel, gyro, and vision
+     * observations have already been fused. Treating that pose as raw odometry would
+     * rotate field-frame corrections again and give the local covariance a false
+     * statistical meaning. Diagnostics are cleared rather than marked rejected: innovation,
+     * Kalman gain, and `lastMeasurementAccepted=false` here mean "no local correction was
+     * applied", not "a measurement was rejected".
+     */
+    fun acceptExternalEstimate(
+        state: PoseEstimatorState,
+        timestampMs: Long,
+        xMeters: Double,
+        yMeters: Double,
+        headingRadians: Double
+    ): PoseEstimatorState {
+        if (!xMeters.isFinite() || !yMeters.isFinite() || !headingRadians.isFinite()) {
+            return state
+        }
+
+        val normalizedHeading = wrapAngle(headingRadians)
+        state.estimatedPoseX = xMeters
+        state.estimatedPoseY = yMeters
+        state.estimatedPoseHeading = normalizedHeading
+        state.lastInnovationX = 0.0
+        state.lastInnovationY = 0.0
+        state.lastInnovationTheta = 0.0
+        state.lastNormalizedInnovationSquared = 0.0
+        state.lastKalmanGain.fill(0.0)
+        state.lastMeasurementAccepted = false
+        state.lastRejectionReason = null
+
+        // Preserve the upstream estimator's pose history for replay/telemetry consumers.
+        // qScale=0 records that ARES did not apply local process noise to this sample.
+        state.history.addEntryDirect(
+            timestampMs,
+            xMeters,
+            yMeters,
+            normalizedHeading,
+            state.covariance,
+            0.0
+        )
+        return state
+    }
+
+    /**
+     * Fuses an asynchronous 3D AprilTag vision observation with statistical Mahalanobis distance outlier rejection and trajectory rewind.
+     *
+     * @param state Active EKF state snapshot.
+     * @param measurement Observed AprilTag 3D pose measurement.
+     * @param visionStdDevs Baseline standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ in meters and radians.
+     * @param numTags Number of detected tags in the current frame.
+     * @param useMahalanobisRejection If true, rejects measurements exceeding [mahalanobisThreshold].
+     * @param mahalanobisThreshold Chi-squared threshold $d_M^2$ for outlier rejection (default $12.0$).
+     * @param maxAmbiguity Maximum acceptable tag pose solver ambiguity (default $0.2$).
+     * @return Updated [PoseEstimatorState].
+     */
+    fun addVisionMeasurement(
+        state: PoseEstimatorState,
+        measurement: VisionMeasurement,
+        visionStdDevs: Vector3,
+        numTags: Int = 1,
+        useMahalanobisRejection: Boolean = true,
+        mahalanobisThreshold: Double = 12.0,
+        maxAmbiguity: Double = 0.2
+    ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
+        return VisionMahalanobisFilter.processVisionMeasurement(
+            state, measurement, visionStdDevs.x, visionStdDevs.y, visionStdDevs.z, numTags,
+            useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
+            activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
+            scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2,
+            scratch.scratchInterpolatedEntry
+        )
+    }
+
+    /** Scalar covariance overload for zero-allocation per-frame camera uncertainty. */
+    fun addVisionMeasurementDirect(
+        state: PoseEstimatorState,
+        measurement: VisionMeasurement,
+        visionStdDevX: Double,
+        visionStdDevY: Double,
+        visionStdDevHeading: Double,
+        numTags: Int = 1,
+        useMahalanobisRejection: Boolean = true,
+        mahalanobisThreshold: Double = 12.0,
+        maxAmbiguity: Double = 0.2
+    ): PoseEstimatorState {
+        val scratch = threadScratchpad.get()
+        return VisionMahalanobisFilter.processVisionMeasurement(
+            state, measurement, visionStdDevX, visionStdDevY, visionStdDevHeading, numTags,
+            useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
+            activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
+            scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2,
+            scratch.scratchInterpolatedEntry
+        )
+    }
+}
+
