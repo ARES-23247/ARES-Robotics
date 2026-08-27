@@ -22,6 +22,10 @@ apply plugin: 'org.jetbrains.kotlinx.kover'
 def generatedAresSubsystemMainDir = file("${buildDir}/generated/ares/main/kotlin")
 def generatedAresSubsystemTestDir = file("${buildDir}/generated/ares/test/kotlin")
 def generatedAresDrivebaseMainDir = file("${buildDir}/generated/ares/drivebase/kotlin")
+def canonicalMonorepoFtcRuntimeDir = new File(
+    rootProject.projectDir.parentFile,
+    "templates/ftc/runtime/src/main/kotlin"
+)
 
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
@@ -29,6 +33,9 @@ android {
     sourceSets {
         main.java.srcDir generatedAresSubsystemMainDir
         main.java.srcDir generatedAresDrivebaseMainDir
+        if (canonicalMonorepoFtcRuntimeDir.isDirectory()) {
+            main.java.srcDir canonicalMonorepoFtcRuntimeDir
+        }
         test.java.srcDir generatedAresSubsystemTestDir
     }
 

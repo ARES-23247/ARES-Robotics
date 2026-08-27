@@ -19,6 +19,8 @@ $templates = @(
     @{ Name = 'ARES-FTC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter' },
     @{ Name = 'ARES-FRC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FRC-Starter' }
 )
+$ftcRuntimeRelativePath = 'TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
+$ftcRuntimeSource = Join-Path $workspaceRoot 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
 
 function Get-RelativeFileHashes([string]$Root) {
     $result = [ordered]@{}
@@ -36,6 +38,9 @@ foreach ($template in $templates) {
     $sourceHashes = Get-RelativeFileHashes $template.Source
     $sourceHashes['release/ares-versions.properties'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'release/ares-versions.properties')).Hash.ToLowerInvariant()
     $sourceHashes['build-logic/ares-versioning.gradle'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'build-logic/ares-versioning.gradle')).Hash.ToLowerInvariant()
+    if ($template.Name -eq 'ARES-FTC-Starter') {
+        $sourceHashes[$ftcRuntimeRelativePath] = (Get-FileHash -Algorithm SHA256 -LiteralPath $ftcRuntimeSource).Hash.ToLowerInvariant()
+    }
 
     if ($Check) {
         if (-not (Test-Path -LiteralPath $destination)) { throw "Missing generated mirror: $destination" }
@@ -55,6 +60,8 @@ foreach ($template in $templates) {
             Join-Path $workspaceRoot $entry
         } elseif ($entry -eq 'build-logic/ares-versioning.gradle') {
             Join-Path $workspaceRoot $entry
+        } elseif ($template.Name -eq 'ARES-FTC-Starter' -and $entry -eq $ftcRuntimeRelativePath) {
+            $ftcRuntimeSource
         } else {
             Join-Path $template.Source $entry
         }

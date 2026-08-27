@@ -1634,6 +1634,15 @@ public final class com/areslib/ftc/runtime/FtcAutonomousSelector {
 	public final fun update (ZZZ)Z
 }
 
+public final class com/areslib/ftc/runtime/FtcDriveAssistModes {
+	public fun <init> ()V
+	public final fun getHeadingLockEnabled ()Z
+	public final fun getPositionHoldEnabled ()Z
+	public final fun positionHoldAllowed (Lcom/areslib/state/RobotState;JJ)Z
+	public final fun setHeadingLockEnabled (Z)V
+	public final fun setPositionHoldEnabled (Z)V
+}
+
 public abstract class com/areslib/ftc/runtime/FtcGeneratedAutonomousOpMode : com/qualcomm/robotcore/eventloop/opmode/OpMode, com/areslib/ftc/photon/AresFtcRuntimeOptionsProvider {
 	public static final field DEFAULT_MAXIMUM_RUNTIME_SECONDS D
 	public static final field LOOP_TELEMETRY_PERIOD_MS J

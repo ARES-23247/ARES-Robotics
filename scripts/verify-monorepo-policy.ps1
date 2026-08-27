@@ -38,4 +38,19 @@ foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Sta
     }
 }
 
+$canonicalFtcRuntime = Join-Path $root 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
+if (-not (Test-Path -LiteralPath $canonicalFtcRuntime)) {
+    throw 'Canonical FTC generated-project runtime template is missing.'
+}
+foreach ($copiedRuntime in @(
+    'ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt',
+    'ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt',
+    'ARES-FRC/src/main/kotlin/com/areslib/frc/generatedruntime/FrcGeneratedControlsRuntime.kt',
+    'ARES-FRC-Starter/src/main/kotlin/com/areslib/frc/generatedruntime/FrcGeneratedControlsRuntime.kt'
+)) {
+    if (Test-Path -LiteralPath (Join-Path $root $copiedRuntime)) {
+        throw "Generated platform runtime implementation is copied into a consumer: $copiedRuntime"
+    }
+}
+
 Write-Host "Monorepo policy verified: ARES $($release.aresVersion), Studio $($release.studioVersion)." -ForegroundColor Green
