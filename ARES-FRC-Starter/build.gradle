@@ -20,7 +20,7 @@ repositories {
         maven { url uri(validationRepo) }
     }
     mavenCentral()
-    maven { url 'https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven' }
+    maven { url 'https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven' }
 }
 
 java {

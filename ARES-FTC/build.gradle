@@ -35,7 +35,7 @@ allprojects {
             maven { url uri(aresRepositoryUrl) }
         }
         mavenCentral()
-        maven { url 'https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven' }
+        maven { url 'https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven' }
         google()
         maven { url 'https://frcmaven.wpi.edu/artifactory/release/' }
         maven { url 'https://maven.ctr-electronics.com/release/' }

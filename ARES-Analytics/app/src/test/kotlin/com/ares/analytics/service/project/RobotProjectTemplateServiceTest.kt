@@ -495,7 +495,7 @@ class RobotProjectTemplateServiceTest {
                 studioVersion=2.0.0
                 ftcStarterVersion=$aresVersion
                 frcStarterVersion=$aresVersion
-                githubMavenRepository=https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven
+                githubMavenRepository=https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven
             """.trimIndent() + "\n",
             "fixture-root/TeamCode/src/main/java/example/Robot.kt" to "package example\nclass Robot\n",
             "fixture-root/.ares/project.json" to metadata,

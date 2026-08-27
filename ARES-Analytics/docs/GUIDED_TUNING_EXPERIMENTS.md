@@ -7,7 +7,7 @@ ARES Robotics Studio turns a paired-run observation into a controlled, reversibl
 1. Open **Analysis → Guided Run Review** and compare two compatible runs from the active team, season, and robot workspace.
 2. Inspect a finding's exact replay timestamp, source topics, and uncertainty statement.
 3. Choose **Create one-change experiment**.
-4. Write the question, a falsifiable prediction, the conditions you will hold constant, a numeric success threshold, and the Local Sim safety boundary. Request mentor review when appropriate; this is a learning prompt, not a cloud permission or invented approval role.
+4. Write the question, a falsifiable prediction, the conditions you will hold constant, a numeric success threshold, and the Local Sim safety boundary. Optionally ask a teammate for a second review; this is collaboration, not permission or an approval role.
 5. Select one typed numeric parameter and one outcome metric. ARES proposes one conservative change inside the parameter's declared bounds.
 6. Select **Snapshot configuration & stage one proposal**. ARES records the resolved profile values, profile content hash, and hashes of the canonical `.ares` robot documents.
 7. Launch **Local Sim**. A `LIVE_SAFE` candidate can be sent only while the loopback simulator is the selected, connected target. ARES waits for the runtime request nonce and explicit `APPLIED` acknowledgement.
@@ -51,4 +51,4 @@ Canonical configuration remains in `.ares/tuning`, drivetrain, subsystem, supers
 - What physical effects are missing from the simulator?
 - Should the team accept, revise, or roll back—and what evidence is still required before physical testing?
 
-The exported Markdown report is designed to capture those answers for a student notebook or mentor review.
+The exported Markdown report is designed to capture those answers for a student notebook, team discussion, or optional peer review.

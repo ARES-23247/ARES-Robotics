@@ -15,7 +15,7 @@ import com.ares.analytics.service.tuning.GuidedTuningExperimentPlan
 import com.ares.analytics.service.tuning.GuidedTuningExperimentRepository
 import com.ares.analytics.service.tuning.GuidedTuningExperimentSeed
 import com.ares.analytics.service.tuning.GuidedTuningProposalPolicy
-import com.ares.analytics.service.tuning.MentorReviewState
+import com.ares.analytics.service.tuning.PeerReviewState
 import com.ares.analytics.service.tuning.ResolvedTuningValue
 import com.ares.analytics.service.tuning.TuningValueProvenance
 import com.ares.analytics.service.tuning.candidateRuns
@@ -57,7 +57,7 @@ data class GuidedTuningExperimentState(
     val heldConstantsText: String = DEFAULT_HELD_CONSTANTS,
     val successThresholdText: String = DEFAULT_SUCCESS_THRESHOLD,
     val safetyNotes: String = DEFAULT_SAFETY_NOTES,
-    val requestMentorReview: Boolean = true,
+    val requestPeerReview: Boolean = false,
     val proposalPreview: BoundedTuningProposal? = null,
     val experiment: GuidedTuningExperiment? = null,
     val experiments: List<GuidedTuningExperiment> = emptyList(),
@@ -82,7 +82,7 @@ sealed interface GuidedTuningExperimentIntent {
     data class SetHeldConstants(val value: String) : GuidedTuningExperimentIntent
     data class SetSuccessThreshold(val value: String) : GuidedTuningExperimentIntent
     data class SetSafetyNotes(val value: String) : GuidedTuningExperimentIntent
-    data class SetMentorReviewRequested(val value: Boolean) : GuidedTuningExperimentIntent
+    data class SetPeerReviewRequested(val value: Boolean) : GuidedTuningExperimentIntent
     data object CreateAndStage : GuidedTuningExperimentIntent
     data object RefreshTuningContext : GuidedTuningExperimentIntent
     data object RefreshCandidateRuns : GuidedTuningExperimentIntent
@@ -137,7 +137,7 @@ class GuidedTuningExperimentViewModel(
             is GuidedTuningExperimentIntent.SetHeldConstants -> _state.value = _state.value.copy(heldConstantsText = intent.value, errorMessage = null)
             is GuidedTuningExperimentIntent.SetSuccessThreshold -> _state.value = _state.value.copy(successThresholdText = intent.value, errorMessage = null)
             is GuidedTuningExperimentIntent.SetSafetyNotes -> _state.value = _state.value.copy(safetyNotes = intent.value, errorMessage = null)
-            is GuidedTuningExperimentIntent.SetMentorReviewRequested -> _state.value = _state.value.copy(requestMentorReview = intent.value, errorMessage = null)
+            is GuidedTuningExperimentIntent.SetPeerReviewRequested -> _state.value = _state.value.copy(requestPeerReview = intent.value, errorMessage = null)
             GuidedTuningExperimentIntent.CreateAndStage -> createAndStage()
             GuidedTuningExperimentIntent.RefreshTuningContext -> refreshTuningContext()
             GuidedTuningExperimentIntent.RefreshCandidateRuns -> refreshCandidateRuns()
@@ -166,7 +166,7 @@ class GuidedTuningExperimentViewModel(
             heldConstantsText = DEFAULT_HELD_CONSTANTS,
             successThresholdText = DEFAULT_SUCCESS_THRESHOLD,
             safetyNotes = DEFAULT_SAFETY_NOTES,
-            requestMentorReview = true,
+            requestPeerReview = false,
             proposalPreview = null,
             experiment = null,
             candidateRuns = emptyList(),
@@ -244,7 +244,7 @@ class GuidedTuningExperimentViewModel(
                             heldConstants = heldConstants,
                             successThresholdPercent = threshold,
                             safetyNotes = current.safetyNotes,
-                            mentorReviewState = if (current.requestMentorReview) MentorReviewState.REQUESTED else MentorReviewState.NOT_REQUESTED,
+                            peerReviewState = if (current.requestPeerReview) PeerReviewState.REQUESTED else PeerReviewState.NOT_REQUESTED,
                         ),
                     )
                 }
@@ -393,7 +393,7 @@ class GuidedTuningExperimentViewModel(
             heldConstantsText = DEFAULT_HELD_CONSTANTS,
             successThresholdText = DEFAULT_SUCCESS_THRESHOLD,
             safetyNotes = DEFAULT_SAFETY_NOTES,
-            requestMentorReview = true,
+            requestPeerReview = false,
             statusMessage = "The previous experiment remains saved. Choose one bounded value and write a new prediction.",
             errorMessage = null,
         )
@@ -430,7 +430,7 @@ class GuidedTuningExperimentViewModel(
                         ?.toString()
                         ?: DEFAULT_SUCCESS_THRESHOLD,
                     safetyNotes = experiment.safetyNotes.ifBlank { DEFAULT_SAFETY_NOTES },
-                    requestMentorReview = experiment.mentorReviewState == MentorReviewState.REQUESTED,
+                    requestPeerReview = experiment.peerReviewState == PeerReviewState.REQUESTED,
                     proposalPreview = proposal,
                     experiment = experiment,
                     candidateRuns = emptyList(),
@@ -522,7 +522,7 @@ internal fun renderGuidedTuningExperimentReport(experiment: GuidedTuningExperime
         experiment.heldConstants.ifEmpty { listOf("Not recorded in this legacy experiment") }
             .forEach { appendLine("  - $it") }
         appendLine("- Safety boundary: ${experiment.safetyNotes.ifBlank { "Local Sim only; physical validation requires a separate documented safety procedure." }}")
-        appendLine("- Mentor review: ${experiment.mentorReviewState.name.replace('_', ' ')}")
+        appendLine("- Optional peer review: ${experiment.peerReviewState.name.replace('_', ' ')}")
         appendLine()
         appendLine("## Baseline and candidate")
         appendLine("- Baseline run: ${experiment.baselineSessionId}")

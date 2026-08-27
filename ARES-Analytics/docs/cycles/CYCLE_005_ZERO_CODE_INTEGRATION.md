@@ -51,7 +51,7 @@ Hardware Setup derives exact names/ports, read-only signals, control strategies,
 calibration/current requirements, and follower relationships from canonical descriptors. It may
 show a bounded **UNARMED PULSE PROPOSAL**, but Analytics does not send that proposal to a robot.
 Physical motion still requires explicit team authorization, a disabled and supported mechanism,
-mentor review, and the platform diagnostic workflow. No result in this cycle is physical-robot
+student-recorded configuration review and the platform diagnostic workflow. No result in this cycle is physical-robot
 validation.
 
 ## Local verification matrix

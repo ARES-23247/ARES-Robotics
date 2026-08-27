@@ -66,7 +66,7 @@ branch deletion, or conflict resolution.
 
 A GitHub restore is accepted only when the local commit is an ancestor of the selected remote
 `main` commit. Equal histories are reported as up to date; a local-ahead history directs the user
-to synchronize; divergent histories stop and require mentor review. Incoming trees are validated
+to synchronize; divergent histories stop and require an explicit student or teammate conflict review. Incoming trees are validated
 before working files change, and the confirmation token binds both commit identities plus the diff.
 ARES writes a `refs/ares/restore-backups/...` safety ref before the fast-forward so the prior local
 version remains recoverable. Recovery is itself review-bound and creates a new safety ref before

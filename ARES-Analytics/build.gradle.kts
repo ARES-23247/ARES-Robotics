@@ -33,7 +33,11 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
     val templateServiceFile = file(
         "app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt",
     )
-    val workflowFile = file(".github/workflows/build-distributions.yml")
+    val workflowFile = listOf(
+        rootProject.file("../.github/workflows/build-distributions.yml"),
+        file(".github/workflows/build-distributions.yml"),
+    ).firstOrNull(File::isFile)
+        ?: error("The protected desktop packaging workflow is missing.")
     val templateDirectory = file("app/src/main/resources/project-templates")
     inputs.files(releasePropertiesFile, starterArtifactsFile, appBuildFile, templateServiceFile, workflowFile)
     inputs.dir(templateDirectory)
@@ -103,7 +107,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         requireContains(templateServiceFile, "aresVersion = \"$ftcVersion\"", "FTC template version")
         requireContains(
             templateServiceFile,
-            "ARES-FTC-Starter/releases/download/v$ftcVersion/ARES-FTC-Starter-$ftcVersion.zip",
+            "ARES-Robotics/releases/download/v$appVersion/ARES-FTC-Starter-$ftcVersion.zip",
             "FTC template URL",
         )
         requireContains(templateServiceFile, "archiveSha256 = \"$ftcHash\"", "FTC template hash")
@@ -116,7 +120,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         requireContains(templateServiceFile, "aresVersion = \"$frcVersion\"", "FRC template version")
         requireContains(
             templateServiceFile,
-            "ARES-FRC-Starter/releases/download/v$frcVersion/ARES-FRC-Starter-$frcVersion.zip",
+            "ARES-Robotics/releases/download/v$appVersion/ARES-FRC-Starter-$frcVersion.zip",
             "FRC template URL",
         )
         requireContains(templateServiceFile, "archiveSha256 = \"$frcHash\"", "FRC template hash")
@@ -129,16 +133,16 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         requireContains(workflowFile, "ARES_VERSION: $aresVersion", "workflow ARES version")
         requireContains(
             workflowFile,
-            "ARES-FTC-Starter/releases/download/v$ftcVersion/ARES-FTC-Starter-$ftcVersion.zip",
+            "ARES-Robotics/releases/download/v$appVersion/ARES-FTC-Starter-$ftcVersion.zip",
             "workflow FTC template URL",
         )
-        requireContains(workflowFile, "'ftc.zip' = '$ftcHash'", "workflow FTC template hash")
+        requireContains(workflowFile, "FTC_STARTER_SHA256: $ftcHash", "workflow FTC template hash")
         requireContains(
             workflowFile,
-            "ARES-FRC-Starter/releases/download/v$frcVersion/ARES-FRC-Starter-$frcVersion.zip",
+            "ARES-Robotics/releases/download/v$appVersion/ARES-FRC-Starter-$frcVersion.zip",
             "workflow FRC template URL",
         )
-        requireContains(workflowFile, "'frc.zip' = '$frcHash'", "workflow FRC template hash")
+        requireContains(workflowFile, "FRC_STARTER_SHA256: $frcHash", "workflow FRC template hash")
 
         listOf("FTC" to ftcVersion to ftcHash, "FRC" to frcVersion to frcHash).forEach { entry ->
             val (leagueAndVersion, expectedHash) = entry
