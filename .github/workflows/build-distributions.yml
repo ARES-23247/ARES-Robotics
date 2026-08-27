@@ -1,0 +1,225 @@
+name: Build Desktop Packages
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Application version to package (for example, 1.8.0)
+        required: true
+        type: string
+      publish:
+        description: Publish a GitHub release after every package and acceptance gate passes
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  candidate:
+    name: Prepare package dependency candidate
+    runs-on: ubuntu-latest
+    outputs:
+      ares-version: ${{ steps.identity.outputs.ares-version }}
+      studio-version: ${{ steps.identity.outputs.studio-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve immutable package identities
+        id: identity
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          ares_base="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
+          ares_version="${ares_base}-rc.${GITHUB_SHA::12}"
+          if [[ -n "$REQUESTED_VERSION" ]]; then
+            studio_version="$REQUESTED_VERSION"
+          else
+            build=$((10#$RUN_NUMBER % 65535))
+            studio_version="254.0.$build"
+          fi
+          if [[ ! "$studio_version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Invalid application version: $studio_version (expected MAJOR.MINOR.BUILD)" >&2
+            exit 1
+          fi
+          major=$((10#${BASH_REMATCH[1]}))
+          minor=$((10#${BASH_REMATCH[2]}))
+          build=$((10#${BASH_REMATCH[3]}))
+          if (( major > 255 || minor > 255 || build > 65535 )); then
+            echo "Application version exceeds native package limits: $studio_version" >&2
+            exit 1
+          fi
+          echo "ares-version=$ares_version" >> "$GITHUB_OUTPUT"
+          echo "studio-version=$studio_version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish isolated ARES candidate
+        working-directory: ARESLib-Kotlin
+        run: >-
+          ./gradlew apiCheck publishReleaseValidation
+          -ParesVersion=${{ steps.identity.outputs.ares-version }}
+          --no-parallel --no-daemon --console=plain
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-validation-repository
+          path: ARESLib-Kotlin/build/release-repository/
+          if-no-files-found: error
+          retention-days: 3
+
+  zero-code-project-acceptance:
+    name: Verify generated starter mirrors
+    needs: candidate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: package-validation-repository
+          path: .release-validation
+
+      - name: Export canonical mirrors and create reviewed archives
+        shell: pwsh
+        run: |
+          $mirrors = Join-Path $env:RUNNER_TEMP 'ares-starter-mirrors'
+          $archives = Join-Path $env:RUNNER_TEMP 'ares-official-templates'
+          New-Item -ItemType Directory -Force -Path $archives | Out-Null
+          .\scripts\export-starter-mirrors.ps1 -OutputRoot $mirrors
+          .\scripts\export-starter-mirrors.ps1 -OutputRoot $mirrors -Check
+          Compress-Archive -Path "$mirrors\ARES-FTC-Starter\*" -DestinationPath "$archives\ftc.zip"
+          Compress-Archive -Path "$mirrors\ARES-FRC-Starter\*" -DestinationPath "$archives\frc.zip"
+
+      - name: Create, generate, test, simulate, and package fresh FTC and FRC projects
+        shell: pwsh
+        env:
+          ARES_OFFICIAL_TEMPLATE_ARCHIVE_DIR: ${{ runner.temp }}\ares-official-templates
+          ARES_OFFICIAL_TEMPLATE_OUTPUT_DIR: ${{ runner.temp }}\ares-zero-code-acceptance
+          ARES_OFFICIAL_TEMPLATE_VALIDATION_REPOSITORY: ${{ github.workspace }}\.release-validation
+          ARES_OFFICIAL_TEMPLATE_VALIDATION_VERSION: ${{ needs.candidate.outputs.ares-version }}
+        run: >-
+          .\ARES-Analytics\gradlew.bat -p ARES-Analytics :app:test
+          --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest'
+          -ParesVersion=${{ needs.candidate.outputs.ares-version }}
+          -ParesRepository="file:///${{ github.workspace }}/.release-validation"
+          --no-parallel --no-daemon --console=plain
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zero-code-project-acceptance-logs
+          path: ${{ runner.temp }}/ares-zero-code-acceptance/**/official-template-validation.log
+          if-no-files-found: warn
+
+  build-packages:
+    name: Native package (${{ matrix.os }})
+    needs: candidate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            task: ':app:packageReleaseMsi'
+            artifact-path: 'ARES-Analytics/app/build/compose/binaries/main-release/msi/'
+          - os: macos-latest
+            task: ':app:packageReleaseDmg'
+            artifact-path: 'ARES-Analytics/app/build/compose/binaries/main-release/dmg/'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: package-validation-repository
+          path: .release-validation
+
+      - name: Resolve validation repository URI
+        id: repository
+        shell: pwsh
+        run: |
+          $uri = [Uri]::new((Resolve-Path '.release-validation').Path).AbsoluteUri
+          "uri=$uri" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Build and verify native package
+        working-directory: ARES-Analytics
+        shell: bash
+        env:
+          ARES_GOOGLE_OAUTH_CLIENT_ID: ${{ vars.ARES_GOOGLE_OAUTH_CLIENT_ID }}
+          ARES_GOOGLE_OAUTH_BROKER_URL: ${{ vars.ARES_GOOGLE_OAUTH_BROKER_URL }}
+          ARES_GITHUB_APP_CLIENT_ID: ${{ vars.ARES_GITHUB_APP_CLIENT_ID }}
+          ARES_GITHUB_APP_SLUG: ${{ vars.ARES_GITHUB_APP_SLUG }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew ${{ matrix.task }} \
+            -ParesAnalyticsVersion=${{ needs.candidate.outputs.studio-version }} \
+            -ParesVersion=${{ needs.candidate.outputs.ares-version }} \
+            -ParesRepository=${{ steps.repository.outputs.uri }} \
+            --no-parallel --no-daemon --console=plain
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ARES-Robotics-Studio-${{ matrix.os }}
+          path: ${{ matrix.artifact-path }}
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish verified Studio release
+    needs: [candidate, zero-code-project-acceptance, build-packages]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Require protected main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo 'Public releases may only be dispatched from the protected main branch.' >&2
+          exit 1
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ARES-Robotics-Studio-*
+          merge-multiple: true
+          path: release-assets
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          find release-assets -type f \( -name '*.msi' -o -name '*.dmg' \) -print0 |
+            while IFS= read -r -d '' asset; do sha256sum "$asset" > "$asset.sha256"; done
+
+      - name: Publish immutable GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.candidate.outputs.studio-version }}
+          name: ARES Robotics Studio ${{ needs.candidate.outputs.studio-version }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/**/*.msi
+            release-assets/**/*.dmg
+            release-assets/**/*.sha256

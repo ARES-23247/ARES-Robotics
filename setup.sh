@@ -23,6 +23,8 @@ for path in "${REQUIRED[@]}"; do
   fi
 done
 
+"$ROOT/scripts/verify-imported-histories.sh"
+
 if grep -R --include='*.gradle' --include='*.gradle.kts' -nE '\bmavenLocal[[:space:]]*\(' \
   "$ROOT/ARESLib-Kotlin" "$ROOT/ARES-FTC" "$ROOT/ARES-FRC" \
   "$ROOT/ARES-FTC-Starter" "$ROOT/ARES-FRC-Starter" "$ROOT/ARES-Analytics"; then

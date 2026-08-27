@@ -16,6 +16,8 @@ $required = @(
 $missing = $required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $root $_)) }
 if ($missing) { throw "Incomplete ARES-Robotics checkout. Missing: $($missing -join ', ')" }
 
+& (Join-Path $root 'scripts/verify-imported-histories.ps1')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & (Join-Path $root 'scripts/verify-monorepo-policy.ps1')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

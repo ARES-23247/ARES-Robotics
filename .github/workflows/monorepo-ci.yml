@@ -1,0 +1,203 @@
+name: Monorepo CI
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monorepo-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  policy:
+    name: Source and release policy
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify monorepo ownership and dependency policy
+        shell: pwsh
+        run: |
+          .\scripts\verify-imported-histories.ps1
+          .\scripts\verify-monorepo-policy.ps1
+
+      - name: Prove starter mirrors are deterministic
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'ares-starter-mirrors'
+          .\scripts\export-starter-mirrors.ps1 -OutputRoot $output
+          .\scripts\export-starter-mirrors.ps1 -OutputRoot $output -Check
+
+  candidate:
+    name: ARESLib candidate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.identity.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Select immutable validation identity
+        id: identity
+        shell: bash
+        run: |
+          base="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
+          version="${base}-rc.${GITHUB_SHA::12}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Test API and publish isolated candidate
+        working-directory: ARESLib-Kotlin
+        run: >-
+          ./gradlew test apiCheck publishReleaseValidation
+          -ParesVersion=${{ steps.identity.outputs.version }}
+          --no-parallel --no-daemon --console=plain
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ares-validation-repository
+          path: ARESLib-Kotlin/build/release-repository/
+          if-no-files-found: error
+          retention-days: 3
+
+  ftc:
+    name: FTC robot and simulator
+    needs: candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ares-validation-repository
+          path: .release-validation
+      - name: Test generated FTC project, simulator, and APK
+        working-directory: ARES-FTC
+        shell: bash
+        run: >-
+          ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
+          -ParesVersion=${{ needs.candidate.outputs.version }}
+          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
+          --no-parallel --no-daemon --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lightbot-debug-apk
+          path: ARES-FTC/TeamCode/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  frc:
+    name: FRC robot and simulation contracts
+    needs: candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ares-validation-repository
+          path: .release-validation
+      - name: Test generated FRC project and league simulator contracts
+        working-directory: ARES-FRC
+        shell: bash
+        run: >-
+          ./gradlew test
+          -ParesVersion=${{ needs.candidate.outputs.version }}
+          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
+          --no-parallel --no-daemon --console=plain
+
+  ftc-starter:
+    name: FTC starter mirror source
+    needs: candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ares-validation-repository
+          path: .release-validation
+      - name: Test generated FTC starter, simulator, and APK
+        working-directory: ARES-FTC-Starter
+        shell: bash
+        run: >-
+          ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
+          -ParesVersion=${{ needs.candidate.outputs.version }}
+          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
+          --no-parallel --no-daemon --console=plain
+
+  frc-starter:
+    name: FRC starter mirror source
+    needs: candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ares-validation-repository
+          path: .release-validation
+      - name: Test generated FRC starter and simulation contracts
+        working-directory: ARES-FRC-Starter
+        shell: bash
+        run: >-
+          ./gradlew test
+          -ParesVersion=${{ needs.candidate.outputs.version }}
+          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
+          --no-parallel --no-daemon --console=plain
+
+  analytics:
+    name: Studio, gateway, and analytics
+    needs: candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ares-validation-repository
+          path: .release-validation
+      - name: Test Studio, shared models, and gateway
+        working-directory: ARES-Analytics
+        shell: bash
+        run: >-
+          ./gradlew :shared:test :app:test :gateway:test
+          -ParesVersion=${{ needs.candidate.outputs.version }}
+          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
+          --no-parallel --no-daemon --console=plain

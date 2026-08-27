@@ -1,0 +1,87 @@
+name: Analytics Validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Validation profile
+        required: true
+        default: smoke
+        type: choice
+        options: [smoke, soak]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: analytics-validation-${{ github.ref }}-${{ inputs.profile || 'automatic' }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    if: github.event_name != 'schedule' && inputs.profile != 'soak'
+    name: Dashboard smoke and performance budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run dashboard smoke and baseline validation
+        working-directory: ARES-Analytics
+        run: >-
+          ./gradlew :app:dashboardPerformanceBaseline
+          -ParesUseSiblingLib=true
+          --no-parallel --no-daemon --console=plain
+      - name: Publish validation summary
+        if: always()
+        working-directory: ARES-Analytics
+        run: test ! -f app/build/reports/dashboard-validation/dashboard-validation-smoke.md || cat app/build/reports/dashboard-validation/dashboard-validation-smoke.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-validation-smoke
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            ARES-Analytics/app/build/reports/dashboard-validation/**
+            ARES-Analytics/app/build/reports/tests/dashboardSmoke/**
+            ARES-Analytics/app/build/test-results/dashboardSmoke/**
+
+  soak:
+    if: github.event_name == 'schedule' || inputs.profile == 'soak'
+    name: Dashboard 30-minute-equivalent soak
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run dashboard soak validation
+        working-directory: ARES-Analytics
+        run: >-
+          ./gradlew :app:dashboardSoak
+          -ParesUseSiblingLib=true
+          --no-parallel --no-daemon --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-validation-soak
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            ARES-Analytics/app/build/reports/dashboard-validation/**
+            ARES-Analytics/app/build/reports/tests/dashboardSoak/**
+            ARES-Analytics/app/build/test-results/dashboardSoak/**
