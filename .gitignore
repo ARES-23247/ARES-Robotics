@@ -1,10 +1,12 @@
-# Each subproject is its own independent repository with its own GitHub remote.
-# They are intentionally NOT tracked here; this parent repo only holds
-# cross-cutting, workspace-level files (e.g. AGENTS.md).
-/ARESLib-Kotlin/
-/ARES-FTC/
-/ARES-FRC/
-/ARES-Analytics/
+# All ARES-owned implementation is tracked by this source monorepo. The component directories
+# retain isolated Gradle roots because Android, GradleRIO, Compose, and publishing toolchains have
+# different constraints; they are no longer nested Git repositories.
+
+# Workspace-local validation and package caches
+/.tmp/
+/.pnpm-store/
+/.release-validation/
+/.codex-validation/
 
 # OS / editor cruft
 .DS_Store
