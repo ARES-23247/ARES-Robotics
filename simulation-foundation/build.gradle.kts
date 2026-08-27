@@ -10,12 +10,11 @@ mavenPublishing {
     configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
 }
 
-description = "Pure ARES raw/effective project assembly and cross-document validation."
+description = "Platform-neutral simulator product selection and capability validation contracts."
 
 dependencies {
     api(project(":project-schema"))
-    api(project(":simulation-foundation"))
-    api(project(":core"))
+    implementation(project(":core"))
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")

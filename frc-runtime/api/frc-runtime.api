@@ -60,3 +60,4 @@ public final class com/areslib/frc/runtime/WpilibFrcControllerPortSampler : com/
 	public fun prepare (I)V
 	public fun sampleInto (ILcom/areslib/input/InputFrame;J)V
 }
+

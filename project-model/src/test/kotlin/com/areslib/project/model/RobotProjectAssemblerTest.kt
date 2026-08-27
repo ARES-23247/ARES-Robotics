@@ -10,6 +10,7 @@ import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.schema.AresControllerTarget
 import com.areslib.project.schema.AresSimulatorTarget
 import com.areslib.project.schema.ProjectActionKey
+import com.areslib.simulation.SimulationProductId
 import com.areslib.tuning.TuningComponentDocument
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -25,6 +26,8 @@ class RobotProjectAssemblerTest {
         assertEquals("lightbot", effective.projectId?.value)
         assertEquals(AresControllerTarget.FTC_CONTROL_HUB, effective.target?.controller)
         assertEquals(AresSimulatorTarget.FTC, effective.target?.simulator)
+        assertEquals(SimulationProductId.FTC_DESKTOP_OPMODE, effective.simulationPlan?.product?.id)
+        assertTrue(effective.simulationPlan?.isSupported == true)
         assertTrue(ProjectActionKey("lights.cycleForward") in effective.actions)
     }
 
@@ -35,6 +38,7 @@ class RobotProjectAssemblerTest {
         assertEquals("lightbot", queries.metadata?.projectId)
         assertEquals(listOf("lights.cycleForward"), queries.actions.map { it.key })
         assertEquals("Cycle lights forward", queries.action("lights.cycleForward")?.displayName)
+        assertEquals(SimulationProductId.FTC_DESKTOP_OPMODE, queries.simulationPlan?.product?.id)
         assertEquals(null, queries.action("invalid key with spaces"))
     }
 

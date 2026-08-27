@@ -3,6 +3,7 @@ package com.areslib.project.compiler
 import com.areslib.project.schema.AresControllerTarget
 import com.areslib.project.schema.AresSimulatorTarget
 import com.areslib.project.schema.ProjectId
+import com.areslib.simulation.SimulationProductId
 import java.security.MessageDigest
 
 @JvmInline
@@ -67,11 +68,12 @@ data class ProjectArtifactManifestEntry(
 }
 
 data class ProjectVerificationManifest(
-    val schemaVersion: Int = 1,
+    val schemaVersion: Int = 2,
     val compilerIrVersion: Int,
     val projectId: ProjectId,
     val controllerTarget: AresControllerTarget,
     val simulatorTarget: AresSimulatorTarget,
+    val simulationProduct: SimulationProductId,
     val canonicalProjectSha256: String,
     val artifacts: List<ProjectArtifactManifestEntry>,
     val manifestSha256: String,
@@ -93,6 +95,7 @@ object ProjectVerificationManifestBuilder {
             projectId = project.projectId,
             controllerTarget = project.target.controller,
             simulatorTarget = project.target.simulator,
+            simulationProduct = project.simulationProduct,
             canonicalProjectSha256 = project.canonicalProjectSha256,
             artifacts = sorted,
             manifestSha256 = "",
@@ -113,6 +116,7 @@ object ProjectVerificationManifestCodec {
         append("  \"projectId\": ").append(manifest.projectId.value.json()).append(",\n")
         append("  \"controllerTarget\": ").append(manifest.controllerTarget.name.json()).append(",\n")
         append("  \"simulatorTarget\": ").append(manifest.simulatorTarget.name.json()).append(",\n")
+        append("  \"simulationProduct\": ").append(manifest.simulationProduct.stableId.json()).append(",\n")
         append("  \"canonicalProjectSha256\": ").append(manifest.canonicalProjectSha256.json()).append(",\n")
         append("  \"artifacts\": [")
         if (manifest.artifacts.isNotEmpty()) append('\n')

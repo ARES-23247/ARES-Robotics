@@ -16,6 +16,7 @@ val allowFinalReleaseValidation = providers.gradleProperty("allowFinalReleaseVal
     .orElse(false)
 val publishedProjectPaths = listOf(
     ":project-schema",
+    ":simulation-foundation",
     ":project-model",
     ":project-compiler",
     ":core",

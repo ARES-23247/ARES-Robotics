@@ -22,6 +22,7 @@ import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.RoutineDocument
+import com.areslib.simulation.SimulationProductId
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import com.areslib.subsystem.SubsystemDocument
@@ -36,7 +37,7 @@ import com.areslib.tuning.TuningProfileDocumentCodec
 import java.security.MessageDigest
 
 /** Version of the platform-neutral compiler IR, independent of individual document schemas. */
-const val ARES_PROJECT_COMPILER_IR_VERSION: Int = 1
+const val ARES_PROJECT_COMPILER_IR_VERSION: Int = 2
 
 /** An effective action with a stable, validated project key. */
 data class ProjectActionIr(
@@ -91,6 +92,7 @@ data class RobotProjectIr(
     val irVersion: Int = ARES_PROJECT_COMPILER_IR_VERSION,
     val projectId: ProjectId,
     val target: AresProjectTarget,
+    val simulationProduct: SimulationProductId,
     val inputPlatform: ControllerInputPlatform,
     val metadata: AresProjectMetadataDocument,
     val capabilityCatalog: CapabilityCatalogDocument,
@@ -127,6 +129,10 @@ object RobotProjectCompiler {
         }
         val projectId = requireNotNull(project.projectId) { "Effective project is missing its typed project ID" }
         val target = requireNotNull(project.target) { "Effective project is missing its controller/simulator target" }
+        val simulationPlan = requireNotNull(project.simulationPlan) {
+            "Effective project is missing its simulator product plan"
+        }
+        val simulationProduct = simulationPlan.product.id
         val metadata = requireNotNull(project.raw.metadata) { "Effective project is missing canonical metadata" }
         val catalog = requireNotNull(project.capabilityCatalog) { "Effective project is missing its effective capability catalog" }
         val inputPlatform = when (target.controller) {
@@ -147,6 +153,7 @@ object RobotProjectCompiler {
         return RobotProjectIr(
             projectId = projectId,
             target = target,
+            simulationProduct = simulationProduct,
             inputPlatform = inputPlatform,
             metadata = metadata,
             capabilityCatalog = catalog,

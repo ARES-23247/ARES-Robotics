@@ -18,6 +18,7 @@ javaPlatform {
 dependencies {
     constraints {
         api(project(":project-schema"))
+        api(project(":simulation-foundation"))
         api(project(":project-model"))
         api(project(":project-compiler"))
         api(project(":core"))

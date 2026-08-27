@@ -10,6 +10,7 @@ import com.areslib.project.schema.ProjectActionKey
 import com.areslib.project.schema.ProjectDocumentId
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.RoutineDocument
+import com.areslib.simulation.SimulationProjectPlan
 import com.areslib.state.RobotFieldConfig
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.superstructure.SuperstructureDocument
@@ -29,6 +30,7 @@ class EffectiveRobotProjectQueries(private val project: EffectiveRobotProject) {
     val capabilityCatalog: CapabilityCatalogDocument? get() = project.capabilityCatalog
     val autonomousCatalog: AutonomousCatalogDocument? get() = project.raw.autonomousCatalog
     val field: RobotFieldConfig? get() = project.raw.field
+    val simulationPlan: SimulationProjectPlan? get() = project.simulationPlan
     val tuningComponents: List<TuningComponentDocument> get() = project.raw.tuningComponents.sortedBy { it.uid }
     val tuningProfiles: List<TuningProfileDocument> get() = project.raw.tuningProfiles.sortedBy { it.uid }
 

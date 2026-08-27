@@ -11,7 +11,7 @@ mavenPublishing {
     configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
 }
 
-description = "Platform-neutral ARES desktop physics simulator and FTC OpMode runner."
+description = "FTC desktop OpMode simulator with FTC device doubles, mecanum physics, and NT4 telemetry."
 
 repositories {
     mavenCentral()

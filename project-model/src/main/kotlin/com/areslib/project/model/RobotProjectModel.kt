@@ -31,6 +31,8 @@ import com.areslib.routine.RoutineValidationContext
 import com.areslib.routine.RoutineValidationSeverity
 import com.areslib.routine.validateAutonomousCatalog
 import com.areslib.routine.validateRoutineSet
+import com.areslib.simulation.SimulationProjectPlan
+import com.areslib.simulation.SimulationProjectPlanner
 import com.areslib.state.FieldType
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldValidator
@@ -91,6 +93,8 @@ data class EffectiveRobotProject(
     /** Legacy runtime tuning scope, intentionally distinct from canonical project identity. */
     val tuningScopeUid: String?,
     val target: AresProjectTarget?,
+    /** Simulator product and capability evidence derived from the same canonical project. */
+    val simulationPlan: SimulationProjectPlan?,
     val capabilityCatalog: CapabilityCatalogDocument?,
     val actions: Map<ProjectActionKey, com.areslib.catalog.ActionDescriptor>,
     val routines: Map<ProjectDocumentId, RoutineDocument>,
@@ -170,19 +174,26 @@ object RobotProjectAssembler {
             }?.let { it to action }
         }.toMap()
 
+        val indexedSubsystems = typedIndex(snapshot.subsystems, SubsystemDocument::documentId, ProjectDocumentKind.SUBSYSTEM, issues)
+        val indexedDrivetrains = typedIndex(snapshot.drivetrains, DrivetrainDocument::uid, ProjectDocumentKind.DRIVETRAIN, issues)
+        val simulationPlan = target?.let {
+            SimulationProjectPlanner.plan(it, indexedDrivetrains.values.singleOrNull(), indexedSubsystems.values)
+        }
+
         return EffectiveRobotProject(
             raw = snapshot,
             projectId = projectId,
             tuningScopeUid = tuningScopeUid,
             target = target,
+            simulationPlan = simulationPlan,
             capabilityCatalog = effectiveCatalog,
             actions = actions,
             routines = typedIndex(snapshot.routines, RoutineDocument::documentId, ProjectDocumentKind.ROUTINE, issues),
             controlSchemes = typedIndex(snapshot.controlSchemes, ControlSchemeDocument::documentId, ProjectDocumentKind.CONTROL_SCHEME, issues),
             controllerProfiles = typedIndex(snapshot.controllerProfiles, ControllerProfileDocument::documentId, ProjectDocumentKind.CONTROLLER_PROFILE, issues),
-            subsystems = typedIndex(snapshot.subsystems, SubsystemDocument::documentId, ProjectDocumentKind.SUBSYSTEM, issues),
+            subsystems = indexedSubsystems,
             superstructures = typedIndex(snapshot.superstructures, SuperstructureDocument::superstructureId, ProjectDocumentKind.SUPERSTRUCTURE, issues),
-            drivetrains = typedIndex(snapshot.drivetrains, DrivetrainDocument::uid, ProjectDocumentKind.DRIVETRAIN, issues),
+            drivetrains = indexedDrivetrains,
             issues = issues.distinctBy { listOf(it.severity, it.kind, it.documentId, it.path, it.code, it.message) }
                 .sortedWith(compareBy<ProjectModelIssue> { it.kind.ordinal }.thenBy { it.documentId.orEmpty() }.thenBy { it.path }),
         )
