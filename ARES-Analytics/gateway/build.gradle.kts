@@ -39,7 +39,7 @@ dependencies {
     implementation("com.google.genai:google-genai:1.67.0")
 
     // Logging
-    implementation("ch.qos.logback:logback-classic:1.5.12")
+    implementation("ch.qos.logback:logback-classic:1.6.3")
 
     // Testing
     testImplementation(kotlin("test"))
