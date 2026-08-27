@@ -30,12 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Run dashboard smoke and baseline validation
         working-directory: ARES-Analytics
         run: >-
@@ -46,7 +46,7 @@ jobs:
         if: always()
         working-directory: ARES-Analytics
         run: test ! -f app/build/reports/dashboard-validation/dashboard-validation-smoke.md || cat app/build/reports/dashboard-validation/dashboard-validation-smoke.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: dashboard-validation-smoke
@@ -63,19 +63,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Run dashboard soak validation
         working-directory: ARES-Analytics
         run: >-
           ./gradlew :app:dashboardSoak
           -ParesUseSiblingLib=true
           --no-parallel --no-daemon --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: dashboard-validation-soak

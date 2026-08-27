@@ -73,6 +73,7 @@ class ManagedToolchainServiceTest {
                     assertTrue(File(javaHome, "bin/java.exe").isFile)
                     assertTrue(File(javaHome, "bin/javac.exe").isFile)
                 },
+                managedInstallationSupported = { true },
             )
 
             val snapshot = service.installManagedJdk21(League.FTC)
@@ -97,8 +98,9 @@ class ManagedToolchainServiceTest {
     fun `explicit simulation JDK becomes first on path even when it was already later`() {
         val root = Files.createTempDirectory("ares-java-environment-test").toFile()
         val bin = File(root, "bin").apply { mkdirs() }
-        File(bin, "java.exe").writeText("java")
-        File(bin, "javac.exe").writeText("javac")
+        val executableSuffix = if (System.getProperty("os.name").contains("win", ignoreCase = true)) ".exe" else ""
+        File(bin, "java$executableSuffix").writeText("java")
+        File(bin, "javac$executableSuffix").writeText("javac")
         File(root, "release").writeText("JAVA_VERSION=\"17.0.16\"")
         val other = Files.createTempDirectory("ares-other-java-bin").toFile()
         try {
@@ -128,6 +130,7 @@ class ManagedToolchainServiceTest {
                 },
                 packageDownloader = { _, destination, _ -> destination.writeBytes(archive) },
                 jdkVerifier = { error("must not verify") },
+                managedInstallationSupported = { true },
             )
 
             runCatching { service.installManagedJdk21(League.FTC) }
@@ -146,6 +149,8 @@ class ManagedToolchainServiceTest {
             listOf(
                 "jdk-21-test/bin/java.exe" to "java",
                 "jdk-21-test/bin/javac.exe" to "javac",
+                "jdk-21-test/bin/java" to "java",
+                "jdk-21-test/bin/javac" to "javac",
                 "jdk-21-test/release" to "JAVA_VERSION=\"21\"",
             ).forEach { (name, content) ->
                 zip.putNextEntry(ZipEntry(name))

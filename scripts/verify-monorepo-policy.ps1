@@ -32,6 +32,22 @@ foreach ($buildFile in $buildFiles) {
     }
 }
 
+$validationEntrypoints = @(
+    (Join-Path $root 'verify-autos.ps1'),
+    (Join-Path $root 'verify-autos.sh')
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $root 'scripts') -File -Include '*.ps1', '*.sh' |
+        Where-Object { $_.Name -ne 'verify-monorepo-policy.ps1' }
+) + @(
+    Get-ChildItem -LiteralPath (Join-Path $root '.github/workflows') -File -Include '*.yml', '*.yaml'
+)
+foreach ($entrypoint in $validationEntrypoints) {
+    $content = Get-Content -Raw -LiteralPath $entrypoint
+    if ($content -match 'publishToMavenLocal') {
+        throw "Ambient Maven Local publication is forbidden in validation entrypoints: $entrypoint"
+    }
+}
+
 foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Starter', 'ARES-FRC-Starter', 'ARES-Analytics')) {
     if (Test-Path -LiteralPath (Join-Path $root "$component/.git")) {
         throw "$component is still a nested Git repository; source must be owned by the monorepo."

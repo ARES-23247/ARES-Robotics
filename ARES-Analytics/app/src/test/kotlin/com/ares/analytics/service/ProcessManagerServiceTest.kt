@@ -164,7 +164,8 @@ class ProcessManagerServiceTest {
                 assertTrue("--no-daemon" in command)
                 assertTrue("--console=plain" in command)
             }
-            if (ManagedToolchainPaths.resolveFrcSimulationJavaHome() != null) {
+            val frcJavaHome = ManagedToolchainPaths.resolveFrcSimulationJavaHome()
+            if (frcJavaHome != null && File(frcJavaHome, "bin/java.exe").isFile) {
                 val windowsFrc = service.simulationGradleCommandForTest(SimulationProductId.FRC_WPILIB_DESKTOP, isWindows = true)
                 assertTrue(windowsFrc.any { it.startsWith("-ParesFrcJavaExecutable=") })
             }

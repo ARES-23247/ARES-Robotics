@@ -31,12 +31,12 @@ jobs:
       ares-version: ${{ steps.identity.outputs.ares-version }}
       studio-version: ${{ steps.identity.outputs.studio-version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Resolve immutable package identities
         id: identity
@@ -75,7 +75,7 @@ jobs:
           -ParesVersion=${{ steps.identity.outputs.ares-version }}
           --no-parallel --no-daemon --console=plain
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-validation-repository
           path: ARESLib-Kotlin/build/release-repository/
@@ -87,13 +87,13 @@ jobs:
     needs: candidate
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: package-validation-repository
           path: .release-validation
@@ -119,11 +119,11 @@ jobs:
         run: >-
           .\ARES-Analytics\gradlew.bat -p ARES-Analytics :app:test
           --tests 'com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest'
-          -ParesVersion=${{ needs.candidate.outputs.ares-version }}
-          -ParesRepository="file:///${{ github.workspace }}/.release-validation"
+          "-ParesVersion=${{ needs.candidate.outputs.ares-version }}"
+          "-ParesRepository=file:///${{ github.workspace }}/.release-validation"
           --no-parallel --no-daemon --console=plain
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zero-code-project-acceptance-logs
@@ -145,13 +145,13 @@ jobs:
             task: ':app:packageReleaseDmg'
             artifact-path: 'ARES-Analytics/app/build/compose/binaries/main-release/dmg/'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: package-validation-repository
           path: .release-validation
@@ -179,7 +179,7 @@ jobs:
             -ParesRepository=${{ steps.repository.outputs.uri }} \
             --no-parallel --no-daemon --console=plain
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ARES-Robotics-Studio-${{ matrix.os }}
           path: ${{ matrix.artifact-path }}
@@ -199,7 +199,7 @@ jobs:
           echo 'Public releases may only be dispatched from the protected main branch.' >&2
           exit 1
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: ARES-Robotics-Studio-*
           merge-multiple: true

@@ -65,6 +65,7 @@ class ManagedToolchainService internal constructor(
     private val packageResolver: () -> JdkPackage = ::resolveLatestTemurin21,
     private val packageDownloader: (JdkPackage, File, (Long, Long?) -> Unit) -> Unit = ::downloadJdkPackage,
     private val jdkVerifier: (File) -> Unit = ::verifyInstalledJdk,
+    private val managedInstallationSupported: () -> Boolean = ManagedToolchainPaths::managedJdkInstallationSupported,
 ) {
     private val installMutex = Mutex()
     private val _installState = MutableStateFlow<ManagedToolchainInstallState>(ManagedToolchainInstallState.Idle)
@@ -148,7 +149,7 @@ class ManagedToolchainService internal constructor(
 
     suspend fun installManagedJdk21(league: League): RobotToolchainSnapshot = installMutex.withLock {
         withContext(Dispatchers.IO) {
-            require(ManagedToolchainPaths.managedJdkInstallationSupported()) {
+            require(managedInstallationSupported()) {
                 "Managed JDK installation is currently supported on Windows x64. Install JDK 21 manually on this platform."
             }
             rootDirectory.mkdirs()

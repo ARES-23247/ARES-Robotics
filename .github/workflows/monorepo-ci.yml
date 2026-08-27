@@ -20,7 +20,7 @@ jobs:
     name: Source and release policy
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -43,16 +43,16 @@ jobs:
     outputs:
       version: ${{ steps.identity.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Select immutable validation identity
         id: identity
@@ -69,7 +69,7 @@ jobs:
           -ParesVersion=${{ steps.identity.outputs.version }}
           --no-parallel --no-daemon --console=plain
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ares-validation-repository
           path: ARESLib-Kotlin/build/release-repository/
@@ -81,13 +81,13 @@ jobs:
     needs: candidate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: ares-validation-repository
           path: .release-validation
@@ -99,7 +99,7 @@ jobs:
           -ParesVersion=${{ needs.candidate.outputs.version }}
           -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
           --no-parallel --no-daemon --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lightbot-debug-apk
           path: ARES-FTC/TeamCode/build/outputs/apk/debug/*.apk
@@ -111,13 +111,13 @@ jobs:
     needs: candidate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: ares-validation-repository
           path: .release-validation
@@ -135,13 +135,13 @@ jobs:
     needs: candidate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: ares-validation-repository
           path: .release-validation
@@ -159,13 +159,13 @@ jobs:
     needs: candidate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: ares-validation-repository
           path: .release-validation
@@ -183,13 +183,13 @@ jobs:
     needs: candidate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/download-artifact@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
         with:
           name: ares-validation-repository
           path: .release-validation
