@@ -14,10 +14,6 @@ import org.duckdb.DuckDBAppender
 import org.duckdb.DuckDBConnection
 import java.sql.Connection
 import java.sql.ResultSet
-import java.sql.SQLTimeoutException
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 data class TelemetryExportPreflight(
@@ -77,12 +73,13 @@ class MatchLogRepository(
 ) {
     private val statementCache = java.util.concurrent.ConcurrentHashMap<String, java.sql.PreparedStatement>()
     private val nextSampleOrder = AtomicLong()
+    private val readOnlyQueries = ReadOnlyQueryRepository(readConn, readMutex, metrics)
 
     /** Executes the deliberately restricted SQL subset exposed to the AI analyst. */
     suspend fun executeAiQuery(
         sql: String,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT,
-    ): QueryResult = executeQueryRaw(AiSqlQueryGuard.validate(sql), rowLimit)
+    ): QueryResult = readOnlyQueries.executeRaw(AiSqlQueryGuard.validate(sql), rowLimit)
 
     private fun readConnectionFor(sessionId: String): Connection =
         if (sessionId == "live-telemetry") ephemeralReadConn else readConn
@@ -140,157 +137,14 @@ class MatchLogRepository(
     suspend fun executeQueryRaw(
         sql: String,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT
-    ): QueryResult = withReadLock {
-        require(rowLimit in 1..QueryResult.MAX_RAW_QUERY_ROW_LIMIT) {
-            "rowLimit must be between 1 and ${QueryResult.MAX_RAW_QUERY_ROW_LIMIT}"
-        }
-        // Primary guard: whitelist the first non-whitespace token. Only read-only
-        // statement leaders are permitted. This runs BEFORE any execution.
-        val queryBody = sql.trim().trimEnd(';').trim()
-        val normalized = queryBody.uppercase()
-        val firstToken = Regex("^[A-Z]+").find(normalized)?.value ?: ""
-        val allowedLeaders = setOf("SELECT", "WITH", "VALUES", "TABLE", "SHOW", "DESCRIBE", "EXPLAIN")
-        if (firstToken !in allowedLeaders) {
-            throw IllegalArgumentException("Raw query rejected: only read-only query leaders are allowed (got '$firstToken').")
-        }
-        // Defense-in-depth keyword denylist (expanded): even with a SELECT leader, block
-        // statements that smuggle in writes, side-effects, or exfiltration primitives the
-        // read-only transaction might not fully neutralize (e.g. EXPORT DATABASE).
-        val forbidden = listOf(
-            "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "ATTACH", "DETACH",
-            "INSTALL", "LOAD", "PRAGMA", "COPY", "TRUNCATE", "EXECUTE", "CALL", "VACUUM",
-            "EXPORT", "SET", "USE", "IMPORT"
-        )
-        val hasForbidden = forbidden.any { Regex("\\b$it\\b").containsMatchIn(normalized) }
-        if (hasForbidden) {
-            throw IllegalArgumentException("Raw query rejected: query contains a disallowed modification/side-effect keyword.")
-        }
-        // SELECT/WITH/VALUES/TABLE are valid derived-table queries in DuckDB. Wrapping them makes
-        // LIMIT part of the engine plan rather than merely stopping Kotlin collection after the
-        // driver may already have materialized an enormous native result. Metadata statements such
-        // as SHOW/DESCRIBE/EXPLAIN cannot be derived tables; those remain collection-bounded below.
-        val engineBoundedSql = if (firstToken in setOf("SELECT", "WITH", "VALUES", "TABLE")) {
-            "SELECT * FROM ($queryBody) AS ares_bounded_query LIMIT ${rowLimit + 1}"
-        } else {
-            queryBody
-        }
-        // Enforce read-only at the engine level: wrap the query in a READ ONLY transaction
-        // so any write attempt (even one that slipped past the token/keyword guards) is
-        // rejected by DuckDB itself. Executed on readConn (separate from the writer conn).
-        readConn.createStatement().use { it.execute("BEGIN TRANSACTION READ ONLY") }
-        try {
-            val timedOut = AtomicBoolean(false)
-            val statement = readConn.createStatement()
-            val timeoutTask = queryTimeoutExecutor.schedule({
-                timedOut.set(true)
-                runCatching { statement.cancel() }
-            }, RAW_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            val result = try {
-                statement.use { st ->
-                val hasResultSet = st.execute(engineBoundedSql)
-                if (hasResultSet) {
-                    st.resultSet.use { rs ->
-                        val meta = rs.metaData
-                        val colCount = meta.columnCount
-                        require(colCount <= QueryResult.MAX_RAW_QUERY_COLUMN_COUNT) {
-                            "Query returned $colCount columns; the diagnostics viewer supports at most " +
-                                "${QueryResult.MAX_RAW_QUERY_COLUMN_COUNT}."
-                        }
-                        val columns = (1..colCount).map { meta.getColumnName(it) }
-                        val rows = ArrayList<List<String>>(rowLimit.coerceAtMost(256))
-                        var hasAdditionalRows = false
-                        var truncatedCellCount = 0
-                        while (rs.next()) {
-                            if (rows.size == rowLimit) {
-                                hasAdditionalRows = true
-                                break
-                            }
-                            val row = ArrayList<String>(colCount)
-                            for (columnIndex in 1..colCount) {
-                                val rawValue = rs.getObject(columnIndex)?.toString() ?: "NULL"
-                                if (rawValue.length > QueryResult.MAX_CELL_CHARACTERS) {
-                                    row.add(rawValue.take(QueryResult.MAX_CELL_CHARACTERS) + "…")
-                                    truncatedCellCount++
-                                } else {
-                                    row.add(rawValue)
-                                }
-                            }
-                            rows.add(row)
-                        }
-                        QueryResult(
-                            columns = columns,
-                            rows = rows,
-                            isTruncated = hasAdditionalRows,
-                            rowLimit = rowLimit,
-                            truncatedCellCount = truncatedCellCount
-                        )
-                    }
-                } else {
-                    val updateCount = st.updateCount
-                    QueryResult(
-                        columns = listOf("Status"),
-                        rows = listOf(listOf("Command completed successfully. Affected rows: $updateCount"))
-                    )
-                }
-                }
-            } catch (failure: Exception) {
-                if (timedOut.get()) {
-                    throw SQLTimeoutException(
-                        "Raw query exceeded the ${RAW_QUERY_TIMEOUT_SECONDS}-second execution limit",
-                        failure,
-                    )
-                }
-                throw failure
-            } finally {
-                timeoutTask.cancel(false)
-            }
-            readConn.createStatement().use { it.execute("COMMIT") }
-            result
-        } catch (e: Exception) {
-            runCatching { readConn.createStatement().use { it.execute("ROLLBACK") } }
-            throw e
-        }
-    }
+    ): QueryResult = readOnlyQueries.executeRaw(sql, rowLimit)
 
     /**
      * Execute a parameterized SQL query and return results as [QueryResult].
      * Use this for queries with user-provided values to prevent SQL injection.
      */
-    suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult = withReadLock {
-        readConn.prepareStatement(sql).use { ps ->
-            params.forEachIndexed { index, param ->
-                when (param) {
-                    is String -> ps.setString(index + 1, param)
-                    is Long -> ps.setLong(index + 1, param)
-                    is Int -> ps.setInt(index + 1, param)
-                    is Double -> ps.setDouble(index + 1, param)
-                    else -> ps.setObject(index + 1, param)
-                }
-            }
-            val hasResultSet = ps.execute()
-            if (hasResultSet) {
-                ps.resultSet.use { rs ->
-                    val meta = rs.metaData
-                    val colCount = meta.columnCount
-                    val columns = (1..colCount).map { meta.getColumnName(it) }
-                    val rows = mutableListOf<List<String>>()
-                    while (rs.next()) {
-                        val row = (1..colCount).map {
-                            rs.getObject(it)?.toString() ?: "NULL"
-                        }
-                        rows.add(row)
-                    }
-                    QueryResult(columns, rows)
-                }
-            } else {
-                val updateCount = ps.updateCount
-                QueryResult(
-                    columns = listOf("Status"),
-                    rows = listOf(listOf("Command completed successfully. Affected rows: $updateCount"))
-                )
-            }
-        }
-    }
+    suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult =
+        readOnlyQueries.executeWithParams(sql, params)
 
     suspend fun insertSession(session: Session) = withDbLock {
         upsertSession(session, IMPORT_STATE_COMPLETE)
@@ -1544,10 +1398,6 @@ class MatchLogRepository(
     private companion object {
         private const val IMPORT_STATE_IMPORTING = "IMPORTING"
         private const val IMPORT_STATE_COMPLETE = "COMPLETE"
-        private const val RAW_QUERY_TIMEOUT_SECONDS = 5L
-        private val queryTimeoutExecutor = Executors.newSingleThreadScheduledExecutor { task ->
-            Thread(task, "ares-duckdb-query-timeout").apply { isDaemon = true }
-        }
     }
 
 }
