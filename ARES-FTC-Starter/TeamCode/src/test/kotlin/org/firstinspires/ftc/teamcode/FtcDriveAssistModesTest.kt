@@ -4,7 +4,7 @@ package org.firstinspires.ftc.teamcode
 import com.areslib.math.estimation.PoseEstimatorSnapshot
 import com.areslib.state.DriveState
 import com.areslib.state.RobotState
-import org.firstinspires.ftc.teamcode.dsl.FtcDriveAssistModes
+import com.areslib.ftc.runtime.FtcDriveAssistModes
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
