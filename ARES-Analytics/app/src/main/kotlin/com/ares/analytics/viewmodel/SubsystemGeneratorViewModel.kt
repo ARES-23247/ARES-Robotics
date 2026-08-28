@@ -13,6 +13,7 @@ import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.shared.League
 import com.ares.analytics.service.project.persistence.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
+import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
 import com.areslib.codegen.GeneratedSubsystemSourceSet
 import com.areslib.codegen.SubsystemArtifact
 import com.areslib.codegen.SubsystemArtifactGroup
@@ -30,7 +31,6 @@ import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemFaultRecoveryDocument
 import com.areslib.subsystem.SubsystemFeedforwardDocument
 import com.areslib.subsystem.SubsystemFieldRole
-import com.areslib.subsystem.SubsystemFollowerDocument
 import com.areslib.subsystem.SubsystemFollowerTransform
 import com.areslib.subsystem.SubsystemHardwareConnection
 import com.areslib.subsystem.SubsystemHardwareDocument
@@ -887,12 +887,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun removeHardware(id: String) = edit { document ->
-        document.copy(
-            hardware = document.hardware.filterNot { it.hardwareId == id }.map { device ->
-                if (device.following?.leaderId == id) device.copy(following = null) else device
-            },
-            controlLoops = document.controlLoops.filterNot { it.actuatorId == id },
-        )
+        SubsystemDocumentGraphEditor.removeHardware(document, id)
     }.also { selectHardware(null) }
 
     fun updateHardware(id: String, transform: (SubsystemHardwareDocument) -> SubsystemHardwareDocument) = edit { document ->
@@ -904,19 +899,7 @@ class SubsystemGeneratorViewModel(
         leaderId: String?,
         transform: SubsystemFollowerTransform = SubsystemFollowerTransform.SAME_DIRECTION,
     ) = edit { document ->
-        document.copy(
-            hardware = document.hardware.map { device ->
-                if (device.hardwareId == id) {
-                    device.copy(following = leaderId?.let { SubsystemFollowerDocument(it, transform) })
-                } else device
-            },
-            controlLoops = if (leaderId == null) document.controlLoops else {
-                document.controlLoops.filterNot { it.actuatorId == id }
-            },
-            safety = if (leaderId != null && document.safety.homing.actuatorId == id) {
-                document.safety.copy(homing = SubsystemHomingDocument())
-            } else document.safety,
-        )
+        SubsystemDocumentGraphEditor.setFollower(document, id, leaderId, transform)
     }
 
     fun changeHardwareKind(id: String, kind: SubsystemHardwareKind) = edit { document ->
@@ -956,23 +939,7 @@ class SubsystemGeneratorViewModel(
 
     fun renameHardwareId(id: String, newId: String) {
         if (newId == id) return
-        edit { document ->
-            document.copy(
-                hardware = document.hardware.map {
-                    when {
-                        it.hardwareId == id -> it.copy(hardwareId = newId)
-                        it.following?.leaderId == id -> it.copy(following = requireNotNull(it.following).copy(leaderId = newId))
-                        else -> it
-                    }
-                },
-                controlLoops = document.controlLoops.map { if (it.actuatorId == id) it.copy(actuatorId = newId) else it },
-                safety = document.safety.copy(
-                    homing = document.safety.homing.copy(
-                        actuatorId = document.safety.homing.actuatorId?.let { if (it == id) newId else it }
-                    )
-                ),
-            )
-        }
+        edit { document -> SubsystemDocumentGraphEditor.renameHardware(document, id, newId) }
         selectHardware(_state.value.draft?.document?.hardware?.firstOrNull { it.hardwareId == newId }?.uid)
     }
 
@@ -999,13 +966,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun removeStateField(id: String) = edit { document ->
-        document.copy(
-            stateFields = document.stateFields.filterNot { it.fieldId == id },
-            hardware = document.hardware.map {
-                it.copy(measurements = it.measurements.filterNot { measurement -> measurement.fieldId == id })
-            },
-            controlLoops = document.controlLoops.filterNot { it.targetFieldId == id || it.measurementFieldId == id },
-        )
+        SubsystemDocumentGraphEditor.removeStateField(document, id)
     }.also { selectField(null) }
 
     fun updateStateField(id: String, transform: (SubsystemStateFieldDocument) -> SubsystemStateFieldDocument) = edit { document ->
@@ -1027,34 +988,7 @@ class SubsystemGeneratorViewModel(
 
     fun renameStateFieldId(id: String, newId: String) {
         if (newId == id) return
-        edit { document ->
-            document.copy(
-                stateFields = document.stateFields.map { if (it.fieldId == id) it.copy(fieldId = newId) else it },
-                hardware = document.hardware.map { device ->
-                    device.copy(measurements = device.measurements.map { measurement ->
-                        if (measurement.fieldId == id) measurement.copy(fieldId = newId) else measurement
-                    })
-                },
-                controlLoops = document.controlLoops.map { loop ->
-                    loop.copy(
-                        targetFieldId = if (loop.targetFieldId == id) newId else loop.targetFieldId,
-                        measurementFieldId = loop.measurementFieldId?.let { if (it == id) newId else it },
-                        feedforward = loop.feedforward.copy(
-                            velocityFieldId = loop.feedforward.velocityFieldId?.let { if (it == id) newId else it },
-                            accelerationFieldId = loop.feedforward.accelerationFieldId?.let { if (it == id) newId else it },
-                            gravityAngleFieldId = loop.feedforward.gravityAngleFieldId?.let { if (it == id) newId else it },
-                        ),
-                    )
-                },
-                safety = document.safety.copy(
-                    homing = document.safety.homing.copy(
-                        evidence = document.safety.homing.evidence.map {
-                            if (it.fieldId == id) it.copy(fieldId = newId) else it
-                        }
-                    )
-                ),
-            )
-        }
+        edit { document -> SubsystemDocumentGraphEditor.renameStateField(document, id, newId) }
         selectField(_state.value.draft?.document?.stateFields?.firstOrNull { it.fieldId == newId }?.uid)
     }
 
