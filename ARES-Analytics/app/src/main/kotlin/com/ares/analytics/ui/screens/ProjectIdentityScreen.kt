@@ -231,6 +231,12 @@ internal fun projectIdentityReviewGuidance(state: ProjectIdentityEditorState): S
     else -> null
 }
 
+internal fun protectedProjectIdentityExplanation(error: String): String? = when {
+    error.contains("authoringModel") ->
+        "This local robot was created with an older project format. Current Studio intentionally keeps it blocked until you review a one-time replacement. Your original file is preserved in .ares/recovery/project; you do not need to delete the robot."
+    else -> null
+}
+
 @Composable
 private fun ProjectIdentityDestinationCard(state: ProjectIdentityEditorState) {
     Card(
@@ -253,6 +259,7 @@ private fun ProjectIdentityDestinationCard(state: ProjectIdentityEditorState) {
 
 @Composable
 private fun ProtectedProjectIdentityCard(error: String, repairAvailable: Boolean) {
+    val explanation = protectedProjectIdentityExplanation(error)
     Card(
         colors = CardDefaults.cardColors(containerColor = AresError.copy(alpha = 0.10f)),
         border = BorderStroke(1.dp, AresError),
@@ -267,6 +274,9 @@ private fun ProtectedProjectIdentityCard(error: String, repairAvailable: Boolean
                     fontWeight = FontWeight.Bold,
                 )
                 Text(error, color = AresTextSecondary)
+                explanation?.let {
+                    Text(it, color = AresTextPrimary, fontSize = 12.sp)
+                }
             }
         }
     }

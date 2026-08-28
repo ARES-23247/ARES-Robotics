@@ -102,13 +102,28 @@ internal suspend fun removeImmutableCloudObject(
     }
 }
 
+internal fun robotProfileMutationApplied(
+    before: List<RobotProfile>,
+    desired: List<RobotProfile>,
+    published: List<RobotProfile>,
+): Boolean {
+    val beforeById = before.associateBy(RobotProfile::robotId)
+    val desiredById = desired.associateBy(RobotProfile::robotId)
+    val publishedById = published.associateBy(RobotProfile::robotId)
+    val changed = desiredById.filter { (robotId, profile) -> beforeById[robotId] != profile }
+    val removed = beforeById.keys - desiredById.keys
+    return changed.all { (robotId, profile) -> publishedById[robotId] == profile } &&
+        removed.none(publishedById::containsKey)
+}
+
 /**
  * Desktop-owned synchronization service for historical telemetry sessions.
  *
  * The robot remains offline-first. Analytics packages a complete session as an immutable
  * `.ares-session.zip` bundle, uploads it to the active workspace's Google Drive folder, and then
- * atomically updates the Drive-hosted session index. Content hashes provide incremental sync and
- * download-integrity checks.
+ * publishes the Drive-hosted session index through version-bracketed reads, stale-version checks,
+ * retry, and post-write verification. Content hashes provide incremental sync and download-
+ * integrity checks.
  *
  * The Cloud Run gateway is used for protected diagnostics and AI requests; it is not in the
  * telemetry upload path.
@@ -223,8 +238,8 @@ class SyncEngineService(
     }
 
     /**
-     * Serializes index.json read-modify-write sequences so two concurrent uploads (or an
-     * upload + delete) cannot interleave their read/write and clobber each other's entries.
+     * Serializes this process's index.json read-modify-write sequences. Cross-process writers are
+     * handled separately through Drive version checks, retry, and post-write verification.
      */
     private val indexMutex = kotlinx.coroutines.sync.Mutex()
     private val robotProfilesMutex = kotlinx.coroutines.sync.Mutex()
@@ -264,14 +279,12 @@ class SyncEngineService(
         }
     }
 
-    private suspend fun readIndex(fileId: String): Pair<List<SessionSummary>, String> {
+    private suspend fun readIndex(fileId: String): Pair<List<SessionSummary>, Long> {
         val snapshot = googleDriveService.readFileSnapshot(fileId)
-        val etag = snapshot.etag
-            ?: throw IllegalStateException("Google Drive index.json did not include an ETag")
         val summaries = AppJson.decodeFromString<List<SessionSummary>>(
             String(snapshot.bytes, Charsets.UTF_8)
         )
-        return summaries to etag
+        return summaries to snapshot.version
     }
 
     private fun mergeRobotProfiles(profileSets: Iterable<List<RobotProfile>>): List<RobotProfile> {
@@ -285,14 +298,12 @@ class SyncEngineService(
         return merged.values.toList()
     }
 
-    private suspend fun readRobotProfiles(fileId: String): Pair<List<RobotProfile>, String> {
+    private suspend fun readRobotProfiles(fileId: String): Pair<List<RobotProfile>, Long> {
         val snapshot = googleDriveService.readFileSnapshot(fileId)
-        val etag = snapshot.etag
-            ?: throw IllegalStateException("Google Drive robots.json did not include an ETag")
         val profiles = AppJson.decodeFromString<List<RobotProfile>>(
             String(snapshot.bytes, Charsets.UTF_8)
         )
-        return profiles to etag
+        return profiles to snapshot.version
     }
 
     /**
@@ -301,7 +312,8 @@ class SyncEngineService(
      */
     private suspend fun mutateRemoteIndex(
         rootFolderId: String,
-        transform: (List<SessionSummary>) -> List<SessionSummary>
+        transform: (List<SessionSummary>) -> List<SessionSummary>,
+        isApplied: (List<SessionSummary>) -> Boolean,
     ) = indexMutex.withLock {
         repeat(INDEX_UPDATE_ATTEMPTS) { attempt ->
             val indexIds = googleDriveService.findFiles("index.json", rootFolderId)
@@ -322,7 +334,7 @@ class SyncEngineService(
             val snapshots = indexIds.associateWith { readIndex(it) }
             val current = mergeIndexSummaries(snapshots.values.map { it.first })
             val canonicalId = indexIds.minOrNull()!!
-            val expectedEtag = snapshots.getValue(canonicalId).second
+            val expectedVersion = snapshots.getValue(canonicalId).second
             val updated = transform(current).also { summaries ->
                 summaries.forEach(::validateCloudSummary)
             }
@@ -334,12 +346,20 @@ class SyncEngineService(
                     parentId = rootFolderId,
                     mimeType = "application/json",
                     fileId = canonicalId,
-                    expectedEtag = expectedEtag
+                    expectedVersion = expectedVersion
                 )
-                indexIds.asSequence().filter { it != canonicalId }.forEach { duplicateId ->
-                    runCatching { googleDriveService.deleteFile(duplicateId) }
+                val publishedIds = googleDriveService.findFiles("index.json", rootFolderId)
+                val published = mergeIndexSummaries(publishedIds.map { readIndex(it).first })
+                if (isApplied(published)) {
+                    publishedIds.asSequence().filter { it != canonicalId }.forEach { duplicateId ->
+                        runCatching { googleDriveService.deleteFile(duplicateId) }
+                    }
+                    return@withLock
                 }
-                return@withLock
+                if (attempt == INDEX_UPDATE_ATTEMPTS - 1) {
+                    throw IllegalStateException("index.json did not retain the requested update")
+                }
+                kotlinx.coroutines.delay(INDEX_RETRY_DELAY_MS * (attempt + 1))
             } catch (_: DrivePreconditionFailedException) {
                 if (attempt == INDEX_UPDATE_ATTEMPTS - 1) {
                     throw IllegalStateException("index.json kept changing during update")
@@ -448,18 +468,24 @@ class SyncEngineService(
                     )
                 },
                 swapManifest = { newObjectId, recordPriorObjectIds ->
-                    // Cross-process optimistic update; the callback is refreshed on each ETag
+                    // Cross-process optimistic update; the callback is refreshed on each version
                     // retry so cleanup only targets objects superseded by the winning attempt.
-                    mutateRemoteIndex(rootFolderId) { indexList ->
-                        recordPriorObjectIds(
-                            indexList.asSequence()
-                                .filter { it.sessionId == sessionId }
-                                .mapNotNull { it.cloudFileId }
-                                .toSet()
-                        )
-                        indexList.filter { it.sessionId != sessionId } +
-                            uploadSummary.copy(cloudFileId = newObjectId)
-                    }
+                    mutateRemoteIndex(
+                        rootFolderId = rootFolderId,
+                        transform = { indexList ->
+                            recordPriorObjectIds(
+                                indexList.asSequence()
+                                    .filter { it.sessionId == sessionId }
+                                    .mapNotNull { it.cloudFileId }
+                                    .toSet()
+                            )
+                            indexList.filter { it.sessionId != sessionId } +
+                                uploadSummary.copy(cloudFileId = newObjectId)
+                        },
+                        isApplied = { published ->
+                            published.singleOrNull { it.sessionId == sessionId }?.cloudFileId == newObjectId
+                        },
+                    )
                 },
                 currentManifestObjectId = {
                     currentSessionObjectId(rootFolderId, sessionId)
@@ -491,9 +517,9 @@ class SyncEngineService(
     }
 
     /**
-     * Atomically mutates the shared robot registry. Read or parse failures propagate and
-     * therefore can never be mistaken for an empty registry. ETags prevent concurrent
-     * dashboard instances from silently overwriting one another.
+     * Safely mutates the shared robot registry. Read or parse failures propagate and
+     * therefore can never be mistaken for an empty registry. Drive versions detect stale
+     * snapshots before an update; the surrounding retry loop re-reads and reapplies changes.
      */
     suspend fun mutateRemoteRobotProfiles(
         transform: (List<RobotProfile>) -> List<RobotProfile>
@@ -524,12 +550,20 @@ class SyncEngineService(
                         parentId = rootFolderId,
                         mimeType = "application/json",
                         fileId = canonicalId,
-                        expectedEtag = snapshots.getValue(canonicalId).second
+                        expectedVersion = snapshots.getValue(canonicalId).second
                     )
-                    fileIds.drop(1).forEach { duplicateId ->
-                        runCatching { googleDriveService.deleteFile(duplicateId) }
+                    val publishedIds = googleDriveService.findFiles("robots.json", rootFolderId).sorted()
+                    val published = mergeRobotProfiles(publishedIds.map { readRobotProfiles(it).first })
+                    if (robotProfileMutationApplied(current, updated, published)) {
+                        publishedIds.asSequence().filter { it != canonicalId }.forEach { duplicateId ->
+                            runCatching { googleDriveService.deleteFile(duplicateId) }
+                        }
+                        return@withLock published
                     }
-                    return@withLock updated
+                    if (attempt == INDEX_UPDATE_ATTEMPTS - 1) {
+                        throw IllegalStateException("robots.json did not retain the requested update")
+                    }
+                    kotlinx.coroutines.delay(INDEX_RETRY_DELAY_MS * (attempt + 1))
                 } catch (_: DrivePreconditionFailedException) {
                     if (attempt == INDEX_UPDATE_ATTEMPTS - 1) {
                         throw IllegalStateException("robots.json kept changing during update")
@@ -1338,9 +1372,11 @@ class SyncEngineService(
             val rootFolderId = googleDriveService.workspaceRootId()
             removeImmutableCloudObject(
                 removeManifestReference = {
-                    mutateRemoteIndex(rootFolderId) { indexList ->
-                        indexList.filter { it.sessionId != sessionId }
-                    }
+                    mutateRemoteIndex(
+                        rootFolderId = rootFolderId,
+                        transform = { indexList -> indexList.filter { it.sessionId != sessionId } },
+                        isApplied = { published -> published.none { it.sessionId == sessionId } },
+                    )
                 },
                 deleteObject = {
                     googleDriveService.deleteFile(cloudObjectFileId)

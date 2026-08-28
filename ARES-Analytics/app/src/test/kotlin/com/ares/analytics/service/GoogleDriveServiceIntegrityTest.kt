@@ -19,8 +19,141 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class GoogleDriveServiceIntegrityTest {
+    @Test
+    fun `documented file version brackets media download without ETag`() = runTest {
+        val content = "[]".toByteArray()
+        val requests = mutableListOf<String>()
+        val client = HttpClient(MockEngine) {
+            engine {
+                addHandler { request ->
+                    if (request.url.parameters["alt"] == "media") {
+                        requests += "media"
+                        respond(content)
+                    } else {
+                        requests += "metadata"
+                        assertEquals("id,version", request.url.parameters["fields"])
+                        respond(
+                            """{"id":"index-id","version":"7"}""",
+                        )
+                    }
+                }
+            }
+        }
+        val service = GoogleDriveService(
+            mock(OAuthService::class.java),
+            mock(EnvironmentService::class.java),
+            client,
+            accessTokenOverride = { "token" },
+        )
+        try {
+            val snapshot = service.readFileSnapshot("index-id")
+
+            assertContentEquals(content, snapshot.bytes)
+            assertEquals(7L, snapshot.version)
+            assertEquals(listOf("metadata", "media", "metadata"), requests)
+        } finally {
+            service.dispose()
+        }
+    }
+
+    @Test
+    fun `snapshot retries when metadata changes around media download`() = runTest {
+        val metadataVersions = ArrayDeque(
+            listOf(1L, 2L, 2L, 2L),
+        )
+        var mediaReads = 0
+        val client = HttpClient(MockEngine) {
+            engine {
+                addHandler { request ->
+                    if (request.url.parameters["alt"] == "media") {
+                        mediaReads++
+                        respond("[]")
+                    } else {
+                        respond(
+                            """{"id":"index-id","version":"${metadataVersions.removeFirst()}"}""",
+                        )
+                    }
+                }
+            }
+        }
+        val service = GoogleDriveService(
+            mock(OAuthService::class.java),
+            mock(EnvironmentService::class.java),
+            client,
+            accessTokenOverride = { "token" },
+        )
+        try {
+            val snapshot = service.readFileSnapshot("index-id")
+
+            assertEquals(2L, snapshot.version)
+            assertEquals(2, mediaReads)
+            assertTrue(metadataVersions.isEmpty())
+        } finally {
+            service.dispose()
+        }
+    }
+
+    @Test
+    fun `snapshot fails closed when metadata response omits version`() = runTest {
+        val client = HttpClient(MockEngine) {
+            engine {
+                addHandler { respond("""{"id":"index-id"}""") }
+            }
+        }
+        val service = GoogleDriveService(
+            mock(OAuthService::class.java),
+            mock(EnvironmentService::class.java),
+            client,
+            accessTokenOverride = { "token" },
+        )
+        try {
+            val failure = assertFailsWith<IllegalStateException> {
+                service.readFileSnapshot("index-id")
+            }
+            assertTrue(failure.message.orEmpty().contains("numeric file version"))
+        } finally {
+            service.dispose()
+        }
+    }
+
+    @Test
+    fun `stale expected version prevents manifest overwrite`() = runTest {
+        val methods = mutableListOf<HttpMethod>()
+        val client = HttpClient(MockEngine) {
+            engine {
+                addHandler { request ->
+                    methods += request.method
+                    check(request.method == HttpMethod.Get) { "PATCH must not run for a stale version" }
+                    respond("""{"id":"index-id","version":"8"}""")
+                }
+            }
+        }
+        val service = GoogleDriveService(
+            mock(OAuthService::class.java),
+            mock(EnvironmentService::class.java),
+            client,
+            accessTokenOverride = { "token" },
+        )
+        try {
+            assertFailsWith<DrivePreconditionFailedException> {
+                service.writeFile(
+                    name = "index.json",
+                    bytes = "[]".toByteArray(),
+                    parentId = "root",
+                    mimeType = "application/json",
+                    fileId = "index-id",
+                    expectedVersion = 7L,
+                )
+            }
+            assertEquals(listOf(HttpMethod.Get), methods)
+        } finally {
+            service.dispose()
+        }
+    }
+
     @Test
     fun `streaming session upload always creates a new Drive object`() = runTest {
         val requests = mutableListOf<String>()
