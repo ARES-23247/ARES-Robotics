@@ -15,6 +15,14 @@ on:
         required: true
         default: false
         type: boolean
+      windows_installer_trust:
+        description: Require pinned Authenticode, or publish a disclosed GitHub-release SHA-256 bootstrap installer
+        required: true
+        default: checksum
+        type: choice
+        options:
+          - checksum
+          - authenticode
 
 permissions:
   contents: read
@@ -207,7 +215,7 @@ jobs:
           ARES_GOOGLE_OAUTH_BROKER_URL: ${{ vars.ARES_GOOGLE_OAUTH_BROKER_URL }}
           ARES_GITHUB_APP_CLIENT_ID: ${{ vars.ARES_GITHUB_APP_CLIENT_ID }}
           ARES_GITHUB_APP_SLUG: ${{ vars.ARES_GITHUB_APP_SLUG }}
-          ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS: ${{ vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS }}
+          ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && inputs.windows_installer_trust == 'authenticode' && vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS || '' }}
         run: |
           chmod +x ./gradlew
           ./gradlew ${{ matrix.task }} \
@@ -220,7 +228,8 @@ jobs:
         if: >-
           runner.os == 'Windows' &&
           github.event_name == 'workflow_dispatch' &&
-          inputs.publish
+          inputs.publish &&
+          inputs.windows_installer_trust == 'authenticode'
         shell: pwsh
         env:
           WINDOWS_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
@@ -278,6 +287,39 @@ jobs:
               Remove-Item -LiteralPath $certificatePath -Force
             }
           }
+
+      - name: Record Windows installer trust evidence
+        if: >-
+          runner.os == 'Windows' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.publish
+        shell: pwsh
+        env:
+          WINDOWS_INSTALLER_TRUST: ${{ inputs.windows_installer_trust }}
+        run: |
+          $installers = @(Get-ChildItem `
+            -LiteralPath 'ARES-Analytics/app/build/compose/binaries/main-release/msi' `
+            -Filter '*.msi')
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one MSI to describe, found $($installers.Count)."
+          }
+          $signature = Get-AuthenticodeSignature -LiteralPath $installers[0].FullName
+          $thumbprint = if ($null -ne $signature.SignerCertificate) {
+            $signature.SignerCertificate.Thumbprint.ToUpperInvariant()
+          } else { $null }
+          if ($env:WINDOWS_INSTALLER_TRUST -eq 'authenticode' -and $signature.Status -ne 'Valid') {
+            throw "Authenticode trust mode produced an invalid signature ($($signature.Status))."
+          }
+          $evidence = [ordered]@{
+            schemaVersion = 1
+            assetName = $installers[0].Name
+            trustMode = $env:WINDOWS_INSTALLER_TRUST
+            sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $installers[0].FullName).Hash.ToLowerInvariant()
+            authenticodeStatus = $signature.Status.ToString()
+            signerThumbprint = $thumbprint
+          }
+          $manifest = Join-Path $installers[0].DirectoryName 'windows-installer-trust.json'
+          $evidence | ConvertTo-Json | Set-Content -LiteralPath $manifest -Encoding UTF8
 
       - uses: actions/upload-artifact@v7
         with:
@@ -372,9 +414,14 @@ jobs:
           name: ARES Robotics Studio ${{ needs.candidate.outputs.studio-version }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
+          body: |
+            Windows installer trust mode: `${{ inputs.windows_installer_trust }}`.
+
+            `authenticode` releases require a valid certificate pinned into Studio. `checksum` releases are bootstrap packages: Studio verifies the exact MSI against the SHA-256 asset from this immutable GitHub release, but Windows will identify the publisher as unsigned. See `windows-installer-trust.json` for the machine-readable evidence.
           fail_on_unmatched_files: true
           files: |
             release-assets/**/*.msi
             release-assets/**/*.dmg
             release-assets/**/*.zip
             release-assets/**/*.sha256
+            release-assets/**/windows-installer-trust.json

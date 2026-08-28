@@ -24,23 +24,23 @@ class UpdateCheckerServiceTest {
     fun testCheckForUpdatesAvailable() = runBlocking {
         val mockEngine = MockEngine { request ->
             assertEquals("api.github.com", request.url.host)
-            assertEquals("/repos/ARES-23247/ARES-Analytics/releases/latest", request.url.encodedPath)
+            assertEquals("/repos/ARES-23247/ARES-Robotics/releases/latest", request.url.encodedPath)
             respond(
                 content = """
                 {
                     "tag_name": "v99.0.0",
-                    "html_url": "https://github.com/ARES-23247/ARES-Analytics/releases/tag/v99.0.0",
+                    "html_url": "https://github.com/ARES-23247/ARES-Robotics/releases/tag/v99.0.0",
                     "body": "Bug fixes and performance improvements",
                     "assets": [
                       {
                         "name": "ARES-Robotics-Studio-99.0.0.msi",
-                        "browser_download_url": "https://github.com/ARES-23247/ARES-Analytics/releases/download/v99.0.0/ARES-Robotics-Studio-99.0.0.msi",
+                        "browser_download_url": "https://github.com/ARES-23247/ARES-Robotics/releases/download/v99.0.0/ARES-Robotics-Studio-99.0.0.msi",
                         "size": 123456,
                         "content_type": "application/x-msi"
                       },
                       {
                         "name": "ARES-Robotics-Studio-99.0.0.msi.sha256",
-                        "browser_download_url": "https://github.com/ARES-23247/ARES-Analytics/releases/download/v99.0.0/ARES-Robotics-Studio-99.0.0.msi.sha256",
+                        "browser_download_url": "https://github.com/ARES-23247/ARES-Robotics/releases/download/v99.0.0/ARES-Robotics-Studio-99.0.0.msi.sha256",
                         "size": 128,
                         "content_type": "text/plain"
                       }
@@ -73,7 +73,7 @@ class UpdateCheckerServiceTest {
         println("Actual update state: $state")
         assertTrue(state is UpdateCheckerService.UpdateState.UpdateAvailable)
         assertEquals("v99.0.0", state.latestVersion)
-        assertEquals("https://github.com/ARES-23247/ARES-Analytics/releases/tag/v99.0.0", state.downloadUrl)
+        assertEquals("https://github.com/ARES-23247/ARES-Robotics/releases/tag/v99.0.0", state.downloadUrl)
         assertEquals("Bug fixes and performance improvements", state.releaseNotes)
         assertEquals("ARES-Robotics-Studio-99.0.0.msi", state.windowsCandidate?.installerName)
         assertEquals(123456, state.windowsCandidate?.sizeBytes)
@@ -91,7 +91,7 @@ class UpdateCheckerServiceTest {
                 content = """
                 {
                     "tag_name": "v1.4.0",
-                    "html_url": "https://github.com/ARES-23247/ARES-Analytics/releases/tag/v1.4.0",
+                    "html_url": "https://github.com/ARES-23247/ARES-Robotics/releases/tag/v1.4.0",
                     "body": "Initial Release"
                 }
                 """.trimIndent(),

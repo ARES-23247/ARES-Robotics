@@ -28,7 +28,6 @@ private const val MAX_CHECKSUM_RESPONSE_BYTES = 4_096L
 
 enum class WindowsUpdateFailureKind {
     UNSUPPORTED_PLATFORM,
-    SIGNER_POLICY_UNAVAILABLE,
     INVALID_CANDIDATE,
     INSUFFICIENT_SPACE,
     NETWORK,
@@ -36,6 +35,14 @@ enum class WindowsUpdateFailureKind {
     SIGNATURE_MISMATCH,
     CANCELLED,
     IO,
+}
+
+enum class WindowsInstallerTrustMode {
+    /** Exact SHA-256 from the matching immutable GitHub release asset. */
+    GITHUB_RELEASE_SHA256,
+
+    /** SHA-256 plus a valid Authenticode certificate pinned by this Studio build. */
+    AUTHENTICODE,
 }
 
 sealed interface WindowsUpdateStageState {
@@ -49,7 +56,8 @@ data class StagedWindowsUpdate(
     val version: String,
     val installer: File,
     val sha256: String,
-    val signerThumbprint: String,
+    val trustMode: WindowsInstallerTrustMode,
+    val signerThumbprint: String?,
     val releasePageUrl: String,
 )
 
@@ -173,17 +181,30 @@ class WindowsUpdateService(
                 partial.delete()
                 return@withContext fail(WindowsUpdateFailureKind.DIGEST_MISMATCH, "Downloaded installer failed its SHA-256 check")
             }
-            val signature = signatureVerifier.verify(partial)
-            val signer = signature.thumbprint?.normalizeThumbprint()
-            if (!signature.valid || signer == null || signer !in normalizedTrustedSigners) {
-                partial.delete()
-                return@withContext fail(WindowsUpdateFailureKind.SIGNATURE_MISMATCH, "Downloaded installer is not signed by a trusted ARES publisher")
+            val signer = if (normalizedTrustedSigners.isEmpty()) {
+                null
+            } else {
+                val signature = signatureVerifier.verify(partial)
+                val actualSigner = signature.thumbprint?.normalizeThumbprint()
+                if (!signature.valid || actualSigner == null || actualSigner !in normalizedTrustedSigners) {
+                    partial.delete()
+                    return@withContext fail(
+                        WindowsUpdateFailureKind.SIGNATURE_MISMATCH,
+                        "Downloaded installer is not signed by a trusted ARES publisher",
+                    )
+                }
+                actualSigner
             }
             Files.move(partial.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
             val staged = StagedWindowsUpdate(
                 version = candidate.version,
                 installer = destination,
                 sha256 = actualDigest,
+                trustMode = if (signer == null) {
+                    WindowsInstallerTrustMode.GITHUB_RELEASE_SHA256
+                } else {
+                    WindowsInstallerTrustMode.AUTHENTICODE
+                },
                 signerThumbprint = signer,
                 releasePageUrl = candidate.releasePageUrl,
             )
@@ -231,9 +252,6 @@ class WindowsUpdateService(
         if (architecture.lowercase() !in setOf("amd64", "x86_64")) {
             return WindowsUpdateFailureKind.INVALID_CANDIDATE to "This update does not match the current Windows architecture"
         }
-        if (normalizedTrustedSigners.isEmpty()) {
-            return WindowsUpdateFailureKind.SIGNER_POLICY_UNAVAILABLE to "This build has no trusted update signer; use the release page to update manually"
-        }
         if (!isSemanticVersionNewer(installedVersion, candidate.version)) {
             return WindowsUpdateFailureKind.INVALID_CANDIDATE to "The release is not newer than the installed version"
         }
@@ -243,8 +261,12 @@ class WindowsUpdateService(
         if (candidate.sizeBytes !in 1..MAX_WINDOWS_INSTALLER_BYTES) {
             return WindowsUpdateFailureKind.INVALID_CANDIDATE to "Release installer size is invalid"
         }
-        if (!isTrustedReleaseUrl(candidate.installerUrl) || !isTrustedReleaseUrl(candidate.checksumUrl)) {
-            return WindowsUpdateFailureKind.INVALID_CANDIDATE to "Release assets must use GitHub HTTPS URLs"
+        if (
+            !isTrustedAresReleaseAssetUrl(candidate.installerUrl, candidate.version, candidate.installerName) ||
+            !isTrustedAresReleaseAssetUrl(candidate.checksumUrl, candidate.version, "${candidate.installerName}.sha256") ||
+            !isTrustedAresReleasePageUrl(candidate.releasePageUrl, candidate.version)
+        ) {
+            return WindowsUpdateFailureKind.INVALID_CANDIDATE to "Release assets must belong to the matching immutable ARES GitHub release"
         }
         return null
     }
@@ -323,7 +345,16 @@ class WindowsUpdateInstaller(
         if (!platformName.contains("win", ignoreCase = true)) {
             return@withContext WindowsUpdateInstallResult.Failed("Automatic installation is currently available only on Windows")
         }
-        if (normalizedTrustedSigners.isEmpty() || update.signerThumbprint.normalizeThumbprint() !in normalizedTrustedSigners) {
+        val expectedSigner = update.signerThumbprint?.normalizeThumbprint()
+        if (normalizedTrustedSigners.isEmpty()) {
+            if (update.trustMode != WindowsInstallerTrustMode.GITHUB_RELEASE_SHA256 || expectedSigner != null) {
+                return@withContext WindowsUpdateInstallResult.Failed("The staged update trust policy does not match this build")
+            }
+        } else if (
+            update.trustMode != WindowsInstallerTrustMode.AUTHENTICODE ||
+            expectedSigner == null ||
+            expectedSigner !in normalizedTrustedSigners
+        ) {
             return@withContext WindowsUpdateInstallResult.Failed("The staged update signer is not trusted by this build")
         }
         if (!update.installer.isFile || !relaunchExecutable.isFile || !relaunchExecutable.name.endsWith(".exe", true)) {
@@ -332,10 +363,12 @@ class WindowsUpdateInstaller(
         if (!updateSha256(update.installer).equals(update.sha256, ignoreCase = true)) {
             return@withContext WindowsUpdateInstallResult.Failed("The staged installer changed after verification")
         }
-        val signature = signatureVerifier.verify(update.installer)
-        val actualSigner = signature.thumbprint?.normalizeThumbprint()
-        if (!signature.valid || actualSigner != update.signerThumbprint.normalizeThumbprint()) {
-            return@withContext WindowsUpdateInstallResult.Failed("The staged installer signature changed after verification")
+        if (expectedSigner != null) {
+            val signature = signatureVerifier.verify(update.installer)
+            val actualSigner = signature.thumbprint?.normalizeThumbprint()
+            if (!signature.valid || actualSigner != expectedSigner) {
+                return@withContext WindowsUpdateInstallResult.Failed("The staged installer signature changed after verification")
+            }
         }
 
         return@withContext try {
@@ -349,12 +382,16 @@ class WindowsUpdateInstaller(
             )
             val resultFile = File(directory, "install-result.json")
             val logFile = File(directory, "install-helper.log")
-            val command = listOf(
+            val command = mutableListOf(
                 "powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
                 "-ExecutionPolicy", "Bypass", "-File", helper.absolutePath,
                 "-MsiPath", update.installer.absolutePath,
                 "-ExpectedSha256", update.sha256,
-                "-ExpectedSignerThumbprint", update.signerThumbprint,
+            )
+            if (expectedSigner != null) {
+                command += listOf("-ExpectedSignerThumbprint", expectedSigner)
+            }
+            command += listOf(
                 "-ParentPid", parentPid.toString(),
                 "-RelaunchPath", relaunchExecutable.absolutePath,
                 "-ResultFile", resultFile.absolutePath,
@@ -393,8 +430,16 @@ internal fun updateSha256(file: File): String {
 
 private fun String.normalizeThumbprint(): String = filter(Char::isLetterOrDigit).uppercase()
 
-private fun isTrustedReleaseUrl(value: String): Boolean = runCatching {
+private fun isTrustedAresReleaseAssetUrl(value: String, version: String, assetName: String): Boolean = runCatching {
     val uri = URI(value)
-    uri.scheme.equals("https", true) && uri.userInfo == null && uri.fragment == null &&
-        uri.host?.lowercase() in setOf("github.com", "objects.githubusercontent.com")
+    val expectedPath = "/ARES-23247/ARES-Robotics/releases/download/v$version/$assetName"
+    uri.scheme.equals("https", true) && uri.userInfo == null && uri.fragment == null && uri.query == null &&
+        uri.host.equals("github.com", true) && uri.path == expectedPath
+}.getOrDefault(false)
+
+private fun isTrustedAresReleasePageUrl(value: String, version: String): Boolean = runCatching {
+    val uri = URI(value)
+    val expectedPath = "/ARES-23247/ARES-Robotics/releases/tag/v$version"
+    uri.scheme.equals("https", true) && uri.userInfo == null && uri.fragment == null && uri.query == null &&
+        uri.host.equals("github.com", true) && uri.path == expectedPath
 }.getOrDefault(false)

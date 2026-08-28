@@ -85,17 +85,19 @@ Studio may stage Windows MSI assets only when all of the following hold:
 - both asset URLs are GitHub HTTPS release URLs;
 - the declared size is bounded and sufficient disk space exists;
 - the streaming download has the expected size and SHA-256 digest;
-- Windows reports a valid Authenticode signature whose certificate thumbprint is compiled into the installed Studio build.
+- the installer satisfies the trust policy compiled into the installed Studio build:
+  - official bootstrap builds verify the exact MSI against the named SHA-256 asset from the same immutable GitHub release;
+  - once trusted signer thumbprints are configured, Studio additionally requires a valid Authenticode signature from one of those pinned certificates and never falls back to checksum-only trust.
 
-If no trusted signer is compiled into a build, automatic staging fails closed and the existing release-page download remains available. Public release jobs require:
+Public release jobs select one explicit Windows trust mode. `checksum` is the bootstrap mode while no publicly trusted certificate exists. `authenticode` requires:
 
 - protected secret `WINDOWS_SIGNING_PFX_BASE64`;
 - protected secret `WINDOWS_SIGNING_PFX_PASSWORD`;
 - repository variable `ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS`, containing one or more comma-separated SHA-1 certificate thumbprints.
 
-The release workflow signs and verifies the MSI before upgrade testing and before checksums are generated. Signing private keys never enter source or application artifacts.
+The release workflow signs and verifies the MSI before checksums are generated when `authenticode` is selected. It rejects that mode if any protected setting is absent. In either mode it publishes `windows-installer-trust.json` with the exact digest and honest signature status. Signing private keys never enter source or application artifacts.
 
-Installation requires an explicit user action and an empty safety-blocker list. Studio re-verifies the staged digest and signature, starts a separate hidden helper, and then follows the normal bounded shutdown path. The helper waits for Studio to release its single-instance lock, verifies the MSI again, invokes `msiexec /passive /norestart`, records `install-result.json`, and relaunches the installed executable.
+Installation requires an explicit user action and an empty safety-blocker list. Studio re-verifies the staged digest and, when configured, the pinned signature, starts a separate hidden helper, and then follows the normal bounded shutdown path. The helper waits for Studio to release its single-instance lock, verifies the MSI under the same policy again, invokes `msiexec /passive /norestart`, records `install-result.json`, and relaunches the installed executable. A build with pinned signer thumbprints never downgrades to checksum-only trust.
 
 Recovery behavior:
 
@@ -104,6 +106,6 @@ Recovery behavior:
 - A busy robot, simulator, import, analysis, delivery, database migration, or dirty critical state defers installation without deleting the verified package.
 - Installer failure leaves the current installation maintained by Windows Installer and records a recovery result beside the staged package.
 - Exit code `3010` is recorded as restart-required; the application is still relaunched so the user can save work and reboot deliberately.
-- Manual download from the GitHub release page remains the fallback for unsupported platforms, unsigned development builds, or helper failure.
+- Manual download from the GitHub release page remains the fallback for unsupported platforms or helper failure. Windows may display an unknown-publisher warning for an honestly disclosed checksum-bootstrap release.
 
 The stable MSI `upgradeUuid`, runtime snapshot, single-instance lock, Compose window ownership, and shutdown watchdog are unchanged.
