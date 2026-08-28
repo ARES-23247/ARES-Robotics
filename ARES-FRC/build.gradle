@@ -97,6 +97,7 @@ def aresSimulatorRuntime = aresOsName.contains('windows')
 dependencies {
     implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
     implementation 'org.aresfirst.ares:core'
+    implementation 'org.aresfirst.ares:simulation-foundation'
     implementation('org.aresfirst.ares:simulator') {
         exclude group: 'edu.wpi.first.wpilibj'
         exclude group: 'edu.wpi.first.cameraserver'

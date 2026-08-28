@@ -24,6 +24,7 @@ application {
 
 dependencies {
     api(project(":core"))
+    api(project(":simulation-foundation"))
     api(project(":ftc-hardware"))
     api(project(":ftc-mocks"))
     

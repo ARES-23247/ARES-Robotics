@@ -17,6 +17,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.areslib.state.RobotFieldAprilTag
 import com.areslib.state.RobotFieldConfig
+import com.areslib.simulation.SimulationFaultKind
+import com.areslib.simulation.SimulationFaultTimeline
 import kotlin.math.abs
 
 /**
@@ -24,7 +26,12 @@ import kotlin.math.abs
  *
  * Robotics framework control component.
  */
-class SimDcMotorEx : DcMotorEx {
+class SimDcMotorEx(
+    private val faultTimeline: SimulationFaultTimeline? = null,
+    private val faultTargetId: String = "ftc.motor",
+    private val busTargetId: String = "ftc.control-hub",
+    private val powerTargetId: String = "ftc.power",
+) : DcMotorEx {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
     @Volatile override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
     @Volatile override var zeroPowerBehavior: DcMotor.ZeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
@@ -33,16 +40,76 @@ class SimDcMotorEx : DcMotorEx {
     override var power: Double
         get() = if (direction == DcMotorSimple.Direction.REVERSE) -_power else _power
         set(value) {
+            check(!writeUnavailable()) { "Simulated FTC motor write rejected for '$faultTargetId'" }
             val safeValue = value.takeIf(Double::isFinite)?.coerceIn(-1.0, 1.0) ?: 0.0
-            _power = if (direction == DcMotorSimple.Direction.REVERSE) -safeValue else safeValue
+            val availableValue = if (isActive(powerTargetId, SimulationFaultKind.BROWNOUT)) {
+                safeValue * BROWNOUT_OUTPUT_SCALE
+            } else {
+                safeValue
+            }
+            _power = if (direction == DcMotorSimple.Direction.REVERSE) -availableValue else availableValue
         }
-    
-    @Volatile override var currentPosition: Int = 0
-    @Volatile override var velocity: Double = 0.0
+
+    @Volatile private var rawCurrentPosition: Int = 0
+    @Volatile private var lastHealthyPosition: Int = 0
+    override var currentPosition: Int
+        get() {
+            check(!inputDisconnected()) { "Simulated FTC motor input disconnected for '$faultTargetId'" }
+            check(!isActive(faultTargetId, SimulationFaultKind.INVALID_INPUT)) {
+                "Simulated FTC motor input invalid for '$faultTargetId'"
+            }
+            if (inputFrozen()) return lastHealthyPosition
+            lastHealthyPosition = rawCurrentPosition
+            return rawCurrentPosition
+        }
+        set(value) {
+            rawCurrentPosition = value
+            if (!inputFrozen() && !inputDisconnected()) lastHealthyPosition = value
+        }
+
+    @Volatile private var rawVelocity: Double = 0.0
+    @Volatile private var lastHealthyVelocity: Double = 0.0
+    override var velocity: Double
+        get() {
+            check(!inputDisconnected()) { "Simulated FTC motor input disconnected for '$faultTargetId'" }
+            if (isActive(faultTargetId, SimulationFaultKind.INVALID_INPUT)) return Double.NaN
+            if (inputFrozen()) return lastHealthyVelocity
+            lastHealthyVelocity = rawVelocity
+            return rawVelocity
+        }
+        set(value) {
+            rawVelocity = value
+            if (!inputFrozen() && !inputDisconnected() && value.isFinite()) lastHealthyVelocity = value
+        }
+
+    val inputValid: Boolean
+        get() = !inputDisconnected() && !isActive(faultTargetId, SimulationFaultKind.INVALID_INPUT)
+
+    val inputFresh: Boolean
+        get() = inputValid && !isActive(faultTargetId, SimulationFaultKind.STALE_INPUT)
 
     override fun getCurrent(unit: CurrentUnit): Double {
+        if (!inputValid) return Double.NaN
         // Return simulated current draw: 0.15A idle, scaling up to 4.2A under load
         return abs(power) * 4.05 + 0.15
+    }
+
+    private fun inputFrozen(): Boolean =
+        isActive(faultTargetId, SimulationFaultKind.FROZEN_INPUT) ||
+            isActive(faultTargetId, SimulationFaultKind.STALE_INPUT)
+
+    private fun inputDisconnected(): Boolean =
+        isActive(faultTargetId, SimulationFaultKind.DEVICE_DISCONNECTED) ||
+            isActive(busTargetId, SimulationFaultKind.BUS_DISCONNECTED)
+
+    private fun writeUnavailable(): Boolean = inputDisconnected() ||
+        isActive(faultTargetId, SimulationFaultKind.WRITE_REJECTED)
+
+    private fun isActive(targetId: String, kind: SimulationFaultKind): Boolean =
+        faultTimeline?.isActive(targetId, kind) == true
+
+    private companion object {
+        const val BROWNOUT_OUTPUT_SCALE = 0.35
     }
 }
 
@@ -91,11 +158,13 @@ class SimLLResult(
  *
  * Robotics framework control component.
  */
-class MecanumRobotDouble {
-    val fl = SimDcMotorEx()
-    val fr = SimDcMotorEx()
-    val rl = SimDcMotorEx()
-    val rr = SimDcMotorEx()
+class MecanumRobotDouble(
+    private val faultTimeline: SimulationFaultTimeline = SimulationFaultTimeline(emptyList()),
+) {
+    val fl = SimDcMotorEx(faultTimeline, "ftc.drive.fl")
+    val fr = SimDcMotorEx(faultTimeline, "ftc.drive.fr")
+    val rl = SimDcMotorEx(faultTimeline, "ftc.drive.rl")
+    val rr = SimDcMotorEx(faultTimeline, "ftc.drive.rr")
     
     val pinpoint = GoBildaPinpointDriver()
     val limelight = SimLimelight3A()
@@ -104,7 +173,8 @@ class MecanumRobotDouble {
     @Volatile private var simulatedImuAngularVelocityRadiansPerSecond = 0.0
     
     val voltageSensor = object : VoltageSensor {
-        override val voltage: Double = 12.8
+        override val voltage: Double
+            get() = if (faultTimeline.isActive("ftc.power", SimulationFaultKind.BROWNOUT)) 7.0 else 12.8
     }
 
     val mockImu = object : com.qualcomm.robotcore.hardware.IMU {
@@ -168,7 +238,9 @@ class MecanumRobotDouble {
                         }
                         com.qualcomm.robotcore.hardware.DcMotor::class.java.isAssignableFrom(classOrType) -> {
                             println("[SimHardwareMap] Device '$deviceName' requested as DcMotor. Returning default SimDcMotorEx.")
-                            cachedFallback(deviceName, classOrType, ::SimDcMotorEx)
+                            cachedFallback(deviceName, classOrType) {
+                                SimDcMotorEx(faultTimeline, "ftc.device.$deviceName")
+                            }
                         }
                         VoltageSensor::class.java.isAssignableFrom(classOrType) -> {
                             this@MecanumRobotDouble.voltageSensor as T
