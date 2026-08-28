@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
  * GitHub Release payload record returned by GitHub REST API (`/releases/latest`).
  *
  * @property tagName Release version tag string (e.g. `"v2.4.0"`).
- * @property htmlUrl Direct browser URL to release release release page.
+ * @property htmlUrl Direct browser URL to the release page.
  * @property body Optional markdown release notes text.
  */
 @Serializable
@@ -55,7 +55,7 @@ data class WindowsUpdateCandidate(
  * Service checking for application software updates via GitHub Releases API.
  *
  * Compares current application version ([BuildConfig.VERSION]) against the latest release published to
- * `https://api.github.com/repos/ARES-23247/ARES-Analytics/releases/latest`.
+ * `https://api.github.com/repos/ARES-23247/ARES-Robotics/releases/latest`.
  *
  * ### Thread Safety & Performance Guarantees:
  * Executes HTTP requests asynchronously within [serviceScope] on `Dispatchers.IO`. Updates UI state via [StateFlow].
@@ -96,8 +96,8 @@ class UpdateCheckerService(
         serviceScope.launch {
             _updateState.value = UpdateState.Checking
             try {
-                httpClient.prepareGet("https://api.github.com/repos/ARES-23247/ARES-Analytics/releases/latest") {
-                    header(HttpHeaders.UserAgent, "ares-analytics-app")
+                httpClient.prepareGet("https://api.github.com/repos/ARES-23247/ARES-Robotics/releases/latest") {
+                    header(HttpHeaders.UserAgent, "ares-robotics-studio")
                 }.execute { response ->
                     if (response.status == HttpStatusCode.OK) {
                         val release = response.body<GitHubRelease>()

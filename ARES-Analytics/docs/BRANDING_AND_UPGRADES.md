@@ -34,6 +34,15 @@ version. If a locally built package and a public package happen to share a versi
 the replacement instead of guessing which bytes should win. Install the next public patch release;
 do not uninstall the application or delete a robot project.
 
+Each GitHub release publishes a checksum beside the installer. Until the project configures a
+publicly trusted Authenticode certificate, Windows packages use the explicitly disclosed
+`checksum` bootstrap policy: Studio and its update helper verify the exact MSI against the named
+SHA-256 asset from the same immutable GitHub release, while Windows may still show an unknown
+publisher warning. When a release is built in `authenticode` mode, the installed app pins the
+certificate thumbprint and refuses to downgrade to checksum-only verification. The release's
+`windows-installer-trust.json` records the selected policy, digest, signature status, and signer
+thumbprint when present.
+
 ## Repair or reinstall the same version on Windows
 
 Run the exact same downloaded `.msi` again. Windows Installer opens **Change, repair, or remove

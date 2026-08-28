@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$MsiPath,
     [Parameter(Mandatory = $true)][ValidatePattern('^[A-Fa-f0-9]{64}$')][string]$ExpectedSha256,
-    [Parameter(Mandatory = $true)][ValidatePattern('^[A-Fa-f0-9]{40,128}$')][string]$ExpectedSignerThumbprint,
+    [Parameter(Mandatory = $false)][ValidatePattern('^[A-Fa-f0-9]{40,128}$')][string]$ExpectedSignerThumbprint = '',
     [Parameter(Mandatory = $true)][long]$ParentPid,
     [Parameter(Mandatory = $true)][string]$RelaunchPath,
     [Parameter(Mandatory = $true)][string]$ResultFile
@@ -39,13 +39,15 @@ try {
     if ($actualSha256 -ne $ExpectedSha256.ToLowerInvariant()) {
         throw 'The staged MSI digest changed before installation.'
     }
-    $signature = Get-AuthenticodeSignature -LiteralPath $MsiPath
-    $actualThumbprint = if ($null -ne $signature.SignerCertificate) {
-        ($signature.SignerCertificate.Thumbprint -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
-    } else { '' }
-    $expectedThumbprint = ($ExpectedSignerThumbprint -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
-    if ($signature.Status -ne 'Valid' -or $actualThumbprint -ne $expectedThumbprint) {
-        throw 'The staged MSI Authenticode signature is no longer trusted.'
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedSignerThumbprint)) {
+        $signature = Get-AuthenticodeSignature -LiteralPath $MsiPath
+        $actualThumbprint = if ($null -ne $signature.SignerCertificate) {
+            ($signature.SignerCertificate.Thumbprint -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
+        } else { '' }
+        $expectedThumbprint = ($ExpectedSignerThumbprint -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
+        if ($signature.Status -ne 'Valid' -or $actualThumbprint -ne $expectedThumbprint) {
+            throw 'The staged MSI Authenticode signature is no longer trusted.'
+        }
     }
 
     $installer = Start-Process -FilePath 'msiexec.exe' -ArgumentList @(
