@@ -1,6 +1,7 @@
-# ARES Analytics startup and recovery
+# ARES Robotics Studio startup and recovery
 
-Use this decision tree when ARES Analytics does not show a usable desktop window. Preserve all unrelated worktree changes while diagnosing it.
+Use this decision tree when ARES Robotics Studio does not show a usable desktop window. The source
+directory remains `ARES-Analytics/`. Preserve all unrelated worktree changes while diagnosing it.
 
 ## First establish which layer failed
 
@@ -24,7 +25,7 @@ A JVM can outlive its window when an agent abandons a background Gradle session,
 Diagnose before killing:
 
 ```powershell
-cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+Set-Location <monorepo-root>\ARES-Analytics
 jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 ```
 
@@ -99,7 +100,7 @@ If a crash log contains `NoClassDefFoundError` or `ClassNotFoundException` for a
 An ordinary `:app:compileKotlin` result may say `FROM-CACHE` while restoring the same bad output. Recover with a scoped, no-cache rebuild:
 
 ```powershell
-cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+Set-Location <monorepo-root>\ARES-Analytics
 .\gradlew.bat killExisting
 .\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks
 ```
@@ -148,7 +149,7 @@ They are service-state messages. Do not suppress them as a window fix, and do no
 ## Required verification sequence
 
 ```powershell
-cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+Set-Location <monorepo-root>\ARES-Analytics
 git status --short --branch
 .\gradlew.bat :app:compileKotlin
 jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
@@ -158,9 +159,10 @@ jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 After `Isolated desktop runtime classpath`, require `Desktop window shown` and `Desktop window opened` before `Desktop window presented after windowOpened` (or the explicit startup fallback). The presentation log must report `showing=true, nativeVisible=true, hwnd=<value>`. Then require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`. Capture strictly and confirm the script reports that same HWND:
 
 ```powershell
-& "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
-  -WindowTitle "ARES Analytics" `
-  -OutputFile "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\startup.png"
+& "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
+  -WindowTitle "ARES Robotics Studio" `
+  -OutputFile "<monorepo-root>\ARES-Analytics\build\diagnostics\startup.png" `
+  -NoActivate
 ```
 
 Inspect the PNG. If the exact ARES HWND has a black client area on the first capture, keep the same process alive, check the console for an AWT/render error, wait one paint interval, and recapture that same HWND. A rendered recapture is delayed painting; a persistently black/blank client area is a startup failure. Then close gracefully by posting `WM_CLOSE` to the verified ARES HWND. If the console has reported an AWT critical fault, read its crash log before cleanup:
@@ -168,7 +170,7 @@ Inspect the PNG. If the exact ARES HWND has a black client area on the first cap
 If the app and external tester run on different Windows desktops/window stations, the tester cannot enumerate the app's HWND even when both processes share a login session. Use the app's opt-in same-desktop verifier for that run:
 
 ```powershell
-$env:ARES_ANALYTICS_STARTUP_CAPTURE = "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\startup.png"
+$env:ARES_ANALYTICS_STARTUP_CAPTURE = "<monorepo-root>\ARES-Analytics\build\diagnostics\startup.png"
 $env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE = "true"
 .\gradlew.bat :app:run
 Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE
@@ -178,8 +180,8 @@ Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE
 The app waits for settled `alwaysOnTop=false`, uses `java.awt.Robot` to capture its own window rectangle, and posts `WM_CLOSE` to the exact verified HWND. Normal launches do not perform this capture or auto-close behavior. Inspect the image and confirm `cleanupDesktopRunSnapshot`, `BUILD SUCCESSFUL`, and no remaining `MainKt`.
 
 ```powershell
-& "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" `
-  -WindowTitle "ARES Analytics" `
+& "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" `
+  -WindowTitle "ARES Robotics Studio" `
   -CloseWindow
 
 jps -lv | Select-String 'com\.ares\.analytics\.MainKt'

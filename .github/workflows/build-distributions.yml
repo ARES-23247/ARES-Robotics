@@ -23,7 +23,7 @@ env:
   ARES_VERSION: 11.0.0
   STUDIO_VERSION: 2.0.0
   FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FTC-Starter-11.0.0.zip
-  FTC_STARTER_SHA256: 2ce61f49bde9da4c1e7947db6e37e760c96ebfc1ee75806f3b6636c405fba374
+  FTC_STARTER_SHA256: 4ff9928650c1aeaf8e6dd8d39d62b05b6bf0a4cca4f965c9ad457120e4714009
   FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FRC-Starter-11.0.0.zip
   FRC_STARTER_SHA256: d996a45b610f6f1e252efdf2b9d4b42be70347265f028cdaeb3a7442f1219d7e
 

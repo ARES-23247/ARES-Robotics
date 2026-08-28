@@ -6,8 +6,10 @@ import com.areslib.controls.ControlSchemeDocument
 import com.areslib.controls.ControllerProfileDocument
 import com.areslib.drivetrain.DrivetrainDocument
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.schema.AresProjectTarget
 import com.areslib.project.schema.ProjectActionKey
 import com.areslib.project.schema.ProjectDocumentId
+import com.areslib.project.schema.ProjectId
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.RoutineDocument
 import com.areslib.simulation.SimulationProjectPlan
@@ -15,6 +17,7 @@ import com.areslib.state.RobotFieldConfig
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.superstructure.SuperstructureDocument
 import com.areslib.tuning.TuningComponentDocument
+import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningProfileDocument
 
 /**
@@ -25,7 +28,11 @@ import com.areslib.tuning.TuningProfileDocument
  * named canonical inputs here, keeping filesystem and merge semantics out of feature code.
  */
 class EffectiveRobotProjectQueries(private val project: EffectiveRobotProject) {
+    val projectRoot: String get() = project.raw.projectRoot
     val isValid: Boolean get() = project.isValid
+    val projectId: ProjectId? get() = project.projectId
+    val target: AresProjectTarget? get() = project.target
+    val issues: List<ProjectModelIssue> get() = project.issues
     val metadata: AresProjectMetadataDocument? get() = project.raw.metadata
     val capabilityCatalog: CapabilityCatalogDocument? get() = project.capabilityCatalog
     val autonomousCatalog: AutonomousCatalogDocument? get() = project.raw.autonomousCatalog
@@ -33,8 +40,14 @@ class EffectiveRobotProjectQueries(private val project: EffectiveRobotProject) {
     val simulationPlan: SimulationProjectPlan? get() = project.simulationPlan
     val tuningComponents: List<TuningComponentDocument> get() = project.raw.tuningComponents.sortedBy { it.uid }
     val tuningProfiles: List<TuningProfileDocument> get() = project.raw.tuningProfiles.sortedBy { it.uid }
+    val tuningParameters: List<TuningParameterDeclaration> get() =
+        (drivetrains.flatMap { it.parameters } +
+            subsystems.flatMap { it.tuningParameters } +
+            tuningComponents.flatMap { it.parameters })
+            .sortedBy { it.uid }
 
     val actions: List<ActionDescriptor> get() = project.actions.entries.sortedBy { it.key.value }.map { it.value }
+    val actionKeys: Set<ProjectActionKey> get() = project.actions.keys
     val routines: List<RoutineDocument> get() = project.routines.entries.sortedBy { it.key.value }.map { it.value }
     val controlSchemes: List<ControlSchemeDocument> get() =
         project.controlSchemes.entries.sortedBy { it.key.value }.map { it.value }

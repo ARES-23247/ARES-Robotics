@@ -473,7 +473,7 @@ class RobotProjectTemplateService(
                 aresVersion = "11.0.0",
                 revision = "schema4-standalone-v1",
                 archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.0/ARES-FTC-Starter-11.0.0.zip",
-                archiveSha256 = "2ce61f49bde9da4c1e7947db6e37e760c96ebfc1ee75806f3b6636c405fba374",
+                archiveSha256 = "4ff9928650c1aeaf8e6dd8d39d62b05b6bf0a4cca4f965c9ad457120e4714009",
                 bundledResourcePath = "/project-templates/ARES-FTC-Starter-11.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),

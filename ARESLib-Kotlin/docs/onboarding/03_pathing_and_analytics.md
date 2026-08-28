@@ -1,6 +1,6 @@
 # Onboarding 3: Pathing integration
 
-ARESLib parses and executes paths; ARES Analytics or PathPlanner creates/edits the assets, and season repositories decide how those assets are deployed to a robot. Keeping these responsibilities separate avoids file-system and UI assumptions in reusable robot code.
+ARESLib parses and executes paths; ARES Robotics Studio or PathPlanner creates/edits the assets, and platform products decide how those assets are deployed to a robot. Keeping these responsibilities separate avoids file-system and UI assumptions in reusable robot code.
 
 ## Path pipeline
 

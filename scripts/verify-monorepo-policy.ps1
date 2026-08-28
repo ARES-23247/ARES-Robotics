@@ -90,6 +90,59 @@ foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Sta
     }
 }
 
+# Operational agent guidance and tester skills are executable contracts. Keep machine-specific paths,
+# retired branch names, and the former product title out of the files agents actually follow. Dated
+# cycle logs and branding/migration documents intentionally remain historical evidence and are not
+# scanned here.
+$currentGuidance = @(
+    'AGENTS.md',
+    'ARESLib-Kotlin/GEMINI.md',
+    'ARES-FTC-Starter/AGENTS.md',
+    'ARES-FRC-Starter/AGENTS.md',
+    '.agents/skills/compose-desktop-tester/SKILL.md',
+    '.agents/skills/compose-desktop-tester/references/startup-recovery.md',
+    '.agents/skills/compose-desktop-tester/scripts/capture_app.ps1',
+    '.agents/skills/compose-desktop-tester/scripts/inspect_app_window.ps1',
+    '.agents/skills/compose-desktop-tester/scripts/interact_app.ps1',
+    'ARES-Analytics/docs/admin/GOOGLE_CLOUD_OAUTH.md',
+    'ARES-Analytics/docs/VALIDATION.md'
+)
+foreach ($relativePath in $currentGuidance) {
+    $path = Join-Path $root $relativePath
+    if (-not (Test-Path -LiteralPath $path)) { throw "Current guidance file is missing: $relativePath" }
+    $content = Get-Content -Raw -LiteralPath $path
+    if ($content -match 'C:\\Users\\david\\dev\\robotics\\ares') {
+        throw "Current guidance contains a developer-specific workspace path: $relativePath"
+    }
+}
+
+$rootGuide = Get-Content -Raw -LiteralPath (Join-Path $root 'AGENTS.md')
+if ($rootGuide -match 'clone all four subprojects' -or $rootGuide -match 'commit directly to `master`') {
+    throw 'AGENTS.md describes the pre-monorepo checkout or branch workflow.'
+}
+if ($rootGuide -match 'visible `ARES Analytics` window') {
+    throw 'AGENTS.md uses the retired desktop window title in active launch guidance.'
+}
+
+$testerFiles = $currentGuidance | Where-Object { $_ -like '.agents/skills/compose-desktop-tester/*' }
+foreach ($relativePath in $testerFiles) {
+    $content = Get-Content -Raw -LiteralPath (Join-Path $root $relativePath)
+    if ($content -match 'WindowTitle\s+(=|\")?\s*\"ARES Analytics\"') {
+        throw "Compose tester uses the retired window title: $relativePath"
+    }
+}
+
+$geminiGuide = Get-Content -Raw -LiteralPath (Join-Path $root 'ARESLib-Kotlin/GEMINI.md')
+if ($geminiGuide -match 'all four repositories' -or $geminiGuide -match 'ARESLib-Kotlin/maven') {
+    throw 'ARESLib-Kotlin/GEMINI.md contains a pre-monorepo product count or Maven endpoint.'
+}
+
+$oauthGuide = Get-Content -Raw -LiteralPath (Join-Path $root 'ARES-Analytics/docs/admin/GOOGLE_CLOUD_OAUTH.md')
+$validationGuide = Get-Content -Raw -LiteralPath (Join-Path $root 'ARES-Analytics/docs/VALIDATION.md')
+if ($oauthGuide -match 'from `master`' -or $validationGuide -match 'pushes to `master`') {
+    throw 'Current Studio operations documentation names the retired default branch.'
+}
+
 $canonicalFtcRuntime = Join-Path $root 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
 if (-not (Test-Path -LiteralPath $canonicalFtcRuntime)) {
     throw 'Canonical FTC generated-project runtime template is missing.'

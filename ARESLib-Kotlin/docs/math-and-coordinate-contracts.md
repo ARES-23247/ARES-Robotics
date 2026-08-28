@@ -71,7 +71,7 @@ Target-space axes are different from the field frame:
 
 ## Field-to-screen transforms
 
-ARES Analytics converts field coordinates to canvas coordinates with swapped/negated axes. The dashboard's robot icon also has its own zero-angle orientation. Those display transforms do not change the robot/EKF frame and must never leak back into robot math.
+ARES Robotics Studio converts field coordinates to canvas coordinates with swapped/negated axes. The dashboard's robot icon also has its own zero-angle orientation. Those display transforms do not change the robot/EKF frame and must never leak back into robot math.
 
 ## Alliance transforms
 

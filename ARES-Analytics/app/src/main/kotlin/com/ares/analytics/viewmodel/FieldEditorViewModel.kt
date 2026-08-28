@@ -289,7 +289,7 @@ class FieldEditorViewModel(
 
                 val (loaded, projectRevision) = withContext(Dispatchers.IO) {
                     val snapshot = projectSession?.snapshot(projectPath, league.targetPlatform(), forceReload = true)
-                    val field = snapshot?.documents?.effectiveProject?.raw?.field
+                    val field = snapshot?.documents?.query?.field
                     (field?.let(FieldDocumentStore::fromDocument) ?: FieldDocumentStore.load(projectPath, league)) to
                         snapshot?.revision
                 }

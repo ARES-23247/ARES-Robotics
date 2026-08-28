@@ -142,7 +142,7 @@ All hardware reads (voltage sensors, encoders, servo positions, analog inputs) m
 
 ## 6. Per-Project Quick Reference
 
-### ARESLib-Kotlin (`C:\Users\david\dev\robotics\ares\ARESLib-Kotlin`)
+### ARESLib-Kotlin (`ARESLib-Kotlin/`)
 The foundation. Its authoritative module list is `settings.gradle.kts`; it includes the project
 schema/model/compiler, core, codegen, FTC/FRC hardware and runtime modules, mocks, simulation
 foundation and platform runtimes, and `ares-bom`. Published coordinates use
@@ -167,23 +167,26 @@ foundation and platform runtimes, and `ares-bom`. Published coordinates use
 - **Docs:** `GEMINI.md` (canonical source of truth), `.planning/PROJECT.md` (roadmap), `docs/onboarding/` (4 guides), `TEST_INFRA.md`.
 - **Build/test:** `.\gradlew.bat compileKotlin compileTestKotlin`, `test`, `:core:test`, `:ftc-hardware:test`, `apiCheck`, `publishReleaseValidation`. Tests are JUnit 5 with tiered E2E suites (`e2e/tier1`, `e2e/tier2`, `ZeroGcRegressionTest`).
 
-### ARES-FTC (`C:\Users\david\dev\robotics\ares\ARES-FTC`)
+### ARES-FTC (`ARES-FTC/`)
 FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `FtcRobotController/` module is upstream boilerplate — don't edit it).
 
-- **Team code:** `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/` (100% Kotlin despite `java/` dir):
-  - `config/HardwareConstants.kt`, `dsl/` (`AresTeleOpBase`, `AresAutoBase`, `SubsystemStates`)
-  - `hardware/` (`FtcIntakeIO`, `FtcFlywheelIO`, `SeasonInterfaces`)
-  - `subsystems/` (`IntakeSubsystem`, `FlywheelSubsystem`, `PrismSubsystem`, `IndicatorLightSubsystem`)
-  - `opmodes/` (`ARESMecanumTeleOp`, `IntakeShootTeleOp`, `ARESTuningTeleOp`, `ARESRemoteDriveOpOpMode`, `ARESAuto`, `TestAuto`, `NullOpMode`, `ARESMecanumDiagnostic`, `TeamStateStorage`) and `opmodes/robot/` (`AresRobot` facade, `AresDriveController`, `AresSuperstructureController`, `AresTelemetryHelper`)
-  - Subsystem authoring preserves domain, control, hardware, simulation, generated plumbing, and
-    verification responsibilities. File count is not a design goal; generated mechanical files and
-    tests belong under Gradle generated directories.
+- **Canonical robot source:** `.ares/` documents describe the Lightbot reference robot: mecanum
+  drivetrain, two independently controlled indicator lights, and one Prism underbody light. The
+  Gradle code-generation tasks produce mechanical runtime and verification sources under generated
+  directories; do not add hand-maintained copies of generated robot plumbing to `TeamCode/src`.
+- **Team-owned source:** `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/` contains the thin
+  OpMode, policy, telemetry, drive-controller, and explicit extension boundary around generated
+  robot code. Generic intake and flywheel capabilities remain ARESLib templates, but are not part of
+  Lightbot.
+- Subsystem authoring preserves domain, control, hardware, simulation, generated plumbing, and
+  verification responsibilities. File count is not a design goal; generated mechanical files and
+  tests belong under Gradle generated directories.
 - **Canonical autonomous assets:** `.ares/routines/`, `.ares/autonomous-catalog.json`, `.ares/action-catalog.json`, and the generated project source. Loose PathPlanner/`.aresauto` deployment is unsupported.
 - **`simulator/` module** (desktop JVM, JDK 21): shares `TeamCode/src/main/java`, runs real OpModes against mocks. `runSim` → `DesktopSimLauncher --headless`; `CalibrationVerificationApp` exercises all SysId routines.
 - **`.ares/project.json`** — canonical team/season/robot, authoring-model, coordinate, footprint, and runtime identity. Older split identity files are unsupported. **`ares_tuning.json`** — live-tuning config.
 - **Build/deploy:** `.\gradlew.bat :TeamCode:assembleDebug`; deploy via `adb connect 192.168.43.1:5555` then `adb install -r`. Default FTC connection `192.168.43.1:5810`.
 
-### ARES-FRC (`C:\Users\david\dev\robotics\ares\ARES-FRC`)
+### ARES-FRC (`ARES-FRC/`)
 FRC RoboRIO code, **2024 Crescendo** ("Marvin XIX"), WPILib **2026.2.1**, CTRE Phoenix 6 v26.1.1 (all-TalonFX, CAN bus "CAN2"), dyn4j sim. Kotlin-first (single auto-generated `TunerConstants.java`).
 
 - `src/main/kotlin/com/areslib/frc/`:
@@ -196,7 +199,7 @@ FRC RoboRIO code, **2024 Crescendo** ("Marvin XIX"), WPILib **2026.2.1**, CTRE P
 - **No WPILib Command-Based** usage despite the vendordep — it's Redux actions all the way down.
 - **Build/test:** `.\gradlew.bat simulateJava` (sim), `deploy` (RIO). Kover coverage; JUnit 5 tests under `src/test/kotlin/com/areslib/frc/` incl. `pathing/E2EAutonomousSimulationTest`.
 
-### ARES-Analytics (`C:\Users\david\dev\robotics\ares\ARES-Analytics`)
+### ARES-Analytics (`ARES-Analytics/`)
 ARES Robotics Studio plus its Ktor gateway. Kotlin 2.4.10, Compose 1.11.1, Ktor 3.5.2, DuckDB
 1.1.3. The isolated build contains `:shared`, `:app`, and `:gateway`; the gateway targets JRE 17.
 
@@ -257,7 +260,7 @@ Offline NT4 connection failures and Google Drive sign-in errors are expected whe
 5. If the crash is `NoClassDefFoundError` / `ClassNotFoundException` for an application class whose source exists, run `.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks`; do not trust an incremental `FROM-CACHE` result for that recovery.
 6. Launch with `.\gradlew.bat :app:run` for released dependencies, or add `"-ParesUseSiblingLib=true"` only when intentionally validating sibling ARESLib source. Require the `Isolated desktop runtime classpath at ...ares-analytics-run-*` log; otherwise concurrent builds can corrupt the running app.
 7. Require `Desktop window shown` and `Desktop window opened` before a `Desktop window presented after windowOpened` (or explicit startup-fallback) log ending in `showing=true, nativeVisible=true, hwnd=<value>`. Then require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`. This second line proves the window remained presented after the bounded topmost interval instead of briefly flashing and falling behind the launcher.
-   Strict capture must return that same HWND for the visible `ARES Analytics` window. A different same-process HWND or full-desktop fallback image is not proof. If the launcher and capture helper are isolated onto different Windows desktops/window stations, set `ARES_ANALYTICS_STARTUP_CAPTURE=<absolute-png-path>` and `ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE=true` for that verification run. The app then captures its own window after settled state and posts `WM_CLOSE` to the exact HWND; both variables are opt-in and normal launches perform no capture I/O.
+   Strict capture must return that same HWND for the visible `ARES Robotics Studio` window. A different same-process HWND or full-desktop fallback image is not proof. If the launcher and capture helper are isolated onto different Windows desktops/window stations, set `ARES_ANALYTICS_STARTUP_CAPTURE=<absolute-png-path>` and `ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE=true` for that verification run. The app then captures its own window after settled state and posts `WM_CLOSE` to the exact HWND; both variables are opt-in and normal launches perform no capture I/O.
 8. Inspect the captured image for actual app content rather than accepting a process ID, Gradle task state, or blank frame.
    If the exact ARES HWND has a black client area on the first capture, keep that same process alive, check for an AWT/render error, wait one paint interval, and capture the same HWND again. A rendered recapture is delayed painting; a persistently blank capture is a startup failure.
 9. If the console reports an uncaught `AWT-EventQueue-0` exception, inspect the named crash log before cleanup. The first relevant application frame is evidence of the initiating UI defect; the remaining process and lock are secondary effects.
@@ -356,15 +359,22 @@ Preserve these invariants:
 
 ## 8. Working in This Workspace — Checklist
 
-- **Fresh checkout?** Run `.\setup.ps1` (Windows) or `./setup.sh` (macOS/Linux) to clone all four subprojects as siblings of this file. Idempotent — existing dirs are skipped.
+- **Fresh checkout?** Clone this repository once, then run `.\setup.ps1` (Windows) or `./setup.sh`
+  (macOS/Linux). Setup validates that all six imported Gradle products, their preserved histories,
+  release manifest, and monorepo policies are present; it never downloads or overwrites source.
 - **Changing ARESLib?** Run `apiCheck publishReleaseValidation` in `ARESLib-Kotlin/`, then rebuild consumers with `-ParesRepository=<absolute validation-repository path>`. Source substitution requires explicit `-ParesUseSiblingLib=true`.
 - **Telemetry mismatch in the dashboard?** Check the NT4 topic map and dashboard variable mapping (§4), confirm leading-`/` stripping, and verify CCW+ heading consistency.
 - **Heading/rotation looks wrong?** Re-read `GEMINI.md §5` and the negation rules in §5 above. Usual culprits: extra negation after `PinpointIO`, the `-90°` canvas offset, or Limelight `rotation.y` vs `.z`.
 - **Writing a hot-path (robot or sim)?** Zero allocations. Use buffers/pools, `RobotClock`, `when` over nested `if`.
-- **Adding a subsystem?** Follow the 6-file Redux pattern (State/Action/Reducer/IO interface/Ftc-or-Frc IO/Mock IO/Controller). See `ARES-FTC/TeamCode/.../test/tools/SubsystemGenerator.kt`.
+- **Adding a subsystem?** Use a canonical `.aressubsystem` document or an explicit code-first/hybrid
+  extension package. Preserve domain, control, hardware, simulation, generated plumbing, and
+  verification boundaries; do not optimize for a fixed file count. See
+  `ARESLib-Kotlin/docs/subsystem-dsl.md` and the Studio Subsystem Builder.
 - **Cloud/sync code?** Remember offline-first: robot serves `LogManagerServer:5002`; the laptop pulls then syncs. Never push from robot.
 - **Analytics launches but shows no window?** Follow §7 and the Compose desktop tester startup-recovery reference. Check for an orphaned lock owner before changing rendering or UI code.
-- **Tests:** JUnit 5 everywhere. ARESLib has tiered E2E + `ZeroGcRegressionTest`; ARES-FRC/FTC have subsystem & sim tests. Run with `.\gradlew.bat test` (per-module: `:core:test`, `:TeamCode:test`, etc.).
+- **Tests:** ARESLib, FRC, starters, and Studio use JUnit 5/Kotlin test where configured. FTC Android
+  unit tests use JUnit 4.13.2; its desktop simulator tests use JUnit 5. Run the dependency-ordered
+  monorepo matrix with `.\build.ps1 -Task Test`, or the product-specific task documented above.
 
 ## 9. Key File Lookup
 
@@ -391,4 +401,6 @@ All agents operating in this workspace must adhere to strict factual precision:
 - **Explicit Fidelity Boundaries:** Always distinguish between simplified educational previews (1D Euler step response, 2D trig kinematics drawings) and production robot runtime or multi-body Dyn4j physics simulations. Explicitly state what educational sandboxes ignore.
 - **Accurate Scope Boundaries:** Delineate where GUI scaffolding ends and Kotlin programming begins. Do not claim the system is "100% no-code" when competition logic and hardware mapping require code inspection.
 - **Differentiate Preexisting vs. New:** Clearly state what was already present in the codebase versus what was incrementally added in the current task.
-- **Strict Branch Discipline:** Keep feature work isolated on designated branches; never commit directly to `master` unless instructed.
+- **Strict Branch Discipline:** Keep feature work isolated on designated branches; never commit
+  directly to `main` unless explicitly instructed. Release work merges through protected pull
+  requests.

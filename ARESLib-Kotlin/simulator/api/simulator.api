@@ -325,6 +325,8 @@ public final class com/areslib/sim/model/IntakePivotSim {
 
 public final class com/areslib/sim/model/MecanumRobotDouble {
 	public fun <init> ()V
+	public fun <init> (Lcom/areslib/simulation/SimulationFaultTimeline;)V
+	public synthetic fun <init> (Lcom/areslib/simulation/SimulationFaultTimeline;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun configureField (Lcom/areslib/state/RobotFieldConfig;)V
 	public final fun getFl ()Lcom/areslib/sim/model/SimDcMotorEx;
 	public final fun getFr ()Lcom/areslib/sim/model/SimDcMotorEx;
@@ -341,12 +343,16 @@ public final class com/areslib/sim/model/MecanumRobotDouble {
 
 public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/hardware/DcMotorEx {
 	public fun <init> ()V
+	public fun <init> (Lcom/areslib/simulation/SimulationFaultTimeline;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/areslib/simulation/SimulationFaultTimeline;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
 	public fun getConnectionInfo ()Ljava/lang/String;
 	public fun getCurrent (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
 	public fun getCurrentPosition ()I
 	public fun getDeviceName ()Ljava/lang/String;
 	public fun getDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
+	public final fun getInputFresh ()Z
+	public final fun getInputValid ()Z
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
 	public fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
 	public fun getPower ()D

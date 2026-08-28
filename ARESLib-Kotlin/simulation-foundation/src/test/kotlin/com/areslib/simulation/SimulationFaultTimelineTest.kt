@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SimulationFaultTimelineTest {
     @AfterTest
@@ -37,6 +38,8 @@ class SimulationFaultTimelineTest {
         )
 
         assertEquals("invalid", timeline.activeFault("motor", 10L)?.commandId)
+        assertTrue(timeline.isActive("motor", SimulationFaultKind.INVALID_INPUT, 10L))
+        assertTrue(timeline.isActive("motor", SimulationFaultKind.WRITE_REJECTED, 10L))
     }
 
     @Test

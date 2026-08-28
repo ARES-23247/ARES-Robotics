@@ -221,7 +221,7 @@ class DrivebaseBuilderViewModel(
                     state.league.targetPlatform(),
                     forceReload = true,
                 )
-                val saved = sessionSnapshot?.documents?.effectiveProject?.raw?.drivetrains
+                val saved = sessionSnapshot?.documents?.query?.drivetrains
                     ?.also { require(it.size <= 1) { "This project has multiple drivetrain documents. Choose one explicitly before editing." } }
                     ?.singleOrNull()
                     ?.toUiDrivebase()

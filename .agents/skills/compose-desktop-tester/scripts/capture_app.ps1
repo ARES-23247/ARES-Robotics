@@ -1,7 +1,8 @@
 param(
-    [string]$WindowTitle = "ARES Analytics",
-    [string]$OutputFile = "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\window.png",
-    [switch]$FullScreen
+    [string]$WindowTitle = "ARES Robotics Studio",
+    [string]$OutputFile = (Join-Path $PSScriptRoot "../../../../ARES-Analytics/build/diagnostics/window.png"),
+    [switch]$FullScreen,
+    [switch]$NoActivate
 )
 
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing
@@ -69,8 +70,10 @@ if ($hWnd -ne [IntPtr]::Zero -and -not $FullScreen) {
     if ([NativeCapture]::IsIconic($hWnd)) {
         [NativeCapture]::ShowWindow($hWnd, 9) | Out-Null # SW_RESTORE
     }
-    [NativeCapture]::SetForegroundWindow($hWnd) | Out-Null
-    Start-Sleep -Milliseconds 300
+    if (-not $NoActivate) {
+        [NativeCapture]::SetForegroundWindow($hWnd) | Out-Null
+        Start-Sleep -Milliseconds 300
+    }
 
     $rect = New-Object NativeCapture+RECT
     [NativeCapture]::GetWindowRect($hWnd, [ref]$rect)

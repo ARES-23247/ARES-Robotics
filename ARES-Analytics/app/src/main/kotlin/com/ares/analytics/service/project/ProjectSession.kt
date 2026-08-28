@@ -568,12 +568,12 @@ class ProjectExecutionCoordinator(
             session.snapshot(workspace.projectPath, targetPlatform, forceReload = true)
         }
             .getOrElse { return ProjectExecutionDecision(false, it.message ?: "Project could not be opened.") }
-        val project = snapshot.documents.effectiveProject
+        val project = snapshot.documents.query
         val expectedLeague = when (workspace.league) {
             League.FTC -> AresLeague.FTC
             League.FRC -> AresLeague.FRC
         }
-        if (project.raw.metadata?.league != expectedLeague) {
+        if (project.metadata?.league != expectedLeague) {
             return ProjectExecutionDecision(false, "The selected workspace league does not match .ares/project.json.")
         }
         val errors = project.issues.filter { it.severity == ProjectModelSeverity.ERROR }

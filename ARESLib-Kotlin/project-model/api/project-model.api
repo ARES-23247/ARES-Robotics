@@ -42,6 +42,7 @@ public final class com/areslib/project/model/EffectiveRobotProjectQueries {
 	public final fun controlScheme (Ljava/lang/String;)Lcom/areslib/controls/ControlSchemeDocument;
 	public final fun controllerProfile (Ljava/lang/String;)Lcom/areslib/controls/ControllerProfileDocument;
 	public final fun drivetrain (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainDocument;
+	public final fun getActionKeys ()Ljava/util/Set;
 	public final fun getActions ()Ljava/util/List;
 	public final fun getAutonomousCatalog ()Lcom/areslib/routine/AutonomousCatalogDocument;
 	public final fun getCapabilityCatalog ()Lcom/areslib/catalog/CapabilityCatalogDocument;
@@ -49,12 +50,17 @@ public final class com/areslib/project/model/EffectiveRobotProjectQueries {
 	public final fun getControllerProfiles ()Ljava/util/List;
 	public final fun getDrivetrains ()Ljava/util/List;
 	public final fun getField ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getIssues ()Ljava/util/List;
 	public final fun getMetadata ()Lcom/areslib/project/AresProjectMetadataDocument;
+	public final fun getProjectId-c1h943Q ()Ljava/lang/String;
+	public final fun getProjectRoot ()Ljava/lang/String;
 	public final fun getRoutines ()Ljava/util/List;
 	public final fun getSimulationPlan ()Lcom/areslib/simulation/SimulationProjectPlan;
 	public final fun getSubsystems ()Ljava/util/List;
 	public final fun getSuperstructures ()Ljava/util/List;
+	public final fun getTarget ()Lcom/areslib/project/schema/AresProjectTarget;
 	public final fun getTuningComponents ()Ljava/util/List;
+	public final fun getTuningParameters ()Ljava/util/List;
 	public final fun getTuningProfiles ()Ljava/util/List;
 	public final fun isValid ()Z
 	public final fun routine (Ljava/lang/String;)Lcom/areslib/routine/RoutineDocument;

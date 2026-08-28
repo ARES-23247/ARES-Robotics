@@ -68,4 +68,22 @@ class SimulationFaultTimeline(commands: Collection<SimulationFaultCommand>) {
         }
         return null
     }
+
+    /** Allocation-free predicate used when adapters must react to more than one simultaneous fault. */
+    fun isActive(
+        targetId: String,
+        kind: SimulationFaultKind,
+        timeMillis: Long = RobotClock.currentTimeMillis(),
+    ): Boolean {
+        var index = 0
+        while (index < scheduled.size) {
+            val command = scheduled[index]
+            if (command.startsAtMillis > timeMillis) return false
+            if (command.targetId == targetId && command.kind == kind && command.isActiveAt(timeMillis)) {
+                return true
+            }
+            index++
+        }
+        return false
+    }
 }

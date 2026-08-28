@@ -1,5 +1,5 @@
 param(
-    [string]$WindowTitle = "ARES Analytics",
+    [string]$WindowTitle = "ARES Robotics Studio",
     [int]$ClickX = -1,
     [int]$ClickY = -1,
     [string]$Text = "",

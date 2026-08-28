@@ -116,6 +116,8 @@ public final class com/areslib/simulation/SimulationFaultTimeline {
 	public final fun activeFault (Ljava/lang/String;J)Lcom/areslib/simulation/SimulationFaultCommand;
 	public static synthetic fun activeFault$default (Lcom/areslib/simulation/SimulationFaultTimeline;Ljava/lang/String;JILjava/lang/Object;)Lcom/areslib/simulation/SimulationFaultCommand;
 	public final fun getSize ()I
+	public final fun isActive (Ljava/lang/String;Lcom/areslib/simulation/SimulationFaultKind;J)Z
+	public static synthetic fun isActive$default (Lcom/areslib/simulation/SimulationFaultTimeline;Ljava/lang/String;Lcom/areslib/simulation/SimulationFaultKind;JILjava/lang/Object;)Z
 }
 
 public final class com/areslib/simulation/SimulationProductContract {

@@ -16,6 +16,33 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: Classify affected products
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.classify.outputs.full }}
+      lib: ${{ steps.classify.outputs.lib }}
+      ftc: ${{ steps.classify.outputs.ftc }}
+      frc: ${{ steps.classify.outputs.frc }}
+      ftc_starter: ${{ steps.classify.outputs.ftc_starter }}
+      frc_starter: ${{ steps.classify.outputs.frc_starter }}
+      analytics: ${{ steps.classify.outputs.analytics }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: >-
+          python scripts/classify_ci_paths.py
+          --event-name "${{ github.event_name }}"
+          --base-sha "$BASE_SHA"
+          --head-sha "$GITHUB_SHA"
+          --github-output "$GITHUB_OUTPUT"
+
   policy:
     name: Source and release policy
     runs-on: windows-latest
@@ -27,6 +54,7 @@ jobs:
       - name: Verify monorepo ownership and dependency policy
         shell: pwsh
         run: |
+          python -m unittest discover -s scripts/tests -p 'test_*.py'
           .\scripts\verify-imported-histories.ps1
           .\scripts\verify-doc-links.ps1
           .\scripts\verify-monorepo-policy.ps1
@@ -40,6 +68,8 @@ jobs:
 
   candidate:
     name: ARESLib candidate
+    needs: changes
+    if: needs.changes.outputs.full == 'true' || needs.changes.outputs.lib == 'true'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.identity.outputs.version }}
@@ -79,7 +109,11 @@ jobs:
 
   ftc:
     name: FTC robot and simulator
-    needs: candidate
+    needs: [changes, candidate]
+    if: >-
+      always() && needs.changes.result == 'success' &&
+      (needs.changes.outputs.full == 'true' || needs.changes.outputs.ftc == 'true') &&
+      (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -89,17 +123,24 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
+        if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
           path: .release-validation
       - name: Test generated FTC project, simulator, and APK
         working-directory: ARES-FTC
         shell: bash
-        run: >-
-          ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
-          -ParesVersion=${{ needs.candidate.outputs.version }}
-          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
-          --no-parallel --no-daemon --console=plain
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
+            "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
       - uses: actions/upload-artifact@v7
         with:
           name: lightbot-debug-apk
@@ -109,7 +150,11 @@ jobs:
 
   frc:
     name: FRC robot and simulation contracts
-    needs: candidate
+    needs: [changes, candidate]
+    if: >-
+      always() && needs.changes.result == 'success' &&
+      (needs.changes.outputs.full == 'true' || needs.changes.outputs.frc == 'true') &&
+      (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -119,21 +164,31 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
+        if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
           path: .release-validation
       - name: Test generated FRC project and league simulator contracts
         working-directory: ARES-FRC
         shell: bash
-        run: >-
-          ./gradlew test
-          -ParesVersion=${{ needs.candidate.outputs.version }}
-          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
-          --no-parallel --no-daemon --console=plain
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          ./gradlew test "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
 
   ftc-starter:
     name: FTC starter mirror source
-    needs: candidate
+    needs: [changes, candidate]
+    if: >-
+      always() && needs.changes.result == 'success' &&
+      (needs.changes.outputs.full == 'true' || needs.changes.outputs.ftc_starter == 'true') &&
+      (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -143,21 +198,32 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
+        if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
           path: .release-validation
       - name: Test generated FTC starter, simulator, and APK
         working-directory: ARES-FTC-Starter
         shell: bash
-        run: >-
-          ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
-          -ParesVersion=${{ needs.candidate.outputs.version }}
-          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
-          --no-parallel --no-daemon --console=plain
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
+            "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
 
   frc-starter:
     name: FRC starter mirror source
-    needs: candidate
+    needs: [changes, candidate]
+    if: >-
+      always() && needs.changes.result == 'success' &&
+      (needs.changes.outputs.full == 'true' || needs.changes.outputs.frc_starter == 'true') &&
+      (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -167,21 +233,31 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
+        if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
           path: .release-validation
       - name: Test generated FRC starter and simulation contracts
         working-directory: ARES-FRC-Starter
         shell: bash
-        run: >-
-          ./gradlew test
-          -ParesVersion=${{ needs.candidate.outputs.version }}
-          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
-          --no-parallel --no-daemon --console=plain
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          ./gradlew test "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
 
   analytics:
     name: Studio, gateway, and analytics
-    needs: candidate
+    needs: [changes, candidate]
+    if: >-
+      always() && needs.changes.result == 'success' &&
+      (needs.changes.outputs.full == 'true' || needs.changes.outputs.analytics == 'true') &&
+      (needs.candidate.result == 'success' || needs.candidate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -191,14 +267,21 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
+        if: needs.candidate.result == 'success'
         with:
           name: ares-validation-repository
           path: .release-validation
       - name: Test Studio, shared models, and gateway
         working-directory: ARES-Analytics
         shell: bash
-        run: >-
-          ./gradlew :shared:test :app:test :gateway:test
-          -ParesVersion=${{ needs.candidate.outputs.version }}
-          -ParesRepository="file://${GITHUB_WORKSPACE}/.release-validation"
-          --no-parallel --no-daemon --console=plain
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          ./gradlew :shared:test :app:test :gateway:test \
+            "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
