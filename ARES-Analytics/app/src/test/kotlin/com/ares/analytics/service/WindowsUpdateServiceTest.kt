@@ -242,7 +242,7 @@ class WindowsUpdateServiceTest {
                 },
                 helperLauncher = UpdateHelperLauncher { command, _ ->
                     launchedCommand = command
-                    ProcessBuilder("cmd.exe", "/c", "exit", "0").start()
+                    ProcessBuilder("java", "-version").start()
                 },
                 helperResource = { "Write-Output helper".toByteArray() },
                 platformName = "Windows",
