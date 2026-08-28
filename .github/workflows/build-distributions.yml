@@ -21,11 +21,11 @@ permissions:
 
 env:
   ARES_VERSION: 11.1.0
-  STUDIO_VERSION: 2.0.1
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.1/ARES-FTC-Starter-11.1.0.zip
-  FTC_STARTER_SHA256: 0b6b3aa511c42e505351ed6d655636918d6d73d58582202d92540f035c5ce770
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.1/ARES-FRC-Starter-11.1.0.zip
-  FRC_STARTER_SHA256: 7adf1e8d631ac49a2f0465049421e1d3cfc827256949d8d1941300d6572bca12
+  STUDIO_VERSION: 2.0.2
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.2/ARES-FTC-Starter-11.1.0.zip
+  FTC_STARTER_SHA256: bed7e368d7a5f9d0d949d72448f96268af0310d97c8fcf4d11fb20d811536112
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.2/ARES-FRC-Starter-11.1.0.zip
+  FRC_STARTER_SHA256: cddf515080a3c327cbf05f9e9c628c2d0625f200c0f56cfc67f17c53b2c675d8
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
@@ -207,6 +207,7 @@ jobs:
           ARES_GOOGLE_OAUTH_BROKER_URL: ${{ vars.ARES_GOOGLE_OAUTH_BROKER_URL }}
           ARES_GITHUB_APP_CLIENT_ID: ${{ vars.ARES_GITHUB_APP_CLIENT_ID }}
           ARES_GITHUB_APP_SLUG: ${{ vars.ARES_GITHUB_APP_SLUG }}
+          ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS: ${{ vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS }}
         run: |
           chmod +x ./gradlew
           ./gradlew ${{ matrix.task }} \
@@ -214,6 +215,69 @@ jobs:
             -ParesVersion=${{ needs.candidate.outputs.ares-version }} \
             -ParesRepository=${{ steps.repository.outputs.uri }} \
             --no-parallel --no-daemon --console=plain
+
+      - name: Sign and verify Windows release installer
+        if: >-
+          runner.os == 'Windows' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.publish
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
+          WINDOWS_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
+          EXPECTED_SIGNER_THUMBPRINTS: ${{ vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)) {
+            throw 'Protected Windows signing certificate secrets are required for a public release.'
+          }
+          $expectedThumbprints = @($env:EXPECTED_SIGNER_THUMBPRINTS -split ',' | ForEach-Object {
+            ($_ -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
+          } | Where-Object { $_ -match '^[A-F0-9]{40}$' })
+          if ($expectedThumbprints.Count -eq 0) {
+            throw 'ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS must name at least one trusted SHA-1 certificate thumbprint.'
+          }
+          $installers = @(Get-ChildItem `
+            -LiteralPath 'ARES-Analytics/app/build/compose/binaries/main-release/msi' `
+            -Filter '*.msi')
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one MSI to sign, found $($installers.Count)."
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "ares-windows-signing-$env:GITHUB_RUN_ID.pfx"
+          try {
+            [IO.File]::WriteAllBytes(
+              $certificatePath,
+              [Convert]::FromBase64String($env:WINDOWS_SIGNING_PFX_BASE64)
+            )
+            $signTool = Get-ChildItem `
+              -LiteralPath "${env:ProgramFiles(x86)}\Windows Kits\10\bin" `
+              -Filter 'signtool.exe' `
+              -File `
+              -Recurse |
+              Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+            if ($null -eq $signTool) { throw 'Windows SDK signtool.exe was not found.' }
+            & $signTool.FullName sign `
+              /fd SHA256 `
+              /td SHA256 `
+              /tr 'http://timestamp.digicert.com' `
+              /f $certificatePath `
+              /p $env:WINDOWS_SIGNING_PFX_PASSWORD `
+              $installers[0].FullName
+            if ($LASTEXITCODE -ne 0) { throw "signtool failed with exit code $LASTEXITCODE." }
+            & $signTool.FullName verify /pa /all /v $installers[0].FullName
+            if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed with exit code $LASTEXITCODE." }
+            $signature = Get-AuthenticodeSignature -LiteralPath $installers[0].FullName
+            $actualThumbprint = $signature.SignerCertificate.Thumbprint.ToUpperInvariant()
+            if ($signature.Status -ne 'Valid' -or $actualThumbprint -notin $expectedThumbprints) {
+              throw "Installer signer is not trusted by this release ($($signature.Status), $actualThumbprint)."
+            }
+          } finally {
+            if (Test-Path -LiteralPath $certificatePath) {
+              Remove-Item -LiteralPath $certificatePath -Force
+            }
+          }
 
       - uses: actions/upload-artifact@v7
         with:

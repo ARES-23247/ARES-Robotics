@@ -17,6 +17,7 @@ val googleOAuthClientIdEnvironment = providers.environmentVariable("ARES_GOOGLE_
 val googleOAuthBrokerUrlEnvironment = providers.environmentVariable("ARES_GOOGLE_OAUTH_BROKER_URL")
 val githubAppClientIdEnvironment = providers.environmentVariable("ARES_GITHUB_APP_CLIENT_ID")
 val githubAppSlugEnvironment = providers.environmentVariable("ARES_GITHUB_APP_SLUG")
+val windowsUpdateSignerThumbprintsEnvironment = providers.environmentVariable("ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS")
 val googleOAuthClientId = providers.gradleProperty("googleOAuthClientId")
     .orElse(googleOAuthClientIdEnvironment)
     .orElse(providers.gradleProperty("aresPublicGoogleOAuthClientId"))
@@ -41,6 +42,14 @@ val githubAppSlug = providers.gradleProperty("githubAppSlug")
     .orElse("")
     .get()
     .trim()
+val windowsUpdateSignerThumbprints = providers.gradleProperty("windowsUpdateSignerThumbprints")
+    .orElse(windowsUpdateSignerThumbprintsEnvironment)
+    .orElse("")
+    .get()
+    .split(',')
+    .map { it.filter(Char::isLetterOrDigit).uppercase() }
+    .filter { it.matches(Regex("[A-F0-9]{40,128}")) }
+    .distinct()
 val isGitHubActions = providers.environmentVariable("GITHUB_ACTIONS")
     .map { it.equals("true", ignoreCase = true) }
     .orElse(false)
@@ -144,6 +153,7 @@ tasks.register("generateBuildConfig") {
     val oauthBrokerUrl = googleOAuthBrokerUrl
     val githubClientId = githubAppClientId
     val githubSlug = githubAppSlug
+    val updateSignerThumbprints = windowsUpdateSignerThumbprints.joinToString(",")
     inputs.property("aresAnalyticsVersion", version)
     inputs.property("aresProductName", productName)
     inputs.property("aresProductTagline", productTagline)
@@ -152,6 +162,7 @@ tasks.register("generateBuildConfig") {
     inputs.property("googleOAuthBrokerUrl", oauthBrokerUrl)
     inputs.property("githubAppClientId", githubClientId)
     inputs.property("githubAppSlug", githubSlug)
+    inputs.property("windowsUpdateSignerThumbprints", updateSignerThumbprints)
     outputs.dir(generatedBuildConfigDir)
     doLast {
         val pkgDir = generatedBuildConfigDir.get().asFile.resolve("com/ares/analytics")
@@ -187,6 +198,7 @@ tasks.register("generateBuildConfig") {
             |    const val GOOGLE_OAUTH_BROKER_URL = "$escapedOAuthBrokerUrl"
             |    const val GITHUB_APP_CLIENT_ID = "$escapedGitHubClientId"
             |    const val GITHUB_APP_SLUG = "$escapedGitHubAppSlug"
+            |    const val WINDOWS_UPDATE_SIGNER_THUMBPRINTS = "$updateSignerThumbprints"
             |}
             """.trimMargin()
         )

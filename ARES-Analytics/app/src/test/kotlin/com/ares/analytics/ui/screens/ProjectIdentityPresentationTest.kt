@@ -6,6 +6,7 @@ import com.ares.analytics.viewmodel.project.ProjectIdentityField
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ProjectIdentityPresentationTest {
     @Test
@@ -40,5 +41,15 @@ class ProjectIdentityPresentationTest {
     @Test
     fun `ready identity does not render blocker guidance`() {
         assertNull(projectIdentityReviewGuidance(ProjectIdentityEditorState(loading = false)))
+    }
+
+    @Test
+    fun `old project format explains reviewed replacement without deletion`() {
+        val explanation = protectedProjectIdentityExplanation(
+            "Project metadata is missing required field: authoringModel",
+        )
+
+        assertTrue(explanation.orEmpty().contains("older project format"))
+        assertTrue(explanation.orEmpty().contains("do not need to delete the robot"))
     }
 }

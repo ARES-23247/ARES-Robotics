@@ -68,6 +68,7 @@ import com.ares.analytics.viewmodel.tuning.GuidedExperimentProposal
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentIntent
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
+import com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -356,6 +357,9 @@ fun MainScreen(services: ServiceRegistry) {
     }
     val projectBackupViewModel = remember(currentConfig.projectPath) {
         ProjectBackupViewModel(services.projectVersionControlService, scope)
+    }
+    val integrationCenterViewModel = remember {
+        IntegrationCenterViewModel(services.integrationCenterService, scope)
     }
     val hardwareSetupViewModel = remember(currentConfig.projectPath, currentConfig.league) {
         HardwareSetupViewModel(
@@ -1240,6 +1244,14 @@ fun MainScreen(services: ServiceRegistry) {
                             NavigationTarget.PROJECT_BACKUP -> ProjectBackupScreen(
                                 viewModel = projectBackupViewModel,
                                 projectPath = currentConfig.projectPath,
+                            )
+                            NavigationTarget.INTEGRATIONS -> IntegrationCenterScreen(
+                                viewModel = integrationCenterViewModel,
+                                workspace = com.ares.analytics.shared.models.IntegrationWorkspaceIdentity(
+                                    teamId = currentConfig.teamId,
+                                    seasonId = currentConfig.seasonId,
+                                    robotId = currentConfig.robotId,
+                                ),
                             )
                             NavigationTarget.ADMIN -> AdminScreen(
                                 syncEngineService = services.syncEngineService,

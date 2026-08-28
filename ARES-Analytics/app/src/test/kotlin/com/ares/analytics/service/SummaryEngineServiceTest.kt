@@ -22,7 +22,16 @@ class SummaryEngineServiceTest {
         val databaseService = DatabaseService(tempDb.absolutePath)
         val sysIdService = SysIdService(databaseService)
         val driverAnalysisService = DriverAnalysisService(databaseService, sysIdService)
-        val summaryEngine = SummaryEngineService(databaseService, sysIdService, driverAnalysisService)
+        var draftedSessionId: String? = null
+        val summaryEngine = SummaryEngineService(
+            databaseService,
+            sysIdService,
+            driverAnalysisService,
+            onSummaryPersisted = { summary, alerts ->
+                draftedSessionId = summary.sessionId
+                assertTrue(alerts.isEmpty())
+            },
+        )
         val session = Session(
             sessionId = "summary-session",
             teamId = "23247",
@@ -73,6 +82,7 @@ class SummaryEngineServiceTest {
         val saved = databaseService.getSessionSummary(session.sessionId)
         assertTrue(saved != null)
         assertEquals(11.2, saved.minBatteryVoltage)
+        assertEquals("summary-session", draftedSessionId)
         databaseService.close()
         tempDb.delete()
     }

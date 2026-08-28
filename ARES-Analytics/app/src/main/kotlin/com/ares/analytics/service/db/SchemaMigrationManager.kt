@@ -230,6 +230,64 @@ class SchemaMigrationManager(
                     payload_json VARCHAR NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS integration_events (
+                    event_id VARCHAR PRIMARY KEY,
+                    schema_version INTEGER NOT NULL,
+                    event_type VARCHAR NOT NULL,
+                    occurred_at_ms BIGINT NOT NULL,
+                    aggregate_id VARCHAR NOT NULL,
+                    team_id VARCHAR NOT NULL,
+                    season_id VARCHAR NOT NULL,
+                    robot_id VARCHAR NOT NULL,
+                    payload_json VARCHAR NOT NULL,
+                    content_hash VARCHAR NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS integration_deliveries (
+                    event_id VARCHAR NOT NULL,
+                    provider_id VARCHAR NOT NULL,
+                    state VARCHAR NOT NULL,
+                    attempt_count INTEGER NOT NULL DEFAULT 0,
+                    next_attempt_at_ms BIGINT NOT NULL,
+                    lease_owner VARCHAR,
+                    lease_expires_at_ms BIGINT,
+                    last_error_kind VARCHAR,
+                    last_error_message VARCHAR,
+                    receipt_json VARCHAR,
+                    updated_at_ms BIGINT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS engineering_notebook_entries (
+                    entry_id VARCHAR NOT NULL,
+                    revision INTEGER NOT NULL,
+                    schema_version INTEGER NOT NULL,
+                    entry_type VARCHAR NOT NULL,
+                    team_id VARCHAR NOT NULL,
+                    season_id VARCHAR NOT NULL,
+                    robot_id VARCHAR NOT NULL,
+                    markdown_body VARCHAR NOT NULL,
+                    evidence_json VARCHAR NOT NULL,
+                    visibility VARCHAR NOT NULL,
+                    review_state VARCHAR NOT NULL,
+                    human_author_id VARCHAR,
+                    human_reviewer_id VARCHAR,
+                    ai_provenance_json VARCHAR,
+                    content_hash VARCHAR NOT NULL,
+                    created_at_ms BIGINT NOT NULL,
+                    updated_at_ms BIGINT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS notebook_publication_receipts (
+                    entry_id VARCHAR NOT NULL,
+                    revision INTEGER NOT NULL,
+                    publisher_id VARCHAR NOT NULL,
+                    content_hash VARCHAR NOT NULL,
+                    remote_id VARCHAR NOT NULL,
+                    receipt_json VARCHAR NOT NULL,
+                    accepted_at_ms BIGINT NOT NULL,
+                    PRIMARY KEY (entry_id, revision, publisher_id, remote_id)
+                );
+
                 CREATE TABLE IF NOT EXISTS schema_migrations (
                     name VARCHAR PRIMARY KEY,
                     completed_at BIGINT NOT NULL
@@ -261,6 +319,10 @@ class SchemaMigrationManager(
             st.execute("CREATE INDEX IF NOT EXISTS idx_analysis_diagnostics_session ON analysis_diagnostics(session_id)")
             st.execute("CREATE INDEX IF NOT EXISTS idx_session_import_reports_session ON session_import_reports(session_id)")
             st.execute("CREATE INDEX IF NOT EXISTS idx_session_import_reports_sha ON session_import_reports(source_sha256)")
+            st.execute(
+                "CREATE INDEX IF NOT EXISTS idx_integration_events_aggregate " +
+                    "ON integration_events(aggregate_id, occurred_at_ms)"
+            )
 
             try {
                 st.execute("ALTER TABLE telemetry_frames ADD COLUMN string_value VARCHAR;")

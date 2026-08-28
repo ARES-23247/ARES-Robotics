@@ -35,7 +35,7 @@ private fun JsonElement.requiredDriveId(context: String): String =
     ((this as? JsonObject)?.get("id") as? JsonPrimitive)?.contentOrNull
         ?: throw IllegalStateException("Google Drive returned $context without a file id")
 
-internal data class DriveFileSnapshot(val bytes: ByteArray, val etag: String?)
+internal data class DriveFileSnapshot(val bytes: ByteArray, val version: Long)
 
 internal class DrivePreconditionFailedException(message: String) : IllegalStateException(message)
 
@@ -413,6 +413,8 @@ class GoogleDriveService(
     private companion object {
         const val GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
         const val DRIVE_LIST_PAGE_SIZE = 1_000
+        const val DRIVE_SNAPSHOT_ATTEMPTS = 3
+        const val DRIVE_SNAPSHOT_RETRY_DELAY_MS = 50L
         const val DRIVE_STREAM_BUFFER_BYTES = 64 * 1024
         const val MAX_DRIVE_METADATA_BYTES = 8 * 1024 * 1024
         const val MAX_DRIVE_DOWNLOAD_BYTES = 2L * 1024L * 1024L * 1024L
@@ -442,20 +444,51 @@ class GoogleDriveService(
         readBoundedBytes(response, MAX_DRIVE_METADATA_BYTES)
     }
 
-    /** Reads content together with the revision ETag used for optimistic concurrency. */
+    /**
+     * Reads content together with Drive's monotonically increasing file version.
+     *
+     * Drive v3 does not expose a file-resource ETag for these responses. Read the documented
+     * `version` field on both sides of the download instead. A changing version means the bytes
+     * may not represent one stable revision, so retry rather than
+     * returning a snapshot that could later overwrite another team's update.
+     */
     internal suspend fun readFileSnapshot(fileId: String): DriveFileSnapshot = withContext(Dispatchers.IO) {
         val scope = if (!enforceWorkspaceScope) null else activeScope()
         val token = scope?.token ?: getAccessToken()
         if (scope != null) requireWithinDestination(fileId, scope)
+
+        repeat(DRIVE_SNAPSHOT_ATTEMPTS) { attempt ->
+            val beforeVersion = readMetadataVersion(fileId, token)
+            val response = httpClient.get("https://www.googleapis.com/drive/v3/files/$fileId") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                parameter("alt", "media")
+                parameter("supportsAllDrives", "true")
+            }
+            if (response.status != HttpStatusCode.OK) {
+                throw driveApiFailure("Reading workspace metadata content", response.status)
+            }
+            val bytes = readBoundedBytes(response, MAX_DRIVE_METADATA_BYTES)
+            val afterVersion = readMetadataVersion(fileId, token)
+            if (beforeVersion == afterVersion) return@withContext DriveFileSnapshot(bytes, beforeVersion)
+            if (attempt < DRIVE_SNAPSHOT_ATTEMPTS - 1) {
+                kotlinx.coroutines.delay(DRIVE_SNAPSHOT_RETRY_DELAY_MS * (attempt + 1))
+            }
+        }
+        throw DrivePreconditionFailedException("Google Drive file $fileId kept changing while it was read")
+    }
+
+    private suspend fun readMetadataVersion(fileId: String, token: String): Long {
         val response = httpClient.get("https://www.googleapis.com/drive/v3/files/$fileId") {
             header(HttpHeaders.Authorization, "Bearer $token")
-            parameter("alt", "media")
+            parameter("fields", "id,version")
             parameter("supportsAllDrives", "true")
         }
         if (response.status != HttpStatusCode.OK) {
-            throw driveApiFailure("Reading workspace metadata", response.status)
+            throw driveApiFailure("Reading workspace metadata revision", response.status)
         }
-        DriveFileSnapshot(readBoundedBytes(response, MAX_DRIVE_METADATA_BYTES), response.headers[HttpHeaders.ETag])
+        val metadata = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        return metadata["version"]?.jsonPrimitive?.longOrNull
+            ?: throw IllegalStateException("Google Drive did not provide a numeric file version")
     }
 
     /**
@@ -553,7 +586,7 @@ class GoogleDriveService(
         parentId: String,
         mimeType: String,
         fileId: String? = null,
-        expectedEtag: String? = null
+        expectedVersion: Long? = null
     ): String = withContext(Dispatchers.IO) {
         val scope = if (!enforceWorkspaceScope) null else activeScope()
         val token = scope?.token ?: getAccessToken()
@@ -563,10 +596,12 @@ class GoogleDriveService(
         }
 
         if (fileId != null) {
+            if (expectedVersion != null && readMetadataVersion(fileId, token) != expectedVersion) {
+                throw DrivePreconditionFailedException("Google Drive file $fileId changed concurrently")
+            }
             // Overwrite existing file media content
             return@withContext httpClient.preparePatch("https://www.googleapis.com/upload/drive/v3/files/$fileId?uploadType=media&supportsAllDrives=true") {
                 header(HttpHeaders.Authorization, "Bearer $token")
-                if (expectedEtag != null) header(HttpHeaders.IfMatch, expectedEtag)
                 contentType(ContentType.parse(mimeType))
                 setBody(bytes)
             }.execute { response ->
