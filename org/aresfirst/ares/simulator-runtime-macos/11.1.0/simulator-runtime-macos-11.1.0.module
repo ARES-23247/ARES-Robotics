@@ -1,0 +1,203 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "simulator-runtime-macos",
+    "version": "11.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "11.1.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-runtime-macos-11.1.0.jar",
+          "url": "simulator-runtime-macos-11.1.0.jar",
+          "size": 5077,
+          "sha512": "bd7c492ed777efa068d5a941863c2d62f8a52a3c2ccc19ace95514402b54aa3f4e2c586223bb76451c5597affa6d46082ea4cd5c5a4464f9cb0712c08a389cc1",
+          "sha256": "102c2b958d43f689d1da598ac3d8112d8d11ae2e1b7cf11ca00b19d4fe04faf9",
+          "sha1": "24b7724522b14c15e03405048fbeb759fb3f0781",
+          "md5": "ab06ff0c800ace7bfd71b0724b2a5c1f"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "11.1.0"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpinet-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "osxuniversal"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "ntcore-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "osxuniversal"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpiutil-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "osxuniversal"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "wpimath-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "osxuniversal"
+            }
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-jni",
+          "version": {
+            "requires": "2024.3.2"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "hal-jni",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "osxuniversal"
+            }
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl",
+          "version": {
+            "requires": "3.3.3"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "lwjgl",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "natives-macos"
+            }
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl-glfw",
+          "version": {
+            "requires": "3.3.3"
+          },
+          "thirdPartyCompatibility": {
+            "artifactSelector": {
+              "name": "lwjgl-glfw",
+              "type": "jar",
+              "extension": "jar",
+              "classifier": "natives-macos"
+            }
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-runtime-macos-11.1.0.jar",
+          "url": "simulator-runtime-macos-11.1.0.jar",
+          "size": 5077,
+          "sha512": "bd7c492ed777efa068d5a941863c2d62f8a52a3c2ccc19ace95514402b54aa3f4e2c586223bb76451c5597affa6d46082ea4cd5c5a4464f9cb0712c08a389cc1",
+          "sha256": "102c2b958d43f689d1da598ac3d8112d8d11ae2e1b7cf11ca00b19d4fe04faf9",
+          "sha1": "24b7724522b14c15e03405048fbeb759fb3f0781",
+          "md5": "ab06ff0c800ace7bfd71b0724b2a5c1f"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "simulator-runtime-macos-11.1.0-sources.jar",
+          "url": "simulator-runtime-macos-11.1.0-sources.jar",
+          "size": 5077,
+          "sha512": "bd7c492ed777efa068d5a941863c2d62f8a52a3c2ccc19ace95514402b54aa3f4e2c586223bb76451c5597affa6d46082ea4cd5c5a4464f9cb0712c08a389cc1",
+          "sha256": "102c2b958d43f689d1da598ac3d8112d8d11ae2e1b7cf11ca00b19d4fe04faf9",
+          "sha1": "24b7724522b14c15e03405048fbeb759fb3f0781",
+          "md5": "ab06ff0c800ace7bfd71b0724b2a5c1f"
+        }
+      ]
+    }
+  ]
+}
