@@ -17,6 +17,10 @@ if (-not (Test-Path -LiteralPath $staged -PathType Container)) {
 if (-not (Test-Path -LiteralPath (Join-Path $sourceRepository '.git'))) {
     throw "RepositoryRoot is not a Git checkout: $sourceRepository"
 }
+$stagedFiles = @(Get-ChildItem -LiteralPath $staged -Recurse -File)
+if ($stagedFiles.Count -eq 0) {
+    throw "Staged Maven repository contains no files: $staged"
+}
 
 $temporary = Join-Path ([System.IO.Path]::GetTempPath()) "ares-maven-publish-$([guid]::NewGuid())"
 try {
@@ -51,7 +55,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Unable to prepare the $Branch branch." }
 
     $conflicts = [System.Collections.Generic.List[string]]::new()
-    Get-ChildItem -LiteralPath $staged -Recurse -File | ForEach-Object {
+    $stagedFiles | ForEach-Object {
         $relative = [System.IO.Path]::GetRelativePath($staged, $_.FullName)
         $target = Join-Path $temporary $relative
         if (Test-Path -LiteralPath $target) {

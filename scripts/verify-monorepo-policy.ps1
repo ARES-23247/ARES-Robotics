@@ -11,6 +11,19 @@ $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)
 foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'githubMavenRepository')) {
     if ([string]::IsNullOrWhiteSpace($release[$required])) { throw "Release manifest is missing $required." }
 }
+$aresSourceTreePath = Join-Path $root 'release/ares-source-tree.txt'
+if (-not (Test-Path -LiteralPath $aresSourceTreePath -PathType Leaf)) {
+    throw 'Canonical ARES source-tree identity is missing.'
+}
+$expectedAresTree = (Get-Content -Raw -LiteralPath $aresSourceTreePath).Trim()
+if ($expectedAresTree -notmatch '^[0-9a-f]{40}$') {
+    throw 'release/ares-source-tree.txt must contain one lowercase 40-character Git tree ID.'
+}
+$actualAresTree = (& git -C $root rev-parse 'HEAD:ARESLib-Kotlin').Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the current ARESLib source tree.' }
+if ($actualAresTree -ne $expectedAresTree) {
+    throw "ARESLib source tree is $actualAresTree, but release/ares-source-tree.txt records $expectedAresTree. Bump aresVersion and update the source-tree identity together."
+}
 foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256')) {
     if ($release.ContainsKey($retiredHash)) {
         throw "$retiredHash must remain outside the standalone dependency manifest."

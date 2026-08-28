@@ -65,6 +65,19 @@ jobs:
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           ares_base="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
+          expected_ares_tree="$(tr -d '\r\n' < release/ares-source-tree.txt)"
+          actual_ares_tree="$(git rev-parse HEAD:ARESLib-Kotlin)"
+          if [[ ! "$expected_ares_tree" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "release/ares-source-tree.txt has no valid Git tree ID." >&2
+            exit 1
+          fi
+          if [[ "$actual_ares_tree" != "$expected_ares_tree" ]]; then
+            echo "ARESLib source changed without a new immutable release identity." >&2
+            echo "Expected tree: $expected_ares_tree" >&2
+            echo "Current tree:  $actual_ares_tree" >&2
+            echo "Bump aresVersion and record the new ARESLib tree before packaging." >&2
+            exit 1
+          fi
           ares_candidate_version="${ares_base}-rc.${GITHUB_SHA::12}"
           if [[ -n "$REQUESTED_VERSION" ]]; then
             studio_version="$REQUESTED_VERSION"
@@ -103,14 +116,36 @@ jobs:
         working-directory: ARESLib-Kotlin
         shell: bash
         run: |
+          rm -rf build/github-repository
+          mkdir -p build/github-repository
           if git ls-remote --exit-code origin refs/heads/maven >/dev/null 2>&1; then
-            mkdir -p build/github-repository
-            git fetch --quiet origin refs/heads/maven:refs/remotes/origin/maven
+            git fetch --quiet origin +refs/heads/maven:refs/remotes/origin/maven
             git archive origin/maven | tar -x -C build/github-repository
           fi
-          ./gradlew publishGitHubRepository \
-            -ParesVersion=${{ steps.identity.outputs.ares-version }} \
-            --no-parallel --no-daemon --console=plain
+          version="${{ steps.identity.outputs.ares-version }}"
+          modules=(
+            ares-bom codegen core frc-hardware frc-runtime ftc-hardware ftc-mocks
+            project-compiler project-model project-schema simulation-foundation simulator
+            simulator-runtime-linux simulator-runtime-macos simulator-runtime-windows
+          )
+          published=0
+          for module in "${modules[@]}"; do
+            pom="build/github-repository/org/aresfirst/ares/$module/$version/$module-$version.pom"
+            if [[ -f "$pom" ]]; then
+              published=$((published + 1))
+            fi
+          done
+          if (( published == ${#modules[@]} )); then
+            echo "Reusing all ${#modules[@]} immutable ARES $version publications byte-for-byte."
+          elif (( published != 0 )); then
+            echo "ARES $version is only partially present on the Maven branch ($published/${#modules[@]} modules)." >&2
+            echo "Refusing to rebuild or overwrite a partial immutable release." >&2
+            exit 1
+          else
+            ./gradlew publishGitHubRepository \
+              -ParesVersion="$version" \
+              --no-parallel --no-daemon --console=plain
+          fi
 
       - uses: actions/upload-artifact@v7
         with:
