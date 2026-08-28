@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.Session
 import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.AlertRecord
 import com.ares.analytics.shared.AnalysisDiagnostic
 import com.ares.analytics.shared.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
@@ -42,7 +43,8 @@ import kotlin.math.sqrt
 class SummaryEngineService(
     private val databaseService: DatabaseService,
     private val sysIdService: SysIdService,
-    private val driverAnalysisService: DriverAnalysisService
+    private val driverAnalysisService: DriverAnalysisService,
+    private val onSummaryPersisted: suspend (SessionSummary, List<AlertRecord>) -> Unit = { _, _ -> },
 ) {
 
     suspend fun generateSummary(session: Session): SessionSummary = withContext(Dispatchers.Default) {
@@ -168,6 +170,13 @@ class SummaryEngineService(
         )
 
         databaseService.insertSessionSummary(summary)
+        try {
+            onSummaryPersisted(summary, databaseService.getAlerts(summary.sessionId))
+        } catch (failure: Exception) {
+            // Notebook drafting is additive. A local or remote integration failure must never
+            // turn a successfully persisted robot analysis into a failed log import.
+            System.err.println("[SummaryEngineService] Engineering notebook draft failed: ${failure.message}")
+        }
         summary
     }
 

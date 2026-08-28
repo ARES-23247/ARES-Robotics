@@ -1509,6 +1509,7 @@ object LearningCatalog {
         NavigationTarget.ACADEMY to "start-simulator",
         NavigationTarget.DASHBOARD to "start-simulator",
         NavigationTarget.CLOUD to "compare-run-evidence",
+        NavigationTarget.INTEGRATIONS to "compare-run-evidence",
         NavigationTarget.FIELD_EDITOR to "edit-field-documents",
         NavigationTarget.MATCH_STRATEGY to "read-driver-coaching",
         NavigationTarget.GUIDED_RUN_ANALYSIS to "compare-run-evidence",

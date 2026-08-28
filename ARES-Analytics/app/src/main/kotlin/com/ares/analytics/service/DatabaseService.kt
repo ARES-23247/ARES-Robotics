@@ -2,6 +2,10 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.*
 import com.ares.analytics.service.db.*
+import com.ares.analytics.service.integration.IntegrationRepository
+import com.ares.analytics.service.integration.IntegrationStore
+import com.ares.analytics.service.integration.IntegrationEventRecorder
+import com.ares.analytics.service.integration.IntegrationRoutingPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -94,6 +98,12 @@ class DatabaseService(
     private val schemaManager: SchemaMigrationManager
     private val matchLogRepo: MatchLogRepository
     private val backupExporter: DatabaseBackupExporter
+    private val integrationRepository: IntegrationRepository
+
+    val integrations: IntegrationStore
+        get() = integrationRepository
+    val integrationRouting = IntegrationRoutingPolicy()
+    val integrationEvents: IntegrationEventRecorder
 
     private val checkpointScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var checkpointJob: Job
@@ -144,6 +154,8 @@ class DatabaseService(
         schemaManager = SchemaMigrationManager(conn, ephemeralConn)
         matchLogRepo = MatchLogRepository(conn, readConn, ephemeralConn, ephemeralReadConn, dbMutex, readMutex, metrics)
         backupExporter = DatabaseBackupExporter(conn, dbMutex)
+        integrationRepository = IntegrationRepository(conn, dbMutex)
+        integrationEvents = IntegrationEventRecorder(integrationRepository, integrationRouting)
 
         schemaManager.runMigrations(legacyDbPath)
 
@@ -182,7 +194,18 @@ class DatabaseService(
         sourceHashes: Set<String>,
     ): Session? = matchLogRepo.findCompletedSessionBySourceHashes(teamId, seasonId, robotId, sourceHashes)
     suspend fun deleteSession(sessionId: String) = matchLogRepo.deleteSession(sessionId)
-    suspend fun insertSessionSummary(summary: SessionSummary) = matchLogRepo.insertSessionSummary(summary)
+    suspend fun insertSessionSummary(summary: SessionSummary) {
+        matchLogRepo.insertSessionSummary(summary)
+        integrationEvents.analysisReady(summary)
+    }
+    suspend fun saveEngineeringNotebookRevision(
+        entry: com.ares.analytics.shared.models.EngineeringNotebookEntry,
+        commitRange: String? = null,
+    ) {
+        integrationRepository.saveNotebookRevision(entry)
+        if (commitRange == null) integrationEvents.notebookDraftReady(entry)
+        else integrationEvents.softwareDigestReady(entry, commitRange)
+    }
     override suspend fun getSessionSummary(sessionId: String): SessionSummary? = matchLogRepo.getSessionSummary(sessionId)
     override suspend fun getAllSessionSummaries(): List<SessionSummary> = matchLogRepo.getAllSessionSummaries()
     suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = matchLogRepo.insertTelemetryFrames(frames)
@@ -240,6 +263,7 @@ class DatabaseService(
         // power loss never leaves an arbitrarily large WAL, while normal ingestion still avoids
         // an fsync on every frame batch.
         checkpointAfterDurableBoundary("completed session import")
+        integrationEvents.sessionImported(session, reports)
     }
     internal suspend fun getSessionImportReports(sessionId: String): List<ImportReport> =
         matchLogRepo.getSessionImportReports(sessionId)
@@ -266,7 +290,20 @@ class DatabaseService(
     suspend fun updateSessionTags(sessionId: String, tags: List<String>) = matchLogRepo.updateSessionTags(sessionId, tags)
     suspend fun updateSessionMatchDetails(sessionId: String, matchNumber: Int?, allianceColor: String?) = matchLogRepo.updateSessionMatchDetails(sessionId, matchNumber, allianceColor)
     suspend fun associateSessionWithMatch(sessionId: String, matchNumber: Int, allianceColor: String, opponentTeams: List<String>) = matchLogRepo.associateSessionWithMatch(sessionId, matchNumber, allianceColor, opponentTeams)
-    suspend fun insertAlert(alert: AlertRecord) = matchLogRepo.insertAlert(alert)
+    suspend fun insertAlert(alert: AlertRecord) {
+        matchLogRepo.insertAlert(alert)
+        val session = matchLogRepo.getSessions().firstOrNull { it.sessionId == alert.sessionId }
+        if (session != null) {
+            integrationEvents.alertPersisted(
+                alert,
+                com.ares.analytics.shared.models.IntegrationWorkspaceIdentity(
+                    session.teamId,
+                    session.seasonId,
+                    session.robotId,
+                ),
+            )
+        }
+    }
     suspend fun getAlerts(sessionId: String): List<AlertRecord> = matchLogRepo.getAlerts(sessionId)
     suspend fun insertTopology(topology: HardwareTopology) = matchLogRepo.insertTopology(topology)
     suspend fun getTopology(robotId: String): HardwareTopology? = matchLogRepo.getTopology(robotId)

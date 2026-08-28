@@ -27,7 +27,28 @@ import kotlinx.serialization.json.Json
 data class GitHubRelease(
     @SerialName("tag_name") val tagName: String,
     @SerialName("html_url") val htmlUrl: String,
-    val body: String? = null
+    val body: String? = null,
+    val prerelease: Boolean = false,
+    val draft: Boolean = false,
+    val assets: List<GitHubReleaseAsset> = emptyList(),
+)
+
+@Serializable
+data class GitHubReleaseAsset(
+    val name: String,
+    @SerialName("browser_download_url") val browserDownloadUrl: String,
+    val size: Long,
+    @SerialName("content_type") val contentType: String? = null,
+)
+
+data class WindowsUpdateCandidate(
+    val version: String,
+    val installerName: String,
+    val installerUrl: String,
+    val checksumUrl: String,
+    val sizeBytes: Long,
+    val releasePageUrl: String,
+    val releaseNotes: String?,
 )
 
 /**
@@ -58,7 +79,12 @@ class UpdateCheckerService(
 
         object UpToDate : UpdateState()
 
-        data class UpdateAvailable(val latestVersion: String, val downloadUrl: String, val releaseNotes: String?) : UpdateState()
+        data class UpdateAvailable(
+            val latestVersion: String,
+            val downloadUrl: String,
+            val releaseNotes: String?,
+            val windowsCandidate: WindowsUpdateCandidate? = null,
+        ) : UpdateState()
 
         data class Error(val message: String) : UpdateState()
     }
@@ -75,11 +101,12 @@ class UpdateCheckerService(
                 }.execute { response ->
                     if (response.status == HttpStatusCode.OK) {
                         val release = response.body<GitHubRelease>()
-                        if (isNewerVersion(BuildConfig.VERSION, release.tagName)) {
+                        if (!release.draft && !release.prerelease && isSemanticVersionNewer(BuildConfig.VERSION, release.tagName)) {
                             _updateState.value = UpdateState.UpdateAvailable(
                                 latestVersion = release.tagName,
                                 downloadUrl = release.htmlUrl,
-                                releaseNotes = release.body
+                                releaseNotes = release.body,
+                                windowsCandidate = release.windowsUpdateCandidate(),
                             )
                         } else {
                             _updateState.value = UpdateState.UpToDate
@@ -98,19 +125,33 @@ class UpdateCheckerService(
         serviceScope.coroutineContext.cancelChildren()
     }
 
-    private fun isNewerVersion(current: String, latest: String): Boolean {
-        val cleanCurrent = current.removePrefix("v").trim()
-        val cleanLatest = latest.removePrefix("v").trim()
-        if (cleanCurrent == cleanLatest) return false
-        val currentParts = cleanCurrent.split(".").mapNotNull { it.toIntOrNull() }
-        val latestParts = cleanLatest.split(".").mapNotNull { it.toIntOrNull() }
-        val maxLength = maxOf(currentParts.size, latestParts.size)
-        for (i in 0 until maxLength) {
-            val currVal = currentParts.getOrElse(i) { 0 }
-            val latVal = latestParts.getOrElse(i) { 0 }
-            if (latVal > currVal) return true
-            if (currVal > latVal) return false
-        }
-        return false
+}
+
+internal fun isSemanticVersionNewer(current: String, latest: String): Boolean {
+    fun parse(value: String): List<Int>? {
+        val match = Regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)$").matchEntire(value.trim()) ?: return null
+        return match.groupValues.drop(1).map { it.toIntOrNull() ?: return null }
     }
+    val currentParts = parse(current) ?: return false
+    val latestParts = parse(latest) ?: return false
+    return latestParts.zip(currentParts).firstOrNull { (next, installed) -> next != installed }
+        ?.let { (next, installed) -> next > installed }
+        ?: false
+}
+
+private fun GitHubRelease.windowsUpdateCandidate(): WindowsUpdateCandidate? {
+    val installers = assets.filter { it.name.endsWith(".msi", ignoreCase = true) }
+    if (installers.size != 1) return null
+    val installer = installers.single()
+    val checksum = assets.singleOrNull { it.name == "${installer.name}.sha256" } ?: return null
+    if (installer.size <= 0L) return null
+    return WindowsUpdateCandidate(
+        version = tagName.removePrefix("v"),
+        installerName = installer.name,
+        installerUrl = installer.browserDownloadUrl,
+        checksumUrl = checksum.browserDownloadUrl,
+        sizeBytes = installer.size,
+        releasePageUrl = htmlUrl,
+        releaseNotes = body,
+    )
 }

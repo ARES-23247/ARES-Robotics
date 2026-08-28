@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.SettingsInputComponent
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class NavigationTarget(val label: String, val icon: ImageVector) {
@@ -45,6 +46,7 @@ enum class NavigationTarget(val label: String, val icon: ImageVector) {
     SUBSYSTEM_GEN("Subsystem Builder", Icons.Default.Construction),
     SUPERSTRUCTURE_STUDIO("Superstructure Studio", Icons.Default.Layers),
     PROJECT_BACKUP("Project History", Icons.Default.CloudUpload),
+    INTEGRATIONS("Integrations", Icons.Default.SettingsInputComponent),
     PROFILE("Profile", Icons.Default.Person),
     ADMIN("Admin Panel", Icons.Default.SupervisorAccount)
 }
@@ -73,7 +75,7 @@ fun NavigationTarget.section(): NavigationSection? = when (this) {
     NavigationTarget.PATH_PLANNER, NavigationTarget.FIELD_EDITOR -> NavigationSection.AUTONOMOUS
     NavigationTarget.GUIDED_RUN_ANALYSIS, NavigationTarget.RUN_HISTORY -> NavigationSection.ANALYSIS
     NavigationTarget.IMPORT_CENTER, NavigationTarget.CLOUD -> NavigationSection.DATA
-    NavigationTarget.PROJECT_BACKUP, NavigationTarget.PROFILE, NavigationTarget.ADMIN -> NavigationSection.SETTINGS
+    NavigationTarget.PROJECT_BACKUP, NavigationTarget.INTEGRATIONS, NavigationTarget.PROFILE, NavigationTarget.ADMIN -> NavigationSection.SETTINGS
     NavigationTarget.ACADEMY, NavigationTarget.KDOC_VIEWER,
     NavigationTarget.DATABASE_VIEWER, NavigationTarget.MATCH_STRATEGY -> null
 }
@@ -100,7 +102,7 @@ fun NavigationSection.targets(): List<NavigationTarget> = when (this) {
     NavigationSection.AUTONOMOUS -> listOf(NavigationTarget.PATH_PLANNER, NavigationTarget.FIELD_EDITOR)
     NavigationSection.ANALYSIS -> listOf(NavigationTarget.GUIDED_RUN_ANALYSIS, NavigationTarget.RUN_HISTORY)
     NavigationSection.DATA -> listOf(NavigationTarget.IMPORT_CENTER, NavigationTarget.CLOUD)
-    NavigationSection.SETTINGS -> listOf(NavigationTarget.PROFILE, NavigationTarget.PROJECT_BACKUP, NavigationTarget.ADMIN)
+    NavigationSection.SETTINGS -> listOf(NavigationTarget.PROFILE, NavigationTarget.INTEGRATIONS, NavigationTarget.PROJECT_BACKUP, NavigationTarget.ADMIN)
 }
 
 fun availablePaletteTargets(developerMode: Boolean): List<NavigationTarget> = NavigationTarget.entries.filter {
@@ -140,6 +142,7 @@ fun NavigationTarget.searchTerms(): Set<String> = when (this) {
     NavigationTarget.SUBSYSTEM_GEN -> setOf("mechanism", "motor", "sensor", "redux", "io", "generator")
     NavigationTarget.SUPERSTRUCTURE_STUDIO -> setOf("coordinator", "superstructure", "state machine", "posture", "interlock", "lookup table", "lut", "multiple mechanisms")
     NavigationTarget.PROJECT_BACKUP -> setOf("backup", "git", "github", "history", "version", "restore", "save project")
+    NavigationTarget.INTEGRATIONS -> setOf("zulip", "webhook", "notebook", "cms", "notifications", "publishing", "delivery")
     NavigationTarget.PROFILE -> setOf("workspace", "robot", "team", "accessibility", "project folder")
     NavigationTarget.ADMIN -> setOf("roster", "shared robots", "administrator")
 }
