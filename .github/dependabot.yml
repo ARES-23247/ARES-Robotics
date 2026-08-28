@@ -6,36 +6,24 @@ updates:
       interval: monthly
     open-pull-requests-limit: 2
     labels: [dependencies]
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: gradle
-    directory: /ARESLib-Kotlin
+    directories:
+      - /ARESLib-Kotlin
+      - /ARES-FTC
+      - /ARES-FRC
+      - /ARES-FTC-Starter
+      - /ARES-FRC-Starter
+      - /ARES-Analytics
     schedule: { interval: weekly, day: monday, time: "09:00", timezone: America/New_York }
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 8
     labels: [dependencies]
-  - package-ecosystem: gradle
-    directory: /ARES-FTC
-    schedule: { interval: weekly, day: monday, time: "09:10", timezone: America/New_York }
-    open-pull-requests-limit: 3
-    labels: [dependencies]
-  - package-ecosystem: gradle
-    directory: /ARES-FRC
-    schedule: { interval: weekly, day: monday, time: "09:20", timezone: America/New_York }
-    open-pull-requests-limit: 3
-    labels: [dependencies]
-  - package-ecosystem: gradle
-    directory: /ARES-FTC-Starter
-    schedule: { interval: weekly, day: monday, time: "09:30", timezone: America/New_York }
-    open-pull-requests-limit: 3
-    labels: [dependencies]
-  - package-ecosystem: gradle
-    directory: /ARES-FRC-Starter
-    schedule: { interval: weekly, day: monday, time: "09:40", timezone: America/New_York }
-    open-pull-requests-limit: 3
-    labels: [dependencies]
-  - package-ecosystem: gradle
-    directory: /ARES-Analytics
-    schedule: { interval: weekly, day: monday, time: "09:50", timezone: America/New_York }
-    open-pull-requests-limit: 3
-    labels: [dependencies]
+    groups:
+      same-dependency-across-products:
+        group-by: dependency-name
