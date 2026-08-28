@@ -4,7 +4,8 @@ This file is the repository-specific guide for automated contributors. Read it b
 
 ## Repository role
 
-ARESLib-Kotlin is the shared foundation for ARES-FTC, ARES-FRC, ARES-Analytics, and the desktop simulator. It is organized as:
+ARESLib-Kotlin is the shared foundation for the FTC and FRC products, their standalone starters,
+ARES Robotics Studio, and the platform-specific simulators in this monorepo. It is organized as:
 
 - `core`: SDK-independent state, math, estimation, control, safety, pathing, sequencing, IO contracts, NT4, telemetry, and logging.
 - `project-schema`, `project-model`, `project-compiler`: canonical documents, the validated effective project, and deterministic compiler IR.
@@ -18,7 +19,7 @@ ARESLib-Kotlin is the shared foundation for ARES-FTC, ARES-FRC, ARES-Analytics, 
 - `simulator-runtime-windows`, `simulator-runtime-linux`, `simulator-runtime-macos`: platform-specific simulator native runtime artifacts.
 - `ares-bom`: published dependency constraints for all ARES artifacts.
 
-Platform and season code depend inward on `core`. Do not add FTC, Android, WPILib, or vendor API types to `core`. Game-specific mechanism and field code belongs in the season repositories.
+Platform and season code depend inward on `core`. Do not add FTC, Android, WPILib, or vendor API types to `core`. Game-specific mechanism and field code belongs in the corresponding product directory.
 
 See [Architecture](docs/architecture.md) for package ownership and extension guidance.
 
@@ -36,7 +37,7 @@ Use the checked-in wrapper and JDK 17:
 .\gradlew.bat test apiCheck publishReleaseValidation --no-parallel "-ParesVersion=<candidate>-rc.<commit>"
 ```
 
-After changing ARESLib, test it and publish the isolated validation repository before testing consumers. Pass the same candidate `-ParesVersion` plus an absolute `-ParesRepository=file:///.../build/release-repository` to every consumer. Normal consumer builds resolve the pinned version from Maven Central and the GitHub-hosted ARES Maven repository; sibling source substitution is opt-in with `-ParesUseSiblingLib=true`. Do not use `mavenLocal()` as cross-repository validation evidence. Publication coordinates are listed in [README.md](README.md).
+After changing ARESLib, test it and publish the isolated validation repository before testing consumers. Pass the same candidate `-ParesVersion` plus an absolute `-ParesRepository=file:///.../build/release-repository` to every consumer. Normal consumer builds resolve the pinned version from Maven Central and the monorepo GitHub Maven branch at `https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven`; sibling source substitution is opt-in with `-ParesUseSiblingLib=true`. Do not use `mavenLocal()` as cross-product validation evidence. Publication coordinates are listed in [README.md](README.md).
 
 ## State and reducer contract
 
@@ -82,7 +83,7 @@ Do not use `rotation.z` as target-relative robot heading.
 
 ### Display transforms
 
-ARES Analytics swaps/negates field axes for canvas rendering and applies an icon-angle offset. That is display-only behavior and must not enter robot, path, or estimator math.
+ARES Robotics Studio swaps/negates field axes for canvas rendering and applies an icon-angle offset. That is display-only behavior and must not enter robot, path, or estimator math.
 
 The complete review checklist is in [Math and coordinate contracts](docs/math-and-coordinate-contracts.md).
 
@@ -106,8 +107,10 @@ One-time initialization, file parsing, and explicit operator actions may allocat
 - `LogManagerServer` listens on port `5002`.
 - NT4 topics are canonicalized without a leading slash.
 - An announced NT4 topic keeps one type for its lifetime.
-- Keep publisher/subscriber topic spelling, units, types, and heading signs consistent across all four repositories.
-- Robots never push logs to cloud services. ARES Analytics pulls local logs and the laptop performs optional cloud sync.
+- Keep publisher/subscriber topic spelling, units, types, and heading signs consistent across every
+  publishing and consuming product.
+- Robots never push logs to cloud services. ARES Robotics Studio pulls local logs and the laptop
+  performs optional cloud sync.
 - Main telemetry logs are `.csv` or `.csv.gz`; `.jsonl` remains valid for action/replay logs. Keep `LogManagerServer` discovery and download support aligned with all accepted formats.
 - Simulator truth belongs only on `ARES/TruePose/*`. Redux EKF estimate belongs on `ARES/EstimatedPose/*` and `Drive/Pose_*`; odometry belongs on `Drive/Odom_*`.
 - The simulator publishes `ARES/SimulatorPoseFrame` as `[true x/y/h, EKF x/y/h, odom x/y/h, sequence]`. Preserve this atomic frame and never substitute truth for estimator data or restore per-scalar simulator UI commits.
@@ -134,7 +137,7 @@ See [Development, testing, and troubleshooting](docs/development.md) and [TEST_I
 ## Change checklist
 
 1. Preserve unrelated working-tree changes.
-2. Identify all sibling-repository consumers before changing a public type, topic, unit, file format, or behavior.
+2. Identify every monorepo consumer before changing a public type, topic, unit, file format, or behavior.
 3. Keep source KDoc explicit about frames, units, signs, timestamps, invalid inputs, and ownership of mutable/pool-backed data.
 4. Run focused and module tests.
 5. Publish an explicit prerelease version to the isolated `build/release-repository` and test affected consumers with that same version and repository URI.

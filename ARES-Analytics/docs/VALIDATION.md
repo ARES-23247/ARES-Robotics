@@ -155,7 +155,7 @@ Supported properties are:
 
 `.github/workflows/dashboard-validation.yml` runs:
 
-- `dashboardPerformanceBaseline` (which runs `dashboardSmoke` first) for relevant pull requests and pushes to `master`.
+- `dashboardPerformanceBaseline` (which runs `dashboardSmoke` first) for relevant pull requests and pushes to `main`.
 - `dashboardSoak` nightly and when manually selected through `workflow_dispatch`.
 - Report and JUnit artifact upload even when a budget fails.
 

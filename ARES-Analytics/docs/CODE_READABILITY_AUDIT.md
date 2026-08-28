@@ -53,4 +53,4 @@ The audit removed 459 generated KDoc blocks that contained only a generic physic
 - Direct nested-`if` pattern: zero in first-party production source.
 - Encoding-artifact scan: clean.
 - `git diff --check`: required before handoff.
-- Full Gradle suites: required sequentially after all four repositories finish this shared-workspace pass.
+- Full Gradle suites: required in dependency order after all six monorepo products finish this shared-source pass.

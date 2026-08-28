@@ -72,7 +72,7 @@ client and broker configuration together.
   the service; do not ask a student for a secret.
 - On secret rotation, update the broker atomically, verify sign-in and refresh, then disable the old
   secret through the protected procedure.
-- Deploy reviewed gateway changes only from `master` with the **Deploy Analytics Gateway** workflow.
+- Deploy reviewed gateway changes only from protected `main` with the **Deploy Analytics Gateway** workflow.
   Configure its `gateway-production` environment with required reviewers and the public variables
   `GOOGLE_WORKLOAD_IDENTITY_PROVIDER` and `GOOGLE_GATEWAY_DEPLOY_SERVICE_ACCOUNT`. The OIDC service
   account needs `roles/cloudbuild.builds.editor`, `roles/serviceusage.serviceUsageConsumer`, and

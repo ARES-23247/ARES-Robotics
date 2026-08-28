@@ -1,6 +1,9 @@
 # ARES FTC Starter agent guide
 
-This repository is the generic, simulation-first FTC starter consumed by ARES Analytics. It is not
+Read the monorepo root `AGENTS.md` first; it owns cross-product release, safety, telemetry, and
+validation contracts.
+
+This directory is the generic, simulation-first FTC starter consumed by ARES Robotics Studio. It is not
 a competition-season repository and must never absorb team-specific hardware constants, autonomous
 routines, field assets, mechanism code, credentials, or calibration values.
 

@@ -1,11 +1,13 @@
 ---
 name: compose-desktop-tester
-description: Automated visual testing, screen capture, and UI interaction workflow for Kotlin Compose Desktop applications (ARES-Analytics) on Windows.
+description: Automated visual testing, screen capture, and UI interaction workflow for the ARES Robotics Studio Kotlin Compose Desktop application on Windows.
 ---
 
 # Compose Desktop Visual Tester
 
-Launch, capture, inspect, interact with, and cleanly close the **ARES-Analytics** Compose Desktop application on Windows. A running JVM is not sufficient evidence: this workflow requires a visible top-level window containing rendered app UI.
+Launch, capture, inspect, interact with, and cleanly close **ARES Robotics Studio** on Windows. The
+source product directory remains `ARES-Analytics/` for repository continuity. A running JVM is not
+sufficient evidence: this workflow requires a visible top-level window containing rendered app UI.
 
 ## Read the recovery guide when startup is involved
 
@@ -23,7 +25,7 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 1. Preserve the current worktree and compile before launching:
 
    ```powershell
-   cd C:\Users\david\dev\robotics\ares\ARES-Analytics
+   Set-Location <monorepo-root>\ARES-Analytics
    git status --short --branch
    .\gradlew.bat :app:compileKotlin
    ```
@@ -37,9 +39,10 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 3. Wait for `Desktop window presented`, then require an exact visible-window capture. The script exits nonzero when no matching ARES HWND exists; it no longer substitutes a full-desktop image.
 
    ```powershell
-   & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
-     -WindowTitle "ARES Analytics" `
-     -OutputFile "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\window.png"
+   & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\capture_app.ps1" `
+     -WindowTitle "ARES Robotics Studio" `
+     -OutputFile "<monorepo-root>\ARES-Analytics\build\diagnostics\window.png" `
+     -NoActivate
    ```
 
 4. Inspect the saved image with the available image-viewing tool. Verify actual ARES content, window dimensions, layout, contrast, canvas rendering, and the state relevant to the task.
@@ -47,7 +50,7 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
    Some agent GUI runners assign each tool process a different Windows desktop/window station. If the app logs an exact HWND and `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true` but an external capture process cannot enumerate it, use the opt-in same-process capture instead of claiming the window vanished:
 
    ```powershell
-   $env:ARES_ANALYTICS_STARTUP_CAPTURE = "C:\Users\david\dev\robotics\ares\ARES-Analytics\build\diagnostics\window.png"
+   $env:ARES_ANALYTICS_STARTUP_CAPTURE = "<monorepo-root>\ARES-Analytics\build\diagnostics\window.png"
    $env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE = "true"
    .\gradlew.bat :app:run
    Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE
@@ -59,15 +62,15 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 5. Interact only through a verified ARES window. Coordinates are relative to that window; the script fails instead of clicking the desktop when no window is found.
 
    ```powershell
-   & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Analytics" -ClickX 350 -ClickY 60
-   & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Analytics" -Text "MyStatePreset"
-   & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Analytics" -Key "ENTER"
+   & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Robotics Studio" -ClickX 350 -ClickY 60
+   & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Robotics Studio" -Text "MyStatePreset"
+   & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Robotics Studio" -Key "ENTER"
    ```
 
 6. Close through the window first so service disposal and shutdown watchdog behavior are exercised. The close action posts native `WM_CLOSE` to the verified ARES HWND and waits up to 25 seconds for the process to exit. Do not use `SendKeys` to simulate Alt+F4: a focused Compose field can receive that synthetic key input instead of a native window-close event.
 
    ```powershell
-   & "C:\Users\david\dev\robotics\ares\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Analytics" -CloseWindow
+   & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Robotics Studio" -CloseWindow
    ```
 
    If graceful close fails, report it and then run `.\gradlew.bat killExisting` as cleanup. Confirm `jps -lv` no longer lists `com.ares.analytics.MainKt`.

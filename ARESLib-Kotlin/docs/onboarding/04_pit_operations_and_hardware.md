@@ -1,6 +1,6 @@
 # Onboarding 4: Pit operations and hardware
 
-This checklist covers library-level behavior. Exact buttons and dashboard screens belong to the season repository and ARES Analytics documentation.
+This checklist covers library-level behavior. Exact buttons and dashboard screens belong to the platform product and ARES Robotics Studio documentation.
 
 ## Before enabling
 
@@ -35,7 +35,7 @@ Each loop refreshes each device once and stores the sample in cached fields/inpu
 
 1. Stop the OpMode cleanly so the logger drains and closes its file.
 2. Check `droppedFrameCount` if data is missing.
-3. Pull logs through ARES Analytics or `GET /api/download?file=<name>` on port `5002`.
+3. Pull logs through ARES Robotics Studio or `GET /api/download?file=<name>` on port `5002`.
 4. Do not add robot-side cloud upload as a workaround for laptop import problems.
 5. Delete robot logs only after the pulled copy has been verified.
 

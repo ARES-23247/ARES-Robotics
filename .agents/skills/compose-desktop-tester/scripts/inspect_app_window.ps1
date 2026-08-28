@@ -1,6 +1,6 @@
 param(
     [long]$Handle = 0,
-    [string]$WindowTitle = "ARES Analytics",
+    [string]$WindowTitle = "ARES Robotics Studio",
     [int]$OwnerProcessId = 0,
     [int]$WatchSeconds = 0,
     [int]$PollMilliseconds = 100

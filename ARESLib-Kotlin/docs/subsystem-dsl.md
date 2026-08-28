@@ -5,7 +5,7 @@ so students can move between them without rewriting the robot architecture.
 
 ## Level 1: visual builder
 
-Open **Robot -> Subsystem Builder** in ARES Analytics. Select the robot project, add hardware,
+Open **Robot → Subsystem Builder** in ARES Robotics Studio. Select the robot project, add hardware,
 state values, and control rules, then choose **Save & Generate**.
 
 Adding hardware creates explicit normal state rather than hiding inferred behavior. A motor adds

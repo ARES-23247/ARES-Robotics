@@ -6,8 +6,8 @@ Robot code never depends on internet or cloud credentials:
 
 ```text
 robot/simulator
-  |-- live NT4 telemetry on :5810 ----------> ARES Analytics
-  `-- local log HTTP API on :5002 ----------> ARES Analytics
+  |-- live NT4 telemetry on :5810 ----------> ARES Robotics Studio
+  `-- local log HTTP API on :5002 ----------> ARES Robotics Studio
                                                    |
                                                    `-- optional laptop-to-cloud sync
 ```
@@ -45,7 +45,7 @@ Code that publishes at loop rate should reuse arrays/buffers and call the teleme
 | `ARES/EstimatedPose/0..2` | Scalar fused X/Y/heading | double |
 | `Robot/Odometry/Covariance` | EKF covariance diagonal `[Pxx, Pyy, Ptheta]` | double array |
 
-`TelemetryTopicNormalizer` removes transport-only leading slashes; it does not translate aliases. All four repositories publish and consume the canonical names above. The scalar `ARES/EstimatedPose/*` and drive pose topics must carry the same frame and heading sign.
+`TelemetryTopicNormalizer` removes transport-only leading slashes; it does not translate aliases. Every publishing and consuming product uses the canonical names above. The scalar `ARES/EstimatedPose/*` and drive pose topics must carry the same frame and heading sign.
 
 The simulator consumes the atomic leased `ARES/Input/driveFrame` v2 `double[8]` for drive,
 mode, alliance, and button state. Alliance is flag bit 5; each new session must begin with a
@@ -144,4 +144,4 @@ Check the process working directory, file permissions, and whether the file move
 
 ### CSV has data only in `_ExtraFieldsJson`
 
-The first frame defines stable columns. Emit expected keys in the first frame if they need first-class columns; late keys remain recoverable from `_ExtraFieldsJson` and are expanded by ARES Analytics import.
+The first frame defines stable columns. Emit expected keys in the first frame if they need first-class columns; late keys remain recoverable from `_ExtraFieldsJson` and are expanded by ARES Robotics Studio import.
