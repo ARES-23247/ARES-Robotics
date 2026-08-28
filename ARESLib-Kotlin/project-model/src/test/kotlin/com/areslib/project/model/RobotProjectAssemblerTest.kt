@@ -35,8 +35,13 @@ class RobotProjectAssemblerTest {
     fun `feature query API reads the validated effective catalog`() {
         val queries = RobotProjectAssembler.assemble(validSnapshot()).queries()
 
+        assertEquals("C:/robot/lightbot", queries.projectRoot)
+        assertTrue(queries.isValid, queries.issues.joinToString())
+        assertEquals("lightbot", queries.projectId?.value)
+        assertEquals(AresControllerTarget.FTC_CONTROL_HUB, queries.target?.controller)
         assertEquals("lightbot", queries.metadata?.projectId)
         assertEquals(listOf("lights.cycleForward"), queries.actions.map { it.key })
+        assertTrue(ProjectActionKey("lights.cycleForward") in queries.actionKeys)
         assertEquals("Cycle lights forward", queries.action("lights.cycleForward")?.displayName)
         assertEquals(SimulationProductId.FTC_DESKTOP_OPMODE, queries.simulationPlan?.product?.id)
         assertEquals(null, queries.action("invalid key with spaces"))

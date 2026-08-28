@@ -15,16 +15,16 @@ class PackagedProjectValidationTest {
         val fixture = checkNotNull(javaClass.classLoader.getResource("packaged-runtime-project"))
         val projectPath = File(fixture.toURI()).path
         val result = validatePackagedProject(projectPath)
-        val effectiveProject = AresProjectDocuments().load(projectPath).effectiveProject
+        val project = AresProjectDocuments().load(projectPath).query
 
         assertTrue(result.isValid, result.errors.joinToString())
         assertEquals(1, result.routineCount)
         assertEquals(1, result.subsystemCount)
-        assertTrue(effectiveProject.isValid, effectiveProject.issues.joinToString())
-        assertEquals("packaged-runtime-smoke", effectiveProject.projectId?.value)
-        assertEquals(AresControllerTarget.FTC_CONTROL_HUB, effectiveProject.target?.controller)
-        assertEquals(AresSimulatorTarget.FTC, effectiveProject.target?.simulator)
-        assertTrue(ProjectActionKey("smoke.run") in effectiveProject.actions)
+        assertTrue(project.isValid, project.issues.joinToString())
+        assertEquals("packaged-runtime-smoke", project.projectId?.value)
+        assertEquals(AresControllerTarget.FTC_CONTROL_HUB, project.target?.controller)
+        assertEquals(AresSimulatorTarget.FTC, project.target?.simulator)
+        assertTrue(ProjectActionKey("smoke.run") in project.actionKeys)
     }
 
     @Test

@@ -19,7 +19,6 @@ import com.areslib.controls.ControllerInputPlatform
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataDocument
-import com.areslib.project.model.EffectiveRobotProject
 import com.areslib.project.model.EffectiveRobotProjectQueries
 import com.areslib.project.model.ProjectModelIssue
 import com.areslib.project.model.ProjectModelSeverity
@@ -33,11 +32,10 @@ import java.io.File
 
 /** Studio read boundary backed by the shared effective project model. */
 data class AresProjectDocumentSnapshot(
-    val effectiveProject: EffectiveRobotProject,
+    val query: EffectiveRobotProjectQueries,
     val diagnostics: List<ProjectDocumentDiagnostic>,
 ) {
-    val projectRoot: String get() = effectiveProject.raw.projectRoot
-    val query: EffectiveRobotProjectQueries get() = effectiveProject.queries()
+    val projectRoot: String get() = query.projectRoot
 }
 
 /**
@@ -199,7 +197,7 @@ class AresProjectDocuments(
             }
 
         return AresProjectDocumentSnapshot(
-            effectiveProject = effective,
+            query = effective.queries(),
             diagnostics = diagnostics
                 .distinctBy { Triple(it.kind, it.file.canonicalPath, it.message) }
                 .sortedWith(compareBy<ProjectDocumentDiagnostic> { it.kind.ordinal }.thenBy { it.file.name.lowercase() }),

@@ -195,7 +195,7 @@ class ProjectSessionTest {
         )
 
         val applied = assertIs<ProjectSessionMutationResult.Applied<*>>(result)
-        assertEquals(1, applied.snapshot.documents.effectiveProject.raw.drivetrains.size)
+        assertEquals(1, applied.snapshot.documents.query.drivetrains.size)
         assertTrue(File(root, ".ares/drivetrains").listFiles().orEmpty().single().isFile)
         assertTrue(File(root, ".ares/tuning").listFiles().orEmpty().isNotEmpty())
     }

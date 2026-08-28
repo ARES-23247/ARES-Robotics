@@ -98,13 +98,13 @@ class RobotProjectReadinessService(
         val snapshotFailure = projectSnapshot.exceptionOrNull()?.message
         val diagnostics = snapshot?.diagnostics.orEmpty()
 
-        val rawProject = snapshot?.effectiveProject?.raw
+        val project = snapshot?.query
         val drivebaseDiagnostics = diagnostics.filter { it.kind == ProjectDocumentKind.DRIVETRAIN }
         val drivebaseResult = runCatching {
             require(drivebaseDiagnostics.isEmpty()) {
                 drivebaseDiagnostics.joinToString("; ") { "${it.file.name}: ${it.message}" }
             }
-            val drivetrains = requireNotNull(rawProject) { snapshotFailure ?: "The canonical project did not load." }.drivetrains
+            val drivetrains = requireNotNull(project) { snapshotFailure ?: "The canonical project did not load." }.drivetrains
             require(drivetrains.size <= 1) { "This project has multiple drivetrain documents." }
             drivetrains.singleOrNull()?.toUiDrivebase()
         }
@@ -123,12 +123,10 @@ class RobotProjectReadinessService(
             require(tuningDiagnostics.isEmpty()) {
                 tuningDiagnostics.joinToString("; ") { "${it.file.name}: ${it.message}" }
             }
-            val raw = requireNotNull(rawProject) { snapshotFailure ?: "The canonical project did not load." }
+            val effective = requireNotNull(project) { snapshotFailure ?: "The canonical project did not load." }
             TuningWorkspaceDocuments(
-                catalog = raw.drivetrains.flatMap { it.parameters } +
-                    raw.subsystems.flatMap { it.tuningParameters } +
-                    raw.tuningComponents.flatMap { it.parameters },
-                profiles = raw.tuningProfiles,
+                catalog = effective.tuningParameters,
+                profiles = effective.tuningProfiles,
             )
         }
         val tuning = tuningResult.getOrNull()
@@ -163,7 +161,6 @@ class RobotProjectReadinessService(
         val autonomousErrors = diagnostics.filter {
             it.kind == ProjectDocumentKind.ROUTINE || it.kind == ProjectDocumentKind.AUTONOMOUS_CATALOG
         }.map { "${it.file.name}: ${it.message}" }
-        val project = snapshot?.query
         val catalogActions = project?.actions.orEmpty()
         val controlCoverages = project?.controlSchemes.orEmpty().map { scheme ->
             controlsCoverage(catalogActions, scheme)
