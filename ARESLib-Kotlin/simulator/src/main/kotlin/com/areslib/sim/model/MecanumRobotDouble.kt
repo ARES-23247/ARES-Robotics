@@ -43,7 +43,7 @@ class SimDcMotorEx(
             check(!writeUnavailable()) { "Simulated FTC motor write rejected for '$faultTargetId'" }
             val safeValue = value.takeIf(Double::isFinite)?.coerceIn(-1.0, 1.0) ?: 0.0
             val availableValue = if (isActive(powerTargetId, SimulationFaultKind.BROWNOUT)) {
-                safeValue * BROWNOUT_OUTPUT_SCALE
+                safeValue * 0.35
             } else {
                 safeValue
             }
@@ -108,9 +108,6 @@ class SimDcMotorEx(
     private fun isActive(targetId: String, kind: SimulationFaultKind): Boolean =
         faultTimeline?.isActive(targetId, kind) == true
 
-    private companion object {
-        const val BROWNOUT_OUTPUT_SCALE = 0.35
-    }
 }
 
 /**
