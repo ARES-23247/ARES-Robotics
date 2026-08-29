@@ -38,8 +38,10 @@ published library have different toolchains and release boundaries.
 Central and the monorepo's GitHub-hosted Maven branch at
 `https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven`. Existing releases in the former
 ARESLib repository remain immutable legacy artifacts. `release/ares-versions.properties` is the
-single final-version manifest. After changing the library, publish a unique isolated candidate
-before testing any consumer:
+single final-version manifest; `release/ares-source-tree.txt` binds its ARES version to the exact
+library source tree. A packaging retry reuses any existing Maven publication byte-for-byte. After
+changing the library, bump the ARES version and source-tree identity, then publish a unique isolated
+candidate before testing any consumer:
 
 ```powershell
 # 1. Always do this FIRST after changing ARESLib-Kotlin.

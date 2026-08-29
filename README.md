@@ -60,7 +60,10 @@ points are explicit and are never silently overwritten.
 
 ## Dependency and release policy
 
-`release/ares-versions.properties` is the canonical dependency and product-version identity.
+`release/ares-versions.properties` is the canonical dependency and product-version identity, while
+`release/ares-source-tree.txt` binds that ARES version to the exact `ARESLib-Kotlin` Git tree. A
+packaging retry reuses an already-published version byte-for-byte; changing that tree requires a new
+ARES version instead of rebuilding different artifacts under an existing coordinate.
 `release/starter-artifacts.properties` records the integrity hashes of Studio's immutable starter
 archives without copying a self-referential archive hash into standalone projects. Ordinary
 consumers use immutable `org.aresfirst.ares` artifacts. Cross-project changes use one explicit
