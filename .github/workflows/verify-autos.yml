@@ -3,24 +3,8 @@ name: Verify autonomous contracts
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "ARESLib-Kotlin/**"
-      - "ARES-Analytics/**"
-      - "ARES-FTC/**"
-      - "ARES-FRC/**"
-      - "verify-autos.ps1"
-      - "verify-autos.sh"
-      - ".github/workflows/verify-autos.yml"
   push:
     branches: [main]
-    paths:
-      - "ARESLib-Kotlin/**"
-      - "ARES-Analytics/**"
-      - "ARES-FTC/**"
-      - "ARES-FRC/**"
-      - "verify-autos.ps1"
-      - "verify-autos.sh"
-      - ".github/workflows/verify-autos.yml"
   workflow_dispatch:
 
 permissions:
