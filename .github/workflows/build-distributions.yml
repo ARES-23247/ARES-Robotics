@@ -49,6 +49,12 @@ jobs:
       studio-version: ${{ steps.identity.outputs.studio-version }}
     steps:
       - uses: actions/checkout@v7
+      - name: Check out published Maven branch
+        uses: actions/checkout@v7
+        with:
+          ref: maven
+          path: .published-maven
+          fetch-depth: 1
       - uses: actions/setup-java@v6
         with:
           distribution: zulu
@@ -116,12 +122,10 @@ jobs:
         working-directory: ARESLib-Kotlin
         shell: bash
         run: |
+          set -euo pipefail
           rm -rf build/github-repository
           mkdir -p build/github-repository
-          if git ls-remote --exit-code origin refs/heads/maven >/dev/null 2>&1; then
-            git fetch --quiet origin +refs/heads/maven:refs/remotes/origin/maven
-            git archive origin/maven | tar -x -C build/github-repository
-          fi
+          git -C ../.published-maven archive HEAD | tar -x -C build/github-repository
           version="${{ steps.identity.outputs.ares-version }}"
           modules=(
             ares-bom codegen core frc-hardware frc-runtime ftc-hardware ftc-mocks
