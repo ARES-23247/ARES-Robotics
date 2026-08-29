@@ -183,6 +183,22 @@ class ProjectSessionTest {
     }
 
     @Test
+    fun `present retired metadata reports its decode error without claiming the file is missing`() = withProject { root ->
+        ProjectMetadataRepository().file(root.path).apply {
+            parentFile.mkdirs()
+            writeText(
+                """{"schemaVersion":3,"projectId":"retired","identity":{"teamId":"23247","seasonId":"2026","robotId":"Lightbot","displayName":"Lightbot"},"league":"FTC","coordinateConvention":"CENTER_ORIGIN_CCW","robotLengthMeters":0.46,"robotWidthMeters":0.46,"fieldLengthMeters":3.6576,"fieldWidthMeters":3.6576}""",
+            )
+        }
+
+        val snapshot = AresProjectDocuments().load(root.path, ControllerInputPlatform.FTC)
+        val messages = snapshot.diagnostics.map { it.message }
+
+        assertTrue(messages.any { it.contains("authoringModel") })
+        assertFalse(messages.any { it.contains("Canonical .ares/project.json is required") })
+    }
+
+    @Test
     fun `drivebase save is revision bound and refreshes tuning plus drivetrain as one project view`() = withProject { root ->
         seedProject(root, "drive-project")
         val session = ProjectSession()

@@ -9,14 +9,99 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 
 class LayoutPreferenceServiceTest {
+
+    @Test
+    fun `registered widget configuration resize and properties survive a service restart`() = runTest {
+        val root = Files.createTempDirectory("ares-widget-extension-contract").toFile()
+        val definition = requireNotNull(DashboardWidgetRegistry.find("single_signal"))
+        val configured = WidgetConfig(
+            id = "single_signal_loop_time",
+            type = definition.type.serializedName,
+            row = 1,
+            col = 2,
+            rowSpan = definition.defaultRowSpan + 1,
+            colSpan = definition.defaultColSpan + 2,
+            properties = definition.properties.associate { property ->
+                property.key to when (property.key) {
+                    "topic" -> "Robot/LoopTimeMs"
+                    "label" -> "Control loop"
+                    "unit" -> "ms"
+                    "displayMode" -> "bar"
+                    "minimum" -> "0"
+                    "maximum" -> "50"
+                    "warningLow" -> ""
+                    "warningHigh" -> "25"
+                    else -> property.defaultValue.orEmpty()
+                }
+            },
+        )
+        try {
+            LayoutPreferenceService(
+                baseDir = root.absolutePath,
+                widgetCatalog = DashboardWidgetRegistry,
+            ).saveLayout("Extension Contract", DashboardLayoutConfig(listOf(configured)))
+
+            val restartedService = LayoutPreferenceService(
+                baseDir = root.absolutePath,
+                widgetCatalog = DashboardWidgetRegistry,
+            )
+            val restored = restartedService.loadLayout("Extension Contract").widgets.single()
+
+            assertEquals(configured, restored)
+            assertEquals("Robot/LoopTimeMs", restored.properties["topic"])
+            assertEquals("bar", restored.properties["displayMode"])
+            assertEquals(definition.defaultRowSpan + 1, restored.rowSpan)
+            assertEquals(definition.defaultColSpan + 2, restored.colSpan)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `production catalog rejects unknown overlapping and undersized widgets before persistence`() = runTest {
+        val root = Files.createTempDirectory("ares-layout-validation").toFile()
+        val service = LayoutPreferenceService(
+            baseDir = root.absolutePath,
+            widgetCatalog = DashboardWidgetRegistry,
+        )
+        try {
+            assertFailsWith<IllegalArgumentException> {
+                service.saveLayout(
+                    "Unknown Widget",
+                    DashboardLayoutConfig(listOf(WidgetConfig("unknown", "not_registered", 0, 0, 2, 2))),
+                )
+            }
+            assertFailsWith<IllegalArgumentException> {
+                service.saveLayout(
+                    "Overlap",
+                    DashboardLayoutConfig(
+                        listOf(
+                            WidgetConfig("first", "field_viewer", 0, 0, 3, 3),
+                            WidgetConfig("second", "alerts", 1, 1, 3, 3),
+                        ),
+                    ),
+                )
+            }
+            assertFailsWith<IllegalArgumentException> {
+                service.saveLayout(
+                    "Outside Grid",
+                    DashboardLayoutConfig(listOf(WidgetConfig("chart", "telemetry_chart", 0, 11, 2, 2))),
+                )
+            }
+            assertTrue(root.listFiles().orEmpty().isEmpty())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
 
     @Test
     fun `unsafe blank and reserved profile names are rejected inside the service boundary`() = runTest {
         val container = Files.createTempDirectory("ares-layout-name-safety").toFile()
         val root = container.resolve("layouts").apply { mkdirs() }
-        val service = LayoutPreferenceService(root.absolutePath)
+        val service = LayoutPreferenceService(root.absolutePath, DashboardWidgetRegistry)
         val layout = DashboardLayoutConfig(emptyList())
         try {
             listOf(
@@ -55,13 +140,17 @@ class LayoutPreferenceServiceTest {
         val replacement = DashboardLayoutConfig(
             listOf(WidgetConfig("replacement", "field_viewer", 1, 1, 3, 3))
         )
-        val service = LayoutPreferenceService(root.absolutePath)
+        val service = LayoutPreferenceService(root.absolutePath, DashboardWidgetRegistry)
         try {
             service.saveLayout("Match Review Copy", original)
-            val failingService = LayoutPreferenceService(root.absolutePath) { temporary, destination ->
-                assertEquals(destination.parent, temporary.parent)
-                throw IOException("injected atomic replace failure")
-            }
+            val failingService = LayoutPreferenceService(
+                baseDir = root.absolutePath,
+                widgetCatalog = DashboardWidgetRegistry,
+                beforeAtomicReplace = { temporary, destination ->
+                    assertEquals(destination.parent, temporary.parent)
+                    throw IOException("injected atomic replace failure")
+                },
+            )
 
             assertFailsWith<IOException> {
                 failingService.saveLayout("Match Review Copy", replacement)
@@ -77,7 +166,7 @@ class LayoutPreferenceServiceTest {
     @Test
     fun testDefaultLayouts() {
         val tempDir = File(System.getProperty("java.io.tmpdir"), "ares_layout_test_default")
-        val service = LayoutPreferenceService(tempDir.absolutePath)
+        val service = LayoutPreferenceService(tempDir.absolutePath, DashboardWidgetRegistry)
         val studentLayout = service.getDefaultLayout("student")
         assertTrue(studentLayout.widgets.any { it.type == "field_viewer" })
         assertTrue(studentLayout.widgets.any { it.type == "system_health" })
@@ -141,7 +230,7 @@ class LayoutPreferenceServiceTest {
     fun testSaveAndLoadLayout() = runTest {
         val tempDir = File(System.getProperty("java.io.tmpdir"), "ares_layout_test_save")
         tempDir.mkdirs()
-        val service = LayoutPreferenceService(tempDir.absolutePath)
+        val service = LayoutPreferenceService(tempDir.absolutePath, DashboardWidgetRegistry)
         val customWidgets = listOf(
             WidgetConfig("chart_1", "telemetry_chart", 0, 0, 2, 2)
         )
@@ -165,7 +254,7 @@ class LayoutPreferenceServiceTest {
     fun testGetAvailableLayouts() = runTest {
         val tempDir = File(System.getProperty("java.io.tmpdir"), "ares_layout_test_list")
         tempDir.mkdirs()
-        val service = LayoutPreferenceService(tempDir.absolutePath)
+        val service = LayoutPreferenceService(tempDir.absolutePath, DashboardWidgetRegistry)
         val config = DashboardLayoutConfig(emptyList())
         service.saveLayout("Custom Team Layout", config)
         val available = service.getAvailableLayouts()
@@ -184,7 +273,7 @@ class LayoutPreferenceServiceTest {
     fun testDeleteLayout() = runTest {
         val tempDir = File(System.getProperty("java.io.tmpdir"), "ares_layout_test_delete")
         tempDir.mkdirs()
-        val service = LayoutPreferenceService(tempDir.absolutePath)
+        val service = LayoutPreferenceService(tempDir.absolutePath, DashboardWidgetRegistry)
         val config = DashboardLayoutConfig(emptyList())
         service.saveLayout("Temp Delete Profile", config)
         assertTrue(service.getSavedLayouts().contains("Temp Delete Profile"))

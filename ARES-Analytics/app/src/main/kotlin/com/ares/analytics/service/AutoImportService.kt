@@ -72,6 +72,8 @@ class AutoImportService(
     }
     private val sourceObservations = java.util.concurrent.ConcurrentHashMap<String, SourceSnapshot>()
     private val importedFingerprintCaches = java.util.concurrent.ConcurrentHashMap<String, MutableSet<String>>()
+    @Volatile private var discoveredAdbPath: String? = null
+    private var importSucceededThisCycle = false
 
     /** Starts (or replaces) the scanner only after the prior generation has fully stopped. */
     suspend fun start(onImportSuccess: () -> Unit) = withContext(NonCancellable) {
@@ -111,14 +113,13 @@ class AutoImportService(
         get() = job?.isActive == true
 
     private suspend fun runScannerLoop() {
-        val adbPath = if (scanCycleOverride == null) findAdbPath() else "adb"
         while (currentCoroutineContext().isActive) {
             try {
                 val override = scanCycleOverride
                 if (override != null) {
                     override()
                 } else {
-                    scanConfiguredSources(adbPath)
+                    scanConfiguredSources()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -130,23 +131,35 @@ class AutoImportService(
         }
     }
 
-    private suspend fun scanConfiguredSources(adbPath: String) {
+    private suspend fun scanConfiguredSources() {
         val config = configProvider()
         if (config == null || config.projectPath.isNullOrEmpty()) return
 
-        importLocalLogs(config)
-        when (config.league) {
-            League.FTC -> {
-                if (processManagerService.adbConnected.value) {
-                    importFtcRobotLogs(config, adbPath)
+        importSucceededThisCycle = false
+        try {
+            importLocalLogs(config)
+            when (config.league) {
+                League.FTC -> {
+                    if (processManagerService.adbConnected.value) {
+                        // Local logs must not wait for Android tooling discovery. Resolve ADB only
+                        // when a robot connection actually requires it, then retain that result for
+                        // later scan cycles.
+                        val adbPath = discoveredAdbPath ?: findAdbPath().also { discoveredAdbPath = it }
+                        importFtcRobotLogs(config, adbPath)
+                    }
+                }
+                League.FRC -> {
+                    val host = config.nt4Host ?: getDefaultFrcHost(config.teamId)
+                    if (isHostReachable(host)) {
+                        importFrcRobotLogs(config, host)
+                    }
                 }
             }
-            League.FRC -> {
-                val host = config.nt4Host ?: getDefaultFrcHost(config.teamId)
-                if (isHostReachable(host)) {
-                    importFrcRobotLogs(config, host)
-                }
-            }
+        } finally {
+            // One scan may discover hundreds of archived robot logs. Refreshing Compose after
+            // every file continuously reorders Run History and can make its controls impossible
+            // to select. Publish one invalidation after the complete, deterministic batch.
+            if (importSucceededThisCycle) onImportSuccessCallback?.invoke()
         }
     }
 
@@ -245,8 +258,7 @@ class AutoImportService(
                     dsEventsSource?.delete()
                     _importNotifications.emit("[AUTO-IMPORT] Successfully imported ${file.name} (Session ID: ${sessionId.take(8)}...)")
 
-                    // Trigger UI reload
-                    onImportSuccessCallback?.invoke()
+                    importSucceededThisCycle = true
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -344,20 +356,21 @@ class AutoImportService(
                             // Keep imported file safely in logs/imported archive folder
                             _importNotifications.emit("[AUTO-IMPORT] Successfully imported robot log $filename (Session ID: ${sessionId.take(8)}...)")
 
-                            // Trigger UI reload
-                            onImportSuccessCallback?.invoke()
+                            importSucceededThisCycle = true
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         val failedFile = archivedFile
                         val failedFingerprint = fingerprint
+                        var quarantineRecorded = false
                         if (failedFile != null && failedFingerprint != null && failedFile.exists()) {
                             runCatching { quarantineFailedImport(config, failedFile, failedFingerprint, e, filename) }
+                                .onSuccess { quarantineRecorded = true }
                                 .onFailure { e.addSuppressed(it) }
                         }
                         _importNotifications.emit("[AUTO-IMPORT] Failed to import robot log $filename: ${e.message}")
-                        e.printStackTrace()
+                        if (!quarantineRecorded) e.printStackTrace()
                     } finally {
                         tempLocalFile.delete()
                     }
@@ -470,20 +483,21 @@ class AutoImportService(
                             // Keep imported file safely in logs/imported archive folder
                             _importNotifications.emit("[AUTO-IMPORT] Successfully imported RoboRIO log $filename (Session ID: ${sessionId.take(8)}...)")
 
-                            // Trigger UI reload
-                            onImportSuccessCallback?.invoke()
+                            importSucceededThisCycle = true
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         val failedFile = archivedFile
                         val failedFingerprint = fingerprint
+                        var quarantineRecorded = false
                         if (failedFile != null && failedFingerprint != null && failedFile.exists()) {
                             runCatching { quarantineFailedImport(config, failedFile, failedFingerprint, e, filename) }
+                                .onSuccess { quarantineRecorded = true }
                                 .onFailure { e.addSuppressed(it) }
                         }
                         _importNotifications.emit("[AUTO-IMPORT] Failed to import RoboRIO log $filename: ${e.message}")
-                        e.printStackTrace()
+                        if (!quarantineRecorded) e.printStackTrace()
                     } finally {
                         tempLocalFile.delete()
                         tempEventsFile?.delete()

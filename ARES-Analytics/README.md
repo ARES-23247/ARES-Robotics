@@ -97,6 +97,10 @@ Run the automated dashboard smoke or 30-minute-equivalent soak profile:
 
 Both tasks enforce performance budgets and write JSON plus Markdown reports under `app/build/reports/dashboard-validation/`. See [Automated dashboard validation](docs/VALIDATION.md) for workload settings, budget overrides, CI behavior, and hardware-test boundaries.
 
+Dashboard extensions are registered through a single typed definition that declares their picker
+metadata, profile defaults, configuration, service needs, and renderer. See
+[Adding a dashboard widget](docs/DASHBOARD_WIDGET_EXTENSIONS.md) before changing dashboard composition.
+
 ## Runtime data flow
 
 ```text

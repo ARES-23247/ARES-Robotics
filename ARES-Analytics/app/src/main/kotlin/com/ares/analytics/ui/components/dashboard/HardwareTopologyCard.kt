@@ -24,7 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.di.ServiceRegistry
+import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.shared.models.HardwareTopology
 import com.ares.analytics.shared.models.TopologyNode
 import com.ares.analytics.shared.models.TopologyNodeType
@@ -42,20 +43,20 @@ enum class TopologyCategoryFilter(val displayName: String) {
     SENSORS("Sensors"),
     VISION("Vision & IMU")
 }
-
 private val prettyJson = Json { prettyPrint = true }
 
 @Composable
 fun HardwareTopologyCard(
-    services: ServiceRegistry,
+    nt4ClientService: Nt4ClientService,
+    databaseService: DatabaseService,
     sessionId: String?,
     modifier: Modifier = Modifier
 ) {
     // LocalClipboardManager: the non-deprecated LocalClipboard needs ClipEntry.ofPlainText,
     // which this Compose version does not ship. Revisit at the next Compose bump.
     @Suppress("DEPRECATION") val clipboardManager = LocalClipboardManager.current
-    val liveTopology by services.nt4ClientService.latestTopology.collectAsState()
-    val isConnected by services.nt4ClientService.isConnected.collectAsState()
+    val liveTopology by nt4ClientService.latestTopology.collectAsState()
+    val isConnected by nt4ClientService.isConnected.collectAsState()
 
     var historicalTopology by remember { mutableStateOf<HardwareTopology?>(null) }
     var searchQuery by remember { mutableStateOf("") }
@@ -65,8 +66,8 @@ fun HardwareTopologyCard(
     // Load from DB if historical session is chosen
     LaunchedEffect(sessionId) {
         if (sessionId != null && sessionId != "live-telemetry") {
-            val summary = services.databaseService.getSessionSummary(sessionId)
-            historicalTopology = services.databaseService.getTopology(summary?.robotId ?: "")
+            val summary = databaseService.getSessionSummary(sessionId)
+            historicalTopology = databaseService.getTopology(summary?.robotId ?: "")
         } else {
             historicalTopology = null
         }
@@ -295,7 +296,7 @@ fun HardwareTopologyCard(
                     items(filteredNodes) { node ->
                         TopologyNodeRow(
                             node = node,
-                            services = services,
+                            nt4ClientService = nt4ClientService,
                             isChild = false
                         )
                     }
@@ -305,7 +306,7 @@ fun HardwareTopologyCard(
                         item(key = root.id) {
                             TopologyNodeRow(
                                 node = root,
-                                services = services,
+                                nt4ClientService = nt4ClientService,
                                 isChild = false
                             )
                         }
@@ -314,7 +315,7 @@ fun HardwareTopologyCard(
                         items(children, key = { it.id }) { child ->
                             TopologyNodeRow(
                                 node = child,
-                                services = services,
+                                nt4ClientService = nt4ClientService,
                                 isChild = true
                             )
                         }
@@ -327,7 +328,7 @@ fun HardwareTopologyCard(
                     items(orphans, key = { it.id }) { orphan ->
                         TopologyNodeRow(
                             node = orphan,
-                            services = services,
+                            nt4ClientService = nt4ClientService,
                             isChild = false
                         )
                     }
@@ -340,11 +341,11 @@ fun HardwareTopologyCard(
 @Composable
 private fun TopologyNodeRow(
     node: TopologyNode,
-    services: ServiceRegistry,
+    nt4ClientService: Nt4ClientService,
     isChild: Boolean
 ) {
     // Check if live telemetry matches this node
-    val latestValues = services.nt4ClientService.latestValues
+    val latestValues = nt4ClientService.latestValues
     val currentAmps = latestValues["Hardware/Motors/${node.displayName}/CurrentAmps"]?.value
         ?: latestValues["Hardware/Motors/${node.id}/CurrentAmps"]?.value
     val velocity = latestValues["Hardware/Motors/${node.displayName}/Velocity"]?.value

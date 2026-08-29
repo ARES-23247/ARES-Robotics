@@ -3,6 +3,7 @@ package com.ares.analytics.di
 import com.ares.analytics.service.*
 import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,7 @@ class ServiceRegistry {
     val targetScannerService by lazy { TargetScannerService() }
     val keybindingParserService by lazy { KeybindingParserService() }
     val eventApiService by lazy { EventApiService() }
-    val layoutPreferenceService by lazy { LayoutPreferenceService() }
+    val layoutPreferenceService by lazy { LayoutPreferenceService(widgetCatalog = DashboardWidgetRegistry) }
     val updateCheckerService by lazy { UpdateCheckerService() }
     val windowsUpdateService by lazy {
         val client = io.ktor.client.HttpClient(io.ktor.client.engine.cio.CIO) {

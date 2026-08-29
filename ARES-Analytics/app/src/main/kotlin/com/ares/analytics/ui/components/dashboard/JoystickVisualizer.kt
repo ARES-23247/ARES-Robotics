@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.di.KeyboardDriveState
+import com.ares.analytics.service.GamepadService
 import com.ares.analytics.ui.theme.*
 
 @Composable
@@ -27,19 +29,19 @@ fun JoystickVisualizer(
 ) {
     // ...
 }
-
 @Composable
 fun JoystickVisualizer(
     currentFrame: ReplayFrame?,
     nt4ClientService: Nt4ClientService? = null,
-    services: com.ares.analytics.di.ServiceRegistry? = null,
+    keyboardDriveState: KeyboardDriveState? = null,
+    gamepadService: GamepadService? = null,
     onOpenKeybindings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val keyboardState = services?.keyboardDriveState ?: remember { com.ares.analytics.di.KeyboardDriveState() }
+    val keyboardState = keyboardDriveState ?: remember { KeyboardDriveState() }
     val keyboardControlEnabled = keyboardState.enabled
-    val gamepad1StateFlow = services?.gamepadService?.gamepad1State
-    val gamepad2StateFlow = services?.gamepadService?.gamepad2State
+    val gamepad1StateFlow = gamepadService?.gamepad1State
+    val gamepad2StateFlow = gamepadService?.gamepad2State
 
     Column(
         modifier = modifier

@@ -187,6 +187,33 @@ class ProjectIdentityViewModelTest {
     }
 
     @Test
+    fun `retired schema three project is blocked without offering automatic repair`() = runTest {
+        withProject { project ->
+            val file = File(project, ".ares/project.json").apply {
+                parentFile.mkdirs()
+                writeText(
+                    """{"schemaVersion":3,"projectId":"retired","identity":{"teamId":"23247","seasonId":"2026","robotId":"Lightbot","displayName":"Lightbot"},"league":"FTC","coordinateConvention":"CENTER_ORIGIN_CCW","robotLengthMeters":0.46,"robotWidthMeters":0.46,"fieldLengthMeters":3.6576,"fieldWidthMeters":3.6576}""",
+                )
+            }
+            val original = file.readBytes()
+            val viewModel = ProjectIdentityViewModel(
+                scope = this,
+                ioDispatcher = StandardTestDispatcher(testScheduler),
+            )
+
+            viewModel.load(workspace(project))
+            advanceUntilIdle()
+
+            val loaded = viewModel.state.value
+            assertTrue(loaded.protectedError.orEmpty().contains("retired schema-3 format"))
+            assertTrue(loaded.protectedError.orEmpty().contains("will not rewrite this project"))
+            assertNull(loaded.protectedContentHash)
+            assertFalse(loaded.canReview)
+            assertTrue(file.readBytes().contentEquals(original))
+        }
+    }
+
+    @Test
     fun `empty object reports missing fields without leaking a Kotlin null error`() {
         val error = runCatching { decodeProjectMetadata("{}") }.exceptionOrNull()
 
@@ -200,7 +227,9 @@ class ProjectIdentityViewModelTest {
     @Test
     fun `reviewed repair preserves invalid bytes before replacing canonical identity`() = runTest {
         withProject { project ->
-            val invalidBytes = byteArrayOf(0x7b, 0x7d) // Exact "{}" recovery evidence.
+            // Current-format corruption remains repairable. Retired schema-3 files that omit
+            // authoringModel are intentionally not migrated by Studio.
+            val invalidBytes = """{"schemaVersion":4,"authoringModel":"GUI_OWNED"}""".toByteArray()
             val file = File(project, ".ares/project.json").apply {
                 parentFile.mkdirs()
                 writeBytes(invalidBytes)
@@ -246,7 +275,7 @@ class ProjectIdentityViewModelTest {
         withProject { project ->
             val file = File(project, ".ares/project.json").apply {
                 parentFile.mkdirs()
-                writeText("{}")
+                writeText("""{"schemaVersion":4,"authoringModel":"GUI_OWNED"}""")
             }
             val viewModel = ProjectIdentityViewModel(
                 scope = this,

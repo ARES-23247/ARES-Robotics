@@ -185,9 +185,16 @@ class AresProjectDocuments(
             },
         )
         val effective = RobotProjectAssembler.assemble(raw, targetPlatform)
+        val metadataDecodeFailed = raw.loadIssues.any { issue ->
+            issue.kind == ProjectDocumentKind.PROJECT_METADATA
+        }
         effective.issues
             .asSequence()
             .filter { issue -> issue.severity == ProjectModelSeverity.ERROR && issue.code != "decode_error" }
+            // A present-but-unreadable project file already has an exact decode diagnostic.
+            // Do not also claim that the canonical file is missing; that cascade obscures the
+            // real schema/field error and sends students toward the wrong repair.
+            .filterNot { issue -> metadataDecodeFailed && issue.kind == ProjectDocumentKind.PROJECT_METADATA }
             .forEach { issue ->
                 diagnostics += ProjectDocumentDiagnostic(
                     issue.kind,

@@ -101,6 +101,11 @@ Compose event -> ViewModel intent -> service call -> immutable/state-flow update
 
 The main window owns keyboard state and passes it to the dashboard drive loop. Q/E are reserved for intake/flywheel actions; directional keys must not consume them first.
 
+Dashboard widgets use one typed registry for identity, picker metadata, default layout placement,
+configuration, service capabilities, and rendering. New widgets must follow the declarative
+[dashboard widget extension contract](docs/DASHBOARD_WIDGET_EXTENSIONS.md) rather than adding
+parallel conditionals to the picker, layout service, and dashboard screen.
+
 ## 5. Live NT4 pipeline
 
 `Nt4ClientService` is both an NT4 subscriber and a publisher of dashboard inputs.
