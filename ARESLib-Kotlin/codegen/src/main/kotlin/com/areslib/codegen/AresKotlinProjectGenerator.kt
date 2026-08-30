@@ -44,6 +44,7 @@ import com.areslib.routine.RoutineValidationSeverity
 import com.areslib.routine.validateRoutineSet
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresLeague
 import com.areslib.project.compiler.RobotProjectIr
 import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
@@ -206,12 +207,14 @@ object AresKotlinProjectGenerator {
                 append("    const val ROBOT_WIDTH_METERS: Double = ${doubleLiteral(metadata.robotWidthMeters)}\n")
                 append("    const val FIELD_LENGTH_METERS: Double = ${doubleLiteral(metadata.fieldLengthMeters)}\n")
                 append("    const val FIELD_WIDTH_METERS: Double = ${doubleLiteral(metadata.fieldWidthMeters)}\n\n")
-                val ftcRuntime = metadata.requireFtcRuntimeOptions()
-                append("    /** Canonical runtime choices reviewed in .ares/project.json. */\n")
-                append("    object RuntimeOptions {\n")
-                append("        const val FTC_HUB_COMMAND_TRANSPORT: String = ${stringLiteral(ftcRuntime.hubCommandTransport.name)}\n")
-                append("        const val FTC_LIMELIGHT_PROXY_ENABLED: Boolean = ${ftcRuntime.limelightProxyEnabled}\n")
-                append("    }\n\n")
+                if (metadata.league == AresLeague.FTC) {
+                    val ftcRuntime = metadata.requireFtcRuntimeOptions()
+                    append("    /** Canonical runtime choices reviewed in .ares/project.json. */\n")
+                    append("    object RuntimeOptions {\n")
+                    append("        const val FTC_HUB_COMMAND_TRANSPORT: String = ${stringLiteral(ftcRuntime.hubCommandTransport.name)}\n")
+                    append("        const val FTC_LIMELIGHT_PROXY_ENABLED: Boolean = ${ftcRuntime.limelightProxyEnabled}\n")
+                    append("    }\n\n")
+                }
             }
             append("    val knownActionKeys: Set<String> = ${renderStringSet(canonicalActions.map { it.key }, 1)}\n")
             append("    val knownConditionKeys: Set<String> = ${renderStringSet(canonicalConditions.map { it.key }, 1)}\n\n")
