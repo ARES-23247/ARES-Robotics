@@ -34,7 +34,6 @@ import java.awt.Desktop
 import java.io.File
 import java.net.URI
 import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import java.time.Instant
 import java.util.Locale
 
@@ -164,6 +163,7 @@ class ProjectVersionControlService internal constructor(
     private val githubMutex = Mutex()
     private val historyMutex = Mutex()
     private val destinationStore = ProjectGitHubDestinationStore()
+    private val reviewTokens = ProjectReviewTokenFactory()
     private val autoSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val autoSyncRequests = Channel<String>(Channel.CONFLATED)
     private val autoSyncJob: Job
@@ -862,7 +862,7 @@ class ProjectVersionControlService internal constructor(
                 lastCommit = lastCommit,
                 remoteUrl = destinationStore.originUrl(git),
                 destination = destinationStore.read(git),
-                confirmationToken = changes.takeIf { it.isNotEmpty() }?.let { contentBoundToken(root, it) },
+                confirmationToken = changes.takeIf { it.isNotEmpty() }?.let { reviewTokens.workingTreeToken(root, it) },
                 versions = versions,
                 recoveryPoints = recoveryPoints,
             )
@@ -925,7 +925,7 @@ class ProjectVersionControlService internal constructor(
             currentCommit = currentId.name,
             targetCommit = targetId.name,
             changes = changes,
-            confirmationToken = restoreConfirmationToken(currentId, targetId, changes),
+            confirmationToken = reviewTokens.restoreToken(currentId.name, targetId.name, changes),
         )
     }
 
@@ -974,7 +974,7 @@ class ProjectVersionControlService internal constructor(
             remoteCommit = remoteId.name,
             changes = changes,
             confirmationToken = changes.takeIf { it.isNotEmpty() }
-                ?.let { restoreConfirmationToken(localId, remoteId, it) },
+                ?.let { reviewTokens.restoreToken(localId.name, remoteId.name, it) },
         )
     }
 
@@ -996,11 +996,11 @@ class ProjectVersionControlService internal constructor(
                         "The GitHub version contains an unsupported link or special file ($path). ARES will not restore it."
                     }
                     val size = git.repository.open(tree.getObjectId(0)).size
-                    require(size <= MAX_REVIEWED_FILE_BYTES) {
+                    require(size <= ProjectVersionControlLimits.MAX_REVIEWED_FILE_BYTES) {
                         "$path is too large for a reviewed GitHub restore."
                     }
                     totalBytes = Math.addExact(totalBytes, size)
-                    require(totalBytes <= MAX_RESTORED_PROJECT_BYTES) {
+                    require(totalBytes <= ProjectVersionControlLimits.MAX_RESTORED_PROJECT_BYTES) {
                         "The GitHub project is too large for a reviewed restore."
                     }
                     if (path == ".ares/project.json") canonicalMarkerFound = true
@@ -1032,23 +1032,6 @@ class ProjectVersionControlService internal constructor(
             }
         }
 
-    private fun restoreConfirmationToken(
-        localId: ObjectId,
-        remoteId: ObjectId,
-        changes: List<ProjectChange>,
-    ): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        digest.update(localId.name.toByteArray(StandardCharsets.US_ASCII))
-        digest.update(remoteId.name.toByteArray(StandardCharsets.US_ASCII))
-        changes.forEach { change ->
-            digest.update(change.kind.name.toByteArray(StandardCharsets.US_ASCII))
-            digest.update(0)
-            digest.update(change.path.toByteArray(StandardCharsets.UTF_8))
-            digest.update(0)
-        }
-        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
-    }
-
     private fun createRestoreSafetyRef(git: Git, localId: ObjectId, remoteId: ObjectId) {
         val refName = "$RESTORE_BACKUP_REF_PREFIX${epochSeconds()}-${localId.name.take(12)}-${remoteId.name.take(12)}"
         val update = git.repository.updateRef(refName)
@@ -1065,37 +1048,6 @@ class ProjectVersionControlService internal constructor(
         val safeMessage = friendlyRemoteFailure(operation, failure)
         if (safeMessage == failure.message) throw failure
         throw IllegalStateException(safeMessage, failure)
-    }
-
-    private fun contentBoundToken(root: File, changes: List<ProjectChange>): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        var totalBytes = 0L
-        changes.forEach { change ->
-            digest.update(change.kind.name.toByteArray())
-            digest.update(0)
-            digest.update(change.path.toByteArray(StandardCharsets.UTF_8))
-            digest.update(0)
-            val file = File(root, change.path).canonicalFile
-            require(file.toPath().startsWith(root.canonicalFile.toPath())) { "A changed path escaped the project." }
-            if (file.isFile) {
-                require(file.length() <= MAX_REVIEWED_FILE_BYTES) {
-                    "${change.path} is too large for reviewed project backup."
-                }
-                totalBytes += file.length()
-                require(totalBytes <= MAX_REVIEWED_CHANGE_BYTES) {
-                    "The pending change set is too large for one reviewed backup."
-                }
-                file.inputStream().buffered().use { input ->
-                    val buffer = ByteArray(64 * 1024)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        digest.update(buffer, 0, read)
-                    }
-                }
-            }
-        }
-        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
 
     private fun requireProjectRoot(projectPath: String): File {
@@ -1126,9 +1078,6 @@ class ProjectVersionControlService internal constructor(
     }
 
     companion object {
-        const val MAX_REVIEWED_FILE_BYTES = 20L * 1024L * 1024L
-        const val MAX_REVIEWED_CHANGE_BYTES = 100L * 1024L * 1024L
-        const val MAX_RESTORED_PROJECT_BYTES = 500L * 1024L * 1024L
         private const val MAX_VISIBLE_VERSIONS = 20
         private const val MAX_VISIBLE_RECOVERY_POINTS = 10
         private const val MINIMUM_DEVICE_POLL_SECONDS = 5L
