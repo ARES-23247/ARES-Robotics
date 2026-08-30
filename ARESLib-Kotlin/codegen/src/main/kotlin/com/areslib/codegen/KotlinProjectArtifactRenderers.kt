@@ -107,7 +107,7 @@ object ProjectVerificationKotlinRenderer {
 object SubsystemKotlinArtifactRenderer {
     data class Result(
         val artifacts: List<RenderedKotlinArtifact>,
-        internal val legacyFiles: List<GeneratedSubsystemFile>,
+        internal val generatedFiles: List<GeneratedSubsystemFile>,
     )
 
     fun render(

@@ -167,7 +167,6 @@ object AresProjectCodegenCli {
             addAll(syncSuperstructureSources(projectRoot, compilerIr, options))
         }
         if (!options.subsystemsOnly) {
-            FtcStarterContractMigration.reconcile(projectRoot, options.platform, options.checkOnly)
             syncVerificationManifest(projectRoot, compilerIr, renderedArtifacts, options)
         }
         return generated
@@ -310,7 +309,7 @@ object AresProjectCodegenCli {
             projectRelativePath(projectRoot, generatedTestRoot),
         )
         val artifacts = rendered.artifacts
-        val files = rendered.legacyFiles
+        val files = rendered.generatedFiles
         val plan = SubsystemStarterReconciler.plan(starterRoot, files)
         if (options.previewSubsystemStarters) {
             println(plan.render())
