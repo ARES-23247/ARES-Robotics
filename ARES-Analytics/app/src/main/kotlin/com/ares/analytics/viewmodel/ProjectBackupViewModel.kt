@@ -6,6 +6,7 @@ import com.ares.analytics.service.versioncontrol.GitHubBackupCatalog
 import com.ares.analytics.service.versioncontrol.ProjectBackupPlan
 import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncState
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
+import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryPlan
 import com.ares.analytics.service.versioncontrol.ProjectRestorePlan
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
@@ -63,6 +64,7 @@ sealed class ProjectBackupIntent {
 class ProjectBackupViewModel(
     private val service: ProjectVersionControlService,
     private val githubAuthentication: GitHubAuthenticationService,
+    private val autoSync: ProjectBackupAutoSyncService,
     private val archiveExporter: ProjectArchiveExporter,
     private val scope: CoroutineScope,
 ) {
@@ -76,8 +78,8 @@ class ProjectBackupViewModel(
             }
         }
         scope.launch {
-            service.autoSyncState.collectLatest { autoSync ->
-                _state.update { it.copy(autoSync = autoSync) }
+            autoSync.state.collectLatest { state ->
+                _state.update { it.copy(autoSync = state) }
             }
         }
     }
@@ -92,7 +94,7 @@ class ProjectBackupViewModel(
                 clearCatalog = true,
             ) {
                 githubAuthentication.disconnect()
-                service.pauseAutoSyncForSignedOutAccount()
+                autoSync.pauseForSignedOutAccount()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.SignInToGitHub -> runAction(
@@ -165,7 +167,7 @@ class ProjectBackupViewModel(
             notice = null,
             refreshCatalog = _state.value.githubState is GitHubConnectionState.Connected,
         ) {
-            service.loadAutoSync(projectPath)
+            autoSync.load(projectPath)
             service.inspect(projectPath)
         }
     }
@@ -175,7 +177,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val autoSync = service.setAutoSyncEnabled(requireProjectPath(), enabled)
+                val autoSync = autoSync.setEnabled(requireProjectPath(), enabled)
                 _state.update {
                     it.copy(
                         isBusy = false,

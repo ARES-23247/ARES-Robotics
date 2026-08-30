@@ -6,6 +6,36 @@ import kotlin.test.assertTrue
 
 class ProjectModelArchitectureTest {
     @Test
+    fun `project history github authentication and automatic backup have distinct owners`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val boundary = File(sourceRoot, "service/versioncontrol")
+        val history = File(boundary, "ProjectVersionControlService.kt").readText()
+        val authentication = File(boundary, "GitHubAuthenticationService.kt").readText()
+        val autoSync = File(boundary, "ProjectBackupAutoSyncService.kt").readText()
+
+        listOf(
+            "beginDeviceAuthorization",
+            "ProjectGitHubCredentialRepository",
+            "ProjectBackupAutoSyncStatus",
+            "Channel<String>",
+            "AUTO_SYNC_RETRY",
+        ).forEach { forbidden ->
+            assertTrue(
+                forbidden !in history,
+                "ProjectVersionControlService must not reclaim authentication or automatic-backup ownership: $forbidden",
+            )
+        }
+        assertTrue("beginDeviceAuthorization" in authentication)
+        assertTrue("ProjectGitHubCredentialRepository" in authentication)
+        assertTrue("Channel<String>" in autoSync)
+        assertTrue("ProjectBackupAutoSyncStatus" in autoSync)
+    }
+
+    @Test
     fun `studio features consume the assembled project instead of decoding the action catalog`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),

@@ -58,6 +58,11 @@ two verified desktop launches and graceful shutdowns, and no regression in simul
 - Separate Google Drive synchronization from Gemini/forensics/chat/SQL assistance.
 - Split match-log persistence into domain repositories over one DuckDB transaction coordinator.
 
+**Completed boundaries:** project builds and robot deployment; GitHub App authentication; automatic
+GitHub backup preference, scheduling, retry state, and worker lifetime. `ProjectVersionControlService`
+now receives explicit save/synchronization events and contains neither authentication nor background
+automation APIs. Recovery and remote-backup orchestration remain the next version-control split.
+
 **Exit criteria:** current boundary contract tests, cancellation/shutdown tests, offline behavior, database
 transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures remain isolated.
 

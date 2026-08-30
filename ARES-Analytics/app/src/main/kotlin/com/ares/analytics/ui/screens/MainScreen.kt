@@ -344,6 +344,7 @@ fun MainScreen(services: ServiceRegistry) {
         ProjectBackupViewModel(
             service = services.projectVersionControlService,
             githubAuthentication = services.githubAuthenticationService,
+            autoSync = services.projectBackupAutoSyncService,
             archiveExporter = services.projectArchiveExporter,
             scope = scope,
         )

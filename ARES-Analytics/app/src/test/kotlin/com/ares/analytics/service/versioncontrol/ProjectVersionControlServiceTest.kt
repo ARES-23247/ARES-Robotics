@@ -43,7 +43,6 @@ class ProjectVersionControlServiceTest {
             assertEquals("local-history@aresfirst.org", commit.authorIdent.emailAddress)
             assertEquals("main", git.repository.branch)
         }
-        service.closeAndJoin()
     }
 
     @Test
@@ -55,7 +54,7 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         val pushes = AtomicInteger()
-        val (service, github) = githubServices(
+        val (service, github, autoSync) = githubServices(
             store = MemoryCredentialStore(),
             api = api,
             remotePusher = { _, _ -> pushes.incrementAndGet() },
@@ -65,9 +64,9 @@ class ProjectVersionControlServiceTest {
         github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         assertEquals(1, pushes.get())
-        assertFalse(service.loadAutoSync(root.path).enabled)
+        assertFalse(autoSync.load(root.path).enabled)
 
-        service.setAutoSyncEnabled(root.path, true)
+        autoSync.setEnabled(root.path, true)
         withTimeout(2_000) {
             while (pushes.get() < 2) delay(10)
         }
@@ -76,14 +75,14 @@ class ProjectVersionControlServiceTest {
         withTimeout(2_000) {
             while (
                 pushes.get() < 3 ||
-                service.autoSyncState.value.status != ProjectBackupAutoSyncStatus.UP_TO_DATE
+                autoSync.state.value.status != ProjectBackupAutoSyncStatus.UP_TO_DATE
             ) delay(10)
         }
 
-        assertEquals(ProjectBackupAutoSyncStatus.UP_TO_DATE, service.autoSyncState.value.status)
-        assertTrue(service.autoSyncState.value.enabled)
+        assertEquals(ProjectBackupAutoSyncStatus.UP_TO_DATE, autoSync.state.value.status)
+        assertTrue(autoSync.state.value.enabled)
         assertTrue(service.inspect(root.path).changes.isEmpty())
-        service.closeAndJoin()
+        autoSync.closeAndJoin()
     }
 
     @Test
@@ -96,7 +95,7 @@ class ProjectVersionControlServiceTest {
         }
         var offline = false
         val attempts = AtomicInteger()
-        val (service, github) = githubServices(
+        val (service, github, autoSync) = githubServices(
             store = MemoryCredentialStore(),
             api = api,
             remotePusher = { _, _ ->
@@ -110,15 +109,15 @@ class ProjectVersionControlServiceTest {
         service.connectApprovedRepository(root.path, 22, 202)
         offline = true
 
-        service.setAutoSyncEnabled(root.path, true)
+        autoSync.setEnabled(root.path, true)
         withTimeout(2_000) {
-            while (!service.autoSyncState.value.message.contains("local versions are safe")) delay(10)
+            while (!autoSync.state.value.message.contains("local versions are safe")) delay(10)
         }
 
-        assertEquals(ProjectBackupAutoSyncStatus.OFFLINE_RETRY, service.autoSyncState.value.status)
-        assertContains(service.autoSyncState.value.message, "local versions are safe")
+        assertEquals(ProjectBackupAutoSyncStatus.OFFLINE_RETRY, autoSync.state.value.status)
+        assertContains(autoSync.state.value.message, "local versions are safe")
         assertTrue(service.inspect(root.path).changes.isEmpty())
-        service.closeAndJoin()
+        autoSync.closeAndJoin()
     }
 
     @Test
@@ -606,11 +605,14 @@ class ProjectVersionControlServiceTest {
 
     private fun localOnlyService() = ProjectVersionControlService(
         githubAuthentication = testAuthentication(),
+        onBackupRelevantChange = {},
+        onBackupSynchronized = {},
     )
 
     private data class GitHubServices(
         val versionControl: ProjectVersionControlService,
         val authentication: GitHubAuthenticationService,
+        val autoSync: ProjectBackupAutoSyncService,
     )
 
     private fun githubServices(
@@ -633,14 +635,23 @@ class ProjectVersionControlServiceTest {
             pollDelay = {},
             epochSeconds = { if (api.nowForTokenExpiry) now + 3_570L else now },
         )
-        return GitHubServices(
-            versionControl = ProjectVersionControlService(
+        lateinit var versionControl: ProjectVersionControlService
+        val autoSync = ProjectBackupAutoSyncService(
+            inspectProject = { projectPath -> versionControl.inspect(projectPath) },
+            pushBackup = { projectPath -> versionControl.pushBackup(projectPath) },
+            workerDelay = autoSyncDelay,
+        )
+        versionControl = ProjectVersionControlService(
                 githubAuthentication = authentication,
+                onBackupRelevantChange = autoSync::schedule,
+                onBackupSynchronized = autoSync::markSynchronized,
                 remotePusher = remotePusher,
                 remoteMainFetcher = remoteMainFetcher,
-                autoSyncDelay = autoSyncDelay,
-            ),
+            )
+        return GitHubServices(
+            versionControl = versionControl,
             authentication = authentication,
+            autoSync = autoSync,
         )
     }
 

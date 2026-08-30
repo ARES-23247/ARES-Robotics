@@ -116,7 +116,6 @@ class OfficialProjectTemplateIntegrationTest {
                 assertTrue(names.none { it.startsWith(".git/") || it.startsWith("build/") || it.contains("/build/") })
             }
         }
-        history.closeAndJoin()
     }
 
     private fun validateGeneratedProject(
@@ -189,6 +188,8 @@ class OfficialProjectTemplateIntegrationTest {
                 browserLauncher = {},
                 pollDelay = {},
             ),
+            onBackupRelevantChange = {},
+            onBackupSynchronized = {},
         )
 
         fun validationRepositoryUri(value: String): String {

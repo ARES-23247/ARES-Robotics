@@ -1,17 +1,6 @@
 package com.ares.analytics.service.versioncontrol
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -62,26 +51,6 @@ data class ProjectRecoveryPlan(
 ) {
     val canRecover: Boolean get() = changes.isNotEmpty() && confirmationToken != null
 }
-enum class ProjectBackupAutoSyncStatus {
-    DISABLED,
-    WAITING_FOR_DESTINATION,
-    WAITING_FOR_LOCAL_SAVE,
-    SCHEDULED,
-    SYNCING,
-    UP_TO_DATE,
-    OFFLINE_RETRY,
-    ATTENTION_REQUIRED,
-}
-
-/** Plain-language state for the optional, project-scoped GitHub backup automation. */
-data class ProjectBackupAutoSyncState(
-    val projectPath: String = "",
-    val enabled: Boolean = false,
-    val status: ProjectBackupAutoSyncStatus = ProjectBackupAutoSyncStatus.DISABLED,
-    val message: String = "Automatic GitHub backup is off.",
-    val lastSuccessEpochSeconds: Long? = null,
-)
-
 /** Optional boundary used by zero-code editors to checkpoint only the canonical files they saved. */
 fun interface ProjectCheckpointRecorder {
     suspend fun checkpoint(projectPath: String, label: String, pathScopes: Set<String>): ProjectBackupPlan?
@@ -129,11 +98,12 @@ data class ProjectBackupPlan(
  * private/write permissions before sending bytes.
  */
 class ProjectVersionControlService internal constructor(
-    private val githubAuthentication: GitHubAuthenticationService = GitHubAuthenticationService(),
+    private val githubAuthentication: GitHubAuthenticationService,
+    private val onBackupRelevantChange: (String) -> Unit,
+    private val onBackupSynchronized: (String) -> Unit,
     private val epochSeconds: () -> Long = { Instant.now().epochSecond },
     private val remotePusher: (Git, String) -> Unit = ::pushWithJGit,
     private val remoteMainFetcher: (Git, String) -> ObjectId = ::fetchMainWithJGit,
-    private val autoSyncDelay: suspend (Long) -> Unit = { milliseconds -> delay(milliseconds) },
 ) : ProjectCheckpointRecorder {
     init {
         configureJGitLogging()
@@ -142,24 +112,15 @@ class ProjectVersionControlService internal constructor(
     private val historyMutex = Mutex()
     private val destinationStore = ProjectGitHubDestinationStore()
     private val reviewTokens = ProjectReviewTokenFactory()
-    private val autoSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val autoSyncRequests = Channel<String>(Channel.CONFLATED)
-    private val autoSyncJob: Job
-    private val _autoSyncState = MutableStateFlow(ProjectBackupAutoSyncState())
-    val autoSyncState: StateFlow<ProjectBackupAutoSyncState> = _autoSyncState.asStateFlow()
-
-    init {
-        autoSyncJob = autoSyncScope.launch { processAutoSyncRequests() }
-    }
 
     suspend fun inspect(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
-        buildPlan(requireProjectRoot(projectPath))
+        buildPlan(requireCanonicalProjectRoot(projectPath))
     }
 
     suspend fun initialize(projectPath: String, authorName: String, authorEmail: String): ProjectBackupPlan =
         withContext(Dispatchers.IO) {
             validateIdentity(authorName, authorEmail)
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             require(!File(root, ".git").exists()) { "This project already has local version history." }
             Git.init().setDirectory(root).setInitialBranch("main").call().use { git ->
                 val config = git.repository.config
@@ -178,7 +139,7 @@ class ProjectVersionControlService internal constructor(
      */
     suspend fun initializeNewProject(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
         historyMutex.withLock {
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             require(!File(root, ".git").exists()) { "The staged project already contains Git history." }
             Git.init().setDirectory(root).setInitialBranch("main").call().use { git ->
                 val config = git.repository.config
@@ -206,32 +167,6 @@ class ProjectVersionControlService internal constructor(
         }
     }
 
-    /** Loads the local automation preference for the active workspace without contacting GitHub. */
-    suspend fun loadAutoSync(projectPath: String): ProjectBackupAutoSyncState = withContext(Dispatchers.IO) {
-        val root = requireProjectRoot(projectPath)
-        val state = autoSyncStateFor(root)
-        _autoSyncState.value = state
-        state
-    }
-
-    /** Enables or disables online backup for this project only. It is always off by default. */
-    suspend fun setAutoSyncEnabled(projectPath: String, enabled: Boolean): ProjectBackupAutoSyncState =
-        withContext(Dispatchers.IO) {
-            val root = requireProjectRoot(projectPath)
-            Git.open(root).use { git ->
-                require(git.repository.resolve(Constants.HEAD) != null) {
-                    "Save the first local project version before enabling automatic GitHub backup."
-                }
-                val config = git.repository.config
-                config.setBoolean(AUTO_SYNC_CONFIG_SECTION, null, AUTO_SYNC_CONFIG_NAME, enabled)
-                config.save()
-            }
-            val state = autoSyncStateFor(root)
-            _autoSyncState.value = state
-            if (enabled) scheduleAutoSync(root)
-            _autoSyncState.value
-        }
-
     suspend fun commit(
         projectPath: String,
         expectedConfirmationToken: String,
@@ -241,7 +176,7 @@ class ProjectVersionControlService internal constructor(
     ): ProjectBackupPlan = withContext(Dispatchers.IO) {
         validateIdentity(authorName, authorEmail)
         require(message.trim().length in 3..120) { "Describe this saved version in 3 to 120 characters." }
-        val root = requireProjectRoot(projectPath)
+        val root = requireCanonicalProjectRoot(projectPath)
         val current = buildPlan(root)
         require(current.canCommit) {
             if (current.blockedSensitivePaths.isNotEmpty()) {
@@ -267,7 +202,7 @@ class ProjectVersionControlService internal constructor(
                 .setSign(false)
                 .call()
         }
-        buildPlan(root).also { scheduleAutoSync(root) }
+        buildPlan(root).also { onBackupRelevantChange(root.path) }
     }
 
     suspend fun connectApprovedRepository(
@@ -289,7 +224,7 @@ class ProjectVersionControlService internal constructor(
             require(repository.ownerLogin.equals(account.login, ignoreCase = true)) {
                 "GitHub returned a repository outside the selected installation account. Nothing was connected."
             }
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             Git.open(root).use { git ->
                 require(git.repository.resolve(Constants.HEAD) != null) {
                     "Save at least one local version before connecting an online backup."
@@ -316,13 +251,13 @@ class ProjectVersionControlService internal constructor(
                     throw failure
                 }
             }
-            buildPlan(root).also { markAutoSyncSuccessIfEnabled(root) }
+            buildPlan(root).also { onBackupSynchronized(root.path) }
         }
     }
 
     suspend fun pushBackup(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
         githubAuthentication.withCredential { credential ->
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             Git.open(root).use { git ->
                 require(git.status().call().isClean) {
                     "Save the current changes as a local version before syncing GitHub."
@@ -343,7 +278,7 @@ class ProjectVersionControlService internal constructor(
                     remotePusher(git, credential.accessToken)
                 }
             }
-            buildPlan(root).also { markAutoSyncSuccessIfEnabled(root) }
+            buildPlan(root).also { onBackupSynchronized(root.path) }
         }
     }
 
@@ -353,7 +288,7 @@ class ProjectVersionControlService internal constructor(
      */
     suspend fun previewGitHubRestore(projectPath: String): ProjectRestorePlan = withContext(Dispatchers.IO) {
         githubAuthentication.withCredential { credential ->
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             Git.open(root).use { git -> prepareRestore(git, credential) }
         }
     }
@@ -364,7 +299,7 @@ class ProjectVersionControlService internal constructor(
         expectedConfirmationToken: String,
     ): ProjectBackupPlan = withContext(Dispatchers.IO) {
         githubAuthentication.withCredential { credential ->
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             Git.open(root).use { git ->
                 val reviewed = prepareRestore(git, credential)
                 require(reviewed.canRestore && reviewed.confirmationToken == expectedConfirmationToken) {
@@ -385,7 +320,7 @@ class ProjectVersionControlService internal constructor(
                 }
             }
             // Revalidate the canonical marker after JGit updates the working tree.
-            requireProjectRoot(root.path)
+            requireCanonicalProjectRoot(root.path)
             buildPlan(root)
         }
     }
@@ -395,7 +330,7 @@ class ProjectVersionControlService internal constructor(
         projectPath: String,
         recoveryRefName: String,
     ): ProjectRecoveryPlan = withContext(Dispatchers.IO) {
-        val root = requireProjectRoot(projectPath)
+        val root = requireCanonicalProjectRoot(projectPath)
         Git.open(root).use { git -> prepareRecovery(git, recoveryRefName) }
     }
 
@@ -405,7 +340,7 @@ class ProjectVersionControlService internal constructor(
         recoveryRefName: String,
         expectedConfirmationToken: String,
     ): ProjectBackupPlan = withContext(Dispatchers.IO) {
-        val root = requireProjectRoot(projectPath)
+        val root = requireCanonicalProjectRoot(projectPath)
         Git.open(root).use { git ->
             val reviewed = prepareRecovery(git, recoveryRefName)
             require(reviewed.canRecover && reviewed.confirmationToken == expectedConfirmationToken) {
@@ -419,7 +354,7 @@ class ProjectVersionControlService internal constructor(
                 "ARES could not restore the reviewed safety point. The current version is still preserved as a recovery point."
             }
         }
-        requireProjectRoot(root.path)
+        requireCanonicalProjectRoot(root.path)
         buildPlan(root)
     }
 
@@ -436,7 +371,7 @@ class ProjectVersionControlService internal constructor(
     ): ProjectBackupPlan? = withContext(Dispatchers.IO) {
         historyMutex.withLock {
             require(label.trim().length in 3..90) { "Describe the automatic checkpoint in 3 to 90 characters." }
-            val root = requireProjectRoot(projectPath)
+            val root = requireCanonicalProjectRoot(projectPath)
             if (!File(root, ".git").isDirectory) return@withLock null
             val scopes = pathScopes.mapTo(linkedSetOf(), ::normalizeCheckpointScope)
             require(scopes.isNotEmpty()) { "An automatic checkpoint must name at least one canonical project file." }
@@ -469,19 +404,12 @@ class ProjectVersionControlService internal constructor(
                 selected.map(ProjectChange::path).distinct().forEach(command::setOnly)
                 command.call()
             }
-            buildPlan(root).also { scheduleAutoSync(root) }
+            buildPlan(root).also { onBackupRelevantChange(root.path) }
         }
     }
 
-    /** Stops the optional background synchronization worker during desktop shutdown. */
-    suspend fun closeAndJoin() {
-        autoSyncRequests.close()
-        autoSyncJob.cancelAndJoin()
-        autoSyncScope.cancel()
-    }
-
     suspend fun disconnectBackupDestination(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
-        val root = requireProjectRoot(projectPath)
+        val root = requireCanonicalProjectRoot(projectPath)
         Git.open(root).use { git ->
             require(destinationStore.read(git) != null) {
                 "This project has no ARES-managed GitHub destination to disconnect."
@@ -489,172 +417,7 @@ class ProjectVersionControlService internal constructor(
             if (destinationStore.originUrl(git) != null) destinationStore.removeOrigin(git)
             destinationStore.clear(git)
         }
-        buildPlan(root).also { _autoSyncState.value = autoSyncStateFor(root) }
-    }
-
-    fun pauseAutoSyncForSignedOutAccount() {
-        val currentAutoSync = _autoSyncState.value
-        if (currentAutoSync.enabled) {
-            _autoSyncState.value = currentAutoSync.copy(
-                status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
-                message = "Automatic backup is paused. Sign in with GitHub again to continue.",
-            )
-        }
-    }
-
-    private fun scheduleAutoSync(root: File) {
-        if (!readAutoSyncEnabled(root)) return
-        _autoSyncState.value = ProjectBackupAutoSyncState(
-            projectPath = root.path,
-            enabled = true,
-            status = ProjectBackupAutoSyncStatus.SCHEDULED,
-            message = "A local version was saved. GitHub backup is queued.",
-            lastSuccessEpochSeconds = _autoSyncState.value.lastSuccessEpochSeconds,
-        )
-        autoSyncRequests.trySend(root.path)
-    }
-
-    private fun markAutoSyncSuccessIfEnabled(root: File) {
-        if (!readAutoSyncEnabled(root)) return
-        _autoSyncState.value = ProjectBackupAutoSyncState(
-            projectPath = root.path,
-            enabled = true,
-            status = ProjectBackupAutoSyncStatus.UP_TO_DATE,
-            message = "GitHub backup is up to date.",
-            lastSuccessEpochSeconds = epochSeconds(),
-        )
-    }
-
-    private suspend fun processAutoSyncRequests() {
-        for (firstPath in autoSyncRequests) {
-            var projectPath = firstPath
-            do {
-                autoSyncDelay(AUTO_SYNC_DEBOUNCE_MS)
-                val newer = autoSyncRequests.tryReceive().getOrNull()
-                if (newer != null) projectPath = newer
-            } while (newer != null)
-            runAutoSync(projectPath)
-        }
-    }
-
-    private suspend fun runAutoSync(projectPath: String) {
-        val root = runCatching { requireProjectRoot(projectPath) }.getOrElse { failure ->
-            _autoSyncState.value = ProjectBackupAutoSyncState(
-                projectPath = projectPath,
-                enabled = true,
-                status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
-                message = failure.message ?: "The project is no longer available.",
-            )
-            return
-        }
-        if (!readAutoSyncEnabled(root)) {
-            _autoSyncState.value = disabledAutoSyncState(root)
-            return
-        }
-        val plan = buildPlan(root)
-        if (plan.destination == null) {
-            _autoSyncState.value = ProjectBackupAutoSyncState(
-                projectPath = root.path,
-                enabled = true,
-                status = ProjectBackupAutoSyncStatus.WAITING_FOR_DESTINATION,
-                message = "Automatic backup is on. Choose an approved GitHub repository to begin syncing.",
-            )
-            return
-        }
-        if (plan.changes.isNotEmpty()) {
-            _autoSyncState.value = ProjectBackupAutoSyncState(
-                projectPath = root.path,
-                enabled = true,
-                status = ProjectBackupAutoSyncStatus.WAITING_FOR_LOCAL_SAVE,
-                message = "Automatic backup is waiting for the remaining project changes to be saved locally.",
-            )
-            return
-        }
-        for (attempt in 0 until AUTO_SYNC_RETRY_DELAYS_MS.size) {
-            _autoSyncState.value = ProjectBackupAutoSyncState(
-                projectPath = root.path,
-                enabled = true,
-                status = ProjectBackupAutoSyncStatus.SYNCING,
-                message = "Syncing the latest saved version to GitHub…",
-                lastSuccessEpochSeconds = _autoSyncState.value.lastSuccessEpochSeconds,
-            )
-            try {
-                pushBackup(root.path)
-                _autoSyncState.value = ProjectBackupAutoSyncState(
-                    projectPath = root.path,
-                    enabled = true,
-                    status = ProjectBackupAutoSyncStatus.UP_TO_DATE,
-                    message = "GitHub backup is up to date.",
-                    lastSuccessEpochSeconds = epochSeconds(),
-                )
-                return
-            } catch (failure: Exception) {
-                if (!isRecoverableAutoSyncFailure(failure)) {
-                    _autoSyncState.value = ProjectBackupAutoSyncState(
-                        projectPath = root.path,
-                        enabled = true,
-                        status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
-                        message = failure.message ?: "GitHub backup needs attention.",
-                        lastSuccessEpochSeconds = _autoSyncState.value.lastSuccessEpochSeconds,
-                    )
-                    return
-                }
-                val hasRetry = attempt < AUTO_SYNC_RETRY_DELAYS_MS.lastIndex
-                _autoSyncState.value = ProjectBackupAutoSyncState(
-                    projectPath = root.path,
-                    enabled = true,
-                    status = ProjectBackupAutoSyncStatus.OFFLINE_RETRY,
-                    message = if (hasRetry) {
-                        "GitHub is temporarily unreachable. ARES will retry automatically."
-                    } else {
-                        "GitHub is still unreachable. Your local versions are safe; use Sync backup now when the connection returns."
-                    },
-                    lastSuccessEpochSeconds = _autoSyncState.value.lastSuccessEpochSeconds,
-                )
-                if (!hasRetry) return
-                autoSyncDelay(AUTO_SYNC_RETRY_DELAYS_MS[attempt])
-            }
-        }
-    }
-
-    private fun autoSyncStateFor(root: File): ProjectBackupAutoSyncState {
-        if (!File(root, ".git").isDirectory || !readAutoSyncEnabled(root)) return disabledAutoSyncState(root)
-        val plan = buildPlan(root)
-        return when {
-            plan.destination == null -> ProjectBackupAutoSyncState(
-                root.path,
-                true,
-                ProjectBackupAutoSyncStatus.WAITING_FOR_DESTINATION,
-                "Automatic backup is on. Choose an approved GitHub repository to begin syncing.",
-            )
-            plan.changes.isNotEmpty() -> ProjectBackupAutoSyncState(
-                root.path,
-                true,
-                ProjectBackupAutoSyncStatus.WAITING_FOR_LOCAL_SAVE,
-                "Automatic backup is waiting for project changes to be saved locally.",
-            )
-            else -> ProjectBackupAutoSyncState(
-                root.path,
-                true,
-                ProjectBackupAutoSyncStatus.UP_TO_DATE,
-                "Automatic GitHub backup is on.",
-                _autoSyncState.value.lastSuccessEpochSeconds,
-            )
-        }
-    }
-
-    private fun disabledAutoSyncState(root: File) = ProjectBackupAutoSyncState(
-        projectPath = root.path,
-        enabled = false,
-        status = ProjectBackupAutoSyncStatus.DISABLED,
-        message = "Automatic GitHub backup is off. Local history still saves versions on this computer.",
-    )
-
-    private fun readAutoSyncEnabled(root: File): Boolean {
-        if (!File(root, ".git").isDirectory) return false
-        return Git.open(root).use { git ->
-            git.repository.config.getBoolean(AUTO_SYNC_CONFIG_SECTION, null, AUTO_SYNC_CONFIG_NAME, false)
-        }
+        buildPlan(root).also { onBackupRelevantChange(root.path) }
     }
 
     private fun buildPlan(root: File): ProjectBackupPlan {
@@ -876,14 +639,6 @@ class ProjectVersionControlService internal constructor(
         throw IllegalStateException(safeMessage, failure)
     }
 
-    private fun requireProjectRoot(projectPath: String): File {
-        require(projectPath.isNotBlank()) { "Choose a robot project before opening Project Backup." }
-        val root = File(projectPath).canonicalFile
-        require(root.isDirectory) { "The selected robot project folder does not exist." }
-        require(File(root, ".ares/project.json").isFile) { "The selected folder is not a canonical ARES robot project." }
-        return root
-    }
-
     private fun validateIdentity(name: String, email: String) {
         require(name.trim().length in 2..80) { "Enter the student or team member name used for saved versions." }
         require(email.trim().matches(Regex("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))) {
@@ -894,10 +649,6 @@ class ProjectVersionControlService internal constructor(
     companion object {
         private const val MAX_VISIBLE_VERSIONS = 20
         private const val MAX_VISIBLE_RECOVERY_POINTS = 10
-        private const val AUTO_SYNC_CONFIG_SECTION = "aresBackup"
-        private const val AUTO_SYNC_CONFIG_NAME = "autoSync"
-        private const val AUTO_SYNC_DEBOUNCE_MS = 5_000L
-        private val AUTO_SYNC_RETRY_DELAYS_MS = longArrayOf(5_000L, 15_000L, 60_000L)
         private const val AUTOMATIC_HISTORY_AUTHOR_NAME = "ARES Robotics Studio"
         private const val AUTOMATIC_HISTORY_AUTHOR_EMAIL = "local-history@aresfirst.org"
         private const val INITIAL_PROJECT_COMMIT_MESSAGE = "Create robot project with ARES Robotics Studio"
@@ -914,26 +665,6 @@ class ProjectVersionControlService internal constructor(
         }
         return normalized
     }
-}
-
-private fun isRecoverableAutoSyncFailure(failure: Throwable): Boolean {
-    val chain = generateSequence(failure) { it.cause }.toList()
-    if (chain.filterIsInstance<GitHubApiException>().any { it.status == 429 || it.status >= 500 }) return true
-    if (chain.any {
-            it is java.net.UnknownHostException || it is java.net.ConnectException ||
-                it is java.net.SocketTimeoutException || it is java.net.SocketException
-        }
-    ) return true
-    val message = chain.mapNotNull(Throwable::message).joinToString(" ").lowercase(Locale.ROOT)
-    return listOf(
-        "could not be reached",
-        "timed out",
-        "timeout",
-        "connection reset",
-        "connection refused",
-        "network is unreachable",
-        "could not resolve host",
-    ).any(message::contains)
 }
 
 private enum class RemoteOperation { PUSH, FETCH }

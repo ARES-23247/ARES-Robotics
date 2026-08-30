@@ -71,8 +71,18 @@ class ServiceRegistry {
     val githubAuthenticationService by lazy {
         com.ares.analytics.service.versioncontrol.GitHubAuthenticationService()
     }
-    val projectVersionControlService by lazy {
-        com.ares.analytics.service.versioncontrol.ProjectVersionControlService(githubAuthenticationService)
+    val projectBackupAutoSyncService: com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService(
+            inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
+            pushBackup = { projectPath -> projectVersionControlService.pushBackup(projectPath) },
+        )
+    }
+    val projectVersionControlService: com.ares.analytics.service.versioncontrol.ProjectVersionControlService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectVersionControlService(
+            githubAuthentication = githubAuthenticationService,
+            onBackupRelevantChange = { projectPath -> projectBackupAutoSyncService.schedule(projectPath) },
+            onBackupSynchronized = { projectPath -> projectBackupAutoSyncService.markSynchronized(projectPath) },
+        )
     }
     val projectArchiveExporter by lazy { com.ares.analytics.service.versioncontrol.ProjectArchiveExporter() }
     val hardwareSetupService by lazy { com.ares.analytics.service.hardware.HardwareSetupService() }
@@ -277,9 +287,9 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::adbService)) {
                     adbService.shutdownAndJoin()
                 }
-                  if (lazyFieldInitialized(::projectVersionControlService)) {
-                      projectVersionControlService.closeAndJoin()
-                  }
+                if (lazyFieldInitialized(::projectBackupAutoSyncService)) {
+                    projectBackupAutoSyncService.closeAndJoin()
+                }
                 if (lazyFieldInitialized(::replayEngineService)) {
                     replayEngineService.disposeAndJoin()
                 }
