@@ -40,6 +40,7 @@ class ServiceRegistry {
     val databaseService by lazy { DatabaseService() }
     val environmentService by lazy { EnvironmentService() }
     val processManagerService by lazy { ProcessManagerService() }
+    val adbService by lazy { AdbService() }
     val targetScannerService by lazy { TargetScannerService() }
     val keybindingParserService by lazy { KeybindingParserService() }
     val eventApiService by lazy { EventApiService() }
@@ -179,7 +180,7 @@ class ServiceRegistry {
         AutoImportService(
             logParserService = logParserService,
             hootDecoderService = hootDecoderService,
-            processManagerService = processManagerService,
+            adbConnected = adbService.connected,
             configProvider = autoImportConfig::get
         )
     }
@@ -252,9 +253,12 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::nt4ClientService)) {
                     telemetryPersisted = nt4ClientService.disposeAndJoin()
                 }
-                  if (lazyFieldInitialized(::processManagerService)) {
-                      processManagerService.shutdown()
-                  }
+                if (lazyFieldInitialized(::processManagerService)) {
+                    processManagerService.shutdown()
+                }
+                if (lazyFieldInitialized(::adbService)) {
+                    adbService.shutdownAndJoin()
+                }
                   if (lazyFieldInitialized(::projectVersionControlService)) {
                       projectVersionControlService.closeAndJoin()
                   }

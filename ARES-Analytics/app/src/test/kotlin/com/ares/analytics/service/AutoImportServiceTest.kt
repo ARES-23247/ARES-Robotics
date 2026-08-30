@@ -7,6 +7,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.decodeFromString
 import org.mockito.Mockito
 import java.io.File
@@ -42,7 +43,7 @@ class AutoImportServiceTest {
 
         // Robot connectivity is irrelevant to this local-disk test and must not depend on
         // whether a developer happens to have a Control Hub connected.
-        val processManagerService = ProcessManagerService(monitorAdbConnection = false)
+        val adbConnected = MutableStateFlow(false)
 
         // Create a temporary project path
         val tempProjectDir = File(System.getProperty("java.io.tmpdir"), "ares_project_test_${System.currentTimeMillis()}")
@@ -70,7 +71,7 @@ class AutoImportServiceTest {
         val autoImportService = AutoImportService(
             logParserService = logParserService,
             hootDecoderService = hootDecoderService,
-            processManagerService = processManagerService,
+            adbConnected = adbConnected,
             configProvider = { config },
             scope = this,
             scanIntervalMs = 50L
@@ -127,7 +128,7 @@ class AutoImportServiceTest {
         val restarted = AutoImportService(
             logParserService = logParserService,
             hootDecoderService = hootDecoderService,
-            processManagerService = processManagerService,
+            adbConnected = adbConnected,
             configProvider = { config },
             scope = this,
             scanIntervalMs = 50L
@@ -147,7 +148,7 @@ class AutoImportServiceTest {
         val changedContentService = AutoImportService(
             logParserService = logParserService,
             hootDecoderService = hootDecoderService,
-            processManagerService = processManagerService,
+            adbConnected = adbConnected,
             configProvider = { config },
             scope = this,
             scanIntervalMs = 50L
@@ -165,7 +166,7 @@ class AutoImportServiceTest {
         // Clean up
         tempProjectDir.deleteRecursively()
         tempDb.delete()
-        processManagerService.shutdown()
+        Unit
     }
 
     @Test
@@ -178,7 +179,7 @@ class AutoImportServiceTest {
             sysIdService,
             DriverAnalysisService(databaseService, sysIdService),
         )
-        val processManagerService = ProcessManagerService(monitorAdbConnection = false)
+        val adbConnected = MutableStateFlow(false)
         val projectDir = Files.createTempDirectory("auto-import-batch").toFile()
         val logsDir = projectDir.resolve("logs").apply { mkdirs() }
         val csv = """
@@ -199,7 +200,7 @@ class AutoImportServiceTest {
         val service = AutoImportService(
             logParserService = LogParserService(databaseService, summaryEngineService),
             hootDecoderService = HootDecoderService(databaseService, summaryEngineService, sysIdService),
-            processManagerService = processManagerService,
+            adbConnected = adbConnected,
             configProvider = { config },
             scope = this,
             scanIntervalMs = 25L,
@@ -220,7 +221,6 @@ class AutoImportServiceTest {
         } finally {
             service.stopAndJoin()
             databaseService.close()
-            processManagerService.shutdown()
             projectDir.deleteRecursively()
             tempDb.delete()
         }
@@ -237,7 +237,7 @@ class AutoImportServiceTest {
             DriverAnalysisService(databaseService, sysIdService)
         )
         val logParserService = LogParserService(databaseService, summaryEngineService)
-        val processManagerService = ProcessManagerService(monitorAdbConnection = false)
+        val adbConnected = MutableStateFlow(false)
         val projectDir = File(System.getProperty("java.io.tmpdir"), "ares_quarantine_test_${System.nanoTime()}")
         val logsDir = File(projectDir, "logs").apply { mkdirs() }
         val sourceFile = File(logsDir, "bad.csv").apply { writeText("not,a,valid,log") }
@@ -251,7 +251,7 @@ class AutoImportServiceTest {
         val service = AutoImportService(
             logParserService,
             HootDecoderService(databaseService, summaryEngineService, sysIdService),
-            processManagerService,
+            adbConnected,
             configProvider = { config },
             scope = this,
             scanIntervalMs = 25L
@@ -281,7 +281,7 @@ class AutoImportServiceTest {
         val restarted = AutoImportService(
             logParserService,
             HootDecoderService(databaseService, summaryEngineService, sysIdService),
-            processManagerService,
+            adbConnected,
             configProvider = { config },
             scope = this,
             scanIntervalMs = 25L
@@ -293,7 +293,6 @@ class AutoImportServiceTest {
         assertEquals(1, quarantineDir.listFiles().orEmpty().count { it.name.endsWith(AutoImportService.IMPORT_REPORT_SUFFIX) })
 
         databaseService.close()
-        processManagerService.shutdown()
         projectDir.deleteRecursively()
         tempDb.delete()
         Unit
@@ -489,7 +488,7 @@ class AutoImportServiceTest {
     ): AutoImportService = AutoImportService(
         logParserService = Mockito.mock(LogParserService::class.java),
         hootDecoderService = Mockito.mock(HootDecoderService::class.java),
-        processManagerService = Mockito.mock(ProcessManagerService::class.java),
+        adbConnected = MutableStateFlow(false),
         configProvider = { null },
         scope = scope,
         scanIntervalMs = 10L,

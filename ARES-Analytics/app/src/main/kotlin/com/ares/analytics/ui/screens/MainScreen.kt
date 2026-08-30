@@ -414,7 +414,7 @@ fun MainScreen(services: ServiceRegistry) {
     val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
     val processState by services.processManagerService.processState.collectAsState()
-    val adbConnected = processState.adbConnected
+    val adbConnected by services.adbService.connected.collectAsState()
     val isSimRunning = processState.simulatorRunning
     val activeSimulationProjectPath = processState.activeSimulationProjectPath
     val activeSimulationLeague = processState.activeSimulationLeague
@@ -992,6 +992,7 @@ fun MainScreen(services: ServiceRegistry) {
                 // Collapsible Terminal drawer overlay
                 TerminalDrawer(
                     processManagerService = services.processManagerService,
+                    adbService = services.adbService,
                     projectPath = currentConfig.projectPath,
                     league = currentConfig.league,
                     isOpen = isTerminalOpen,

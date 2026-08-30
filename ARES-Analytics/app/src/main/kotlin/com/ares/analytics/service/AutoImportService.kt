@@ -6,6 +6,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.sync.Mutex
@@ -37,17 +38,17 @@ import java.util.concurrent.TimeUnit
  *
  * @param logParserService Central log parser service.
  * @param hootDecoderService Decoder service for CTRE `.hoot` logs.
- * @param processManagerService Service monitoring ADB connection status.
+ * @param adbConnected Current Android Debug Bridge connection state.
  * @param configProvider Lambda supplying current active workspace configuration.
  * @param scope Coroutine scope running background watcher loops.
  *
  * @see LogParserService
- * @see ProcessManagerService
+ * @see AdbService
  */
 class AutoImportService(
     private val logParserService: LogParserService,
     private val hootDecoderService: HootDecoderService,
-    private val processManagerService: ProcessManagerService,
+    private val adbConnected: StateFlow<Boolean>,
     private val configProvider: () -> WorkspaceConfig?,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, exception ->
         println("[AUTO-IMPORT] Unhandled exception in background scope: ${exception.message}")
@@ -140,7 +141,7 @@ class AutoImportService(
             importLocalLogs(config)
             when (config.league) {
                 League.FTC -> {
-                    if (processManagerService.processState.value.adbConnected) {
+                    if (adbConnected.value) {
                         // Local logs must not wait for Android tooling discovery. Resolve ADB only
                         // when a robot connection actually requires it, then retain that result for
                         // later scan cycles.

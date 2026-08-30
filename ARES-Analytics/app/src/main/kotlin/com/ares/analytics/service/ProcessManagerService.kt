@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -76,7 +75,6 @@ data class ProjectProcessState(
     val activeSimulationLeague: League? = null,
     val buildRunning: Boolean = false,
     val buildExecution: BuildExecutionState = BuildExecutionState(),
-    val adbConnected: Boolean = false,
     val deployExecution: DeployExecutionState = DeployExecutionState(),
 )
 
@@ -126,22 +124,14 @@ private data class SubsystemStarterInputs(
  * @see TargetScannerService
  */
 class ProcessManagerService internal constructor(
-    private val monitorAdbConnection: Boolean,
     aresRepositoryUri: String?,
     aresVersion: String? = null,
     gradleJavaInstallations: List<File> = ManagedToolchainPaths.gradleJavaInstallations(),
 ) : AresProjectGenerator {
 
     constructor() : this(
-        monitorAdbConnection = true,
         aresRepositoryUri = System.getProperty(ARES_REPOSITORY_URI_PROPERTY),
         aresVersion = System.getProperty(ARES_VERSION_PROPERTY),
-    )
-
-    internal constructor(monitorAdbConnection: Boolean) : this(
-        monitorAdbConnection = monitorAdbConnection,
-        aresRepositoryUri = null,
-        aresVersion = null,
     )
 
     private val commandFactory = ProjectProcessCommandFactory(
@@ -158,13 +148,6 @@ class ProcessManagerService internal constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
     val buildOutput: SharedFlow<String> = _buildOutput.asSharedFlow()
-
-    private val _logcatOutput = MutableSharedFlow<String>(
-        replay = 200,
-        extraBufferCapacity = 800,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
-    val logcatOutput: SharedFlow<String> = _logcatOutput.asSharedFlow()
 
     private val _processState = MutableStateFlow(ProjectProcessState())
     val processState: StateFlow<ProjectProcessState> = _processState.asStateFlow()
@@ -185,44 +168,13 @@ class ProcessManagerService internal constructor(
 
     @Volatile
     private var activeBuildJob: Job? = null
-    private var activeLogcatJob: Job? = null
     private var activeSimJob: Job? = null
-    private var adbMonitorJob: Job? = null
 
     @Volatile
     private var buildProcess: Process? = null
     private var activeBuildGeneration = 0L
     private var activeBuildKind: BuildOperationKind? = null
-    private var logcatProcess: Process? = null
     private var simProcess: Process? = null
-
-    init {
-        // Start periodic ADB connection check
-        if (monitorAdbConnection) startAdbMonitoring()
-    }
-
-    private fun startAdbMonitoring() {
-        adbMonitorJob?.cancel()
-        adbMonitorJob = serviceScope.launch {
-            while (isActive) {
-                try {
-                    val pb = ProcessBuilder("adb", "devices").redirectErrorStream(true)
-                    val proc = pb.start()
-                    val output = StringBuilder()
-                    val exitCode = waitForProcess(proc, 3) { line ->
-                        if (output.length < MAX_MONITOR_OUTPUT_CHARS) output.appendLine(line)
-                    }
-                    val text = output.toString()
-                    val isConnected = exitCode == 0 &&
-                        (text.contains("192.168.43.1:5555") || text.contains("device\n") || text.contains("device\r"))
-                    _processState.update { it.copy(adbConnected = isConnected) }
-                } catch (e: Exception) {
-                    _processState.update { it.copy(adbConnected = false) }
-                }
-                delay(5000)
-            }
-        }
-    }
 
     fun runBuild(projectPath: String, league: League) {
         enqueueBuildOperation(BuildOperationKind.BUILD) { generation ->
@@ -660,7 +612,7 @@ class ProcessManagerService internal constructor(
                 canonicalProjectPath = root.path
                 templateDeploymentBlockReason(root)?.let { reason -> error(reason) }
                 if (league == League.FTC) {
-                    val adb = resolveAdbPath()
+                    val adb = resolveAdbExecutable()
                     _buildOutput.emit("[DEPLOY] Connecting wireless ADB ($FTC_ADB_TARGET)...")
                     val connectExit = runOwnedBuildProcess(
                         generation,
@@ -897,55 +849,6 @@ class ProcessManagerService internal constructor(
         replacement.start()
     }
 
-    fun startLogcat() {
-        if (shuttingDown.get()) return
-        killActiveLogcat()
-
-        val replacement = serviceScope.launch(start = CoroutineStart.LAZY) {
-            var ownedProcess: Process? = null
-            try {
-                _logcatOutput.emit("[SYSTEM] Starting ADB logcat stream...")
-                val adb = resolveAdbPath()
-                val pb = ProcessBuilder(adb, "logcat", "-v", "time")
-                    .redirectErrorStream(true)
-                val proc = pb.start()
-                ownedProcess = proc
-                logcatProcess = proc
-                currentCoroutineContext().ensureActive()
-
-                proc.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                    while (true) {
-                        val line = reader.readLine() ?: break
-                        currentCoroutineContext().ensureActive()
-                        _logcatOutput.emit(line)
-                    }
-                }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (e: Exception) {
-                currentCoroutineContext().ensureActive()
-                _logcatOutput.emit("[SYSTEM] Error streaming logcat: ${e.message}")
-            } finally {
-                ownedProcess?.let { if (it.isAlive) terminateProcessTree(it) }
-                if (logcatProcess === ownedProcess) logcatProcess = null
-            }
-        }
-        activeLogcatJob = replacement
-        replacement.start()
-    }
-
-    private fun resolveAdbPath(): String {
-        ManagedToolchainPaths.resolveAndroidSdk()?.let { sdk ->
-            val executable = File(sdk, "platform-tools/${if (System.getProperty("os.name").contains("win", true)) "adb.exe" else "adb"}")
-            if (executable.isFile) return executable.absolutePath
-        }
-        val platformTools = File(System.getenv("LOCALAPPDATA") ?: "", "Android/Sdk/platform-tools/adb.exe")
-        if (platformTools.exists()) return platformTools.absolutePath
-        val adbMac = File(System.getProperty("user.home"), "Library/Android/sdk/platform-tools/adb")
-        if (adbMac.exists()) return adbMac.absolutePath
-        return "adb"
-    }
-
     fun killActiveBuild() {
         runBlocking { killActiveBuildAndJoin() }
     }
@@ -1000,10 +903,6 @@ class ProcessManagerService internal constructor(
         }
     }
 
-    fun killActiveLogcat() {
-        runBlocking { stopLogcatAndJoin() }
-    }
-
     fun killActiveSim() {
         runBlocking { stopSimulationAndJoin() }
     }
@@ -1016,21 +915,8 @@ class ProcessManagerService internal constructor(
         shuttingDown.set(true)
         buildRequestId.incrementAndGet()
         buildLifecycleMutex.withLock { stopActiveBuildLocked() }
-        stopLogcatAndJoin()
         stopSimulationAndJoin()
-        adbMonitorJob?.cancelAndJoin()
-        adbMonitorJob = null
         serviceScope.coroutineContext[Job]?.cancelAndJoin()
-    }
-
-    private suspend fun stopLogcatAndJoin() = withContext(NonCancellable) {
-        val process = logcatProcess
-        val job = activeLogcatJob
-        job?.cancel()
-        process?.let { terminateProcessTree(it) }
-        job?.cancelAndJoin()
-        if (logcatProcess === process) logcatProcess = null
-        if (activeLogcatJob === job) activeLogcatJob = null
     }
 
     private suspend fun stopSimulationAndJoin() = withContext(NonCancellable) {
@@ -1047,69 +933,6 @@ class ProcessManagerService internal constructor(
                 activeSimulationProjectPath = null,
                 activeSimulationLeague = null,
             )
-        }
-    }
-
-    /** Drains output concurrently so a verbose child cannot fill its pipe before the timeout. */
-    private suspend fun waitForProcess(
-        process: Process,
-        timeoutSeconds: Long,
-        onLine: suspend (String) -> Unit
-    ): Int? = coroutineScope {
-        runCatching { process.outputStream.close() }
-        val drain = async(Dispatchers.IO) {
-            runCatching {
-                process.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                    while (true) onLine(reader.readLine() ?: break)
-                }
-            }
-        }
-        val finished = try {
-            withTimeoutOrNull(timeoutSeconds * 1_000L) {
-                while (process.isAlive) delay(25)
-                true
-            } ?: false
-        } catch (cancelled: CancellationException) {
-            terminateProcessTree(process)
-            throw cancelled
-        }
-        if (!finished) {
-            terminateProcessTree(process)
-            withTimeoutOrNull(2_000) {
-                while (process.isAlive) delay(25)
-            }
-        }
-        withTimeoutOrNull(2_000) { drain.await() } ?: drain.cancel()
-        if (finished) process.exitValue() else null
-    }
-
-    private suspend fun terminateProcessTree(process: Process) {
-        withContext(NonCancellable + Dispatchers.IO) {
-            val handles = mutableListOf<ProcessHandle>()
-            runCatching {
-                process.descendants().use { descendants ->
-                    descendants.forEach { handles.add(it) }
-                }
-            }
-            handles.asReversed().forEach { child -> runCatching { child.destroyForcibly() } }
-            runCatching { process.destroyForcibly() }
-
-            val allHandles = handles + process.toHandle()
-            val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(PROCESS_TREE_KILL_GRACE_MS)
-            while (allHandles.any { it.isAlive } && System.nanoTime() < deadline) {
-                try {
-                    Thread.sleep(PROCESS_TREE_POLL_MS)
-                } catch (_: InterruptedException) {
-                    // Coroutine cancellation cannot abandon process cleanup once it has begun.
-                    Thread.interrupted()
-                }
-            }
-            allHandles.filter { it.isAlive }.forEach { handle ->
-                runCatching { handle.destroyForcibly() }
-            }
-            runCatching { process.inputStream.close() }
-            runCatching { process.errorStream.close() }
-            runCatching { process.outputStream.close() }
         }
     }
 
@@ -1184,9 +1007,6 @@ class ProcessManagerService internal constructor(
     private companion object {
         const val GENERATION_DIAGNOSTIC_LINE_LIMIT = 24
         const val GENERATION_DIAGNOSTIC_CHARACTER_LIMIT = 4_000
-        const val MAX_MONITOR_OUTPUT_CHARS = 64 * 1024
-        const val PROCESS_TREE_KILL_GRACE_MS = 2_000L
-        const val PROCESS_TREE_POLL_MS = 10L
         val GENERATED_CONTENT_HASH = Regex("CONTENT_SHA256:\\s*String\\s*=\\s*\"([0-9a-fA-F]{64})\"")
     }
 }

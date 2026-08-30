@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.AdbService
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
@@ -30,6 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TerminalDrawer(
     processManagerService: ProcessManagerService,
+    adbService: AdbService,
     projectPath: String,
     league: League,
     isOpen: Boolean,
@@ -54,7 +56,7 @@ fun TerminalDrawer(
             }
         }
         launch {
-            processManagerService.logcatOutput.collect { line ->
+            adbService.logcatOutput.collect { line ->
                 logcatLog.add(line)
                 if (logcatLog.size > 1000) logcatLog.removeAt(0)
             }
@@ -129,7 +131,7 @@ fun TerminalDrawer(
                         Button(
                             onClick = {
                                 logcatLog.clear()
-                                processManagerService.startLogcat()
+                                adbService.startLogcat()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
                             shape = RoundedCornerShape(6.dp),
@@ -143,7 +145,7 @@ fun TerminalDrawer(
 
                     IconButton(
                         onClick = {
-                            if (activeTab == 0) processManagerService.killActiveBuild() else processManagerService.killActiveLogcat()
+                            if (activeTab == 0) processManagerService.killActiveBuild() else adbService.stopLogcat()
                         }
                     ) {
                         Icon(imageVector = Icons.Default.Cancel, contentDescription = "Kill Process", tint = AresError)

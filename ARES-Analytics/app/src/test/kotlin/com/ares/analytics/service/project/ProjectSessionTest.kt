@@ -266,7 +266,7 @@ class ProjectSessionTest {
     fun `authoring generation is rejected before a process starts when the project is invalid`() = withProject { root ->
         val session = ProjectSession()
         val gateway = RecordingProjectProcessGateway()
-        val processManager = ProcessManagerService(monitorAdbConnection = false)
+        val processManager = ProcessManagerService(aresRepositoryUri = null)
         val generator = SessionProjectGenerator(
             session,
             ProjectExecutionCoordinator(session, gateway),

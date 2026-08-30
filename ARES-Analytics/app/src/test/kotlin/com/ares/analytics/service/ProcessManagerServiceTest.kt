@@ -227,7 +227,7 @@ class ProcessManagerServiceTest {
 
     @Test
     fun `verification outcome retains selected project success and failure evidence`() = runBlocking {
-        val service = ProcessManagerService(monitorAdbConnection = false)
+        val service = ProcessManagerService(aresRepositoryUri = null)
         val project = Files.createTempDirectory("process-manager-build-result").toFile()
         val javaExecutable = File(
             System.getProperty("java.home"),
@@ -272,7 +272,7 @@ class ProcessManagerServiceTest {
 
     @Test
     fun `stopping verification records cancellation and kills its process`() = runBlocking {
-        val service = ProcessManagerService(monitorAdbConnection = false)
+        val service = ProcessManagerService(aresRepositoryUri = null)
         val project = Files.createTempDirectory("process-manager-build-cancel").toFile()
         val pidFile = File(project, "verification.pid")
         val neverReleased = File(project, "never-release")
@@ -300,7 +300,7 @@ class ProcessManagerServiceTest {
 
     @Test
     fun `starter preview token is hash-bound and stale apply is rejected before Gradle`() {
-        val service = ProcessManagerService(monitorAdbConnection = false)
+        val service = ProcessManagerService(aresRepositoryUri = null)
         val root = Files.createTempDirectory("process-manager-starter-plan").toFile()
         try {
             val document = SubsystemTemplates.createWithOwnership(
@@ -338,7 +338,7 @@ class ProcessManagerServiceTest {
 
     @Test
     fun `replacement joins old generation and cannot clear the new process state`() = runBlocking {
-        val service = ProcessManagerService(monitorAdbConnection = false)
+        val service = ProcessManagerService(aresRepositoryUri = null)
         val directory = Files.createTempDirectory("process-manager-replacement").toFile()
         val oldParentPid = File(directory, "old-parent.pid")
         val oldChildPid = File(directory, "old-child.pid")
@@ -376,7 +376,7 @@ class ProcessManagerServiceTest {
 
     @Test
     fun `slow terminal collector cannot backpressure verbose build output`() = runBlocking {
-        val service = ProcessManagerService(monitorAdbConnection = false)
+        val service = ProcessManagerService(aresRepositoryUri = null)
         val slowCollector = launch {
             service.buildOutput.collect {
                 delay(50L)
@@ -394,7 +394,7 @@ class ProcessManagerServiceTest {
 
     @Test
     fun `shutdown remains non-cancellable and kills the complete process tree`() = runBlocking {
-        val service = ProcessManagerService(monitorAdbConnection = false)
+        val service = ProcessManagerService(aresRepositoryUri = null)
         val directory = Files.createTempDirectory("process-manager-shutdown").toFile()
         val parentPidFile = File(directory, "parent.pid")
         val childPidFile = File(directory, "child.pid")
