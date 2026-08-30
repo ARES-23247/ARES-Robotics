@@ -3,7 +3,7 @@ package com.areslib.project
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 
 const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 4
 
@@ -153,9 +153,7 @@ object AresProjectMetadataCodec {
         return document
     }
 
-    fun contentHash(document: AresProjectMetadataDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: AresProjectMetadataDocument): String = sha256Hex(encode(document))
 
     private fun requireValid(document: AresProjectMetadataDocument) {
         val issues = validateAresProjectMetadata(document)

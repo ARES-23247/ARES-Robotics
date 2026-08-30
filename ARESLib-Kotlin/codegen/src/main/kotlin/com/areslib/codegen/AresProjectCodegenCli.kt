@@ -24,10 +24,8 @@ import com.areslib.subsystem.isAresGenerated
 import com.areslib.tuning.TuningProfileAuthority
 import com.areslib.tuning.TuningComponentDocumentCodec
 import com.areslib.tuning.TuningProfileDocumentCodec
-import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import kotlin.io.path.extension
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.name
@@ -158,7 +156,7 @@ object AresProjectCodegenCli {
                 "Generated source is stale at $output. Regenerate it before building."
             }
         } else if (!Files.isRegularFile(output) || Files.readString(output) != generated.source) {
-            writeAtomically(output, generated.source)
+            GeneratedFileWriter.writeAtomically(output, generated.source)
         }
         val renderedArtifacts = buildList {
             add(projectRuntimeArtifact)
@@ -217,9 +215,9 @@ object AresProjectCodegenCli {
             require(!exists || relative in previous || Files.readString(path) == content) {
                 "Refusing to overwrite unowned drivebase output at $path; remove or relocate it explicitly"
             }
-            if (!exists || Files.readString(path) != content) writeAtomically(path, content)
+            if (!exists || Files.readString(path) != content) GeneratedFileWriter.writeAtomically(path, content)
         }
-        if (expected.isEmpty()) Files.deleteIfExists(manifest) else writeAtomically(manifest, expectedManifest)
+        if (expected.isEmpty()) Files.deleteIfExists(manifest) else GeneratedFileWriter.writeAtomically(manifest, expectedManifest)
         return artifacts
     }
 
@@ -270,9 +268,9 @@ object AresProjectCodegenCli {
             require(!exists || relative in previous || Files.readString(path) == content) {
                 "Refusing to overwrite unowned superstructure output at $path; remove or relocate it explicitly"
             }
-            if (!exists || Files.readString(path) != content) writeAtomically(path, content)
+            if (!exists || Files.readString(path) != content) GeneratedFileWriter.writeAtomically(path, content)
         }
-        if (expected.isEmpty()) Files.deleteIfExists(manifest) else writeAtomically(manifest, expectedManifest)
+        if (expected.isEmpty()) Files.deleteIfExists(manifest) else GeneratedFileWriter.writeAtomically(manifest, expectedManifest)
         return artifacts
     }
 
@@ -372,12 +370,12 @@ object AresProjectCodegenCli {
         }
         normalizedExpected.forEach { (relative, content) ->
             val path = safeGeneratedPath(root, relative)
-            if (!Files.isRegularFile(path) || Files.readString(path) != content) writeAtomically(path, content)
+            if (!Files.isRegularFile(path) || Files.readString(path) != content) GeneratedFileWriter.writeAtomically(path, content)
         }
         if (normalizedExpected.isEmpty()) {
             Files.deleteIfExists(manifest)
         } else if (!Files.isRegularFile(manifest) || Files.readString(manifest) != expectedManifest) {
-            writeAtomically(manifest, expectedManifest)
+            GeneratedFileWriter.writeAtomically(manifest, expectedManifest)
         }
     }
 
@@ -428,7 +426,7 @@ object AresProjectCodegenCli {
                 "Generated verification manifest is stale at $manifestPath. Run the ARES generation task."
             }
         } else if (!Files.isRegularFile(manifestPath) || Files.readString(manifestPath) != content) {
-            writeAtomically(manifestPath, content)
+            GeneratedFileWriter.writeAtomically(manifestPath, content)
         }
     }
 
@@ -448,26 +446,6 @@ object AresProjectCodegenCli {
             runCatching { decode(Files.readString(path)) }.getOrElse { error ->
                 throw IllegalArgumentException("Could not read ${path.fileName}: ${error.message}", error)
             }
-        }
-    }
-
-    private fun writeAtomically(output: Path, content: String) {
-        Files.createDirectories(output.parent)
-        val temporary = Files.createTempFile(output.parent, ".${output.fileName}.", ".tmp")
-        try {
-            Files.writeString(temporary, content)
-            try {
-                Files.move(
-                    temporary,
-                    output,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(temporary, output, StandardCopyOption.REPLACE_EXISTING)
-            }
-        } finally {
-            Files.deleteIfExists(temporary)
         }
     }
 

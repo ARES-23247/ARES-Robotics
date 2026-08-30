@@ -2,8 +2,8 @@ package com.areslib.subsystem
 
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.util.parseJsonElement
+import com.areslib.util.sha256Hex
 import com.google.gson.GsonBuilder
-import java.security.MessageDigest
 
 object SubsystemDocumentCodec {
     private val gson = GsonBuilder().setPrettyPrinting().create()
@@ -350,9 +350,7 @@ object SubsystemDocumentCodec {
         )
     }
 
-    fun contentHash(document: SubsystemDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: SubsystemDocument): String = sha256Hex(encode(document))
 
     private fun requireValid(document: SubsystemDocument) {
         val issues = SubsystemSchema.validate(document)

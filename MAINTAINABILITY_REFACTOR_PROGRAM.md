@@ -101,6 +101,13 @@ Generated and vendor IO constructors no longer self-register. The old static API
 than forwarded, and every in-monorepo consumer migrated to the current contract. Isolation tests prove
 that refreshing, safing, closing, and polling one robot cannot mutate another robot's devices.
 
+The third slice consolidated policies only inside their owning modules. `project-schema` now has one
+internal lowercase UTF-8 SHA-256 renderer used by every canonical document codec. `codegen` now has
+one atomic replacement writer for generated and explicitly reviewed starter files, including the
+non-atomic filesystem fallback and temporary-file cleanup contract. The duplicated implementations
+and their private forwarding methods were deleted; neither helper is exposed as a general-purpose
+cross-module utility.
+
 **Exit criteria:** no orphan production APIs, multiple simulated robot instances remain isolated,
 hardware reads remain once per loop, and zero-allocation regression tests remain green.
 

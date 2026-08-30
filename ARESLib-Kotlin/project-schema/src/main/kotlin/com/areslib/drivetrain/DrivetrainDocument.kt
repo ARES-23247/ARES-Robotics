@@ -4,7 +4,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.validateTuningParameterDeclarations
 import com.google.gson.GsonBuilder
 import com.areslib.util.parseJsonElement
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 
 const val ARES_DRIVETRAIN_SCHEMA_VERSION: Int = 1
 
@@ -341,7 +341,7 @@ object DrivetrainDocumentCodec {
         requireValid(document)
         return document
     }
-    fun contentHash(document: DrivetrainDocument): String = sha256(encode(document))
+    fun contentHash(document: DrivetrainDocument): String = sha256Hex(encode(document))
     private fun requireValid(document: DrivetrainDocument) {
         val issues = validateDrivetrainDocument(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
@@ -355,4 +355,3 @@ private val CLASS_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*
 private val SHA = Regex("[a-f0-9]{64}")
 private fun duplicate(values: List<String>) = values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
 private fun String.safeRelative() = isNotBlank() && !startsWith('/') && '\\' !in this && split('/').none { it.isBlank() || it == "." || it == ".." }
-private fun sha256(value: String) = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it.toInt() and 0xff) }

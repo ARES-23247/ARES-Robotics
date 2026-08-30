@@ -3,8 +3,8 @@ package com.areslib.controls
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CatalogValidationSeverity
 import com.areslib.catalog.validateCapabilityCatalog
+import com.areslib.util.sha256Hex
 import com.google.gson.GsonBuilder
-import java.security.MessageDigest
 
 private val CONTROL_STABLE_KEY = Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")
 private val CONTROL_ARGUMENT_KEY = Regex("[A-Za-z][A-Za-z0-9_]{0,63}")
@@ -387,9 +387,7 @@ object ControlSchemeCodec {
         return document.canonicalized()
     }
 
-    fun contentHash(document: ControlSchemeDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: ControlSchemeDocument): String = sha256Hex(encode(document))
 
     private fun requireValid(document: ControlSchemeDocument) {
         val errors = validateControlScheme(document).filter { it.severity == ControlValidationSeverity.ERROR }

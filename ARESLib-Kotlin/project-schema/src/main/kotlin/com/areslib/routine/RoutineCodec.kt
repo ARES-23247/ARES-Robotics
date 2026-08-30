@@ -7,9 +7,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
+import com.areslib.util.sha256Hex
 import java.io.StringReader
-import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 
 /** Strict JSON codec for the native `.aresroutine` file format. */
 object AresRoutineCodec {
@@ -38,11 +37,7 @@ object AresRoutineCodec {
     }
 
     /** SHA-256 of the canonical encoded document used for revision parent links. */
-    fun contentHash(document: RoutineDocument): String {
-        val bytes = MessageDigest.getInstance("SHA-256")
-            .digest(encode(document).toByteArray(StandardCharsets.UTF_8))
-        return bytes.joinToString(separator = "") { byte -> "%02x".format(byte) }
-    }
+    fun contentHash(document: RoutineDocument): String = sha256Hex(encode(document))
 
     private fun requireValid(document: RoutineDocument) {
         val errors = try {

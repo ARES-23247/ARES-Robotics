@@ -11,7 +11,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.areslib.util.parseJsonElement
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 import java.util.ArrayDeque
 
 const val ARES_SUPERSTRUCTURE_SCHEMA_VERSION: Int = 3
@@ -530,9 +530,7 @@ object SuperstructureDocumentCodec {
         return document
     }
 
-    fun contentHash(document: SuperstructureDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: SuperstructureDocument): String = sha256Hex(encode(document))
 
     // Gson can populate Kotlin non-null fields with null when older or hand-edited JSON omits a
     // value. These Elvis branches are therefore a deliberate untrusted-data boundary even though

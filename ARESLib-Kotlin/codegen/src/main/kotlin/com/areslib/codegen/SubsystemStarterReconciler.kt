@@ -89,7 +89,7 @@ object SubsystemStarterReconciler {
         plan.changes.filter { it.kind != SubsystemStarterChangeKind.UNCHANGED }.forEach { change ->
             val source = requireNotNull(byPath[change.relativePath])
             val path = safePath(root.toAbsolutePath().normalize(), change.relativePath)
-            writeAtomically(path, source.content)
+            GeneratedFileWriter.writeAtomically(path, source.content)
         }
         return plan
     }
@@ -106,26 +106,6 @@ object SubsystemStarterReconciler {
         val path = root.resolve(relative).normalize()
         require(relative.isNotBlank() && path.startsWith(root)) { "Invalid subsystem starter path '$relative'" }
         return path
-    }
-
-    private fun writeAtomically(path: Path, content: String) {
-        Files.createDirectories(path.parent)
-        val temporary = Files.createTempFile(path.parent, ".${path.fileName}.", ".tmp")
-        try {
-            Files.writeString(temporary, content)
-            try {
-                Files.move(
-                    temporary,
-                    path,
-                    java.nio.file.StandardCopyOption.ATOMIC_MOVE,
-                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
-                )
-            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
-                Files.move(temporary, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-            }
-        } finally {
-            Files.deleteIfExists(temporary)
-        }
     }
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
