@@ -1190,30 +1190,21 @@ fun MainScreen(services: ServiceRegistry) {
                                     refreshRobotStudio = robotStudioViewModel::refresh,
                                 ),
                             )
-                            NavigationTarget.PROFILE -> ProfileScreen(
-                                viewModel = profileViewModel,
-                                managedToolchainService = services.managedToolchainService,
-                                config = currentConfig,
-                                onConfigChanged = { newConfig ->
-                                    mainViewModel.onIntent(MainIntent.SaveConfig(newConfig))
-                                }
-                            )
-                            NavigationTarget.PROJECT_BACKUP -> ProjectBackupScreen(
-                                viewModel = projectBackupViewModel,
-                                projectPath = currentConfig.projectPath,
-                            )
-                            NavigationTarget.INTEGRATIONS -> IntegrationCenterScreen(
-                                viewModel = integrationCenterViewModel,
-                                workspace = com.ares.analytics.shared.models.IntegrationWorkspaceIdentity(
-                                    teamId = currentConfig.teamId,
-                                    seasonId = currentConfig.seasonId,
-                                    robotId = currentConfig.robotId,
+                            NavigationTarget.PROFILE,
+                            NavigationTarget.PROJECT_BACKUP,
+                            NavigationTarget.INTEGRATIONS,
+                            NavigationTarget.ADMIN -> WorkspaceServicesRouteHost(
+                                route = activeNav,
+                                scope = WorkspaceServicesFeatureScope(
+                                    profile = profileViewModel,
+                                    projectBackup = projectBackupViewModel,
+                                    integrations = integrationCenterViewModel,
+                                    toolchains = services.managedToolchainService,
+                                    sync = services.syncEngineService,
+                                    oauth = services.oauthService,
                                 ),
-                            )
-                            NavigationTarget.ADMIN -> AdminScreen(
-                                syncEngineService = services.syncEngineService,
-                                oauthService = services.oauthService,
-                                config = currentConfig
+                                workspace = currentConfig,
+                                saveWorkspace = { mainViewModel.onIntent(MainIntent.SaveConfig(it)) },
                             )
                         }
                     }

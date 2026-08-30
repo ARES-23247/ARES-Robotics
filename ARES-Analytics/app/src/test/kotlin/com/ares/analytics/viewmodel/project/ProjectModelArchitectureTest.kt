@@ -123,6 +123,25 @@ class ProjectModelArchitectureTest {
     }
 
     @Test
+    fun `workspace services route host uses a typed feature scope instead of the global registry`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val routeHost = File(sourceRoot, "ui/screens/WorkspaceServicesRouteHost.kt").readText()
+
+        assertTrue(
+            "WorkspaceServicesFeatureScope" in routeHost,
+            "Workspace-service routes must declare their preference, backup, and integration boundary explicitly.",
+        )
+        assertTrue(
+            "ServiceRegistry" !in routeHost,
+            "Workspace-service routes must not pull arbitrary application services.",
+        )
+    }
+
+    @Test
     fun `production authoring view models share the long lived project session`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),
