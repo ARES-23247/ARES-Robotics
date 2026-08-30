@@ -69,14 +69,16 @@ class ProjectModelArchitectureTest {
         ).firstOrNull(File::isDirectory)
         checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
         val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
-        val routeHostStart = mainScreen.indexOf("when (activeNav)")
-        assertTrue(routeHostStart >= 0, "MainScreen route host was not found")
-
-        val applicationShell = mainScreen.substring(0, routeHostStart)
+        val routeHost = File(sourceRoot, "ui/screens/RobotAuthoringRouteHost.kt").readText()
         assertTrue(
-            "gamepad1State.collectAsState()" !in applicationShell &&
-                "gamepad2State.collectAsState()" !in applicationShell,
+            "gamepad1State.collectAsState()" !in mainScreen &&
+                "gamepad2State.collectAsState()" !in mainScreen,
             "High-rate gamepad state must be collected only inside visible controller routes.",
+        )
+        assertTrue(
+            "gamepad1State.collectAsState()" in routeHost &&
+                "gamepad2State.collectAsState()" in routeHost,
+            "RobotAuthoringRouteHost must own controller-state collection for visible routes.",
         )
     }
 
@@ -93,6 +95,24 @@ class ProjectModelArchitectureTest {
         assertTrue("WorkspaceSelector(" in mainScreen)
         assertTrue("DropdownMenu(" !in mainScreen, "Workspace menu state belongs to WorkspaceSelector.")
         assertTrue("ServiceRegistry" !in selector, "The workspace selector receives data and actions, not application services.")
+    }
+
+    @Test
+    fun `workspace route host owns navigation without the application registry`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
+        val routeHost = File(sourceRoot, "ui/screens/WorkspaceRouteHost.kt").readText()
+
+        assertTrue("WorkspaceRouteHost(" in mainScreen)
+        assertTrue("when (activeNav)" !in mainScreen, "Navigation rendering belongs to WorkspaceRouteHost.")
+        assertTrue("WorkspaceRouteFeatureScope" in routeHost)
+        assertTrue("WorkspaceRouteState" in routeHost)
+        assertTrue("WorkspaceRouteActions" in routeHost)
+        assertTrue("ServiceRegistry" !in routeHost, "Route rendering must not pull arbitrary application services.")
     }
 
     @Test
