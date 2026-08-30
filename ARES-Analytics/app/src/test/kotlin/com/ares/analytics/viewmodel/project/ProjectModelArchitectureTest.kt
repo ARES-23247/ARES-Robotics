@@ -81,6 +81,21 @@ class ProjectModelArchitectureTest {
     }
 
     @Test
+    fun `workspace selector owns dropdown state without application services`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
+        val selector = File(sourceRoot, "ui/components/WorkspaceSelector.kt").readText()
+
+        assertTrue("WorkspaceSelector(" in mainScreen)
+        assertTrue("DropdownMenu(" !in mainScreen, "Workspace menu state belongs to WorkspaceSelector.")
+        assertTrue("ServiceRegistry" !in selector, "The workspace selector receives data and actions, not application services.")
+    }
+
+    @Test
     fun `robot authoring route host uses a typed feature scope instead of the global registry`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),

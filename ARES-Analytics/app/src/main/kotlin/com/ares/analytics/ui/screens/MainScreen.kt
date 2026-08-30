@@ -3,9 +3,7 @@ package com.ares.analytics.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
@@ -16,12 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
 import com.ares.analytics.di.ServiceRegistry
 import com.ares.analytics.service.AutoImportService
 import com.ares.analytics.service.BuildExecutionPhase
@@ -37,6 +31,7 @@ import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.QuickNavigationMenu
 import com.ares.analytics.ui.components.SectionNavigationBar
 import com.ares.analytics.ui.components.Sidebar
+import com.ares.analytics.ui.components.WorkspaceSelector
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
 import com.ares.analytics.ui.input.DesktopDriveKeyDispatcher
@@ -715,153 +710,26 @@ fun MainScreen(services: ServiceRegistry) {
                             horizontalArrangement = Arrangement.spacedBy(if (compactShell) 6.dp else 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                        // Dropdown Selector for active Workspace/Robot configuration
-                        var dropdownExpanded by remember { mutableStateOf(false) }
-                        Box {
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { dropdownExpanded = true }
-                                    .background(AresSurface)
-                                    .border(1.dp, AresBorder, RoundedCornerShape(6.dp))
-                                    .padding(horizontal = if (compactShell) 8.dp else 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                val badgeBg = if (currentConfig.league == League.FTC) AresGold else AresCyan
-                                Text(
-                                    text = currentConfig.league.name,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AresBackground,
-                                    modifier = Modifier
-                                        .background(badgeBg, RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-
-                                Text(
-                                    text = if (compactShell) currentConfig.robotId else "${currentConfig.robotId} (Team ${currentConfig.teamId})",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AresTextPrimary
-                                )
-
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = AresTextSecondary
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = dropdownExpanded,
-                                onDismissRequest = { dropdownExpanded = false },
-                                modifier = Modifier.background(AresSurfaceElevated).border(1.dp, AresBorder)
-                            ) {
-                                Text(
-                                    "MY ROBOTS",
-                                    color = AresTextTertiary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                                mainState.workspaces.forEach { workspace ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                modifier = Modifier.width(220.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = "${workspace.robotId} (Team ${workspace.teamId})",
-                                                        fontWeight = if (workspace.id == currentConfig.id) FontWeight.Bold else FontWeight.Normal,
-                                                        color = if (workspace.id == currentConfig.id) AresCyan else AresTextPrimary
-                                                    )
-                                                    Text(
-                                                        text = "${workspace.league.name} • Season ${workspace.seasonId}",
-                                                        fontSize = 11.sp,
-                                                        color = AresTextSecondary
-                                                    )
-                                                }
-
-                                                IconButton(
-                                                    onClick = {
-                                                        val displayName = workspace.robotName.ifBlank {
-                                                            "${workspace.robotId} (Team ${workspace.teamId})"
-                                                        }
-                                                        workspacePendingDeletion = workspace.id to displayName
-                                                        dropdownExpanded = false
-                                                    },
-                                                    modifier = Modifier.size(24.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Delete,
-                                                        contentDescription = "Remove workspace",
-                                                        tint = AresError.copy(alpha = 0.8f),
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            mainViewModel.onIntent(MainIntent.SelectWorkspace(workspace.id))
-                                            dropdownExpanded = false
-                                        }
-                                    )
+                        WorkspaceSelector(
+                            current = currentConfig,
+                            workspaces = mainState.workspaces,
+                            compact = compactShell,
+                            onSelect = { mainViewModel.onIntent(MainIntent.SelectWorkspace(it)) },
+                            onRemove = { workspace ->
+                                val displayName = workspace.robotName.ifBlank {
+                                    "${workspace.robotId} (Team ${workspace.teamId})"
                                 }
-
-                                HorizontalDivider(color = AresBorder, modifier = Modifier.padding(vertical = 4.dp))
-
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Add,
-                                                contentDescription = null,
-                                                tint = AresCyan,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Text("Create or open a robot...", color = AresCyan, fontWeight = FontWeight.Bold)
-                                        }
-                                    },
-                                    onClick = {
-                                        requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
-                                        mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                        dropdownExpanded = false
-                                    }
-                                )
-                                HorizontalDivider(color = AresBorder, modifier = Modifier.padding(vertical = 4.dp))
-                                Text(
-                                    "EXAMPLES",
-                                    color = AresTextTertiary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text("Explore the demo robot", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-                                            Text(
-                                                "Create one editable, simulation-first FTC example",
-                                                color = AresTextSecondary,
-                                                fontSize = 11.sp,
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        requestedProjectSetupMode = ProjectSetupMode.EXPLORE_DEMO
-                                        mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                        dropdownExpanded = false
-                                    },
-                                )
-                            }
-                        }
+                                workspacePendingDeletion = workspace.id to displayName
+                            },
+                            onCreate = {
+                                requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                            },
+                            onExploreDemo = {
+                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_DEMO
+                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                            },
+                        )
 
                         val missionSnapshot = dashboardMissionSnapshot
                         if (activeNav == NavigationTarget.DASHBOARD && missionSnapshot != null) {
