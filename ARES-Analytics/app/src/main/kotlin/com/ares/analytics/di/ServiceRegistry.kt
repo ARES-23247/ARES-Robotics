@@ -68,7 +68,12 @@ class ServiceRegistry {
     val robotProjectTemplateService by lazy { com.ares.analytics.service.project.RobotProjectTemplateService() }
     val projectIdeLauncher by lazy { com.ares.analytics.service.project.ProjectIdeLauncher() }
     val managedToolchainService by lazy { ManagedToolchainService() }
-    val projectVersionControlService by lazy { com.ares.analytics.service.versioncontrol.ProjectVersionControlService() }
+    val githubAuthenticationService by lazy {
+        com.ares.analytics.service.versioncontrol.GitHubAuthenticationService()
+    }
+    val projectVersionControlService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectVersionControlService(githubAuthenticationService)
+    }
     val projectArchiveExporter by lazy { com.ares.analytics.service.versioncontrol.ProjectArchiveExporter() }
     val hardwareSetupService by lazy { com.ares.analytics.service.hardware.HardwareSetupService() }
     val integrationSettingsService by lazy { com.ares.analytics.service.integration.IntegrationSettingsService() }

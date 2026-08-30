@@ -2,6 +2,7 @@ package com.ares.analytics.service.project
 
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.versioncontrol.DefaultGitHubProjectApi
+import com.ares.analytics.service.versioncontrol.GitHubAuthenticationService
 import com.ares.analytics.service.versioncontrol.ProjectBackupCredentialStore
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
@@ -173,19 +174,21 @@ class OfficialProjectTemplateIntegrationTest {
 
     private companion object {
         fun localHistoryService() = ProjectVersionControlService(
-            githubClientId = "",
-            githubAppSlug = "",
-            credentialRepository = ProjectGitHubCredentialRepository(
-                object : ProjectBackupCredentialStore {
-                    override fun read(): ByteArray? = null
-                    override fun write(bytes: ByteArray) = Unit
-                    override fun delete(): Boolean = true
-                    override val protectionDescription: String = "acceptance fixture"
-                },
+            githubAuthentication = GitHubAuthenticationService(
+                clientId = "",
+                appSlug = "",
+                credentialRepository = ProjectGitHubCredentialRepository(
+                    object : ProjectBackupCredentialStore {
+                        override fun read(): ByteArray? = null
+                        override fun write(bytes: ByteArray) = Unit
+                        override fun delete(): Boolean = true
+                        override val protectionDescription: String = "acceptance fixture"
+                    },
+                ),
+                api = DefaultGitHubProjectApi(),
+                browserLauncher = {},
+                pollDelay = {},
             ),
-            githubApi = DefaultGitHubProjectApi(),
-            browserLauncher = {},
-            pollDelay = {},
         )
 
         fun validationRepositoryUri(value: String): String {

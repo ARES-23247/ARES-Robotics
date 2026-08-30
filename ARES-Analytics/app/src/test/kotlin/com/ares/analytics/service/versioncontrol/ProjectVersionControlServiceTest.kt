@@ -55,18 +55,14 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         val pushes = AtomicInteger()
-        val service = ProjectVersionControlService(
-            githubClientId = "Ov23liExampleClientId",
-            githubAppSlug = "ares-project-backup",
-            credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
-            githubApi = api,
-            browserLauncher = {},
-            pollDelay = {},
+        val (service, github) = githubServices(
+            store = MemoryCredentialStore(),
+            api = api,
             remotePusher = { _, _ -> pushes.incrementAndGet() },
             autoSyncDelay = {},
         )
         service.initializeNewProject(root.path)
-        service.signInToGitHub()
+        github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         assertEquals(1, pushes.get())
         assertFalse(service.loadAutoSync(root.path).enabled)
@@ -100,13 +96,9 @@ class ProjectVersionControlServiceTest {
         }
         var offline = false
         val attempts = AtomicInteger()
-        val service = ProjectVersionControlService(
-            githubClientId = "Ov23liExampleClientId",
-            githubAppSlug = "ares-project-backup",
-            credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
-            githubApi = api,
-            browserLauncher = {},
-            pollDelay = {},
+        val (service, github) = githubServices(
+            store = MemoryCredentialStore(),
+            api = api,
             remotePusher = { _, _ ->
                 attempts.incrementAndGet()
                 if (offline) throw java.net.UnknownHostException("offline fixture")
@@ -114,7 +106,7 @@ class ProjectVersionControlServiceTest {
             autoSyncDelay = {},
         )
         service.initializeNewProject(root.path)
-        service.signInToGitHub()
+        github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         offline = true
 
@@ -183,8 +175,8 @@ class ProjectVersionControlServiceTest {
         val store = MemoryCredentialStore()
         val api = FakeGitHubApi()
         var openedUri: String? = null
-        val service = githubService(store, api, browserLauncher = { openedUri = it })
-        service.signInToGitHub()
+        val (_, github) = githubServices(store, api, browserLauncher = { openedUri = it })
+        github.signIn()
         assertEquals("https://github.com/login/device", openedUri)
         val saved = store.bytes?.toString(Charsets.UTF_8).orEmpty()
         assertFalse(saved.contains("schemaVersion"))
@@ -192,9 +184,9 @@ class ProjectVersionControlServiceTest {
         assertContains(saved, api.authorizedTokens.refreshToken)
         assertFalse(saved.contains("client_secret", ignoreCase = true))
         assertFalse(saved.contains("\"scope\"", ignoreCase = true))
-        assertEquals(GitHubConnectionState.Connected("student-team"), service.githubState.value)
+        assertEquals(GitHubConnectionState.Connected("student-team"), github.state.value)
         assertEquals("Ov23liExampleClientId", api.receivedClientId)
-        service.disconnectGitHub()
+        github.disconnect()
         assertNull(store.bytes)
     }
 
@@ -205,10 +197,10 @@ class ProjectVersionControlServiceTest {
             authorizedTokens = tokens("old-access-token-1234567890", "old-refresh-token-123456789")
             refreshedTokens = tokens("new-access-token-1234567890", "new-refresh-token-123456789")
         }
-        val service = githubService(store, api, now = 1_000L)
-        service.signInToGitHub()
+        val (_, github) = githubServices(store, api, now = 1_000L)
+        github.signIn()
         api.nowForTokenExpiry = true
-        service.discoverGitHubDestinations()
+        github.discoverDestinations()
         assertEquals(1, api.refreshCalls)
         assertTrue(api.catalogTokens.all { it == api.refreshedTokens.accessToken })
         val saved = store.bytes?.toString(Charsets.UTF_8).orEmpty()
@@ -221,14 +213,14 @@ class ProjectVersionControlServiceTest {
     fun `revoked refresh access is cleared and requires a new sign in`() = runBlocking {
         val store = MemoryCredentialStore()
         val api = FakeGitHubApi().apply { refreshFailureCode = "bad_refresh_token" }
-        val service = githubService(store, api, now = 1_000L)
-        service.signInToGitHub()
+        val (_, github) = githubServices(store, api, now = 1_000L)
+        github.signIn()
         api.nowForTokenExpiry = true
 
-        val failure = assertFailsWith<IllegalStateException> { service.discoverGitHubDestinations() }
+        val failure = assertFailsWith<IllegalStateException> { github.discoverDestinations() }
 
         assertContains(failure.message.orEmpty(), "expired or was revoked")
-        assertTrue(service.githubState.value is GitHubConnectionState.Error)
+        assertTrue(github.state.value is GitHubConnectionState.Error)
         assertNull(store.bytes)
     }
 
@@ -242,9 +234,9 @@ class ProjectVersionControlServiceTest {
                 privateRepository(22, 203, "ARES-23247", "archive").copy(archived = true),
             )
         }
-        val service = githubService(MemoryCredentialStore(), api)
-        service.signInToGitHub()
-        val catalog = service.discoverGitHubDestinations()
+        val (_, github) = githubServices(MemoryCredentialStore(), api)
+        github.signIn()
+        val catalog = github.discoverDestinations()
         assertEquals(listOf(GitHubAccountKind.PERSONAL, GitHubAccountKind.ORGANIZATION), catalog.accounts.map { it.kind })
         assertEquals(listOf(101L), catalog.repositoriesFor(11).filter { it.canUseForBackup }.map { it.repositoryId })
         assertEquals(listOf(202L), catalog.repositoriesFor(22).filter { it.canUseForBackup }.map { it.repositoryId })
@@ -259,8 +251,12 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         val pushedTokens = mutableListOf<String>()
-        val service = githubService(MemoryCredentialStore(), api, remotePusher = { _, token -> pushedTokens += token })
-        service.signInToGitHub()
+        val (service, github) = githubServices(
+            MemoryCredentialStore(),
+            api,
+            remotePusher = { _, token -> pushedTokens += token },
+        )
+        github.signIn()
         val plan = service.connectApprovedRepository(root.path, 22, 202)
         assertEquals("ARES-23247", plan.destination?.ownerLogin)
         assertEquals(202L, plan.destination?.repositoryId)
@@ -287,8 +283,12 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         var pushCount = 0
-        val service = githubService(MemoryCredentialStore(), api, remotePusher = { _, _ -> pushCount++ })
-        service.signInToGitHub()
+        val (service, github) = githubServices(
+            MemoryCredentialStore(),
+            api,
+            remotePusher = { _, _ -> pushCount++ },
+        )
+        github.signIn()
 
         val failure = assertFailsWith<IllegalArgumentException> {
             service.connectApprovedRepository(root.path, 22, 202)
@@ -311,8 +311,12 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val service = githubService(MemoryCredentialStore(), api, remotePusher = { _, _ -> error("network unavailable") })
-        service.signInToGitHub()
+        val (service, github) = githubServices(
+            MemoryCredentialStore(),
+            api,
+            remotePusher = { _, _ -> error("network unavailable") },
+        )
+        github.signIn()
 
         assertFailsWith<IllegalStateException> { service.connectApprovedRepository(root.path, 22, 202) }
 
@@ -360,14 +364,14 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val service = githubService(
+        val (service, github) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, _ ->
                 error("https://github.com/ARES-23247/team-robot.git: git-receive-pack not permitted")
             },
         )
-        service.signInToGitHub()
+        github.signIn()
 
         val failure = assertFailsWith<IllegalStateException> {
             service.connectApprovedRepository(root.path, 22, 202)
@@ -388,13 +392,13 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val service = githubService(
+        val (service, github) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = localRemotePusher(remote),
             remoteMainFetcher = localRemoteFetcher(remote),
         )
-        service.signInToGitHub()
+        github.signIn()
         val connected = service.connectApprovedRepository(root.path, 22, 202)
         val originalCommit = requireNotNull(connected.lastCommit)
         advanceRemote(remote, "robot.txt", "newer robot", "Improve robot")
@@ -434,13 +438,13 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val service = githubService(
+        val (service, github) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = localRemotePusher(remote),
             remoteMainFetcher = localRemoteFetcher(remote),
         )
-        service.signInToGitHub()
+        github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         advanceRemote(remote, "robot.txt", "remote one", "Remote one")
         val stalePreview = service.previewGitHubRestore(root.path)
@@ -473,13 +477,13 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val service = githubService(
+        val (service, github) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = localRemotePusher(remote),
             remoteMainFetcher = localRemoteFetcher(remote),
         )
-        service.signInToGitHub()
+        github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         advanceRemote(remote, "credentials.json", "{\"privateKey\":\"must-not-restore\"}", "Unsafe remote file")
 
@@ -500,8 +504,12 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         var pushCount = 0
-        val service = githubService(MemoryCredentialStore(), api, remotePusher = { _, _ -> pushCount++ })
-        service.signInToGitHub()
+        val (service, github) = githubServices(
+            MemoryCredentialStore(),
+            api,
+            remotePusher = { _, _ -> pushCount++ },
+        )
+        github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         assertEquals(1, pushCount)
         api.repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot").copy(canPush = false))
@@ -520,14 +528,14 @@ class ProjectVersionControlServiceTest {
         val active = AtomicInteger()
         val maximumActive = AtomicInteger()
         var pushes = 0
-        val service = githubService(MemoryCredentialStore(), api, remotePusher = { _, _ ->
+        val (service, github) = githubServices(MemoryCredentialStore(), api, remotePusher = { _, _ ->
             val current = active.incrementAndGet()
             maximumActive.updateAndGet { previous -> maxOf(previous, current) }
             Thread.sleep(20)
             pushes++
             active.decrementAndGet()
         })
-        service.signInToGitHub()
+        github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
 
         coroutineScope {
@@ -546,8 +554,12 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-a"))
         }
         var pushCount = 0
-        val service = githubService(MemoryCredentialStore(), api, remotePusher = { _, _ -> pushCount++ })
-        service.signInToGitHub()
+        val (service, github) = githubServices(
+            MemoryCredentialStore(),
+            api,
+            remotePusher = { _, _ -> pushCount++ },
+        )
+        github.signIn()
         val failure = assertFailsWith<IllegalStateException> {
             service.connectApprovedRepository(root.path, installationId = 99, repositoryId = 909)
         }
@@ -561,8 +573,8 @@ class ProjectVersionControlServiceTest {
         val store = MemoryCredentialStore().apply {
             bytes = """{"accessToken":"legacy-token","login":"student-team","scope":"repo"}""".toByteArray()
         }
-        val service = githubService(store, FakeGitHubApi())
-        val state = service.githubState.value as GitHubConnectionState.Error
+        val (_, github) = githubServices(store, FakeGitHubApi())
+        val state = github.state.value as GitHubConnectionState.Error
         assertContains(state.message, "invalid")
         assertNull(store.bytes)
     }
@@ -570,15 +582,15 @@ class ProjectVersionControlServiceTest {
     @Test
     fun `unreadable saved github access is cleared without crashing the screen`() {
         val store = UnreadableCredentialStore()
-        val service = ProjectVersionControlService(
-            githubClientId = "Ov23liExampleClientId",
-            githubAppSlug = "ares-project-backup",
+        val github = GitHubAuthenticationService(
+            clientId = "Ov23liExampleClientId",
+            appSlug = "ares-project-backup",
             credentialRepository = ProjectGitHubCredentialRepository(store),
-            githubApi = FakeGitHubApi(),
+            api = FakeGitHubApi(),
             browserLauncher = {},
             pollDelay = {},
         )
-        assertTrue(service.githubState.value is GitHubConnectionState.Error)
+        assertTrue(github.state.value is GitHubConnectionState.Error)
         assertTrue(store.deleted)
     }
 
@@ -593,15 +605,15 @@ class ProjectVersionControlServiceTest {
     }
 
     private fun localOnlyService() = ProjectVersionControlService(
-        githubClientId = "",
-        githubAppSlug = "",
-        credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
-        githubApi = FakeGitHubApi(),
-        browserLauncher = {},
-        pollDelay = {},
+        githubAuthentication = testAuthentication(),
     )
 
-    private fun githubService(
+    private data class GitHubServices(
+        val versionControl: ProjectVersionControlService,
+        val authentication: GitHubAuthenticationService,
+    )
+
+    private fun githubServices(
         store: ProjectBackupCredentialStore,
         api: FakeGitHubApi,
         now: Long = 1_000L,
@@ -610,16 +622,35 @@ class ProjectVersionControlServiceTest {
         remoteMainFetcher: (Git, String) -> ObjectId = { git, _ ->
             requireNotNull(git.repository.resolve("refs/remotes/origin/main"))
         },
-    ) = ProjectVersionControlService(
-        githubClientId = "Ov23liExampleClientId",
-        githubAppSlug = "ares-project-backup",
-        credentialRepository = ProjectGitHubCredentialRepository(store),
-        githubApi = api,
-        browserLauncher = browserLauncher,
+        autoSyncDelay: suspend (Long) -> Unit = { delay(it) },
+    ): GitHubServices {
+        val authentication = GitHubAuthenticationService(
+            clientId = "Ov23liExampleClientId",
+            appSlug = "ares-project-backup",
+            credentialRepository = ProjectGitHubCredentialRepository(store),
+            api = api,
+            browserLauncher = browserLauncher,
+            pollDelay = {},
+            epochSeconds = { if (api.nowForTokenExpiry) now + 3_570L else now },
+        )
+        return GitHubServices(
+            versionControl = ProjectVersionControlService(
+                githubAuthentication = authentication,
+                remotePusher = remotePusher,
+                remoteMainFetcher = remoteMainFetcher,
+                autoSyncDelay = autoSyncDelay,
+            ),
+            authentication = authentication,
+        )
+    }
+
+    private fun testAuthentication() = GitHubAuthenticationService(
+        clientId = "",
+        appSlug = "",
+        credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
+        api = FakeGitHubApi(),
+        browserLauncher = {},
         pollDelay = {},
-        epochSeconds = { if (api.nowForTokenExpiry) now + 3_570L else now },
-        remotePusher = remotePusher,
-        remoteMainFetcher = remoteMainFetcher,
     )
 
     private fun localBareRemote(name: String): File = temporaryDirectory.resolve("$name.git").toFile().also { remote ->

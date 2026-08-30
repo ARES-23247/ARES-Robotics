@@ -1,6 +1,5 @@
 package com.ares.analytics.service.versioncontrol
 
-import com.ares.analytics.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,9 +29,7 @@ import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.util.io.DisabledOutputStream
 import org.slf4j.LoggerFactory
-import java.awt.Desktop
 import java.io.File
-import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.Locale
@@ -123,18 +120,6 @@ data class ProjectBackupPlan(
         initialized && changes.isNotEmpty() && blockedSensitivePaths.isEmpty() && confirmationToken != null
 }
 
-sealed class GitHubConnectionState {
-    object Disconnected : GitHubConnectionState()
-    data class Unavailable(val message: String) : GitHubConnectionState()
-    data class AwaitingUser(
-        val userCode: String,
-        val verificationUri: String,
-        val expiresAtEpochSeconds: Long,
-    ) : GitHubConnectionState()
-    data class Connected(val login: String) : GitHubConnectionState()
-    data class Error(val message: String) : GitHubConnectionState()
-}
-
 /**
  * Review-first local Git history plus an optional permission-scoped GitHub App backup.
  *
@@ -144,13 +129,7 @@ sealed class GitHubConnectionState {
  * private/write permissions before sending bytes.
  */
 class ProjectVersionControlService internal constructor(
-    private val githubClientId: String = BuildConfig.GITHUB_APP_CLIENT_ID,
-    private val githubAppSlug: String = BuildConfig.GITHUB_APP_SLUG,
-    private val credentialRepository: ProjectGitHubCredentialRepository =
-        ProjectGitHubCredentialRepository(createProjectBackupCredentialStore()),
-    private val githubApi: GitHubProjectApi = DefaultGitHubProjectApi(),
-    private val browserLauncher: (String) -> Unit = { uri -> Desktop.getDesktop().browse(URI(uri)) },
-    private val pollDelay: suspend (Long) -> Unit = { milliseconds -> delay(milliseconds) },
+    private val githubAuthentication: GitHubAuthenticationService = GitHubAuthenticationService(),
     private val epochSeconds: () -> Long = { Instant.now().epochSecond },
     private val remotePusher: (Git, String) -> Unit = ::pushWithJGit,
     private val remoteMainFetcher: (Git, String) -> ObjectId = ::fetchMainWithJGit,
@@ -160,15 +139,12 @@ class ProjectVersionControlService internal constructor(
         configureJGitLogging()
     }
 
-    private val githubMutex = Mutex()
     private val historyMutex = Mutex()
     private val destinationStore = ProjectGitHubDestinationStore()
     private val reviewTokens = ProjectReviewTokenFactory()
     private val autoSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val autoSyncRequests = Channel<String>(Channel.CONFLATED)
     private val autoSyncJob: Job
-    private val _githubState = MutableStateFlow<GitHubConnectionState>(initialGitHubState())
-    val githubState: StateFlow<GitHubConnectionState> = _githubState.asStateFlow()
     private val _autoSyncState = MutableStateFlow(ProjectBackupAutoSyncState())
     val autoSyncState: StateFlow<ProjectBackupAutoSyncState> = _autoSyncState.asStateFlow()
 
@@ -294,58 +270,13 @@ class ProjectVersionControlService internal constructor(
         buildPlan(root).also { scheduleAutoSync(root) }
     }
 
-    suspend fun signInToGitHub() = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            requireValidGitHubAppConfiguration()
-            val authorization = githubApi.beginDeviceAuthorization(githubClientId)
-            val expiresAt = epochSeconds() + authorization.expiresInSeconds
-            _githubState.value = GitHubConnectionState.AwaitingUser(
-                authorization.userCode,
-                authorization.verificationUri,
-                expiresAt,
-            )
-            browserLauncher(authorization.verificationUri)
-            var interval = authorization.intervalSeconds.coerceAtLeast(MINIMUM_DEVICE_POLL_SECONDS)
-            while (epochSeconds() < expiresAt) {
-                pollDelay(interval * 1_000)
-                when (val result = githubApi.pollDeviceAuthorization(githubClientId, authorization.deviceCode)) {
-                    GitHubDevicePollResult.Pending -> Unit
-                    GitHubDevicePollResult.SlowDown -> interval += 5
-                    is GitHubDevicePollResult.Authorized -> {
-                        val login = githubApi.currentLogin(result.tokens.accessToken)
-                        val credential = credentialRepository.from(result.tokens, login, epochSeconds())
-                        credentialRepository.write(credential)
-                        _githubState.value = GitHubConnectionState.Connected(login)
-                        return@serializedGitHubOperation
-                    }
-                    is GitHubDevicePollResult.Failed -> failGitHubSignIn(result.code)
-                }
-            }
-            val message = "The GitHub sign-in code expired. Start sign-in again to receive a new code."
-            _githubState.value = GitHubConnectionState.Error(message)
-            error(message)
-        }
-    }
-
-    suspend fun discoverGitHubDestinations(): GitHubBackupCatalog = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            loadCatalog(requireUsableCredential())
-        }
-    }
-
-    suspend fun openGitHubAppInstallation() = withContext(Dispatchers.IO) {
-        requireValidGitHubAppConfiguration()
-        browserLauncher("https://github.com/apps/$githubAppSlug/installations/new")
-    }
-
     suspend fun connectApprovedRepository(
         projectPath: String,
         installationId: Long,
         repositoryId: Long,
     ): ProjectBackupPlan = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            val credential = requireUsableCredential()
-            val catalog = loadCatalog(credential)
+        githubAuthentication.withCredential { credential ->
+            val catalog = githubAuthentication.loadCatalog(credential)
             val account = catalog.accounts.singleOrNull { it.installationId == installationId }
                 ?: error("That GitHub App installation is no longer available to this account.")
             require(account.canWriteContents) {
@@ -390,8 +321,7 @@ class ProjectVersionControlService internal constructor(
     }
 
     suspend fun pushBackup(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            val credential = requireUsableCredential()
+        githubAuthentication.withCredential { credential ->
             val root = requireProjectRoot(projectPath)
             Git.open(root).use { git ->
                 require(git.status().call().isClean) {
@@ -399,7 +329,7 @@ class ProjectVersionControlService internal constructor(
                 }
                 val destination = destinationStore.read(git)
                     ?: error("Choose an approved personal or team repository before syncing GitHub.")
-                val (account, repository) = verifyDestinationAccess(credential, destination)
+                val (account, repository) = githubAuthentication.verifyDestinationAccess(credential, destination)
                 val origin = destinationStore.originUrl(git)
                     ?: error("The saved GitHub destination has no origin remote. Choose the destination again.")
                 require(destinationStore.sameRepository(origin, destination.cloneUrl)) {
@@ -422,8 +352,7 @@ class ProjectVersionControlService internal constructor(
      * Only an unambiguous fast-forward can become restorable.
      */
     suspend fun previewGitHubRestore(projectPath: String): ProjectRestorePlan = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            val credential = requireUsableCredential()
+        githubAuthentication.withCredential { credential ->
             val root = requireProjectRoot(projectPath)
             Git.open(root).use { git -> prepareRestore(git, credential) }
         }
@@ -434,8 +363,7 @@ class ProjectVersionControlService internal constructor(
         projectPath: String,
         expectedConfirmationToken: String,
     ): ProjectBackupPlan = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            val credential = requireUsableCredential()
+        githubAuthentication.withCredential { credential ->
             val root = requireProjectRoot(projectPath)
             Git.open(root).use { git ->
                 val reviewed = prepareRestore(git, credential)
@@ -564,30 +492,13 @@ class ProjectVersionControlService internal constructor(
         buildPlan(root).also { _autoSyncState.value = autoSyncStateFor(root) }
     }
 
-    suspend fun disconnectGitHub() = withContext(Dispatchers.IO) {
-        serializedGitHubOperation {
-            check(credentialRepository.delete()) { "GitHub credentials could not be removed from this computer." }
-            _githubState.value = if (validGitHubAppConfiguration(githubClientId, githubAppSlug)) {
-                GitHubConnectionState.Disconnected
-            } else {
-                GitHubConnectionState.Unavailable("Official GitHub App backup is not configured in this build.")
-            }
-            val currentAutoSync = _autoSyncState.value
-            if (currentAutoSync.enabled) {
-                _autoSyncState.value = currentAutoSync.copy(
-                    status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
-                    message = "Automatic backup is paused. Sign in with GitHub again to continue.",
-                )
-            }
-        }
-    }
-
-    private suspend fun <T> serializedGitHubOperation(block: suspend () -> T): T {
-        githubMutex.lock()
-        try {
-            return block()
-        } finally {
-            githubMutex.unlock()
+    fun pauseAutoSyncForSignedOutAccount() {
+        val currentAutoSync = _autoSyncState.value
+        if (currentAutoSync.enabled) {
+            _autoSyncState.value = currentAutoSync.copy(
+                status = ProjectBackupAutoSyncStatus.ATTENTION_REQUIRED,
+                message = "Automatic backup is paused. Sign in with GitHub again to continue.",
+            )
         }
     }
 
@@ -746,91 +657,6 @@ class ProjectVersionControlService internal constructor(
         }
     }
 
-    private fun loadCatalog(credential: StoredGitHubAppCredential): GitHubBackupCatalog = credentialAware {
-        val accounts = githubApi.listInstallations(credential.accessToken)
-            .distinctBy(GitHubBackupAccount::installationId)
-            .sortedWith(compareBy(GitHubBackupAccount::kind, GitHubBackupAccount::login))
-        val repositories = accounts.flatMap { account ->
-            githubApi.listRepositories(credential.accessToken, account.installationId)
-        }.distinctBy { it.installationId to it.repositoryId }
-            .sortedWith(compareBy(GitHubBackupRepository::ownerLogin, GitHubBackupRepository::name))
-        GitHubBackupCatalog(accounts, repositories)
-    }
-
-    private fun verifyDestinationAccess(
-        credential: StoredGitHubAppCredential,
-        destination: GitHubBackupDestination,
-    ): Pair<GitHubBackupAccount, GitHubBackupRepository> {
-        val catalog = loadCatalog(credential)
-        val account = catalog.accounts.singleOrNull { it.installationId == destination.installationId }
-            ?: error("The saved ${destination.ownerLogin} GitHub App installation is no longer accessible. Ask a team owner to restore it or change destination.")
-        require(account.canWriteContents) {
-            "The saved GitHub App installation no longer has Contents: write permission. Nothing was synchronized."
-        }
-        val repository = catalog.repositories.singleOrNull {
-            it.installationId == destination.installationId && it.repositoryId == destination.repositoryId
-        } ?: error("The saved repository is no longer granted to the ARES GitHub App. Nothing was synchronized.")
-        require(repository.canUseForBackup) { repository.unavailableReason ?: "The saved repository cannot accept a backup." }
-        return account to repository
-    }
-
-    private fun credentialAware(block: () -> GitHubBackupCatalog): GitHubBackupCatalog = try {
-        block()
-    } catch (failure: GitHubApiException) {
-        if (failure.status == 401) invalidateCredential("GitHub access was revoked or expired. Saved access was cleared; sign in again.")
-        throw failure
-    }
-
-    private fun requireUsableCredential(): StoredGitHubAppCredential {
-        val credential = loadCredentialOrInvalidate()
-        val now = epochSeconds()
-        if (credential.refreshTokenExpiresAtEpochSeconds <= now + TOKEN_EXPIRY_SAFETY_SECONDS) {
-            invalidateCredential("GitHub refresh access expired. Saved access was cleared; sign in again.")
-        }
-        if (credential.accessTokenExpiresAtEpochSeconds > now + TOKEN_EXPIRY_SAFETY_SECONDS) return credential
-        val refreshed = try {
-            githubApi.refreshUserAccessToken(githubClientId, credential.refreshToken)
-        } catch (failure: GitHubAuthorizationException) {
-            invalidateCredential(githubRefreshFailureMessage(failure.code))
-        } catch (failure: GitHubApiException) {
-            if (failure.status == 401) invalidateCredential("GitHub refresh access was revoked. Saved access was cleared; sign in again.")
-            throw failure
-        }
-        return credentialRepository.from(refreshed, credential.login, epochSeconds()).also(credentialRepository::write)
-    }
-
-    private fun loadCredentialOrInvalidate(): StoredGitHubAppCredential {
-        val credential = try {
-            credentialRepository.read()
-        } catch (_: Exception) {
-            invalidateCredential("Saved GitHub access was invalid or unreadable and has been cleared. Sign in again.")
-        } ?: error("Sign in with GitHub before choosing or synchronizing a backup.")
-        return credential
-    }
-
-    private fun invalidateCredential(message: String): Nothing {
-        credentialRepository.delete()
-        _githubState.value = GitHubConnectionState.Error(message)
-        error(message)
-    }
-
-    private fun initialGitHubState(): GitHubConnectionState {
-        if (!validGitHubAppConfiguration(githubClientId, githubAppSlug)) {
-            return GitHubConnectionState.Unavailable(
-                "Official GitHub App backup is not configured in this build. Local history is still available.",
-            )
-        }
-        val credential = try {
-            credentialRepository.read()
-        } catch (_: Exception) {
-            credentialRepository.delete()
-            return GitHubConnectionState.Error(
-                "Saved GitHub access was invalid or unreadable and has been cleared. Sign in again.",
-            )
-        } ?: return GitHubConnectionState.Disconnected
-        return GitHubConnectionState.Connected(credential.login)
-    }
-
     private fun buildPlan(root: File): ProjectBackupPlan {
         if (!File(root, ".git").isDirectory) {
             return ProjectBackupPlan(root.path, false, null, emptyList(), emptyList(), null, null, null, null)
@@ -938,7 +764,7 @@ class ProjectVersionControlService internal constructor(
         }
         val destination = destinationStore.read(git)
             ?: error("Choose an approved personal or team repository before checking GitHub versions.")
-        val (_, repository) = verifyDestinationAccess(credential, destination)
+        val (_, repository) = githubAuthentication.verifyDestinationAccess(credential, destination)
         val origin = destinationStore.originUrl(git)
             ?: error("The saved GitHub destination has no origin remote. Choose the destination again.")
         require(destinationStore.sameRepository(origin, repository.cloneUrl)) {
@@ -1065,23 +891,9 @@ class ProjectVersionControlService internal constructor(
         }
     }
 
-    private fun requireValidGitHubAppConfiguration() {
-        require(validGitHubAppConfiguration(githubClientId, githubAppSlug)) {
-            "This ARES build has no GitHub App identity. Local history still works; install an official build configured for GitHub backup."
-        }
-    }
-
-    private fun failGitHubSignIn(code: String): Nothing {
-        val message = githubDeviceFailureMessage(code)
-        _githubState.value = GitHubConnectionState.Error(message)
-        error(message)
-    }
-
     companion object {
         private const val MAX_VISIBLE_VERSIONS = 20
         private const val MAX_VISIBLE_RECOVERY_POINTS = 10
-        private const val MINIMUM_DEVICE_POLL_SECONDS = 5L
-        private const val TOKEN_EXPIRY_SAFETY_SECONDS = 60L
         private const val AUTO_SYNC_CONFIG_SECTION = "aresBackup"
         private const val AUTO_SYNC_CONFIG_NAME = "autoSync"
         private const val AUTO_SYNC_DEBOUNCE_MS = 5_000L
@@ -1156,21 +968,6 @@ internal fun isSensitiveProjectPath(path: String): Boolean {
         containsPrivateKeySuffix ||
         name in setOf("credentials.json", "service-account.json", "service_account.json") ||
         normalized.startsWith(".ares/secrets/")
-}
-
-private fun githubDeviceFailureMessage(code: String): String = when (code) {
-    "expired_token" -> "The GitHub sign-in code expired. Start sign-in again."
-    "access_denied" -> "GitHub sign-in was cancelled. Local project history is unchanged."
-    "device_flow_disabled" -> "The ARES GitHub App is not enabled for device sign-in. Contact an ARES administrator."
-    "incorrect_client_credentials" -> "This ARES build has an invalid GitHub App identity. Update the app or contact an administrator."
-    "token_expiration_required" -> "The ARES GitHub App must use expiring user tokens. Contact an ARES administrator."
-    else -> "GitHub could not complete sign-in ($code). Local project history is unchanged."
-}
-
-private fun githubRefreshFailureMessage(code: String): String = when (code) {
-    "bad_refresh_token", "expired_token" ->
-        "GitHub refresh access expired or was revoked. Saved access was cleared; sign in again."
-    else -> "GitHub could not refresh access ($code). Saved access was cleared; sign in again."
 }
 
 private fun pushWithJGit(git: Git, accessToken: String) {

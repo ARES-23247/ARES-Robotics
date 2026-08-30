@@ -1,6 +1,7 @@
 package com.ares.analytics.viewmodel
 
 import com.ares.analytics.service.versioncontrol.GitHubConnectionState
+import com.ares.analytics.service.versioncontrol.GitHubAuthenticationService
 import com.ares.analytics.service.versioncontrol.GitHubBackupCatalog
 import com.ares.analytics.service.versioncontrol.ProjectBackupPlan
 import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncState
@@ -61,15 +62,16 @@ sealed class ProjectBackupIntent {
 /** Coordinates review-first project history and optional private GitHub backup. */
 class ProjectBackupViewModel(
     private val service: ProjectVersionControlService,
+    private val githubAuthentication: GitHubAuthenticationService,
     private val archiveExporter: ProjectArchiveExporter,
     private val scope: CoroutineScope,
 ) {
-    private val _state = MutableStateFlow(ProjectBackupState(githubState = service.githubState.value))
+    private val _state = MutableStateFlow(ProjectBackupState(githubState = githubAuthentication.state.value))
     val state: StateFlow<ProjectBackupState> = _state.asStateFlow()
 
     init {
         scope.launch {
-            service.githubState.collectLatest { github ->
+            githubAuthentication.state.collectLatest { github ->
                 _state.update { it.copy(githubState = github) }
             }
         }
@@ -89,20 +91,21 @@ class ProjectBackupViewModel(
                 "GitHub was disconnected. Local versions remain on this computer.",
                 clearCatalog = true,
             ) {
-                service.disconnectGitHub()
+                githubAuthentication.disconnect()
+                service.pauseAutoSyncForSignedOutAccount()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.SignInToGitHub -> runAction(
                 "GitHub is connected. Choose an approved personal or team repository.",
                 refreshCatalog = true,
             ) {
-                service.signInToGitHub()
+                githubAuthentication.signIn()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.OpenGitHubAppInstallation -> runAction(
                 "GitHub opened the ARES App installation page. Return here and refresh destinations after approval.",
             ) {
-                service.openGitHubAppInstallation()
+                githubAuthentication.openInstallationPage()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.RefreshGitHubDestinations -> runAction(
@@ -211,7 +214,7 @@ class ProjectBackupViewModel(
                 val plan = block()
                 val catalog = when {
                     clearCatalog -> GitHubBackupCatalog()
-                    refreshCatalog -> service.discoverGitHubDestinations()
+                    refreshCatalog -> githubAuthentication.discoverDestinations()
                     else -> _state.value.githubCatalog
                 }
                 _state.update { current ->
