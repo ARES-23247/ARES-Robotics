@@ -58,7 +58,7 @@ class ProjectVersionControlServiceTest {
         val service = ProjectVersionControlService(
             githubClientId = "Ov23liExampleClientId",
             githubAppSlug = "ares-project-backup",
-            credentialStore = MemoryCredentialStore(),
+            credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
             githubApi = api,
             browserLauncher = {},
             pollDelay = {},
@@ -103,7 +103,7 @@ class ProjectVersionControlServiceTest {
         val service = ProjectVersionControlService(
             githubClientId = "Ov23liExampleClientId",
             githubAppSlug = "ares-project-backup",
-            credentialStore = MemoryCredentialStore(),
+            credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
             githubApi = api,
             browserLauncher = {},
             pollDelay = {},
@@ -573,7 +573,7 @@ class ProjectVersionControlServiceTest {
         val service = ProjectVersionControlService(
             githubClientId = "Ov23liExampleClientId",
             githubAppSlug = "ares-project-backup",
-            credentialStore = store,
+            credentialRepository = ProjectGitHubCredentialRepository(store),
             githubApi = FakeGitHubApi(),
             browserLauncher = {},
             pollDelay = {},
@@ -595,7 +595,7 @@ class ProjectVersionControlServiceTest {
     private fun localOnlyService() = ProjectVersionControlService(
         githubClientId = "",
         githubAppSlug = "",
-        credentialStore = MemoryCredentialStore(),
+        credentialRepository = ProjectGitHubCredentialRepository(MemoryCredentialStore()),
         githubApi = FakeGitHubApi(),
         browserLauncher = {},
         pollDelay = {},
@@ -613,7 +613,7 @@ class ProjectVersionControlServiceTest {
     ) = ProjectVersionControlService(
         githubClientId = "Ov23liExampleClientId",
         githubAppSlug = "ares-project-backup",
-        credentialStore = store,
+        credentialRepository = ProjectGitHubCredentialRepository(store),
         githubApi = api,
         browserLauncher = browserLauncher,
         pollDelay = {},

@@ -1,7 +1,6 @@
 package com.ares.analytics.service.versioncontrol
 
 import com.ares.analytics.BuildConfig
-import com.ares.analytics.shared.AppJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,7 +16,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.MergeCommand
 import org.eclipse.jgit.api.ResetCommand
@@ -138,15 +136,6 @@ sealed class GitHubConnectionState {
     data class Error(val message: String) : GitHubConnectionState()
 }
 
-@Serializable
-internal data class StoredGitHubAppCredential(
-    val accessToken: String,
-    val accessTokenExpiresAtEpochSeconds: Long,
-    val refreshToken: String,
-    val refreshTokenExpiresAtEpochSeconds: Long,
-    val login: String,
-)
-
 /**
  * Review-first local Git history plus an optional permission-scoped GitHub App backup.
  *
@@ -158,7 +147,8 @@ internal data class StoredGitHubAppCredential(
 class ProjectVersionControlService internal constructor(
     private val githubClientId: String = BuildConfig.GITHUB_APP_CLIENT_ID,
     private val githubAppSlug: String = BuildConfig.GITHUB_APP_SLUG,
-    private val credentialStore: ProjectBackupCredentialStore = createProjectBackupCredentialStore(),
+    private val credentialRepository: ProjectGitHubCredentialRepository =
+        ProjectGitHubCredentialRepository(createProjectBackupCredentialStore()),
     private val githubApi: GitHubProjectApi = DefaultGitHubProjectApi(),
     private val browserLauncher: (String) -> Unit = { uri -> Desktop.getDesktop().browse(URI(uri)) },
     private val pollDelay: suspend (Long) -> Unit = { milliseconds -> delay(milliseconds) },
@@ -323,8 +313,8 @@ class ProjectVersionControlService internal constructor(
                     GitHubDevicePollResult.SlowDown -> interval += 5
                     is GitHubDevicePollResult.Authorized -> {
                         val login = githubApi.currentLogin(result.tokens.accessToken)
-                        val credential = credentialFrom(result.tokens, login)
-                        storeCredential(credential)
+                        val credential = credentialRepository.from(result.tokens, login, epochSeconds())
+                        credentialRepository.write(credential)
                         _githubState.value = GitHubConnectionState.Connected(login)
                         return@serializedGitHubOperation
                     }
@@ -576,7 +566,7 @@ class ProjectVersionControlService internal constructor(
 
     suspend fun disconnectGitHub() = withContext(Dispatchers.IO) {
         serializedGitHubOperation {
-            check(credentialStore.delete()) { "GitHub credentials could not be removed from this computer." }
+            check(credentialRepository.delete()) { "GitHub credentials could not be removed from this computer." }
             _githubState.value = if (validGitHubAppConfiguration(githubClientId, githubAppSlug)) {
                 GitHubConnectionState.Disconnected
             } else {
@@ -806,57 +796,20 @@ class ProjectVersionControlService internal constructor(
             if (failure.status == 401) invalidateCredential("GitHub refresh access was revoked. Saved access was cleared; sign in again.")
             throw failure
         }
-        return credentialFrom(refreshed, credential.login).also(::storeCredential)
-    }
-
-    private fun credentialFrom(tokens: GitHubUserTokens, login: String): StoredGitHubAppCredential {
-        val now = epochSeconds()
-        require(login.matches(Regex("[A-Za-z0-9-]{1,100}"))) { "GitHub returned an invalid account identity." }
-        require(tokens.accessToken.length in 20..2_048 && tokens.refreshToken.length in 20..2_048) {
-            "GitHub returned an invalid credential. Sign-in was not saved."
-        }
-        return StoredGitHubAppCredential(
-            accessToken = tokens.accessToken,
-            accessTokenExpiresAtEpochSeconds = Math.addExact(now, tokens.expiresInSeconds),
-            refreshToken = tokens.refreshToken,
-            refreshTokenExpiresAtEpochSeconds = Math.addExact(now, tokens.refreshTokenExpiresInSeconds),
-            login = login,
-        )
-    }
-
-    private fun storeCredential(credential: StoredGitHubAppCredential) {
-        credentialStore.write(
-            AppJson.encodeToString(StoredGitHubAppCredential.serializer(), credential)
-                .toByteArray(StandardCharsets.UTF_8),
-        )
+        return credentialRepository.from(refreshed, credential.login, epochSeconds()).also(credentialRepository::write)
     }
 
     private fun loadCredentialOrInvalidate(): StoredGitHubAppCredential {
-        val bytes = try {
-            credentialStore.read()
+        val credential = try {
+            credentialRepository.read()
         } catch (_: Exception) {
-            invalidateCredential("Saved GitHub access was unreadable and has been cleared. Sign in again.")
+            invalidateCredential("Saved GitHub access was invalid or unreadable and has been cleared. Sign in again.")
         } ?: error("Sign in with GitHub before choosing or synchronizing a backup.")
-        return try {
-            decodeCredential(bytes)
-        } catch (_: Exception) {
-            invalidateCredential("Saved GitHub access was invalid and has been cleared. Sign in again.")
-        }
-    }
-
-    private fun decodeCredential(bytes: ByteArray): StoredGitHubAppCredential {
-        val text = bytes.toString(StandardCharsets.UTF_8)
-        return AppJson.decodeFromString(StoredGitHubAppCredential.serializer(), text).also(::validateStoredCredential)
-    }
-
-    private fun validateStoredCredential(credential: StoredGitHubAppCredential) {
-        require(credential.accessToken.length in 20..2_048 && credential.refreshToken.length in 20..2_048)
-        require(credential.login.matches(Regex("[A-Za-z0-9-]{1,100}")))
-        require(credential.accessTokenExpiresAtEpochSeconds > 0 && credential.refreshTokenExpiresAtEpochSeconds > 0)
+        return credential
     }
 
     private fun invalidateCredential(message: String): Nothing {
-        credentialStore.delete()
+        credentialRepository.delete()
         _githubState.value = GitHubConnectionState.Error(message)
         error(message)
     }
@@ -867,18 +820,14 @@ class ProjectVersionControlService internal constructor(
                 "Official GitHub App backup is not configured in this build. Local history is still available.",
             )
         }
-        val bytes = try {
-            credentialStore.read()
-        } catch (_: Exception) {
-            credentialStore.delete()
-            return GitHubConnectionState.Error("Saved GitHub access was unreadable and has been cleared. Sign in again.")
-        } ?: return GitHubConnectionState.Disconnected
         val credential = try {
-            decodeCredential(bytes)
+            credentialRepository.read()
         } catch (_: Exception) {
-            credentialStore.delete()
-            return GitHubConnectionState.Error("Saved GitHub access was invalid and has been cleared. Sign in again.")
-        }
+            credentialRepository.delete()
+            return GitHubConnectionState.Error(
+                "Saved GitHub access was invalid or unreadable and has been cleared. Sign in again.",
+            )
+        } ?: return GitHubConnectionState.Disconnected
         return GitHubConnectionState.Connected(credential.login)
     }
 

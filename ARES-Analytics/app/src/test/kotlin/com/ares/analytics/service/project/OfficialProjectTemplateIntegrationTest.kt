@@ -5,6 +5,7 @@ import com.ares.analytics.service.versioncontrol.DefaultGitHubProjectApi
 import com.ares.analytics.service.versioncontrol.ProjectBackupCredentialStore
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
+import com.ares.analytics.service.versioncontrol.ProjectGitHubCredentialRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -174,12 +175,14 @@ class OfficialProjectTemplateIntegrationTest {
         fun localHistoryService() = ProjectVersionControlService(
             githubClientId = "",
             githubAppSlug = "",
-            credentialStore = object : ProjectBackupCredentialStore {
-                override fun read(): ByteArray? = null
-                override fun write(bytes: ByteArray) = Unit
-                override fun delete(): Boolean = true
-                override val protectionDescription: String = "acceptance fixture"
-            },
+            credentialRepository = ProjectGitHubCredentialRepository(
+                object : ProjectBackupCredentialStore {
+                    override fun read(): ByteArray? = null
+                    override fun write(bytes: ByteArray) = Unit
+                    override fun delete(): Boolean = true
+                    override val protectionDescription: String = "acceptance fixture"
+                },
+            ),
             githubApi = DefaultGitHubProjectApi(),
             browserLauncher = {},
             pollDelay = {},
