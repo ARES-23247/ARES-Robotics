@@ -14,14 +14,6 @@ import com.ares.analytics.shared.League
 import com.ares.analytics.service.project.persistence.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
-import com.areslib.codegen.GeneratedSubsystemSourceSet
-import com.areslib.codegen.SubsystemArtifact
-import com.areslib.codegen.SubsystemArtifactGroup
-import com.areslib.codegen.SubsystemArtifactOwnership
-import com.areslib.codegen.SubsystemKotlinCodegenTarget
-import com.areslib.codegen.SubsystemKotlinGenerator
-import com.areslib.codegen.SubsystemStarterReconciler
-import com.areslib.codegen.SubsystemStarterChangeKind
 import com.areslib.subsystem.FaultRecoveryActionKind
 import com.areslib.subsystem.InterlockComparison
 import com.areslib.subsystem.SubsystemControlLoopDocument
@@ -95,6 +87,7 @@ class SubsystemGeneratorViewModel(
         League.FTC -> "org.firstinspires.ftc.teamcode.subsystems"
         League.FRC -> "com.areslib.frc.subsystems"
     }
+    private val previewPlanner = SubsystemBuilderPreviewPlanner(league, platform, basePackage)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var aiProposalGeneration = 0L
     private val _state = MutableStateFlow(SubsystemGeneratorState(projectPath, league))
@@ -1254,96 +1247,7 @@ class SubsystemGeneratorViewModel(
 
     private fun SubsystemGeneratorState.revalidated(
         external: List<SubsystemProblem> = problems.filter { it.path.startsWith("project:") },
-    ): SubsystemGeneratorState {
-        val document = draft?.document ?: return copy(previewFiles = emptyList(), problems = external)
-        val validation = SubsystemSchema.validate(document).map {
-            SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
-        } + projectConnectionProblems(document, documents)
-        val generated = if (validation.isEmpty() && document.implementation.kind.isAresGenerated()) {
-            val sourceFiles = SubsystemKotlinGenerator.generate(document, SubsystemKotlinCodegenTarget(platform, basePackage))
-            val starterPlan = SubsystemStarterReconciler.plan(starterRoot().toPath(), sourceFiles)
-            val starterChanges = starterPlan.changes.associateBy { it.relativePath }
-            sourceFiles.map { file ->
-                val destination = artifactDestination(file.relativePath, file.sourceSet, file.ownership)
-                val existing = safeExistingFile(destination)?.takeIf(File::isFile)?.readText()
-                val planned = starterChanges[file.relativePath.replace('\\', '/')]
-                val change = when (planned?.kind) {
-                    SubsystemStarterChangeKind.ADD -> SubsystemFileChange.CREATE
-                    SubsystemStarterChangeKind.UNCHANGED -> SubsystemFileChange.UNCHANGED
-                    SubsystemStarterChangeKind.REPLACE -> SubsystemFileChange.REPLACE_STARTER
-                    SubsystemStarterChangeKind.PROTECTED -> SubsystemFileChange.PROTECTED_USER_OWNED
-                    null -> when {
-                        existing == null -> SubsystemFileChange.CREATE
-                        existing == file.content -> SubsystemFileChange.UNCHANGED
-                        file.ownership == SubsystemArtifactOwnership.USER_OWNED -> SubsystemFileChange.PROTECTED_USER_OWNED
-                        else -> SubsystemFileChange.UPDATE_GENERATED
-                    }
-                }
-                SubsystemPreviewFile(
-                    path = file.relativePath,
-                    sourceSet = file.sourceSet,
-                    content = file.content,
-                    artifact = file.artifact,
-                    group = file.group,
-                    ownership = file.ownership,
-                    description = file.description,
-                    moduleName = if (league == League.FTC) "ARES-FTC · :TeamCode" else "ARES-FRC · root",
-                    projectRelativePath = destination,
-                    change = change,
-                    diff = planned?.diff?.takeIf(String::isNotBlank)?.let(::parseUnifiedDiff)
-                        ?: existing?.takeIf { it != file.content }?.let { structuredLineDiff(it, file.content) }.orEmpty(),
-                )
-            }
-        } else emptyList()
-        val token = if (validation.isEmpty() && document.implementation.kind == SubsystemImplementationKind.GENERATED_STARTER) {
-            val sources = SubsystemKotlinGenerator.generate(document, SubsystemKotlinCodegenTarget(platform, basePackage))
-            SubsystemStarterReconciler.plan(starterRoot().toPath(), sources).confirmationToken
-        } else null
-        return copy(
-            previewFiles = generated,
-            starterConfirmationToken = token,
-            problems = (external + validation + safetyWarnings(document))
-                .distinctBy { Triple(it.severity, it.path, it.message) },
-        )
-    }
-
-    private fun artifactDestination(
-        relativePath: String,
-        sourceSet: GeneratedSubsystemSourceSet,
-        ownership: SubsystemArtifactOwnership,
-    ): String {
-        val packagePath = basePackage.replace('.', '/')
-        val sourceKind = if (sourceSet == GeneratedSubsystemSourceSet.TEST) "test" else "main"
-        val root = when {
-            ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT && league == League.FTC ->
-                "TeamCode/build/generated/ares/$sourceKind/kotlin/$packagePath"
-            ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT ->
-                "build/generated/ares/$sourceKind/kotlin/$packagePath"
-            league == League.FTC && sourceSet == GeneratedSubsystemSourceSet.TEST -> "TeamCode/src/test/java/$packagePath"
-            league == League.FTC -> "TeamCode/src/main/java/$packagePath"
-            sourceSet == GeneratedSubsystemSourceSet.TEST -> "src/test/kotlin/$packagePath"
-            else -> "src/main/kotlin/$packagePath"
-        }
-        return "$root/${relativePath.replace('\\', '/')}"
-    }
-
-    private fun safeExistingFile(projectRelativePath: String): File? {
-        val root = File(_state.value.projectPath).canonicalFile
-        val candidate = File(root, projectRelativePath).canonicalFile
-        return candidate.takeIf { it.toPath().startsWith(root.toPath()) }
-    }
-
-    private fun starterRoot(): File {
-        val relative = if (league == League.FTC) {
-            "TeamCode/src/main/java/${basePackage.replace('.', '/')}"
-        } else {
-            "src/main/kotlin/${basePackage.replace('.', '/')}"
-        }
-        val root = File(_state.value.projectPath).canonicalFile
-        return File(root, relative).canonicalFile.also {
-            require(it.toPath().startsWith(root.toPath())) { "Subsystem starter root escaped the project" }
-        }
-    }
+    ): SubsystemGeneratorState = previewPlanner.plan(this, external)
 
     override fun close() = scope.cancel()
 
