@@ -49,6 +49,11 @@ internal class DatabaseTransactionCoordinator(
         }
     }
 
+    /** Forces one persistent WAL checkpoint at a caller-selected durable boundary. */
+    suspend fun checkpoint() = write {
+        writeConnection.createStatement().use { it.execute("CHECKPOINT") }
+    }
+
     private companion object {
         const val LIVE_TELEMETRY_SESSION_ID = "live-telemetry"
     }

@@ -2,11 +2,6 @@ package com.ares.analytics.service.db
 
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
-import com.ares.analytics.service.QueryResult
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import org.duckdb.DuckDBAppender
 import org.duckdb.DuckDBConnection
 import java.sql.Connection
 import java.sql.ResultSet
@@ -32,10 +27,10 @@ data class TelemetryExportCursor(
 )
 
 /**
- * Primary repository interface for telemetry persistent storage, DuckDB vectorized queries, and match history.
+ * Owns telemetry ingestion, time-series queries, filtering, retention, and export pagination.
  *
  * Provides thread-safe transaction execution over DuckDB JDBC connections, utilizing DuckDB's native Appender C++ API
- * (`insertTelemetryFramesAppender`, `insertRobotActionsBulk`) for bulk frame ingest (~10-100x faster than traditional JDBC SQL batches).
+ * (`insertTelemetryFramesAppender`) for bulk frame ingest (~10-100x faster than traditional JDBC SQL batches).
  *
  * ### Physical Units & Storage Targets:
  * - Timestamps: Milliseconds ($ms$)
@@ -47,33 +42,19 @@ data class TelemetryExportCursor(
  * - EKF position drift / cross-track error: Meters ($m$)
  *
  * ### Thread Safety & Performance Guarantees:
- * Thread-safe suspend functions executing DB transactions under mutual exclusion lock ([dbMutex]) on [Dispatchers.IO].
+ * Thread-safe suspend functions use the shared [DatabaseTransactionCoordinator].
  * Appender operations stream raw memory arrays to DuckDB C++ native buffers with zero JVM heap fragmentation.
- *
- * @param conn Primary DuckDB connection bound to disk storage.
- * @param ephemeralConn In-memory DuckDB connection for high-throughput live telemetry buffers.
- * @param dbMutex Mutual exclusion coroutine lock controlling connection write concurrency.
  *
  * @see SchemaMigrationManager
  * @see DatabaseBackupExporter
- * @see QueryResult
  */
-internal class MatchLogRepository(
+internal class TelemetryRepository(
     private val transactions: DatabaseTransactionCoordinator,
-    private val sessionMetadataRepository: SessionMetadataRepository,
 ) {
     private val conn: Connection get() = transactions.writeConnection
     private val readConn: Connection get() = transactions.readConnection
     private val ephemeralConn: Connection get() = transactions.ephemeralWriteConnection
-    private val statementCache = java.util.concurrent.ConcurrentHashMap<String, java.sql.PreparedStatement>()
     private val nextSampleOrder = AtomicLong()
-    private val readOnlyQueries = transactions.readOnlyQueries
-
-    /** Executes the deliberately restricted SQL subset exposed to the AI analyst. */
-    suspend fun executeAiQuery(
-        sql: String,
-        rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT,
-    ): QueryResult = readOnlyQueries.executeRaw(AiSqlQueryGuard.validate(sql), rowLimit)
 
     private fun readConnectionFor(sessionId: String): Connection = transactions.readConnectionFor(sessionId)
 
@@ -90,40 +71,12 @@ internal class MatchLogRepository(
 
     private suspend fun <T> withReadLock(block: suspend () -> T): T = transactions.read(block)
 
-    /**
-     * Final teardown — closes and clears the [statementCache]. Call from [DatabaseService.close]
-     * before closing the underlying connections so cached PreparedStatements don't leak.
-     */
-    fun dispose() {
-        statementCache.values.forEach { runCatching { it.close() } }
-        statementCache.clear()
-    }
-
     suspend fun executeNativeCsvImport(sql: String) = withDbLock {
         if (!sql.trim().uppercase().startsWith("INSERT INTO TELEMETRY_FRAMES")) {
             throw IllegalArgumentException("executeNativeCsvImport only allows INSERT INTO telemetry_frames")
         }
         conn.createStatement().use { it.execute(sql) }
     }
-
-    /**
-     * Executes a custom read-only query while bounding the amount of data retained on the JVM heap.
-     *
-     * Relational queries are wrapped in an outer `LIMIT rowLimit + 1` so DuckDB itself does not return
-     * an unbounded result. The extra row is used only to report truncation; it is never copied into
-     * [QueryResult]. Cell and column limits protect projections a row-only limit would not address.
-     */
-    suspend fun executeQueryRaw(
-        sql: String,
-        rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT
-    ): QueryResult = readOnlyQueries.executeRaw(sql, rowLimit)
-
-    /**
-     * Execute a parameterized SQL query and return results as [QueryResult].
-     * Use this for queries with user-provided values to prevent SQL injection.
-     */
-    suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult =
-        readOnlyQueries.executeWithParams(sql, params)
 
     suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = withDbLock {
         if (frames.isEmpty()) return@withDbLock
@@ -183,71 +136,10 @@ internal class MatchLogRepository(
         } finally {
             appender.close()
             // CHECKPOINT intentionally NOT run per batch — a per-batch WAL fsync dominated
-            // import time. Checkpointing is now caller/timer-controlled via [checkpoint]
+            // import time. Checkpointing is now caller/timer-controlled by
+            // [DatabaseTransactionCoordinator.checkpoint]
             // (DatabaseService runs it on a periodic timer; connection close still flushes).
         }
-    }
-
-    /**
-     * Forces a WAL checkpoint on the persistent connection. Caller/timer-controlled so it
-     * runs once per import job or periodically, not after every appender batch.
-     */
-    suspend fun checkpoint() = withDbLock {
-        conn.createStatement().use { it.execute("CHECKPOINT") }
-    }
-
-    /**
-     * High-performance bulk insert for RobotAction records using DuckDB's native Appender API.
-     * Stores Redux-style action log entries from the robot's ActionLogger JSONL output.
-     */
-    suspend fun insertRobotActionsBulk(actions: List<com.ares.analytics.shared.models.RobotActionRecord>) = withDbLock {
-        if (actions.isEmpty()) return@withDbLock
-        val duckConn = conn.unwrap(DuckDBConnection::class.java)
-        val appender = duckConn.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "robot_actions")
-        try {
-            for (action in actions) {
-                appender.beginRow()
-                appender.append(action.timestampMs)
-                appender.append(action.sessionId)
-                appender.append(action.runId)
-                appender.append(action.robotId)
-                appender.append(action.matchNumber)
-                appender.append(action.alliance)
-                appender.append(action.actionType)
-                appender.append(action.payloadJson)
-                appender.endRow()
-            }
-            appender.flush()
-        } finally {
-            appender.close()
-        }
-    }
-
-    /**
-     * Retrieves all robot actions for a given session, ordered chronologically.
-     */
-    suspend fun getActionsForSession(sessionId: String): List<com.ares.analytics.shared.models.RobotActionRecord> = withDbLock {
-        val list = mutableListOf<com.ares.analytics.shared.models.RobotActionRecord>()
-        conn.prepareStatement(
-            "SELECT timestamp_ms, session_id, run_id, robot_id, match_number, alliance, action_type, payload_json FROM robot_actions WHERE session_id = ? ORDER BY timestamp_ms, run_id, action_type, payload_json"
-        ).use { ps ->
-            ps.setString(1, sessionId)
-            ps.executeQuery().use { rs ->
-                while (rs.next()) {
-                    list.add(com.ares.analytics.shared.models.RobotActionRecord(
-                        timestampMs = rs.getLong("timestamp_ms"),
-                        sessionId = rs.getString("session_id"),
-                        runId = rs.getString("run_id"),
-                        robotId = rs.getString("robot_id"),
-                        matchNumber = rs.getInt("match_number"),
-                        alliance = rs.getString("alliance"),
-                        actionType = rs.getString("action_type"),
-                        payloadJson = rs.getString("payload_json")
-                    ))
-                }
-            }
-        }
-        list
     }
 
     /**
@@ -591,184 +483,6 @@ internal class MatchLogRepository(
         frames
     }
 
-    suspend fun getDiagnosticsTelemetry(sessionId: String): List<TelemetryFrame> = withDbLock {
-        val list = mutableListOf<TelemetryFrame>()
-        conn.prepareStatement("SELECT * FROM telemetry_frames WHERE session_id = ? AND key LIKE 'Diagnostics/%'").use { ps ->
-            ps.setString(1, sessionId)
-            ps.executeQuery().use { rs ->
-                while (rs.next()) list.add(rs.toTelemetryFrame())
-            }
-        }
-        val displayTimestamp = conn.prepareStatement(
-            "SELECT COALESCE(MAX(timestamp_ms), (SELECT created_at FROM sessions WHERE session_id = ?), 0) " +
-                "FROM telemetry_frames WHERE session_id = ?"
-        ).use { ps ->
-            ps.setString(1, sessionId)
-            ps.setString(2, sessionId)
-            ps.executeQuery().use { rows -> if (rows.next()) rows.getLong(1) else 0L }
-        }
-        conn.prepareStatement(
-            "SELECT session_id, key, value, string_value FROM analysis_diagnostics WHERE session_id = ? ORDER BY key"
-        ).use { ps ->
-            ps.setString(1, sessionId)
-            ps.executeQuery().use { rows ->
-                var sampleOrder = 1L
-                while (rows.next()) {
-                    list.add(
-                        TelemetryFrame(
-                            timestampMs = displayTimestamp,
-                            sessionId = rows.getString("session_id"),
-                            key = rows.getString("key"),
-                            value = rows.getDouble("value"),
-                            stringValue = rows.getString("string_value"),
-                            sampleOrder = sampleOrder++,
-                        )
-                    )
-                }
-            }
-        }
-        list
-    }
-
-    /** Atomically replaces analyzer-owned results without modifying the raw telemetry timeline. */
-    suspend fun replaceAnalysisDiagnostics(
-        sessionId: String,
-        diagnostics: List<AnalysisDiagnostic>,
-    ) = withDbLock {
-        require(diagnostics.all { it.sessionId == sessionId }) {
-            "Every analysis diagnostic must belong to the replaced session"
-        }
-        val previousAutoCommit = conn.autoCommit
-        try {
-            conn.autoCommit = false
-            conn.prepareStatement("DELETE FROM analysis_diagnostics WHERE session_id = ?").use { statement ->
-                statement.setString(1, sessionId)
-                statement.executeUpdate()
-            }
-            conn.prepareStatement(
-                "INSERT INTO analysis_diagnostics (session_id, key, value, string_value) VALUES (?, ?, ?, ?)"
-            ).use { statement ->
-                diagnostics.distinctBy { TelemetryMetricCatalog.normalizeTopic(it.key) }.forEach { diagnostic ->
-                    statement.setString(1, sessionId)
-                    statement.setString(2, TelemetryMetricCatalog.normalizeTopic(diagnostic.key))
-                    statement.setDouble(3, diagnostic.value)
-                    statement.setString(4, diagnostic.stringValue)
-                    statement.addBatch()
-                }
-                statement.executeBatch()
-            }
-            conn.commit()
-        } catch (failure: Throwable) {
-            conn.rollback()
-            throw failure
-        } finally {
-            conn.autoCommit = previousAutoCommit
-        }
-    }
-
-    suspend fun getAnalysisDiagnostics(sessionId: String): List<AnalysisDiagnostic> = withReadLock {
-        val diagnostics = mutableListOf<AnalysisDiagnostic>()
-        readConn.prepareStatement(
-            "SELECT session_id, key, value, string_value FROM analysis_diagnostics WHERE session_id = ? ORDER BY key"
-        ).use { statement ->
-            statement.setString(1, sessionId)
-            statement.executeQuery().use { rows ->
-                while (rows.next()) {
-                    diagnostics.add(
-                        AnalysisDiagnostic(
-                            sessionId = rows.getString("session_id"),
-                            key = rows.getString("key"),
-                            value = rows.getDouble("value"),
-                            stringValue = rows.getString("string_value"),
-                        )
-                    )
-                }
-            }
-        }
-        diagnostics
-    }
-
-    suspend fun replaceSessionImportReports(
-        sessionId: String,
-        reports: List<com.ares.analytics.service.ImportReport>,
-    ) = withDbLock {
-        require(reports.all { it.sessionId == sessionId }) {
-            "Every import report must belong to the replaced session"
-        }
-        val previousAutoCommit = conn.autoCommit
-        try {
-            conn.autoCommit = false
-            replaceImportReports(sessionId, reports)
-            conn.commit()
-        } catch (failure: Throwable) {
-            conn.rollback()
-            throw failure
-        } finally {
-            conn.autoCommit = previousAutoCommit
-        }
-    }
-
-    /** Atomically exposes a staged import together with its immutable source evidence. */
-    suspend fun completeSessionImport(
-        session: Session,
-        reports: List<com.ares.analytics.service.ImportReport>,
-    ) = withDbLock {
-        require(reports.isNotEmpty()) { "A completed import requires source evidence" }
-        require(reports.all { it.sessionId == session.sessionId }) {
-            "Every import report must belong to the completed session"
-        }
-        val previousAutoCommit = conn.autoCommit
-        try {
-            conn.autoCommit = false
-            sessionMetadataRepository.upsertCompletedSessionWithinTransaction(session)
-            replaceImportReports(session.sessionId, reports)
-            conn.commit()
-        } catch (failure: Throwable) {
-            conn.rollback()
-            throw failure
-        } finally {
-            conn.autoCommit = previousAutoCommit
-        }
-    }
-
-    private fun replaceImportReports(
-        sessionId: String,
-        reports: List<com.ares.analytics.service.ImportReport>,
-    ) {
-        conn.prepareStatement("DELETE FROM session_import_reports WHERE session_id = ?").use { statement ->
-            statement.setString(1, sessionId)
-            statement.executeUpdate()
-        }
-        conn.prepareStatement(
-            "INSERT INTO session_import_reports (session_id, source_sha256, source_name, report_json) VALUES (?, ?, ?, ?)"
-        ).use { statement ->
-            reports.distinctBy { it.sourceSha256 to it.sourceName }.forEach { report ->
-                statement.setString(1, sessionId)
-                statement.setString(2, report.sourceSha256)
-                statement.setString(3, report.sourceName)
-                statement.setString(4, AppJson.encodeToString(report))
-                statement.addBatch()
-            }
-            statement.executeBatch()
-        }
-    }
-
-    suspend fun getSessionImportReports(
-        sessionId: String,
-    ): List<com.ares.analytics.service.ImportReport> = withReadLock {
-        val reports = mutableListOf<com.ares.analytics.service.ImportReport>()
-        readConn.prepareStatement(
-            "SELECT report_json FROM session_import_reports WHERE session_id = ? ORDER BY source_name, source_sha256"
-        ).use { statement ->
-            statement.setString(1, sessionId)
-            statement.executeQuery().use { rows ->
-                while (rows.next()) {
-                    reports.add(AppJson.decodeFromString(rows.getString("report_json")))
-                }
-            }
-        }
-        reports
-    }
     suspend fun getTelemetryForFilters(
         sessionId: String,
         keys: List<String>,

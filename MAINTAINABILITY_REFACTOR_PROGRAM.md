@@ -70,12 +70,12 @@ synchronization; `GenerativeAiService` owns provider authentication and transpor
 forensics, coaching, and guarded telemetry-query interpretation. All callers use the new services
 directly; the removed `SyncEngineService` AI methods have no compatibility forwarding layer.
 DuckDB now has one `DatabaseTransactionCoordinator` for connection selection, serialized writes,
-concurrent reads, and metrics. `SessionMetadataRepository` owns session identity/import state,
-summaries, annotations, match metadata, alerts, topology, and console evidence, while
-`MatchLogRepository` retains telemetry, robot actions, analysis diagnostics, and import reports.
-`DatabaseService` delegates directly to those current contracts; the former combined repository API
-was deleted rather than preserved through forwarding methods. Further telemetry/import decomposition
-can build on the same coordinator without duplicating transaction ownership.
+concurrent reads, metrics, and checkpoint boundaries. `SessionMetadataRepository` owns session
+identity/import state, summaries, annotations, match metadata, alerts, topology, and console
+evidence. `TelemetryRepository`, `RobotActionRepository`, and `RunEvidenceRepository` separately own
+time-series data, action history, and analysis/import evidence. `ReadOnlyQueryRepository` owns bounded
+diagnostic SQL. `DatabaseService` composes those current contracts; `MatchLogRepository` was deleted
+instead of retained as a forwarding facade.
 
 **Exit criteria:** current boundary contract tests, cancellation/shutdown tests, offline behavior, database
 transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures remain isolated.

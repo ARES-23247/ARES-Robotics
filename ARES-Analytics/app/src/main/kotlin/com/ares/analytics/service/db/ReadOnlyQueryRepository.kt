@@ -15,8 +15,8 @@ import kotlinx.coroutines.withContext
 /**
  * Bounded DuckDB read boundary used by diagnostics and the AI analyst.
  *
- * Keeping arbitrary-query policy outside [MatchLogRepository] separates read-only diagnostics
- * from ingestion and session persistence while retaining one measured connection lock.
+ * Keeping arbitrary-query policy outside domain repositories separates read-only diagnostics from
+ * ingestion and session persistence while retaining one measured connection lock.
  */
 internal class ReadOnlyQueryRepository(
     private val connection: Connection,

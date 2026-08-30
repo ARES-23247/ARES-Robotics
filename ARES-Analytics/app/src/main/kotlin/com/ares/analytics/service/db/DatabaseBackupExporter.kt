@@ -46,7 +46,8 @@ internal data class CloudSessionAncillaryData(
  * @param dbMutex Asynchronous mutual exclusion lock preventing concurrent write transactions on the database connection.
  *
  * @see SchemaMigrationManager
- * @see MatchLogRepository
+ * @see TelemetryRepository
+ * @see RunEvidenceRepository
  */
 class DatabaseBackupExporter(
     private val conn: Connection,

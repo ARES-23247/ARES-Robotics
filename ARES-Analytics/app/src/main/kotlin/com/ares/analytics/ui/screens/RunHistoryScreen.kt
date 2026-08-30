@@ -106,7 +106,8 @@ data class RowDefinition(
  * @param onOpenImports Opens the log-import workflow when no completed runs exist.
  * @param onOpenHelp Opens the beginner lesson that explains how to create and review a run.
  *
- * @see com.ares.analytics.service.MatchLogRepository
+ * @see com.ares.analytics.service.db.TelemetryRepository
+ * @see com.ares.analytics.service.db.RunEvidenceRepository
  * @see com.ares.analytics.service.ReplayEngineService
  */
 @Composable

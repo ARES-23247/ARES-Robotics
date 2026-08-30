@@ -25,7 +25,7 @@ import java.sql.Connection
  * @param ephemeralConn Temporary in-memory DuckDB JDBC connection used for fast buffer filtering.
  *
  * @see DatabaseBackupExporter
- * @see MatchLogRepository
+ * @see DatabaseTransactionCoordinator
  */
 class SchemaMigrationManager(
     private val conn: Connection,

@@ -6,18 +6,20 @@ import kotlin.test.assertTrue
 
 class ProjectModelArchitectureTest {
     @Test
-    fun `session metadata and match telemetry have distinct database owners`() {
+    fun `database domains share transactions without sharing repository ownership`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),
             File("src/main/kotlin/com/ares/analytics"),
         ).firstOrNull(File::isDirectory)
         checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
         val databaseBoundary = File(sourceRoot, "service/db")
-        val matchLog = File(databaseBoundary, "MatchLogRepository.kt").readText()
         val sessions = File(databaseBoundary, "SessionMetadataRepository.kt").readText()
+        val telemetry = File(databaseBoundary, "TelemetryRepository.kt").readText()
+        val actions = File(databaseBoundary, "RobotActionRepository.kt").readText()
+        val evidence = File(databaseBoundary, "RunEvidenceRepository.kt").readText()
         val transactions = File(databaseBoundary, "DatabaseTransactionCoordinator.kt").readText()
 
-        listOf(
+        val sessionMethods = listOf(
             "fun insertSession(",
             "fun getSessions(",
             "fun deleteSession(",
@@ -27,12 +29,40 @@ class ProjectModelArchitectureTest {
             "fun insertAlert(",
             "fun insertTopology(",
             "fun insertConsoleMessages(",
-        ).forEach { forbidden ->
-            assertTrue(forbidden !in matchLog, "MatchLogRepository must remain telemetry/import owned: $forbidden")
-            assertTrue(forbidden in sessions, "SessionMetadataRepository must own the current session contract: $forbidden")
+        )
+        val telemetryMethods = listOf(
+            "fun insertTelemetryFrames(",
+            "fun getTelemetryRange(",
+            "fun getTelemetrySeries(",
+            "fun getTelemetryExportPage(",
+            "fun pruneTelemetryFrames(",
+        )
+        val actionMethods = listOf("fun insert(", "fun getForSession(")
+        val evidenceMethods = listOf(
+            "fun getDiagnosticsTelemetry(",
+            "fun replaceAnalysisDiagnostics(",
+            "fun replaceImportReports(",
+            "fun completeImport(",
+        )
+        val owners = mapOf(
+            "session" to (sessions to sessionMethods),
+            "telemetry" to (telemetry to telemetryMethods),
+            "actions" to (actions to actionMethods),
+            "evidence" to (evidence to evidenceMethods),
+        )
+        owners.forEach { (ownerName, owned) ->
+            val (source, methods) = owned
+            methods.forEach { method ->
+                assertTrue(method in source, "$ownerName repository must own $method")
+                owners.filterKeys { it != ownerName }.forEach { (otherName, other) ->
+                    assertTrue(method !in other.first, "$otherName repository must not duplicate $method")
+                }
+            }
         }
-        assertTrue("DatabaseTransactionCoordinator" in matchLog)
-        assertTrue("DatabaseTransactionCoordinator" in sessions)
+        assertTrue(!File(databaseBoundary, "MatchLogRepository.kt").exists())
+        listOf(sessions, telemetry, actions, evidence).forEach { source ->
+            assertTrue("DatabaseTransactionCoordinator" in source)
+        }
         assertTrue("suspend fun <T> write" in transactions && "suspend fun <T> read" in transactions)
     }
 

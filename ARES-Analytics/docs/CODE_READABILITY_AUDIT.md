@@ -45,7 +45,9 @@ The audit removed 459 generated KDoc blocks that contained only a generic physic
 
 - `ParquetLogDecoder` remains an intentionally unsupported adapter. It now fails explicitly instead of returning a misleading successful empty import.
 - Several legacy UI sites use non-null assertions after local null checks. They are generally safe today but should continue migrating to local smart-cast values as those components are touched.
-- Large classes such as `FieldCanvas`, `CloudViewModel`, and `MatchLogRepository` are readable at the branch level but remain oversized. Future feature work should extract cohesive state machines or storage operations rather than add more branches.
+- Large classes such as `FieldCanvas` and `CloudViewModel` remain candidates for cohesive feature
+  extraction. The former `MatchLogRepository` concern was subsequently split into session,
+  telemetry, action, run-evidence, and bounded-query repositories over one transaction coordinator.
 
 ## Verification
 
