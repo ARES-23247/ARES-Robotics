@@ -1176,70 +1176,43 @@ fun MainScreen(services: ServiceRegistry) {
                                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
                                 },
                             )
-                            NavigationTarget.ROBOT_STUDIO -> {
-                                val gamepad1State by services.gamepadService.gamepad1State.collectAsState()
-                                val gamepad2State by services.gamepadService.gamepad2State.collectAsState()
-                                RobotStudioScreen(
-                                    viewModel = robotStudioViewModel,
-                                    drivebaseViewModel = drivebaseBuilderViewModel,
-                                    subsystemViewModel = subsystemGeneratorViewModel,
-                                    superstructureViewModel = superstructureStudioViewModel,
-                                    pathPlannerViewModel = pathPlannerViewModel,
-                                    controlsViewModel = controlsEditorViewModel,
+                            NavigationTarget.ROBOT_STUDIO,
+                            NavigationTarget.CONTROLS,
+                            NavigationTarget.SUPERSTRUCTURE_STUDIO,
+                            NavigationTarget.HARDWARE_STUDIO,
+                            NavigationTarget.HARDWARE_SETUP,
+                            NavigationTarget.DRIVEBASE_BUILDER,
+                            NavigationTarget.SUBSYSTEM_GEN,
+                            NavigationTarget.PROJECT_IDENTITY -> RobotAuthoringRouteHost(
+                                route = activeNav,
+                                scope = RobotAuthoringFeatureScope(
+                                    robotStudio = robotStudioViewModel,
+                                    drivebase = drivebaseBuilderViewModel,
+                                    subsystem = subsystemGeneratorViewModel,
+                                    superstructure = superstructureStudioViewModel,
+                                    pathPlanner = pathPlannerViewModel,
+                                    controls = controlsEditorViewModel,
                                     controlsState = controlsEditorState,
-                                    gamepad1State = gamepad1State,
-                                    gamepad2State = gamepad2State,
-                                    hardwareSetupViewModel = hardwareSetupViewModel,
-                                    projectIdentityViewModel = projectIdentityViewModel,
-                                    config = currentConfig,
-                                    onOpenPitDiagnostics = {
-                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.PIT_DIAGNOSTICS))
-                                    },
-                                    onRunVerification = {
+                                    hardwareSetup = hardwareSetupViewModel,
+                                    projectIdentity = projectIdentityViewModel,
+                                    gamepads = services.gamepadService,
+                                ),
+                                config = currentConfig,
+                                hardwareStudioInitialTab = hardwareStudioInitialTab,
+                                actions = RobotAuthoringRouteActions(
+                                    navigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
+                                    runVerification = {
                                         executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                                     },
-                                    onOpenInIde = {
+                                    openInIde = {
                                         services.projectIdeLauncher.open(currentConfig.projectPath, currentConfig.league).message
                                     },
-                                    onCreateStandaloneProject = {
+                                    createStandaloneProject = {
                                         requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
                                         mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                                     },
-                                )
-                            }
-                            NavigationTarget.CONTROLS -> {
-                                val gamepad1State by services.gamepadService.gamepad1State.collectAsState()
-                                val gamepad2State by services.gamepadService.gamepad2State.collectAsState()
-                                com.ares.analytics.ui.components.controls.ControlsEditorPanel(
-                                    state = controlsEditorState,
-                                    viewModel = controlsEditorViewModel,
-                                    gamepad1State = gamepad1State,
-                                    gamepad2State = gamepad2State,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            }
-                            NavigationTarget.SUPERSTRUCTURE_STUDIO -> SuperstructureStudioScreen(superstructureStudioViewModel)
-                            NavigationTarget.HARDWARE_STUDIO, NavigationTarget.HARDWARE_SETUP, NavigationTarget.DRIVEBASE_BUILDER, NavigationTarget.SUBSYSTEM_GEN -> HardwareStudioScreen(
-                                drivebaseViewModel = drivebaseBuilderViewModel,
-                                subsystemViewModel = subsystemGeneratorViewModel,
-                                hardwareSetupViewModel = hardwareSetupViewModel,
-                                initialTab = when (activeNav) {
-                                    NavigationTarget.DRIVEBASE_BUILDER -> HardwareStudioTab.DRIVETRAIN
-                                    NavigationTarget.SUBSYSTEM_GEN -> HardwareStudioTab.MECHANISMS
-                                    NavigationTarget.HARDWARE_SETUP -> HardwareStudioTab.PORT_MAP
-                                    else -> hardwareStudioInitialTab
-                                },
-                                onBackToStudio = {
-                                    robotStudioViewModel.refresh()
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ROBOT_STUDIO))
-                                },
-                            )
-                            NavigationTarget.PROJECT_IDENTITY -> ProjectIdentityScreen(
-                                viewModel = projectIdentityViewModel,
-                                config = currentConfig,
-                                onBackToStudio = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ROBOT_STUDIO))
-                                },
+                                    refreshRobotStudio = robotStudioViewModel::refresh,
+                                ),
                             )
                             NavigationTarget.PROFILE -> ProfileScreen(
                                 viewModel = profileViewModel,

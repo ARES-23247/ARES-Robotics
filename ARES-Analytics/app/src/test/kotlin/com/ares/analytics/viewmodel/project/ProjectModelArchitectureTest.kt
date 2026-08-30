@@ -81,6 +81,29 @@ class ProjectModelArchitectureTest {
     }
 
     @Test
+    fun `robot authoring route host uses a typed feature scope instead of the global registry`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val routeHost = File(sourceRoot, "ui/screens/RobotAuthoringRouteHost.kt").readText()
+
+        assertTrue(
+            "RobotAuthoringFeatureScope" in routeHost,
+            "Robot authoring routes must declare their capability boundary explicitly.",
+        )
+        assertTrue(
+            "ServiceRegistry" !in routeHost,
+            "Robot authoring routes must not pull arbitrary application services.",
+        )
+        assertTrue(
+            "gamepad1State.collectAsState()" in routeHost && "gamepad2State.collectAsState()" in routeHost,
+            "Controller state must be collected in the visible authoring route host.",
+        )
+    }
+
+    @Test
     fun `production authoring view models share the long lived project session`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),
