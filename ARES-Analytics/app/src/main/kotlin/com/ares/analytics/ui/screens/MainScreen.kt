@@ -343,6 +343,7 @@ fun MainScreen(services: ServiceRegistry) {
     val projectBackupViewModel = remember(currentConfig.projectPath) {
         ProjectBackupViewModel(
             service = services.projectVersionControlService,
+            remoteBackup = services.projectRemoteBackupService,
             recovery = services.projectRecoveryService,
             githubAuthentication = services.githubAuthenticationService,
             autoSync = services.projectBackupAutoSyncService,

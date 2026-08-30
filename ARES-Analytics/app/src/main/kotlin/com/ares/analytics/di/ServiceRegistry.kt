@@ -74,12 +74,18 @@ class ServiceRegistry {
     val projectBackupAutoSyncService: com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService by lazy {
         com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService(
             inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
-            pushBackup = { projectPath -> projectVersionControlService.pushBackup(projectPath) },
+            pushBackup = { projectPath -> projectRemoteBackupService.pushBackup(projectPath) },
         )
     }
     val projectVersionControlService: com.ares.analytics.service.versioncontrol.ProjectVersionControlService by lazy {
         com.ares.analytics.service.versioncontrol.ProjectVersionControlService(
+            onBackupRelevantChange = { projectPath -> projectBackupAutoSyncService.schedule(projectPath) },
+        )
+    }
+    val projectRemoteBackupService: com.ares.analytics.service.versioncontrol.ProjectRemoteBackupService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectRemoteBackupService(
             githubAuthentication = githubAuthenticationService,
+            inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
             onBackupRelevantChange = { projectPath -> projectBackupAutoSyncService.schedule(projectPath) },
             onBackupSynchronized = { projectPath -> projectBackupAutoSyncService.markSynchronized(projectPath) },
         )

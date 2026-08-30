@@ -9,6 +9,7 @@ import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryPlan
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryService
+import com.ares.analytics.service.versioncontrol.ProjectRemoteBackupService
 import com.ares.analytics.service.versioncontrol.ProjectRestorePlan
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
 import kotlinx.coroutines.CancellationException
@@ -64,6 +65,7 @@ sealed class ProjectBackupIntent {
 /** Coordinates review-first project history and optional private GitHub backup. */
 class ProjectBackupViewModel(
     private val service: ProjectVersionControlService,
+    private val remoteBackup: ProjectRemoteBackupService,
     private val recovery: ProjectRecoveryService,
     private val githubAuthentication: GitHubAuthenticationService,
     private val autoSync: ProjectBackupAutoSyncService,
@@ -135,7 +137,7 @@ class ProjectBackupViewModel(
                 "Approved GitHub repository connected and synchronized.",
                 refreshCatalog = true,
             ) {
-                service.connectApprovedRepository(
+                remoteBackup.connectApprovedRepository(
                     requireProjectPath(),
                     intent.installationId,
                     intent.repositoryId,
@@ -145,7 +147,7 @@ class ProjectBackupViewModel(
                 "GitHub backup is up to date.",
                 refreshCatalog = true,
             ) {
-                service.pushBackup(requireProjectPath())
+                remoteBackup.pushBackup(requireProjectPath())
             }
             is ProjectBackupIntent.SetAutomaticGitHubBackup -> setAutomaticGitHubBackup(intent.enabled)
             ProjectBackupIntent.PreviewGitHubRestore -> previewRestore()
@@ -155,7 +157,7 @@ class ProjectBackupViewModel(
             is ProjectBackupIntent.ExportArchive -> exportArchive(intent.destinationPath)
             ProjectBackupIntent.DisconnectGitHubDestination -> runAction(
                 "The online destination was disconnected. No local or GitHub files were deleted.",
-            ) { service.disconnectBackupDestination(requireProjectPath()) }
+            ) { remoteBackup.disconnectBackupDestination(requireProjectPath()) }
         }
     }
 

@@ -173,23 +173,7 @@ class OfficialProjectTemplateIntegrationTest {
 
     private companion object {
         fun localHistoryService() = ProjectVersionControlService(
-            githubAuthentication = GitHubAuthenticationService(
-                clientId = "",
-                appSlug = "",
-                credentialRepository = ProjectGitHubCredentialRepository(
-                    object : ProjectBackupCredentialStore {
-                        override fun read(): ByteArray? = null
-                        override fun write(bytes: ByteArray) = Unit
-                        override fun delete(): Boolean = true
-                        override val protectionDescription: String = "acceptance fixture"
-                    },
-                ),
-                api = DefaultGitHubProjectApi(),
-                browserLauncher = {},
-                pollDelay = {},
-            ),
             onBackupRelevantChange = {},
-            onBackupSynchronized = {},
         )
 
         fun validationRepositoryUri(value: String): String {

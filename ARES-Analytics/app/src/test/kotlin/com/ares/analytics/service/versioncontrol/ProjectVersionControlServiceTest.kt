@@ -54,7 +54,7 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         val pushes = AtomicInteger()
-        val (service, github, autoSync) = githubServices(
+        val (service, github, autoSync, remoteBackup) = githubServices(
             store = MemoryCredentialStore(),
             api = api,
             remotePusher = { _, _ -> pushes.incrementAndGet() },
@@ -62,7 +62,7 @@ class ProjectVersionControlServiceTest {
         )
         service.initializeNewProject(root.path)
         github.signIn()
-        service.connectApprovedRepository(root.path, 22, 202)
+        remoteBackup.connectApprovedRepository(root.path, 22, 202)
         assertEquals(1, pushes.get())
         assertFalse(autoSync.load(root.path).enabled)
 
@@ -95,7 +95,7 @@ class ProjectVersionControlServiceTest {
         }
         var offline = false
         val attempts = AtomicInteger()
-        val (service, github, autoSync) = githubServices(
+        val (service, github, autoSync, remoteBackup) = githubServices(
             store = MemoryCredentialStore(),
             api = api,
             remotePusher = { _, _ ->
@@ -106,7 +106,7 @@ class ProjectVersionControlServiceTest {
         )
         service.initializeNewProject(root.path)
         github.signIn()
-        service.connectApprovedRepository(root.path, 22, 202)
+        remoteBackup.connectApprovedRepository(root.path, 22, 202)
         offline = true
 
         autoSync.setEnabled(root.path, true)
@@ -250,13 +250,13 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         val pushedTokens = mutableListOf<String>()
-        val (service, github) = githubServices(
+        val (service, github, _, remoteBackup) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, token -> pushedTokens += token },
         )
         github.signIn()
-        val plan = service.connectApprovedRepository(root.path, 22, 202)
+        val plan = remoteBackup.connectApprovedRepository(root.path, 22, 202)
         assertEquals("ARES-23247", plan.destination?.ownerLogin)
         assertEquals(202L, plan.destination?.repositoryId)
         assertEquals(listOf(api.authorizedTokens.accessToken), pushedTokens)
@@ -282,7 +282,7 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         var pushCount = 0
-        val (service, github) = githubServices(
+        val (service, github, _, remoteBackup) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, _ -> pushCount++ },
@@ -290,7 +290,7 @@ class ProjectVersionControlServiceTest {
         github.signIn()
 
         val failure = assertFailsWith<IllegalArgumentException> {
-            service.connectApprovedRepository(root.path, 22, 202)
+            remoteBackup.connectApprovedRepository(root.path, 22, 202)
         }
 
         assertContains(failure.message.orEmpty(), "different origin")
@@ -310,14 +310,14 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val (service, github) = githubServices(
+        val (service, github, _, remoteBackup) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, _ -> error("network unavailable") },
         )
         github.signIn()
 
-        assertFailsWith<IllegalStateException> { service.connectApprovedRepository(root.path, 22, 202) }
+        assertFailsWith<IllegalStateException> { remoteBackup.connectApprovedRepository(root.path, 22, 202) }
 
         val plan = service.inspect(root.path)
         assertNull(plan.destination)
@@ -363,7 +363,7 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val (service, github) = githubServices(
+        val (service, github, _, remoteBackup) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, _ ->
@@ -373,7 +373,7 @@ class ProjectVersionControlServiceTest {
         github.signIn()
 
         val failure = assertFailsWith<IllegalStateException> {
-            service.connectApprovedRepository(root.path, 22, 202)
+            remoteBackup.connectApprovedRepository(root.path, 22, 202)
         }
 
         assertContains(failure.message.orEmpty(), "no longer has permission to write")
@@ -399,9 +399,10 @@ class ProjectVersionControlServiceTest {
         )
         val service = services.versionControl
         val github = services.authentication
+        val remoteBackup = services.remoteBackup
         val recovery = services.recovery
         github.signIn()
-        val connected = service.connectApprovedRepository(root.path, 22, 202)
+        val connected = remoteBackup.connectApprovedRepository(root.path, 22, 202)
         val originalCommit = requireNotNull(connected.lastCommit)
         advanceRemote(remote, "robot.txt", "newer robot", "Improve robot")
 
@@ -448,9 +449,10 @@ class ProjectVersionControlServiceTest {
         )
         val service = services.versionControl
         val github = services.authentication
+        val remoteBackup = services.remoteBackup
         val recovery = services.recovery
         github.signIn()
-        service.connectApprovedRepository(root.path, 22, 202)
+        remoteBackup.connectApprovedRepository(root.path, 22, 202)
         advanceRemote(remote, "robot.txt", "remote one", "Remote one")
         val stalePreview = recovery.previewGitHubRestore(root.path)
         advanceRemote(remote, "robot.txt", "remote two", "Remote two")
@@ -490,9 +492,10 @@ class ProjectVersionControlServiceTest {
         )
         val service = services.versionControl
         val github = services.authentication
+        val remoteBackup = services.remoteBackup
         val recovery = services.recovery
         github.signIn()
-        service.connectApprovedRepository(root.path, 22, 202)
+        remoteBackup.connectApprovedRepository(root.path, 22, 202)
         advanceRemote(remote, "credentials.json", "{\"privateKey\":\"must-not-restore\"}", "Unsafe remote file")
 
         val failure = assertFailsWith<IllegalArgumentException> {
@@ -512,16 +515,16 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
         var pushCount = 0
-        val (service, github) = githubServices(
+        val (service, github, _, remoteBackup) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, _ -> pushCount++ },
         )
         github.signIn()
-        service.connectApprovedRepository(root.path, 22, 202)
+        remoteBackup.connectApprovedRepository(root.path, 22, 202)
         assertEquals(1, pushCount)
         api.repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot").copy(canPush = false))
-        val failure = assertFailsWith<IllegalArgumentException> { service.pushBackup(root.path) }
+        val failure = assertFailsWith<IllegalArgumentException> { remoteBackup.pushBackup(root.path) }
         assertContains(failure.message.orEmpty(), "write access")
         assertEquals(1, pushCount)
     }
@@ -536,7 +539,7 @@ class ProjectVersionControlServiceTest {
         val active = AtomicInteger()
         val maximumActive = AtomicInteger()
         var pushes = 0
-        val (service, github) = githubServices(MemoryCredentialStore(), api, remotePusher = { _, _ ->
+        val (_, github, _, remoteBackup) = githubServices(MemoryCredentialStore(), api, remotePusher = { _, _ ->
             val current = active.incrementAndGet()
             maximumActive.updateAndGet { previous -> maxOf(previous, current) }
             Thread.sleep(20)
@@ -544,10 +547,10 @@ class ProjectVersionControlServiceTest {
             active.decrementAndGet()
         })
         github.signIn()
-        service.connectApprovedRepository(root.path, 22, 202)
+        remoteBackup.connectApprovedRepository(root.path, 22, 202)
 
         coroutineScope {
-            List(4) { async { service.pushBackup(root.path) } }.awaitAll()
+            List(4) { async { remoteBackup.pushBackup(root.path) } }.awaitAll()
         }
 
         assertEquals(5, pushes)
@@ -562,14 +565,14 @@ class ProjectVersionControlServiceTest {
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-a"))
         }
         var pushCount = 0
-        val (service, github) = githubServices(
+        val (service, github, _, remoteBackup) = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = { _, _ -> pushCount++ },
         )
         github.signIn()
         val failure = assertFailsWith<IllegalStateException> {
-            service.connectApprovedRepository(root.path, installationId = 99, repositoryId = 909)
+            remoteBackup.connectApprovedRepository(root.path, installationId = 99, repositoryId = 909)
         }
         assertContains(failure.message.orEmpty(), "no longer available")
         assertEquals(0, pushCount)
@@ -613,15 +616,14 @@ class ProjectVersionControlServiceTest {
     }
 
     private fun localOnlyService() = ProjectVersionControlService(
-        githubAuthentication = testAuthentication(),
         onBackupRelevantChange = {},
-        onBackupSynchronized = {},
     )
 
     private data class GitHubServices(
         val versionControl: ProjectVersionControlService,
         val authentication: GitHubAuthenticationService,
         val autoSync: ProjectBackupAutoSyncService,
+        val remoteBackup: ProjectRemoteBackupService,
         val recovery: ProjectRecoveryService,
     )
 
@@ -646,13 +648,18 @@ class ProjectVersionControlServiceTest {
             epochSeconds = { if (api.nowForTokenExpiry) now + 3_570L else now },
         )
         lateinit var versionControl: ProjectVersionControlService
+        lateinit var remoteBackup: ProjectRemoteBackupService
         val autoSync = ProjectBackupAutoSyncService(
             inspectProject = { projectPath -> versionControl.inspect(projectPath) },
-            pushBackup = { projectPath -> versionControl.pushBackup(projectPath) },
+            pushBackup = { projectPath -> remoteBackup.pushBackup(projectPath) },
             workerDelay = autoSyncDelay,
         )
         versionControl = ProjectVersionControlService(
+            onBackupRelevantChange = autoSync::schedule,
+        )
+        remoteBackup = ProjectRemoteBackupService(
             githubAuthentication = authentication,
+            inspectProject = versionControl::inspect,
             onBackupRelevantChange = autoSync::schedule,
             onBackupSynchronized = autoSync::markSynchronized,
             remotePusher = remotePusher,
@@ -667,6 +674,7 @@ class ProjectVersionControlServiceTest {
             versionControl = versionControl,
             authentication = authentication,
             autoSync = autoSync,
+            remoteBackup = remoteBackup,
             recovery = recovery,
         )
     }

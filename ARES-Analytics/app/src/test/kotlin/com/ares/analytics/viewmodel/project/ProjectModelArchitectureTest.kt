@@ -16,6 +16,7 @@ class ProjectModelArchitectureTest {
         val history = File(boundary, "ProjectVersionControlService.kt").readText()
         val authentication = File(boundary, "GitHubAuthenticationService.kt").readText()
         val autoSync = File(boundary, "ProjectBackupAutoSyncService.kt").readText()
+        val remoteBackup = File(boundary, "ProjectRemoteBackupService.kt").readText()
         val recovery = File(boundary, "ProjectRecoveryService.kt").readText()
 
         listOf(
@@ -28,6 +29,9 @@ class ProjectModelArchitectureTest {
             "recoverToSafetyPoint",
             "MergeCommand",
             "ResetCommand",
+            "connectApprovedRepository",
+            "pushBackup",
+            "remotePusher",
         ).forEach { forbidden ->
             assertTrue(
                 forbidden !in history,
@@ -38,6 +42,9 @@ class ProjectModelArchitectureTest {
         assertTrue("ProjectGitHubCredentialRepository" in authentication)
         assertTrue("Channel<String>" in autoSync)
         assertTrue("ProjectBackupAutoSyncStatus" in autoSync)
+        assertTrue("connectApprovedRepository" in remoteBackup)
+        assertTrue("pushBackup" in remoteBackup)
+        assertTrue("remotePusher" in remoteBackup)
         assertTrue("previewGitHubRestore" in recovery)
         assertTrue("recoverToSafetyPoint" in recovery)
         assertTrue("MergeCommand" in recovery)
