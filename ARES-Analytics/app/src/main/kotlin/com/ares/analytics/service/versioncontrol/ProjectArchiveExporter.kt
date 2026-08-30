@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -80,18 +81,14 @@ class ProjectArchiveExporter {
             )
         }
 
-    private fun requireCanonicalProjectRoot(projectPath: String): File {
-        require(projectPath.isNotBlank()) { "Choose a robot project before exporting it." }
-        val root = File(projectPath).canonicalFile
-        require(root.isDirectory) { "The selected robot project folder does not exist." }
-        require(File(root, ".ares/project.json").isFile) {
-            "The selected folder is not a canonical ARES robot project."
-        }
-        return root
-    }
-
     private companion object {
         const val MAX_ARCHIVE_FILE_BYTES = 100L * 1024L * 1024L
         const val MAX_ARCHIVE_PROJECT_BYTES = 1024L * 1024L * 1024L
     }
+}
+
+private fun isExcludedArchivePath(path: String): Boolean {
+    val segments = path.replace('\\', '/').lowercase(Locale.ROOT).split('/').filter(String::isNotEmpty)
+    return segments.any { it in setOf(".git", ".gradle", "build", ".idea", ".vscode", "out") } ||
+        segments.lastOrNull() in setOf("local.properties", ".ds_store", "thumbs.db")
 }

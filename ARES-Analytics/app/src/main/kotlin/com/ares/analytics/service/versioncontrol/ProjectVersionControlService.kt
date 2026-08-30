@@ -314,9 +314,3 @@ internal fun isSensitiveProjectPath(path: String): Boolean {
         name in setOf("credentials.json", "service-account.json", "service_account.json") ||
         normalized.startsWith(".ares/secrets/")
 }
-
-internal fun isExcludedArchivePath(path: String): Boolean {
-    val segments = path.replace('\\', '/').lowercase(Locale.ROOT).split('/').filter(String::isNotEmpty)
-    return segments.any { it in setOf(".git", ".gradle", "build", ".idea", ".vscode", "out") } ||
-        segments.lastOrNull() in setOf("local.properties", ".ds_store", "thumbs.db")
-}

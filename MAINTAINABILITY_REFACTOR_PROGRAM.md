@@ -62,8 +62,9 @@ two verified desktop launches and graceful shutdowns, and no regression in simul
 GitHub backup preference, scheduling, retry state, and worker lifetime; reviewed GitHub restore and
 local safety-point recovery; GitHub destination selection and backup synchronization.
 `ProjectVersionControlService` now receives one explicit history-change event and contains no
-authentication, remote mutation, background automation, restore, or recovery APIs. Archive export
-remains the next version-control split.
+authentication, remote mutation, background automation, restore, recovery, or archive policy.
+Archive export is isolated and reuses the one canonical project-root contract. Google Drive/AI
+separation and DuckDB domain repositories remain the next external-service boundaries.
 
 **Exit criteria:** current boundary contract tests, cancellation/shutdown tests, offline behavior, database
 transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures remain isolated.
