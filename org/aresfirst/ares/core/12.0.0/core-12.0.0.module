@@ -1,0 +1,164 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "core",
+    "version": "12.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "12.0.0"
+          }
+        },
+        {
+          "group": "org.java-websocket",
+          "module": "Java-WebSocket",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "org.nanohttpd",
+          "module": "nanohttpd",
+          "version": {
+            "requires": "2.3.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-12.0.0.jar",
+          "url": "core-12.0.0.jar",
+          "size": 1620229,
+          "sha512": "2e1b53c31bf7d19cf4ad2ef9ac6a7b4083198524040179d191a7908300fc02b943c2447fb6ced980409e20ed69a43129ed6a161bea3ac8667ff50c07a4f7ed77",
+          "sha256": "51d3d4b615bc4ce6ea175add47c0d17eb67dea3307d8cdcd15b99c375c96baeb",
+          "sha1": "27c03a12ed37af667ee8ebf7923f7cef877b690c",
+          "md5": "68733c9f61d13b27e0c102da57298c04"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.14.0"
+          }
+        },
+        {
+          "group": "org.msgpack",
+          "module": "msgpack-core",
+          "version": {
+            "requires": "0.9.12"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.11.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "12.0.0"
+          }
+        },
+        {
+          "group": "org.java-websocket",
+          "module": "Java-WebSocket",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "org.nanohttpd",
+          "module": "nanohttpd",
+          "version": {
+            "requires": "2.3.1"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-12.0.0.jar",
+          "url": "core-12.0.0.jar",
+          "size": 1620229,
+          "sha512": "2e1b53c31bf7d19cf4ad2ef9ac6a7b4083198524040179d191a7908300fc02b943c2447fb6ced980409e20ed69a43129ed6a161bea3ac8667ff50c07a4f7ed77",
+          "sha256": "51d3d4b615bc4ce6ea175add47c0d17eb67dea3307d8cdcd15b99c375c96baeb",
+          "sha1": "27c03a12ed37af667ee8ebf7923f7cef877b690c",
+          "md5": "68733c9f61d13b27e0c102da57298c04"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "core-12.0.0-sources.jar",
+          "url": "core-12.0.0-sources.jar",
+          "size": 443203,
+          "sha512": "644db319f09c9665ca3c8e1eb646f086a08377d4d922d44aedd70724b29787527bb85762fdcb92a9589c22a7ad683fb5f5a7bced92db752ceb08bbc0e442dec6",
+          "sha256": "b6b7cdfbf26be7f6ca603ed44fc2e2ebc20d83361fce5e52a7fe20a459cd81c3",
+          "sha1": "0bd65adb9b89660b30f3ff20d8bd6727bb9b9ed9",
+          "md5": "97cf9d2ad230911db4f84d59486e80cd"
+        }
+      ]
+    }
+  ]
+}

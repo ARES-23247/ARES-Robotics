@@ -1,0 +1,115 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "project-compiler",
+    "version": "12.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "12.0.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-compiler-12.0.0.jar",
+          "url": "project-compiler-12.0.0.jar",
+          "size": 72124,
+          "sha512": "ae76deecbd216381b7eaf6933a5c0b9e60dfea2984cede27a746ce14241aadedf297dc6668239df4a2068189a8e7cd51d0a7cc53fb7c6c17d5dfd519729510c5",
+          "sha256": "4fd05129ef0f6eff5d1b0df7df477a000257883043779d1dfb69b242219fe06c",
+          "sha1": "97d0207dfe20979281cef159782af9c6c314191b",
+          "md5": "fbf4bb7e6796d0aa4c06e9d09d1e826f"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "12.0.0"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-compiler-12.0.0.jar",
+          "url": "project-compiler-12.0.0.jar",
+          "size": 72124,
+          "sha512": "ae76deecbd216381b7eaf6933a5c0b9e60dfea2984cede27a746ce14241aadedf297dc6668239df4a2068189a8e7cd51d0a7cc53fb7c6c17d5dfd519729510c5",
+          "sha256": "4fd05129ef0f6eff5d1b0df7df477a000257883043779d1dfb69b242219fe06c",
+          "sha1": "97d0207dfe20979281cef159782af9c6c314191b",
+          "md5": "fbf4bb7e6796d0aa4c06e9d09d1e826f"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "project-compiler-12.0.0-sources.jar",
+          "url": "project-compiler-12.0.0-sources.jar",
+          "size": 10318,
+          "sha512": "d52d2d758ece9dde83d38c74c629b60f04db10b9a4e1e797814e22dd99d8ba8b6ce30467ed6002183d07e3c012322d248a699a4ff6c7a976e2e6a9a630f5c369",
+          "sha256": "9917130b760427edc07d4848b28675e506cf92aa16c460fbbdf68bd4840cac76",
+          "sha1": "66d34cf1c507ec5fb3bc23ded11822dab75b199a",
+          "md5": "c372ebe95742a7fdb53a5411dcbd706d"
+        }
+      ]
+    }
+  ]
+}
