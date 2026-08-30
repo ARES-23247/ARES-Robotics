@@ -69,7 +69,13 @@ synchronization; `GenerativeAiService` owns provider authentication and transpor
 `RobotDesignAssistantService` owns reviewed Builder proposals; and `AiDiagnosticsService` owns
 forensics, coaching, and guarded telemetry-query interpretation. All callers use the new services
 directly; the removed `SyncEngineService` AI methods have no compatibility forwarding layer.
-DuckDB domain repositories remain the next external-service boundary.
+DuckDB now has one `DatabaseTransactionCoordinator` for connection selection, serialized writes,
+concurrent reads, and metrics. `SessionMetadataRepository` owns session identity/import state,
+summaries, annotations, match metadata, alerts, topology, and console evidence, while
+`MatchLogRepository` retains telemetry, robot actions, analysis diagnostics, and import reports.
+`DatabaseService` delegates directly to those current contracts; the former combined repository API
+was deleted rather than preserved through forwarding methods. Further telemetry/import decomposition
+can build on the same coordinator without duplicating transaction ownership.
 
 **Exit criteria:** current boundary contract tests, cancellation/shutdown tests, offline behavior, database
 transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures remain isolated.

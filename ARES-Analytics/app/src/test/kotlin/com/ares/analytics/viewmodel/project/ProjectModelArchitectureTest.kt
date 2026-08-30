@@ -6,6 +6,37 @@ import kotlin.test.assertTrue
 
 class ProjectModelArchitectureTest {
     @Test
+    fun `session metadata and match telemetry have distinct database owners`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val databaseBoundary = File(sourceRoot, "service/db")
+        val matchLog = File(databaseBoundary, "MatchLogRepository.kt").readText()
+        val sessions = File(databaseBoundary, "SessionMetadataRepository.kt").readText()
+        val transactions = File(databaseBoundary, "DatabaseTransactionCoordinator.kt").readText()
+
+        listOf(
+            "fun insertSession(",
+            "fun getSessions(",
+            "fun deleteSession(",
+            "fun insertSessionSummary(",
+            "fun insertAnnotation(",
+            "fun updateSessionTags(",
+            "fun insertAlert(",
+            "fun insertTopology(",
+            "fun insertConsoleMessages(",
+        ).forEach { forbidden ->
+            assertTrue(forbidden !in matchLog, "MatchLogRepository must remain telemetry/import owned: $forbidden")
+            assertTrue(forbidden in sessions, "SessionMetadataRepository must own the current session contract: $forbidden")
+        }
+        assertTrue("DatabaseTransactionCoordinator" in matchLog)
+        assertTrue("DatabaseTransactionCoordinator" in sessions)
+        assertTrue("suspend fun <T> write" in transactions && "suspend fun <T> read" in transactions)
+    }
+
+    @Test
     fun `drive sync robot design and ai diagnostics have distinct service owners`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),
