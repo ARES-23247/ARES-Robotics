@@ -174,6 +174,24 @@ class ProjectModelArchitectureTest {
     }
 
     @Test
+    fun `dashboard consumes typed services instead of the global registry adapter`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val dashboard = File(sourceRoot, "ui/screens/DashboardScreen.kt").readText()
+        val widgetServices = File(sourceRoot, "ui/components/dashboard/DashboardWidgetServices.kt").readText()
+
+        assertTrue("DashboardFeatureServices" in dashboard, "Dashboard must declare its explicit service boundary.")
+        assertTrue("ServiceRegistry" !in dashboard, "Dashboard must not pull arbitrary application services.")
+        assertTrue(
+            "ServiceRegistryDashboardWidgetServices" !in widgetServices,
+            "Dashboard widget services must be concrete capability groups, not a registry wrapper.",
+        )
+    }
+
+    @Test
     fun `production authoring view models share the long lived project session`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),

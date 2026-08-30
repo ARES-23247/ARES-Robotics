@@ -22,8 +22,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.di.ServiceRegistry
 import com.ares.analytics.service.*
+import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.dashboard.*
@@ -45,7 +45,7 @@ import com.ares.analytics.service.tuning.TuningParameterDeclaration
  * - Robot icon heading angle rotation offset: $-90^\circ$
  *
  * @param viewModel State manager [DashboardViewModel] for dashboard actions.
- * @param services Dependency container [ServiceRegistry].
+ * @param services Typed dependencies owned by the dashboard feature.
  * @param currentConfig Active workspace configuration settings.
  *
  * @see FieldViewerViewModel
@@ -55,10 +55,16 @@ import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 
+internal data class DashboardFeatureServices(
+    val widgets: DashboardWidgetServices,
+    val processManager: ProcessManagerService,
+    val tuningProfiles: TuningProfileRepository,
+)
+
 @Composable
-fun DashboardScreen(
+internal fun DashboardScreen(
     viewModel: DashboardViewModel,
-    services: ServiceRegistry,
+    services: DashboardFeatureServices,
     currentConfig: WorkspaceConfig,
     isLocalSimulatorSelected: Boolean,
     isSimulatorLaunchPreparationRunning: Boolean,
@@ -79,7 +85,8 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
-    val widgetServices = remember(services) { ServiceRegistryDashboardWidgetServices(services).grouped() }
+    val liveServices = services.widgets.live
+    val replayServices = services.widgets.replay
     var newLayoutName by remember { mutableStateOf("") }
     var offlineGuideDismissed by remember { mutableStateOf(false) }
     var loopTimeMs by remember { mutableStateOf<Double?>(null) }
@@ -89,12 +96,12 @@ fun DashboardScreen(
     var lastUpdateTimestampMs by remember { mutableStateOf(-1L) }
     var lastUpdateAgeMs by remember { mutableStateOf(-1L) }
 
-    val isSimRunning by services.processManagerService.isSimRunning.collectAsState()
+    val isSimRunning by services.processManager.isSimRunning.collectAsState()
     val isLocalSimulator = isLocalSimulatorSelected
-    val healthSnapshot by services.dashboardHealthService.health.collectAsState()
+    val healthSnapshot by liveServices.dashboardHealthService.health.collectAsState()
     val frameRateHz = healthSnapshot.ingestFramesPerSecond
-    val isReplayActive by services.nt4ClientService.isReplayActive.collectAsState()
-    val replayEngine = services.replayEngineService
+    val isReplayActive by liveServices.nt4ClientService.isReplayActive.collectAsState()
+    val replayEngine = replayServices.replayEngineService
     val replayState by replayEngine.state.collectAsState()
     val replayFrame by replayEngine.currentFrame.collectAsState()
     val replaySessionStart by replayEngine.sessionStartTimestampMs.collectAsState()
@@ -104,14 +111,14 @@ fun DashboardScreen(
 
     val tuningDeclarations by produceState<List<TuningParameterDeclaration>>(emptyList(), currentConfig.projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            services.tuningProfileRepository.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()
+            services.tuningProfiles.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()
         }
     }
 
     // Telemetry flow listener for health metrics and freshness tracking
     LaunchedEffect(Unit) {
         scope.launch {
-            services.nt4ClientService.uiTelemetryFlow.collect { frame ->
+            liveServices.nt4ClientService.uiTelemetryFlow.collect { frame ->
                 if (latestReplayMode) return@collect
                 lastUpdateTimestampMs = System.currentTimeMillis()
                 val key = frame.key.lowercase()
@@ -179,7 +186,7 @@ fun DashboardScreen(
     LaunchedEffect(state.primarySessionId, state.replayEvidenceTarget?.requestId) {
         val sessionId = state.primarySessionId
         if (sessionId != null) {
-            services.nt4ClientService.isReplayActive.value = true
+            liveServices.nt4ClientService.isReplayActive.value = true
             if (replayEngine.sessionInfo.value?.sessionId != sessionId || replayEngine.currentFrame.value == null) {
                 replayEngine.loadSession(sessionId)
             }
@@ -192,7 +199,7 @@ fun DashboardScreen(
         } else {
             replayEngine.stop()
             if (state.sessionMode != SessionMode.LIVE_REWIND) {
-                services.nt4ClientService.isReplayActive.value = false
+                liveServices.nt4ClientService.isReplayActive.value = false
             }
         }
     }
@@ -202,7 +209,7 @@ fun DashboardScreen(
             // Replay state survives navigation, but non-dashboard screens return to live UI data.
             // Coming back reselects the same immutable snapshot without reloading or losing place.
             if (selectedSessionForDisposal != null) {
-                services.nt4ClientService.isReplayActive.value = false
+                liveServices.nt4ClientService.isReplayActive.value = false
             }
         }
     }
@@ -254,8 +261,8 @@ fun DashboardScreen(
 
         if (isLocalSimulator) {
             LocalSimulatorControlBar(
-                nt4Client = services.nt4ClientService,
-                keyboardDriveState = services.keyboardDriveState,
+                nt4Client = liveServices.nt4ClientService,
+                keyboardDriveState = liveServices.keyboardDriveState,
                 league = currentConfig.league,
                 teamId = currentConfig.teamId,
                 seasonId = currentConfig.seasonId,
@@ -284,7 +291,7 @@ fun DashboardScreen(
         if (layout != null) {
             DashboardWidgetHost(
                 layout = layout,
-                services = widgetServices,
+                services = services.widgets,
                 workspace = currentConfig,
                 dashboardState = state,
                 replayFrame = displayedReplayFrame,
@@ -309,8 +316,8 @@ fun DashboardScreen(
         }
 
         // Timeline Scrubber Bar
-        val isConnected by services.nt4ClientService.isConnected.collectAsState()
-        val isReplayActive by services.nt4ClientService.isReplayActive.collectAsState()
+        val isConnected by liveServices.nt4ClientService.isConnected.collectAsState()
+        val isReplayActive by liveServices.nt4ClientService.isReplayActive.collectAsState()
 
         if (state.primarySessionId != null || isConnected) {
             ReplayTimelineScrubber(
@@ -323,14 +330,14 @@ fun DashboardScreen(
                 alerts = state.alerts,
                 onSnapToRealtime = {
                     scope.launch {
-                        services.nt4ClientService.isReplayActive.value = false
+                        liveServices.nt4ClientService.isReplayActive.value = false
                         viewModel.onIntent(DashboardIntent.SetSessionMode(SessionMode.LIVE_STREAMING))
                         replayEngine.stop()
                     }
                 },
                 onScrubLive = { pct ->
                     scope.launch {
-                        services.nt4ClientService.isReplayActive.value = true
+                        liveServices.nt4ClientService.isReplayActive.value = true
                         viewModel.onIntent(DashboardIntent.SetSessionMode(SessionMode.LIVE_REWIND))
                         replayEngine.loadSession("live-telemetry")
                         replayEngine.scrubTo(pct)
@@ -338,7 +345,7 @@ fun DashboardScreen(
                 },
                 onPauseLive = {
                     scope.launch {
-                        services.nt4ClientService.isReplayActive.value = true
+                        liveServices.nt4ClientService.isReplayActive.value = true
                         viewModel.onIntent(DashboardIntent.SetSessionMode(SessionMode.LIVE_REWIND))
                         replayEngine.loadSession("live-telemetry")
                         replayEngine.scrubTo(1.0)
@@ -347,7 +354,7 @@ fun DashboardScreen(
                 },
                 onPlayLive = {
                     scope.launch {
-                        services.nt4ClientService.isReplayActive.value = true
+                        liveServices.nt4ClientService.isReplayActive.value = true
                         viewModel.onIntent(DashboardIntent.SetSessionMode(SessionMode.LIVE_REWIND))
                         replayEngine.loadSession("live-telemetry")
                         replayEngine.play()

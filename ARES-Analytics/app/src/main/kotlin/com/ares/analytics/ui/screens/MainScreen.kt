@@ -45,6 +45,10 @@ import com.ares.analytics.ui.components.core.OneClickDeployDialog
 import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
+import com.ares.analytics.ui.components.dashboard.DashboardAnalysisWidgetServices
+import com.ares.analytics.ui.components.dashboard.DashboardLiveWidgetServices
+import com.ares.analytics.ui.components.dashboard.DashboardReplayWidgetServices
+import com.ares.analytics.ui.components.dashboard.DashboardWidgetServices
 import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.ui.components.dashboard.localSimulatorLaunchRequest
@@ -965,40 +969,67 @@ fun MainScreen(services: ServiceRegistry) {
                     // ── Screen Router ────────────────────────────────────────
                     Box(modifier = Modifier.weight(1f)) {
                         when (activeNav) {
-                            NavigationTarget.DASHBOARD -> DashboardScreen(
-                                viewModel = dashboardViewModel,
-                                services = services,
-                                currentConfig = currentConfig,
-                                isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
-                                isSimulatorLaunchPreparationRunning = pendingSimulatorLaunch,
-                                simulatorLaunchRequiresVerification = simulatorLaunchRequiresVerification,
-                                canLaunchSimulator = simulatorLaunchRequestEnabled && !isSimRunning,
-                                simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
-                                onLaunchSimulator = requestSimulatorLaunch,
-                                matches = matches,
-                                onForensicsCompleted = { mainViewModel.onIntent(MainIntent.SetDiagnosticsResponse(it)) },
-                                onSelectMatch = { match, allianceColor ->
-                                    if (primarySessionId != null) {
-                                        scope.launch {
-                                            val opponents = if (allianceColor == "red") match.blueAlliance else match.redAlliance
-                                            services.databaseService.associateSessionWithMatch(
-                                                sessionId = primarySessionId,
-                                                matchNumber = match.matchNumber,
-                                                allianceColor = allianceColor,
-                                                opponentTeams = opponents
-                                            )
-                                            mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
+                            NavigationTarget.DASHBOARD -> {
+                                val dashboardServices = remember(services) {
+                                    DashboardFeatureServices(
+                                        widgets = DashboardWidgetServices(
+                                            live = DashboardLiveWidgetServices(
+                                                nt4ClientService = services.nt4ClientService,
+                                                alertEngineService = services.alertEngineService,
+                                                dashboardHealthService = services.dashboardHealthService,
+                                                keyboardDriveState = services.keyboardDriveState,
+                                                gamepadService = services.gamepadService,
+                                            ),
+                                            analysis = DashboardAnalysisWidgetServices(
+                                                databaseService = services.databaseService,
+                                                advancedAnalyticsService = services.advancedAnalyticsService,
+                                                syncEngineService = services.syncEngineService,
+                                                driverAnalysisService = services.driverAnalysisService,
+                                                diagnosticCoachService = services.diagnosticCoachService,
+                                            ),
+                                            replay = DashboardReplayWidgetServices(
+                                                replayEngineService = services.replayEngineService,
+                                            ),
+                                        ),
+                                        processManager = services.processManagerService,
+                                        tuningProfiles = services.tuningProfileRepository,
+                                    )
+                                }
+                                DashboardScreen(
+                                    viewModel = dashboardViewModel,
+                                    services = dashboardServices,
+                                    currentConfig = currentConfig,
+                                    isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
+                                    isSimulatorLaunchPreparationRunning = pendingSimulatorLaunch,
+                                    simulatorLaunchRequiresVerification = simulatorLaunchRequiresVerification,
+                                    canLaunchSimulator = simulatorLaunchRequestEnabled && !isSimRunning,
+                                    simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
+                                    onLaunchSimulator = requestSimulatorLaunch,
+                                    matches = matches,
+                                    onForensicsCompleted = { mainViewModel.onIntent(MainIntent.SetDiagnosticsResponse(it)) },
+                                    onSelectMatch = { match, allianceColor ->
+                                        if (primarySessionId != null) {
+                                            scope.launch {
+                                                val opponents = if (allianceColor == "red") match.blueAlliance else match.redAlliance
+                                                services.databaseService.associateSessionWithMatch(
+                                                    sessionId = primarySessionId,
+                                                    matchNumber = match.matchNumber,
+                                                    allianceColor = allianceColor,
+                                                    opponentTeams = opponents
+                                                )
+                                                mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
+                                            }
                                         }
-                                    }
-                                },
-                                reloadTrigger = runsIndexReloadTrigger,
-                                onImportSuccess = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
-                                onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
-                                onOpenKeybindings = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.CONTROLS)) },
-                                onOpenRunHistory = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY)) },
-                                onOpenHelp = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY)) },
-                                onMissionSnapshotChanged = { dashboardMissionSnapshot = it },
-                            )
+                                    },
+                                    reloadTrigger = runsIndexReloadTrigger,
+                                    onImportSuccess = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
+                                    onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
+                                    onOpenKeybindings = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.CONTROLS)) },
+                                    onOpenRunHistory = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY)) },
+                                    onOpenHelp = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY)) },
+                                    onMissionSnapshotChanged = { dashboardMissionSnapshot = it },
+                                )
+                            }
                             NavigationTarget.PATH_PLANNER -> PathPlannerScreen(
                                 viewModel = pathPlannerViewModel,
                                 league = currentConfig.league,
