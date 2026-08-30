@@ -1,6 +1,7 @@
 package com.ares.analytics.ui.help
 
 import com.ares.analytics.viewmodel.TuningState
+import com.areslib.tuning.TuningParameterDeclaration
 
 private val feedforwardTokens = listOf(
     "feedforward",
@@ -12,7 +13,7 @@ private val feedforwardTokens = listOf(
     ".kg",
 )
 
-private fun com.ares.analytics.service.tuning.TuningParameterDeclaration.isFeedforwardRelated(): Boolean {
+private fun TuningParameterDeclaration.isFeedforwardRelated(): Boolean {
     val searchable = "$key $displayName $description".lowercase()
     return feedforwardTokens.any(searchable::contains)
 }

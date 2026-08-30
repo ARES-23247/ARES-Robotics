@@ -9,7 +9,10 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 
-data class TuningWorkspaceDocuments(val catalog: List<TuningParameterDeclaration>, val profiles: List<RobotTuningProfile>)
+data class TuningWorkspaceDocuments(
+    val catalog: List<TuningParameterDeclaration>,
+    val profiles: List<TuningProfileDocument>,
+)
 
 data class ReviewedTuningHistory(
     val profileUid: String,
@@ -82,13 +85,13 @@ class TuningProfileRepository {
 
     fun promote(
         projectPath: String,
-        current: RobotTuningProfile,
+        current: TuningProfileDocument,
         expectedContentHash: String,
         declarations: List<TuningParameterDeclaration>,
         changes: List<TuningProfileChange>,
         reviewedBy: String,
         reviewSummary: String
-    ): RobotTuningProfile {
+    ): TuningProfileDocument {
         require(changes.isNotEmpty()) { "Review at least one change before promotion." }
         require(reviewedBy.isNotBlank() && reviewSummary.isNotBlank()) { "Reviewer and review summary are required." }
         validateEvidence(projectPath, changes)
@@ -143,7 +146,7 @@ class TuningProfileRepository {
         return promoted
     }
 
-    fun reviewToken(profile: RobotTuningProfile, declarations: List<TuningParameterDeclaration>, changes: List<TuningProfileChange>, reviewedBy: String, reviewSummary: String): String {
+    fun reviewToken(profile: TuningProfileDocument, declarations: List<TuningParameterDeclaration>, changes: List<TuningProfileChange>, reviewedBy: String, reviewSummary: String): String {
         val hash = TuningProfileDocumentCodec.contentHash(profile, declarations)
         val canonical = "$hash|$reviewedBy|$reviewSummary|" + changes.joinToString("|") {
             "${it.parameterUid}:${it.before?.displayValue()}->${it.after.displayValue()}:${it.provenance.source}:${it.provenance.note}:${it.provenance.evidencePath}:${it.provenance.evidenceSha256}"
@@ -153,7 +156,7 @@ class TuningProfileRepository {
 
     private fun profileFile(
         projectPath: String,
-        profile: RobotTuningProfile,
+        profile: TuningProfileDocument,
         declarations: List<TuningParameterDeclaration>
     ): File {
         val directory = File(projectPath, ".ares/tuning")

@@ -108,6 +108,13 @@ non-atomic filesystem fallback and temporary-file cleanup contract. The duplicat
 and their private forwarding methods were deleted; neither helper is exposed as a general-purpose
 cross-module utility.
 
+The fourth slice applies the pre-release clean-break rule to executable APIs. `AresGamepad` now has
+one public primitive `GamepadAxisSource` for built-in and custom analog bindings; the nullable dual
+selector path and boxed-lambda compatibility constructors were removed from the hot loop. Studio
+tuning code now imports the canonical ARES tuning models directly instead of re-exporting them
+through six application-local type aliases. Existing binary consumers must upgrade and recompile;
+the repository does not preserve removed signatures through forwarding wrappers.
+
 **Exit criteria:** no orphan production APIs, multiple simulated robot instances remain isolated,
 hardware reads remain once per loop, and zero-allocation regression tests remain green.
 
@@ -155,6 +162,8 @@ no simulator result is described as physical validation.
 ## Guardrails
 
 - No file-size-only refactors: split by ownership and external boundary.
+- No compatibility-only aliases, forwarding wrappers, fallback readers, or dual schemas. Migrate all
+  in-repository producers and consumers to one current contract; old binaries must upgrade.
 - No arbitrary Kotlin reverse engineering or replacement of user-owned source.
 - No cloud calls from robot code.
 - No `System` clock in runtime/library code; use `RobotClock`.

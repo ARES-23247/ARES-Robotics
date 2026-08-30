@@ -228,6 +228,25 @@ class AresGamepadDslTest {
     }
 
     @Test
+    fun `custom analog bindings use the one primitive source contract`() {
+        val axis = AresGamepad.BindableAxis(GamepadAxisSource(GamepadState::rightTrigger))
+        val stick = AresGamepad.BindableStick(
+            GamepadAxisSource(GamepadState::leftStickX),
+            GamepadAxisSource(GamepadState::leftStickY),
+        )
+        state.rightTrigger = 0.6f
+        state.leftStickX = 0.25f
+        state.leftStickY = -0.5f
+
+        axis.updateValue(state, timestampMs = 20L, notifyConsumer = false, resetSlew = true)
+        stick.updateValue(state, timestampMs = 20L, notifyConsumer = false, resetSlew = true)
+
+        assertEquals(0.6, axis.shapedValue, 1e-6)
+        assertEquals(0.25, stick.shapedX, 1e-6)
+        assertEquals(-0.5, stick.shapedY, 1e-6)
+    }
+
+    @Test
     fun `shaped axis and stick callbacks remain allocation free after warmup`() {
         val bean = ManagementFactory.getThreadMXBean() as? com.sun.management.ThreadMXBean
         assumeTrue(bean != null && bean.isThreadAllocatedMemorySupported)

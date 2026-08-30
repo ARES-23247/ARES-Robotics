@@ -7611,7 +7611,7 @@ public abstract interface class com/areslib/telemetry/AresGamepad$AxisConsumer {
 }
 
 public final class com/areslib/telemetry/AresGamepad$BindableAxis {
-	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Lcom/areslib/telemetry/GamepadAxisSource;)V
 	public final fun bindAxis (Lcom/areslib/telemetry/AresGamepad$AxisConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 	public final fun getShapedValue ()D
 	public final fun getValue ()F
@@ -7641,7 +7641,7 @@ public final class com/areslib/telemetry/AresGamepad$BindableButton {
 }
 
 public final class com/areslib/telemetry/AresGamepad$BindableStick {
-	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Lcom/areslib/telemetry/GamepadAxisSource;Lcom/areslib/telemetry/GamepadAxisSource;)V
 	public final fun bindStick (Lcom/areslib/telemetry/AresGamepad$StickConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableStick;
 	public final fun getShapedX ()D
 	public final fun getShapedY ()D
@@ -7655,6 +7655,10 @@ public final class com/areslib/telemetry/AresGamepad$BindableStick {
 
 public abstract interface class com/areslib/telemetry/AresGamepad$StickConsumer {
 	public abstract fun accept (DD)V
+}
+
+public abstract interface class com/areslib/telemetry/GamepadAxisSource {
+	public abstract fun read (Lcom/areslib/telemetry/GamepadState;)F
 }
 
 public final class com/areslib/telemetry/GamepadState {

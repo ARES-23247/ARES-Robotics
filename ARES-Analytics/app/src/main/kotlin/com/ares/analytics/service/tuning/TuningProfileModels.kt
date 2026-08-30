@@ -1,11 +1,10 @@
 package com.ares.analytics.service.tuning
 
-typealias TuningParameterDeclaration = com.areslib.tuning.TuningParameterDeclaration
-typealias TuningApplyPolicy = com.areslib.tuning.TuningApplyPolicy
-typealias TuningParameterType = com.areslib.tuning.TuningParameterType
-typealias TuningValue = com.areslib.tuning.TuningValue
-typealias RobotTuningProfile = com.areslib.tuning.TuningProfileDocument
-typealias TuningComponentCatalog = List<TuningParameterDeclaration>
+import com.areslib.tuning.TuningApplyPolicy
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningProfileDocument
+import com.areslib.tuning.TuningValue
 
 enum class TuningValueOwner { ROBOT_PROFILE, VENDOR_SOURCE }
 enum class TuningValueStatus { INHERITED, PROFILE, PROPOSED, INVALID, LIVE_ONLY, UNDECLARED }
@@ -70,8 +69,8 @@ fun TuningParameterDeclaration.owner(): TuningValueOwner =
 fun TuningValue.numericValue(): Double? = doubleValue ?: intValue?.toDouble()
 
 fun resolveTuningProfile(
-    profile: RobotTuningProfile,
-    profiles: List<RobotTuningProfile>,
+    profile: TuningProfileDocument,
+    profiles: List<TuningProfileDocument>,
     declarations: List<TuningParameterDeclaration>,
     liveValues: Map<String, Double>,
     proposals: Map<String, TuningValue>,
@@ -109,8 +108,8 @@ fun resolveTuningProfile(
 }
 
 fun buildTuningReview(
-    profile: RobotTuningProfile,
-    profiles: List<RobotTuningProfile>,
+    profile: TuningProfileDocument,
+    profiles: List<TuningProfileDocument>,
     declarations: List<TuningParameterDeclaration>,
     proposals: Map<String, TuningValue>,
     proposalProvenance: Map<String, TuningValueProvenance>

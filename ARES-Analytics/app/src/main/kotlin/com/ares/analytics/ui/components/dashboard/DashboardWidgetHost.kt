@@ -7,10 +7,10 @@ import com.ares.analytics.service.DashboardLayoutConfig
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.service.WidgetConfig
-import com.ares.analytics.service.tuning.TuningParameterDeclaration
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.viewmodel.DashboardState
+import com.areslib.tuning.TuningParameterDeclaration
 
 /** Compose host that turns registry definitions into grid renderers for one immutable dashboard state. */
 @Composable

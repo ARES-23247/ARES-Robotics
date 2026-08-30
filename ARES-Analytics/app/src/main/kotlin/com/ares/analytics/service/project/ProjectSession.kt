@@ -5,7 +5,6 @@ import com.ares.analytics.service.RobotDeploymentService
 import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.service.drivebase.DrivebaseDocument
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
-import com.ares.analytics.service.tuning.RobotTuningProfile
 import com.ares.analytics.service.tuning.TuningProfileChange
 import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.models.League
@@ -33,6 +32,7 @@ import com.areslib.subsystem.SubsystemDocument
 import com.areslib.superstructure.SuperstructureDocument
 import com.areslib.state.RobotFieldConfig
 import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningProfileDocument
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.locks.ReentrantLock
@@ -358,13 +358,13 @@ class ProjectSession(
 
     fun promoteTuningProfile(
         expectedRevision: ProjectSessionRevision,
-        current: RobotTuningProfile,
+        current: TuningProfileDocument,
         expectedContentHash: String,
         declarations: List<TuningParameterDeclaration>,
         changes: List<TuningProfileChange>,
         reviewedBy: String,
         reviewSummary: String,
-    ): ProjectSessionMutationResult<RobotTuningProfile> = mutate(expectedRevision, "Promoting tuning profile") { snapshot ->
+    ): ProjectSessionMutationResult<TuningProfileDocument> = mutate(expectedRevision, "Promoting tuning profile") { snapshot ->
         tuningRepository.promote(
             snapshot.selection.projectRoot,
             current,

@@ -24,6 +24,7 @@ import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.TuningIntent
 import com.ares.analytics.viewmodel.TuningState
 import com.ares.analytics.viewmodel.TuningViewModel
+import com.areslib.tuning.TuningValue
 
 @Composable
 fun GainTuningPanel(

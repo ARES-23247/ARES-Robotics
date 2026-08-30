@@ -31,7 +31,7 @@ import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.DashboardIntent
 import com.ares.analytics.viewmodel.DashboardViewModel
 import kotlinx.coroutines.launch
-import com.ares.analytics.service.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterDeclaration
 
 /**
  * Primary telemetry analytics dashboard screen displaying real-time robot visualization cards.

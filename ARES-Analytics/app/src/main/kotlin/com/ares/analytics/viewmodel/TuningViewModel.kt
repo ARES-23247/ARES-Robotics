@@ -7,6 +7,11 @@ import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.areslib.controls.ControllerInputPlatform
+import com.areslib.tuning.TuningApplyPolicy
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningProfileDocument
+import com.areslib.tuning.TuningValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -32,8 +37,8 @@ data class TuningState(
     val consumerSupportByUid: Map<String, Boolean> = emptyMap(),
     val projectPath: String = "",
     val projectRevision: ProjectSessionRevision? = null,
-    val catalog: TuningComponentCatalog = emptyList(),
-    val profiles: List<RobotTuningProfile> = emptyList(),
+    val catalog: List<TuningParameterDeclaration> = emptyList(),
+    val profiles: List<TuningProfileDocument> = emptyList(),
     val selectedProfileId: String = "competition",
     val proposals: Map<String, TuningValue> = emptyMap(),
     val proposalProvenance: Map<String, TuningValueProvenance> = emptyMap(),
@@ -45,7 +50,7 @@ data class TuningState(
     val saveStatus: String = "",
     val errorMessage: String? = null
 ) {
-    val selectedProfile: RobotTuningProfile?
+    val selectedProfile: TuningProfileDocument?
         get() = profiles.firstOrNull { it.profileId == selectedProfileId }
 
     val rows: List<ResolvedTuningValue>

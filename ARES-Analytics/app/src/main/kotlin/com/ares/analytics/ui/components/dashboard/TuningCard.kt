@@ -16,8 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.tuning.TuningParameterDeclaration
 import com.ares.analytics.service.tuning.TuningTransport
+import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.ares.analytics.ui.components.core.AnalyticsCard
 import com.ares.analytics.ui.components.core.CardHeader
