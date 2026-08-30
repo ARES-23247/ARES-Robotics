@@ -1,6 +1,9 @@
 package com.ares.analytics.viewmodel
 
 import com.ares.analytics.service.*
+import com.ares.analytics.service.dashboard.DashboardWidgetCatalog
+import com.ares.analytics.service.dashboard.DashboardWidgetType
+import com.ares.analytics.service.dashboard.defaultProperties
 import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.*
 import kotlinx.coroutines.CoroutineScope
@@ -62,7 +65,7 @@ sealed class DashboardIntent {
 
     data class UpdateLayout(val newWidgets: List<WidgetConfig>) : DashboardIntent()
 
-    data class AddWidget(val type: String) : DashboardIntent()
+    data class AddWidget(val type: DashboardWidgetType) : DashboardIntent()
 
     data class RemoveWidget(val widgetId: String) : DashboardIntent()
 
@@ -76,7 +79,6 @@ sealed class DashboardIntent {
 
     data class DeleteLayout(val profileName: String) : DashboardIntent()
 }
-
 /** Coordinates dashboard profiles, live/replay session selection, layouts, and log imports. */
 class DashboardViewModel(
     private val databaseService: DatabaseService,
@@ -86,6 +88,7 @@ class DashboardViewModel(
     private val hootDecoderService: HootDecoderService,
     private val logParserService: LogParserService,
     private val layoutPreferenceService: LayoutPreferenceService,
+    private val widgetCatalog: DashboardWidgetCatalog,
     private val scope: CoroutineScope
 ) {
     private val _state = MutableStateFlow(DashboardState())
@@ -220,7 +223,7 @@ class DashboardViewModel(
                 }
                 is DashboardIntent.AddWidget -> {
                     layoutTransactions.transact {
-                        val spec = DashboardWidgetCatalog.find(intent.type)
+                        val spec = widgetCatalog.find(intent.type)
                         if (spec == null) {
                             _state.update { it.copy(errorMessage = "Unknown dashboard widget type: ${intent.type}") }
                         } else {
@@ -228,12 +231,13 @@ class DashboardViewModel(
                             val currentList = _state.value.currentLayout?.widgets.orEmpty()
                             val maxRow = currentList.maxOfOrNull { it.row + it.rowSpan } ?: 0
                             val newWidget = WidgetConfig(
-                                id = "${intent.type}_${UUID.randomUUID()}",
-                                type = intent.type,
+                                id = "${intent.type.serializedName}_${UUID.randomUUID()}",
+                                type = intent.type.serializedName,
                                 row = maxRow,
                                 col = 0,
                                 rowSpan = spec.defaultRowSpan,
-                                colSpan = spec.defaultColSpan
+                                colSpan = spec.defaultColSpan,
+                                properties = spec.defaultProperties(),
                             )
                             persistLayout(
                                 profile = profile,

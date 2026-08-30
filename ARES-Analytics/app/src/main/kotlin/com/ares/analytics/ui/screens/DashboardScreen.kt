@@ -30,8 +30,6 @@ import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.DashboardIntent
 import com.ares.analytics.viewmodel.DashboardViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 import com.ares.analytics.service.tuning.TuningParameterDeclaration
 
 /**
@@ -80,6 +78,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val widgetServices = remember(services) { ServiceRegistryDashboardWidgetServices(services).grouped() }
     var newLayoutName by remember { mutableStateOf("") }
     var offlineGuideDismissed by remember { mutableStateOf(false) }
     var loopTimeMs by remember { mutableStateOf<Double?>(null) }
@@ -150,7 +149,6 @@ fun DashboardScreen(
     // Replay integration
     val selectedSessionForDisposal by rememberUpdatedState(state.primarySessionId)
     val undismissedAlerts = remember { mutableStateListOf<AlertRecord>() }
-    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
 
     LaunchedEffect(state.alerts, isReplayMode) {
         if (isReplayMode) {
@@ -283,210 +281,30 @@ fun DashboardScreen(
         // Configurable widgets area
         val layout = state.currentLayout
         if (layout != null) {
-            val builders = mapOf<String, @Composable (WidgetConfig, Modifier) -> Unit>(
-                "driver_station" to { _, mod ->
-                    FtcDriverStationWidget(nt4Client = services.nt4ClientService, modifier = mod)
+            DashboardWidgetHost(
+                layout = layout,
+                services = widgetServices,
+                workspace = currentConfig,
+                dashboardState = state,
+                replayFrame = displayedReplayFrame,
+                replaySessionStartMs = replaySessionStart,
+                matches = matches,
+                tuningDeclarations = tuningDeclarations,
+                reloadTrigger = reloadTrigger,
+                onForensicsCompleted = onForensicsCompleted,
+                onSelectMatch = onSelectMatch,
+                onSelectPrimarySession = { viewModel.onIntent(DashboardIntent.SelectPrimarySession(it)) },
+                onSelectCompareSession = { viewModel.onIntent(DashboardIntent.SelectCompareSession(it)) },
+                onOpenKeybindings = onOpenKeybindings,
+                onUpdateProperties = { widget, newProperties ->
+                    viewModel.onIntent(DashboardIntent.UpdateLayout(layout.widgets.map {
+                        if (it.id == widget.id) it.copy(properties = newProperties) else it
+                    }))
                 },
-                "autonomous_selector" to { _, mod ->
-                    AutonomousSelectorCard(nt4ClientService = services.nt4ClientService, modifier = mod)
-                },
-                "runs_index" to { _, mod ->
-                    RunsIndex(
-                        databaseService = services.databaseService,
-                        workspace = currentConfig,
-                        primarySessionId = state.primarySessionId,
-                        compareSessionId = state.compareSessionId,
-                        onSelectPrimary = { viewModel.onIntent(DashboardIntent.SelectPrimarySession(it)) },
-                        onSelectCompare = { viewModel.onIntent(DashboardIntent.SelectCompareSession(it)) },
-                        modifier = mod,
-                        reloadTrigger = reloadTrigger
-                    )
-                },
-                "alerts" to { _, mod ->
-                    AlertPanel(services.alertEngineService, mod)
-                },
-                "telemetry_chart" to { widget, mod ->
-                    TelemetryChartPanel(
-                        nt4ClientService = services.nt4ClientService,
-                        databaseService = services.databaseService,
-                        currentFrame = displayedReplayFrame,
-                        properties = widget.properties,
-                        onPropertiesChanged = { newProps ->
-                            viewModel.onIntent(DashboardIntent.UpdateLayout(layout.widgets.map {
-                                if (it.id == widget.id) it.copy(properties = newProps) else it
-                            }))
-                        },
-                        modifier = mod
-                    )
-                },
-                "camera_stream" to { widget, mod ->
-                    CameraStreamCard(
-                        properties = widget.properties,
-                        onPropertiesChanged = { newProps ->
-                            viewModel.onIntent(DashboardIntent.UpdateLayout(layout.widgets.map {
-                                if (it.id == widget.id) it.copy(properties = newProps) else it
-                            }))
-                        },
-                        modifier = mod
-                    )
-                },
-                "motor_health" to { _, mod ->
-                    MotorHealthCard(services.databaseService, state.primarySessionId, mod)
-                },
-                "vision_quality" to { _, mod ->
-                    VisionQualityCard(services.databaseService, state.primarySessionId, mod)
-                },
-                "ai_coach" to { _, mod ->
-                    AiCoachPanel(services.databaseService, services.syncEngineService, state.primarySessionId, onForensicsCompleted, mod)
-                },
-                "driver_motion_review" to { _, mod ->
-                    DriverMotionReviewWidget(services.driverAnalysisService, state.primarySessionId, mod)
-                },
-                "pit_evidence_checklist" to { _, mod ->
-                    DiagnosticChecklistWidget(services.diagnosticCoachService, state.primarySessionId, mod)
-                },
-                "match_schedule" to { _, mod ->
-                    MatchScheduleCard(matches, currentConfig.teamId, onSelectMatch, mod)
-                },
-                "console_viewer" to { widget, mod ->
-                    ConsoleViewer(services, widget, mod)
-                },
-                "swerve_animator" to { _, mod ->
-                    SwerveModuleVisualizer(
-                        nt4ClientService = services.nt4ClientService,
-                        currentFrame = displayedReplayFrame,
-                        modifier = mod,
-                    )
-                },
-                "session_summary" to { _, mod ->
-                    SessionSummaryCard(services.databaseService, state.primarySessionId, mod)
-                },
-                "joystick_visualizer" to { _, mod ->
-                    JoystickVisualizer(
-                        currentFrame = displayedReplayFrame,
-                        nt4ClientService = services.nt4ClientService.takeIf { displayedReplayFrame == null },
-                        services = services.takeIf { displayedReplayFrame == null },
-                        onOpenKeybindings = onOpenKeybindings,
-                        modifier = mod
-                    )
-                },
-                "mechanism_visualizer" to { _, mod ->
-                    MechanismVisualizer(
-                        currentFrame = displayedReplayFrame,
-                        nt4ClientService = services.nt4ClientService.takeIf { displayedReplayFrame == null },
-                        modifier = mod,
-                    )
-                },
-                "mecanum_visualizer" to { _, mod ->
-                    MecanumVisualizer(
-                        currentFrame = displayedReplayFrame,
-                        nt4ClientService = services.nt4ClientService.takeIf { displayedReplayFrame == null },
-                        modifier = mod,
-                    )
-                },
-                "field_viewer" to { widget, mod ->
-                    FieldViewerCard(
-                        nt4ClientService = services.nt4ClientService,
-                        currentFrame = displayedReplayFrame,
-                        databaseService = services.databaseService,
-                        replayStartTimestampMs = replaySessionStart,
-                        league = currentConfig.league,
-                        projectPath = currentConfig.projectPath,
-                        properties = widget.properties,
-                        onPropertiesChanged = { newProps ->
-                            viewModel.onIntent(DashboardIntent.UpdateLayout(layout.widgets.map {
-                                if (it.id == widget.id) it.copy(properties = newProps) else it
-                            }))
-                        },
-                        modifier = mod
-                    )
-                },
-                "pose_viewer" to { _, mod ->
-                    PoseViewerCard(services.nt4ClientService, displayedReplayFrame, mod)
-                },
-                "trends_card" to { _, mod ->
-                    TrendsCard(services.databaseService, mod)
-                },
-                "battery_health" to { _, mod ->
-                    BatteryHealthCard(services.databaseService, state.primarySessionId, mod)
-                },
-                "statistics_panel" to { _, mod ->
-                    StatisticsPanel(services.databaseService, state.primarySessionId, mod)
-                },
-                "advanced_analytics" to { _, mod ->
-                    AdvancedAnalyticsCard(
-                        analyticsService = services.advancedAnalyticsService,
-                        sessionId = state.primarySessionId,
-                        compareSessionId = state.compareSessionId,
-                        modifier = mod
-                    )
-                },
-                "control_profiler" to { _, mod ->
-                    ControlLoopProfilerCard(services.nt4ClientService, mod)
-                },
-                "state_tracker" to { _, mod ->
-                    StateMachineTrackerCard(services.nt4ClientService, mod)
-                },
-                "subsystem_health" to { _, mod ->
-                    SubsystemHealthCard(services.nt4ClientService, mod)
-                },
-                "system_health" to { _, mod ->
-                    SystemHealthCard(
-                        nt4ClientService = services.nt4ClientService,
-                        dashboardHealthService = services.dashboardHealthService,
-                        currentFrame = displayedReplayFrame,
-                        modifier = mod,
-                    )
-                },
-                "imu_visualizer" to { _, mod ->
-                    IMUVisualizerCard(services.nt4ClientService, mod)
-                },
-                "power_distribution" to { _, mod ->
-                    PowerDistributionCard(services.nt4ClientService, mod)
-                },
-                "tuning_card" to { _, mod ->
-                    TuningCard(services.nt4ClientService, mod, tuningDeclarations)
-                },
-                "ekf_telemetry" to { _, mod ->
-                    EKFTelemetryCard(services.nt4ClientService, mod)
-                },
-                "path_tuning" to { _, mod ->
-                    PathTuningVisualizer(services.nt4ClientService, mod)
-                },
-                "brownout_protection" to { _, mod ->
-                    BrownoutProtectionCard(services.nt4ClientService, mod)
-                },
-                "profiling_diagnostics" to { _, mod ->
-                    ProfilingDiagnosticsCard(services.nt4ClientService, mod)
-                },
-                "hardware_topology" to { _, mod ->
-                    HardwareTopologyCard(services, state.primarySessionId, mod)
-                },
-                "indicator_lights" to { _, mod ->
-                    IndicatorLightsCard(services.nt4ClientService, displayedReplayFrame, mod)
-                }
+                onLayoutChanged = { viewModel.onIntent(DashboardIntent.UpdateLayout(it)) },
+                onRemoveWidget = { viewModel.onIntent(DashboardIntent.RemoveWidget(it)) },
+                modifier = Modifier.weight(1f).fillMaxWidth(),
             )
-            val rendererCatalogIssue = remember(builders.keys) {
-                DashboardWidgetCatalog.completenessError(builders.keys, "Dashboard renderer")
-            }
-            LaunchedEffect(rendererCatalogIssue) {
-                rendererCatalogIssue?.let { System.err.println("[Dashboard] $it") }
-            }
-
-            key(displayedReplayFrame?.sessionId ?: "live") {
-                DashboardWidgetGrid(
-                    widgets = layout.widgets,
-                    isEditing = state.isLayoutEditing,
-                    onLayoutChanged = { newWidgets ->
-                        viewModel.onIntent(DashboardIntent.UpdateLayout(newWidgets))
-                    },
-                    onRemoveWidget = { id ->
-                        viewModel.onIntent(DashboardIntent.RemoveWidget(id))
-                    },
-                    widgetBuilders = builders,
-                    modifier = Modifier.weight(1f).fillMaxWidth()
-                )
-            }
         }
 
         // Timeline Scrubber Bar
@@ -548,69 +366,15 @@ fun DashboardScreen(
         )
     }
 
-    // Floating notifications / popout warning alerts
-    Column(
+    DashboardCriticalAlertStack(
+        alerts = undismissedAlerts,
+        onDismiss = { undismissedAlerts.remove(it) },
         modifier = Modifier
             .align(Alignment.TopEnd)
-            .padding(16.dp)
-            .width(320.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        undismissedAlerts.forEach { alert ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AresError.copy(alpha = 0.95f)),
-                shape = RoundedCornerShape(8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = AresBackground,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = when {
-                                alert.ruleKey.contains("brownout", ignoreCase = true) -> "CRITICAL BROWNOUT"
-                                alert.ruleKey.contains("comms", ignoreCase = true) -> "COMMS / PACKET LOSS"
-                                alert.ruleKey.contains("can", ignoreCase = true) -> "CANBUS HARDWARE ERROR"
-                                alert.ruleKey.contains("battery", ignoreCase = true) -> "LOW BATTERY ALERT"
-                                else -> alert.ruleKey.uppercase()
-                            },
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AresBackground
-                        )
-                        Text(
-                            text = "Peak: ${String.format("%.2f", alert.peakValue)} | Triggered: ${timeFormat.format(java.util.Date(alert.triggerTimestampMs))}",
-                            fontSize = 10.sp,
-                            color = AresBackground.copy(alpha = 0.8f)
-                        )
-                    }
-                    IconButton(
-                        onClick = { undismissedAlerts.remove(alert) },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Dismiss",
-                            tint = AresBackground,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
+            .padding(16.dp),
+    )
     }
 }
-
 internal fun shouldShowDashboardOfflineGuide(
     isConnected: Boolean,
     primarySessionId: String?,

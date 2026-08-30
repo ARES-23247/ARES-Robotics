@@ -382,6 +382,81 @@ class BuilderVisualScreenshotTest {
     }
 
     @Test
+    fun renderVaderFrontAndRearControllerCanvases() {
+        fun button(
+            id: String,
+            label: String,
+            x: Double,
+            y: Double,
+            surface: ControllerSurfaceDocument = ControllerSurfaceDocument.FRONT,
+        ) = ControllerControlDocument(
+            controlId = id,
+            displayName = label,
+            surface = surface,
+            type = ControllerControlTypeDocument.BUTTON,
+            anchor = ControllerAnchorDocument(x, y),
+            mappings = listOf(ControllerInputMappingDocument(ControllerInputPlatform.FTC, buttonIndex = 0)),
+        )
+        fun axis(id: String, label: String, x: Double, y: Double) = ControllerControlDocument(
+            controlId = id,
+            displayName = label,
+            surface = ControllerSurfaceDocument.FRONT,
+            type = ControllerControlTypeDocument.AXIS,
+            anchor = ControllerAnchorDocument(x, y),
+            mappings = listOf(ControllerInputMappingDocument(ControllerInputPlatform.FTC, axisIndex = 0)),
+        )
+        val standard = listOf(
+            button("a", "A", .81, .44), button("b", "B", .88, .35),
+            button("x", "X", .74, .35), button("y", "Y", .81, .26),
+            button("left_bumper", "LB", .23, .10), button("right_bumper", "RB", .77, .10),
+            button("back", "Back", .43, .40), button("start", "Start", .57, .40),
+            button("left_stick_button", "L3", .35, .66), button("right_stick_button", "R3", .65, .66),
+            button("dpad_up", "D-pad up", .23, .43), button("dpad_down", "D-pad down", .23, .57),
+            button("dpad_left", "D-pad left", .16, .50), button("dpad_right", "D-pad right", .30, .50),
+            axis("left_stick_x", "Left stick X", .35, .62), axis("left_stick_y", "Left stick Y", .35, .72),
+            axis("right_stick_x", "Right stick X", .65, .62), axis("right_stick_y", "Right stick Y", .65, .72),
+            axis("left_trigger", "LT", .17, .02), axis("right_trigger", "RT", .83, .02),
+        )
+        val extras = listOf(
+            button("c", "C", .73, .54), button("z", "Z", .87, .54),
+            button("lm", "LM", .23, .08), button("rm", "RM", .77, .08),
+            button("m1", "M1", .32, .34, ControllerSurfaceDocument.REAR),
+            button("m2", "M2", .68, .34, ControllerSurfaceDocument.REAR),
+            button("m3", "M3", .36, .66, ControllerSurfaceDocument.REAR),
+            button("m4", "M4", .64, .66, ControllerSurfaceDocument.REAR),
+        )
+        val profile = ControllerProfileDocument(
+            documentId = "flydigi-vader-5-pro",
+            displayName = "Flydigi Vader 5 Pro",
+            controls = standard + extras,
+        )
+        val labels = profile.controls.associate { it.controlId to listOf("Action for ${it.displayName}") }
+        val scene = ImageComposeScene(1100, 820)
+        scene.setContent {
+            AresTheme {
+                Column(Modifier.fillMaxSize().background(AresBackground).padding(20.dp)) {
+                    Text("Vader 5 Pro · Front", color = AresTextPrimary)
+                    ControllerCanvas(
+                        profile, ControllerSurfaceDocument.FRONT, "lm", emptySet(),
+                        standard.mapTo(linkedSetOf()) { it.controlId }, ControllerInputPlatform.FTC,
+                        GamepadState(), {}, boundActionLabels = labels,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text("Vader 5 Pro · Rear paddles", color = AresTextPrimary)
+                    ControllerCanvas(
+                        profile, ControllerSurfaceDocument.REAR, "m2", emptySet(),
+                        extras.mapTo(linkedSetOf()) { it.controlId }, ControllerInputPlatform.FTC,
+                        GamepadState(), {}, boundActionLabels = labels,
+                    )
+                }
+            }
+        }
+
+        val file = saveScene(scene, "controller_canvas_vader_front_rear.png")
+        assertTrue(file.length() > 10_000, "Vader front/rear screenshot should contain both mapped surfaces")
+    }
+
+    @Test
     fun renderInspectorDrawer() {
         val scene = ImageComposeScene(1100, 750)
         scene.setContent {

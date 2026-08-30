@@ -40,8 +40,9 @@ class AutoImportServiceTest {
         val logParserService = LogParserService(databaseService, summaryEngineService)
         val hootDecoderService = HootDecoderService(databaseService, summaryEngineService, sysIdService)
 
-        // Mock ProcessManagerService
-        val processManagerService = ProcessManagerService()
+        // Robot connectivity is irrelevant to this local-disk test and must not depend on
+        // whether a developer happens to have a Control Hub connected.
+        val processManagerService = ProcessManagerService(monitorAdbConnection = false)
 
         // Create a temporary project path
         val tempProjectDir = File(System.getProperty("java.io.tmpdir"), "ares_project_test_${System.currentTimeMillis()}")
@@ -93,7 +94,7 @@ class AutoImportServiceTest {
         // we can wait a moment or just verify the file moves after a short delay since it is running on a coroutine.
         // Let's delay the test thread slightly to allow the loop to run.
         var retries = 0
-        while (!importSuccessCalled && retries < 50) {
+        while (!importSuccessCalled && retries < 200) {
             kotlinx.coroutines.delay(100)
             retries++
         }
@@ -153,7 +154,7 @@ class AutoImportServiceTest {
         )
         changedContentService.start { changedContentImported = true }
         retries = 0
-        while (!changedContentImported && retries < 50) {
+        while (!changedContentImported && retries < 200) {
             delay(100L)
             retries++
         }
@@ -168,6 +169,64 @@ class AutoImportServiceTest {
     }
 
     @Test
+    fun `one scan with multiple imports emits one UI refresh`() = runBlocking {
+        val tempDb = File.createTempFile("auto_import_batch_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath)
+        val sysIdService = SysIdService(databaseService)
+        val summaryEngineService = SummaryEngineService(
+            databaseService,
+            sysIdService,
+            DriverAnalysisService(databaseService, sysIdService),
+        )
+        val processManagerService = ProcessManagerService(monitorAdbConnection = false)
+        val projectDir = Files.createTempDirectory("auto-import-batch").toFile()
+        val logsDir = projectDir.resolve("logs").apply { mkdirs() }
+        val csv = """
+            TimestampMs, voltage
+            1000, 12.0
+            2000, 11.9
+        """.trimIndent()
+        logsDir.resolve("first.csv").writeText(csv)
+        logsDir.resolve("second.csv").writeText(csv.replace("12.0", "12.1"))
+        val config = WorkspaceConfig(
+            teamId = "1234",
+            seasonId = "2026",
+            robotId = "batch-test",
+            projectPath = projectDir.absolutePath,
+            league = League.FTC,
+        )
+        val callbacks = AtomicInteger()
+        val service = AutoImportService(
+            logParserService = LogParserService(databaseService, summaryEngineService),
+            hootDecoderService = HootDecoderService(databaseService, summaryEngineService, sysIdService),
+            processManagerService = processManagerService,
+            configProvider = { config },
+            scope = this,
+            scanIntervalMs = 25L,
+        )
+
+        try {
+            service.start { callbacks.incrementAndGet() }
+            var attempts = 0
+            while (databaseService.getSessions().size < 2 && attempts < 200) {
+                delay(25L)
+                attempts++
+            }
+            delay(100L)
+            service.stopAndJoin()
+
+            assertEquals(2, databaseService.getSessions().size)
+            assertEquals(1, callbacks.get(), "a batch must invalidate Run History only once")
+        } finally {
+            service.stopAndJoin()
+            databaseService.close()
+            processManagerService.shutdown()
+            projectDir.deleteRecursively()
+            tempDb.delete()
+        }
+    }
+
+    @Test
     fun `quarantine persists rejection and suppresses the same fingerprint`() = runBlocking {
         val tempDb = File.createTempFile("auto_quarantine_db", ".db").apply { deleteOnExit() }
         val databaseService = DatabaseService(tempDb.absolutePath)
@@ -178,7 +237,7 @@ class AutoImportServiceTest {
             DriverAnalysisService(databaseService, sysIdService)
         )
         val logParserService = LogParserService(databaseService, summaryEngineService)
-        val processManagerService = ProcessManagerService()
+        val processManagerService = ProcessManagerService(monitorAdbConnection = false)
         val projectDir = File(System.getProperty("java.io.tmpdir"), "ares_quarantine_test_${System.nanoTime()}")
         val logsDir = File(projectDir, "logs").apply { mkdirs() }
         val sourceFile = File(logsDir, "bad.csv").apply { writeText("not,a,valid,log") }

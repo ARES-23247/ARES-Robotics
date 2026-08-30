@@ -52,6 +52,7 @@ import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.RobotTopicContract
 import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.SIMULATION_SESSION_TAG
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -727,7 +728,7 @@ fun LocalSimulatorControlBar(
                                         teamId = teamId,
                                         seasonId = seasonId,
                                         robotId = robotId,
-                                        tags = listOf("simulation", "studio-experiment"),
+                                        tags = listOf(SIMULATION_SESSION_TAG, "studio-experiment"),
                                     )
                                     recordingMessage = "Recording simulation run ${session.sessionId.take(8)}…"
                                 } else {

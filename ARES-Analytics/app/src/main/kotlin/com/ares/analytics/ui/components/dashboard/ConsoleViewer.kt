@@ -21,7 +21,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.di.ServiceRegistry
+import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.ReplayState
 import com.ares.analytics.service.WidgetConfig
 import com.ares.analytics.shared.ConsoleMessage
@@ -36,7 +38,9 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConsoleViewer(
-    services: ServiceRegistry,
+    nt4ClientService: Nt4ClientService,
+    databaseService: DatabaseService,
+    replayEngineService: ReplayEngineService,
     widgetConfig: WidgetConfig,
     modifier: Modifier = Modifier
 ) {
@@ -48,7 +52,7 @@ fun ConsoleViewer(
 
     // 1. Subscribe to Live Streams
     LaunchedEffect(Unit) {
-        services.nt4ClientService.consoleFlow.collect { msg ->
+        nt4ClientService.consoleFlow.collect { msg ->
             liveLogs.add(msg)
             if (liveLogs.size > 1000) {
                 liveLogs.removeAt(0)
@@ -61,7 +65,7 @@ fun ConsoleViewer(
         sessionLogs.clear()
         if (primarySessionId != null) {
             try {
-                val dbLogs = services.databaseService.getConsoleMessages(primarySessionId)
+                val dbLogs = databaseService.getConsoleMessages(primarySessionId)
                 sessionLogs.addAll(dbLogs)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -72,8 +76,8 @@ fun ConsoleViewer(
     val allMessages = if (isReplayMode) sessionLogs else liveLogs
 
     // Replay synchronisation
-    val replayFrame by services.replayEngineService.currentFrame.collectAsState()
-    val replayState by services.replayEngineService.state.collectAsState()
+    val replayFrame by replayEngineService.currentFrame.collectAsState()
+    val replayState by replayEngineService.state.collectAsState()
     val displayMessages = remember(allMessages, replayFrame, replayState, isReplayMode) {
         val playheadMs = replayFrame?.timestampMs
         if (isReplayMode && replayState != ReplayState.STOPPED && playheadMs != null) {

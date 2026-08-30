@@ -44,12 +44,14 @@ class ProjectIdentityPresentationTest {
     }
 
     @Test
-    fun `old project format explains reviewed replacement without deletion`() {
+    fun `old project format directs users to a current project without migration`() {
         val explanation = protectedProjectIdentityExplanation(
             "Project metadata is missing required field: authoringModel",
         )
 
-        assertTrue(explanation.orEmpty().contains("older project format"))
-        assertTrue(explanation.orEmpty().contains("do not need to delete the robot"))
+        assertTrue(explanation.orEmpty().contains("retired schema-3 project format"))
+        assertTrue(explanation.orEmpty().contains("schema-4 projects only"))
+        assertTrue(explanation.orEmpty().contains("will not rewrite this project automatically"))
+        assertTrue(explanation.orEmpty().contains("do not need to delete the old folder"))
     }
 }

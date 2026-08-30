@@ -4,6 +4,7 @@ package com.ares.analytics.service
 import com.ares.analytics.shared.AppJson
 
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.controls.ControlSchemeCodec
 import com.areslib.controls.ControlSchemeDocument
@@ -502,6 +503,7 @@ class SyncEngineService(
                 remoteObjectId = installedObjectId,
                 manifestRevision = requireNotNull(uploadSummary.cloudSha256),
                 occurredAtMs = System.currentTimeMillis(),
+                externalUpdatesAllowed = summary.allowsAutomaticExternalUpdates(),
             )
         } finally {
             tempFile.delete()

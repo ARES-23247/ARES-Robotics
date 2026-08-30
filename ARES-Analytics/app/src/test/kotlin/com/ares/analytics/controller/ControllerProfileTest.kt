@@ -53,6 +53,18 @@ class ControllerProfileTest {
     }
 
     @Test
+    fun `device matching selects the explicit Xbox visual profile`() {
+        assertEquals(
+            ControllerProfiles.xboxStandard.id,
+            ControllerProfiles.forDevice("Xbox Wireless Controller").id,
+        )
+        assertEquals(
+            ControllerProfiles.xboxStandard.id,
+            ControllerProfiles.forDevice("XInput Controller #1").id,
+        )
+    }
+
+    @Test
     fun `learning accepts only a single new raw button`() {
         val previous = GamepadState(rawButtons = listOf(false, false, true))
         assertEquals(1, newlyPressedRawButton(previous, GamepadState(rawButtons = listOf(false, true, true))))

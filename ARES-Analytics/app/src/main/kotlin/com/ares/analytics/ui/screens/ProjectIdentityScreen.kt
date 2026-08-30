@@ -233,7 +233,7 @@ internal fun projectIdentityReviewGuidance(state: ProjectIdentityEditorState): S
 
 internal fun protectedProjectIdentityExplanation(error: String): String? = when {
     error.contains("authoringModel") ->
-        "This local robot was created with an older project format. Current Studio intentionally keeps it blocked until you review a one-time replacement. Your original file is preserved in .ares/recovery/project; you do not need to delete the robot."
+        "This folder uses the retired schema-3 project format. Current Studio supports schema-4 projects only and will not rewrite this project automatically. Open the current Lightbot project, or create/export a new robot from Studio; you do not need to delete the old folder."
     else -> null
 }
 
@@ -268,7 +268,8 @@ private fun ProtectedProjectIdentityCard(error: String, repairAvailable: Boolean
             Icon(Icons.Default.Error, contentDescription = null, tint = AresError)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    if (repairAvailable) "Invalid project file preserved · reviewed repair available"
+                    if (explanation != null) "Retired project format · select a current project"
+                    else if (repairAvailable) "Invalid project file preserved · reviewed repair available"
                     else "Protected project file · no write allowed",
                     color = AresTextPrimary,
                     fontWeight = FontWeight.Bold,

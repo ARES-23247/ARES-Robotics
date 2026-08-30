@@ -355,6 +355,7 @@ class ProjectIdentityViewModel(
         }
         val corruptError = currentResult.exceptionOrNull()?.takeIf { file.isFile }
         val corruptHash = corruptError?.let { repository.rawContentHash(config.projectPath) }
+        val retiredSchema = corruptError?.message.orEmpty().contains("authoringModel")
         val projectSourceError = ProjectLayout.validationError(config.projectPath, config.league)
         val mismatch = current?.takeIf { it.league != config.league.toAresLeague() }
         val draft = projectIdentityDraft(config, current)
@@ -371,13 +372,15 @@ class ProjectIdentityViewModel(
             generalErrors = validation.generalErrors,
             projectSourceError = projectSourceError,
             protectedError = when {
+                retiredSchema ->
+                    "The selected .ares/project.json uses the retired schema-3 format because it has no authoringModel. Current Studio supports schema-4 projects only and will not rewrite this project."
                 corruptError != null ->
                     "The existing .ares/project.json cannot be used: ${corruptError.message}. Its exact bytes remain unchanged. Enter the measured robot dimensions, review the repair, and ARES will preserve the original under .ares/recovery/project before replacing it."
                 mismatch != null ->
                     "The canonical project is ${mismatch.league}, but this workspace is ${config.league}. Select the correct workspace league; ARES will not rewrite platform identity automatically."
                 else -> null
             },
-            protectedContentHash = corruptHash,
+            protectedContentHash = corruptHash.takeUnless { retiredSchema },
             message = when {
                 corruptError != null -> null
                 projectSourceError != null ->

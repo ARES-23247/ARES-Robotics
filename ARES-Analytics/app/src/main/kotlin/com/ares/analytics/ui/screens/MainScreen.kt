@@ -52,6 +52,7 @@ import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
+import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.ui.components.dashboard.localSimulatorLaunchRequest
 import com.ares.analytics.ui.components.terminal.TerminalDrawer
 import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
@@ -199,6 +200,7 @@ fun MainScreen(services: ServiceRegistry) {
             hootDecoderService = services.hootDecoderService,
             logParserService = services.logParserService,
             layoutPreferenceService = services.layoutPreferenceService,
+            widgetCatalog = DashboardWidgetRegistry,
             scope = scope
         )
     }

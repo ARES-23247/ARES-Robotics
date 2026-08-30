@@ -4,6 +4,11 @@
 
 All integrations run on the desktop after data is persisted locally. FTC and FRC robot code remains offline-first and never contacts Zulip, a webhook, a CMS, Google Drive, or an AI provider.
 
+Studio-recorded simulator sessions are also local by default. Their `simulation` tag suppresses all
+automatic Zulip, webhook, notebook-publisher, and cloud-completion notification deliveries while
+preserving local recording, analysis, alerts, notebook drafts, replay, comparison, and reports.
+Explicit integration tests and explicit publication remain separate user actions.
+
 Studio writes an immutable domain event and one durable delivery row per configured destination. Delivery uses leases, bounded retries, stable event IDs, and provider idempotency keys. A notification or publisher outage therefore cannot turn a successful import, analysis, alert, or cloud upload into a failed local operation.
 
 ## Configuration and credentials

@@ -4,6 +4,7 @@ import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.shared.AlertRecord
 import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.shared.models.EngineeringNotebookEntry
 import com.ares.analytics.shared.models.EngineeringNotebookHasher
 import com.ares.analytics.shared.models.IntegrationWorkspaceIdentity
@@ -130,6 +131,7 @@ class EngineeringNotebookDraftService(
             authorId = authorId,
             useAi = useAi,
             commitRange = null,
+            externalUpdatesAllowed = summary.allowsAutomaticExternalUpdates(),
         )
     }
 
@@ -160,6 +162,7 @@ class EngineeringNotebookDraftService(
             authorId = authorId,
             useAi = useAi,
             commitRange = safeRange,
+            externalUpdatesAllowed = true,
         )
     }
 
@@ -172,6 +175,7 @@ class EngineeringNotebookDraftService(
         authorId: String?,
         useAi: Boolean,
         commitRange: String?,
+        externalUpdatesAllowed: Boolean,
     ): EngineeringNotebookEntry {
         val latest = databaseService.integrations.getLatestNotebookRevision(entryId)
         val revision = (latest?.revision ?: 0) + 1
@@ -237,7 +241,7 @@ class EngineeringNotebookDraftService(
             createdAtMs = latest?.createdAtMs ?: generatedAtMs,
             updatedAtMs = generatedAtMs,
         )
-        databaseService.saveEngineeringNotebookRevision(entry, commitRange)
+        databaseService.saveEngineeringNotebookRevision(entry, commitRange, externalUpdatesAllowed)
         return entry
     }
 
