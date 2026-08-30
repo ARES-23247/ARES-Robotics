@@ -44,7 +44,7 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("org.aresfirst.ares:ares-bom:11.1.0"))
+    implementation(platform("org.aresfirst.ares:ares-bom:12.0.0"))
     implementation("org.aresfirst.ares:core")
     implementation("org.aresfirst.ares:ftc-hardware")
 }
