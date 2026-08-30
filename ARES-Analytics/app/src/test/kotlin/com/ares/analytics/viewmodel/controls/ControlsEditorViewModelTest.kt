@@ -187,6 +187,7 @@ class ControlsEditorViewModelTest {
         val viewModel = ControlsEditorViewModel(project.path, League.FTC, seededDocuments(project))
         val profile = viewModel.state.value.selectedProfile ?: error("Expected built-in controller profile")
 
+        assertTrue(viewModel.state.value.profiles.any { it.documentId == "xbox-standard" })
         val a = profile.controls.first { it.controlId == "a" }
         val rightTrigger = profile.controls.first { it.controlId == "right_trigger" }
         assertEquals(0, a.mappings.single { it.platform == ControllerInputPlatform.FTC }.buttonIndex)

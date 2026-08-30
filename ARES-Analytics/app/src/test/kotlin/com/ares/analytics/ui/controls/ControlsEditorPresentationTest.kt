@@ -5,7 +5,10 @@ import com.ares.analytics.ui.components.controls.actionAccessibleLabel
 import com.ares.analytics.ui.components.controls.actionBrowserGroups
 import com.ares.analytics.ui.components.controls.actionCatalogSummary
 import com.ares.analytics.ui.components.controls.bindingLearningTrace
+import com.ares.analytics.ui.components.controls.canvasCollisionOffsetX
 import com.ares.analytics.ui.components.controls.canvasCollisionOffsetY
+import com.ares.analytics.ui.components.controls.controllerCallouts
+import com.ares.analytics.ui.components.controls.controllerMarkerLabel
 import com.ares.analytics.ui.components.controls.hasAdvancedBindingSettings
 import com.ares.analytics.shared.League
 import com.ares.analytics.viewmodel.controls.ControlsEditorState
@@ -76,6 +79,59 @@ class ControlsEditorPresentationTest {
         val authoredRows = listOf(axis("left_stick_x", .62), axis("left_stick_y", .72))
         assertEquals(0f, authoredRows[0].canvasCollisionOffsetY(authoredRows))
         assertEquals(0f, authoredRows[1].canvasCollisionOffsetY(authoredRows))
+    }
+
+    @Test
+    fun `controller callouts use stable non-overlapping side lanes`() {
+        fun button(id: String, x: Double, y: Double) = ControllerControlDocument(
+            controlId = id,
+            displayName = id,
+            type = ControllerControlTypeDocument.BUTTON,
+            anchor = ControllerAnchorDocument(x, y),
+        )
+        val controls = listOf(
+            button("dpad_up", .23, .43),
+            button("left_bumper", .23, .10),
+            button("a", .81, .44),
+            button("right_bumper", .77, .10),
+        )
+
+        val callouts = controllerCallouts(controls)
+        val left = callouts.filter { it.control.anchor.x <= .5 }
+        val right = callouts.filter { it.control.anchor.x > .5 }
+
+        assertEquals(listOf("left_bumper", "dpad_up"), left.map { it.control.controlId })
+        assertEquals(listOf("right_bumper", "a"), right.map { it.control.controlId })
+        assertTrue(left.zipWithNext().all { (a, b) -> a.normalizedY < b.normalizedY })
+        assertTrue(right.zipWithNext().all { (a, b) -> a.normalizedY < b.normalizedY })
+    }
+
+    @Test
+    fun `controller markers remain compact and recognizable`() {
+        fun control(id: String, displayName: String) = ControllerControlDocument(
+            controlId = id,
+            displayName = displayName,
+            type = ControllerControlTypeDocument.BUTTON,
+            anchor = ControllerAnchorDocument(.5, .5),
+        )
+
+        assertEquals("D↑", control("dpad_up", "D-pad up").controllerMarkerLabel())
+        assertEquals("LX", control("left_stick_x", "Left stick X").controllerMarkerLabel())
+        assertEquals("Sta", control("start", "Start").controllerMarkerLabel())
+    }
+
+    @Test
+    fun `Vader extras sharing a shoulder are separated symmetrically`() {
+        fun control(id: String, y: Double) = ControllerControlDocument(
+            controlId = id,
+            displayName = id.uppercase(),
+            type = ControllerControlTypeDocument.BUTTON,
+            anchor = ControllerAnchorDocument(.23, y),
+        )
+        val controls = listOf(control("left_bumper", .10), control("lm", .08))
+
+        assertEquals(-11f, controls[0].canvasCollisionOffsetX(controls))
+        assertEquals(11f, controls[1].canvasCollisionOffsetX(controls))
     }
 
     @Test

@@ -99,6 +99,13 @@ object ControllerProfiles {
         controls = standardFrontControls()
     )
 
+    val xboxStandard: ControllerProfile = ControllerProfile(
+        id = "xbox-standard",
+        displayName = "Xbox standard controller",
+        deviceNameMatchers = listOf("xbox", "xinput"),
+        controls = standardFrontControls()
+    )
+
     /**
      * Vader 5 Pro visual template.
      *
@@ -121,7 +128,7 @@ object ControllerProfiles {
         )
     )
 
-    val builtIns: List<ControllerProfile> = listOf(vader5Pro, genericGamepad)
+    val builtIns: List<ControllerProfile> = listOf(vader5Pro, xboxStandard, genericGamepad)
 
     fun forDevice(deviceName: String): ControllerProfile = builtIns.firstOrNull { profile ->
         profile.deviceNameMatchers.any { matcher -> deviceName.contains(matcher, ignoreCase = true) }

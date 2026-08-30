@@ -964,12 +964,22 @@ class ControlsEditorViewModel(
                 .sortedBy { it.displayName.lowercase() }
         }
 
-        private fun builtInProfiles() = listOf(vader5ProProfile(), genericProfile())
+        private fun builtInProfiles() = listOf(vader5ProProfile(), xboxProfile(), genericProfile())
 
         private fun genericProfile() = ControllerProfileDocument(
             documentId = "generic-gamepad",
             displayName = "Generic gamepad",
             controls = standardControls()
+        )
+
+        private fun xboxProfile() = ControllerProfileDocument(
+            documentId = "xbox-standard",
+            displayName = "Xbox standard controller",
+            deviceMatchers = listOf(
+                ControllerDeviceMatcherDocument(nameContains = "Xbox"),
+                ControllerDeviceMatcherDocument(nameContains = "XInput"),
+            ),
+            controls = standardControls(),
         )
 
         private fun vader5ProProfile() = ControllerProfileDocument(
