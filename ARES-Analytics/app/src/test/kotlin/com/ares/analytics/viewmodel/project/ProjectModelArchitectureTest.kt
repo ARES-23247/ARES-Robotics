@@ -6,7 +6,7 @@ import kotlin.test.assertTrue
 
 class ProjectModelArchitectureTest {
     @Test
-    fun `project history github authentication and automatic backup have distinct owners`() {
+    fun `project history authentication automatic backup and recovery have distinct owners`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),
             File("src/main/kotlin/com/ares/analytics"),
@@ -16,6 +16,7 @@ class ProjectModelArchitectureTest {
         val history = File(boundary, "ProjectVersionControlService.kt").readText()
         val authentication = File(boundary, "GitHubAuthenticationService.kt").readText()
         val autoSync = File(boundary, "ProjectBackupAutoSyncService.kt").readText()
+        val recovery = File(boundary, "ProjectRecoveryService.kt").readText()
 
         listOf(
             "beginDeviceAuthorization",
@@ -23,16 +24,24 @@ class ProjectModelArchitectureTest {
             "ProjectBackupAutoSyncStatus",
             "Channel<String>",
             "AUTO_SYNC_RETRY",
+            "previewGitHubRestore",
+            "recoverToSafetyPoint",
+            "MergeCommand",
+            "ResetCommand",
         ).forEach { forbidden ->
             assertTrue(
                 forbidden !in history,
-                "ProjectVersionControlService must not reclaim authentication or automatic-backup ownership: $forbidden",
+                "ProjectVersionControlService must not reclaim authentication, automatic-backup, or recovery ownership: $forbidden",
             )
         }
         assertTrue("beginDeviceAuthorization" in authentication)
         assertTrue("ProjectGitHubCredentialRepository" in authentication)
         assertTrue("Channel<String>" in autoSync)
         assertTrue("ProjectBackupAutoSyncStatus" in autoSync)
+        assertTrue("previewGitHubRestore" in recovery)
+        assertTrue("recoverToSafetyPoint" in recovery)
+        assertTrue("MergeCommand" in recovery)
+        assertTrue("ResetCommand" in recovery)
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncState
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryPlan
+import com.ares.analytics.service.versioncontrol.ProjectRecoveryService
 import com.ares.analytics.service.versioncontrol.ProjectRestorePlan
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
 import kotlinx.coroutines.CancellationException
@@ -63,6 +64,7 @@ sealed class ProjectBackupIntent {
 /** Coordinates review-first project history and optional private GitHub backup. */
 class ProjectBackupViewModel(
     private val service: ProjectVersionControlService,
+    private val recovery: ProjectRecoveryService,
     private val githubAuthentication: GitHubAuthenticationService,
     private val autoSync: ProjectBackupAutoSyncService,
     private val archiveExporter: ProjectArchiveExporter,
@@ -250,7 +252,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, restorePlan = null, error = null, notice = null) }
             try {
-                val restore = service.previewGitHubRestore(requireProjectPath())
+                val restore = recovery.previewGitHubRestore(requireProjectPath())
                 _state.update {
                     it.copy(
                         isBusy = false,
@@ -283,7 +285,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val plan = service.restoreFromGitHub(requireProjectPath(), confirmationToken)
+                val plan = recovery.restoreFromGitHub(requireProjectPath(), confirmationToken)
                 _state.update {
                     it.copy(
                         plan = plan,
@@ -311,8 +313,8 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, restorePlan = null, recoveryPlan = null, error = null, notice = null) }
             try {
-                val recovery = service.previewRecovery(requireProjectPath(), refName)
-                _state.update { it.copy(isBusy = false, recoveryPlan = recovery) }
+                val plan = recovery.previewRecovery(requireProjectPath(), refName)
+                _state.update { it.copy(isBusy = false, recoveryPlan = plan) }
             } catch (cancelled: CancellationException) {
                 _state.update { it.copy(isBusy = false) }
                 throw cancelled
@@ -329,7 +331,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val plan = service.recoverToSafetyPoint(requireProjectPath(), refName, confirmationToken)
+                val plan = recovery.recoverToSafetyPoint(requireProjectPath(), refName, confirmationToken)
                 _state.update {
                     it.copy(
                         plan = plan,

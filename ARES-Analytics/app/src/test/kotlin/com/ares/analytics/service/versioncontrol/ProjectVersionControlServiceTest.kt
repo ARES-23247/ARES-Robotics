@@ -391,30 +391,33 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val (service, github) = githubServices(
+        val services = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = localRemotePusher(remote),
             remoteMainFetcher = localRemoteFetcher(remote),
         )
+        val service = services.versionControl
+        val github = services.authentication
+        val recovery = services.recovery
         github.signIn()
         val connected = service.connectApprovedRepository(root.path, 22, 202)
         val originalCommit = requireNotNull(connected.lastCommit)
         advanceRemote(remote, "robot.txt", "newer robot", "Improve robot")
 
-        val preview = service.previewGitHubRestore(root.path)
+        val preview = recovery.previewGitHubRestore(root.path)
 
         assertEquals(ProjectRestoreDisposition.REMOTE_AHEAD, preview.disposition)
         assertEquals(listOf(ProjectChange("robot.txt", ProjectChangeKind.MODIFIED)), preview.changes)
         assertTrue(preview.canRestore)
-        val restored = service.restoreFromGitHub(root.path, requireNotNull(preview.confirmationToken))
+        val restored = recovery.restoreFromGitHub(root.path, requireNotNull(preview.confirmationToken))
         assertEquals("newer robot", File(root, "robot.txt").readText())
         assertEquals("Improve robot", restored.versions.first().message)
         val recoveryPoint = restored.recoveryPoints.single()
         assertEquals(originalCommit, recoveryPoint.commitId)
-        val recoveryPreview = service.previewRecovery(root.path, recoveryPoint.refName)
+        val recoveryPreview = recovery.previewRecovery(root.path, recoveryPoint.refName)
         assertEquals(listOf(ProjectChange("robot.txt", ProjectChangeKind.MODIFIED)), recoveryPreview.changes)
-        val recovered = service.recoverToSafetyPoint(
+        val recovered = recovery.recoverToSafetyPoint(
             root.path,
             recoveryPoint.refName,
             requireNotNull(recoveryPreview.confirmationToken),
@@ -437,20 +440,23 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val (service, github) = githubServices(
+        val services = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = localRemotePusher(remote),
             remoteMainFetcher = localRemoteFetcher(remote),
         )
+        val service = services.versionControl
+        val github = services.authentication
+        val recovery = services.recovery
         github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         advanceRemote(remote, "robot.txt", "remote one", "Remote one")
-        val stalePreview = service.previewGitHubRestore(root.path)
+        val stalePreview = recovery.previewGitHubRestore(root.path)
         advanceRemote(remote, "robot.txt", "remote two", "Remote two")
 
         val staleFailure = assertFailsWith<IllegalArgumentException> {
-            service.restoreFromGitHub(root.path, requireNotNull(stalePreview.confirmationToken))
+            recovery.restoreFromGitHub(root.path, requireNotNull(stalePreview.confirmationToken))
         }
         assertContains(staleFailure.message.orEmpty(), "changed after this preview")
         assertEquals("robot", File(root, "robot.txt").readText())
@@ -464,7 +470,7 @@ class ProjectVersionControlServiceTest {
             "Student",
             "student@example.org",
         )
-        val divergence = assertFailsWith<IllegalStateException> { service.previewGitHubRestore(root.path) }
+        val divergence = assertFailsWith<IllegalStateException> { recovery.previewGitHubRestore(root.path) }
         assertContains(divergence.message.orEmpty(), "different saved versions")
     }
 
@@ -476,18 +482,21 @@ class ProjectVersionControlServiceTest {
             accounts = listOf(organizationAccount())
             repositories = listOf(privateRepository(22, 202, "ARES-23247", "team-robot"))
         }
-        val (service, github) = githubServices(
+        val services = githubServices(
             MemoryCredentialStore(),
             api,
             remotePusher = localRemotePusher(remote),
             remoteMainFetcher = localRemoteFetcher(remote),
         )
+        val service = services.versionControl
+        val github = services.authentication
+        val recovery = services.recovery
         github.signIn()
         service.connectApprovedRepository(root.path, 22, 202)
         advanceRemote(remote, "credentials.json", "{\"privateKey\":\"must-not-restore\"}", "Unsafe remote file")
 
         val failure = assertFailsWith<IllegalArgumentException> {
-            service.previewGitHubRestore(root.path)
+            recovery.previewGitHubRestore(root.path)
         }
 
         assertContains(failure.message.orEmpty(), "private credential path")
@@ -613,6 +622,7 @@ class ProjectVersionControlServiceTest {
         val versionControl: ProjectVersionControlService,
         val authentication: GitHubAuthenticationService,
         val autoSync: ProjectBackupAutoSyncService,
+        val recovery: ProjectRecoveryService,
     )
 
     private fun githubServices(
@@ -642,16 +652,22 @@ class ProjectVersionControlServiceTest {
             workerDelay = autoSyncDelay,
         )
         versionControl = ProjectVersionControlService(
-                githubAuthentication = authentication,
-                onBackupRelevantChange = autoSync::schedule,
-                onBackupSynchronized = autoSync::markSynchronized,
-                remotePusher = remotePusher,
-                remoteMainFetcher = remoteMainFetcher,
-            )
+            githubAuthentication = authentication,
+            onBackupRelevantChange = autoSync::schedule,
+            onBackupSynchronized = autoSync::markSynchronized,
+            remotePusher = remotePusher,
+        )
+        val recovery = ProjectRecoveryService(
+            githubAuthentication = authentication,
+            inspectProject = versionControl::inspect,
+            remoteMainFetcher = remoteMainFetcher,
+            epochSeconds = { now },
+        )
         return GitHubServices(
             versionControl = versionControl,
             authentication = authentication,
             autoSync = autoSync,
+            recovery = recovery,
         )
     }
 

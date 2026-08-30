@@ -84,6 +84,12 @@ class ServiceRegistry {
             onBackupSynchronized = { projectPath -> projectBackupAutoSyncService.markSynchronized(projectPath) },
         )
     }
+    val projectRecoveryService: com.ares.analytics.service.versioncontrol.ProjectRecoveryService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectRecoveryService(
+            githubAuthentication = githubAuthenticationService,
+            inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
+        )
+    }
     val projectArchiveExporter by lazy { com.ares.analytics.service.versioncontrol.ProjectArchiveExporter() }
     val hardwareSetupService by lazy { com.ares.analytics.service.hardware.HardwareSetupService() }
     val integrationSettingsService by lazy { com.ares.analytics.service.integration.IntegrationSettingsService() }
