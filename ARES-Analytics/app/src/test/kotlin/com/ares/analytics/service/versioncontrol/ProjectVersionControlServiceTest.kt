@@ -187,7 +187,7 @@ class ProjectVersionControlServiceTest {
         service.signInToGitHub()
         assertEquals("https://github.com/login/device", openedUri)
         val saved = store.bytes?.toString(Charsets.UTF_8).orEmpty()
-        assertContains(saved, "\"schemaVersion\":2")
+        assertFalse(saved.contains("schemaVersion"))
         assertContains(saved, api.authorizedTokens.accessToken)
         assertContains(saved, api.authorizedTokens.refreshToken)
         assertFalse(saved.contains("client_secret", ignoreCase = true))
@@ -557,13 +557,13 @@ class ProjectVersionControlServiceTest {
     }
 
     @Test
-    fun `legacy broad oauth credential is deleted and requires github app sign in`() {
+    fun `non-current saved credential is deleted and requires github app sign in`() {
         val store = MemoryCredentialStore().apply {
             bytes = """{"accessToken":"legacy-token","login":"student-team","scope":"repo"}""".toByteArray()
         }
         val service = githubService(store, FakeGitHubApi())
         val state = service.githubState.value as GitHubConnectionState.Error
-        assertContains(state.message, "older broad GitHub OAuth credential")
+        assertContains(state.message, "invalid")
         assertNull(store.bytes)
     }
 

@@ -2,7 +2,6 @@ package com.ares.analytics.service.versioncontrol
 
 import com.ares.analytics.BuildConfig
 import com.ares.analytics.shared.AppJson
-import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -144,15 +143,12 @@ sealed class GitHubConnectionState {
 
 @Serializable
 internal data class StoredGitHubAppCredential(
-    val schemaVersion: Int,
     val accessToken: String,
     val accessTokenExpiresAtEpochSeconds: Long,
     val refreshToken: String,
     val refreshTokenExpiresAtEpochSeconds: Long,
     val login: String,
 )
-
-private class LegacyGitHubCredentialException : IllegalStateException()
 
 /**
  * Review-first local Git history plus an optional permission-scoped GitHub App backup.
@@ -822,7 +818,6 @@ class ProjectVersionControlService internal constructor(
             "GitHub returned an invalid credential. Sign-in was not saved."
         }
         return StoredGitHubAppCredential(
-            schemaVersion = GITHUB_CREDENTIAL_SCHEMA_VERSION,
             accessToken = tokens.accessToken,
             accessTokenExpiresAtEpochSeconds = Math.addExact(now, tokens.expiresInSeconds),
             refreshToken = tokens.refreshToken,
@@ -846,8 +841,6 @@ class ProjectVersionControlService internal constructor(
         } ?: error("Sign in with GitHub before choosing or synchronizing a backup.")
         return try {
             decodeCredential(bytes)
-        } catch (_: LegacyGitHubCredentialException) {
-            invalidateCredential("An older broad GitHub OAuth credential was removed. Sign in again with the permission-scoped ARES GitHub App.")
         } catch (_: Exception) {
             invalidateCredential("Saved GitHub access was invalid and has been cleared. Sign in again.")
         }
@@ -855,9 +848,6 @@ class ProjectVersionControlService internal constructor(
 
     private fun decodeCredential(bytes: ByteArray): StoredGitHubAppCredential {
         val text = bytes.toString(StandardCharsets.UTF_8)
-        val root = JsonParser.parseString(text).asJsonObject
-        val schemaVersion = root.get("schemaVersion")?.asInt ?: throw LegacyGitHubCredentialException()
-        if (schemaVersion != GITHUB_CREDENTIAL_SCHEMA_VERSION) throw LegacyGitHubCredentialException()
         return AppJson.decodeFromString(StoredGitHubAppCredential.serializer(), text).also(::validateStoredCredential)
     }
 
@@ -887,11 +877,6 @@ class ProjectVersionControlService internal constructor(
         } ?: return GitHubConnectionState.Disconnected
         val credential = try {
             decodeCredential(bytes)
-        } catch (_: LegacyGitHubCredentialException) {
-            credentialStore.delete()
-            return GitHubConnectionState.Error(
-                "An older broad GitHub OAuth credential was removed. Sign in again with the permission-scoped ARES GitHub App.",
-            )
         } catch (_: Exception) {
             credentialStore.delete()
             return GitHubConnectionState.Error("Saved GitHub access was invalid and has been cleared. Sign in again.")
@@ -1297,8 +1282,6 @@ internal fun configureJGitLogging() {
     val context = LoggerFactory.getILoggerFactory() as? ch.qos.logback.classic.LoggerContext ?: return
     context.getLogger("org.eclipse.jgit").level = ch.qos.logback.classic.Level.WARN
 }
-
-private const val GITHUB_CREDENTIAL_SCHEMA_VERSION = 2
 
 internal fun validGitHubClientId(value: String): Boolean =
     value.matches(Regex("[A-Za-z0-9_-]{12,128}")) && !value.contains("mock", ignoreCase = true)

@@ -6,9 +6,12 @@ Reduce concentrated code-generation, Studio, persistence, and season-root coupli
 the canonical `.ares` ownership model, Redux flow, fail-closed behavior, generated-source ownership,
 or FTC/FRC/mock/simulator parity. This is an incremental refactor, not a replacement architecture.
 
-Every goal must leave the monorepo buildable. Behavior-changing improvements require explicit tests;
-structural moves must retain deterministic output and public contracts unless a reviewed migration is
-part of that goal.
+Every goal must leave the monorepo buildable. Behavior-changing improvements require explicit tests.
+Structural moves must retain deterministic output, but pre-release schemas and APIs have no backward-
+compatibility requirement: migrate every in-monorepo producer and consumer together, then delete the
+superseded contract. Do not add aliases, dual readers/writers, deprecated forwarding methods, or
+migration-only branches. Platform, filesystem, Git, database, and process adapters remain explicit
+architectural boundaries rather than compatibility layers.
 
 ## Goal 1 — Deterministic code-generation foundation
 
