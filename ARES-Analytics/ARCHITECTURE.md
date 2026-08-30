@@ -46,7 +46,7 @@ The Compose Desktop process. It owns:
 
 Simulator launch is target-derived rather than a UI league guess. The validated effective project
 selects either `ftc.desktop-opmode` or `frc.wpilib-desktop` and reports the drivetrain and subsystem
-capabilities it requires. `ProcessManagerService` receives that concrete product and maps it to the
+capabilities it requires. `ProjectBuildService` receives that concrete product and maps it to the
 FTC `:TeamCode:runSim` or FRC `simulateJava` task. Unsupported, unavailable, or cross-league device
 models remain visible in Robot Studio and fail before a process starts; Studio never substitutes a
 generic drivetrain. The two products retain independent OpMode/TimedRobot lifecycles, fields,
@@ -68,7 +68,7 @@ The dependency tiers are:
 
 ```text
 Tier 0
-  DatabaseService, EnvironmentService, ProcessManagerService,
+  DatabaseService, EnvironmentService, ProjectBuildService,
   TargetScannerService, preferences
 
 Tier 1

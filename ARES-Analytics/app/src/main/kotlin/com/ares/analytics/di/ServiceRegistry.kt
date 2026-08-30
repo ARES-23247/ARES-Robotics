@@ -39,7 +39,9 @@ class ServiceRegistry {
     // ── Tier 0: No dependencies ──────────────────────────────────────────────
     val databaseService by lazy { DatabaseService() }
     val environmentService by lazy { EnvironmentService() }
-    val processManagerService by lazy { ProcessManagerService() }
+    private val projectProcessGate by lazy { ProjectProcessGate() }
+    val projectBuildService by lazy { ProjectBuildService(operationGate = projectProcessGate) }
+    val robotDeploymentService by lazy { RobotDeploymentService(projectProcessGate) }
     val simulatorProcessService by lazy { SimulatorProcessService() }
     val adbService by lazy { AdbService() }
     val targetScannerService by lazy { TargetScannerService() }
@@ -84,8 +86,9 @@ class ServiceRegistry {
         com.ares.analytics.service.project.ProjectExecutionCoordinator(
             projectSession,
             com.ares.analytics.service.project.StudioProjectProcessGateway(
-                processManagerService,
+                projectBuildService,
                 simulatorProcessService,
+                robotDeploymentService,
             ),
         )
     }
@@ -93,7 +96,7 @@ class ServiceRegistry {
         com.ares.analytics.service.project.SessionProjectGenerator(
             projectSession,
             projectExecutionCoordinator,
-            processManagerService,
+            projectBuildService,
         )
     }
 
@@ -257,8 +260,11 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::nt4ClientService)) {
                     telemetryPersisted = nt4ClientService.disposeAndJoin()
                 }
-                if (lazyFieldInitialized(::processManagerService)) {
-                    processManagerService.shutdown()
+                if (lazyFieldInitialized(::projectBuildService)) {
+                    projectBuildService.shutdown()
+                }
+                if (lazyFieldInitialized(::robotDeploymentService)) {
+                    robotDeploymentService.shutdown()
                 }
                 if (lazyFieldInitialized(::simulatorProcessService)) {
                     simulatorProcessService.shutdownAndJoin()

@@ -1,6 +1,7 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.ProjectBuildService
+import com.ares.analytics.service.RobotDeploymentService
 import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.service.drivebase.DrivebaseDocument
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
@@ -623,18 +624,19 @@ interface ProjectProcessGateway {
 }
 
 class StudioProjectProcessGateway(
-    private val processManager: ProcessManagerService,
+    private val projectBuild: ProjectBuildService,
     private val simulator: SimulatorProcessService,
+    private val deployment: RobotDeploymentService,
 ) : ProjectProcessGateway {
     override fun generate(projectPath: String, league: League) =
-        processManager.generateAresProject(projectPath, league)
+        projectBuild.generateAresProject(projectPath, league)
 
     override fun verifyAndBuild(projectPath: String, league: League) =
-        processManager.runBuild(projectPath, league)
+        projectBuild.runBuild(projectPath, league)
 
     override fun simulate(projectPath: String, product: SimulationProductId, simulatorCommand: String?) =
         simulator.start(projectPath, product, simulatorCommand)
 
     override fun deploy(projectPath: String, league: League) =
-        processManager.deployToRobot(projectPath, league)
+        deployment.deploy(projectPath, league)
 }

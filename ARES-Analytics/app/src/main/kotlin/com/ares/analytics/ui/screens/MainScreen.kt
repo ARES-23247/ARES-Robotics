@@ -72,7 +72,7 @@ import kotlinx.coroutines.launch
  * @param onUpdateConfig Callback for saving modified workspace settings.
  *
  * @see NavigationTarget
- * @see com.ares.analytics.service.ProcessManagerService
+ * @see com.ares.analytics.service.ProjectBuildService
  */
 @Composable
 fun MainScreen(services: ServiceRegistry) {
@@ -413,7 +413,8 @@ fun MainScreen(services: ServiceRegistry) {
     val primarySessionId = dashboardShellState.primarySessionId
     val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
-    val processState by services.processManagerService.processState.collectAsState()
+    val processState by services.projectBuildService.processState.collectAsState()
+    val deployExecutionState by services.robotDeploymentService.state.collectAsState()
     val adbConnected by services.adbService.connected.collectAsState()
     val simulatorState by services.simulatorProcessService.state.collectAsState()
     val isSimRunning = simulatorState.running
@@ -421,7 +422,6 @@ fun MainScreen(services: ServiceRegistry) {
     val activeSimulationLeague = simulatorState.league
     val isBuildRunning = processState.buildRunning
     val buildExecutionState = processState.buildExecution
-    val deployExecutionState = processState.deployExecution
     var deployDialogOpen by remember { mutableStateOf(false) }
     var deployAwaitingConfirmation by remember { mutableStateOf(false) }
     var hardwareStudioInitialTab by remember { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }
@@ -740,7 +740,8 @@ fun MainScreen(services: ServiceRegistry) {
                         }
                         Key.K -> {
                             if (keyEvent.isShiftPressed) {
-                                services.processManagerService.killActiveBuild()
+                                services.projectBuildService.killActiveBuild()
+                                services.robotDeploymentService.cancel()
                                 services.simulatorProcessService.stop()
                             } else {
                                 commandPaletteOpen = true
@@ -879,7 +880,8 @@ fun MainScreen(services: ServiceRegistry) {
                             onRunSim = requestSimulatorLaunch,
                             onStopAll = {
                                 pendingSimulatorLaunch = false
-                                services.processManagerService.killActiveBuild()
+                                services.projectBuildService.killActiveBuild()
+                                services.robotDeploymentService.cancel()
                                 services.simulatorProcessService.stop()
                             },
                             compact = compactShell,
@@ -992,7 +994,8 @@ fun MainScreen(services: ServiceRegistry) {
                 }
                 // Collapsible Terminal drawer overlay
                 TerminalDrawer(
-                    processManagerService = services.processManagerService,
+                    projectBuildService = services.projectBuildService,
+                    robotDeploymentService = services.robotDeploymentService,
                     adbService = services.adbService,
                     simulatorProcessService = services.simulatorProcessService,
                     projectPath = currentConfig.projectPath,
@@ -1111,7 +1114,7 @@ fun MainScreen(services: ServiceRegistry) {
                     deployDialogOpen = false
                     deployAwaitingConfirmation = false
                 },
-                onCancel = { services.processManagerService.killActiveBuild() },
+                onCancel = { services.robotDeploymentService.cancel() },
             )
         }
 

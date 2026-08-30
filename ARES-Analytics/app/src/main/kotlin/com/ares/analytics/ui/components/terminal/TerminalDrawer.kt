@@ -22,8 +22,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.ProjectBuildService
 import com.ares.analytics.service.AdbService
+import com.ares.analytics.service.RobotDeploymentService
 import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
@@ -31,7 +32,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalDrawer(
-    processManagerService: ProcessManagerService,
+    projectBuildService: ProjectBuildService,
+    robotDeploymentService: RobotDeploymentService,
     adbService: AdbService,
     simulatorProcessService: SimulatorProcessService,
     projectPath: String,
@@ -41,7 +43,7 @@ fun TerminalDrawer(
     modifier: Modifier = Modifier
 ) {
     var activeTab by remember { mutableStateOf(0) } // 0 = Build, 1 = Logcat
-    val processState by processManagerService.processState.collectAsState()
+    val processState by projectBuildService.processState.collectAsState()
     val isBuildRunning = processState.buildRunning
     val buildListState = rememberLazyListState()
     val logcatListState = rememberLazyListState()
@@ -52,7 +54,13 @@ fun TerminalDrawer(
     // Collect flows
     LaunchedEffect(Unit) {
         launch {
-            processManagerService.buildOutput.collect { line ->
+            projectBuildService.buildOutput.collect { line ->
+                buildLog.add(line)
+                if (buildLog.size > 1000) buildLog.removeAt(0)
+            }
+        }
+        launch {
+            robotDeploymentService.output.collect { line ->
                 buildLog.add(line)
                 if (buildLog.size > 1000) buildLog.removeAt(0)
             }
@@ -120,7 +128,7 @@ fun TerminalDrawer(
                         Button(
                             onClick = {
                                 buildLog.clear()
-                                processManagerService.runBuild(projectPath, league)
+                                projectBuildService.runBuild(projectPath, league)
                             },
                             enabled = !isBuildRunning,
                             colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
@@ -153,7 +161,12 @@ fun TerminalDrawer(
 
                     IconButton(
                         onClick = {
-                            if (activeTab == 0) processManagerService.killActiveBuild() else adbService.stopLogcat()
+                            if (activeTab == 0) {
+                                projectBuildService.killActiveBuild()
+                                robotDeploymentService.cancel()
+                            } else {
+                                adbService.stopLogcat()
+                            }
                         }
                     ) {
                         Icon(imageVector = Icons.Default.Cancel, contentDescription = "Kill Process", tint = AresError)

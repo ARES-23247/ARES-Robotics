@@ -3,7 +3,7 @@ package com.ares.analytics.service.project
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.service.AresGenerationPhase
-import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.ProjectBuildService
 import com.ares.analytics.service.project.persistence.CapabilityCatalogProjectRepository
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
@@ -266,7 +266,7 @@ class ProjectSessionTest {
     fun `authoring generation is rejected before a process starts when the project is invalid`() = withProject { root ->
         val session = ProjectSession()
         val gateway = RecordingProjectProcessGateway()
-        val processManager = ProcessManagerService(aresRepositoryUri = null)
+        val processManager = ProjectBuildService(aresRepositoryUri = null)
         val generator = SessionProjectGenerator(
             session,
             ProjectExecutionCoordinator(session, gateway),

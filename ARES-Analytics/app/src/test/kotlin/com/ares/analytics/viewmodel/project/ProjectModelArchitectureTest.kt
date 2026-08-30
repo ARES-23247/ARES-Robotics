@@ -56,8 +56,28 @@ class ProjectModelArchitectureTest {
             "MainScreen must authorize project execution through ProjectExecutionCoordinator: ${forbidden.joinToString()}",
         )
         assertTrue(
-            "projectGenerator = services.processManagerService" !in mainScreen,
-            "Authoring ViewModels must receive SessionProjectGenerator, never ProcessManagerService.",
+            "projectGenerator = services.projectBuildService" !in mainScreen,
+            "Authoring ViewModels must receive SessionProjectGenerator, never ProjectBuildService.",
+        )
+    }
+
+    @Test
+    fun `build and deployment services own distinct current contracts`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val buildService = File(sourceRoot, "service/ProjectBuildService.kt").readText()
+        val deploymentService = File(sourceRoot, "service/RobotDeploymentService.kt").readText()
+
+        assertTrue(
+            "deployToRobot" !in buildService && "resolveAdbExecutable" !in buildService,
+            "Project generation/build must not retain deployment forwarding or device ownership.",
+        )
+        assertTrue(
+            "fun deploy(" in deploymentService && "commandFactory.adbInstall" in deploymentService,
+            "RobotDeploymentService must directly own the current deployment contract.",
         )
     }
 
