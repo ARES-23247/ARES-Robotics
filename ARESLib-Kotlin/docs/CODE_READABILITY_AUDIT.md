@@ -63,6 +63,11 @@ An exact six-line generated KDoc pattern of the form “`X declaration` / `Stand
 - `ftc-hardware`: `AppFailsafeTier1Test.kt`, `HardwareFaultToleranceTier1Test.kt`, `HardwareBoundsTier2Test.kt`, `CompositeVisionIOTest.kt`, `FtcMecanumRobotBuilderTest.kt`, `MecanumHardwareIOTest.kt`, `FtcPowerManagerTest.kt`.
 - `frc-hardware`: `FrcPowerManagerTest.kt`.
 
+> **Current-state note:** the three `Threaded*Sensor` files listed in the historical mechanical
+> cleanup inventory above were later removed during the runtime-ownership refactor. They had no
+> production consumers and created one scheduler thread per sensor. The inventory remains an exact
+> record of the earlier documentation pass, not a list of current APIs.
+
 </details>
 
 ## Reviewed without changes (252 files)

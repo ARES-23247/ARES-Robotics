@@ -86,6 +86,14 @@ transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures re
 - Remove unused thread-per-sensor wrappers or move supported devices onto bus-scoped polling.
 - Replace process-global hardware ownership with an injectable per-robot registry where practical.
 
+The first runtime-ownership slice removed the unused `ThreadedColorSensor`,
+`ThreadedDistanceSensor`, and `ThreadedMultizoneDistanceSensor` APIs together with the unused
+FTC-specific `FtcColorSensor`, `FtcDistanceSensor`, `FtcRevColorSensorV3`, and `FtcVL53L5CX`
+implementations. Their tests only exercised the obsolete wrappers; no robot, starter, generator, or
+simulator used them. They were deleted rather than retained behind compatibility aliases. Supported
+hardware continues toward the centralized `SyncPolledDevice`/bus-scoped path, where polling and
+lifecycle ownership can be attached to one robot instance instead of one daemon thread per sensor.
+
 **Exit criteria:** no orphan production APIs, multiple simulated robot instances remain isolated,
 hardware reads remain once per loop, and zero-allocation regression tests remain green.
 

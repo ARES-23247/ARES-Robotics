@@ -747,27 +747,10 @@ public final class com/areslib/ftc/hardware/FtcCRServo : com/areslib/hardware/ac
 	public fun setVoltage (DD)V
 }
 
-public final class com/areslib/ftc/hardware/FtcColorSensor : com/areslib/hardware/sensor/ColorSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/ColorSensor;)V
-	public fun close ()V
-	public fun copyNormalizedRgbInto ([D)V
-	public fun getAlpha ()I
-	public fun getBlue ()I
-	public fun getGreen ()I
-	public fun getNormalizedRgb ()[D
-	public fun getRed ()I
-}
-
 public final class com/areslib/ftc/hardware/FtcDigitalSensor : java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/DigitalChannel;)V
 	public fun close ()V
 	public final fun getState ()Z
-}
-
-public final class com/areslib/ftc/hardware/FtcDistanceSensor : com/areslib/hardware/sensor/DistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/DistanceSensor;)V
-	public fun close ()V
-	public fun getDistanceMeters ()D
 }
 
 public final class com/areslib/ftc/hardware/FtcEncoder : com/areslib/hardware/actuator/MotorIO {
@@ -963,18 +946,6 @@ public final class com/areslib/ftc/hardware/FtcPrismDriverIO : com/areslib/hardw
 	public fun setSparkleHue (D)V
 }
 
-public final class com/areslib/ftc/hardware/FtcRevColorSensorV3 : com/areslib/hardware/sensor/ColorSensorIO, com/areslib/hardware/sensor/DistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/ColorSensor;)V
-	public fun close ()V
-	public fun copyNormalizedRgbInto ([D)V
-	public fun getAlpha ()I
-	public fun getBlue ()I
-	public fun getDistanceMeters ()D
-	public fun getGreen ()I
-	public fun getNormalizedRgb ()[D
-	public fun getRed ()I
-}
-
 public final class com/areslib/ftc/hardware/FtcServo : com/areslib/hardware/actuator/ServoIO {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/Servo;Ljava/lang/String;)V
 	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/Servo;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -983,15 +954,6 @@ public final class com/areslib/ftc/hardware/FtcServo : com/areslib/hardware/actu
 	public fun refresh ()V
 	public fun safe ()V
 	public fun setPosition (D)V
-}
-
-public final class com/areslib/ftc/hardware/FtcVL53L5CX : com/areslib/hardware/sensor/MultizoneDistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/ftc/hardware/VL53L5CXDriverProxy;)V
-	public fun close ()V
-	public fun copyDistancesMetersInto ([D)I
-	public fun getColumns ()I
-	public fun getDistancesMeters ()[D
-	public fun getRows ()I
 }
 
 public final class com/areslib/ftc/hardware/OctoQuadAbsolutePWMEncoder : com/areslib/hardware/actuator/MotorIO {
@@ -1261,13 +1223,6 @@ public final class com/areslib/ftc/hardware/SrsHubVL53L5CX : com/areslib/hardwar
 	public fun getColumns ()I
 	public fun getDistancesMeters ()[D
 	public fun getRows ()I
-}
-
-public abstract interface class com/areslib/ftc/hardware/VL53L5CXDriverProxy {
-	public abstract fun getColumns ()I
-	public abstract fun getDistancesMillimeters ()[I
-	public abstract fun getRows ()I
-	public abstract fun update ()V
 }
 
 public final class com/areslib/ftc/hardware/rev/RevAbsoluteAnalogEncoderController : com/areslib/hardware/actuator/MotorIO, java/lang/AutoCloseable {

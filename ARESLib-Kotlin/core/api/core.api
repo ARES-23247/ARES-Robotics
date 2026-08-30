@@ -2071,38 +2071,6 @@ public final class com/areslib/hardware/sensor/MultizoneDistanceSensorIO$Default
 	public static fun copyDistancesMetersInto (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;[D)I
 }
 
-public final class com/areslib/hardware/sensor/ThreadedColorSensor : com/areslib/hardware/sensor/ColorSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/hardware/sensor/ColorSensorIO;J)V
-	public synthetic fun <init> (Lcom/areslib/hardware/sensor/ColorSensorIO;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun copyNormalizedRgbInto ([D)V
-	public fun getAlpha ()I
-	public fun getBlue ()I
-	public fun getGreen ()I
-	public fun getNormalizedRgb ()[D
-	public fun getRed ()I
-	public final fun shutdown ()V
-}
-
-public final class com/areslib/hardware/sensor/ThreadedDistanceSensor : com/areslib/hardware/sensor/DistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/hardware/sensor/DistanceSensorIO;J)V
-	public synthetic fun <init> (Lcom/areslib/hardware/sensor/DistanceSensorIO;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun getDistanceMeters ()D
-	public final fun shutdown ()V
-}
-
-public final class com/areslib/hardware/sensor/ThreadedMultizoneDistanceSensor : com/areslib/hardware/sensor/MultizoneDistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;J)V
-	public synthetic fun <init> (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun copyDistancesMetersInto ([D)I
-	public fun getColumns ()I
-	public fun getDistancesMeters ()[D
-	public fun getRows ()I
-	public final fun shutdown ()V
-}
-
 public final class com/areslib/hardware/vision/CompositeVisionIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
 	public static final field CORRELATION_WINDOW_MICROS J
 	public fun <init> (Ljava/util/List;)V
