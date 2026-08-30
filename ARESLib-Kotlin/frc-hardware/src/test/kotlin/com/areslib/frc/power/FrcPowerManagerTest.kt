@@ -3,16 +3,12 @@ package com.areslib.frc.power
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.AfterEach
+import com.areslib.hardware.HardwareRegistry
 
 class FrcPowerManagerTest {
-    @AfterEach
-    fun clearHardwareRegistry() {
-        com.areslib.hardware.HardwareRegistry.clear()
-    }
     @Test
     fun `test battery voltage monitoring and brownout scaling`() {
-        val powerManager = FrcPowerManager().apply {
+        val powerManager = FrcPowerManager(HardwareRegistry()).apply {
             totalCurrentSupplier = java.util.function.DoubleSupplier { 0.0 }
         }
         
@@ -42,7 +38,7 @@ class FrcPowerManagerTest {
 
     @Test
     fun `invalid or failed voltage readings fail closed`() {
-        val powerManager = FrcPowerManager().apply {
+        val powerManager = FrcPowerManager(HardwareRegistry()).apply {
             totalCurrentSupplier = java.util.function.DoubleSupplier { 0.0 }
         }
 
@@ -61,7 +57,7 @@ class FrcPowerManagerTest {
 
     @Test
     fun `PDH total current applies system budget before main breaker stress`() {
-        val powerManager = FrcPowerManager()
+        val powerManager = FrcPowerManager(HardwareRegistry())
         powerManager.batteryVoltageSupplier = java.util.function.DoubleSupplier { 12.0 }
         powerManager.totalCurrentSupplier = java.util.function.DoubleSupplier { 210.0 }
 
@@ -74,7 +70,7 @@ class FrcPowerManagerTest {
 
     @Test
     fun `roboRIO brownout signal forces immediate zero effort`() {
-        val powerManager = FrcPowerManager()
+        val powerManager = FrcPowerManager(HardwareRegistry())
         powerManager.batteryVoltageSupplier = java.util.function.DoubleSupplier { 12.0 }
         powerManager.totalCurrentSupplier = java.util.function.DoubleSupplier { 0.0 }
         powerManager.brownedOutSupplier = java.util.function.BooleanSupplier { true }
@@ -100,10 +96,11 @@ class FrcPowerManagerTest {
             var reads = 0
             override val currentAmps: Double get() { reads++; error("CAN timeout") }
         }
-        com.areslib.hardware.HardwareRegistry.registerDevice("child", child)
-        com.areslib.hardware.HardwareRegistry.registerDevice("aggregate", aggregate)
-        com.areslib.hardware.HardwareRegistry.registerDevice("bad", bad)
-        val powerManager = FrcPowerManager().apply {
+        val hardwareRegistry = HardwareRegistry()
+        hardwareRegistry.registerDevice("child", child)
+        hardwareRegistry.registerDevice("aggregate", aggregate)
+        hardwareRegistry.registerDevice("bad", bad)
+        val powerManager = FrcPowerManager(hardwareRegistry).apply {
             batteryVoltageSupplier = java.util.function.DoubleSupplier { 12.0 }
         }
 

@@ -9,7 +9,6 @@ import com.areslib.subsystem.SubsystemValueType
 internal object SubsystemFtcIoRenderer {
     fun render(document: SubsystemDocument, pkg: String): String {
         val imports = linkedSetOf(
-            "com.areslib.hardware.HardwareRegistry",
             "com.areslib.util.RobotClock",
             "com.qualcomm.robotcore.hardware.HardwareMap",
         )
@@ -238,7 +237,6 @@ internal object SubsystemFtcIoRenderer {
                     } catch (_: Exception) {
                         false
                     }
-                    HardwareRegistry.registerTelemetryDevice(${("Subsystems/${document.documentId}").quoted()}, this)
                 }
 
                 override fun refresh() {

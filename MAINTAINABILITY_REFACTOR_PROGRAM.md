@@ -94,6 +94,13 @@ simulator used them. They were deleted rather than retained behind compatibility
 hardware continues toward the centralized `SyncPolledDevice`/bus-scoped path, where polling and
 lifecycle ownership can be attached to one robot instance instead of one daemon thread per sensor.
 
+The second slice replaced the process-global `HardwareRegistry` singleton with one registry owned by
+each `AresRobot`/platform composition root. Power managers, telemetry, simulator publishing, generated
+subsystem factories, FTC/FRC season robots, and both starters now receive that exact instance.
+Generated and vendor IO constructors no longer self-register. The old static API was removed rather
+than forwarded, and every in-monorepo consumer migrated to the current contract. Isolation tests prove
+that refreshing, safing, closing, and polling one robot cannot mutate another robot's devices.
+
 **Exit criteria:** no orphan production APIs, multiple simulated robot instances remain isolated,
 hardware reads remain once per loop, and zero-allocation regression tests remain green.
 

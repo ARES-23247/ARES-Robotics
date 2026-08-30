@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode
 
 import com.areslib.action.RobotAction
 import com.areslib.ftc.FtcBaseRobot
-import com.areslib.hardware.HardwareRegistry
 import com.areslib.networktables.NT4Instance
 import com.areslib.sim.model.MecanumRobotDouble
 import com.areslib.sim.opmode.SimOpModeRunner
@@ -20,7 +19,6 @@ import org.junit.Test
 class FtcIterativeAutoSimulatorContractTest {
     @After
     fun cleanUp() {
-        HardwareRegistry.clear()
         NT4Instance.defaultInstance.closeServer()
         RobotClock.useSystemTime()
     }
@@ -65,7 +63,6 @@ class FtcIterativeAutoSimulatorContractTest {
             unlocked.stop()
         }
 
-        HardwareRegistry.clear()
         val locked = requireNotNull(SimOpModeRunner.createOpModeInstance(TestAutoRed(), null))
         try {
             locked.initialize(MecanumRobotDouble().hardwareMap)

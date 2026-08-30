@@ -113,10 +113,6 @@ internal object SubsystemMockIoRenderer {
             $commandFields
             $simSignalFields
             ${linkagePlantFields.prependIndent("    ")}
-                init {
-                    com.areslib.hardware.HardwareRegistry.registerTelemetryDevice(${("Subsystems/${document.documentId}").quoted()}, this)
-                }
-
                 override var feedbackValid: Boolean = false
                 override var feedbackTimestampMs: Long = 0L
                 /** Simulated wiring starts configured; tests and fault injection may set this false. */

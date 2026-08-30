@@ -1,7 +1,6 @@
 package com.areslib.ftc.hardware.rev
 
 import com.areslib.hardware.actuator.MotorIO
-import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.CRServo
@@ -24,14 +23,12 @@ import com.qualcomm.robotcore.hardware.Servo
  * [updateInputs] and [pollCurrentSync] populate primitive properties (`cachedPosition`, `cachedVelocity`, `cachedAmps`) in-place.
  *
  * @param motor FTC SDK [DcMotorEx] hardware instance.
- * @param name Optional hardware configuration name for [HardwareRegistry] registration.
  *
  * @see MotorIO
  * @see RevBulkDataReader
  */
 class RevMotorController(
     private val motor: DcMotorEx,
-    val name: String? = null
 ) : MotorIO, AutoCloseable {
     private var encoderOffset = 0.0
     private var cachedPosition = 0.0
@@ -47,12 +44,7 @@ class RevMotorController(
             motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
         } catch (_: Exception) {}
 
-        if (name != null) {
-            HardwareRegistry.registerMotor(name, this)
-        }
-        
         RevBulkDataReader.registerMotor(this)
-        HardwareRegistry.registerCloseable(this)
     }
 
     private var targetPower: Double = 0.0
@@ -188,20 +180,13 @@ class RevMotorController(
  *
  * @param crServo FTC SDK [CRServo] hardware instance.
  * @param externalEncoder Optional external feedback encoder ([MotorIO]).
- * @param name Optional hardware configuration name.
  *
  * @see MotorIO
  */
 class RevCRServoController(
     private val crServo: CRServo,
     private val externalEncoder: MotorIO? = null,
-    val name: String? = null
 ) : MotorIO {
-    init {
-        if (name != null) {
-            HardwareRegistry.registerMotor(name, this)
-        }
-    }
     private var targetPower: Double = 0.0
     private var lastSentPower = Double.NaN
 
@@ -253,23 +238,15 @@ private fun sanitizeScale(value: Double): Double =
  * Direct hardware IO controller for standalone motor port quadrature encoders.
  *
  * @param motor FTC SDK [DcMotorEx] hardware instance acting as encoder counter input.
- * @param name Optional hardware configuration name.
  *
  * @see MotorIO
  */
 class RevEncoderController(
     private val motor: DcMotorEx,
-    val name: String? = null
 ) : MotorIO {
     private var encoderOffset = 0.0
     private var cachedPosition = 0.0
     private var cachedVelocity = 0.0
-
-    init {
-        if (name != null) {
-            HardwareRegistry.registerMotor(name, this)
-        }
-    }
 
     override var power: Double
         get() = 0.0
@@ -345,21 +322,13 @@ class RevCompositeMotorController(
  * Performs write caching with $0.001$ position change tolerance threshold.
  *
  * @param servo FTC SDK [Servo] hardware instance.
- * @param name Optional hardware configuration name.
  *
  * @see ServoIO
  */
 class RevServoController(
     private val servo: Servo,
-    val name: String? = null
 ) : ServoIO {
     private var lastSentPosition = Double.NaN
-
-    init {
-        if (name != null) {
-            HardwareRegistry.registerServo(name, this)
-        }
-    }
 
     override var position: Double
         get() = if (lastSentPosition.isFinite()) lastSentPosition else 0.0

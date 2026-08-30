@@ -107,7 +107,6 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     private val pollingThread: Thread
 
     init {
-        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         pollingThread = Thread {
             while (running) {
                 if (isInitialized) {

@@ -8,6 +8,7 @@ import com.areslib.state.RobotFieldManager
 import com.areslib.state.TuningState
 import com.areslib.control.tuning.PIDFCoefficients
 import com.areslib.subsystem.Subsystem
+import com.areslib.hardware.HardwareRegistry
 import com.areslib.telemetry.ARESNetworkStatePublisher
 import com.areslib.telemetry.ITelemetry
 import com.areslib.tuning.TuningApplyContext
@@ -66,6 +67,7 @@ class AresStarterRobot : TimedRobot() {
         try {
             installGeneratedSubsystems(
                 usePhysicalAdapters = physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
+                hardwareRegistry = robot.hardwareRegistry,
                 register = robot::registerSubsystem,
             )
             installGeneratedSuperstructures(robot::registerSubsystem)
@@ -203,9 +205,10 @@ class AresStarterRobot : TimedRobot() {
 
 internal fun installGeneratedSubsystems(
     usePhysicalAdapters: Boolean,
+    hardwareRegistry: HardwareRegistry,
     register: (Subsystem) -> Unit,
-    createAll: (Boolean) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(usePhysicalAdapters).also { created -> created.forEach(register) }
+    createAll: (Boolean, HardwareRegistry) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
+): List<Subsystem> = createAll(usePhysicalAdapters, hardwareRegistry).also { created -> created.forEach(register) }
 
 internal fun installGeneratedSuperstructures(
     register: (Subsystem) -> Unit,
@@ -224,6 +227,7 @@ internal class StarterRobotRuntime(
         )
     },
 ) {
+    val hardwareRegistry = HardwareRegistry()
     private val tuningRuntime = GeneratedAresTuningConfig.createRuntime()
     private val tuningUids = StarterFrcRuntimeTuningUids.from(tuningRuntime)
     val store = Store(
@@ -259,14 +263,14 @@ internal class StarterRobotRuntime(
     }
 
     fun publishHardwareTopology(robotId: String) {
-        publisher.publishTopology(com.areslib.hardware.HardwareRegistry.getTopologyJson(robotId))
+        publisher.publishTopology(hardwareRegistry.getTopologyJson(robotId))
     }
 
     fun update() {
         val now = RobotClock.currentTimeMillis()
         val dt = if (lastUpdateMs == 0L) 0.02 else ((now - lastUpdateMs) / 1000.0).coerceIn(0.0, 0.05)
         lastUpdateMs = now
-        com.areslib.hardware.HardwareRegistry.refreshAll()
+        hardwareRegistry.refreshAll()
         for (index in subsystems.indices) subsystems[index].readSensors(store, now)
         val outputScale = if (DriverStation.isEnabled()) 1.0 else 0.0
         for (index in subsystems.indices) subsystems[index].writeOutputs(store.state, outputScale)
@@ -326,7 +330,7 @@ internal class StarterRobotRuntime(
         for (index in subsystems.indices) {
             runCatching { subsystems[index].writeOutputs(store.state, 0.0) }
         }
-        com.areslib.hardware.HardwareRegistry.safeAll()
+        hardwareRegistry.safeAll()
     }
 
     fun close() {
@@ -343,7 +347,7 @@ internal class StarterRobotRuntime(
         }
         attempt(::safeHardware)
         for (index in subsystems.indices.reversed()) attempt(subsystems[index]::close)
-        attempt { com.areslib.hardware.HardwareRegistry.closeAll() }
+        attempt { hardwareRegistry.closeAll() }
         attempt(telemetry::close)
         failure?.let { throw it }
     }

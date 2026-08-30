@@ -20,13 +20,11 @@ import org.junit.jupiter.api.Test
 class FrcBaseRobotLifecycleTest {
     @BeforeEach
     fun setUp() {
-        HardwareRegistry.clear()
         RobotClock.useMockTime(1_000L)
     }
 
     @AfterEach
     fun tearDown() {
-        HardwareRegistry.clear()
         RobotClock.useSystemTime()
     }
 
@@ -96,7 +94,7 @@ class FrcBaseRobotLifecycleTest {
     fun `completed hardware topology is queued exactly once without an early flush`() {
         val base = FrameTelemetry()
         val robot = TestRobot({ true }, base)
-        HardwareRegistry.registerDevice(
+        robot.hardwareRegistry.registerDevice(
             "Shooter",
             object : LoggableDevice {},
             TopologyNode(

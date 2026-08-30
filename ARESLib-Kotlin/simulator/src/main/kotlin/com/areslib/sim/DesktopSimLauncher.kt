@@ -507,7 +507,11 @@ object DesktopSimLauncher {
             val activeInstance = com.areslib.ftc.FtcBaseRobot.activeInstance
             if (activeInstance != null) {
                 val state = activeInstance.store.state
-                TelemetryPublisher.publish(state, dtSeconds = SIM_TIMESTEP_SECONDS)
+                TelemetryPublisher.publish(
+                    state = state,
+                    hardwareRegistry = activeInstance.hardwareRegistry,
+                    dtSeconds = SIM_TIMESTEP_SECONDS,
+                )
                 TelemetryPublisher.publishSimulatorPoseFrame(
                     trueX = currentPhysX,
                     trueY = currentPhysY,

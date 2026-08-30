@@ -20,13 +20,12 @@ import com.qualcomm.robotcore.hardware.Servo
  * current monitoring, and power updates.
  *
  * @param motor FTC SDK [DcMotorEx] hardware instance.
- * @param name Optional hardware configuration name for telemetry logging.
  *
  * @see MotorIO
  * @see RevMotorController
  */
-class FtcMotor(motor: DcMotorEx, name: String? = null) : MotorIO, AutoCloseable {
-    private val delegate = RevMotorController(motor, name)
+class FtcMotor(motor: DcMotorEx) : MotorIO, AutoCloseable {
+    private val delegate = RevMotorController(motor)
     override var powerScale: Double
         get() = delegate.powerScale
         set(value) { delegate.powerScale = value }
@@ -63,13 +62,12 @@ class FtcMotor(motor: DcMotorEx, name: String? = null) : MotorIO, AutoCloseable 
  *
  * @param crServo FTC SDK [CRServo] hardware instance.
  * @param externalEncoder Optional external encoder interface ([MotorIO]) for position and velocity feedback.
- * @param name Optional hardware configuration name.
  *
  * @see MotorIO
  * @see RevCRServoController
  */
-class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null, name: String? = null) : MotorIO {
-    private val delegate = RevCRServoController(crServo, externalEncoder, name)
+class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null) : MotorIO {
+    private val delegate = RevCRServoController(crServo, externalEncoder)
     override var powerScale: Double
         get() = delegate.powerScale
         set(value) { delegate.powerScale = value }
@@ -88,13 +86,12 @@ class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null, name: Strin
  * Read-only hardware IO interface for standalone quadrature or optical encoders connected to REV Hub motor ports.
  *
  * @param motor FTC SDK [DcMotorEx] hardware instance acting as encoder counter input.
- * @param name Optional hardware configuration name.
  *
  * @see MotorIO
  * @see RevEncoderController
  */
-class FtcEncoder(motor: DcMotorEx, name: String? = null) : MotorIO {
-    private val delegate = RevEncoderController(motor, name)
+class FtcEncoder(motor: DcMotorEx) : MotorIO {
+    private val delegate = RevEncoderController(motor)
     override var power: Double
         get() = delegate.power
         set(value) { delegate.power = value }
@@ -148,7 +145,6 @@ class CompositeMotorIO(private val actuator: MotorIO, private val sensor: MotorI
  * @param analogInput FTC SDK [AnalogInput] hardware interface.
  * @param version REV encoder hardware revision variant ([RevEncoderVersion.V1] vs [RevEncoderVersion.V2]).
  * @param ticksPerRev Encoder tick resolution rating ($ticks/rev$, default 8192.0).
- * @param name Optional hardware configuration name.
  *
  * @see MotorIO
  * @see RevAbsoluteAnalogEncoderController
@@ -157,9 +153,8 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
     analogInput: AnalogInput,
     version: RevEncoderVersion = RevEncoderVersion.V1,
     ticksPerRev: Double = 8192.0,
-    name: String? = null
 ) : MotorIO, AutoCloseable {
-    private val delegate = RevAbsoluteAnalogEncoderController(analogInput, version, ticksPerRev, name)
+    private val delegate = RevAbsoluteAnalogEncoderController(analogInput, version, ticksPerRev)
     override var power: Double
         get() = delegate.power
         set(value) { delegate.power = value }
@@ -181,13 +176,12 @@ class FtcAbsoluteAnalogEncoder @kotlin.jvm.JvmOverloads constructor(
  * Hardware IO wrapper for standard 180° / 270° PWM servos driven by REV Hub servo ports.
  *
  * @param servo FTC SDK [Servo] hardware instance.
- * @param name Optional hardware configuration name.
  *
  * @see ServoIO
  * @see RevServoController
  */
-class FtcServo(servo: Servo, name: String? = null) : ServoIO {
-    private val delegate = RevServoController(servo, name)
+class FtcServo(servo: Servo) : ServoIO {
+    private val delegate = RevServoController(servo)
     override var position: Double
         get() = delegate.position
         set(value) { delegate.position = value }

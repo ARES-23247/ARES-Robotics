@@ -36,16 +36,22 @@ internal object SubsystemRegistryRenderer {
             }
         }.distinct().sorted()
         val factories = generatedDocuments.sortedBy { it.documentId }.joinToString("\n") { document ->
-            val factory = when (target.platform) {
+            val ioFactory = when (target.platform) {
                 SubsystemPlatform.FTC ->
-                    "${document.kotlinTypeName}Subsystem(Ftc${document.kotlinTypeName}IO(hardwareMap))"
+                    "Ftc${document.kotlinTypeName}IO(hardwareMap)"
                 SubsystemPlatform.FRC -> if (document.generateMockIo) {
-                    "${document.kotlinTypeName}Subsystem(if (isReal) Frc${document.kotlinTypeName}IO() else Mock${document.kotlinTypeName}IO())"
+                    "if (isReal) Frc${document.kotlinTypeName}IO() else Mock${document.kotlinTypeName}IO()"
                 } else {
-                    "if (isReal) ${document.kotlinTypeName}Subsystem(Frc${document.kotlinTypeName}IO()) else null"
+                    "if (isReal) Frc${document.kotlinTypeName}IO() else null"
                 }
             }
-            "    GeneratedSubsystemRegistrySupport.install(this, ${document.documentId.quoted()}, ${document.requiredAtStartup}) { $factory }"
+            val prefix = ("Subsystems/${document.documentId}").quoted()
+            val subsystemFactory = if (target.platform == SubsystemPlatform.FRC && !document.generateMockIo) {
+                "run { val io = $ioFactory; if (io == null) null else { hardwareRegistry.registerTelemetryDevice($prefix, io); ${document.kotlinTypeName}Subsystem(io) } }"
+            } else {
+                "run { val io = $ioFactory; hardwareRegistry.registerTelemetryDevice($prefix, io); ${document.kotlinTypeName}Subsystem(io) }"
+            }
+            "    GeneratedSubsystemRegistrySupport.install(this, ${document.documentId.quoted()}, ${document.requiredAtStartup}) { $subsystemFactory }"
         }
         val actionCases = generatedDocuments.sortedBy { it.documentId }.flatMapIndexed { resourceIndex, document ->
             val resourceExpression = "TaskResources.generatedSubsystem($resourceIndex)"
@@ -90,14 +96,18 @@ $actionCases
                 SubsystemKotlinGenerator.registryInterlockFunction(document, generatedDocuments)
             }
         val body = if (generatedDocuments.isEmpty()) {
-            val parameter = if (target.platform == SubsystemPlatform.FTC) "hardwareMap: HardwareMap" else "isReal: Boolean"
+            val parameter = if (target.platform == SubsystemPlatform.FTC) {
+                "hardwareMap: HardwareMap, hardwareRegistry: HardwareRegistry"
+            } else {
+                "isReal: Boolean, hardwareRegistry: HardwareRegistry"
+            }
             """@Suppress("UNUSED_PARAMETER")
 fun createAll($parameter): List<Subsystem> = emptyList()"""
         } else when (target.platform) {
-            SubsystemPlatform.FTC -> """fun createAll(hardwareMap: HardwareMap): List<Subsystem> = buildList {
+            SubsystemPlatform.FTC -> """fun createAll(hardwareMap: HardwareMap, hardwareRegistry: HardwareRegistry): List<Subsystem> = buildList {
 $factories
 }"""
-            SubsystemPlatform.FRC -> """fun createAll(isReal: Boolean): List<Subsystem> = buildList {
+            SubsystemPlatform.FRC -> """fun createAll(isReal: Boolean, hardwareRegistry: HardwareRegistry): List<Subsystem> = buildList {
 $factories
 }"""
         }
@@ -114,6 +124,7 @@ $factories
             append("import com.areslib.sequencer.Task\n")
             append("import com.areslib.subsystem.GeneratedSubsystemRegistrySupport\n")
             append("import com.areslib.subsystem.Subsystem\n")
+            append("import com.areslib.hardware.HardwareRegistry\n")
             if (target.platform == SubsystemPlatform.FTC) {
                 append("import com.qualcomm.robotcore.hardware.HardwareMap\n")
             }

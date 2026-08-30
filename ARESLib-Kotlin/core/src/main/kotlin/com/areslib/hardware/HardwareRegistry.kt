@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong
 import com.areslib.hardware.actuator.*
 
 /**
- * Process-wide owner registry for hardware refresh, safety, telemetry, topology, and shutdown.
+ * Robot-instance owner registry for hardware refresh, safety, telemetry, topology, and shutdown.
  *
  * Registration is normally performed once during robot construction. Device collections are
  * copy-on-write/concurrent so telemetry and background polling can inspect them safely, but repeated
@@ -21,7 +21,7 @@ import com.areslib.hardware.actuator.*
  * devices must cache results for robot-loop getters. A device exception is isolated and
  * exponentially rate-limited in stderr so one failed sensor cannot stop polling every other sensor.
  */
-object HardwareRegistry {
+class HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
     private val gson = Gson()
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()

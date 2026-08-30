@@ -11,10 +11,11 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 class HardwareRegistryTest {
+    private lateinit var registry: HardwareRegistry
 
     @BeforeEach
     fun setUp() {
-        HardwareRegistry.clear()
+        registry = HardwareRegistry()
     }
 
     class MockLoggableDevice : LoggableDevice {
@@ -58,7 +59,7 @@ class HardwareRegistryTest {
     @Test
     fun testRegisterDeviceAndClose() {
         val device = MockLoggableDevice()
-        HardwareRegistry.registerDevice("test_device", device)
+        registry.registerDevice("test_device", device)
 
         val telemetry = object : ITelemetry {
             override fun putNumber(key: String, value: Double) {}
@@ -70,17 +71,17 @@ class HardwareRegistryTest {
             override fun getString(key: String, defaultValue: String): String = defaultValue
         }
 
-        HardwareRegistry.publishAll(telemetry)
+        registry.publishAll(telemetry)
         assertTrue(device.logTelemetryCalled)
         assertEquals("Hardware/test_device", device.telemetryPrefix)
 
-        HardwareRegistry.clear()
+        registry.clear()
     }
 
     @Test
     fun `domain telemetry registration preserves its canonical prefix`() {
         val device = MockLoggableDevice()
-        HardwareRegistry.registerTelemetryDevice("Subsystems/elevator", device)
+        registry.registerTelemetryDevice("Subsystems/elevator", device)
         val publishedNumbers = mutableListOf<Pair<String, Double>>()
         val telemetry = object : ITelemetry {
             override fun putNumber(key: String, value: Double) { publishedNumbers += key to value }
@@ -92,8 +93,8 @@ class HardwareRegistryTest {
             override fun getString(key: String, defaultValue: String): String = defaultValue
         }
 
-        HardwareRegistry.publishAll(telemetry)
-        HardwareRegistry.publishAll(telemetry)
+        registry.publishAll(telemetry)
+        registry.publishAll(telemetry)
 
         assertEquals("Subsystems/elevator", device.telemetryPrefix)
         assertEquals(
@@ -108,13 +109,13 @@ class HardwareRegistryTest {
     @Test
     fun testRegisterMotorAndLifeCycle() {
         val motor = MockMotorIO()
-        HardwareRegistry.registerMotor("drive_fl", motor)
+        registry.registerMotor("drive_fl", motor)
 
-        val motors = HardwareRegistry.getRegisteredMotors()
+        val motors = registry.getRegisteredMotors()
         assertEquals(1, motors.size)
         assertSame(motor, motors[0])
 
-        val motorsMap = HardwareRegistry.getRegisteredMotorsWithNames()
+        val motorsMap = registry.getRegisteredMotorsWithNames()
         assertEquals(1, motorsMap.size)
         assertSame(motor, motorsMap["drive_fl"])
     }
@@ -122,21 +123,21 @@ class HardwareRegistryTest {
     @Test
     fun testRegisterCloseable() {
         val closeable = MockCloseable()
-        HardwareRegistry.registerCloseable(closeable)
+        registry.registerCloseable(closeable)
 
-        HardwareRegistry.closeAll()
+        registry.closeAll()
         assertEquals(1, closeable.closeCount)
     }
 
     @Test
     fun testRefreshAndSafeAll() {
         val subsystem = MockSubsystemIO()
-        HardwareRegistry.registerDevice("test_subsystem", subsystem)
+        registry.registerDevice("test_subsystem", subsystem)
 
-        HardwareRegistry.refreshAll()
+        registry.refreshAll()
         assertTrue(subsystem.refreshCalled)
 
-        HardwareRegistry.safeAll()
+        registry.safeAll()
         assertTrue(subsystem.safeCalled)
     }
 
@@ -144,9 +145,9 @@ class HardwareRegistryTest {
     fun testBuildTopologyAndJson() {
         val motor = MockMotorIO()
         // Register with FRC CAN topology
-        HardwareRegistry.registerMotor("swerve_fl", motor, "rio", 10, 1)
+        registry.registerMotor("swerve_fl", motor, "rio", 10, 1)
 
-        val topology = HardwareRegistry.buildTopology("ares_frc_robot")
+        val topology = registry.buildTopology("ares_frc_robot")
         assertEquals("ares_frc_robot", topology.robotId)
         assertEquals(1, topology.nodes.size)
 
@@ -158,7 +159,7 @@ class HardwareRegistryTest {
         assertEquals("rio", node.canBus)
         assertEquals(1, node.busPosition)
 
-        val json = HardwareRegistry.getTopologyJson("ares_frc_robot")
+        val json = registry.getTopologyJson("ares_frc_robot")
         assertTrue(json.contains("ares_frc_robot"))
         assertTrue(json.contains("swerve_fl"))
         assertTrue(json.contains("CAN_MOTOR_CONTROLLER"))
@@ -176,13 +177,13 @@ class HardwareRegistryTest {
         val d1 = MockSyncPolledDevice()
         val d2 = MockSyncPolledDevice()
         
-        HardwareRegistry.registerRoundRobinDevice(d1)
-        HardwareRegistry.registerRoundRobinDevice(d2)
+        registry.registerRoundRobinDevice(d1)
+        registry.registerRoundRobinDevice(d2)
 
         // Give the background polling thread some time to spin up and poll
         Thread.sleep(150)
         
-        HardwareRegistry.closeAll()
+        registry.closeAll()
 
         // It should have polled each one at least once depending on timing
         assertTrue(d1.pollSyncCount > 0)
@@ -197,12 +198,12 @@ class HardwareRegistryTest {
             override fun pollSync() = error("sensor unavailable")
         }
         val healthy = MockSyncPolledDevice()
-        HardwareRegistry.setPollingIntervalMs(10L)
+        registry.setPollingIntervalMs(10L)
 
-        HardwareRegistry.registerRoundRobinDevice(throwing)
-        HardwareRegistry.registerRoundRobinDevice(healthy)
+        registry.registerRoundRobinDevice(throwing)
+        registry.registerRoundRobinDevice(healthy)
         Thread.sleep(100L)
-        HardwareRegistry.closeAll()
+        registry.closeAll()
 
         assertTrue(healthy.pollSyncCount > 0)
     }
@@ -225,12 +226,12 @@ class HardwareRegistryTest {
                 }
             }
         }
-        HardwareRegistry.setPollingIntervalMs(10L)
-        HardwareRegistry.registerRoundRobinDevice(blocking)
+        registry.setPollingIntervalMs(10L)
+        registry.registerRoundRobinDevice(blocking)
         assertTrue(enteredOldPoll.await(1, TimeUnit.SECONDS))
 
         // closeAll times out waiting for the deliberately blocked worker, then clears the registry.
-        HardwareRegistry.closeAll()
+        registry.closeAll()
 
         val newWorkerPolls = AtomicInteger()
         val resurrectedOldWorkerPolls = AtomicInteger()
@@ -245,11 +246,11 @@ class HardwareRegistryTest {
                 }
             }
         }
-        HardwareRegistry.registerRoundRobinDevice(replacement)
+        registry.registerRoundRobinDevice(replacement)
         assertTrue(newWorkerObserved.await(1, TimeUnit.SECONDS))
         releaseOldPoll.countDown()
         Thread.sleep(100L)
-        HardwareRegistry.closeAll()
+        registry.closeAll()
 
         assertTrue(newWorkerPolls.get() > 0)
         assertEquals(0, resurrectedOldWorkerPolls.get())
@@ -259,10 +260,10 @@ class HardwareRegistryTest {
     fun `same logical name replaces lifecycle entry instead of duplicating it`() {
         val first = MockSubsystemIO()
         val replacement = MockSubsystemIO()
-        HardwareRegistry.registerDevice("arm", first)
-        HardwareRegistry.registerDevice("arm", replacement)
+        registry.registerDevice("arm", first)
+        registry.registerDevice("arm", replacement)
 
-        HardwareRegistry.refreshAll()
+        registry.refreshAll()
 
         assertFalse(first.refreshCalled)
         assertTrue(replacement.refreshCalled)
@@ -276,10 +277,10 @@ class HardwareRegistryTest {
             override fun close() { closeCount++ }
         }
         val device = CloseableDevice()
-        HardwareRegistry.registerDevice("owned", device)
-        HardwareRegistry.registerCloseable(device)
+        registry.registerDevice("owned", device)
+        registry.registerCloseable(device)
 
-        HardwareRegistry.closeAll()
+        registry.closeAll()
 
         assertEquals(1, device.closeCount)
     }
@@ -288,14 +289,51 @@ class HardwareRegistryTest {
     fun `current source registration replaces by name and clear removes cached views`() {
         val first = object : SubsystemIO, CurrentSourceIO { override val currentAmps = 1.0 }
         val replacement = object : SubsystemIO, CurrentSourceIO { override val currentAmps = 2.0 }
-        HardwareRegistry.registerDevice("current", first)
-        HardwareRegistry.registerDevice("current", replacement)
+        registry.registerDevice("current", first)
+        registry.registerDevice("current", replacement)
 
-        assertEquals(1, HardwareRegistry.getRegisteredCurrentSources().size)
-        assertSame(replacement, HardwareRegistry.getRegisteredCurrentSources().single())
+        assertEquals(1, registry.getRegisteredCurrentSources().size)
+        assertSame(replacement, registry.getRegisteredCurrentSources().single())
 
-        HardwareRegistry.clear()
-        assertTrue(HardwareRegistry.getRegisteredCurrentSources().isEmpty())
+        registry.clear()
+        assertTrue(registry.getRegisteredCurrentSources().isEmpty())
+    }
+
+    @Test
+    fun `two robot registries isolate refresh safety topology and shutdown`() {
+        class OwnedDevice : SubsystemIO, AutoCloseable {
+            var refreshCount = 0
+            var safeCount = 0
+            var closeCount = 0
+            override fun refresh() { refreshCount++ }
+            override fun safe() { safeCount++ }
+            override fun close() { closeCount++ }
+        }
+        val firstRegistry = HardwareRegistry()
+        val secondRegistry = HardwareRegistry()
+        val first = OwnedDevice()
+        val second = OwnedDevice()
+        firstRegistry.registerDevice("drive", first)
+        secondRegistry.registerDevice("drive", second)
+
+        firstRegistry.refreshAll()
+        firstRegistry.safeAll()
+        firstRegistry.closeAll()
+
+        assertEquals(1, first.refreshCount)
+        assertEquals(1, first.safeCount)
+        assertEquals(1, first.closeCount)
+        assertEquals(0, second.refreshCount)
+        assertEquals(0, second.safeCount)
+        assertEquals(0, second.closeCount)
+        assertTrue(firstRegistry.buildTopology("first").nodes.isEmpty())
+
+        secondRegistry.refreshAll()
+        secondRegistry.safeAll()
+        secondRegistry.closeAll()
+        assertEquals(1, second.refreshCount)
+        assertEquals(1, second.safeCount)
+        assertEquals(1, second.closeCount)
     }
 
     @Test

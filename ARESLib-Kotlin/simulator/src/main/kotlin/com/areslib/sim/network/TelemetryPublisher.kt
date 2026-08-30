@@ -96,10 +96,14 @@ object TelemetryPublisher {
      *
      * @param state The current immutable robot state to serialize and publish.
      */
-    fun publish(state: RobotState, dtSeconds: Double? = null) {
+    fun publish(
+        state: RobotState,
+        hardwareRegistry: com.areslib.hardware.HardwareRegistry,
+        dtSeconds: Double? = null,
+    ) {
         statePublisher.set(state)
         networkStatePublisher?.publish(state, dtSeconds = dtSeconds)
-        nt4Telemetry?.let { com.areslib.hardware.HardwareRegistry.publishAll(it) }
+        nt4Telemetry?.let(hardwareRegistry::publishAll)
         timestampPub.set(com.areslib.util.RobotClock.currentTimeMillis())
     }
 

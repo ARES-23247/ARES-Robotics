@@ -18,12 +18,12 @@ import java.security.MessageDigest
 class SubsystemGeneratorCharacterizationTest {
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("238627dc2c3029aeba95b885473a65e42ec52aef21944c621b1cca1b2944a31a", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("eabe79b7a31915ae5b3048106e98eca4709238481eb75eb5fbfcd27bb0599b13", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("d68a5187e3cac8d06f9df11373273808bb05be61c109ccbb1add42e8155e94d3", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("40e35ce0034e727f14662f987ee4ff5995b468c340fb38952c1298b71800b101", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {

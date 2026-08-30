@@ -2,7 +2,6 @@
 package org.firstinspires.ftc.teamcode
 
 import com.areslib.ftc.FtcBaseRobot
-import com.areslib.hardware.HardwareRegistry
 import com.areslib.networktables.NT4Instance
 import com.areslib.sim.model.MecanumRobotDouble
 import com.areslib.sim.opmode.SimOpModeKind
@@ -21,7 +20,6 @@ import kotlin.math.abs
 class StarterSimulatorE2ETest {
     @After
     fun cleanUp() {
-        HardwareRegistry.clear()
         NT4Instance.defaultInstance.closeServer()
         RobotClock.useSystemTime()
     }

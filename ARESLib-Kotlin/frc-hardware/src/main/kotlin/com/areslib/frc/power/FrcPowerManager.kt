@@ -22,7 +22,9 @@ import java.util.function.DoubleSupplier
  * @see PowerManager
  * @see BrownoutGuard
  */
-class FrcPowerManager : PowerManager {
+class FrcPowerManager(
+    private val hardwareRegistry: com.areslib.hardware.HardwareRegistry,
+) : PowerManager {
     private val currentSourceSampler = com.areslib.hardware.CurrentSourceSampler()
     /** FRC brownout protection guard instance. */
     val brownoutGuard = BrownoutGuard.frcDefaults()
@@ -93,7 +95,7 @@ class FrcPowerManager : PowerManager {
         powerScale = if (isBrownedOut) 0.0 else minOf(brownoutGuard.powerScale, currentPowerScale)
 
         // Dynamically distribute powerScale to all registered motors
-        val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
+        val motors = hardwareRegistry.getRegisteredMotors()
         var motorIndex = 0
         while (motorIndex < motors.size) {
             motors[motorIndex].powerScale = powerScale
@@ -138,7 +140,7 @@ class FrcPowerManager : PowerManager {
     }
 
     private fun registeredCurrentFallback(): Double {
-        val sources = com.areslib.hardware.HardwareRegistry.getRegisteredCurrentSources()
+        val sources = hardwareRegistry.getRegisteredCurrentSources()
         val total = currentSourceSampler.sample(sources)
         return if (currentSourceSampler.hasCompleteCoverage) total else Double.NaN
     }

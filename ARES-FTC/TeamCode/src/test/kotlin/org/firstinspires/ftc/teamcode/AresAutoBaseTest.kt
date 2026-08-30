@@ -45,7 +45,6 @@ class AresAutoBaseTest {
     @After
     fun tearDown() {
         NT4Instance.defaultInstance.closeServer()
-        com.areslib.hardware.HardwareRegistry.clear()
     }
 
     private fun findFieldJsonFile(): File {
@@ -251,7 +250,6 @@ class AresAutoBaseTest {
             blueOpMode.stop()
             assertNull(FtcBaseRobot.activeInstance)
             NT4Instance.defaultInstance.closeServer()
-            com.areslib.hardware.HardwareRegistry.clear()
         }
 
         // 2. Verify TestAutoRed initializes with locked RED alliance
@@ -270,7 +268,6 @@ class AresAutoBaseTest {
             redOpMode.stop()
             assertNull(FtcBaseRobot.activeInstance)
             NT4Instance.defaultInstance.closeServer()
-            com.areslib.hardware.HardwareRegistry.clear()
         }
 
         // 3. Verify maximum allowable runtime of exactly 30.0 seconds initializes without throwing
@@ -291,7 +288,6 @@ class AresAutoBaseTest {
             maxBoundaryOpMode.stop()
             assertNull(FtcBaseRobot.activeInstance)
             NT4Instance.defaultInstance.closeServer()
-            com.areslib.hardware.HardwareRegistry.clear()
         }
     }
 

@@ -1,6 +1,7 @@
 package com.areslib.sim.model
 
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
+import com.areslib.hardware.HardwareRegistry
 import com.areslib.simulation.SimulationFaultCommand
 import com.areslib.simulation.SimulationFaultKind
 import com.areslib.simulation.SimulationFaultTimeline
@@ -46,7 +47,7 @@ class SimulatedFtcFaultAdapterTest {
         val robot = MecanumRobotDouble(
             timeline(SimulationFaultKind.WRITE_REJECTED, "ftc.drive.fl", 100L, 200L),
         )
-        val io = MecanumHardwareIO(robot.hardwareMap)
+        val io = MecanumHardwareIO(robot.hardwareMap, HardwareRegistry())
 
         RobotClock.useMockTime(100L)
         io.setMotorPowers(0.5, 0.5, 0.5, 0.5)

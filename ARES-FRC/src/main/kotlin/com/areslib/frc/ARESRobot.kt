@@ -22,6 +22,7 @@ import com.areslib.frc.hardware.FRCIntakeHardwareIO
 import edu.wpi.first.math.VecBuilder
 
 import com.areslib.hardware.drive.SwerveHardwareIO
+import com.areslib.hardware.HardwareRegistry
 import com.areslib.hardware.vision.VisionIO
 
 import edu.wpi.first.wpilibj.TimedRobot
@@ -140,6 +141,7 @@ internal fun loadFrcFieldContract(bytes: ByteArray): FrcFieldContract? = FrcFiel
  */
 class ARESRobot : TimedRobot() {
 
+    private val hardwareRegistry = HardwareRegistry()
     private lateinit var robot: FrcSwerveRobot
     private var sim: Dyn4jSimulation? = null
     private var dashboardDriveInput: FrcDashboardDriveInput? = null
@@ -330,22 +332,22 @@ class ARESRobot : TimedRobot() {
         // Register each logical mechanism once for lifecycle/telemetry and attach its physical CAN
         // identity for dashboard topology discovery. Multi-motor mechanisms retain every member ID
         // in metadata while canId identifies the primary controller.
-        com.areslib.hardware.HardwareRegistry.registerDevice(
+        hardwareRegistry.registerDevice(
             "Flywheel", flywheelIO, marvinCanTopology("Flywheel", 9, 9, 10, 11, 12)
         )
-        com.areslib.hardware.HardwareRegistry.registerDevice(
+        hardwareRegistry.registerDevice(
             "Cowl", cowlIO, marvinCanTopology("Cowl", 13, 13)
         )
-        com.areslib.hardware.HardwareRegistry.registerDevice(
+        hardwareRegistry.registerDevice(
             "Intake", intakeIO, marvinCanTopology("Intake", 14, 14, 15)
         )
-        com.areslib.hardware.HardwareRegistry.registerDevice(
+        hardwareRegistry.registerDevice(
             "Feeder", feederIO, marvinCanTopology("Feeder", 20, 20)
         )
-        com.areslib.hardware.HardwareRegistry.registerDevice(
+        hardwareRegistry.registerDevice(
             "Floor", floorIO, marvinCanTopology("Floor", 16, 16)
         )
-        com.areslib.hardware.HardwareRegistry.registerDevice(
+        hardwareRegistry.registerDevice(
             "Climber", climberIO, marvinCanTopology("Climber", 19, 19)
         )
 
@@ -371,7 +373,8 @@ class ARESRobot : TimedRobot() {
             visionIO = visionIO,
             isSimulation = !isReal,
             initialState = initialState,
-            reducer = ::composedReducer
+            reducer = ::composedReducer,
+            hardwareRegistry = hardwareRegistry,
         )
 
         val tuningRuntime = com.areslib.frc.generated.drivebase.GeneratedAresTuningConfig.createRuntime()
@@ -404,7 +407,7 @@ class ARESRobot : TimedRobot() {
         )
 
         if (swerveIO != null) {
-            com.areslib.hardware.HardwareRegistry.registerDevice(
+            hardwareRegistry.registerDevice(
                 "Swerve",
                 swerveIO,
                 com.areslib.hardware.TopologyNode(
@@ -423,7 +426,7 @@ class ARESRobot : TimedRobot() {
             )
         }
         if (visionIO != null) {
-            com.areslib.hardware.HardwareRegistry.registerDevice(
+            hardwareRegistry.registerDevice(
                 "Vision",
                 visionIO,
                 com.areslib.hardware.TopologyNode(
@@ -464,7 +467,7 @@ class ARESRobot : TimedRobot() {
         applyMechanismSafetyPolicy("initialization")
 
         // Generated subsystem DSL participates in the same lifecycle as handwritten mechanisms.
-        GeneratedSubsystemRegistry.createAll(isReal).forEach(robot::registerSubsystem)
+        GeneratedSubsystemRegistry.createAll(isReal, hardwareRegistry).forEach(robot::registerSubsystem)
         // Generated superstructures coordinate only generated Redux targets and must run after
         // those generated subsystem lifecycles have been installed.
         GeneratedSuperstructureRegistry.createAll().forEach(robot::registerSubsystem)
@@ -913,7 +916,7 @@ class ARESRobot : TimedRobot() {
             if (::robot.isInitialized) {
                 robot.close()
             } else {
-                com.areslib.hardware.HardwareRegistry.closeAll()
+                hardwareRegistry.closeAll()
             }
         } catch (error: Throwable) {
             capture(error)

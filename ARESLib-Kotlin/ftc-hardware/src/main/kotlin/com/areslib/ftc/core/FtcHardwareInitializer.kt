@@ -69,7 +69,7 @@ class FtcHardwareInitializer(
     }
 
     /**
-     * Safely closes hardware IO resources and unregisters motor instances from the global registry.
+     * Safely closes the sensor IO resources owned by this initializer.
      */
     fun close() {
         pinpointIO?.close()
@@ -79,7 +79,6 @@ class FtcHardwareInitializer(
         try {
             (limelightIO as? AutoCloseable)?.close()
         } catch (_: Exception) {}
-        com.areslib.hardware.HardwareRegistry.closeAll()
         com.areslib.ftc.hardware.FtcMotor.unregisterAll()
     }
 }

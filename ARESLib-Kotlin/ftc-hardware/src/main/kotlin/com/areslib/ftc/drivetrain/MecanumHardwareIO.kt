@@ -48,6 +48,7 @@ import com.areslib.hardware.HardwareRegistry
  */
 class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     val hardwareMap: HardwareMap,
+    private val hardwareRegistry: HardwareRegistry,
     val flName: String = "fl",
     val frName: String = "fr",
     val rlName: String = "rl",
@@ -71,6 +72,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
 
     private val motorCluster = MecanumMotorCluster(
         hardwareMap = hardwareMap,
+        hardwareRegistry = hardwareRegistry,
         flName = flName,
         frName = frName,
         rlName = rlName,
@@ -145,8 +147,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     private val powerBuffer = DoubleArray(4)
 
     init {
-        HardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
-        HardwareRegistry.registerCloseable(this)
+        hardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
     }
 
     /**

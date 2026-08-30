@@ -4,7 +4,6 @@ import com.areslib.action.RobotAction
 import com.areslib.ftc.FtcBaseRobot
 import com.areslib.ftc.FtcMecanumRobot
 import com.areslib.ftc.FtcTeleopDriveFrame
-import com.areslib.hardware.HardwareRegistry
 import com.areslib.networktables.NT4Instance
 import com.areslib.sim.model.MecanumRobotDouble
 import com.areslib.sim.opmode.SimOpModeRunner
@@ -32,7 +31,6 @@ class ZeroCodeLifecycleEndToEndTest {
 
     @After
     fun cleanUp() {
-        HardwareRegistry.clear()
         NT4Instance.defaultInstance.closeServer()
         RobotClock.useSystemTime()
     }

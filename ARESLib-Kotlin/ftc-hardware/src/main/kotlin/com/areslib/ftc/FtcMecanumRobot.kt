@@ -199,6 +199,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** Low-level IO cluster managing physical drive motors ($FL, FR, RL, RR$). */
     val mecanumIO = MecanumHardwareIO(
         hardwareMap = hardwareMap,
+        hardwareRegistry = hardwareRegistry,
         flName = flName, frName = frName, rlName = rlName, rrName = rrName,
         maxWheelSpeedMetersPerSecond = maxWheelSpeedMetersPerSecond,
         flDirection = flDirection, frDirection = frDirection, rlDirection = rlDirection, rrDirection = rrDirection,
@@ -292,7 +293,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * Refreshes all physical hardware inputs and runs live tuning updates.
      */
     override fun updateHardwareInputs() {
-        com.areslib.hardware.HardwareRegistry.refreshAll()
+        hardwareRegistry.refreshAll()
         calibrationController.updateHardwareInputs(
             store = store,
             telemetryManager = telemetryManager,
@@ -387,7 +388,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         var firstFailure: Throwable? = null
         val safetySteps = arrayOf<() -> Unit>(
             { calibrationController.disableMode(telemetryManager, mecanumIO) },
-            { com.areslib.hardware.HardwareRegistry.safeAll() },
+            { hardwareRegistry.safeAll() },
             { stopAll() }
         )
         for (step in safetySteps) {
@@ -465,7 +466,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /** Stops all hardware devices registered in [com.areslib.hardware.HardwareRegistry]. */
-    fun stopAll() = com.areslib.hardware.HardwareRegistry.safeAll()
+    fun stopAll() = hardwareRegistry.safeAll()
     
     /** Alias for [stopAll]. */
     fun stop() = stopAll()

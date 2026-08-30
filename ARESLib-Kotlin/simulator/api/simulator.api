@@ -468,8 +468,8 @@ public final class com/areslib/sim/network/TelemetryPublisher {
 	public final fun init (Lcom/areslib/telemetry/NT4Telemetry;Lcom/areslib/telemetry/ARESNetworkStatePublisher;)V
 	public final fun pollWebFieldConfig ()Ljava/lang/String;
 	public final fun pollWebInputs (Lcom/areslib/sim/infra/SimGamepadManager;)Ljava/lang/String;
-	public final fun publish (Lcom/areslib/state/RobotState;Ljava/lang/Double;)V
-	public static synthetic fun publish$default (Lcom/areslib/sim/network/TelemetryPublisher;Lcom/areslib/state/RobotState;Ljava/lang/Double;ILjava/lang/Object;)V
+	public final fun publish (Lcom/areslib/state/RobotState;Lcom/areslib/hardware/HardwareRegistry;Ljava/lang/Double;)V
+	public static synthetic fun publish$default (Lcom/areslib/sim/network/TelemetryPublisher;Lcom/areslib/state/RobotState;Lcom/areslib/hardware/HardwareRegistry;Ljava/lang/Double;ILjava/lang/Object;)V
 	public final fun publishChassisSpeeds (Lcom/areslib/math/geometry/ChassisSpeeds;)V
 	public final fun publishDriveMode (ZZZ)V
 	public final fun publishGamePieceFrame ([DI)V

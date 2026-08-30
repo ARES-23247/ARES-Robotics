@@ -1377,7 +1377,7 @@ public final class com/areslib/hardware/CurrentSourceSampler {
 }
 
 public final class com/areslib/hardware/HardwareRegistry {
-	public static final field INSTANCE Lcom/areslib/hardware/HardwareRegistry;
+	public fun <init> ()V
 	public final fun buildTopology (Ljava/lang/String;)Lcom/areslib/hardware/HardwareTopology;
 	public final fun clear ()V
 	public final fun closeAll ()V
@@ -6924,9 +6924,10 @@ public final class com/areslib/state/VisionTuningState {
 
 public class com/areslib/subsystem/AresRobot {
 	public fun <init> ()V
-	public fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;)V
-	public synthetic fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;)V
+	public synthetic fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun closeSubsystems ()V
+	public final fun getHardwareRegistry ()Lcom/areslib/hardware/HardwareRegistry;
 	public final fun getRegisteredSubsystems ()Ljava/util/List;
 	public final fun getStore ()Lcom/areslib/Store;
 	public final fun readAllSensors (J)V

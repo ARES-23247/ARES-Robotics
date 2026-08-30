@@ -42,8 +42,8 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
     private val imuInputs = ImuInputs()
 
     init {
-        com.areslib.hardware.HardwareRegistry.registerMotor("revMotor", motor)
-        com.areslib.hardware.HardwareRegistry.registerDevice("IMU", imu)
+        hardwareRegistry.registerMotor("revMotor", motor)
+        hardwareRegistry.registerDevice("IMU", imu)
     }
 
     /**
@@ -51,7 +51,7 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
      */
     override fun updateHardwareInputs() {
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        com.areslib.hardware.HardwareRegistry.refreshAll()
+        hardwareRegistry.refreshAll()
         imu.updateInputs(imuInputs)
 
         store.dispatch(RobotAction.DriveHardwareUpdate(
@@ -90,7 +90,7 @@ class FtcTestbedRobot(hardwareMap: HardwareMap) : FtcBaseRobot(hardwareMap, pinp
      * Safely cuts power to all registered testbed motor devices.
      */
     override fun safeHardware() {
-        com.areslib.hardware.HardwareRegistry.safeAll()
+        hardwareRegistry.safeAll()
     }
 }
 
