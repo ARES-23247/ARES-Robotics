@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    api(project(":telemetry-schema"))
     api(project(":project-schema"))
     implementation(kotlin("stdlib"))
     implementation("com.google.code.gson:gson:2.14.0")

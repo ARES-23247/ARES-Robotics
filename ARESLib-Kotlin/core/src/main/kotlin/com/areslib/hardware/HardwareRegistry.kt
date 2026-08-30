@@ -1,7 +1,10 @@
 package com.areslib.hardware
 
 import com.areslib.telemetry.ITelemetry
-import com.google.gson.Gson
+import com.areslib.telemetry.schema.HardwareTopology
+import com.areslib.telemetry.schema.HardwareTopologyCodec
+import com.areslib.telemetry.schema.TopologyNode
+import com.areslib.telemetry.schema.TopologyNodeType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.Collections
@@ -23,7 +26,6 @@ import com.areslib.hardware.actuator.*
  */
 class HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
-    private val gson = Gson()
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
     private val devicesNamesList = CopyOnWriteArrayList<String>()
     private val devicesPrefixList = CopyOnWriteArrayList<String>()
@@ -294,7 +296,7 @@ class HardwareRegistry {
 
     /** Serializes the current topology snapshot as JSON for dashboard discovery. */
     fun getTopologyJson(robotId: String): String {
-        return gson.toJson(buildTopology(robotId))
+        return HardwareTopologyCodec.encode(buildTopology(robotId))
     }
 
     private fun getDeviceNodeType(name: String): TopologyNodeType {

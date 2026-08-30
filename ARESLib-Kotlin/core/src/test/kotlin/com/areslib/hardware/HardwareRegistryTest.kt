@@ -1,5 +1,9 @@
 package com.areslib.hardware
 
+import com.areslib.telemetry.schema.HARDWARE_TOPOLOGY_SCHEMA_VERSION
+import com.areslib.telemetry.schema.HardwareTopologyCodec
+import com.areslib.telemetry.schema.TopologyNodeType
+
 import com.areslib.telemetry.ITelemetry
 import com.areslib.hardware.actuator.MotorIO
 import org.junit.jupiter.api.Assertions.*
@@ -160,9 +164,9 @@ class HardwareRegistryTest {
         assertEquals(1, node.busPosition)
 
         val json = registry.getTopologyJson("ares_frc_robot")
-        assertTrue(json.contains("ares_frc_robot"))
-        assertTrue(json.contains("swerve_fl"))
-        assertTrue(json.contains("CAN_MOTOR_CONTROLLER"))
+        val decoded = HardwareTopologyCodec.decode(json)
+        assertEquals(topology, decoded)
+        assertEquals(HARDWARE_TOPOLOGY_SCHEMA_VERSION, decoded.schemaVersion)
     }
 
     class MockSyncPolledDevice : SyncPolledDevice {

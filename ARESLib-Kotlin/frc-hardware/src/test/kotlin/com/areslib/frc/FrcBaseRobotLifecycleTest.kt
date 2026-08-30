@@ -3,8 +3,8 @@ package com.areslib.frc
 import com.areslib.action.RobotAction
 import com.areslib.hardware.HardwareRegistry
 import com.areslib.hardware.LoggableDevice
-import com.areslib.hardware.TopologyNode
-import com.areslib.hardware.TopologyNodeType
+import com.areslib.telemetry.schema.TopologyNode
+import com.areslib.telemetry.schema.TopologyNodeType
 import com.areslib.state.DriveMode
 import com.areslib.state.RobotState
 import com.areslib.subsystem.Subsystem

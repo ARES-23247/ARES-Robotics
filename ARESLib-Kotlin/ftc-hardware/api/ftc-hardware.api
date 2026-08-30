@@ -1430,21 +1430,6 @@ public final class com/areslib/ftc/input/FtcInputFrameAdapter {
 	public static synthetic fun sampleInto$default (Lcom/areslib/ftc/input/FtcInputFrameAdapter;Lcom/areslib/input/InputFrame;JILjava/lang/Object;)V
 }
 
-public final class com/areslib/ftc/pathing/FtcMecanumPathingController {
-	public fun <init> (Lcom/areslib/subsystem/DriveSubsystem;)V
-	public final fun driveToPose (Lcom/areslib/Store;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/math/geometry/Pose2d;Z)V
-	public final fun driveToPose (Lcom/areslib/Store;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/math/geometry/Pose2d;ZZ)V
-	public static synthetic fun driveToPose$default (Lcom/areslib/ftc/pathing/FtcMecanumPathingController;Lcom/areslib/Store;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/math/geometry/Pose2d;ZZILjava/lang/Object;)V
-	public final fun driveToWaypoint (Lcom/areslib/Store;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/ftc/telemetry/FtcTelemetryManager;Ljava/lang/String;Z)V
-	public final fun driveToWaypoint (Lcom/areslib/Store;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/ftc/telemetry/FtcTelemetryManager;Ljava/lang/String;ZZ)V
-	public static synthetic fun driveToWaypoint$default (Lcom/areslib/ftc/pathing/FtcMecanumPathingController;Lcom/areslib/Store;Lcom/areslib/ftc/drivetrain/MecanumHardwareIO;Lcom/areslib/ftc/telemetry/FtcTelemetryManager;Ljava/lang/String;ZZILjava/lang/Object;)V
-	public final fun getActivePathfindTask ()Lcom/areslib/sequencer/PathfindToPoseTask;
-	public final fun getAutoBuilder ()Lcom/areslib/pathing/AutoBuilder;
-	public final fun getPathfindFollower ()Lcom/areslib/pathing/HolonomicPathFollower;
-	public final fun getWasPathfindRequested ()Z
-	public final fun updateTuning (Lcom/areslib/state/TuningState;)V
-}
-
 public final class com/areslib/ftc/photon/AresFtcRuntimeOptions {
 	public fun <init> ()V
 	public fun <init> (Lcom/areslib/ftc/photon/FtcHubCommandTransport;Z)V

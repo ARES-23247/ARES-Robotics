@@ -1,5 +1,7 @@
 package com.areslib.telemetry
 
+import com.areslib.telemetry.schema.HARDWARE_TOPOLOGY_TOPIC
+
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
@@ -228,7 +230,7 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
 
     /** Publishes hardware topology JSON, optionally joining it to the caller-owned frame. */
     fun publishTopology(topologyJson: String, flush: Boolean = true) {
-        telemetry.putString("Topology/HardwareMap", topologyJson)
+        telemetry.putString(HARDWARE_TOPOLOGY_TOPIC, topologyJson)
         if (flush) telemetry.update()
     }
 
