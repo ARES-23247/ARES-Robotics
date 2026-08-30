@@ -21,9 +21,6 @@ object TelemetryPublisher {
     private val ntInst = NetworkTableInstance.getDefault()
     private val statePublisher: StructPublisher<RobotState>
     private val targetPosePublisher = ntInst.getDoubleArrayTopic("ARES/TargetPose").publish()
-    private val estimatedPosePublisher = ntInst.getDoubleArrayTopic("ARES/EstimatedPose").publish(
-        edu.wpi.first.networktables.PubSubOption.periodic(0.01)
-    )
     private val truePosePublisher = ntInst.getDoubleArrayTopic("ARES/TruePose").publish(
         edu.wpi.first.networktables.PubSubOption.periodic(0.01)
     )
@@ -49,7 +46,6 @@ object TelemetryPublisher {
     private val redAlliancePub = ntInst.getBooleanTopic("Drive/RedAlliance").publish()
 
     private val targetPoseBuf = DoubleArray(3)
-    private val estimatedPoseBuf = DoubleArray(3)
     private val truePoseBuf = DoubleArray(3)
     private val simulatorPoseFrameBuf = DoubleArray(SIMULATOR_POSE_FRAME_VALUE_COUNT)
     private val driveInputAckBuf = DoubleArray(com.areslib.telemetry.SimInputBridge.ACK_VALUE_COUNT)
@@ -123,47 +119,6 @@ object TelemetryPublisher {
         targetPoseBuf[2] = headingRadians
         targetPosePublisher.set(targetPoseBuf)
         NT4Server.publishTopic("ARES/TargetPose", targetPoseBuf)
-        ntInst.flush()
-    }
-
-    /**
-     * Legacy compatibility helper for a simulator that has no Redux [RobotState] publisher.
-     *
-     * [com.areslib.sim.DesktopSimLauncher] must not call this method: [publish] already writes the
-     * real Redux EKF to `Drive/Pose_*` and the three `ARES/EstimatedPose` scalar topics. Calling
-     * both in one frame
-     * alternates EKF and physics truth under the same topic names, hides estimator behavior, and
-     * produces a moving ghost in clients that render the intermediate update.
-     */
-    @Deprecated(
-        message = "DesktopSimLauncher must publish the active RobotState; physics truth belongs on ARES/TruePose/*",
-        level = DeprecationLevel.ERROR,
-    )
-    fun publishEstimatedPose(pose: com.areslib.math.geometry.Pose2d) {
-        publishEstimatedPoseLegacy(pose.x, pose.y, pose.heading.radians)
-    }
-
-    /** Legacy primitive overload; see [publishEstimatedPose]. */
-    @Deprecated(
-        message = "DesktopSimLauncher must publish the active RobotState; physics truth belongs on ARES/TruePose/*",
-        level = DeprecationLevel.ERROR,
-    )
-    fun publishEstimatedPose(x: Double, y: Double, headingRadians: Double) {
-        publishEstimatedPoseLegacy(x, y, headingRadians)
-    }
-
-    private fun publishEstimatedPoseLegacy(x: Double, y: Double, headingRadians: Double) {
-        estimatedPoseBuf[0] = x
-        estimatedPoseBuf[1] = y
-        estimatedPoseBuf[2] = headingRadians
-        estimatedPosePublisher.set(estimatedPoseBuf)
-        NT4Server.publishTopic("ARES/EstimatedPose", estimatedPoseBuf)
-        NT4Server.publishTopic("ARES/EstimatedPose/0", x)
-        NT4Server.publishTopic("ARES/EstimatedPose/1", y)
-        NT4Server.publishTopic("ARES/EstimatedPose/2", headingRadians)
-        NT4Server.publishTopic("Drive/Pose_X", x)
-        NT4Server.publishTopic("Drive/Pose_Y", y)
-        NT4Server.publishTopic("Drive/Pose_Heading", headingRadians)
         ntInst.flush()
     }
 

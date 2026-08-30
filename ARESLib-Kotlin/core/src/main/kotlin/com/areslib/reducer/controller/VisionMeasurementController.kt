@@ -1,6 +1,5 @@
 package com.areslib.reducer.controller
 
-import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.hardware.vision.VisionOutlierFilter
 import com.areslib.math.estimation.PoseEstimator
@@ -198,18 +197,5 @@ internal class StoreVisionMeasurementProcessor {
         destination[6] = covariance.m20
         destination[7] = covariance.m21
         destination[8] = covariance.m22
-    }
-}
-
-/**
- * Compatibility entry point for one-shot callers. Robot and replay code should dispatch through
- * [Store] so delayed-vision history remains attached to one explicit runtime owner.
- */
-object VisionMeasurementController {
-    @Deprecated("Dispatch through Store so EKF history remains per-runtime and bounded")
-    fun handle(state: RobotState, action: RobotAction.VisionMeasurementsReceived): RobotState {
-        val store = Store(state)
-        store.dispatch(action)
-        return store.state
     }
 }

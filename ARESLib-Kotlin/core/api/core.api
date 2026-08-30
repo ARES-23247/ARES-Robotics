@@ -5106,11 +5106,6 @@ public final class com/areslib/reducer/VisionReducer {
 	public final fun reduce (Lcom/areslib/state/VisionState;Lcom/areslib/action/RobotAction;)Lcom/areslib/state/VisionState;
 }
 
-public final class com/areslib/reducer/controller/VisionMeasurementController {
-	public static final field INSTANCE Lcom/areslib/reducer/controller/VisionMeasurementController;
-	public final fun handle (Lcom/areslib/state/RobotState;Lcom/areslib/action/RobotAction$VisionMeasurementsReceived;)Lcom/areslib/state/RobotState;
-}
-
 public abstract interface annotation class com/areslib/routine/AresRoutineDsl : java/lang/annotation/Annotation {
 }
 

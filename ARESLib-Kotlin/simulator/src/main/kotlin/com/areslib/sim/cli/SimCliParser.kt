@@ -11,9 +11,6 @@ import java.net.URL
 data class SimCliArgs(
     val fieldConfigArg: String? = null,
     val headless: Boolean = false,
-    /** Binary-compatibility shim; live field updates use the canonical NT4 document topic. */
-    @Deprecated("The --watch option never reloaded fields; publish ARES/Input/fieldConfig instead")
-    val watchFieldConfig: Boolean = false,
     val opModeClassName: String? = null
 )
 
