@@ -15,7 +15,8 @@ internal const val FTC_ADB_TARGET = "192.168.43.1:5555"
 
 /**
  * Pure command/configuration boundary for robot-project child processes.
- * Process ownership, cancellation, output, and observable state remain in [ProcessManagerService].
+ * Process ownership, cancellation, output, and observable state remain in the dedicated build,
+ * deployment, and simulator process services.
  */
 internal class ProjectProcessCommandFactory(
     aresRepositoryUri: String?,

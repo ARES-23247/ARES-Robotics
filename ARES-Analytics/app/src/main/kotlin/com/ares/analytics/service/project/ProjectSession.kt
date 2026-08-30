@@ -1,6 +1,7 @@
 package com.ares.analytics.service.project
 
 import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.service.drivebase.DrivebaseDocument
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.tuning.RobotTuningProfile
@@ -621,8 +622,9 @@ interface ProjectProcessGateway {
     fun deploy(projectPath: String, league: League)
 }
 
-class ProcessManagerProjectGateway(
+class StudioProjectProcessGateway(
     private val processManager: ProcessManagerService,
+    private val simulator: SimulatorProcessService,
 ) : ProjectProcessGateway {
     override fun generate(projectPath: String, league: League) =
         processManager.generateAresProject(projectPath, league)
@@ -631,7 +633,7 @@ class ProcessManagerProjectGateway(
         processManager.runBuild(projectPath, league)
 
     override fun simulate(projectPath: String, product: SimulationProductId, simulatorCommand: String?) =
-        processManager.runSimulation(projectPath, product, simulatorCommand)
+        simulator.start(projectPath, product, simulatorCommand)
 
     override fun deploy(projectPath: String, league: League) =
         processManager.deployToRobot(projectPath, league)

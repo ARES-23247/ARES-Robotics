@@ -6,7 +6,7 @@ import com.ares.analytics.service.AcademyPracticeWorkflowService
 import com.ares.analytics.service.LearningProgressService
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.models.ForensicsResponse
@@ -41,7 +41,7 @@ internal data class WorkspaceRouteFeatureScope(
     val authoring: RobotAuthoringFeatureScope,
     val workspaceServices: WorkspaceServicesFeatureScope,
     val nt4: Nt4ClientService,
-    val processManager: ProcessManagerService,
+    val simulator: SimulatorProcessService,
 )
 
 internal data class WorkspaceRouteState(
@@ -240,7 +240,7 @@ internal fun WorkspaceRouteHost(
                 actions.selectTarget(TargetSelection.LOCAL_SIM)
                 actions.navigate(NavigationTarget.DASHBOARD)
             },
-            onStopSimulator = scope.processManager::killActiveSim,
+            onStopSimulator = scope.simulator::stop,
             onOpenGuidedRunReview = {
                 actions.reloadRuns()
                 actions.navigate(NavigationTarget.GUIDED_RUN_ANALYSIS)

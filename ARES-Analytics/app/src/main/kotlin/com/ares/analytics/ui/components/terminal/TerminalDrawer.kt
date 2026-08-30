@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.ProcessManagerService
 import com.ares.analytics.service.AdbService
+import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 fun TerminalDrawer(
     processManagerService: ProcessManagerService,
     adbService: AdbService,
+    simulatorProcessService: SimulatorProcessService,
     projectPath: String,
     league: League,
     isOpen: Boolean,
@@ -51,6 +53,12 @@ fun TerminalDrawer(
     LaunchedEffect(Unit) {
         launch {
             processManagerService.buildOutput.collect { line ->
+                buildLog.add(line)
+                if (buildLog.size > 1000) buildLog.removeAt(0)
+            }
+        }
+        launch {
+            simulatorProcessService.output.collect { line ->
                 buildLog.add(line)
                 if (buildLog.size > 1000) buildLog.removeAt(0)
             }

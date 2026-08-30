@@ -40,6 +40,7 @@ class ServiceRegistry {
     val databaseService by lazy { DatabaseService() }
     val environmentService by lazy { EnvironmentService() }
     val processManagerService by lazy { ProcessManagerService() }
+    val simulatorProcessService by lazy { SimulatorProcessService() }
     val adbService by lazy { AdbService() }
     val targetScannerService by lazy { TargetScannerService() }
     val keybindingParserService by lazy { KeybindingParserService() }
@@ -82,7 +83,10 @@ class ServiceRegistry {
     val projectExecutionCoordinator by lazy {
         com.ares.analytics.service.project.ProjectExecutionCoordinator(
             projectSession,
-            com.ares.analytics.service.project.ProcessManagerProjectGateway(processManagerService),
+            com.ares.analytics.service.project.StudioProjectProcessGateway(
+                processManagerService,
+                simulatorProcessService,
+            ),
         )
     }
     val projectGenerator by lazy {
@@ -255,6 +259,9 @@ class ServiceRegistry {
                 }
                 if (lazyFieldInitialized(::processManagerService)) {
                     processManagerService.shutdown()
+                }
+                if (lazyFieldInitialized(::simulatorProcessService)) {
+                    simulatorProcessService.shutdownAndJoin()
                 }
                 if (lazyFieldInitialized(::adbService)) {
                     adbService.shutdownAndJoin()

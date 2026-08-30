@@ -398,7 +398,7 @@ fun MainScreen(services: ServiceRegistry) {
                 )
             },
             removeProposal = { key ->
-                services.processManagerService.killActiveSim()
+                services.simulatorProcessService.stop()
                 tuningViewModel.onIntent(TuningIntent.RemoveProposal(key))
             },
         )
@@ -415,9 +415,10 @@ fun MainScreen(services: ServiceRegistry) {
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
     val processState by services.processManagerService.processState.collectAsState()
     val adbConnected by services.adbService.connected.collectAsState()
-    val isSimRunning = processState.simulatorRunning
-    val activeSimulationProjectPath = processState.activeSimulationProjectPath
-    val activeSimulationLeague = processState.activeSimulationLeague
+    val simulatorState by services.simulatorProcessService.state.collectAsState()
+    val isSimRunning = simulatorState.running
+    val activeSimulationProjectPath = simulatorState.projectPath
+    val activeSimulationLeague = simulatorState.league
     val isBuildRunning = processState.buildRunning
     val buildExecutionState = processState.buildExecution
     val deployExecutionState = processState.deployExecution
@@ -597,7 +598,7 @@ fun MainScreen(services: ServiceRegistry) {
                     replayEngineService = services.replayEngineService,
                 ),
             ),
-            processManager = services.processManagerService,
+            simulator = services.simulatorProcessService,
             tuningProfiles = services.tuningProfileRepository,
         )
     }
@@ -663,7 +664,7 @@ fun MainScreen(services: ServiceRegistry) {
                 oauth = services.oauthService,
             ),
             nt4 = services.nt4ClientService,
-            processManager = services.processManagerService,
+            simulator = services.simulatorProcessService,
         )
     }
     val academyEnvironment = AcademyRuntimeEnvironment(
@@ -740,7 +741,7 @@ fun MainScreen(services: ServiceRegistry) {
                         Key.K -> {
                             if (keyEvent.isShiftPressed) {
                                 services.processManagerService.killActiveBuild()
-                                services.processManagerService.killActiveSim()
+                                services.simulatorProcessService.stop()
                             } else {
                                 commandPaletteOpen = true
                             }
@@ -879,7 +880,7 @@ fun MainScreen(services: ServiceRegistry) {
                             onStopAll = {
                                 pendingSimulatorLaunch = false
                                 services.processManagerService.killActiveBuild()
-                                services.processManagerService.killActiveSim()
+                                services.simulatorProcessService.stop()
                             },
                             compact = compactShell,
                         )
@@ -993,6 +994,7 @@ fun MainScreen(services: ServiceRegistry) {
                 TerminalDrawer(
                     processManagerService = services.processManagerService,
                     adbService = services.adbService,
+                    simulatorProcessService = services.simulatorProcessService,
                     projectPath = currentConfig.projectPath,
                     league = currentConfig.league,
                     isOpen = isTerminalOpen,
@@ -1032,7 +1034,7 @@ fun MainScreen(services: ServiceRegistry) {
                 onOpenDashboard = {
                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
                 },
-                onStopSimulator = { services.processManagerService.killActiveSim() },
+                onStopSimulator = services.simulatorProcessService::stop,
                 onDismiss = { coachDrawerOpen = false },
             )
         }

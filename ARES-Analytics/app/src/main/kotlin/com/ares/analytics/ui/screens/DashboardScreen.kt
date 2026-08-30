@@ -57,7 +57,7 @@ import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 
 internal data class DashboardFeatureServices(
     val widgets: DashboardWidgetServices,
-    val processManager: ProcessManagerService,
+    val simulator: SimulatorProcessService,
     val tuningProfiles: TuningProfileRepository,
 )
 
@@ -96,8 +96,8 @@ internal fun DashboardScreen(
     var lastUpdateTimestampMs by remember { mutableStateOf(-1L) }
     var lastUpdateAgeMs by remember { mutableStateOf(-1L) }
 
-    val processState by services.processManager.processState.collectAsState()
-    val isSimRunning = processState.simulatorRunning
+    val simulatorState by services.simulator.state.collectAsState()
+    val isSimRunning = simulatorState.running
     val isLocalSimulator = isLocalSimulatorSelected
     val healthSnapshot by liveServices.dashboardHealthService.health.collectAsState()
     val frameRateHz = healthSnapshot.ingestFramesPerSecond

@@ -13,7 +13,6 @@ import com.areslib.codegen.SubsystemStarterReconciler
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.isAresGenerated
-import com.areslib.simulation.SimulationProductId
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -68,11 +67,8 @@ data class DeployExecutionState(
     val requestId: Long = 0L,
 )
 
-/** Canonical observable state for project builds, deployment, ADB, and simulation processes. */
+/** Canonical observable state for project builds and deployment. */
 data class ProjectProcessState(
-    val simulatorRunning: Boolean = false,
-    val activeSimulationProjectPath: String? = null,
-    val activeSimulationLeague: League? = null,
     val buildRunning: Boolean = false,
     val buildExecution: BuildExecutionState = BuildExecutionState(),
     val deployExecution: DeployExecutionState = DeployExecutionState(),
@@ -85,12 +81,6 @@ interface AresProjectGenerator {
     fun previewSubsystemStarters(projectPath: String, league: League): SubsystemStarterPlan
     fun applySubsystemStarters(projectPath: String, league: League, confirmationToken: String? = null)
 }
-
-private val SimulationProductId.league: League
-    get() = when (this) {
-        SimulationProductId.FTC_DESKTOP_OPMODE -> League.FTC
-        SimulationProductId.FRC_WPILIB_DESKTOP -> League.FRC
-    }
 
 private enum class BuildOperationKind { BUILD, GENERATION, TEST }
 
@@ -107,15 +97,13 @@ private data class SubsystemStarterInputs(
 )
 
 /**
- * Service managing external OS process lifecycle execution for Gradle builds, ADB logcat streams, and physics simulators.
+ * Service managing external OS process lifecycle execution for project generation, verification, and deployment.
  *
- * Spawns and monitors underlying system processes for compiling FTC/FRC codebases (`./gradlew assembleDebug`), streaming Android
- * Control Hub logs (`adb logcat`), and launching desktop robot physics simulators (`DesktopSimLauncher`).
+ * Spawns and monitors underlying system processes for compiling FTC/FRC codebases and installing
+ * verified robot packages.
  *
  * ### Process Management Tasks:
  * - **Gradle Compilation**: Invokes local Gradle wrapper (`gradlew.bat` or `./gradlew`) with real-time output line buffering.
- * - **ADB Daemon Monitoring**: Monitors ADB connection state to physical Control Hubs on port 5555.
- * - **Simulator Launcher**: Executes JVM desktop physics simulator processes with cancellation supervisor jobs.
  *
  * ### Thread Safety & Performance Guarantees:
  * Process standard output/error reading runs asynchronously on `Dispatchers.IO`. Utilizes `SharedFlow(replay = 200)` to buffer process logs without thread blocking.
@@ -168,13 +156,11 @@ class ProcessManagerService internal constructor(
 
     @Volatile
     private var activeBuildJob: Job? = null
-    private var activeSimJob: Job? = null
 
     @Volatile
     private var buildProcess: Process? = null
     private var activeBuildGeneration = 0L
     private var activeBuildKind: BuildOperationKind? = null
-    private var simProcess: Process? = null
 
     fun runBuild(projectPath: String, league: League) {
         enqueueBuildOperation(BuildOperationKind.BUILD) { generation ->
@@ -763,92 +749,6 @@ class ProcessManagerService internal constructor(
         }
     }
 
-    fun runSimulation(projectPath: String, product: SimulationProductId, simulatorCommand: String? = null) {
-        if (shuttingDown.get()) return
-        val league = product.league
-        val projectRoot = runCatching { requireSafeProjectRoot(projectPath) }.getOrElse { error ->
-            serviceScope.launch {
-                _buildOutput.emit("[SYSTEM] Simulation could not start: ${error.message ?: "choose a valid robot project"}")
-            }
-            return
-        }
-        killActiveSim()
-
-        val replacement = serviceScope.launch(start = CoroutineStart.LAZY) {
-            var ownedProcess: Process? = null
-            try {
-                _processState.update {
-                    it.copy(
-                        simulatorRunning = true,
-                        activeSimulationProjectPath = projectRoot.path,
-                        activeSimulationLeague = league,
-                    )
-                }
-                val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-                val userCmd = simulatorCommand?.takeIf { it.isNotBlank() }
-                val fatJarFile = File(projectRoot, "simulator/build/libs/simulator-all.jar")
-                val simulationJavaHome = if (league == League.FRC) {
-                    ManagedToolchainPaths.resolveFrcSimulationJavaHome()
-                } else {
-                    ManagedToolchainPaths.resolveJavaHome()
-                }
-                val javaExe = simulationJavaHome
-                    ?.let { File(it, "bin/${if (isWindows) "java.exe" else "java"}") }
-                    ?.takeIf(File::isFile)
-                    ?.path
-                    ?: File(System.getProperty("java.home"), "bin/${if (isWindows) "java.exe" else "java"}").path
-                val cmd = when {
-                    userCmd != null && isWindows -> listOf("cmd.exe", "/d", "/s", "/c", userCmd)
-                    userCmd != null -> listOf("sh", "-c", userCmd)
-                    product == SimulationProductId.FTC_DESKTOP_OPMODE && fatJarFile.exists() ->
-                        listOf(javaExe, "-jar", fatJarFile.absolutePath)
-                    else -> commandFactory.simulation(isWindows, product)
-                }
-
-                _buildOutput.emit("[SYSTEM] Starting Simulation: ${cmd.joinToString(" ")}")
-                val pb = commandFactory.configureEnvironment(ProcessBuilder(cmd)
-                    .directory(projectRoot)
-                    .redirectErrorStream(true))
-                if (league == League.FRC && simulationJavaHome != null) {
-                    ManagedToolchainPaths.configureJavaEnvironment(pb, simulationJavaHome)
-                    _buildOutput.emit("[SYSTEM] FRC simulator Java: ${simulationJavaHome.path}")
-                }
-                val proc = pb.start()
-                ownedProcess = proc
-                simProcess = proc
-                currentCoroutineContext().ensureActive()
-
-                proc.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                    while (true) {
-                        val line = reader.readLine() ?: break
-                        currentCoroutineContext().ensureActive()
-                        _buildOutput.emit(line)
-                    }
-                }
-                currentCoroutineContext().ensureActive()
-                val exitCode = runInterruptible(Dispatchers.IO) { proc.waitFor() }
-                _buildOutput.emit("[SYSTEM] Simulation finished with exit code $exitCode")
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (e: Exception) {
-                currentCoroutineContext().ensureActive()
-                _buildOutput.emit("[SYSTEM] Error running simulation: ${e.message}")
-            } finally {
-                ownedProcess?.let { if (it.isAlive) terminateProcessTree(it) }
-                if (simProcess === ownedProcess) simProcess = null
-                _processState.update {
-                    it.copy(
-                        simulatorRunning = false,
-                        activeSimulationProjectPath = null,
-                        activeSimulationLeague = null,
-                    )
-                }
-            }
-        }
-        activeSimJob = replacement
-        replacement.start()
-    }
-
     fun killActiveBuild() {
         runBlocking { killActiveBuildAndJoin() }
     }
@@ -903,10 +803,6 @@ class ProcessManagerService internal constructor(
         }
     }
 
-    fun killActiveSim() {
-        runBlocking { stopSimulationAndJoin() }
-    }
-
     fun shutdown() {
         runBlocking { shutdownAndJoin() }
     }
@@ -915,25 +811,7 @@ class ProcessManagerService internal constructor(
         shuttingDown.set(true)
         buildRequestId.incrementAndGet()
         buildLifecycleMutex.withLock { stopActiveBuildLocked() }
-        stopSimulationAndJoin()
         serviceScope.coroutineContext[Job]?.cancelAndJoin()
-    }
-
-    private suspend fun stopSimulationAndJoin() = withContext(NonCancellable) {
-        val process = simProcess
-        val job = activeSimJob
-        job?.cancel()
-        process?.let { terminateProcessTree(it) }
-        job?.cancelAndJoin()
-        if (simProcess === process) simProcess = null
-        if (activeSimJob === job) activeSimJob = null
-        _processState.update {
-            it.copy(
-                simulatorRunning = false,
-                activeSimulationProjectPath = null,
-                activeSimulationLeague = null,
-            )
-        }
     }
 
     private fun requireSafeProjectRoot(projectPath: String): File {
