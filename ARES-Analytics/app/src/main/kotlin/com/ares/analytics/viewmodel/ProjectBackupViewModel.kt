@@ -4,6 +4,7 @@ import com.ares.analytics.service.versioncontrol.GitHubConnectionState
 import com.ares.analytics.service.versioncontrol.GitHubBackupCatalog
 import com.ares.analytics.service.versioncontrol.ProjectBackupPlan
 import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncState
+import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryPlan
 import com.ares.analytics.service.versioncontrol.ProjectRestorePlan
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
@@ -60,6 +61,7 @@ sealed class ProjectBackupIntent {
 /** Coordinates review-first project history and optional private GitHub backup. */
 class ProjectBackupViewModel(
     private val service: ProjectVersionControlService,
+    private val archiveExporter: ProjectArchiveExporter,
     private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(ProjectBackupState(githubState = service.githubState.value))
@@ -348,7 +350,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val exported = service.exportProjectArchive(requireProjectPath(), destinationPath)
+                val exported = archiveExporter.export(requireProjectPath(), destinationPath)
                 val skipped = exported.skippedSensitivePaths.takeIf(List<String>::isNotEmpty)
                     ?.let { " Private files were intentionally skipped: ${it.joinToString()}." }
                     .orEmpty()

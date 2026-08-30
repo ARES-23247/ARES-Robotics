@@ -1,7 +1,6 @@
 package com.ares.analytics.service.versioncontrol
 
 import com.ares.analytics.BuildConfig
-import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.shared.AppJson
 import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
@@ -42,8 +41,6 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.Locale
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 enum class ProjectChangeKind { ADDED, MODIFIED, DELETED, RENAMED, CONFLICT }
 
@@ -73,13 +70,6 @@ data class ProjectRecoveryPlan(
 ) {
     val canRecover: Boolean get() = changes.isNotEmpty() && confirmationToken != null
 }
-
-data class ProjectArchiveResult(
-    val destinationPath: String,
-    val fileCount: Int,
-    val uncompressedBytes: Long,
-    val skippedSensitivePaths: List<String>,
-)
 
 enum class ProjectBackupAutoSyncStatus {
     DISABLED,
@@ -576,70 +566,6 @@ class ProjectVersionControlService internal constructor(
         autoSyncRequests.close()
         autoSyncJob.cancelAndJoin()
         autoSyncScope.cancel()
-    }
-
-    /** Exports a portable, credential-free project archive without Git metadata or build caches. */
-    suspend fun exportProjectArchive(
-        projectPath: String,
-        destinationPath: String,
-    ): ProjectArchiveResult = withContext(Dispatchers.IO) {
-        val root = requireProjectRoot(projectPath)
-        require(destinationPath.isNotBlank()) { "Choose where to save the project archive." }
-        val destination = File(destinationPath).canonicalFile
-        require(!destination.toPath().startsWith(root.toPath())) {
-            "Save the project archive outside the robot project folder."
-        }
-        require(!destination.exists()) {
-            "An archive already exists at that location. Choose a new name so ARES does not replace it."
-        }
-        val included = mutableListOf<Pair<File, String>>()
-        val skippedSensitive = mutableListOf<String>()
-        var totalBytes = 0L
-        root.walkTopDown().onEnter { directory ->
-            require(directory == root || !java.nio.file.Files.isSymbolicLink(directory.toPath())) {
-                "The project contains an unsupported directory link (${directory.relativeTo(root).invariantSeparatorsPath}). Remove it before exporting."
-            }
-            val relative = directory.relativeTo(root).invariantSeparatorsPath
-            relative.isEmpty() || !isExcludedArchivePath(relative)
-        }.forEach { file ->
-            if (file == root || file.isDirectory) return@forEach
-            val relative = file.relativeTo(root).invariantSeparatorsPath
-            if (isExcludedArchivePath(relative)) return@forEach
-            if (isSensitiveProjectPath(relative)) {
-                skippedSensitive += relative
-                return@forEach
-            }
-            require(!java.nio.file.Files.isSymbolicLink(file.toPath())) {
-                "The project contains an unsupported link ($relative). Remove it before exporting."
-            }
-            require(file.isFile && file.length() <= MAX_ARCHIVE_FILE_BYTES) {
-                "$relative is too large for a portable project archive."
-            }
-            totalBytes = Math.addExact(totalBytes, file.length())
-            require(totalBytes <= MAX_ARCHIVE_PROJECT_BYTES) {
-                "The project is too large for one portable archive. Remove build outputs or large recordings first."
-            }
-            included += file to relative
-        }
-        require(included.any { it.second == ".ares/project.json" }) {
-            "The project archive is missing its canonical ARES project identity."
-        }
-        writeFileAtomically(destination) { temporary ->
-            ZipOutputStream(temporary.outputStream().buffered()).use { zip ->
-                included.sortedBy { it.second }.forEach { (file, relative) ->
-                    val entry = ZipEntry(relative).apply { time = 0L }
-                    zip.putNextEntry(entry)
-                    file.inputStream().buffered().use { input -> input.copyTo(zip) }
-                    zip.closeEntry()
-                }
-            }
-        }
-        ProjectArchiveResult(
-            destinationPath = destination.path,
-            fileCount = included.size,
-            uncompressedBytes = totalBytes,
-            skippedSensitivePaths = skippedSensitive.distinct().sorted(),
-        )
     }
 
     suspend fun disconnectBackupDestination(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
@@ -1316,8 +1242,6 @@ class ProjectVersionControlService internal constructor(
         const val MAX_REVIEWED_FILE_BYTES = 20L * 1024L * 1024L
         const val MAX_REVIEWED_CHANGE_BYTES = 100L * 1024L * 1024L
         const val MAX_RESTORED_PROJECT_BYTES = 500L * 1024L * 1024L
-        const val MAX_ARCHIVE_FILE_BYTES = 100L * 1024L * 1024L
-        const val MAX_ARCHIVE_PROJECT_BYTES = 1024L * 1024L * 1024L
         private const val MAX_VISIBLE_VERSIONS = 20
         private const val MAX_VISIBLE_RECOVERY_POINTS = 10
         private const val MINIMUM_DEVICE_POLL_SECONDS = 5L

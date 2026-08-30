@@ -4,6 +4,7 @@ import com.ares.analytics.shared.League
 import com.ares.analytics.service.versioncontrol.DefaultGitHubProjectApi
 import com.ares.analytics.service.versioncontrol.ProjectBackupCredentialStore
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
+import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -106,7 +107,7 @@ class OfficialProjectTemplateIntegrationTest {
             assertTrue(requireNotNull(checkpoint).changes.isEmpty())
             val archive = File(output, "${league.name.lowercase()}-portable.zip")
             if (archive.exists()) archive.delete()
-            history.exportProjectArchive(result.destination.path, archive.path)
+            ProjectArchiveExporter().export(result.destination.path, archive.path)
             ZipFile(archive).use { zip ->
                 val names = zip.entries().asSequence().map { it.name }.toSet()
                 assertTrue(".ares/acceptance-checkpoint.txt" in names)

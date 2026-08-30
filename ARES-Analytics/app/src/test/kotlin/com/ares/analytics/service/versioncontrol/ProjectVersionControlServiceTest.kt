@@ -14,7 +14,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.zip.ZipFile
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -425,40 +424,6 @@ class ProjectVersionControlServiceTest {
             assertEquals(2, safetyRefs.size)
             assertTrue(safetyRefs.any { it.objectId.name == originalCommit })
         }
-    }
-
-    @Test
-    fun `portable archive excludes credentials git metadata and build caches`() = runBlocking {
-        val root = cleanCommittedProject("archive-project")
-        File(root, "TeamCode/src/main/kotlin").mkdirs()
-        File(root, "TeamCode/src/main/kotlin/Robot.kt").writeText("class Robot")
-        File(root, "TeamCode/build/classes").mkdirs()
-        File(root, "TeamCode/build/classes/generated.class").writeBytes(byteArrayOf(1, 2, 3))
-        File(root, "credentials.json").writeText("never export")
-        val destination = temporaryDirectory.resolve("robot-export.aresproject.zip").toFile()
-
-        val result = localOnlyService().exportProjectArchive(root.path, destination.path)
-
-        assertEquals(destination.canonicalPath, result.destinationPath)
-        assertEquals(listOf("credentials.json"), result.skippedSensitivePaths)
-        ZipFile(destination).use { zip ->
-            val entries = zip.entries().asSequence().map { it.name }.toSet()
-            assertTrue(".ares/project.json" in entries)
-            assertTrue("TeamCode/src/main/kotlin/Robot.kt" in entries)
-            assertFalse(entries.any { it.startsWith(".git/") })
-            assertFalse(entries.any { "/build/" in it || it.startsWith("build/") })
-            assertFalse("credentials.json" in entries)
-        }
-    }
-
-    @Test
-    fun `portable archive must be saved outside the robot project`() = runBlocking {
-        val root = canonicalProject("archive-destination-project")
-        val failure = assertFailsWith<IllegalArgumentException> {
-            localOnlyService().exportProjectArchive(root.path, File(root, "backup.zip").path)
-        }
-        assertContains(failure.message.orEmpty(), "outside the robot project")
-        assertFalse(File(root, "backup.zip").exists())
     }
 
     @Test

@@ -65,6 +65,7 @@ class ServiceRegistry {
     val projectIdeLauncher by lazy { com.ares.analytics.service.project.ProjectIdeLauncher() }
     val managedToolchainService by lazy { ManagedToolchainService() }
     val projectVersionControlService by lazy { com.ares.analytics.service.versioncontrol.ProjectVersionControlService() }
+    val projectArchiveExporter by lazy { com.ares.analytics.service.versioncontrol.ProjectArchiveExporter() }
     val hardwareSetupService by lazy { com.ares.analytics.service.hardware.HardwareSetupService() }
     val integrationSettingsService by lazy { com.ares.analytics.service.integration.IntegrationSettingsService() }
     val tuningProposalInbox by lazy { com.ares.analytics.service.tuning.TuningProposalInbox() }

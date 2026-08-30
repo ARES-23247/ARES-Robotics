@@ -356,7 +356,11 @@ fun MainScreen(services: ServiceRegistry) {
         )
     }
     val projectBackupViewModel = remember(currentConfig.projectPath) {
-        ProjectBackupViewModel(services.projectVersionControlService, scope)
+        ProjectBackupViewModel(
+            service = services.projectVersionControlService,
+            archiveExporter = services.projectArchiveExporter,
+            scope = scope,
+        )
     }
     val integrationCenterViewModel = remember {
         IntegrationCenterViewModel(services.integrationCenterService, scope)
