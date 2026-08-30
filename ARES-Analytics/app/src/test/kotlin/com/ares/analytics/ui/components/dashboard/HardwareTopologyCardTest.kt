@@ -2,9 +2,9 @@ package com.ares.analytics.ui.components.dashboard
 
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.shared.models.HardwareTopology
-import com.ares.analytics.shared.models.TopologyNode
-import com.ares.analytics.shared.models.TopologyNodeType
+import com.areslib.telemetry.schema.HardwareTopology
+import com.areslib.telemetry.schema.TopologyNode
+import com.areslib.telemetry.schema.TopologyNodeType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString

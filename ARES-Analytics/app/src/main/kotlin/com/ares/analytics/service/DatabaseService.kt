@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
+import com.areslib.telemetry.schema.HardwareTopology
 import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.service.db.*
 import com.ares.analytics.service.integration.IntegrationRepository
