@@ -101,6 +101,38 @@ class ProjectModelArchitectureTest {
             "gamepad1State.collectAsState()" in routeHost && "gamepad2State.collectAsState()" in routeHost,
             "Controller state must be collected in the visible authoring route host.",
         )
+        assertTrue(
+            "scope.controls.state.collectAsState()" in routeHost,
+            "Controls state must be collected only while a controls-aware authoring route is visible.",
+        )
+    }
+
+    @Test
+    fun `academy evidence subscriptions stay outside the main shell`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
+        val runtimeHost = File(sourceRoot, "ui/screens/AcademyRuntimeHost.kt").readText()
+
+        val forbiddenRootSubscriptions = listOf(
+            "controlsEditorViewModel.state.collectAsState()",
+            "subsystemGeneratorViewModel.state.collectAsState()",
+            "tuningViewModel.state.collectAsState()",
+            "superstructureStudioViewModel.state.collectAsState()",
+            "pathPlannerViewModel.state.collectAsState()",
+            "guidedRunAnalysisViewModel.state.collectAsState()",
+        ).filter(mainScreen::contains)
+        assertTrue(
+            forbiddenRootSubscriptions.isEmpty(),
+            "Hidden authoring evidence must not invalidate MainScreen: ${forbiddenRootSubscriptions.joinToString()}",
+        )
+        assertTrue(
+            "AcademyRuntimeFeatureScope" in runtimeHost && "ServiceRegistry" !in runtimeHost,
+            "Academy evidence must be collected behind a typed, feature-owned boundary.",
+        )
     }
 
     @Test

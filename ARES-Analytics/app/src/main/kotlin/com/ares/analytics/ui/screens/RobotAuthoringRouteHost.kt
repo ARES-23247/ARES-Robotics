@@ -11,7 +11,6 @@ import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
 import com.ares.analytics.viewmodel.PathPlannerViewModel
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
-import com.ares.analytics.viewmodel.controls.ControlsEditorState
 import com.ares.analytics.viewmodel.controls.ControlsEditorViewModel
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderViewModel
 import com.ares.analytics.viewmodel.hardware.HardwareSetupViewModel
@@ -27,7 +26,6 @@ internal data class RobotAuthoringFeatureScope(
     val superstructure: SuperstructureStudioViewModel,
     val pathPlanner: PathPlannerViewModel,
     val controls: ControlsEditorViewModel,
-    val controlsState: ControlsEditorState,
     val hardwareSetup: HardwareSetupViewModel,
     val projectIdentity: ProjectIdentityViewModel,
     val gamepads: GamepadService,
@@ -54,6 +52,7 @@ internal fun RobotAuthoringRouteHost(
     actions: RobotAuthoringRouteActions,
 ): Boolean = when (route) {
     NavigationTarget.ROBOT_STUDIO -> {
+        val controlsState by scope.controls.state.collectAsState()
         val gamepad1State by scope.gamepads.gamepad1State.collectAsState()
         val gamepad2State by scope.gamepads.gamepad2State.collectAsState()
         RobotStudioScreen(
@@ -63,7 +62,7 @@ internal fun RobotAuthoringRouteHost(
             superstructureViewModel = scope.superstructure,
             pathPlannerViewModel = scope.pathPlanner,
             controlsViewModel = scope.controls,
-            controlsState = scope.controlsState,
+            controlsState = controlsState,
             gamepad1State = gamepad1State,
             gamepad2State = gamepad2State,
             hardwareSetupViewModel = scope.hardwareSetup,
@@ -78,10 +77,11 @@ internal fun RobotAuthoringRouteHost(
     }
 
     NavigationTarget.CONTROLS -> {
+        val controlsState by scope.controls.state.collectAsState()
         val gamepad1State by scope.gamepads.gamepad1State.collectAsState()
         val gamepad2State by scope.gamepads.gamepad2State.collectAsState()
         ControlsEditorPanel(
-            state = scope.controlsState,
+            state = controlsState,
             viewModel = scope.controls,
             gamepad1State = gamepad1State,
             gamepad2State = gamepad2State,

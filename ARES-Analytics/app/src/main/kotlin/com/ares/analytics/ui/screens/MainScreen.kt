@@ -33,13 +33,6 @@ import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.CommandPalette
 import com.ares.analytics.ui.components.LearningCoachDrawer
-import com.ares.analytics.ui.help.toAcademySubsystemSnapshot
-import com.ares.analytics.ui.help.toAcademyControlsSnapshot
-import com.ares.analytics.ui.help.toAcademyTuningSnapshot
-import com.ares.analytics.ui.help.toAcademySuperstructureSnapshot
-import com.ares.analytics.ui.help.toAcademyAutonomousSnapshot
-import com.ares.analytics.ui.help.toAcademyRunAnalysisSnapshot
-import com.ares.analytics.ui.help.toAcademyGraduationSnapshot
 import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.QuickNavigationMenu
 import com.ares.analytics.ui.components.SectionNavigationBar
@@ -56,7 +49,6 @@ import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.ui.components.dashboard.localSimulatorLaunchRequest
 import com.ares.analytics.ui.components.terminal.TerminalDrawer
-import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
 import com.ares.analytics.ui.help.LearningCatalog
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.*
@@ -297,7 +289,6 @@ fun MainScreen(services: ServiceRegistry) {
             projectSession = services.projectSession,
         )
     }
-    val controlsEditorState by controlsEditorViewModel.state.collectAsState()
     DisposableEffect(controlsEditorViewModel) {
         onDispose { controlsEditorViewModel.close() }
     }
@@ -328,8 +319,6 @@ fun MainScreen(services: ServiceRegistry) {
     DisposableEffect(subsystemGeneratorViewModel) {
         onDispose { subsystemGeneratorViewModel.close() }
     }
-    val tuningState by tuningViewModel.state.collectAsState()
-    val subsystemGeneratorState by subsystemGeneratorViewModel.state.collectAsState()
     val drivebaseBuilderViewModel = remember(currentConfig.projectPath, currentConfig.robotId, currentConfig.league) {
         DrivebaseBuilderViewModel(
             projectPath = currentConfig.projectPath,
@@ -425,9 +414,6 @@ fun MainScreen(services: ServiceRegistry) {
     var dashboardMissionSnapshot by remember(currentConfig.id) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
     }
-    val superstructureStudioState by superstructureStudioViewModel.state.collectAsState()
-    val pathPlannerState by pathPlannerViewModel.state.collectAsState()
-    val guidedRunAnalysisState by guidedRunAnalysisViewModel.state.collectAsState()
     val robotStudioState by robotStudioViewModel.state.collectAsState()
     val primarySessionId = dashboardState.primarySessionId
     val compareSessionId = dashboardState.compareSessionId
@@ -575,25 +561,39 @@ fun MainScreen(services: ServiceRegistry) {
             robotStudioViewModel.refresh()
         }
     }
-    val academyRuntime = AcademyRuntimeSnapshot(
-        isAvailable = true,
+    val academyFeatureScope = remember(
+        subsystemGeneratorViewModel,
+        controlsEditorViewModel,
+        tuningViewModel,
+        superstructureStudioViewModel,
+        pathPlannerViewModel,
+        guidedRunAnalysisViewModel,
+        robotStudioViewModel,
+    ) {
+        AcademyRuntimeFeatureScope(
+            subsystem = subsystemGeneratorViewModel,
+            controls = controlsEditorViewModel,
+            tuning = tuningViewModel,
+            superstructure = superstructureStudioViewModel,
+            autonomous = pathPlannerViewModel,
+            runAnalysis = guidedRunAnalysisViewModel,
+            graduation = robotStudioViewModel,
+        )
+    }
+    val academyEnvironment = AcademyRuntimeEnvironment(
         isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
         isSimulatorRunning = isSimRunning,
         isLocalSimulatorOnline = isLocalSimOnline,
         isNt4Connected = isNt4Connected,
-        subsystem = subsystemGeneratorState.toAcademySubsystemSnapshot(),
-        controls = controlsEditorState.toAcademyControlsSnapshot(),
-        tuning = tuningState.toAcademyTuningSnapshot(),
-        superstructure = superstructureStudioState.toAcademySuperstructureSnapshot(),
-        autonomous = pathPlannerState.toAcademyAutonomousSnapshot(),
-        runAnalysis = guidedRunAnalysisState.toAcademyRunAnalysisSnapshot(),
-        graduation = robotStudioState.toAcademyGraduationSnapshot(),
     )
 
-    // Lesson evidence keeps updating while the slide-out coach is closed.
-    LaunchedEffect(activeCoachLessonId, academyRuntime) {
-        if (activeCoachLessonId != null) {
-            services.learningProgressService.observeRuntime(academyRuntime)
+    // An active lesson continues observing evidence while its drawer is closed, without making
+    // the entire shell subscribe to every authoring feature.
+    if (activeCoachLessonId != null && activeNav != NavigationTarget.ACADEMY) {
+        AcademyRuntimeHost(academyFeatureScope, academyEnvironment) { runtime ->
+            LaunchedEffect(activeCoachLessonId, runtime) {
+                services.learningProgressService.observeRuntime(runtime)
+            }
         }
     }
 
@@ -1066,47 +1066,52 @@ fun MainScreen(services: ServiceRegistry) {
                                 league = currentConfig.league,
                                 projectPath = currentConfig.projectPath
                             )
-                            NavigationTarget.ACADEMY -> AcademyScreen(
-                                progressService = services.learningProgressService,
-                                onOpenScreen = { destination ->
-                                    coachDrawerOpen = true
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
-                                },
-                                onStartSimulator = {
-                                    coachDrawerOpen = true
-                                    startSimulatorProcess()
-                                },
-                                onCreatePracticeProject = {
-                                    requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
-                                    mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                },
-                                onInstallAndImportPracticeRuns = {
-                                    val result = services.academyPracticeWorkflowService.installAndImport(
-                                        projectRoot = File(currentConfig.projectPath),
-                                        identity = com.ares.analytics.service.AcademyPracticeIdentity(
-                                            teamId = currentConfig.teamId,
-                                            seasonId = currentConfig.seasonId,
-                                            robotId = currentConfig.robotId,
-                                        ),
-                                    )
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    result
-                                },
-                                onOpenImports = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
-                                },
-                                onOpenRunReview = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.GUIDED_RUN_ANALYSIS))
-                                },
-                                projectPath = currentConfig.projectPath.orEmpty(),
-                                projectLabel = listOf(currentConfig.robotName, currentConfig.teamId)
-                                    .filter(String::isNotBlank)
-                                    .joinToString(" · "),
-                                initialLessonId = requestedLessonId,
-                                initialGlossaryTerm = requestedGlossaryTerm,
-                                runtime = academyRuntime,
-                            )
+                            NavigationTarget.ACADEMY -> AcademyRuntimeHost(
+                                academyFeatureScope,
+                                academyEnvironment,
+                            ) { runtime ->
+                                AcademyScreen(
+                                    progressService = services.learningProgressService,
+                                    onOpenScreen = { destination ->
+                                        coachDrawerOpen = true
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
+                                    },
+                                    onStartSimulator = {
+                                        coachDrawerOpen = true
+                                        startSimulatorProcess()
+                                    },
+                                    onCreatePracticeProject = {
+                                        requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                        mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                                    },
+                                    onInstallAndImportPracticeRuns = {
+                                        val result = services.academyPracticeWorkflowService.installAndImport(
+                                            projectRoot = File(currentConfig.projectPath),
+                                            identity = com.ares.analytics.service.AcademyPracticeIdentity(
+                                                teamId = currentConfig.teamId,
+                                                seasonId = currentConfig.seasonId,
+                                                robotId = currentConfig.robotId,
+                                            ),
+                                        )
+                                        mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
+                                        result
+                                    },
+                                    onOpenImports = {
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
+                                    },
+                                    onOpenRunReview = {
+                                        mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.GUIDED_RUN_ANALYSIS))
+                                    },
+                                    projectPath = currentConfig.projectPath.orEmpty(),
+                                    projectLabel = listOf(currentConfig.robotName, currentConfig.teamId)
+                                        .filter(String::isNotBlank)
+                                        .joinToString(" · "),
+                                    initialLessonId = requestedLessonId,
+                                    initialGlossaryTerm = requestedGlossaryTerm,
+                                    runtime = runtime,
+                                )
+                            }
                             NavigationTarget.KDOC_VIEWER -> KDocViewerScreen()
                             NavigationTarget.PIT_DIAGNOSTICS -> HardwareSelfTestWizard(nt4ClientService = services.nt4ClientService)
                             NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen()
@@ -1169,7 +1174,6 @@ fun MainScreen(services: ServiceRegistry) {
                                     superstructure = superstructureStudioViewModel,
                                     pathPlanner = pathPlannerViewModel,
                                     controls = controlsEditorViewModel,
-                                    controlsState = controlsEditorState,
                                     hardwareSetup = hardwareSetupViewModel,
                                     projectIdentity = projectIdentityViewModel,
                                     gamepads = services.gamepadService,
