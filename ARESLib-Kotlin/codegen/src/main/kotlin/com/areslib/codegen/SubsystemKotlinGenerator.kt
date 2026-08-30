@@ -2,7 +2,6 @@ package com.areslib.codegen
 
 import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
-import com.areslib.subsystem.SubsystemCapabilityOperation
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemFieldRole
@@ -27,38 +26,6 @@ import com.areslib.subsystem.subsystemNeutralRecoveryActionKey
 import com.areslib.subsystem.subsystemTargetActionKey
 import com.areslib.subsystem.subsystemTargetCapabilities
 import com.areslib.subsystem.validateSubsystemDocument
-import com.areslib.subsystem.validateSubsystemDocuments
-
-enum class GeneratedSubsystemSourceSet { MAIN, TEST }
-
-enum class SubsystemArtifactGroup { DOMAIN, CONTROL, HARDWARE, SIMULATION, GENERATED_PLUMBING, VERIFICATION }
-enum class SubsystemArtifactOwnership { USER_OWNED, GENERATED_STARTER, GENERATED_DO_NOT_EDIT }
-enum class SubsystemArtifact {
-    DEFINITION,
-    STATE,
-    IO_CONTRACT,
-    CONTROLLER,
-    SUBSYSTEM_LIFECYCLE,
-    PLATFORM_IO,
-    MOCK_IO,
-    CONTRACT_TEST,
-    REGISTRY,
-}
-
-data class GeneratedSubsystemFile(
-    val relativePath: String,
-    val content: String,
-    val sourceSet: GeneratedSubsystemSourceSet = GeneratedSubsystemSourceSet.MAIN,
-    val artifact: SubsystemArtifact,
-    val group: SubsystemArtifactGroup,
-    val ownership: SubsystemArtifactOwnership,
-    val description: String,
-)
-
-data class SubsystemKotlinCodegenTarget(
-    val platform: SubsystemPlatform,
-    val basePackage: String,
-)
 
 /** Deterministic Kotlin source generator shared by Gradle, Analytics preview, and tests. */
 object SubsystemKotlinGenerator {
@@ -81,9 +48,9 @@ object SubsystemKotlinGenerator {
         val files = mutableListOf(
             generated("$directory/${document.kotlinTypeName}Definition.kt", definitionSource(document, pkg), SubsystemArtifact.DEFINITION,
                 SubsystemArtifactGroup.GENERATED_PLUMBING, "Declarative DSL mirror used for review and content hashing."),
-            implementationSource(document, "$directory/${document.kotlinTypeName}State.kt", stateSource(document, pkg), SubsystemArtifact.STATE,
+            implementationSource(document, "$directory/${document.kotlinTypeName}State.kt", SubsystemContractRenderer.stateSource(document, pkg), SubsystemArtifact.STATE,
                 SubsystemArtifactGroup.DOMAIN, "Immutable Redux state and safety observations owned by the subsystem."),
-            implementationSource(document, "$directory/${document.kotlinTypeName}IO.kt", ioSource(document, pkg), SubsystemArtifact.IO_CONTRACT,
+            implementationSource(document, "$directory/${document.kotlinTypeName}IO.kt", SubsystemContractRenderer.ioSource(document, pkg), SubsystemArtifact.IO_CONTRACT,
                 SubsystemArtifactGroup.HARDWARE, "Cached, fail-closed boundary shared by physical and simulated adapters."),
             implementationSource(document, "$directory/${document.kotlinTypeName}Controller.kt", controllerSource(document, pkg), SubsystemArtifact.CONTROLLER,
                 SubsystemArtifactGroup.CONTROL, "Allocation-free policy that converts immutable state into safe IO commands."),
@@ -116,130 +83,7 @@ object SubsystemKotlinGenerator {
         documents: List<SubsystemDocument>,
         target: SubsystemKotlinCodegenTarget,
     ): GeneratedSubsystemFile {
-        val projectIssues = validateSubsystemDocuments(documents)
-        require(projectIssues.isEmpty()) {
-            projectIssues.joinToString("; ") { "${it.path}: ${it.message}" }
-        }
-        documents.forEach { document ->
-            require(document.platform == target.platform) {
-                "Subsystem '${document.documentId}' targets ${document.platform}, not ${target.platform}"
-            }
-            require(validateSubsystemDocument(document).isEmpty()) { "Subsystem '${document.documentId}' is invalid" }
-        }
-        val generatedDocuments = documents.filter { it.implementation.kind.isAresGenerated() }
-        val handAuthoredDocuments = documents.filter {
-            it.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED
-        }
-        val imports = generatedDocuments.sortedBy { it.documentId }.flatMap { document ->
-            val segment = document.documentId.replace('-', '_')
-            val pkg = "${target.basePackage}.$segment"
-            buildList {
-                add("$pkg.${document.kotlinTypeName}Subsystem")
-                add("$pkg.${document.kotlinTypeName}State")
-                add("$pkg.${platformPrefix(document.platform)}${document.kotlinTypeName}IO")
-                if (document.generateMockIo) add("$pkg.Mock${document.kotlinTypeName}IO")
-            }
-        }.distinct().sorted()
-        val factories = generatedDocuments.sortedBy { it.documentId }.joinToString("\n") { document ->
-            val factory = when (target.platform) {
-                SubsystemPlatform.FTC ->
-                    "${document.kotlinTypeName}Subsystem(Ftc${document.kotlinTypeName}IO(hardwareMap))"
-                SubsystemPlatform.FRC -> if (document.generateMockIo) {
-                    "${document.kotlinTypeName}Subsystem(if (isReal) Frc${document.kotlinTypeName}IO() else Mock${document.kotlinTypeName}IO())"
-                } else {
-                    "if (isReal) ${document.kotlinTypeName}Subsystem(Frc${document.kotlinTypeName}IO()) else null"
-                }
-            }
-            "    GeneratedSubsystemRegistrySupport.install(this, ${document.documentId.quoted()}, ${document.requiredAtStartup}) { $factory }"
-        }
-        val actionCases = generatedDocuments.sortedBy { it.documentId }.flatMapIndexed { resourceIndex, document ->
-            val resourceExpression = "TaskResources.generatedSubsystem($resourceIndex)"
-            subsystemTargetCapabilities(listOf(document)).map { capability ->
-                when (capability.operation) {
-                    SubsystemCapabilityOperation.SET_FIELD ->
-                        registryActionCase(document, requireNotNull(document.field(capability.fieldId)), resourceExpression)
-                    SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_FORWARD ->
-                        registryIndicatorCycleActionCase(
-                            document,
-                            requireNotNull(document.field(capability.fieldId)),
-                            resourceExpression,
-                            forward = true,
-                        )
-                    SubsystemCapabilityOperation.CYCLE_INDICATOR_COLOR_BACKWARD ->
-                        registryIndicatorCycleActionCase(
-                            document,
-                            requireNotNull(document.field(capability.fieldId)),
-                            resourceExpression,
-                            forward = false,
-                        )
-                    SubsystemCapabilityOperation.SET_HOMING_REQUEST -> registryHomingActionCase(document, resourceExpression)
-                    SubsystemCapabilityOperation.REQUEST_NEUTRAL_RECOVERY ->
-                        registryNeutralRecoveryActionCase(document, resourceExpression)
-                    SubsystemCapabilityOperation.CONFIRM_CALIBRATION ->
-                        registryCalibrationConfirmationActionCase(document, resourceExpression)
-                }
-            }
-        }.joinToString("\n")
-        val actionFactory = if (actionCases.isBlank()) {
-            """@Suppress("UNUSED_PARAMETER")
-fun createActionTask(actionKey: String, value: Any?): Task? = null"""
-        } else {
-            """fun createActionTask(actionKey: String, value: Any?): Task? = when (actionKey) {
-$actionCases
-    else -> null
-}"""
-        }
-        val interlockFunctions = generatedDocuments.filter { it.interlocks.isNotEmpty() }
-            .sortedBy { it.documentId }
-            .joinToString("\n\n") { document -> registryInterlockFunction(document, generatedDocuments) }
-        val body = if (generatedDocuments.isEmpty()) {
-            val parameter = if (target.platform == SubsystemPlatform.FTC) "hardwareMap: HardwareMap" else "isReal: Boolean"
-            """@Suppress("UNUSED_PARAMETER")
-fun createAll($parameter): List<Subsystem> = emptyList()"""
-        } else when (target.platform) {
-            SubsystemPlatform.FTC -> """fun createAll(hardwareMap: HardwareMap): List<Subsystem> = buildList {
-$factories
-}"""
-            SubsystemPlatform.FRC -> {
-                """fun createAll(isReal: Boolean): List<Subsystem> = buildList {
-$factories
-}"""
-            }
-        }
-        val source = buildString {
-            append("package ${target.basePackage}\n\n")
-            if (actionCases.isNotBlank()) {
-                append("import com.areslib.action.RobotAction\n")
-                append("import com.areslib.sequencer.StateActionTask\n")
-                append("import com.areslib.sequencer.TaskResources\n")
-            }
-            if (generatedDocuments.any { it.interlocks.isNotEmpty() }) {
-                append("import com.areslib.state.RobotState\n")
-            }
-            append("import com.areslib.sequencer.Task\n")
-            append("import com.areslib.subsystem.GeneratedSubsystemRegistrySupport\n")
-            append("import com.areslib.subsystem.Subsystem\n")
-            if (target.platform == SubsystemPlatform.FTC) {
-                append("import com.qualcomm.robotcore.hardware.HardwareMap\n")
-            }
-            imports.forEach { append("import $it\n") }
-            append("\n/** Generated composition root. The season shell registers every returned subsystem. */\n")
-            append("object GeneratedSubsystemRegistry {\n")
-            if (handAuthoredDocuments.isNotEmpty()) {
-                append("    // USER-OWNED hand-authored subsystems are registered by the season composition root:\n")
-                handAuthoredDocuments.sortedBy { it.documentId }.forEach { document ->
-                    append("    // - ${document.documentId}: ${document.implementation.subsystemClassName}\n")
-                }
-            }
-            append(body.prependIndent("    "))
-            append("\n\n")
-            append(actionFactory.prependIndent("    "))
-            if (interlockFunctions.isNotBlank()) {
-                append("\n\n")
-                append(interlockFunctions.prependIndent("    "))
-            }
-            append("\n}\n")
-        }
+        val source = SubsystemRegistryRenderer.render(documents, target)
         return generated(
             "GeneratedSubsystemRegistry.kt",
             source,
@@ -249,7 +93,7 @@ $factories
         )
     }
 
-    private fun registryInterlockFunction(
+    internal fun registryInterlockFunction(
         owner: SubsystemDocument,
         documents: List<SubsystemDocument>,
     ): String {
@@ -484,130 +328,6 @@ $fieldLines
 
             $controlLines
                 }
-            }
-        """.trimIndent() + "\n"
-    }
-
-    private fun stateSource(document: SubsystemDocument, pkg: String): String {
-        val fields = document.stateFields.joinToString(",\n") { field ->
-            val bounds = listOfNotNull(field.minimum?.let { "min=$it" }, field.maximum?.let { "max=$it" })
-                .joinToString(", ").takeIf(String::isNotBlank)?.let { "; $it" }.orEmpty()
-            val unit = field.unit?.let { " in $it" }.orEmpty()
-            "    /** ${field.displayName}: ${field.role.name.lowercase()}$unit$bounds. */\n" +
-                "    val ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
-        }
-        val separator = if (fields.isBlank()) "" else ",\n"
-        val safetyRequests = buildString {
-            if (document.hasSafetyRequestHandshake()) {
-                append(
-                    "\n    /** Advances for every explicit target command and releases a controller neutral hold. */\n" +
-                        "    val commandSequence: Long = 0L,"
-                )
-            }
-            if (document.safety.requiresExplicitNeutralRecovery) {
-                append(
-                    "\n    /** Explicit one-shot neutral request; success holds neutral until the next target command. */\n" +
-                        "    val neutralRecoveryRequestSequence: Long = 0L,"
-                )
-            }
-            if (document.safety.requiresCalibration) {
-                append(
-                    "\n    /** Explicit calibration confirmation; success holds neutral until the next target command. */\n" +
-                        "    val calibrationConfirmationRequestSequence: Long = 0L,"
-                )
-            }
-        }
-        return """
-            package $pkg
-
-            import com.areslib.state.SubsystemState
-
-            /** Immutable state owned by the ${document.displayName} subsystem. */
-            data class ${document.kotlinTypeName}State(
-            $fields$separator    /** True only when every required cached control sample is fresh and finite. */
-                val feedbackValid: Boolean = false,
-                /** Receiver timestamp of the newest complete cached input snapshot. */
-                val feedbackTimestampMs: Long = 0L,
-                /** True only after every required device configuration has succeeded. */
-                val configurationHealthy: Boolean = ${(!document.safety.requiresConfigurationHealth)},
-                /** True after the configured homing reference has been established. */
-                val homed: Boolean = ${(!document.requiresHoming())},
-                /** Explicit operator/autonomous request to run the bounded homing state machine. */
-                val homingRequested: Boolean = false,
-                /** Latched when homing times out or cannot safely write/reset; cancel before retrying. */
-                val homingFaultLatched: Boolean = false,
-                /** True after mechanism calibration has been explicitly established. */
-                val calibrated: Boolean = ${(!document.safety.requiresCalibration)},
-                /** True only when required cached current samples are finite and fresh. */
-                val currentReadingValid: Boolean = ${(!document.safety.requiresCurrentMonitoring)},
-                /** Latched after a failed output write until an explicit successful neutral recovery. */
-                val outputFaultLatched: Boolean = false,$safetyRequests
-            ) : SubsystemState
-        """.trimIndent() + "\n"
-    }
-
-    private fun ioSource(document: SubsystemDocument, pkg: String): String {
-        val measurements = document.hardware.flatMap { device ->
-            device.measurements.mapNotNull { measurement ->
-                document.field(measurement.fieldId)?.let { field -> measurement to field }
-            }
-        }.distinctBy { it.second.fieldId }.map { (measurement, field) ->
-            val unit = field.unit?.let { " Unit: $it." }.orEmpty()
-            "    /** Cached ${field.displayName} from ${measurement.source.name.lowercase()}.$unit */\n" +
-                "    val ${field.fieldId}: ${field.kotlinType()}"
-        }
-        val commands = document.actuatorLeaders().map { device ->
-            val safe = requireNotNull(device.safeOutput)
-            "    /** Commands ${device.displayName}; non-finite values fail neutral. Declared neutral: $safe. */\n" +
-                "    fun ${device.commandName()}(value: Double)"
-        }
-        val members = (measurements + commands).joinToString("\n")
-        return """
-            package $pkg
-
-            import com.areslib.hardware.SubsystemIO
-
-            /**
-             * Cached hardware boundary shared by physical and simulated adapters.
-             * Getters never perform direct device reads; [refresh] owns one complete input snapshot.
-             */
-            interface ${document.kotlinTypeName}IO : SubsystemIO, AutoCloseable {
-                /** Complete cached snapshot validity; false on any failed or non-finite required read. */
-                val feedbackValid: Boolean
-                /** Receiver timestamp for the complete cached snapshot, using RobotClock. */
-                val feedbackTimestampMs: Long
-                /** Required device configuration health. */
-                val configurationHealthy: Boolean
-                /** Homing-reference validity; always true when homing is not required. */
-                val homed: Boolean
-                /** True only while every configured cached homing condition is currently satisfied. */
-                val homingConditionMet: Boolean
-                /** Timeout/write/reset failure latch; a neutral cancel is required before retry. */
-                val homingFaultLatched: Boolean
-                /** Calibration validity; always true when calibration is not required. */
-                val calibrated: Boolean
-                /** Cached current validity; always true when current monitoring is not required. */
-                val currentReadingValid: Boolean
-                /** Failed-write latch. Non-neutral commands are rejected while true. */
-                val outputFaultLatched: Boolean
-            $members
-
-                /** Applies every declared neutral and clears the fault latch only after complete success. */
-                fun recoverWithNeutral(): Boolean
-                /** Applies only the bounded descriptor-selected anti-jam output. */
-                fun commandAutomaticRecovery(value: Double): Boolean
-                /** Latches an exhausted/unsafe recovery and commands neutral. */
-                fun latchOutputFault()
-                /** Marks an explicitly completed calibration; generated code never infers calibration. */
-                fun establishCalibration()
-                /** Applies only the bounded generated homing output, bypassing the normal homed permit. */
-                fun commandHoming(): Boolean
-                /** Neutralizes, establishes the configured zero reference, and marks the mechanism homed. */
-                fun establishHome(): Boolean
-                /** Latches a failed homing attempt after neutralizing. */
-                fun failHoming()
-                /** Applies neutral and clears the homing fault so a later explicit request can retry. */
-                fun cancelHoming(): Boolean
             }
         """.trimIndent() + "\n"
     }
@@ -2684,17 +2404,17 @@ private val PID_STRATEGIES = setOf(
     SubsystemControlStrategy.VELOCITY_PID,
 )
 
-private fun SubsystemDocument.field(id: String?): SubsystemStateFieldDocument? =
+internal fun SubsystemDocument.field(id: String?): SubsystemStateFieldDocument? =
     id?.let { requested -> stateFields.firstOrNull { it.fieldId == requested } }
 
 private fun String.sourceFor(document: SubsystemDocument): SubsystemMeasurementSource? =
     document.hardware.asSequence().flatMap { it.measurements.asSequence() }
         .firstOrNull { it.fieldId == this }?.source
 
-private fun SubsystemDocument.requiresHoming(): Boolean =
+internal fun SubsystemDocument.requiresHoming(): Boolean =
     safety.homing.method != SubsystemHomingMethod.NONE
 
-private fun SubsystemDocument.hasSafetyRequestHandshake(): Boolean =
+internal fun SubsystemDocument.hasSafetyRequestHandshake(): Boolean =
     safety.requiresExplicitNeutralRecovery || safety.requiresCalibration
 
 private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardwareKind.MOTOR ||
@@ -2702,7 +2422,7 @@ private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardw
     this == SubsystemHardwareKind.INDICATOR_LIGHT || this == SubsystemHardwareKind.PRISM_DRIVER ||
     this == SubsystemHardwareKind.SOLENOID
 
-private fun SubsystemHardwareDocument.commandName(): String = when (kind) {
+internal fun SubsystemHardwareDocument.commandName(): String = when (kind) {
     SubsystemHardwareKind.MOTOR -> "set${hardwareId.pascalCase()}Voltage"
     SubsystemHardwareKind.POSITIONAL_SERVO,
     SubsystemHardwareKind.INDICATOR_LIGHT -> "set${hardwareId.pascalCase()}Position"
@@ -2760,14 +2480,14 @@ private fun SubsystemStateFieldDocument.dslFunction(): String = when (type) {
     SubsystemValueType.STRING -> "text"
 }
 
-private fun SubsystemStateFieldDocument.kotlinType(): String = when (type) {
+internal fun SubsystemStateFieldDocument.kotlinType(): String = when (type) {
     SubsystemValueType.DOUBLE -> "Double"
     SubsystemValueType.BOOLEAN -> "Boolean"
     SubsystemValueType.INT -> "Int"
     SubsystemValueType.STRING -> "String"
 }
 
-private fun SubsystemStateFieldDocument.defaultKotlinLiteral(): String = when (type) {
+internal fun SubsystemStateFieldDocument.defaultKotlinLiteral(): String = when (type) {
     SubsystemValueType.DOUBLE -> requireNotNull(defaultNumber).kotlinDouble()
     SubsystemValueType.BOOLEAN -> requireNotNull(defaultBoolean).toString()
     SubsystemValueType.INT -> requireNotNull(defaultInt).toString()
@@ -2949,7 +2669,7 @@ private fun SubsystemDocument.controllerTuningExpression(
     ?.variableName
     ?: fallback.kotlinDouble()
 
-private fun SubsystemDocument.actuatorLeaders(): List<SubsystemHardwareDocument> =
+internal fun SubsystemDocument.actuatorLeaders(): List<SubsystemHardwareDocument> =
     hardware.filter { it.kind.isActuator() && it.following == null }
 
 private fun SubsystemDocument.followersOf(leaderId: String): List<SubsystemHardwareDocument> =
@@ -2978,7 +2698,7 @@ private fun SubsystemHardwareDocument.invertedExpression(requested: String): Str
     }
 }
 
-private fun registryActionCase(
+internal fun registryActionCase(
     document: SubsystemDocument,
     field: SubsystemStateFieldDocument,
     resourceExpression: String,
@@ -3059,7 +2779,7 @@ private fun registryActionCase(
     }"""
 }
 
-private fun registryIndicatorCycleActionCase(
+internal fun registryIndicatorCycleActionCase(
     document: SubsystemDocument,
     field: SubsystemStateFieldDocument,
     resourceExpression: String,
@@ -3119,7 +2839,7 @@ private fun registryIndicatorCycleActionCase(
         }"""
 }
 
-private fun registryHomingActionCase(document: SubsystemDocument, resourceExpression: String): String {
+internal fun registryHomingActionCase(document: SubsystemDocument, resourceExpression: String): String {
     val key = subsystemTargetActionKey(document.documentId, "homingRequested")
     return """    ${key.quoted()} -> (value as? Boolean)?.let { requested ->
         StateActionTask(${("Run ${document.displayName} homing").quoted()}, $resourceExpression) { robotState ->
@@ -3132,7 +2852,7 @@ private fun registryHomingActionCase(document: SubsystemDocument, resourceExpres
     }"""
 }
 
-private fun registryNeutralRecoveryActionCase(document: SubsystemDocument, resourceExpression: String): String =
+internal fun registryNeutralRecoveryActionCase(document: SubsystemDocument, resourceExpression: String): String =
     registryOneShotSafetyActionCase(
         key = subsystemNeutralRecoveryActionKey(document.documentId),
         taskName = "Recover ${document.displayName} with neutral",
@@ -3141,7 +2861,7 @@ private fun registryNeutralRecoveryActionCase(document: SubsystemDocument, resou
         resourceExpression = resourceExpression,
     )
 
-private fun registryCalibrationConfirmationActionCase(document: SubsystemDocument, resourceExpression: String): String =
+internal fun registryCalibrationConfirmationActionCase(document: SubsystemDocument, resourceExpression: String): String =
     registryOneShotSafetyActionCase(
         key = subsystemCalibrationConfirmationActionKey(document.documentId),
         taskName = "Confirm ${document.displayName} calibration",
@@ -3167,32 +2887,7 @@ private fun registryOneShotSafetyActionCase(
         }
     }"""
 
-private fun String.pascalCase(): String = split(Regex("[^A-Za-z0-9]+"))
-    .filter(String::isNotEmpty)
-    .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
-
-private fun String.quoted(): String = buildString {
-    append('"')
-    this@quoted.forEach { char ->
-        when (char) {
-            '\\' -> append("\\\\")
-            '"' -> append("\\\"")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            else -> append(char)
-        }
-    }
-    append('"')
-}
-
-private fun Double.kotlinDouble(): String = when {
-    this == -0.0 -> "0.0"
-    toString().contains('.') || toString().contains('e', ignoreCase = true) -> toString()
-    else -> "${this}.0"
-}
-
-private fun platformPrefix(platform: SubsystemPlatform): String = when (platform) {
+internal fun platformPrefix(platform: SubsystemPlatform): String = when (platform) {
     SubsystemPlatform.FTC -> "Ftc"
     SubsystemPlatform.FRC -> "Frc"
 }
