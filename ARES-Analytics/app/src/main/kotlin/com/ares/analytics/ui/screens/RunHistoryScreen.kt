@@ -40,10 +40,10 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.ui.graphics.SolidColor
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.TelemetryFrame
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.history.RunFilterHeader
 import com.ares.analytics.ui.components.history.RunDataCard
 import com.ares.analytics.ui.theme.*

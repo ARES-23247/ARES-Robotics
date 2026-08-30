@@ -2,7 +2,7 @@ package com.ares.analytics.viewmodel.robotstudio
 
 import com.ares.analytics.service.RobotProjectReadinessEvidence
 import com.ares.analytics.service.RobotProjectReadinessService
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow

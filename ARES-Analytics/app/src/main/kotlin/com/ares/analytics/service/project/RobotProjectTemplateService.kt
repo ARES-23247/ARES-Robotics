@@ -5,7 +5,7 @@ import com.ares.analytics.service.AppDataPaths
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.tuning.TuningProfileRepository
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.drivetrain.DrivetrainDocumentCodec

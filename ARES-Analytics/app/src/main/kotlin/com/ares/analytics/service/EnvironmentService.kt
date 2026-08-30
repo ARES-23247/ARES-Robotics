@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
-import com.ares.analytics.shared.AppWorkspaces
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.shared.models.AppWorkspaces
 import com.ares.analytics.util.ProjectLayout
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.Dispatchers
@@ -30,8 +30,8 @@ import java.nio.file.StandardOpenOption
  * @param configPath Legacy single workspace config JSON path (`~/.ares-analytics/config.json`).
  * @param workspacesPath Multi-workspace configuration JSON path (`~/.ares-analytics/workspaces.json`).
  *
- * @see com.ares.analytics.shared.AppWorkspaces
- * @see com.ares.analytics.shared.WorkspaceConfig
+ * @see com.ares.analytics.shared.models.AppWorkspaces
+ * @see com.ares.analytics.shared.models.WorkspaceConfig
  */
 class EnvironmentService(
     private val configPath: String = AppDataPaths.file("config.json").path,

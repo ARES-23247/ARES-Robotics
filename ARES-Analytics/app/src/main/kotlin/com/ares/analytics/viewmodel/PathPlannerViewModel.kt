@@ -9,6 +9,7 @@ import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository

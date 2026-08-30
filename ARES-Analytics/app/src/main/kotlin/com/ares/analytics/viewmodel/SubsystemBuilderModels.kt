@@ -3,7 +3,7 @@ package com.ares.analytics.viewmodel
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.SubsystemDesignProposal
 import com.ares.analytics.service.project.ProjectSessionRevision
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.codegen.GeneratedSubsystemSourceSet
 import com.areslib.codegen.SubsystemArtifact
 import com.areslib.codegen.SubsystemArtifactGroup

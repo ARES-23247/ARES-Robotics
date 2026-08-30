@@ -28,7 +28,7 @@ abstract class BaseLogDecoder {
      *
      * @param file Target log file on the local filesystem.
      * @param sessionId Unique session identifier assigned to the imported log.
-     * @param batcher High-performance bounded channel buffer receiving extracted [com.ares.analytics.shared.TelemetryFrame] records.
+     * @param batcher High-performance bounded channel buffer receiving extracted [com.ares.analytics.shared.models.TelemetryFrame] records.
      * @throws java.io.IOException If the log file cannot be read or contains unrecoverable corruption.
      */
     abstract suspend fun decode(

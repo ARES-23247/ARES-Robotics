@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.Session
 
 /**
  * Human-readable run identity shared by Guided Review and comparison reports.

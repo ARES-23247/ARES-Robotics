@@ -1,6 +1,6 @@
 package com.ares.analytics.ui.input
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 
 /** Canonical field-relative velocity command emitted by desktop keyboard or gamepad input. */
 internal data class DesktopFieldDriveCommand(

@@ -1,7 +1,7 @@
 package com.ares.analytics.service.hardware
 
 import com.ares.analytics.service.drivebase.DriveHardwareRole
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 
 /** One hold-to-run motor check exposed by the FTC Driver Station diagnostic OpMode. */
 data class FtcMotorDirectionCheck(

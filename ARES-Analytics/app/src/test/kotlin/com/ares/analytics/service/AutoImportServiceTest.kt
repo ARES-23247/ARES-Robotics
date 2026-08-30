@@ -3,8 +3,8 @@ package com.ares.analytics.service
 import com.ares.analytics.di.awaitAutoImportBeforeClosingDependencies
 import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.AppJson
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.serialization.decodeFromString

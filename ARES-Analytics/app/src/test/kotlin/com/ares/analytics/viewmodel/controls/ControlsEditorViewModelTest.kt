@@ -4,7 +4,7 @@ import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.AresGenerationState
 import com.ares.analytics.service.AresProjectGenerator
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.help.toAcademyControlsSnapshot
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.areslib.catalog.ActionDescriptor

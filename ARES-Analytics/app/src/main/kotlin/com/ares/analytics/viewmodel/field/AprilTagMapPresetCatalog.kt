@@ -1,6 +1,6 @@
 package com.ares.analytics.viewmodel.field
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 
 /**
  * Reviewed AprilTag-map resources shipped with Robotics Studio.

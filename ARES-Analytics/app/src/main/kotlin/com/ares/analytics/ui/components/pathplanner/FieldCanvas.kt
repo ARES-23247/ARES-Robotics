@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.pathing.RobotDimensions

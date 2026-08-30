@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DeployExecutionPhase
 import com.ares.analytics.service.DeployExecutionState
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresCyan
 import com.ares.analytics.ui.theme.AresError

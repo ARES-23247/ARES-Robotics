@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.Session
 import kotlinx.serialization.Serializable
 
 /** Machine-readable evidence describing what a log import actually produced. */

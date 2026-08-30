@@ -32,10 +32,10 @@ import com.ares.analytics.service.ToolchainReadiness
 import com.ares.analytics.service.isValidGoogleDesktopClientId
 import com.ares.analytics.service.isValidGoogleOAuthBrokerUrl
 import com.ares.analytics.service.writeFileAtomically
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
-import com.ares.analytics.shared.DriveDestinationType
-import com.ares.analytics.shared.WorkspaceCollaborationMode
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.shared.models.DriveDestinationType
+import com.ares.analytics.shared.models.WorkspaceCollaborationMode
 import com.ares.analytics.shared.AppJson
 import com.ares.analytics.ui.components.core.chooseProjectDirectory
 import com.ares.analytics.ui.components.core.openExternalLink
@@ -1094,7 +1094,7 @@ fun ProfileScreen(
     }
 }
 
-private fun exportDriveDestinationRecord(destination: com.ares.analytics.shared.DriveDestinationConfig): String {
+private fun exportDriveDestinationRecord(destination: com.ares.analytics.shared.models.DriveDestinationConfig): String {
     val chooser = JFileChooser().apply {
         dialogTitle = "Export ARES Drive destination record"
         selectedFile = java.io.File("ares-drive-destination.json")

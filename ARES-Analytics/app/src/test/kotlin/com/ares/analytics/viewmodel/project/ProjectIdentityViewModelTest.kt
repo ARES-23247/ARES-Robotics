@@ -3,8 +3,8 @@ package com.ares.analytics.viewmodel.project
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.ares.analytics.service.project.persistence.decodeProjectMetadata
 
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresFtcHubCommandTransport
 import com.areslib.project.AresLeague

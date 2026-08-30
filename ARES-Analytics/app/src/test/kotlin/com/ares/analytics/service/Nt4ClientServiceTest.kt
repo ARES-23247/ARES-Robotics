@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CoroutineStart
@@ -512,7 +512,7 @@ class Nt4ClientServiceTest {
     @Test
     fun `failed database flush retains frames for ordered retry`() = runBlocking {
         nt4ClientService.publishFrame(
-            com.ares.analytics.shared.TelemetryFrame(100L, "ignored", "Drive/Pose_X", 1.0)
+            com.ares.analytics.shared.models.TelemetryFrame(100L, "ignored", "Drive/Pose_X", 1.0)
         )
         databaseService.close()
 
@@ -585,7 +585,7 @@ class Nt4ClientServiceTest {
     @Test
     fun `target reset clears topics latest values and history`() = runBlocking {
         nt4ClientService.topicMap[1] = com.ares.analytics.service.nt4.Nt4Topic(1, "/Old/Value", "double")
-        val frame = com.ares.analytics.shared.TelemetryFrame(1L, "live-telemetry", "Old/Value", 2.0)
+        val frame = com.ares.analytics.shared.models.TelemetryFrame(1L, "live-telemetry", "Old/Value", 2.0)
         nt4ClientService.telemetryStore.accept(frame)
         assertEquals(2.0, withTimeout(1_000) { nt4ClientService.uiTelemetryFlow.first() }.value)
 

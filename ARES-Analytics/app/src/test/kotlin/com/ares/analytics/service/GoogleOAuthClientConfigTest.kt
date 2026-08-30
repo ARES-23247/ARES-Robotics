@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

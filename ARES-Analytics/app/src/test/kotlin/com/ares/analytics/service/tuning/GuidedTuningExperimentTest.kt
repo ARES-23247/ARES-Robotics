@@ -13,9 +13,9 @@ import com.ares.analytics.service.RunComparisonRepository
 import com.ares.analytics.service.RunComparisonRequest
 import com.ares.analytics.service.RunComparisonSeries
 import com.ares.analytics.service.RunMetricSummary
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.viewmodel.tuning.renderGuidedTuningExperimentReport
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningAssignment

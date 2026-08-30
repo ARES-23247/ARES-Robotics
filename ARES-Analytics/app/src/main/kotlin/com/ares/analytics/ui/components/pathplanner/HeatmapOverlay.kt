@@ -4,7 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 
 object HeatmapOverlay {
     // Stateful grid for accumulation

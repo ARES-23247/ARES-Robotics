@@ -68,7 +68,7 @@ data class RobotStudioRuntimeEvidence(
     val deploy: DeployExecutionState = DeployExecutionState(),
     val simulatorRunning: Boolean = false,
     val simulatorProjectPath: String? = null,
-    val simulatorLeague: com.ares.analytics.shared.League? = null,
+    val simulatorLeague: com.ares.analytics.shared.models.League? = null,
     val localSimulatorOnline: Boolean = false,
     val nt4Connected: Boolean = false,
 )

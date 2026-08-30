@@ -1,6 +1,6 @@
 package com.ares.analytics.viewmodel
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.codegen.GeneratedSubsystemSourceSet
 import com.areslib.codegen.SubsystemArtifactOwnership
 import com.areslib.codegen.SubsystemKotlinCodegenTarget

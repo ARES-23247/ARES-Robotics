@@ -70,7 +70,7 @@ import com.ares.analytics.service.RunEvidenceSourceKind
 import com.ares.analytics.service.shortRunLabel
 import com.ares.analytics.service.tuning.GuidedTuningExperimentSeed
 import com.ares.analytics.service.tuning.toExperimentSeed
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder

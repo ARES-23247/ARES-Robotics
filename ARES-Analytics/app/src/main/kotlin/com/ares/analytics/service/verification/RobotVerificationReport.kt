@@ -1,6 +1,6 @@
 package com.ares.analytics.service.verification
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.codegen.ProjectGeneratedTestNames
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec

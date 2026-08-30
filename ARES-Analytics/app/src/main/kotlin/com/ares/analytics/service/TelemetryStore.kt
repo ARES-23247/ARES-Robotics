@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.ExperimentalCoroutinesApi

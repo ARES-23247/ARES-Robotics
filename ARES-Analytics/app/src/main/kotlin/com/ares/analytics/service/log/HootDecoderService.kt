@@ -2,6 +2,7 @@ package com.ares.analytics.service.log
 
 import com.ares.analytics.service.*
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

@@ -6,8 +6,8 @@ import com.ares.analytics.ui.help.AcademyClassroomToolkit
 import com.ares.analytics.ui.help.FirstMissionCheckpointIds
 import com.ares.analytics.ui.help.LearningCatalog
 import com.ares.analytics.ui.help.LearningCheckpointEvidence
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.test.runTest

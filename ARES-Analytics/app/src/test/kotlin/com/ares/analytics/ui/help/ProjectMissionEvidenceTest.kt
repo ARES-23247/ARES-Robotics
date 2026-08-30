@@ -1,7 +1,7 @@
 package com.ares.analytics.ui.help
 
 import com.ares.analytics.service.AresGenerationPhase
-import com.ares.analytics.shared.Trajectory
+import com.ares.analytics.shared.models.Trajectory
 import com.ares.analytics.viewmodel.PathPlannerState
 import com.ares.analytics.viewmodel.superstructure.SuperstructurePreviewSnapshot
 import com.ares.analytics.viewmodel.superstructure.SuperstructureSaveReview

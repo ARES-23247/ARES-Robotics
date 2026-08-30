@@ -4,7 +4,7 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.nio.file.Files
 import javax.tools.ToolProvider
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.codegen.SubsystemKotlinCodegenTarget
 import com.areslib.codegen.SubsystemKotlinGenerator
 import com.areslib.subsystem.SubsystemDocumentCodec

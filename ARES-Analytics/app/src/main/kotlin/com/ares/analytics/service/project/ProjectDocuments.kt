@@ -1,6 +1,6 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
 import com.ares.analytics.service.project.persistence.CapabilityCatalogProjectRepository

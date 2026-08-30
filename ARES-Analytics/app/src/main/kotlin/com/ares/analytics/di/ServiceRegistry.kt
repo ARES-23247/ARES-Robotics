@@ -2,7 +2,7 @@ package com.ares.analytics.di
 
 import com.ares.analytics.service.*
 import com.ares.analytics.service.log.*
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue

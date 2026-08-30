@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*

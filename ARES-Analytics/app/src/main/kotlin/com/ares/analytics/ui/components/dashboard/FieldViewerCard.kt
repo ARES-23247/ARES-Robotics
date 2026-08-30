@@ -21,7 +21,7 @@ import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.pathplanner.FieldCanvas
 import com.ares.analytics.ui.components.pathplanner.IndicatorLightRenderState
 import com.ares.analytics.ui.components.pathplanner.Waypoint

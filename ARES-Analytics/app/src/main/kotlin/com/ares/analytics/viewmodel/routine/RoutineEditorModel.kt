@@ -1,6 +1,6 @@
 package com.ares.analytics.viewmodel.routine
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.pathing.legalCenterBounds

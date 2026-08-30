@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.hypot

@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.BuildConfig
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 
 private const val GOOGLE_DESKTOP_CLIENT_SUFFIX = ".apps.googleusercontent.com"
 

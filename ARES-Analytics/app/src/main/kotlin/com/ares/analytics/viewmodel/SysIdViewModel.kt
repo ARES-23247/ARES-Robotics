@@ -10,7 +10,7 @@ import com.ares.analytics.service.AutoTunerService
 import com.ares.analytics.service.AutoTuningDigitalTwin
 import com.ares.analytics.service.DigitalTwinEvaluation
 import com.ares.analytics.service.TuningApplyState
-import com.ares.analytics.shared.CalculatedSummary
+import com.ares.analytics.shared.models.CalculatedSummary
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.areslib.control.assist.SysIdMechanism
 import com.areslib.control.assist.SysIdRoutine

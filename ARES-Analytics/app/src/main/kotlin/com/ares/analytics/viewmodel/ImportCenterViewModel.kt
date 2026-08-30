@@ -5,7 +5,7 @@ import com.ares.analytics.service.ImportArchiveService
 import com.ares.analytics.service.ImportArchiveSnapshot
 import com.ares.analytics.service.ManualLogImportOutcome
 import com.ares.analytics.service.ManualLogImportService
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

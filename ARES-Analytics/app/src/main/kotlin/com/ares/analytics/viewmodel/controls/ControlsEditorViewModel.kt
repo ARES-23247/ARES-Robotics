@@ -11,7 +11,7 @@ import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType

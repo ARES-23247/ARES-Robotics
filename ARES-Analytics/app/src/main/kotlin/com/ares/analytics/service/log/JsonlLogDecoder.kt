@@ -2,8 +2,8 @@ package com.ares.analytics.service.log
 
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.FrameBatcher
-import com.ares.analytics.shared.RobotActionRecord
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.RobotActionRecord
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.*

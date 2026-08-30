@@ -6,6 +6,7 @@ import com.ares.analytics.service.dashboard.DashboardWidgetType
 import com.ares.analytics.service.dashboard.defaultProperties
 import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -6,7 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.ares.analytics.service.GamepadService
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
 import com.ares.analytics.viewmodel.PathPlannerViewModel

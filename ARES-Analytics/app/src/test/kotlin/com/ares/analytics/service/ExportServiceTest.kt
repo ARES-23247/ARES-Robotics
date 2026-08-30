@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import com.ares.analytics.service.log.CsvLogDecoder
 import com.ares.analytics.service.log.WpiLogDecoder

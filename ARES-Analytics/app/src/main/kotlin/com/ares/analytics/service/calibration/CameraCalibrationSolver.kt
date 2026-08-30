@@ -4,7 +4,7 @@ import com.ares.analytics.service.CalibrationDiagnostics
 import com.ares.analytics.service.CalibrationMeasurement
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.Pose3d
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ejml.simple.SimpleMatrix

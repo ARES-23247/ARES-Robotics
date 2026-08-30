@@ -22,8 +22,8 @@ import com.ares.analytics.service.dashboard.DashboardWidgetSpec
 import com.ares.analytics.service.dashboard.DashboardWidgetType
 import com.ares.analytics.service.dashboard.allows
 import com.ares.analytics.service.tuning.TuningParameterDeclaration
-import com.ares.analytics.shared.ForensicsResponse
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.ForensicsResponse
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.viewmodel.DashboardState
 
 typealias DashboardWidgetRenderer =

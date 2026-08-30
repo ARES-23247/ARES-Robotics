@@ -27,7 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.pathplanner.FieldCanvas
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.ui.components.routine.RoutineBuilderPane

@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionAnnotation
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionAnnotation
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat

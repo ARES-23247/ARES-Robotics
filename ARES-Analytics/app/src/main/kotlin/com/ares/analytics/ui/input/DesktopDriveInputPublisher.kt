@@ -7,7 +7,7 @@ import androidx.compose.runtime.snapshotFlow
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.math.InputMath
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.asCoroutineDispatcher

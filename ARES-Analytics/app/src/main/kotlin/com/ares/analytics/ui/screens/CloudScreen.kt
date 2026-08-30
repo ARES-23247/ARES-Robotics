@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.CloudIntent
 import com.ares.analytics.viewmodel.CloudViewModel

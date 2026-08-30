@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.DriverProfile
+import com.ares.analytics.shared.models.DriverProfile
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,7 +26,7 @@ import java.nio.file.StandardCopyOption
  * @param sysIdService Actuator characterization engine for driver responsiveness analysis.
  * @param profilesPath Absolute filesystem path to persistent JSON driver profile storage.
  *
- * @see com.ares.analytics.shared.DriverProfile
+ * @see com.ares.analytics.shared.models.DriverProfile
  */
 class DriverAnalysisService(
     private val databaseService: DatabaseService,
@@ -164,14 +164,14 @@ class DriverAnalysisService(
     private suspend fun getTelemetryForTopic(
         sessionId: String,
         requestedKey: String
-    ): List<com.ares.analytics.shared.TelemetryFrame> {
+    ): List<com.ares.analytics.shared.models.TelemetryFrame> {
         val canonicalKey = TelemetryMetricCatalog.normalizeTopic(requestedKey)
         val canonicalFrames = databaseService.getTelemetryForKey(sessionId, canonicalKey)
         if (canonicalFrames.isNotEmpty()) return canonicalFrames
         return databaseService.getTelemetryForKey(sessionId, "/$canonicalKey")
     }
 
-    private fun analyzeSignal(frames: List<com.ares.analytics.shared.TelemetryFrame>): SignalSpectrum? {
+    private fun analyzeSignal(frames: List<com.ares.analytics.shared.models.TelemetryFrame>): SignalSpectrum? {
         if (frames.size < MIN_SAMPLES) return null
         val sorted = frames.sortedBy { it.timestampMs }
         if (sorted.any { !it.value.isFinite() }) return null

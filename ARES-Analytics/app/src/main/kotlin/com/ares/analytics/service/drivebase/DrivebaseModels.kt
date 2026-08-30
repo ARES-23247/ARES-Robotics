@@ -1,6 +1,6 @@
 package com.ares.analytics.service.drivebase
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.drivetrain.*
 
 enum class DrivebaseKind { FTC_MECANUM, FRC_CTRE_SWERVE, DIFFERENTIAL, CUSTOM }

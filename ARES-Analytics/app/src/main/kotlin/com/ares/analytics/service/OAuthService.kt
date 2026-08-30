@@ -4,7 +4,7 @@ import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.GoogleAuthorizationCodeExchangeRequest
 import com.ares.analytics.shared.GoogleOAuthBrokerTokenResponse
 import com.ares.analytics.shared.GoogleRefreshTokenExchangeRequest
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*

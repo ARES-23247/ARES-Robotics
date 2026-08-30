@@ -1,6 +1,6 @@
 package com.ares.analytics.service.drivebase
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.drivebase.DriveLabState
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderIntent
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderStep

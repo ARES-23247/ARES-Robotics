@@ -1,6 +1,6 @@
 package com.ares.analytics.viewmodel.field
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.state.AprilTagMapCodec
 import com.areslib.state.FieldType
 import com.areslib.state.RobotFieldDocument

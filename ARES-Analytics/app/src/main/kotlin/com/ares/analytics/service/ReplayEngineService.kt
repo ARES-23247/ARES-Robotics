@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.RobotActionRecord
-import com.ares.analytics.shared.SessionAnnotation
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.RobotActionRecord
+import com.ares.analytics.shared.models.SessionAnnotation
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
@@ -621,7 +621,7 @@ class ReplayEngineService(
         val annotations: List<SessionAnnotation>,
         val density: List<Float>,
         val topicCount: Int,
-        val session: com.ares.analytics.shared.Session?,
+        val session: com.ares.analytics.shared.models.Session?,
         val initialWindow: ReplayWindow?,
     )
 

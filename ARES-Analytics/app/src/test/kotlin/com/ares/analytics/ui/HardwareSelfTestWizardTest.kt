@@ -1,6 +1,6 @@
 package com.ares.analytics.ui
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.ui.screens.SelfTestStatus
 import com.ares.analytics.ui.screens.evaluateHardwareReadiness
 import kotlin.test.Test

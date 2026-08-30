@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.drivebase.*
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.drivebase.*
 import com.areslib.drivetrain.DisabledDrivePolicy
@@ -230,7 +230,7 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                     Column {
                         Text("DRIVE MOTORS (2×2 PHYSICAL LAYOUT)", color = AresTextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         Text(
-                            if (state.league == com.ares.analytics.shared.League.FTC) {
+                            if (state.league == com.ares.analytics.shared.models.League.FTC) {
                                 "FTC hardware-map names: fl, fr, rl, rr"
                             } else {
                                 "FRC: assign a unique CAN ID and bus to every drive device"

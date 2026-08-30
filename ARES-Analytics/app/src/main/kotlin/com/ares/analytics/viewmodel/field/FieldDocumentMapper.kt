@@ -5,7 +5,7 @@ import com.ares.analytics.shared.FTCCoordinateSystem
 import com.ares.analytics.shared.FieldImageConfig
 import com.ares.analytics.shared.FieldWaypoint
 import com.ares.analytics.shared.GamePiece
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.PathPoint
 import com.areslib.state.FieldType

@@ -10,7 +10,7 @@ import com.ares.analytics.ui.components.controls.canvasCollisionOffsetY
 import com.ares.analytics.ui.components.controls.controllerCallouts
 import com.ares.analytics.ui.components.controls.controllerMarkerLabel
 import com.ares.analytics.ui.components.controls.hasAdvancedBindingSettings
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.controls.ControlsEditorState
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.controls.ControlBindingDocument

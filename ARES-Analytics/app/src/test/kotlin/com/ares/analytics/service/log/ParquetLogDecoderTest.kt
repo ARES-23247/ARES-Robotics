@@ -1,7 +1,7 @@
 package com.ares.analytics.service.log
 
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import java.io.File

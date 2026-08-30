@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.RobotActionRecord
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.RobotActionRecord
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout

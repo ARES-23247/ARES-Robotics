@@ -12,9 +12,9 @@ import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.RunComparisonRepository
 import com.ares.analytics.service.RunComparisonRequest
 import com.ares.analytics.service.RunAlignmentAnchor
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation

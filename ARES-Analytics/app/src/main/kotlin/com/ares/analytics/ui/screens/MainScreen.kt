@@ -30,6 +30,7 @@ import com.ares.analytics.service.UpdateCheckerService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.CommandPalette
 import com.ares.analytics.ui.components.LearningCoachDrawer
 import com.ares.analytics.ui.help.toAcademySubsystemSnapshot

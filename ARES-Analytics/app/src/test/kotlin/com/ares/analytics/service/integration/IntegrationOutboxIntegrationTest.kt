@@ -3,9 +3,9 @@ package com.ares.analytics.service.integration
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.ImportReport
 import com.ares.analytics.service.ImportStatus
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.AlertRecord
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.EngineeringNotebookEntry
 import com.ares.analytics.shared.models.EngineeringNotebookHasher
 import com.ares.analytics.shared.models.IntegrationEvent

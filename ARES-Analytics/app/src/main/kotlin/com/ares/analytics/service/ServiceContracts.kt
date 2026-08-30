@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.TelemetryFrame
 
 /** Typed boundary for expected service outcomes; callers need not parse exception messages. */
 sealed interface OperationResult<out T> {

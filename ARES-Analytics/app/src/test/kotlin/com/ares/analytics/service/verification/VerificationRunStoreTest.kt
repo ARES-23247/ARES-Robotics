@@ -1,6 +1,6 @@
 package com.ares.analytics.service.verification
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test

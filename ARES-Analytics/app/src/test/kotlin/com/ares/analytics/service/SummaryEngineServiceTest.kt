@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import kotlin.test.Test

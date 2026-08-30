@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.AlertEngineService
-import com.ares.analytics.shared.AlertRecord
+import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 import kotlin.math.sin

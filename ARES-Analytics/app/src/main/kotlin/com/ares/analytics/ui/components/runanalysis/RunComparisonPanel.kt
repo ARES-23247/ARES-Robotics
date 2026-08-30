@@ -62,7 +62,7 @@ import com.ares.analytics.service.RunComparisonMetric
 import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.RunTrajectoryOverlay
 import com.ares.analytics.service.shortRunLabel
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan

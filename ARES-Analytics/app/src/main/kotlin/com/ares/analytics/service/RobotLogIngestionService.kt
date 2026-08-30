@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout

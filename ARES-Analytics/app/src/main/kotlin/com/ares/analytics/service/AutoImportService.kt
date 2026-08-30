@@ -2,8 +2,8 @@ package com.ares.analytics.service
 
 import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.AppJsonPretty
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

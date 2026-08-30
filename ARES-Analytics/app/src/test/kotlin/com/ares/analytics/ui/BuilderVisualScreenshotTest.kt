@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.hardware.SubsystemHealthSnapshot
 import com.ares.analytics.service.hardware.SubsystemHealthStatus
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.controls.ControllerCanvas
 import com.ares.analytics.ui.components.dashboard.SubsystemHealthContent
 import com.ares.analytics.ui.components.core.AresInspectorDrawer

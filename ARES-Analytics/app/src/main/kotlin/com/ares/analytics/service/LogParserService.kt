@@ -4,7 +4,7 @@ import com.ares.analytics.service.log.JsonlLogDecoder
 import com.ares.analytics.service.log.WpiLogDecoder
 import com.ares.analytics.service.log.CsvLogDecoder
 import com.ares.analytics.service.log.ParquetLogDecoder
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.Session
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

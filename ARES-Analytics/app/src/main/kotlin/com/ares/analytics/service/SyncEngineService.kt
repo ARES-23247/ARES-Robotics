@@ -4,6 +4,7 @@ package com.ares.analytics.service
 import com.ares.analytics.shared.AppJson
 
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.controls.ControlSchemeCodec

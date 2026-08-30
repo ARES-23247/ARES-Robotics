@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.ControllerBinding
+import com.ares.analytics.shared.models.ControllerBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -17,7 +17,7 @@ import java.io.File
  * ### Thread Safety & Performance Guarantees:
  * Executes source file tree traversal asynchronously on `Dispatchers.IO`.
  *
- * @see com.ares.analytics.shared.ControllerBinding
+ * @see com.ares.analytics.shared.models.ControllerBinding
  */
 class KeybindingParserService {
     /**

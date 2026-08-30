@@ -6,8 +6,8 @@ import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.tuning.RobotTuningProfile
 import com.ares.analytics.service.tuning.TuningProfileChange
 import com.ares.analytics.service.tuning.TuningProfileRepository
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.service.project.persistence.ProjectMutationTransaction

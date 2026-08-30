@@ -1,9 +1,9 @@
 package com.ares.analytics.service.integration
 
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.AlertRecord
+import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.AppJson
-import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.shared.models.EngineeringNotebookEntry
 import com.ares.analytics.shared.models.EngineeringNotebookHasher

@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.simulation.SimulationProductId
 import java.io.File
 import java.net.URI

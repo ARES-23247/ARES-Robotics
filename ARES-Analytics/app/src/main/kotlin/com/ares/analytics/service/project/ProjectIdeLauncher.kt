@@ -1,6 +1,6 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import java.io.File
 
 data class ProjectIdeLaunchResult(

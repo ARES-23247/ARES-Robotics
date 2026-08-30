@@ -3,7 +3,7 @@ package com.ares.analytics.service.project
 import com.ares.analytics.service.AresGenerationState
 import com.ares.analytics.service.AresProjectGenerator
 import com.ares.analytics.service.ProcessManagerService
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.codegen.SubsystemStarterPlan
 import com.areslib.controls.ControllerInputPlatform
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +51,7 @@ class SessionProjectGenerator(
         )
     }
 
-    private fun authoringWorkspace(projectPath: String, league: League) = com.ares.analytics.shared.WorkspaceConfig(
+    private fun authoringWorkspace(projectPath: String, league: League) = com.ares.analytics.shared.models.WorkspaceConfig(
         teamId = "authoring",
         seasonId = "authoring",
         robotId = "authoring",

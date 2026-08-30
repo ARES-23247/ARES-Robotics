@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import com.ares.analytics.service.ManagedToolchainService
 import com.ares.analytics.service.OAuthService
 import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.IntegrationWorkspaceIdentity
 import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.viewmodel.ProfileViewModel

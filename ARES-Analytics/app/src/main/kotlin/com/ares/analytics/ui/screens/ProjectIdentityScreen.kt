@@ -20,8 +20,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.project.ProjectIdentityEditorState
 import com.ares.analytics.viewmodel.project.ProjectIdentityField

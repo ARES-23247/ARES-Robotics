@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.DriveDestinationConfig
-import com.ares.analytics.shared.DriveDestinationType
-import com.ares.analytics.shared.WorkspaceCollaborationMode
+import com.ares.analytics.shared.models.DriveDestinationConfig
+import com.ares.analytics.shared.models.DriveDestinationType
+import com.ares.analytics.shared.models.WorkspaceCollaborationMode
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*

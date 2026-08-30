@@ -6,7 +6,7 @@ import com.ares.analytics.gateway.routes.diagnosticsRoutes
 import com.ares.analytics.gateway.routes.GoogleOAuthBroker
 import com.ares.analytics.gateway.routes.googleOAuthBrokerRoutes
 import com.ares.analytics.gateway.routes.sourceCodeRoutes
-import com.ares.analytics.shared.ForensicsRequest
+import com.ares.analytics.shared.models.ForensicsRequest
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*

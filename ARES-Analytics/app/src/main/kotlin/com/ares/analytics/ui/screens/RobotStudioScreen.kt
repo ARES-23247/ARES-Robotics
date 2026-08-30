@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.GamepadState
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
 import com.ares.analytics.ui.components.robotstudio.RobotContextInspector
 import com.ares.analytics.ui.components.robotstudio.RobotHierarchyTree

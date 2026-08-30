@@ -1,6 +1,6 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.versioncontrol.DefaultGitHubProjectApi
 import com.ares.analytics.service.versioncontrol.ProjectBackupCredentialStore
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService

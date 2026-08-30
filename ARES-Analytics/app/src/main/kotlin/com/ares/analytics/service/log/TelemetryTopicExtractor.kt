@@ -1,6 +1,6 @@
 package com.ares.analytics.service.log
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.areslib.telemetry.TelemetryTopicNormalizer
 
 /**

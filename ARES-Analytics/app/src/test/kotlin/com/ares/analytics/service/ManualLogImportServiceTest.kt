@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.service.log.HootDecoderService
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import kotlin.test.Test

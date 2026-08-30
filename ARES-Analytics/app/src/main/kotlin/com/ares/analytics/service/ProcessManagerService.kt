@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.project.templateDeploymentBlockReason
 import com.ares.analytics.service.verification.RobotVerificationReport
 import com.ares.analytics.service.verification.RobotVerificationReportLoader

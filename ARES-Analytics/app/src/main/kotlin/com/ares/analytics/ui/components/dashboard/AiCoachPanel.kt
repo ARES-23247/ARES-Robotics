@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.AlertRecord
-import com.ares.analytics.shared.ForensicsResponse
+import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -110,7 +110,7 @@ fun AiCoachPanel(
                                     if (summary == null) {
                                         throw IllegalArgumentException("Session summary not found.")
                                     }
-                                    val req = com.ares.analytics.shared.ForensicsRequest(
+                                    val req = com.ares.analytics.shared.models.ForensicsRequest(
                                         teamId = summary.teamId,
                                         sessionId = sessionId,
                                         alerts = alerts,
@@ -362,7 +362,7 @@ fun AiCoachPanel(
                                                     val summary = databaseService.getSessionSummary(sessionId) ?: throw IllegalStateException("Summary not found")
                                                     val alerts = databaseService.getAlerts(sessionId)
                                                     val topology = databaseService.getTopology(summary.robotId)
-                                                    val req = com.ares.analytics.shared.ForensicsRequest(
+                                                    val req = com.ares.analytics.shared.models.ForensicsRequest(
                                                         teamId = summary.teamId,
                                                         sessionId = sessionId,
                                                         alerts = alerts,

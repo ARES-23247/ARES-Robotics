@@ -7,7 +7,7 @@ import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.CoroutineScope

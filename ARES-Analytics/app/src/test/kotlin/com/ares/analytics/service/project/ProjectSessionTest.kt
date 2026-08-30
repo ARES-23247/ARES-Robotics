@@ -1,7 +1,7 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.ProcessManagerService
 import com.ares.analytics.service.project.persistence.CapabilityCatalogProjectRepository

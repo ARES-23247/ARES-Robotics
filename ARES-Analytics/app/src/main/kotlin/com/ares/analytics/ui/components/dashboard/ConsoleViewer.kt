@@ -26,7 +26,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.ReplayState
 import com.ares.analytics.service.WidgetConfig
-import com.ares.analytics.shared.ConsoleMessage
+import com.ares.analytics.shared.models.ConsoleMessage
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

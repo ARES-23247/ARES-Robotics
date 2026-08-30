@@ -1,5 +1,6 @@
 package com.ares.analytics.shared
 
+import com.ares.analytics.shared.models.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test

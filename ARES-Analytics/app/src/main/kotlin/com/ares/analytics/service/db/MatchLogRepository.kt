@@ -1,6 +1,7 @@
 package com.ares.analytics.service.db
 
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.service.QueryResult
 import com.ares.analytics.service.DatabaseMetrics
 import kotlinx.coroutines.Dispatchers
@@ -403,7 +404,7 @@ class MatchLogRepository(
      * High-performance bulk insert for RobotAction records using DuckDB's native Appender API.
      * Stores Redux-style action log entries from the robot's ActionLogger JSONL output.
      */
-    suspend fun insertRobotActionsBulk(actions: List<com.ares.analytics.shared.RobotActionRecord>) = withDbLock {
+    suspend fun insertRobotActionsBulk(actions: List<com.ares.analytics.shared.models.RobotActionRecord>) = withDbLock {
         if (actions.isEmpty()) return@withDbLock
         val duckConn = conn.unwrap(DuckDBConnection::class.java)
         val appender = duckConn.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "robot_actions")
@@ -429,15 +430,15 @@ class MatchLogRepository(
     /**
      * Retrieves all robot actions for a given session, ordered chronologically.
      */
-    suspend fun getActionsForSession(sessionId: String): List<com.ares.analytics.shared.RobotActionRecord> = withDbLock {
-        val list = mutableListOf<com.ares.analytics.shared.RobotActionRecord>()
+    suspend fun getActionsForSession(sessionId: String): List<com.ares.analytics.shared.models.RobotActionRecord> = withDbLock {
+        val list = mutableListOf<com.ares.analytics.shared.models.RobotActionRecord>()
         conn.prepareStatement(
             "SELECT timestamp_ms, session_id, run_id, robot_id, match_number, alliance, action_type, payload_json FROM robot_actions WHERE session_id = ? ORDER BY timestamp_ms, run_id, action_type, payload_json"
         ).use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
                 while (rs.next()) {
-                    list.add(com.ares.analytics.shared.RobotActionRecord(
+                    list.add(com.ares.analytics.shared.models.RobotActionRecord(
                         timestampMs = rs.getLong("timestamp_ms"),
                         sessionId = rs.getString("session_id"),
                         runId = rs.getString("run_id"),
