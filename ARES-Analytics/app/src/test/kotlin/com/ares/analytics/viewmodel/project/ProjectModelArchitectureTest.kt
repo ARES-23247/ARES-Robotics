@@ -62,6 +62,25 @@ class ProjectModelArchitectureTest {
     }
 
     @Test
+    fun `main shell does not collect high rate gamepad state outside visible routes`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
+        val routeHostStart = mainScreen.indexOf("when (activeNav)")
+        assertTrue(routeHostStart >= 0, "MainScreen route host was not found")
+
+        val applicationShell = mainScreen.substring(0, routeHostStart)
+        assertTrue(
+            "gamepad1State.collectAsState()" !in applicationShell &&
+                "gamepad2State.collectAsState()" !in applicationShell,
+            "High-rate gamepad state must be collected only inside visible controller routes.",
+        )
+    }
+
+    @Test
     fun `production authoring view models share the long lived project session`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),

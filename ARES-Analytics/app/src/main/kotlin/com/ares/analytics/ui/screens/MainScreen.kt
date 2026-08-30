@@ -107,8 +107,6 @@ fun MainScreen(services: ServiceRegistry) {
     val isTerminalOpen = mainState.isTerminalOpen
     val showUpdateBanner = mainState.showUpdateBanner
     val updateState by services.updateCheckerService.updateState.collectAsState()
-    val gamepad1State by services.gamepadService.gamepad1State.collectAsState()
-    val gamepad2State by services.gamepadService.gamepad2State.collectAsState()
     var commandPaletteOpen by remember { mutableStateOf(false) }
     var workspacePendingDeletion by remember { mutableStateOf<Pair<String, String>?>(null) }
     var requestedLessonId by remember { mutableStateOf<String?>(null) }
@@ -1178,40 +1176,48 @@ fun MainScreen(services: ServiceRegistry) {
                                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
                                 },
                             )
-                            NavigationTarget.ROBOT_STUDIO -> RobotStudioScreen(
-                                viewModel = robotStudioViewModel,
-                                drivebaseViewModel = drivebaseBuilderViewModel,
-                                subsystemViewModel = subsystemGeneratorViewModel,
-                                superstructureViewModel = superstructureStudioViewModel,
-                                pathPlannerViewModel = pathPlannerViewModel,
-                                controlsViewModel = controlsEditorViewModel,
-                                controlsState = controlsEditorState,
-                                gamepad1State = gamepad1State,
-                                gamepad2State = gamepad2State,
-                                hardwareSetupViewModel = hardwareSetupViewModel,
-                                projectIdentityViewModel = projectIdentityViewModel,
-                                config = currentConfig,
-                                onOpenPitDiagnostics = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.PIT_DIAGNOSTICS))
-                                },
-                                onRunVerification = {
-                                    executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
-                                },
-                                onOpenInIde = {
-                                    services.projectIdeLauncher.open(currentConfig.projectPath, currentConfig.league).message
-                                },
-                                onCreateStandaloneProject = {
-                                    requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
-                                    mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                },
-                            )
-                            NavigationTarget.CONTROLS -> com.ares.analytics.ui.components.controls.ControlsEditorPanel(
-                                state = controlsEditorState,
-                                viewModel = controlsEditorViewModel,
-                                gamepad1State = gamepad1State,
-                                gamepad2State = gamepad2State,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            NavigationTarget.ROBOT_STUDIO -> {
+                                val gamepad1State by services.gamepadService.gamepad1State.collectAsState()
+                                val gamepad2State by services.gamepadService.gamepad2State.collectAsState()
+                                RobotStudioScreen(
+                                    viewModel = robotStudioViewModel,
+                                    drivebaseViewModel = drivebaseBuilderViewModel,
+                                    subsystemViewModel = subsystemGeneratorViewModel,
+                                    superstructureViewModel = superstructureStudioViewModel,
+                                    pathPlannerViewModel = pathPlannerViewModel,
+                                    controlsViewModel = controlsEditorViewModel,
+                                    controlsState = controlsEditorState,
+                                    gamepad1State = gamepad1State,
+                                    gamepad2State = gamepad2State,
+                                    hardwareSetupViewModel = hardwareSetupViewModel,
+                                    projectIdentityViewModel = projectIdentityViewModel,
+                                    config = currentConfig,
+                                    onOpenPitDiagnostics = {
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.PIT_DIAGNOSTICS))
+                                    },
+                                    onRunVerification = {
+                                        executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
+                                    },
+                                    onOpenInIde = {
+                                        services.projectIdeLauncher.open(currentConfig.projectPath, currentConfig.league).message
+                                    },
+                                    onCreateStandaloneProject = {
+                                        requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                        mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                                    },
+                                )
+                            }
+                            NavigationTarget.CONTROLS -> {
+                                val gamepad1State by services.gamepadService.gamepad1State.collectAsState()
+                                val gamepad2State by services.gamepadService.gamepad2State.collectAsState()
+                                com.ares.analytics.ui.components.controls.ControlsEditorPanel(
+                                    state = controlsEditorState,
+                                    viewModel = controlsEditorViewModel,
+                                    gamepad1State = gamepad1State,
+                                    gamepad2State = gamepad2State,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
                             NavigationTarget.SUPERSTRUCTURE_STUDIO -> SuperstructureStudioScreen(superstructureStudioViewModel)
                             NavigationTarget.HARDWARE_STUDIO, NavigationTarget.HARDWARE_SETUP, NavigationTarget.DRIVEBASE_BUILDER, NavigationTarget.SUBSYSTEM_GEN -> HardwareStudioScreen(
                                 drivebaseViewModel = drivebaseBuilderViewModel,
