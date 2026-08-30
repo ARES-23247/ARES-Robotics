@@ -26,7 +26,6 @@ import org.eclipse.jgit.diff.DiffFormatter
 import org.eclipse.jgit.lib.FileMode
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.ObjectId
-import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.revwalk.RevWalk
@@ -69,7 +68,6 @@ data class ProjectRecoveryPlan(
 ) {
     val canRecover: Boolean get() = changes.isNotEmpty() && confirmationToken != null
 }
-
 enum class ProjectBackupAutoSyncStatus {
     DISABLED,
     WAITING_FOR_DESTINATION,
@@ -98,7 +96,6 @@ fun interface ProjectCheckpointRecorder {
         val NONE = ProjectCheckpointRecorder { _, _, _ -> null }
     }
 }
-
 enum class ProjectRestoreDisposition { UP_TO_DATE, REMOTE_AHEAD, LOCAL_AHEAD }
 
 data class ProjectRestorePlan(
@@ -176,6 +173,7 @@ class ProjectVersionControlService internal constructor(
 
     private val githubMutex = Mutex()
     private val historyMutex = Mutex()
+    private val destinationStore = ProjectGitHubDestinationStore()
     private val autoSyncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val autoSyncRequests = Channel<String>(Channel.CONFLATED)
     private val autoSyncJob: Job
@@ -378,22 +376,22 @@ class ProjectVersionControlService internal constructor(
                 require(git.status().call().isClean) {
                     "Save the current changes as a local version before connecting an online backup."
                 }
-                val origin = originUrl(git)
-                require(origin == null || sameGitHubRepository(origin, repository.cloneUrl)) {
+                val origin = destinationStore.originUrl(git)
+                require(origin == null || destinationStore.sameRepository(origin, repository.cloneUrl)) {
                     "This project already has a different origin remote. ARES will not replace it."
                 }
                 val addedOrigin = origin == null
                 try {
                     if (addedOrigin) {
-                        git.remoteAdd().setName(ORIGIN_REMOTE).setUri(URIish(repository.cloneUrl)).call()
+                        destinationStore.addOrigin(git, repository.cloneUrl)
                     }
-                    writeDestination(git, account, repository)
+                    destinationStore.write(git, account, repository)
                     invokeRemoteOperation(RemoteOperation.PUSH) {
                         remotePusher(git, credential.accessToken)
                     }
                 } catch (failure: Exception) {
-                    clearDestination(git)
-                    if (addedOrigin) git.remoteRemove().setRemoteName(ORIGIN_REMOTE).call()
+                    destinationStore.clear(git)
+                    if (addedOrigin) destinationStore.removeOrigin(git)
                     throw failure
                 }
             }
@@ -409,18 +407,18 @@ class ProjectVersionControlService internal constructor(
                 require(git.status().call().isClean) {
                     "Save the current changes as a local version before syncing GitHub."
                 }
-                val destination = readDestination(git)
+                val destination = destinationStore.read(git)
                     ?: error("Choose an approved personal or team repository before syncing GitHub.")
                 val (account, repository) = verifyDestinationAccess(credential, destination)
-                val origin = originUrl(git)
+                val origin = destinationStore.originUrl(git)
                     ?: error("The saved GitHub destination has no origin remote. Choose the destination again.")
-                require(sameGitHubRepository(origin, destination.cloneUrl)) {
+                require(destinationStore.sameRepository(origin, destination.cloneUrl)) {
                     "The origin remote changed after this destination was approved. ARES will not push."
                 }
-                if (!sameGitHubRepository(origin, repository.cloneUrl)) {
-                    git.remoteSetUrl().setRemoteName(ORIGIN_REMOTE).setRemoteUri(URIish(repository.cloneUrl)).call()
+                if (!destinationStore.sameRepository(origin, repository.cloneUrl)) {
+                    destinationStore.updateOrigin(git, repository.cloneUrl)
                 }
-                writeDestination(git, account, repository)
+                destinationStore.write(git, account, repository)
                 invokeRemoteOperation(RemoteOperation.PUSH) {
                     remotePusher(git, credential.accessToken)
                 }
@@ -567,11 +565,11 @@ class ProjectVersionControlService internal constructor(
     suspend fun disconnectBackupDestination(projectPath: String): ProjectBackupPlan = withContext(Dispatchers.IO) {
         val root = requireProjectRoot(projectPath)
         Git.open(root).use { git ->
-            require(readDestination(git) != null) {
+            require(destinationStore.read(git) != null) {
                 "This project has no ARES-managed GitHub destination to disconnect."
             }
-            if (originUrl(git) != null) git.remoteRemove().setRemoteName(ORIGIN_REMOTE).call()
-            clearDestination(git)
+            if (destinationStore.originUrl(git) != null) destinationStore.removeOrigin(git)
+            destinationStore.clear(git)
         }
         buildPlan(root).also { _autoSyncState.value = autoSyncStateFor(root) }
     }
@@ -913,8 +911,8 @@ class ProjectVersionControlService internal constructor(
                 changes = changes,
                 blockedSensitivePaths = sensitive,
                 lastCommit = lastCommit,
-                remoteUrl = originUrl(git),
-                destination = readDestination(git),
+                remoteUrl = destinationStore.originUrl(git),
+                destination = destinationStore.read(git),
                 confirmationToken = changes.takeIf { it.isNotEmpty() }?.let { contentBoundToken(root, it) },
                 versions = versions,
                 recoveryPoints = recoveryPoints,
@@ -989,12 +987,12 @@ class ProjectVersionControlService internal constructor(
         require(git.status().call().isClean) {
             "Save the current changes as a local version before checking or restoring GitHub."
         }
-        val destination = readDestination(git)
+        val destination = destinationStore.read(git)
             ?: error("Choose an approved personal or team repository before checking GitHub versions.")
         val (_, repository) = verifyDestinationAccess(credential, destination)
-        val origin = originUrl(git)
+        val origin = destinationStore.originUrl(git)
             ?: error("The saved GitHub destination has no origin remote. Choose the destination again.")
-        require(sameGitHubRepository(origin, repository.cloneUrl)) {
+        require(destinationStore.sameRepository(origin, repository.cloneUrl)) {
             "The origin remote changed after this destination was approved. ARES will not restore from it."
         }
         val localId = git.repository.resolve(Constants.HEAD)
@@ -1151,51 +1149,6 @@ class ProjectVersionControlService internal constructor(
         return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
 
-    private fun writeDestination(
-        git: Git,
-        account: GitHubBackupAccount,
-        repository: GitHubBackupRepository,
-    ) {
-        val config = git.repository.config
-        config.setLong(BACKUP_CONFIG_SECTION, null, "installationId", account.installationId)
-        config.setLong(BACKUP_CONFIG_SECTION, null, "repositoryId", repository.repositoryId)
-        config.setString(BACKUP_CONFIG_SECTION, null, "owner", repository.ownerLogin)
-        config.setString(BACKUP_CONFIG_SECTION, null, "repository", repository.name)
-        config.setString(BACKUP_CONFIG_SECTION, null, "accountKind", account.kind.name)
-        config.setString(BACKUP_CONFIG_SECTION, null, "cloneUrl", repository.cloneUrl)
-        config.setString(BACKUP_CONFIG_SECTION, null, "webUrl", repository.webUrl)
-        config.save()
-    }
-
-    private fun readDestination(git: Git): GitHubBackupDestination? {
-        val config = git.repository.config
-        val installationId = config.getLong(BACKUP_CONFIG_SECTION, null, "installationId", -1L)
-        val repositoryId = config.getLong(BACKUP_CONFIG_SECTION, null, "repositoryId", -1L)
-        val owner = config.getString(BACKUP_CONFIG_SECTION, null, "owner") ?: return null
-        val repository = config.getString(BACKUP_CONFIG_SECTION, null, "repository") ?: return null
-        val kind = config.getString(BACKUP_CONFIG_SECTION, null, "accountKind")
-            ?.let { runCatching { GitHubAccountKind.valueOf(it) }.getOrNull() } ?: return null
-        val cloneUrl = config.getString(BACKUP_CONFIG_SECTION, null, "cloneUrl") ?: return null
-        val webUrl = config.getString(BACKUP_CONFIG_SECTION, null, "webUrl") ?: return null
-        if (installationId <= 0 || repositoryId <= 0 || owner.isBlank() || repository.isBlank()) return null
-        validateGitHubRepositoryUrl(cloneUrl)
-        validateGitHubWebUrl(webUrl)
-        val origin = originUrl(git) ?: return null
-        if (!sameGitHubRepository(origin, cloneUrl)) return null
-        return GitHubBackupDestination(installationId, repositoryId, owner, repository, kind, cloneUrl, webUrl)
-    }
-
-    private fun clearDestination(git: Git) {
-        git.repository.config.apply {
-            unsetSection(BACKUP_CONFIG_SECTION, null)
-            save()
-        }
-    }
-
-    private fun originUrl(git: Git): String? = git.remoteList().call()
-        .singleOrNull { it.name == ORIGIN_REMOTE }
-        ?.urIs?.singleOrNull()?.toString()
-
     private fun requireProjectRoot(projectPath: String): File {
         require(projectPath.isNotBlank()) { "Choose a robot project before opening Project Backup." }
         val root = File(projectPath).canonicalFile
@@ -1231,8 +1184,6 @@ class ProjectVersionControlService internal constructor(
         private const val MAX_VISIBLE_RECOVERY_POINTS = 10
         private const val MINIMUM_DEVICE_POLL_SECONDS = 5L
         private const val TOKEN_EXPIRY_SAFETY_SECONDS = 60L
-        private const val ORIGIN_REMOTE = "origin"
-        private const val BACKUP_CONFIG_SECTION = "aresBackup"
         private const val AUTO_SYNC_CONFIG_SECTION = "aresBackup"
         private const val AUTO_SYNC_CONFIG_NAME = "autoSync"
         private const val AUTO_SYNC_DEBOUNCE_MS = 5_000L
@@ -1395,30 +1346,4 @@ private fun friendlyRemoteFailure(operation: RemoteOperation, failure: Throwable
     } else {
         "GitHub could not check this backup. Refresh destinations and try again; local project history is unchanged."
     }
-}
-
-private fun validateGitHubRepositoryUrl(raw: String) {
-    val uri = runCatching { URI(raw) }.getOrElse { error("The GitHub repository URL is invalid.") }
-    require(uri.scheme == "https" && uri.host.equals("github.com", ignoreCase = true) && uri.userInfo == null) {
-        "Project Backup only accepts credential-free HTTPS repositories on github.com."
-    }
-    val segments = uri.path.trim('/').removeSuffix(".git").split('/')
-    require(segments.size == 2 && segments.all { it.matches(Regex("[A-Za-z0-9_.-]{1,100}")) }) {
-        "The GitHub repository URL must identify one owner and repository."
-    }
-}
-
-private fun validateGitHubWebUrl(raw: String) {
-    validateGitHubRepositoryUrl(raw.removeSuffix("/") + if (raw.endsWith(".git")) "" else ".git")
-}
-
-private fun sameGitHubRepository(first: String, second: String): Boolean =
-    githubRepositoryIdentity(first)?.equals(githubRepositoryIdentity(second), ignoreCase = true) == true
-
-private fun githubRepositoryIdentity(raw: String): String? {
-    val uri = runCatching { URI(raw) }.getOrNull() ?: return null
-    if (uri.scheme != "https" || !uri.host.equals("github.com", ignoreCase = true) || uri.userInfo != null) return null
-    val segments = uri.path.trim('/').removeSuffix(".git").split('/')
-    if (segments.size != 2 || segments.any(String::isBlank)) return null
-    return segments.joinToString("/")
 }
