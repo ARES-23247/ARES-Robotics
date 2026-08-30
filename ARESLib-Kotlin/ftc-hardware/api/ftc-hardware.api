@@ -1572,14 +1572,6 @@ public final class com/areslib/ftc/photon/FtcHubCommandTransport : java/lang/Enu
 	public static fun values ()[Lcom/areslib/ftc/photon/FtcHubCommandTransport;
 }
 
-public abstract interface class com/areslib/ftc/photon/PhotonEnabledOpMode : com/areslib/ftc/photon/AresFtcRuntimeOptionsProvider {
-	public fun getAresFtcRuntimeOptions ()Lcom/areslib/ftc/photon/AresFtcRuntimeOptions;
-}
-
-public final class com/areslib/ftc/photon/PhotonEnabledOpMode$DefaultImpls {
-	public static fun getAresFtcRuntimeOptions (Lcom/areslib/ftc/photon/PhotonEnabledOpMode;)Lcom/areslib/ftc/photon/AresFtcRuntimeOptions;
-}
-
 public final class com/areslib/ftc/power/FtcPowerManager : com/areslib/subsystem/PowerManager {
 	public static final field FLOODGATE_EXPECTED_LOAD_AMPS D
 	public static final field FLOODGATE_ZERO_CURRENT_AMPS D
