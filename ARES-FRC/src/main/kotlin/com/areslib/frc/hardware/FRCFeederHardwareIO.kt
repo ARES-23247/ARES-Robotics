@@ -1,6 +1,6 @@
 package com.areslib.frc.hardware
 
-import com.areslib.frc.hardware.FeederIO
+import com.areslib.hardware.actuator.FeederIO
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX

@@ -1,6 +1,6 @@
 package com.areslib.frc.hardware
 
-import com.areslib.frc.hardware.FloorIO
+import com.areslib.hardware.actuator.FloorIO
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX

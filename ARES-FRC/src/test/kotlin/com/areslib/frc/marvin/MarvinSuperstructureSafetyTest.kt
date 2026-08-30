@@ -1,11 +1,11 @@
 package com.areslib.frc.marvin
 
-import com.areslib.frc.hardware.ClimberIO
-import com.areslib.frc.hardware.CowlIO
-import com.areslib.frc.hardware.FeederIO
-import com.areslib.frc.hardware.FloorIO
-import com.areslib.frc.hardware.FlywheelIO
-import com.areslib.frc.hardware.IntakeIO
+import com.areslib.hardware.actuator.ClimberIO
+import com.areslib.hardware.actuator.CowlIO
+import com.areslib.hardware.actuator.FeederIO
+import com.areslib.hardware.actuator.FloorIO
+import com.areslib.hardware.actuator.FlywheelIO
+import com.areslib.hardware.actuator.IntakeIO
 import com.areslib.state.RobotState
 import com.areslib.state.SuperstructureState
 import org.junit.jupiter.api.Assertions.assertEquals

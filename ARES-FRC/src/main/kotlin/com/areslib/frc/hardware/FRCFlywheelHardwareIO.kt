@@ -1,5 +1,6 @@
 package com.areslib.frc.hardware
 
+import com.areslib.hardware.actuator.FlywheelIO
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.Follower
 import com.ctre.phoenix6.controls.VelocityVoltage

@@ -1,6 +1,6 @@
 package com.areslib.frc.sim.io
 
-import com.areslib.frc.hardware.IntakeIO
+import com.areslib.hardware.actuator.IntakeIO
 import com.areslib.frc.Dyn4jSimulation
 import com.areslib.frc.marvin.MarvinConfig
 

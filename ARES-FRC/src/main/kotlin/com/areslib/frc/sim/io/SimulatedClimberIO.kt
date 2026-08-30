@@ -1,6 +1,6 @@
 package com.areslib.frc.sim.io
 
-import com.areslib.frc.hardware.ClimberIO
+import com.areslib.hardware.actuator.ClimberIO
 import com.areslib.frc.Dyn4jSimulation
 
 /**
