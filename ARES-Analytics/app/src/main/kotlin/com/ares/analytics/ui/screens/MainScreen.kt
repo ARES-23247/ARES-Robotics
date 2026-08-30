@@ -279,7 +279,7 @@ fun MainScreen(services: ServiceRegistry) {
             projectGenerator = services.projectGenerator,
             checkpointRecorder = services.projectVersionControlService,
             designAssistant = com.ares.analytics.service.ControlsDesignAssistant { current, context, request ->
-                services.syncEngineService.requestControlsDesignProposal(current, context, request)
+                services.robotDesignAssistantService.requestControlsDesignProposal(current, context, request)
             },
             projectSession = services.projectSession,
         )
@@ -306,7 +306,7 @@ fun MainScreen(services: ServiceRegistry) {
             projectGenerator = services.projectGenerator,
             checkpointRecorder = services.projectVersionControlService,
             designAssistant = com.ares.analytics.service.SubsystemDesignAssistant { current, request ->
-                services.syncEngineService.requestSubsystemDesignProposal(current, request)
+                services.robotDesignAssistantService.requestSubsystemDesignProposal(current, request)
             },
             projectSession = services.projectSession,
         )
@@ -324,7 +324,7 @@ fun MainScreen(services: ServiceRegistry) {
             checkpointRecorder = services.projectVersionControlService,
             projectSession = services.projectSession,
             designAssistant = com.ares.analytics.service.DrivebaseDesignAssistant { current, request ->
-                services.syncEngineService.requestDrivebaseDesignProposal(current, request)
+                services.robotDesignAssistantService.requestDrivebaseDesignProposal(current, request)
             },
         )
     }
@@ -594,7 +594,7 @@ fun MainScreen(services: ServiceRegistry) {
                 analysis = DashboardAnalysisWidgetServices(
                     databaseService = services.databaseService,
                     advancedAnalyticsService = services.advancedAnalyticsService,
-                    syncEngineService = services.syncEngineService,
+                    aiDiagnosticsService = services.aiDiagnosticsService,
                     driverAnalysisService = services.driverAnalysisService,
                     diagnosticCoachService = services.diagnosticCoachService,
                 ),
@@ -641,6 +641,7 @@ fun MainScreen(services: ServiceRegistry) {
                 guidedAnalysis = guidedRunAnalysisViewModel,
                 database = services.databaseService,
                 sync = services.syncEngineService,
+                aiDiagnostics = services.aiDiagnosticsService,
             ),
             academy = academyFeatureScope,
             learningProgress = services.learningProgressService,

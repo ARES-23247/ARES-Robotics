@@ -206,7 +206,7 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
             SessionSummaryCard(context.analysisServices.databaseService, context.dashboardState.primarySessionId, modifier)
         },
         definition("ai_coach", "AI Forensics Coach", "Evidence-backed pit diagnostics and repair guidance.", Icons.Default.Psychology, DashboardWidgetCategory.ANALYSIS, 5, 6, capabilities = dataReplay + DashboardWidgetCapability.CLOUD) { _, context, modifier ->
-            AiCoachPanel(context.analysisServices.databaseService, context.analysisServices.syncEngineService, context.dashboardState.primarySessionId, context.onForensicsCompleted, modifier)
+            AiCoachPanel(context.analysisServices.databaseService, context.analysisServices.aiDiagnosticsService, context.dashboardState.primarySessionId, context.onForensicsCompleted, modifier)
         },
         definition("driver_motion_review", "Driver Motion Review", "Practice prompts from timestamp-synchronized chassis motion; never a driver score.", Icons.Default.SportsEsports, DashboardWidgetCategory.ANALYSIS, 5, 6, capabilities = dataReplay) { _, context, modifier ->
             DriverMotionReviewWidget(context.analysisServices.driverAnalysisService, context.dashboardState.primarySessionId, modifier)

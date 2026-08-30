@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.service.SyncEngineService
+import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.ui.theme.*
@@ -45,7 +45,7 @@ sealed class ForensicsState {
 @Composable
 fun AiCoachPanel(
     databaseService: DatabaseService,
-    syncEngineService: SyncEngineService,
+    aiDiagnosticsService: AiDiagnosticsService,
     sessionId: String?,
     onForensicsCompleted: (ForensicsResponse) -> Unit,
     modifier: Modifier = Modifier
@@ -118,7 +118,7 @@ fun AiCoachPanel(
                                         topology = topology,
                                         sysIdDrift = emptyMap() // Can be populated if drift calculation available
                                     )
-                                    val response = syncEngineService.requestForensics(req)
+                                    val response = aiDiagnosticsService.requestForensics(req)
                                     forensicsState = ForensicsState.Success(response)
                                     onForensicsCompleted(response)
                                 } catch (e: Exception) {
@@ -369,7 +369,7 @@ fun AiCoachPanel(
                                                         summary = summary,
                                                         topology = topology
                                                     )
-                                                    val reply = syncEngineService.requestChatCoach(req, questionCopy, chatHistory.toList())
+                                                    val reply = aiDiagnosticsService.requestChatCoach(req, questionCopy, chatHistory.toList())
                                                     chatHistory.add(Pair("coach", reply))
                                                 } catch (e: Exception) {
                                                     chatHistory.add(Pair("coach", "Error: ${e.message ?: "Failed to get reply."}"))

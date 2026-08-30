@@ -2,6 +2,7 @@ package com.ares.analytics.ui.components.dashboard
 
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.AdvancedAnalyticsService
+import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.service.AlertEngineService
 import com.ares.analytics.service.DashboardHealthService
 import com.ares.analytics.service.DatabaseService
@@ -10,7 +11,6 @@ import com.ares.analytics.service.DriverAnalysisService
 import com.ares.analytics.service.GamepadService
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayEngineService
-import com.ares.analytics.service.SyncEngineService
 
 /** Live robot/simulator dependencies available to dashboard widget renderers. */
 data class DashboardLiveWidgetServices(
@@ -24,7 +24,7 @@ data class DashboardLiveWidgetServices(
 data class DashboardAnalysisWidgetServices(
     val databaseService: DatabaseService,
     val advancedAnalyticsService: AdvancedAnalyticsService,
-    val syncEngineService: SyncEngineService,
+    val aiDiagnosticsService: AiDiagnosticsService,
     val driverAnalysisService: DriverAnalysisService,
     val diagnosticCoachService: DiagnosticCoachService,
 )

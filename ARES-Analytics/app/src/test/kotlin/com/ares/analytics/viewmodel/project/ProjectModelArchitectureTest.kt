@@ -6,6 +6,36 @@ import kotlin.test.assertTrue
 
 class ProjectModelArchitectureTest {
     @Test
+    fun `drive sync robot design and ai diagnostics have distinct service owners`() {
+        val sourceRoot = sequenceOf(
+            File("app/src/main/kotlin/com/ares/analytics"),
+            File("src/main/kotlin/com/ares/analytics"),
+        ).firstOrNull(File::isDirectory)
+        checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
+        val services = File(sourceRoot, "service")
+        val sync = File(services, "SyncEngineService.kt").readText()
+        val provider = File(services, "GenerativeAiService.kt").readText()
+        val design = File(services, "RobotDesignAssistantService.kt").readText()
+        val diagnostics = File(services, "AiDiagnosticsService.kt").readText()
+
+        listOf(
+            "requestSubsystemDesignProposal",
+            "requestDrivebaseDesignProposal",
+            "requestControlsDesignProposal",
+            "requestForensics",
+            "requestChatCoach",
+            "requestSqlAnalysis",
+            "generativelanguage.googleapis.com",
+            "aiplatform.googleapis.com",
+        ).forEach { forbidden ->
+            assertTrue(forbidden !in sync, "SyncEngineService must remain Drive synchronization only: $forbidden")
+        }
+        assertTrue("requestStructuredJson" in provider && "requestText" in provider)
+        assertTrue("requestSubsystemDesignProposal" in design && "requestControlsDesignProposal" in design)
+        assertTrue("requestForensics" in diagnostics && "requestSqlAnalysis" in diagnostics)
+    }
+
+    @Test
     fun `project history authentication automatic backup and recovery have distinct owners`() {
         val sourceRoot = sequenceOf(
             File("app/src/main/kotlin/com/ares/analytics"),

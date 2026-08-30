@@ -209,7 +209,7 @@ class ProfileViewModel(
                     _state.update { it.copy(syncStatus = "Running delta sync...") }
                     try {
                         withContext(Dispatchers.IO) {
-                            syncEngineService.performDeltaSync(cfg.teamId, cfg.seasonId, intent.firebaseToken)
+                            syncEngineService.performDeltaSync(cfg.teamId, cfg.seasonId)
                         }
                         _state.update { it.copy(syncStatus = "Sync successful!") }
                     } catch (e: Exception) {

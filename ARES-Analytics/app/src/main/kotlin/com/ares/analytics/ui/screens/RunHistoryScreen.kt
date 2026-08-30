@@ -39,7 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.ui.graphics.SolidColor
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.service.SyncEngineService
+import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.TelemetryFrame
@@ -102,7 +102,7 @@ data class RowDefinition(
  * log scrubbing replay controls, and AI log breakdown chat threads.
  *
  * @param databaseService Primary [DatabaseService] backing DuckDB telemetry queries.
- * @param syncEngineService Sync engine service for downloading log files.
+ * @param aiDiagnosticsService AI interpretation boundary for read-only telemetry queries.
  * @param onOpenImports Opens the log-import workflow when no completed runs exist.
  * @param onOpenHelp Opens the beginner lesson that explains how to create and review a run.
  *
@@ -112,7 +112,7 @@ data class RowDefinition(
 @Composable
 fun RunHistoryScreen(
     databaseService: DatabaseService,
-    syncEngineService: SyncEngineService,
+    aiDiagnosticsService: AiDiagnosticsService,
     workspace: WorkspaceConfig,
     reloadTrigger: Int = 0,
     onOpenImports: () -> Unit = {},
@@ -562,7 +562,7 @@ fun RunHistoryScreen(
                             isAnalystLoading = true
                             scope.launch {
                                 try {
-                                    val reply = syncEngineService.requestSqlAnalysis(queryCopy, databaseService)
+                                    val reply = aiDiagnosticsService.requestSqlAnalysis(queryCopy)
                                     analystChatHistory.add(Pair("analyst", reply))
                                 } catch (e: Exception) {
                                     analystChatHistory.add(Pair("analyst", "Error: ${e.message ?: "Failed to analyze query."}"))

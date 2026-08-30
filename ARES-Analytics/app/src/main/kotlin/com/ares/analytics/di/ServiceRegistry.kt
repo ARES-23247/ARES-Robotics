@@ -130,7 +130,6 @@ class ServiceRegistry {
     // ── Tier 1: Depend on Tier 0 ─────────────────────────────────────────────
     val nt4ClientService by lazy { Nt4ClientService(databaseService) }
     val logParserService by lazy { LogParserService(databaseService, summaryEngineService) }
-    val parquetExporterService by lazy { ParquetExporterService(databaseService) }
     val replayEngineService by lazy { ReplayEngineService(databaseService, nt4ClientService) }
     val sysIdService by lazy { SysIdService(databaseService) }
     val autoTunerService by lazy { AutoTunerService(nt4ClientService, sysIdService, tuningProposalInbox) }
@@ -160,7 +159,7 @@ class ServiceRegistry {
             aiProvider = com.ares.analytics.service.integration.JsonStructuredDraftProvider(
                 providerId = "gemini.configured",
                 model = com.ares.analytics.shared.DEFAULT_GEMINI_MODEL,
-                requestJson = syncEngineService::requestNotebookDraftJson,
+                requestJson = generativeAiService::requestStructuredJson,
             ),
         )
     }
@@ -225,7 +224,10 @@ class ServiceRegistry {
         ManualLogImportService(databaseService, logParserService, hootDecoderService, autoImportService)
     }
     val googleDriveService by lazy { GoogleDriveService(oauthService, environmentService) }
-    val syncEngineService by lazy { SyncEngineService(databaseService, parquetExporterService, environmentService, summaryEngineService, googleDriveService) }
+    val generativeAiService by lazy { GenerativeAiService(environmentService) }
+    val robotDesignAssistantService by lazy { RobotDesignAssistantService(generativeAiService) }
+    val aiDiagnosticsService by lazy { AiDiagnosticsService(generativeAiService, databaseService) }
+    val syncEngineService by lazy { SyncEngineService(databaseService, environmentService, summaryEngineService, googleDriveService) }
     val phoenixDiagnosticsService by lazy { PhoenixDiagnosticsService(nt4ClientService) }
     val dashboardHealthService by lazy {
         DashboardHealthService(nt4ClientService.telemetryStore, databaseService.metrics, nt4ClientService, replayEngineService)
@@ -317,8 +319,8 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::oauthService)) {
                     oauthService.dispose()
                 }
-                if (lazyFieldInitialized(::syncEngineService)) {
-                    syncEngineService.close()
+                if (lazyFieldInitialized(::generativeAiService)) {
+                    generativeAiService.close()
                 }
                 if (lazyFieldInitialized(::notificationIntegrationService)) {
                     notificationIntegrationService.closeAndJoin()

@@ -2,6 +2,7 @@ package com.ares.analytics.ui.screens
 
 import androidx.compose.runtime.Composable
 import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.service.SyncEngineService
 import com.ares.analytics.service.tuning.GuidedTuningExperimentSeed
 import com.ares.analytics.shared.models.WorkspaceConfig
@@ -17,6 +18,7 @@ internal data class RunDataFeatureScope(
     val guidedAnalysis: GuidedRunAnalysisViewModel,
     val database: DatabaseService,
     val sync: SyncEngineService,
+    val aiDiagnostics: AiDiagnosticsService,
 )
 
 internal data class RunDataRouteActions(
@@ -79,7 +81,7 @@ internal fun RunDataRouteHost(
     NavigationTarget.RUN_HISTORY -> {
         RunHistoryScreen(
             databaseService = scope.database,
-            syncEngineService = scope.sync,
+            aiDiagnosticsService = scope.aiDiagnostics,
             workspace = workspace,
             reloadTrigger = reloadTrigger,
             onOpenImports = { actions.navigate(NavigationTarget.IMPORT_CENTER) },

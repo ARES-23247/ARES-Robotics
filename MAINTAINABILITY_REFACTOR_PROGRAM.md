@@ -64,7 +64,12 @@ local safety-point recovery; GitHub destination selection and backup synchroniza
 `ProjectVersionControlService` now receives one explicit history-change event and contains no
 authentication, remote mutation, background automation, restore, recovery, or archive policy.
 Archive export is isolated and reuses the one canonical project-root contract. Google Drive/AI
-separation and DuckDB domain repositories remain the next external-service boundaries.
+separation is complete: `SyncEngineService` owns only immutable Drive session/profile
+synchronization; `GenerativeAiService` owns provider authentication and transport;
+`RobotDesignAssistantService` owns reviewed Builder proposals; and `AiDiagnosticsService` owns
+forensics, coaching, and guarded telemetry-query interpretation. All callers use the new services
+directly; the removed `SyncEngineService` AI methods have no compatibility forwarding layer.
+DuckDB domain repositories remain the next external-service boundary.
 
 **Exit criteria:** current boundary contract tests, cancellation/shutdown tests, offline behavior, database
 transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures remain isolated.
