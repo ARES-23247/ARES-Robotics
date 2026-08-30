@@ -199,7 +199,7 @@ class ControlsEditorViewModel(
                 val isNewScheme = project.controlSchemes.isEmpty()
                 val projectProblems = snapshot.diagnostics.map { diagnostic ->
                     ControlsProblem(
-                        if (diagnostic.kind == com.ares.analytics.service.project.persistence.ProjectDocumentKind.PROJECT_METADATA) {
+                        if (diagnostic.kind == com.areslib.project.schema.ProjectDocumentKind.PROJECT_METADATA) {
                             ControlsProblemSeverity.ERROR
                         } else ControlsProblemSeverity.WARNING,
                         diagnostic.message

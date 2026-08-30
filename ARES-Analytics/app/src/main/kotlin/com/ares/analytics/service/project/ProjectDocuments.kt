@@ -7,7 +7,7 @@ import com.ares.analytics.service.project.persistence.CapabilityCatalogProjectRe
 import com.ares.analytics.service.project.persistence.ControlSchemeProjectRepository
 import com.ares.analytics.service.project.persistence.ControllerProfileProjectRepository
 import com.ares.analytics.service.project.persistence.ProjectDocumentDiagnostic
-import com.ares.analytics.service.project.persistence.ProjectDocumentKind
+import com.areslib.project.schema.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentListing
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.ares.analytics.service.project.persistence.RoutineProjectRepository

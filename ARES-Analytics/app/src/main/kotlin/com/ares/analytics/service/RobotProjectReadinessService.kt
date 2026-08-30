@@ -14,7 +14,7 @@ import com.ares.analytics.service.tuning.TuningWorkspaceDocuments
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
-import com.ares.analytics.service.project.persistence.ProjectDocumentKind
+import com.areslib.project.schema.ProjectDocumentKind
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectAuthoringModel

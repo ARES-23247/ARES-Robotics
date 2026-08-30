@@ -1,5 +1,7 @@
 package com.ares.analytics.service.project.persistence
 
+import com.areslib.project.schema.ProjectDocumentKind
+
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.RoutineValidationSeverity

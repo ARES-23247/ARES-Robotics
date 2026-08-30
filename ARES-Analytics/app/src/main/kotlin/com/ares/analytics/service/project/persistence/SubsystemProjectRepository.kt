@@ -1,5 +1,8 @@
 package com.ares.analytics.service.project.persistence
 
+import com.areslib.project.schema.ProjectDocumentKind
+
+import com.areslib.project.schema.ProjectDocumentId
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 

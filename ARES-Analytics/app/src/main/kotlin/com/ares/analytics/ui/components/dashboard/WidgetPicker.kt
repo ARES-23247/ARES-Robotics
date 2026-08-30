@@ -51,16 +51,13 @@ import com.ares.analytics.ui.theme.AresThemeSettings
 import com.ares.analytics.service.dashboard.DashboardWidgetCategory
 import com.ares.analytics.service.dashboard.DashboardWidgetType
 
-typealias WidgetCategory = DashboardWidgetCategory
-typealias AvailableWidget = DashboardWidgetDefinition
-
-val availableWidgetsList: List<AvailableWidget>
+val availableWidgetsList: List<DashboardWidgetDefinition>
     get() = DashboardWidgetRegistry.definitions
 
-fun filterWidgets(query: String, category: WidgetCategory): List<AvailableWidget> {
+fun filterWidgets(query: String, category: DashboardWidgetCategory): List<DashboardWidgetDefinition> {
     val normalized = query.trim().lowercase()
     return availableWidgetsList.filter { widget ->
-        val categoryMatch = if (category == WidgetCategory.RECOMMENDED) widget.recommended else widget.category == category
+        val categoryMatch = if (category == DashboardWidgetCategory.RECOMMENDED) widget.recommended else widget.category == category
         val queryMatch = normalized.isEmpty() || widget.displayName.lowercase().contains(normalized) ||
             widget.description.lowercase().contains(normalized) || widget.type.serializedName.lowercase().contains(normalized)
         categoryMatch && queryMatch
@@ -70,7 +67,7 @@ fun filterWidgets(query: String, category: WidgetCategory): List<AvailableWidget
 @Composable
 fun WidgetPicker(onDismiss: () -> Unit, onSelectWidget: (DashboardWidgetType) -> Unit) {
     var query by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(WidgetCategory.RECOMMENDED) }
+    var category by remember { mutableStateOf(DashboardWidgetCategory.RECOMMENDED) }
     val results = remember(query, category) { filterWidgets(query, category) }
     val touch = AresThemeSettings.touchOptimizedMode
 
@@ -101,7 +98,7 @@ fun WidgetPicker(onDismiss: () -> Unit, onSelectWidget: (DashboardWidgetType) ->
                     }) else null
                 )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    WidgetCategory.entries.forEach { option ->
+                    DashboardWidgetCategory.entries.forEach { option ->
                         AssistChip(
                             onClick = { category = option },
                             label = { Text(option.displayName) },
@@ -143,7 +140,7 @@ fun WidgetPicker(onDismiss: () -> Unit, onSelectWidget: (DashboardWidgetType) ->
 }
 
 @Composable
-private fun WidgetPickerCard(widget: AvailableWidget, onSelectWidget: (DashboardWidgetType) -> Unit, onDismiss: () -> Unit) {
+private fun WidgetPickerCard(widget: DashboardWidgetDefinition, onSelectWidget: (DashboardWidgetType) -> Unit, onDismiss: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
