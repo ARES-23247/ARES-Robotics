@@ -59,28 +59,31 @@ internal object FtcMecanumRuntimeParameters {
         return topologyReady.copy(parameters = (mergedRequired + extras).sortedBy { it.uid })
     }
 
-    /**
-     * Reports whether a previously saved document needs a reviewed runtime-contract repair.
-     * Generation remains fail-closed; the desktop app surfaces this before starting Gradle and
-     * the normal structured-diff save path performs the repair together with its tuning profile.
-     */
-    fun repairMessage(document: DrivetrainDocument): String? {
-        if (document.kind != DrivetrainKind.FTC_MECANUM) return null
-        val repaired = reconcile(document)
-        val currentByKey = document.parameters.associateBy { it.key }
-        val repairedByKey = repaired.parameters.associateBy { it.key }
-        val pinpointTopologyIncomplete = document.localization.primaryOdometry.source == LocalizationSourceKind.PINPOINT &&
-            !hasCompletePinpointTopology(document)
-        val legacyVisionPlaceholder = document.localization.visionFusion.any(::isUnboundLegacyVisionPlaceholder)
-        if (currentByKey == repairedByKey && !pinpointTopologyIncomplete && !legacyVisionPlaceholder) return null
-        val missingKeys = repairedByKey.keys.minus(currentByKey.keys).sorted()
-        val details = buildList {
-            if (missingKeys.isNotEmpty()) add("missing runtime parameters: ${missingKeys.joinToString()}")
-            if (pinpointTopologyIncomplete) add("Pinpoint is not bound to exactly one odometry device")
-            if (legacyVisionPlaceholder) add("an unbound legacy vision placeholder cannot run on FTC")
-            if (isEmpty()) add("saved runtime defaults are out of date")
+    /** Validates the one current FTC runtime contract without rewriting persisted documents. */
+    fun validationIssues(document: DrivetrainDocument): List<String> {
+        if (document.kind != DrivetrainKind.FTC_MECANUM) return emptyList()
+        val expected = requiredFor(document).associateBy { it.key }
+        val actual = document.parameters.associateBy { it.key }
+        return buildList {
+            val missing = expected.keys.minus(actual.keys).sorted()
+            if (missing.isNotEmpty()) add("Missing FTC runtime parameters: ${missing.joinToString()}.")
+            expected.forEach { (key, declaration) ->
+                actual[key]?.let { current ->
+                    if (current.type != declaration.type) {
+                        add("FTC runtime parameter '$key' must use ${declaration.type}.")
+                    }
+                }
+            }
+            if (
+                document.localization.primaryOdometry.source == LocalizationSourceKind.PINPOINT &&
+                !hasCompletePinpointTopology(document)
+            ) {
+                add("Pinpoint must be bound to exactly one odometry device.")
+            }
+            if (document.localization.visionFusion.any(::isUnboundVisionPlaceholder)) {
+                add("Vision fusion must be bound to a declared camera before it can run on FTC.")
+            }
         }
-        return "FTC drivebase runtime contract needs a reviewed repair (${details.joinToString("; ")}). Open Drivetrain, review Safety & Review, and save before Verify & build."
     }
 
     /**
@@ -128,15 +131,15 @@ internal object FtcMecanumRuntimeParameters {
             DrivetrainComponentRole.ODOMETRY_SENSOR
     }
 
-    /** Removes only the pre-runtime generic placeholder that had no physical camera binding. */
+    /** Removes only the unbound UI placeholder; a runtime source must name physical input components. */
     private fun reconcileVisionTopology(document: DrivetrainDocument): DrivetrainDocument {
-        val repaired = document.localization.visionFusion.filterNot(::isUnboundLegacyVisionPlaceholder)
+        val repaired = document.localization.visionFusion.filterNot(::isUnboundVisionPlaceholder)
         return if (repaired.size == document.localization.visionFusion.size) document else document.copy(
             localization = document.localization.copy(visionFusion = repaired),
         )
     }
 
-    private fun isUnboundLegacyVisionPlaceholder(
+    private fun isUnboundVisionPlaceholder(
         source: com.areslib.drivetrain.DrivetrainLocalizationSourceDocument,
     ): Boolean = source.source == LocalizationSourceKind.EXTERNAL &&
         source.componentUids.isEmpty() &&

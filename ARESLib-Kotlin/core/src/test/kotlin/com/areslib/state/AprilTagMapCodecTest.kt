@@ -105,31 +105,12 @@ class AprilTagMapCodecTest {
     }
 
     @Test
-    fun `schema one field remains readable while schema two emits metadata`() {
-        val legacy = RobotFieldDocument.decode(
-            """{"schemaVersion":1,"fieldType":"ftc","apriltags":[{"id":1,"x":1.0,"y":2.0,"z":0.3,"yaw":45.0}]}"""
-        )
-        assertEquals(45.0, legacy.apriltags.single().yaw, 0.0)
-        assertEquals(null, legacy.apriltags.single().sizeMeters)
-
-        val encoded = RobotFieldDocument.encode(
-            legacy.copy(
-                schemaVersion = CURRENT_FIELD_SCHEMA_VERSION,
-                apriltags = listOf(
-                    legacy.apriltags.single().copy(
-                        name = "Tag 1",
-                        family = "36h11",
-                        sizeMeters = 0.1651,
-                        roll = 5.0,
-                        pitch = 6.0,
-                    )
-                ),
+    fun `retired field schemas are rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            RobotFieldDocument.decode(
+                """{"schemaVersion":1,"fieldType":"ftc","apriltags":[{"id":1,"x":1.0,"y":2.0,"z":0.3,"yaw":45.0}]}"""
             )
-        )
-        val upgraded = RobotFieldDocument.decode(encoded).apriltags.single()
-        assertEquals("Tag 1", upgraded.name)
-        assertEquals(5.0, upgraded.roll, 0.0)
-        assertEquals(6.0, upgraded.pitch, 0.0)
+        }
     }
 
     @Test

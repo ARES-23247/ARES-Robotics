@@ -24,7 +24,6 @@ class SessionBundleServiceTest {
         val sourceDatabase = DatabaseService(root.resolve("source.duckdb").absolutePath)
         val targetDatabase = DatabaseService(root.resolve("target.duckdb").absolutePath)
         val environment = EnvironmentService(
-            configPath = root.resolve("legacy.json").absolutePath,
             workspacesPath = root.resolve("workspaces.json").absolutePath,
         )
         val workspace = WorkspaceConfig(

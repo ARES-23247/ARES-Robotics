@@ -216,7 +216,7 @@ class TaskLifecycleRegressionTest {
         assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(longTask))
         assertEquals(2, executions)
         assertEquals(1, resumes)
-        executor.clear(RobotState())
+        executor.cancelAll(RobotState())
         longTask.reset()
     }
 

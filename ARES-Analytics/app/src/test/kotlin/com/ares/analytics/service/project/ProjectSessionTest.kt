@@ -309,6 +309,9 @@ class ProjectSessionTest {
         robotWidthMeters = 0.46,
         fieldLengthMeters = 3.6576,
         fieldWidthMeters = 3.6576,
+        runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+            ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+        ),
     )
 
     private fun controllerProfile() = ControllerProfileDocument(

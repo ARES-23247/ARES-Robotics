@@ -62,7 +62,6 @@ class OAuthServiceTest {
         tempDir = File(System.getProperty("java.io.tmpdir"), "ares-oauth-test-${System.nanoTime()}").apply { mkdirs() }
         authFile = File(tempDir, "auth.json")
         envService = EnvironmentService(
-            configPath = File(tempDir, "config.json").absolutePath,
             workspacesPath = File(tempDir, "workspaces.json").absolutePath
         )
     }

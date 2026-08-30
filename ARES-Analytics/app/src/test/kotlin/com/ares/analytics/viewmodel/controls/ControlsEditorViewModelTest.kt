@@ -754,7 +754,10 @@ class ControlsEditorViewModelTest {
                 robotLengthMeters = .45,
                 robotWidthMeters = .45,
                 fieldLengthMeters = 3.6576,
-                fieldWidthMeters = 3.6576
+                fieldWidthMeters = 3.6576,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             )
         )
     }

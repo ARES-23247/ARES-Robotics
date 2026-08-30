@@ -44,7 +44,7 @@ class ProjectIdentityPresentationTest {
     }
 
     @Test
-    fun `old project format directs users to a current project without migration`() {
+    fun `unsupported project format directs users to create a current project`() {
         val explanation = protectedProjectIdentityExplanation(
             "Project metadata is missing required field: authoringModel",
         )

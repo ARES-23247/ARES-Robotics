@@ -45,7 +45,7 @@ import com.areslib.routine.validateRoutineSet
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.compiler.RobotProjectIr
-import com.areslib.project.resolvedFtcRuntimeOptions
+import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -206,7 +206,7 @@ object AresKotlinProjectGenerator {
                 append("    const val ROBOT_WIDTH_METERS: Double = ${doubleLiteral(metadata.robotWidthMeters)}\n")
                 append("    const val FIELD_LENGTH_METERS: Double = ${doubleLiteral(metadata.fieldLengthMeters)}\n")
                 append("    const val FIELD_WIDTH_METERS: Double = ${doubleLiteral(metadata.fieldWidthMeters)}\n\n")
-                val ftcRuntime = metadata.resolvedFtcRuntimeOptions()
+                val ftcRuntime = metadata.requireFtcRuntimeOptions()
                 append("    /** Canonical runtime choices reviewed in .ares/project.json. */\n")
                 append("    object RuntimeOptions {\n")
                 append("        const val FTC_HUB_COMMAND_TRANSPORT: String = ${stringLiteral(ftcRuntime.hubCommandTransport.name)}\n")

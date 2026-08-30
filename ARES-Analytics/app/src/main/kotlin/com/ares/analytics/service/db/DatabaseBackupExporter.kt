@@ -45,7 +45,7 @@ internal data class CloudSessionAncillaryData(
  * @param conn Active JDBC connection to the DuckDB instance.
  * @param dbMutex Asynchronous mutual exclusion lock preventing concurrent write transactions on the database connection.
  *
- * @see SchemaMigrationManager
+ * @see DatabaseSchemaInitializer
  * @see TelemetryRepository
  * @see RunEvidenceRepository
  */

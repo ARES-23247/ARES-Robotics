@@ -1187,7 +1187,7 @@ public final class com/areslib/project/AresProjectMetadataDocument {
 
 public final class com/areslib/project/AresProjectMetadataKt {
 	public static final field ARES_PROJECT_METADATA_SCHEMA_VERSION I
-	public static final fun resolvedFtcRuntimeOptions (Lcom/areslib/project/AresProjectMetadataDocument;)Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public static final fun requireFtcRuntimeOptions (Lcom/areslib/project/AresProjectMetadataDocument;)Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
 	public static final fun validateAresProjectMetadata (Lcom/areslib/project/AresProjectMetadataDocument;)Ljava/util/List;
 }
 

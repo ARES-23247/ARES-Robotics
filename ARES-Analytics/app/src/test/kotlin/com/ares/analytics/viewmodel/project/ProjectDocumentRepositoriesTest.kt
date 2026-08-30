@@ -53,7 +53,10 @@ class ProjectDocumentRepositoriesTest {
                 robotLengthMeters = .45,
                 robotWidthMeters = .43,
                 fieldLengthMeters = 3.6576,
-                fieldWidthMeters = 3.6576
+                fieldWidthMeters = 3.6576,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             )
             val hash = repository.save(project.path, metadata)
 
@@ -269,7 +272,10 @@ class ProjectDocumentRepositoriesTest {
                     robotLengthMeters = .45,
                     robotWidthMeters = .45,
                     fieldLengthMeters = 3.6576,
-                    fieldWidthMeters = 3.6576
+                    fieldWidthMeters = 3.6576,
+                    runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                        ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                    ),
                 )
             )
             documents.routines.save(project.path, routine("score", "Score", 0.1))
@@ -307,7 +313,10 @@ class ProjectDocumentRepositoriesTest {
                     robotLengthMeters = .45,
                     robotWidthMeters = .45,
                     fieldLengthMeters = 3.6576,
-                    fieldWidthMeters = 3.6576
+                    fieldWidthMeters = 3.6576,
+                    runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                        ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                    ),
                 )
             )
             documents.routines.save(project.path, routine("score", "Score", 0.1))
@@ -467,6 +476,9 @@ class ProjectDocumentRepositoriesTest {
         robotWidthMeters = .43,
         fieldLengthMeters = 3.6576,
         fieldWidthMeters = 3.6576,
+        runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+            ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+        ),
     )
 
     private fun canonical(metadata: AresProjectMetadataDocument): AresProjectMetadataDocument =

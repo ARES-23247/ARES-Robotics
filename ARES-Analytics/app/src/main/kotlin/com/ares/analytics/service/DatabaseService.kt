@@ -56,7 +56,7 @@ internal fun resolveDuckDbResourceSettings(
  * High-level embedded relational database service wrapping the DuckDB C++ engine over JDBC.
  *
  * Manages persistent on-disk database files (`telemetry.duckdb`) and fast ephemeral in-memory databases (`jdbc:duckdb:`).
- * Orchestrates schema migrations via [SchemaMigrationManager], session metadata through
+ * Initializes the current schema via [DatabaseSchemaInitializer], session metadata through
  * [SessionMetadataRepository], telemetry through [TelemetryRepository], action history through
  * [RobotActionRepository], run evidence through [RunEvidenceRepository], and Parquet import/export
  * through [DatabaseBackupExporter].
@@ -72,7 +72,7 @@ internal fun resolveDuckDbResourceSettings(
  *
  * @param dbPath Absolute filesystem path to the DuckDB database file.
  *
- * @see SchemaMigrationManager
+ * @see DatabaseSchemaInitializer
  * @see TelemetryRepository
  * @see DatabaseBackupExporter
  */
@@ -99,7 +99,7 @@ class DatabaseService(
     private val readMutex = Mutex()
     val metrics = DatabaseMetrics()
 
-    private val schemaManager: SchemaMigrationManager
+    private val schemaInitializer: DatabaseSchemaInitializer
     private val transactionCoordinator: DatabaseTransactionCoordinator
     private val sessionMetadataRepo: SessionMetadataRepository
     private val telemetryRepo: TelemetryRepository
@@ -119,15 +119,6 @@ class DatabaseService(
     init {
         Class.forName("org.duckdb.DuckDBDriver")
         val dbFile = File(dbPath)
-        val defaultDbFile = AppDataPaths.file("telemetry.duckdb")
-            .canonicalFile
-        // Legacy import belongs only to the process' real application database. Unit tests and
-        // alternate workspaces must never ingest a user's home telemetry.db by coincidence.
-        val legacyDbPath = if (dbFile.canonicalFile == defaultDbFile) {
-            File(defaultDbFile.parentFile, "telemetry.db").absolutePath
-        } else {
-            null
-        }
         dbFile.parentFile?.mkdirs()
 
         if (dbFile.exists() && dbFile.length() == 0L) {
@@ -159,7 +150,7 @@ class DatabaseService(
         }
         ephemeralReadConn = ephemeralConn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate()
 
-        schemaManager = SchemaMigrationManager(conn, ephemeralConn)
+        schemaInitializer = DatabaseSchemaInitializer(conn, ephemeralConn)
         transactionCoordinator = DatabaseTransactionCoordinator(
             conn,
             readConn,
@@ -177,7 +168,7 @@ class DatabaseService(
         integrationRepository = IntegrationRepository(conn, dbMutex)
         integrationEvents = IntegrationEventRecorder(integrationRepository, integrationRouting)
 
-        schemaManager.runMigrations(legacyDbPath)
+        schemaInitializer.initialize()
 
         // Periodic WAL checkpoint — replaces the per-appender-batch CHECKPOINT that dominated
         // import time with fsyncs on every frame batch. A 60s cadence bounds WAL growth for

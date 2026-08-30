@@ -10,7 +10,7 @@ import com.areslib.project.AresFtcHubCommandTransport
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
-import com.areslib.project.resolvedFtcRuntimeOptions
+import com.areslib.project.requireFtcRuntimeOptions
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -112,8 +112,8 @@ class ProjectIdentityViewModelTest {
 
             val saved = repository.load(project.path).getOrThrow()
             assertEquals(proposal.proposedContentHash, AresProjectMetadataCodec.contentHash(saved))
-            assertEquals(AresFtcHubCommandTransport.ARES_PHOTON, saved.resolvedFtcRuntimeOptions().hubCommandTransport)
-            assertTrue(saved.resolvedFtcRuntimeOptions().limelightProxyEnabled)
+            assertEquals(AresFtcHubCommandTransport.ARES_PHOTON, saved.requireFtcRuntimeOptions().hubCommandTransport)
+            assertTrue(saved.requireFtcRuntimeOptions().limelightProxyEnabled)
             assertNull(viewModel.state.value.proposal)
             assertTrue(viewModel.state.value.message.orEmpty().contains("Created .ares/project.json"))
         }
@@ -348,6 +348,13 @@ class ProjectIdentityViewModelTest {
         robotWidthMeters = .43,
         fieldLengthMeters = if (league == AresLeague.FTC) 3.6576 else 16.541,
         fieldWidthMeters = if (league == AresLeague.FTC) 3.6576 else 8.211,
+        runtimeOptions = if (league == AresLeague.FTC) {
+            com.areslib.project.AresRuntimeOptionsDocument(
+                ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+            )
+        } else {
+            com.areslib.project.AresRuntimeOptionsDocument()
+        },
     )
 
     private suspend fun TestScope.withProject(block: suspend TestScope.(File) -> Unit) {

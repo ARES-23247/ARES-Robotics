@@ -36,7 +36,7 @@ The Compose Desktop process. It owns:
 
 - target discovery and NT4 connections;
 - live dashboard input/output;
-- DuckDB connections and schema migrations;
+- DuckDB connections and current-schema initialization;
 - log decoding and frame batching;
 - deterministic, read-only replay snapshots and dashboard timelines;
 - summaries, SysId, calibration, driver analysis, and alerts;
@@ -169,14 +169,15 @@ Access is serialized with coroutine mutexes at the repository boundary. Keep tra
 
 `executeQueryRaw` is read-only. Do not weaken its restrictions to support a write workflow. Operations such as Parquet `COPY`, where DuckDB cannot parameterize the relevant file position, belong in a narrow internal method that canonicalizes and SQL-escapes the path.
 
-Schema migrations run before repositories are used. Legacy SQLite attach/import uses a separate schema name and explicit destination columns so adding a DuckDB column does not break positional migration.
+`DatabaseSchemaInitializer` creates the one current DuckDB schema before repositories are used and
+then verifies required columns. Incompatible databases fail with an actionable request to create a
+new store; Studio does not carry SQLite importers, schema rewrite branches, or migration markers.
 
-The measured cold-start failure mode and the staged move toward immutable per-session Parquet are
-documented in [Telemetry storage architecture](docs/DATABASE_STORAGE_ARCHITECTURE.md). Do not add a
-primary key or secondary index to the raw telemetry fact table without a production-sized WAL
-recovery benchmark. Existing installations drop the three historical secondary indexes but retain
-their legacy primary-key index until an explicit, progress-reporting Parquet migration; silently
-rewriting tens of millions of rows during startup is prohibited.
+The measured cold-start failure mode and the possible future move toward immutable per-session
+Parquet are documented in [Telemetry storage architecture](docs/DATABASE_STORAGE_ARCHITECTURE.md).
+Do not add a primary key or secondary index to the raw telemetry fact table without a
+production-sized WAL recovery benchmark. Studio never rewrites an incompatible database during
+startup; pre-release stores may be discarded or exported intentionally.
 
 ## 7. Log import
 
@@ -372,7 +373,7 @@ The simulator's `ARES/EstimatedPose/*` ground truth and the robot's `Drive/Pose_
 ### Change persistence
 
 1. Update both persistent and ephemeral schemas when applicable.
-2. Use explicit column lists in migrations/imports.
+2. Use explicit column lists in imports and schema-owned writes.
 3. Preserve numeric and string values.
 4. Test apostrophes and non-ASCII characters in IDs and paths.
 5. Verify export/import round trips.

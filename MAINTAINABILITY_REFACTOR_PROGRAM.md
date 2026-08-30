@@ -115,6 +115,17 @@ tuning code now imports the canonical ARES tuning models directly instead of re-
 through six application-local type aliases. Existing binary consumers must upgrade and recompile;
 the repository does not preserve removed signatures through forwarding wrappers.
 
+The fifth slice applies the same rule to persisted pre-release contracts. Field documents accept
+only the current schema. FTC project metadata must explicitly declare its runtime policy; no getter
+invents one. `TaskExecutor` exposes only cancellation that returns cleanup actions. Studio no longer
+scans for moved workspaces, imports a retired single-workspace configuration, reads plaintext OAuth
+tokens, converts old Academy progress, imports SQLite telemetry, rewrites historical DuckDB tables,
+or stores schema-migration markers. Drivebase and tuning edits may reconcile declarations made
+obsolete by the edit currently under review, but they never repair project identity or accept a
+second persisted schema. Interrupted current imports, corrupt-file quarantine, history backups, and
+fail-closed hardware behavior remain because they protect current operations rather than preserve
+an old contract.
+
 **Exit criteria:** no orphan production APIs, multiple simulated robot instances remain isolated,
 hardware reads remain once per loop, and zero-allocation regression tests remain green.
 

@@ -13,7 +13,16 @@ class DrivebaseProjectRepository {
     fun load(projectPath: String): Result<DrivebaseDocument?> = runCatching {
         val files = drivetrainFiles(projectPath)
         require(files.size <= 1) { "This project has multiple drivetrain documents. Multi-drivebase selection is not available yet; choose one explicitly in project source." }
-        files.singleOrNull()?.let { DrivetrainDocumentCodec.decode(it.readText()).toUiDrivebase() }
+        files.singleOrNull()?.let { file ->
+            val canonical = DrivetrainDocumentCodec.decode(file.readText())
+            val runtimeIssues = FtcMecanumRuntimeParameters.validationIssues(canonical)
+            require(runtimeIssues.isEmpty()) {
+                "${file.name} does not match the current drivetrain runtime contract: " +
+                    runtimeIssues.joinToString(" ") +
+                    " Create a current drivebase document instead of repairing an older contract."
+            }
+            canonical.toUiDrivebase()
+        }
     }
 
     fun saveReviewed(projectPath: String, expectedContentHash: String?, document: DrivebaseDocument): DrivebaseDocument {
@@ -28,26 +37,18 @@ class DrivebaseProjectRepository {
         }
         val saved = normalized
         val tuningRepository = TuningProfileRepository()
-        val tuningWorkspace = tuningRepository.loadForIdentityRepair(projectPath).getOrThrow()
+        val tuningWorkspace = tuningRepository.loadForDrivebaseEdit(projectPath).getOrThrow()
         val matchingProfiles = tuningWorkspace.profiles.filter { it.uid == canonical.canonicalProfileUid }
         require(matchingProfiles.size <= 1) { "Multiple tuning profiles claim ${canonical.canonicalProfileUid}. Resolve them before saving." }
         val canonicalProjectUid = canonical.canonicalProfileUid.substringBefore(".profile.")
+        require(tuningWorkspace.profiles.all { it.projectUid == canonicalProjectUid }) {
+            "Every tuning profile must target current project $canonicalProjectUid before the drivebase can be saved."
+        }
         val matchingProfile = matchingProfiles.singleOrNull()
-        val previousProfileUid = current?.canonical?.canonicalProfileUid
-        val legacyProfiles = if (matchingProfile == null && previousProfileUid != null && previousProfileUid != canonical.canonicalProfileUid) {
-            tuningWorkspace.profiles.filter { it.uid == previousProfileUid }
-        } else emptyList()
-        require(legacyProfiles.size <= 1) { "Multiple tuning profiles claim legacy identity $previousProfileUid. Resolve them before saving." }
-        val legacyProfile = legacyProfiles.singleOrNull()
         require(matchingProfile == null ||
             (matchingProfile.projectUid == canonicalProjectUid && matchingProfile.drivebaseUid == canonical.uid && matchingProfile.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN)
         ) { "Canonical tuning profile ${canonical.canonicalProfileUid} targets a different project or drivebase." }
-        val baseProfile = matchingProfile ?: legacyProfile?.copy(
-            uid = canonical.canonicalProfileUid,
-            profileId = canonical.canonicalProfileUid.substringAfterLast('.'),
-            projectUid = canonicalProjectUid,
-            drivebaseUid = canonical.uid,
-        ) ?: TuningProfileDocument(
+        val baseProfile = matchingProfile ?: TuningProfileDocument(
             uid = canonical.canonicalProfileUid,
             profileId = canonical.canonicalProfileUid.substringAfterLast('.'),
             displayName = "Competition",
@@ -84,11 +85,10 @@ class DrivebaseProjectRepository {
                     runCatching { JsonParser.parseString(file.readText()).asJsonObject.get("uid").asString }
                         .getOrNull() == existing.uid
                 }
-        val legacyProfileFile = legacyProfile?.let(::profileFileFor)
         val profileFile = matchingProfile?.let(::profileFileFor)
             ?: File(profileDirectory, "${updatedProfile.uid}.arestuning")
         val additionalProfileRepairs = tuningWorkspace.profiles
-            .filterNot { it.uid == matchingProfile?.uid || it.uid == legacyProfile?.uid }
+            .filterNot { it.uid == matchingProfile?.uid }
             .mapNotNull { profile ->
                 val repaired = profile.copy(
                     drivebaseUid = if (profile.projectUid == canonicalProjectUid && profile.drivebaseUid != null) canonical.uid else profile.drivebaseUid,
@@ -100,8 +100,8 @@ class DrivebaseProjectRepository {
             ?: File(File(projectPath, ".ares/drivetrains"), "${canonical.uid}.aresdrivetrain")
         target.parentFile.mkdirs()
         if (target.exists()) backupFile(projectPath, target, canonical.uid, DrivetrainDocumentCodec.contentHash(current!!.toCanonicalDrivebase()))
-        val sourceProfileFile = legacyProfileFile ?: profileFile.takeIf(File::exists)
-        val sourceProfile = legacyProfile ?: matchingProfile
+        val sourceProfileFile = profileFile.takeIf(File::exists)
+        val sourceProfile = matchingProfile
         if (sourceProfileFile != null && sourceProfile != null) {
             val profileHash = contentSha256(sourceProfileFile.readText())
             val profileBackup = File(projectPath, ".ares/history/tuning/${sourceProfile.uid}/${profileHash.take(16)}.arestuning")
@@ -115,7 +115,6 @@ class DrivebaseProjectRepository {
         }
         val priorTarget = target.takeIf(File::exists)?.readText()
         val priorProfile = profileFile.takeIf(File::exists)?.readText()
-        val priorLegacyProfile = legacyProfileFile?.takeIf(File::exists)?.readText()
         val priorAdditionalProfiles = additionalProfileRepairs.associate { (file, _) -> file to file.readText() }
         try {
             atomicWrite(profileFile, TuningProfileDocumentCodec.encode(updatedProfile, catalog))
@@ -123,16 +122,10 @@ class DrivebaseProjectRepository {
                 atomicWrite(file, TuningProfileDocumentCodec.encode(profile, catalog))
             }
             atomicWrite(target, DrivetrainDocumentCodec.encode(canonical))
-            if (legacyProfileFile != null && legacyProfileFile != profileFile) {
-                Files.deleteIfExists(legacyProfileFile.toPath())
-            }
             tuningRepository.load(projectPath).getOrThrow()
         } catch (failure: Exception) {
             restoreOrDelete(profileFile, priorProfile)
             restoreOrDelete(target, priorTarget)
-            if (legacyProfileFile != null && legacyProfileFile != profileFile && !legacyProfileFile.exists()) {
-                if (priorLegacyProfile != null) atomicWrite(legacyProfileFile, priorLegacyProfile)
-            }
             priorAdditionalProfiles.forEach { (file, text) -> atomicWrite(file, text) }
             throw failure
         }
@@ -165,19 +158,19 @@ class DrivebaseProjectRepository {
     fun tuningProfileRepairIssues(projectPath: String, document: DrivebaseDocument): List<String> {
         val canonical = document.canonical ?: return emptyList()
         return runCatching {
-            val workspace = TuningProfileRepository().loadForIdentityRepair(projectPath).getOrThrow()
+            val workspace = TuningProfileRepository().loadForDrivebaseEdit(projectPath).getOrThrow()
             val projectUid = canonical.canonicalProfileUid.substringBefore(".profile.")
             val declared = (workspace.catalog + canonical.parameters).mapTo(hashSetOf()) { it.uid }
             buildList {
                 if (workspace.profiles.none { it.uid == canonical.canonicalProfileUid }) {
-                    add("Create or migrate canonical profile ${canonical.canonicalProfileUid}.")
+                    add("Create canonical profile ${canonical.canonicalProfileUid}.")
                 }
                 workspace.profiles.forEach { profile ->
                     if (profile.projectUid != projectUid) {
-                        add("Profile ${profile.uid} targets legacy project ${profile.projectUid}.")
+                        add("Profile ${profile.uid} targets a different project ${profile.projectUid}.")
                     }
                     if (profile.projectUid == projectUid && profile.drivebaseUid != null && profile.drivebaseUid != canonical.uid) {
-                        add("Profile ${profile.uid} targets retired drivebase ${profile.drivebaseUid}.")
+                        add("Profile ${profile.uid} targets a different drivebase ${profile.drivebaseUid}.")
                     }
                     val obsolete = profile.values.map { it.parameterUid }.filterNot(declared::contains)
                     if (obsolete.isNotEmpty()) add("Profile ${profile.uid} assigns removed parameter(s): ${obsolete.joinToString()}.")

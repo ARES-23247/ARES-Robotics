@@ -70,7 +70,7 @@ data class AresProjectTarget(
     val simulator: AresSimulatorTarget,
 )
 
-/** Safe current default. New controller families require an explicit migration, never inference. */
+/** Safe current default. New controller families require an explicit contract change, never inference. */
 fun AresLeague.defaultProjectTarget(): AresProjectTarget = when (this) {
     AresLeague.FTC -> AresProjectTarget(AresControllerTarget.FTC_CONTROL_HUB, AresSimulatorTarget.FTC)
     AresLeague.FRC -> AresProjectTarget(AresControllerTarget.FRC_ROBORIO, AresSimulatorTarget.FRC)

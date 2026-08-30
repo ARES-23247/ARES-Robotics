@@ -1,10 +1,9 @@
 package com.ares.analytics.service.db
 
-import java.io.File
 import java.sql.Connection
 
 /**
- * Manages DDL schema initialization and database migration operations for DuckDB telemetry stores.
+ * Initializes the one current DuckDB telemetry schema.
  *
  * Configures relational tables for main persistent database connections and temporary in-memory
  * connection instances, establishing primary keys, indexed metrics, and default values for robot performance metrics.
@@ -27,95 +26,15 @@ import java.sql.Connection
  * @see DatabaseBackupExporter
  * @see DatabaseTransactionCoordinator
  */
-class SchemaMigrationManager(
+class DatabaseSchemaInitializer(
     private val conn: Connection,
     private val ephemeralConn: Connection
 ) {
-    /**
-     * Runs DDL schema migrations across both primary and ephemeral DuckDB connections.
-     *
-     * If a legacy SQLite database exists at [oldDbPath], attempts to attach it and migrate its
-     * historical tables exactly once. Completion is recorded transactionally, so a failed import
-     * is retried on the next launch instead of being silently abandoned after the DuckDB file exists.
-     *
-     * @param oldDbPath Absolute legacy database path, or null for isolated/custom databases.
-     */
-    fun runMigrations(oldDbPath: String?) {
+    /** Initializes persistent and in-memory schemas before any repository is used. */
+    fun initialize() {
         createSchemaSync(conn)
         recoverInterruptedImports()
-        migrateTelemetryToAppendOnlyStorage()
         createSchemaSync(ephemeralConn)
-
-        if (oldDbPath != null && File(oldDbPath).isFile && !migrationCompleted(LEGACY_SQLITE_MIGRATION)) {
-            val safeOldDbPath = oldDbPath.replace("'", "''")
-            var legacyDatabaseAttached = false
-            try {
-                executeSql("ATTACH '$safeOldDbPath' AS legacy_sqlite (TYPE SQLITE)")
-                legacyDatabaseAttached = true
-                executeSql("BEGIN TRANSACTION")
-                try {
-                    executeSql(
-                        """
-                        INSERT OR IGNORE INTO sessions
-                            (session_id, team_id, season_id, robot_id, created_at, duration_ms, tags, match_number, alliance_color, import_state)
-                        SELECT session_id, team_id, season_id, robot_id, created_at, duration_ms, tags, match_number, alliance_color, 'COMPLETE'
-                        FROM legacy_sqlite.sessions
-                        """.trimIndent()
-                    )
-                    executeSql("INSERT OR IGNORE INTO session_summaries SELECT session_id, team_id, season_id, robot_id, created_at, duration_ms, min_battery_voltage, max_ekf_drift, avg_loop_time_ms, p95_loop_time_ms, motor_current_averages, vision_acceptance_rate, avg_cross_track_error, avg_battery_resistance, max_motor_temps, avg_vision_latency_ms, tags, match_number, alliance_color FROM legacy_sqlite.session_summaries")
-                    executeSql(
-                        """
-                        INSERT INTO telemetry_frames
-                            (timestamp_ms, session_id, key, value, string_value, timestamp_us, sample_order)
-                        SELECT timestamp_ms, session_id, REGEXP_REPLACE(key, '^/+', ''), value, NULL,
-                            timestamp_ms * 1000,
-                            ROW_NUMBER() OVER (ORDER BY session_id, timestamp_ms, key)
-                        FROM legacy_sqlite.telemetry_frames
-                        """.trimIndent()
-                    )
-                    executeSql("INSERT OR IGNORE INTO session_annotations SELECT annotation_id, session_id, text, created_at, author_id FROM legacy_sqlite.session_annotations")
-                    executeSql("INSERT OR IGNORE INTO alerts SELECT alert_id, session_id, rule_key, trigger_timestamp_ms, resolve_timestamp_ms, duration_ms, peak_value, triaged FROM legacy_sqlite.alerts")
-                    executeSql("INSERT OR IGNORE INTO cached_topologies SELECT robot_id, topology_json FROM legacy_sqlite.cached_topologies")
-                    executeSql("INSERT OR IGNORE INTO console_messages SELECT timestamp_ms, session_id, text, severity FROM legacy_sqlite.console_messages")
-                    executeSql("INSERT INTO schema_migrations VALUES ('$LEGACY_SQLITE_MIGRATION', epoch_ms(current_timestamp))")
-                    executeSql("COMMIT")
-                } catch (migrationFailure: Exception) {
-                    runCatching { executeSql("ROLLBACK") }
-                        .exceptionOrNull()
-                        ?.let(migrationFailure::addSuppressed)
-                    throw migrationFailure
-                }
-            } catch (e: Exception) {
-                // Safe to continue (the transactional completion marker means the migration
-                // retries next launch), but it must be user-visible, not a bare stack trace.
-                System.err.println(
-                    "SchemaMigrationManager: legacy migration failed and will retry next launch: " +
-                        "${e.message ?: e::class.java.simpleName}"
-                )
-                e.printStackTrace()
-            } finally {
-                if (legacyDatabaseAttached) {
-                    runCatching { executeSql("DETACH legacy_sqlite") }
-                        .onFailure { detachFailure ->
-                            System.err.println(
-                                "SchemaMigrationManager: legacy database detach failed: " +
-                                    "${detachFailure.message ?: detachFailure::class.java.simpleName}"
-                            )
-                        }
-                }
-            }
-        }
-    }
-
-    private fun executeSql(sql: String) {
-        conn.createStatement().use { statement -> statement.execute(sql) }
-    }
-
-    private fun migrationCompleted(name: String): Boolean = conn.prepareStatement(
-        "SELECT 1 FROM schema_migrations WHERE name = ?"
-    ).use { statement ->
-        statement.setString(1, name)
-        statement.executeQuery().use { rows -> rows.next() }
     }
 
     /**
@@ -288,28 +207,7 @@ class SchemaMigrationManager(
                     PRIMARY KEY (entry_id, revision, publisher_id, remote_id)
                 );
 
-                CREATE TABLE IF NOT EXISTS schema_migrations (
-                    name VARCHAR PRIMARY KEY,
-                    completed_at BIGINT NOT NULL
-                );
             """.trimIndent())
-
-            val sessionColumns = targetConn.createStatement().use { statement ->
-                statement.executeQuery(
-                    "SELECT column_name FROM information_schema.columns " +
-                        "WHERE table_schema = current_schema() AND table_name = 'sessions'"
-                ).use { rows ->
-                    buildSet {
-                        while (rows.next()) add(rows.getString(1).lowercase())
-                    }
-                }
-            }
-            if ("import_state" !in sessionColumns) {
-                st.execute("ALTER TABLE sessions ADD COLUMN import_state VARCHAR DEFAULT 'COMPLETE'")
-            }
-            st.execute("UPDATE sessions SET import_state = 'COMPLETE' WHERE import_state IS NULL OR import_state = ''")
-
-            migrateTelemetryPrecision(targetConn)
             // Telemetry is an immutable, append-only analytical fact table. DuckDB creates an ART
             // index for every primary/unique constraint and explicit CREATE INDEX. Those indexes
             // add no useful ordering guarantee here (sample_order already preserves source order),
@@ -323,12 +221,36 @@ class SchemaMigrationManager(
                 "CREATE INDEX IF NOT EXISTS idx_integration_events_aggregate " +
                     "ON integration_events(aggregate_id, occurred_at_ms)"
             )
+        }
+        requireCurrentColumns(
+            targetConn,
+            "sessions",
+            setOf(
+                "session_id", "team_id", "season_id", "robot_id", "created_at", "duration_ms",
+                "tags", "match_number", "alliance_color", "import_state",
+            ),
+        )
+        requireCurrentColumns(
+            targetConn,
+            "telemetry_frames",
+            setOf("timestamp_ms", "session_id", "key", "value", "string_value", "timestamp_us", "sample_order"),
+        )
+    }
 
-            try {
-                st.execute("ALTER TABLE telemetry_frames ADD COLUMN string_value VARCHAR;")
-            } catch (e: Exception) {
-                // Ignore if it already exists
+    private fun requireCurrentColumns(connection: Connection, table: String, required: Set<String>) {
+        val actual = connection.prepareStatement(
+            "SELECT column_name FROM information_schema.columns " +
+                "WHERE table_schema = current_schema() AND table_name = ?"
+        ).use { statement ->
+            statement.setString(1, table)
+            statement.executeQuery().use { rows ->
+                buildSet { while (rows.next()) add(rows.getString(1).lowercase()) }
             }
+        }
+        val missing = required - actual
+        require(missing.isEmpty()) {
+            "Database table '$table' is not the current ARES schema; missing ${missing.sorted().joinToString()}. " +
+                "Create a new telemetry database before continuing."
         }
     }
 
@@ -371,98 +293,4 @@ class SchemaMigrationManager(
         }
     }
 
-    /**
-     * Removes the three historical secondary ART indexes from the telemetry fact table.
-     *
-     * A realistic 32.6-million-row recovery probe showed that these redundant indexes—not DuckDB
-     * scans—turned a small WAL into a many-minute cold start. New databases have no telemetry ART
-     * indexes. Older databases retain their implicit primary-key index because removing it requires
-     * a full table rewrite (about 100 seconds and 1.5 GiB native memory in the same probe), which is
-     * not acceptable as an invisible startup migration. The future partitioned-Parquet migration
-     * can retire that final legacy index with explicit progress and rollback space.
-     */
-    private fun migrateTelemetryToAppendOnlyStorage() {
-        if (migrationCompleted(TELEMETRY_INDEX_HARDENING_MIGRATION)) return
-
-        conn.createStatement().use { statement ->
-            statement.execute("BEGIN TRANSACTION")
-            try {
-                statement.execute("DROP INDEX IF EXISTS idx_telemetry_session_id")
-                statement.execute("DROP INDEX IF EXISTS idx_telemetry_session_key_time")
-                statement.execute("DROP INDEX IF EXISTS idx_telemetry_session_time")
-                statement.execute(
-                    "INSERT INTO schema_migrations VALUES ('$TELEMETRY_INDEX_HARDENING_MIGRATION', epoch_ms(current_timestamp))"
-                )
-                statement.execute("COMMIT")
-            } catch (failure: Throwable) {
-                runCatching { statement.execute("ROLLBACK") }
-                throw failure
-            }
-        }
-        conn.createStatement().use { statement -> statement.execute("CHECKPOINT") }
-    }
-
-    /**
-     * Rebuilds the legacy millisecond-keyed table once so multiple samples from the same
-     * topic and millisecond can coexist. Existing rows retain their millisecond value and
-     * receive a deterministic source timestamp/order.
-     */
-    private fun migrateTelemetryPrecision(targetConn: Connection) {
-        val columns = targetConn.createStatement().use { statement ->
-            statement.executeQuery(
-                "SELECT column_name FROM information_schema.columns " +
-                    "WHERE table_schema = current_schema() AND table_name = 'telemetry_frames'"
-            ).use { rows ->
-                buildSet {
-                    while (rows.next()) add(rows.getString(1).lowercase())
-                }
-            }
-        }
-        if ("timestamp_us" in columns && "sample_order" in columns) return
-
-        targetConn.createStatement().use { statement ->
-            statement.execute("BEGIN TRANSACTION")
-            try {
-                statement.execute(
-                    """
-                    CREATE TABLE telemetry_frames_precision (
-                        timestamp_ms BIGINT NOT NULL,
-                        session_id VARCHAR NOT NULL,
-                        key VARCHAR NOT NULL,
-                        value DOUBLE NOT NULL,
-                        string_value VARCHAR,
-                        timestamp_us BIGINT NOT NULL,
-                        sample_order BIGINT NOT NULL
-                    )
-                    """.trimIndent()
-                )
-                val stringValueExpression = if ("string_value" in columns) "string_value" else "NULL"
-                statement.execute(
-                    """
-                    INSERT INTO telemetry_frames_precision
-                    SELECT
-                        timestamp_ms,
-                        session_id,
-                        REGEXP_REPLACE(TRIM(key), '^/+', ''),
-                        value,
-                        $stringValueExpression,
-                        timestamp_ms * 1000,
-                        ROW_NUMBER() OVER (ORDER BY session_id, timestamp_ms, key) - 1
-                    FROM telemetry_frames
-                    """.trimIndent()
-                )
-                statement.execute("DROP TABLE telemetry_frames")
-                statement.execute("ALTER TABLE telemetry_frames_precision RENAME TO telemetry_frames")
-                statement.execute("COMMIT")
-            } catch (error: Exception) {
-                runCatching { statement.execute("ROLLBACK") }
-                throw error
-            }
-        }
-    }
-
-    private companion object {
-        const val LEGACY_SQLITE_MIGRATION = "legacy-sqlite-v1"
-        const val TELEMETRY_INDEX_HARDENING_MIGRATION = "telemetry-index-hardening-v1"
-    }
 }

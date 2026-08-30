@@ -405,6 +405,9 @@ class RobotProjectTemplateServiceTest {
                         robotWidthMeters = 0.45,
                         fieldLengthMeters = 3.6576,
                         fieldWidthMeters = 3.6576,
+                        runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                            ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                        ),
                     ),
                 ),
             )
@@ -475,6 +478,9 @@ class RobotProjectTemplateServiceTest {
                 robotWidthMeters = 0.45,
                 fieldLengthMeters = 3.65,
                 fieldWidthMeters = 3.65,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             ),
         )
         val drivebase = defaultDrivebase("template-project", DrivebaseKind.FTC_MECANUM).toCanonicalDrivebase()

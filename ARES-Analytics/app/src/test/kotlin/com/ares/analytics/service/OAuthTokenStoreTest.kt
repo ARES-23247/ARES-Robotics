@@ -25,17 +25,15 @@ class OAuthTokenStoreTest {
     }
 
     @Test
-    fun `windows DPAPI migrates legacy token bytes before deleting plaintext`() {
+    fun `windows DPAPI token store round trips encrypted bytes`() {
         if (!System.getProperty("os.name").lowercase(Locale.ROOT).contains("win")) return
         val directory = Files.createTempDirectory("ares-token-dpapi").toFile()
-        val legacy = directory.resolve("auth.json")
         val encrypted = directory.resolve("auth.dpapi")
         val bytes = "sensitive refresh token".toByteArray()
-        legacy.writeBytes(bytes)
-        val store = WindowsDpapiOAuthTokenStore(encrypted, legacy)
+        val store = WindowsDpapiOAuthTokenStore(encrypted)
         try {
+            store.write(bytes)
             assertContentEquals(bytes, store.read())
-            assertFalse(legacy.exists(), "Plaintext token must be removed only after secure migration succeeds")
             assertTrue(encrypted.isFile)
             assertFalse(encrypted.readBytes().contentEquals(bytes))
             assertContentEquals(bytes, store.read())

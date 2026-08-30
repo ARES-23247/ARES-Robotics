@@ -113,7 +113,7 @@ class RobotProjectReadinessService(
         val drivebaseErrors = buildList {
             drivebaseResult.exceptionOrNull()?.message?.let(::add)
             addAll(drivebaseIssues.filter { it.severity == DrivebaseIssueSeverity.ERROR }.map { it.message })
-            drivebase?.canonical?.let(FtcMecanumRuntimeParameters::repairMessage)?.let(::add)
+            drivebase?.canonical?.let(FtcMecanumRuntimeParameters::validationIssues)?.let(::addAll)
         }.distinct()
 
         val tuningDiagnostics = diagnostics.filter {

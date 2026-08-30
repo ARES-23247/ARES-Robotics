@@ -84,8 +84,7 @@ sealed class DrivePickerState {
 
 /**
  * Persisted Google identity + OAuth tokens. [OAuthTokenStore] protects this record with
- * current-user DPAPI on Windows and owner-only atomic files on other desktop platforms;
- * `auth.json` is read only as a one-time legacy migration source.
+ * current-user DPAPI on Windows and owner-only atomic files on other desktop platforms.
  */
 @Serializable
 data class OAuthSavedAuth(
@@ -766,7 +765,7 @@ class OAuthService(
     }
 
     private fun saveAuth(auth: OAuthSavedAuth) {
-        // OAuthTokenStore owns platform protection, atomic replacement, and legacy migration.
+        // OAuthTokenStore owns platform protection and atomic replacement.
         tokenStore.write(Json.encodeToString(auth).toByteArray(Charsets.UTF_8))
     }
 

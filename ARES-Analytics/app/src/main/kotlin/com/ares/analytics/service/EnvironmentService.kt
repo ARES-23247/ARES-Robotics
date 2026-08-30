@@ -3,7 +3,6 @@ package com.ares.analytics.service
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.AppWorkspaces
-import com.ares.analytics.util.ProjectLayout
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,7 +16,6 @@ import java.nio.file.StandardOpenOption
  * Workspace and environment configuration management service.
  *
  * Manages active team workspaces, season identifiers, robot configurations, and league settings across FTC and FRC.
- * Handles schema migration from single legacy `config.json` files to multi-workspace `workspaces.json` persistence.
  *
  * ### Configuration Data:
  * - Active workspace ID mapping
@@ -27,14 +25,12 @@ import java.nio.file.StandardOpenOption
  * ### Thread Safety & Performance Guarantees:
  * All file read/write operations execute asynchronously on `Dispatchers.IO`. Thread-safe.
  *
- * @param configPath Legacy single workspace config JSON path (`~/.ares-analytics/config.json`).
  * @param workspacesPath Multi-workspace configuration JSON path (`~/.ares-analytics/workspaces.json`).
  *
  * @see com.ares.analytics.shared.models.AppWorkspaces
  * @see com.ares.analytics.shared.models.WorkspaceConfig
  */
 class EnvironmentService(
-    private val configPath: String = AppDataPaths.file("config.json").path,
     private val workspacesPath: String = AppDataPaths.file("workspaces.json").path,
     private val secretsWriter: (File, ByteArray) -> Unit = ::writeSecrets,
 ) {
@@ -42,7 +38,6 @@ class EnvironmentService(
 
     suspend fun loadWorkspaces(): AppWorkspaces = withContext(Dispatchers.IO) {
         val file = File(workspacesPath)
-        val legacyFile = File(configPath)
 
         if (file.exists()) {
             val saved = try {
@@ -54,7 +49,6 @@ class EnvironmentService(
             if (saved != null) {
                 val resolved = saved.copy(
                     workspaces = saved.workspaces
-                        .map(::resolveMovedRobotProject)
                         .map(::synchronizeCanonicalIdentity),
                 )
                 if (resolved != saved) {
@@ -64,75 +58,8 @@ class EnvironmentService(
             }
         }
 
-        if (legacyFile.exists()) {
-            val legacyConfig = try {
-                json.decodeFromString<WorkspaceConfig>(legacyFile.readText())
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-            if (legacyConfig != null) {
-                val migratedId = legacyConfig.id.ifEmpty { "${legacyConfig.league}-${legacyConfig.teamId}-${legacyConfig.robotId}-${legacyConfig.seasonId}" }
-                val migratedConfig = synchronizeCanonicalIdentity(legacyConfig.copy(id = migratedId))
-                val migratedWorkspaces = AppWorkspaces(
-                    activeWorkspaceId = migratedId,
-                    workspaces = listOf(migratedConfig)
-                )
-                secretsWriter(file, json.encodeToString(migratedWorkspaces).toByteArray(Charsets.UTF_8))
-                return@withContext migratedWorkspaces
-            }
-        }
-
         AppWorkspaces(activeWorkspaceId = null, workspaces = emptyList())
     }
-
-    /**
-     * Repairs a workspace path after a repository was moved while leaving an old asset-only
-     * directory behind. A migration is applied only when one nearby repository has matching
-     * checked-in robot identity, so multiple robots can never be selected by filename guessing.
-     */
-    private fun resolveMovedRobotProject(config: WorkspaceConfig): WorkspaceConfig {
-        val configuredRoot = runCatching { File(config.projectPath).canonicalFile }.getOrNull()
-            ?: return config
-        if (ProjectLayout.containsRobotSource(configuredRoot, config.league)) return config
-        if (!hasRelocationEvidence(configuredRoot, config.league)) return config
-
-        val searchRoot = configuredRoot.parentFile?.parentFile ?: return config
-        val matches = runCatching {
-            searchRoot.walkTopDown()
-                .maxDepth(PROJECT_SEARCH_DEPTH)
-                .onFail { _, _ -> }
-                // Recovery is best-effort and runs while loading application state. Never let a
-                // stale path under a broad directory (for example AppData) turn startup into an
-                // unbounded filesystem crawl.
-                .take(MAX_PROJECT_SEARCH_ENTRIES)
-                .filter { file ->
-                    file.isFile && file.name == PROJECT_METADATA_FILE && file.parentFile?.name == ".ares"
-                }
-                .mapNotNull { identityFile ->
-                    val candidate = identityFile.parentFile?.parentFile?.canonicalFile ?: return@mapNotNull null
-                    val identity = readProjectIdentityBlocking(candidate.path) ?: return@mapNotNull null
-                    candidate.takeIf {
-                        identity.matches(config) && ProjectLayout.containsRobotSource(candidate, config.league)
-                    }
-                }
-                .distinctBy(File::getPath)
-                .toList()
-        }.getOrDefault(emptyList())
-
-        return matches.singleOrNull()?.let { config.copy(projectPath = it.path) } ?: config
-    }
-
-    private fun hasRelocationEvidence(root: File, league: League): Boolean = when (league) {
-        League.FTC -> File(root, "src/main/assets").isDirectory ||
-            File(root, "TeamCode/src/main/assets").isDirectory
-        League.FRC -> File(root, "src/main/deploy").isDirectory
-    }
-
-    private fun DetectedProjectIdentity.matches(config: WorkspaceConfig): Boolean =
-        teamId == config.teamId &&
-            robotId.equals(config.robotId, ignoreCase = true) &&
-            league.equals(config.league.name, ignoreCase = true)
 
     /**
      * Workspace identity fields are compatibility/display caches only. Whenever a canonical
@@ -287,10 +214,6 @@ data class DetectedProjectIdentity(
     val name: String = "",
     val league: String = "FTC",
 )
-
-private const val PROJECT_METADATA_FILE = "project.json"
-private const val PROJECT_SEARCH_DEPTH = 4
-private const val MAX_PROJECT_SEARCH_ENTRIES = 5_000
 
 /**
  * Atomically writes [bytes] to [file] through a force-flushed sibling temporary file, then

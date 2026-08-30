@@ -191,7 +191,7 @@ object RobotVerificationReportLoader {
             id = "project.platform-integration",
             layer = VerificationLayer.PLATFORM_INTEGRATION,
             title = "Platform lifecycle and integration tests",
-            explanation = "Hand-written tests protect ${league.name} lifecycle, Redux, autonomous orchestration, coordinates, telemetry, and migration behavior outside one robot descriptor.",
+            explanation = "Hand-written tests protect ${league.name} lifecycle, Redux, autonomous orchestration, coordinates, telemetry, and project-format behavior outside one robot descriptor.",
             results = testCases.filter {
                 it.layer == VerificationLayer.PLATFORM_INTEGRATION &&
                     !it.className.endsWith("GeneratedTest") &&

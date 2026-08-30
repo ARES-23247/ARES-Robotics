@@ -5593,7 +5593,6 @@ public final class com/areslib/sequencer/TaskExecutor {
 	public fun <init> ()V
 	public final fun addTask (Lcom/areslib/sequencer/Task;)V
 	public final fun cancelAll (Lcom/areslib/state/RobotState;)Ljava/util/List;
-	public final fun clear (Lcom/areslib/state/RobotState;)V
 	public final fun getActiveTaskName ()Ljava/lang/String;
 	public final fun getSize ()I
 	public final fun preempt (Lcom/areslib/sequencer/Task;Lcom/areslib/state/RobotState;J)Ljava/util/List;

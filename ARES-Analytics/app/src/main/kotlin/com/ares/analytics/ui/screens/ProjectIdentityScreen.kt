@@ -343,7 +343,7 @@ private fun ProjectIdentityForm(
                 onValueChange = { onUpdate(ProjectIdentityField.ROBOT_ID, it) },
                 error = state.fieldErrors[ProjectIdentityField.ROBOT_ID],
                 enabled = state.currentDocument == null && runtimeOptionsEnabled,
-                help = "Used by generated files and evidence records; changing it later requires a migration.",
+                help = "Used by generated files and evidence records; change it only through a coordinated project rename.",
             )
             IdentityField(
                 label = "Robot display name",

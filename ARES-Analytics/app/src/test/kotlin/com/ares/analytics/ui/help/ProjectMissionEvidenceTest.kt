@@ -174,6 +174,9 @@ class ProjectMissionEvidenceTest {
                 robotWidthMeters = 0.45,
                 fieldLengthMeters = 3.66,
                 fieldWidthMeters = 3.66,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             ),
             generationPhase = AresGenerationPhase.SUCCEEDED,
             routine = routine,
@@ -218,6 +221,9 @@ class ProjectMissionEvidenceTest {
                 robotWidthMeters = 0.45,
                 fieldLengthMeters = 3.66,
                 fieldWidthMeters = 3.66,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             ),
             generationPhase = AresGenerationPhase.SUCCEEDED,
             routine = routine,

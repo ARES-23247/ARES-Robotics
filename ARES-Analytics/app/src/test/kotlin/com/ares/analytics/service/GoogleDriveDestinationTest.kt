@@ -258,7 +258,6 @@ class GoogleDriveDestinationTest {
     ): Fixture {
         val directory = Files.createTempDirectory("ares-drive-destination").toFile()
         val environment = EnvironmentService(
-            configPath = directory.resolve("legacy.json").path,
             workspacesPath = directory.resolve("workspaces.json").path,
         )
         environment.saveConfig(

@@ -45,7 +45,7 @@ data class TelemetryExportCursor(
  * Thread-safe suspend functions use the shared [DatabaseTransactionCoordinator].
  * Appender operations stream raw memory arrays to DuckDB C++ native buffers with zero JVM heap fragmentation.
  *
- * @see SchemaMigrationManager
+ * @see DatabaseSchemaInitializer
  * @see DatabaseBackupExporter
  */
 internal class TelemetryRepository(

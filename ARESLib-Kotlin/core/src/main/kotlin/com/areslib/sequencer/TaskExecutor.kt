@@ -306,15 +306,6 @@ class TaskExecutor {
     }
 
     /**
-     * Clears all tasks while retaining the legacy API that intentionally discards cleanup output.
-     * New lifecycle owners should call [cancelAll] and dispatch its returned actions.
-     */
-    @Synchronized
-    fun clear(state: RobotState) {
-        cancelAll(state)
-    }
-
-    /**
      * Returns the name of the currently active task, if any.
      */
     val activeTaskName: String?

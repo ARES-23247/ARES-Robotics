@@ -28,7 +28,6 @@ class EnvironmentServicePersistenceTest {
             writeSecrets(workspacesFile, previousBytes)
             var replacementAttempted = false
             val service = EnvironmentService(
-                configPath = directory.resolve("config.json").absolutePath,
                 workspacesPath = workspacesFile.absolutePath,
                 secretsWriter = { file, bytes ->
                     writeSecrets(file, bytes) { temporary, destination ->

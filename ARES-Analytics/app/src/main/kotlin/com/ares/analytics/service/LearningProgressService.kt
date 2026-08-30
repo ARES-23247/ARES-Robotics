@@ -17,7 +17,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import java.io.File
 import java.util.UUID
 
@@ -407,17 +406,7 @@ class LearningProgressService(
     private fun loadClassroomStore(): AcademyClassroomStore {
         if (!progressFile.isFile) return emptyClassroomStore()
         return runCatching {
-            val text = progressFile.readText()
-            val root = json.parseToJsonElement(text).jsonObject
-            if ("learners" in root) {
-                normalizeStore(json.decodeFromString<AcademyClassroomStore>(text))
-            } else {
-                val legacy = migrate(json.decodeFromString<LearningProgress>(text))
-                AcademyClassroomStore(
-                    activeLearnerId = LEGACY_LEARNER_ID,
-                    learners = listOf(AcademyLearnerRecord(LEGACY_LEARNER_ID, legacy)),
-                )
-            }
+            normalizeStore(json.decodeFromString<AcademyClassroomStore>(progressFile.readText()))
         }.getOrElse { failure ->
             // A partially-written or unreadable store must not silently reset every learner's
             // records: the next persist would overwrite the file. Preserve the unreadable
@@ -447,9 +436,14 @@ class LearningProgressService(
     }
 
     private fun normalizeStore(store: AcademyClassroomStore): AcademyClassroomStore {
+        require(store.schemaVersion == ACADEMY_CLASSROOM_SCHEMA_VERSION) {
+            "Unsupported Academy classroom schema ${store.schemaVersion}"
+        }
+        require(store.learners.all { it.progress.contentVersion == CURRENT_LEARNING_CONTENT_VERSION }) {
+            "Academy learner content must use version $CURRENT_LEARNING_CONTENT_VERSION"
+        }
         val validRecords = store.learners
             .distinctBy(AcademyLearnerRecord::learnerId)
-            .map { it.copy(progress = migrate(it.progress)) }
         if (validRecords.isEmpty()) return emptyClassroomStore()
         val active = store.activeLearnerId.takeIf { id -> validRecords.any { it.learnerId == id } }
             ?: validRecords.first().learnerId
@@ -495,19 +489,9 @@ class LearningProgressService(
         }
     }
 
-    private fun migrate(progress: LearningProgress): LearningProgress = when {
-        progress.contentVersion >= CURRENT_LEARNING_CONTENT_VERSION -> progress
-        else -> progress.copy(
-            contentVersion = CURRENT_LEARNING_CONTENT_VERSION,
-            // A v1 practiced lesson was necessarily opened, but it did not have trustworthy
-            // checkpoint-level evidence. Preserve the reminder without inventing completion.
-            startedLessonIds = progress.startedLessonIds + progress.practicedLessonIds,
-        )
-    }
 }
 
 const val CURRENT_LEARNING_CONTENT_VERSION = 5
 const val ACADEMY_CLASSROOM_SCHEMA_VERSION = 1
 private const val MAX_LEARNING_NOTE_LENGTH = 4_000
 private const val DEFAULT_LEARNER_ID = "learner-default"
-private const val LEGACY_LEARNER_ID = "learner-legacy"
