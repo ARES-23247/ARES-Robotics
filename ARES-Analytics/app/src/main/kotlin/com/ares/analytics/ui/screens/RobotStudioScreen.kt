@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.GamepadState
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
 import com.ares.analytics.ui.components.robotstudio.RobotContextInspector
 import com.ares.analytics.ui.components.robotstudio.RobotHierarchyTree
@@ -50,7 +50,7 @@ import com.ares.analytics.viewmodel.robotstudio.RobotStudioState
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.areslib.subsystem.SubsystemTemplate
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.project.AresProjectAuthoringModel
 import kotlinx.coroutines.delay
 
@@ -114,7 +114,7 @@ fun RobotStudioScreen(
             val hasErrors = if (subsystem.documentId == draftId) {
                 subsystemState.problems.any { it.severity == SubsystemProblemSeverity.ERROR }
             } else {
-                validateSubsystemDocument(subsystem).isNotEmpty()
+                SubsystemSchema.validate(subsystem).isNotEmpty()
             }
             SubsystemTreeItem(
                 documentId = subsystem.documentId,

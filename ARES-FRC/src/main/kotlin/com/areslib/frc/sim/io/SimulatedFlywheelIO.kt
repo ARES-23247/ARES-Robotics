@@ -1,6 +1,6 @@
 package com.areslib.frc.sim.io
 
-import com.areslib.frc.hardware.FlywheelIO
+import com.areslib.hardware.actuator.FlywheelIO
 import com.areslib.frc.Dyn4jSimulation
 import com.areslib.simulation.SimulationFaultKind
 import com.areslib.simulation.SimulationFaultTimeline

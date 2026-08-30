@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.ui.components.core.CardHeader
 import com.ares.analytics.ui.components.core.ChartContainer

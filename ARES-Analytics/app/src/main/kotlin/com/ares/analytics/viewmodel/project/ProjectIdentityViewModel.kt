@@ -1,7 +1,7 @@
 package com.ares.analytics.viewmodel.project
 
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.ares.analytics.service.project.ProjectSession
@@ -16,7 +16,7 @@ import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.AresRuntimeOptionsDocument
-import com.areslib.project.resolvedFtcRuntimeOptions
+import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
@@ -477,7 +477,10 @@ internal fun projectIdentityDraft(
     current: AresProjectMetadataDocument?,
 ): ProjectIdentityDraft {
     val field = defaultFieldDimensions(config.league)
-    val ftcRuntime = current?.resolvedFtcRuntimeOptions() ?: AresFtcRuntimeOptionsDocument()
+    val ftcRuntime = current
+        ?.takeIf { it.league == AresLeague.FTC }
+        ?.requireFtcRuntimeOptions()
+        ?: AresFtcRuntimeOptionsDocument()
     return ProjectIdentityDraft(
         projectId = current?.projectId ?: suggestedProjectId(config),
         teamId = current?.identity?.teamId ?: config.teamId,
@@ -516,13 +519,13 @@ internal fun projectIdentityChanges(
         changed("Field width (m)", current?.fieldWidthMeters, proposed.fieldWidthMeters),
         changed(
             "FTC hub command transport",
-            current?.takeIf { it.league == AresLeague.FTC }?.resolvedFtcRuntimeOptions()?.hubCommandTransport,
-            proposed.resolvedFtcRuntimeOptions().hubCommandTransport,
+            current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()?.hubCommandTransport,
+            proposed.requireFtcRuntimeOptions().hubCommandTransport,
         ).takeIf { proposed.league == AresLeague.FTC },
         changed(
             "Limelight camera proxy",
-            current?.takeIf { it.league == AresLeague.FTC }?.resolvedFtcRuntimeOptions()?.limelightProxyEnabled,
-            proposed.resolvedFtcRuntimeOptions().limelightProxyEnabled,
+            current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()?.limelightProxyEnabled,
+            proposed.requireFtcRuntimeOptions().limelightProxyEnabled,
         ).takeIf { proposed.league == AresLeague.FTC },
     )
 }

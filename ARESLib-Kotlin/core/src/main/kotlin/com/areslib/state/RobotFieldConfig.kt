@@ -299,8 +299,8 @@ object RobotFieldDocument {
     fun decode(json: String): RobotFieldConfig {
         val config = gson.fromJson(json, RobotFieldConfig::class.java)
             ?: throw IllegalArgumentException("Field document is empty")
-        require(config.schemaVersion in 1..CURRENT_FIELD_SCHEMA_VERSION) {
-            "Unsupported field schema version ${config.schemaVersion}; supported version is $CURRENT_FIELD_SCHEMA_VERSION"
+        require(config.schemaVersion == CURRENT_FIELD_SCHEMA_VERSION) {
+            "Unsupported field schema version ${config.schemaVersion}; create or export a current ARES field document"
         }
         return config
     }

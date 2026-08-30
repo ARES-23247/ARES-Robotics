@@ -1,11 +1,11 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.AlertRecord
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionAnnotation
-import com.ares.analytics.shared.TelemetryFrame
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionAnnotation
+import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import java.nio.file.Files

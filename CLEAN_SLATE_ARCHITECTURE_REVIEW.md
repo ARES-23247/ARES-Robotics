@@ -88,7 +88,9 @@ Representative concentrations include:
 - `SubsystemGeneratorViewModel.kt`: draft editing, validation, file reconciliation, AI proposals,
   preview/diff, and persistence
 - `MainScreen.kt`: navigation and construction of many long-lived feature models
-- `MatchLogRepository.kt`: ingestion persistence and many query shapes
+- DuckDB persistence was formerly concentrated in `MatchLogRepository.kt`; it is now split into a
+  shared transaction coordinator plus session, telemetry, action, run-evidence, and read-only-query
+  repositories.
 
 Large files are not automatically wrong, but these files span independently testable ownership
 boundaries and make changes collide.
@@ -332,10 +334,10 @@ Organize Studio by feature, with each feature owning:
 - Stateless/pure Compose sections receiving state and callbacks
 - Focused tests and visible journeys
 
-Move filesystem writes, external processes, and database operations behind services. Split
-`MatchLogRepository` into ingestion transactions, run queries, comparison queries, and export
-queries while retaining DuckDB as the analytical engine unless profiling shows a concrete reason
-to replace it.
+Move filesystem writes, external processes, and database operations behind services. The completed
+DuckDB split uses one transaction coordinator with separate session, telemetry, action,
+run-evidence, and bounded-query repositories. Keep DuckDB as the analytical engine unless profiling
+shows a concrete reason to replace it.
 
 ### Verification architecture
 

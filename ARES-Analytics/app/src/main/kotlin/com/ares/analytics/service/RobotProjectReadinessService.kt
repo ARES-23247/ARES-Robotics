@@ -11,10 +11,10 @@ import com.ares.analytics.service.project.templateDeploymentBlockReason
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.drivebase.toUiDrivebase
 import com.ares.analytics.service.tuning.TuningWorkspaceDocuments
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
-import com.ares.analytics.service.project.persistence.ProjectDocumentKind
+import com.areslib.project.schema.ProjectDocumentKind
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectAuthoringModel
@@ -113,7 +113,7 @@ class RobotProjectReadinessService(
         val drivebaseErrors = buildList {
             drivebaseResult.exceptionOrNull()?.message?.let(::add)
             addAll(drivebaseIssues.filter { it.severity == DrivebaseIssueSeverity.ERROR }.map { it.message })
-            drivebase?.canonical?.let(FtcMecanumRuntimeParameters::repairMessage)?.let(::add)
+            drivebase?.canonical?.let(FtcMecanumRuntimeParameters::validationIssues)?.let(::addAll)
         }.distinct()
 
         val tuningDiagnostics = diagnostics.filter {

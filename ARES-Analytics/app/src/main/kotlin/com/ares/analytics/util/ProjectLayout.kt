@@ -1,6 +1,6 @@
 package com.ares.analytics.util
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import java.io.File
 
 /**

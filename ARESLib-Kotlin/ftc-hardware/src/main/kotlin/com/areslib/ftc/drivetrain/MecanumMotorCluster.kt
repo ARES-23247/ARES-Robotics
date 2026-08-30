@@ -43,6 +43,7 @@ import com.areslib.util.RobotClock
  */
 class MecanumMotorCluster(
     val hardwareMap: HardwareMap,
+    private val hardwareRegistry: HardwareRegistry,
     val flName: String = "fl",
     val frName: String = "fr",
     val rlName: String = "rl",
@@ -95,15 +96,15 @@ class MecanumMotorCluster(
         rearLeft.zeroPowerBehavior = zeroPowerBehavior
         rearRight.zeroPowerBehavior = zeroPowerBehavior
 
-        HardwareRegistry.registerMotor(flName, flIO)
-        HardwareRegistry.registerMotor(frName, frIO)
-        HardwareRegistry.registerMotor(rlName, rlIO)
-        HardwareRegistry.registerMotor(rrName, rrIO)
+        hardwareRegistry.registerMotor(flName, flIO)
+        hardwareRegistry.registerMotor(frName, frIO)
+        hardwareRegistry.registerMotor(rlName, rlIO)
+        hardwareRegistry.registerMotor(rrName, rrIO)
 
-        HardwareRegistry.registerSyncPolledDevice(flIO)
-        HardwareRegistry.registerSyncPolledDevice(frIO)
-        HardwareRegistry.registerSyncPolledDevice(rlIO)
-        HardwareRegistry.registerSyncPolledDevice(rrIO)
+        hardwareRegistry.registerSyncPolledDevice(flIO)
+        hardwareRegistry.registerSyncPolledDevice(frIO)
+        hardwareRegistry.registerSyncPolledDevice(rlIO)
+        hardwareRegistry.registerSyncPolledDevice(rrIO)
 
         if (useClosedLoopVelocity) {
             listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->

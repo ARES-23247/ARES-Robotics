@@ -1,15 +1,11 @@
 package com.ares.analytics.service.project.persistence
 
+import com.areslib.project.schema.ProjectDocumentId
+import com.areslib.project.schema.ProjectDocumentKind
 import java.io.File
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-
-/** Studio and codegen share exactly one stable document identity contract. */
-typealias ProjectDocumentId = com.areslib.project.schema.ProjectDocumentId
-
-/** Studio and codegen share exactly one canonical document-category vocabulary. */
-typealias ProjectDocumentKind = com.areslib.project.schema.ProjectDocumentKind
 
 /** A bad file is reported without preventing the rest of an offline project from opening. */
 data class ProjectDocumentDiagnostic(

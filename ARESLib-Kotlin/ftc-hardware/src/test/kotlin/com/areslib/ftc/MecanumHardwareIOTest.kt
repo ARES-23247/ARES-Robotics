@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.areslib.kinematics.MecanumWheelSpeeds
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
+import com.areslib.hardware.HardwareRegistry
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -43,6 +44,7 @@ class MecanumHardwareIOTest {
 
         MecanumHardwareIO(
             motorHardwareMap(motors),
+            HardwareRegistry(),
             zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE,
         )
 
@@ -75,7 +77,7 @@ class MecanumHardwareIOTest {
             }
         }
         
-        val io = MecanumHardwareIO(hardwareMap, maxWheelSpeedMetersPerSecond = 1.0)
+        val io = MecanumHardwareIO(hardwareMap, HardwareRegistry(), maxWheelSpeedMetersPerSecond = 1.0)
         
         // Assert init reversed right side
         assertEquals(DcMotorSimple.Direction.REVERSE, fr.direction)
@@ -115,7 +117,7 @@ class MecanumHardwareIOTest {
             }
         }
         
-        val io = MecanumHardwareIO(hardwareMap, maxWheelSpeedMetersPerSecond = 1.0)
+        val io = MecanumHardwareIO(hardwareMap, HardwareRegistry(), maxWheelSpeedMetersPerSecond = 1.0)
         
         // Enable voltage-compensated slew rate limit
         io.slewRateLimit = 2.0
@@ -153,7 +155,7 @@ class MecanumHardwareIOTest {
     fun `power scale is applied once at the hardware boundary`() {
         val motors = Array(4) { MockDcMotorEx() }
         val hardwareMap = motorHardwareMap(motors)
-        val io = MecanumHardwareIO(hardwareMap, maxWheelSpeedMetersPerSecond = 1.0)
+        val io = MecanumHardwareIO(hardwareMap, HardwareRegistry(), maxWheelSpeedMetersPerSecond = 1.0)
         io.kV = 1.0
 
         io.apply(
@@ -171,7 +173,7 @@ class MecanumHardwareIOTest {
     @Test
     fun `nonfinite drivetrain requests fail closed`() {
         val motors = Array(4) { MockDcMotorEx() }
-        val io = MecanumHardwareIO(motorHardwareMap(motors), maxWheelSpeedMetersPerSecond = 1.0)
+        val io = MecanumHardwareIO(motorHardwareMap(motors), HardwareRegistry(), maxWheelSpeedMetersPerSecond = 1.0)
         io.kV = 1.0
 
         io.apply(
@@ -191,7 +193,7 @@ class MecanumHardwareIOTest {
     @Test
     fun `failed output latches neutral until explicit successful recovery`() {
         val motors = Array(4) { MockDcMotorEx() }
-        val io = MecanumHardwareIO(motorHardwareMap(motors), maxWheelSpeedMetersPerSecond = 1.0)
+        val io = MecanumHardwareIO(motorHardwareMap(motors), HardwareRegistry(), maxWheelSpeedMetersPerSecond = 1.0)
 
         motors[1].rejectNextPowerWrite = true
         io.setMotorPowers(0.6, 0.6, 0.6, 0.6)
@@ -213,7 +215,7 @@ class MecanumHardwareIOTest {
     @Test
     fun `failed neutral recovery remains latched`() {
         val motors = Array(4) { MockDcMotorEx() }
-        val io = MecanumHardwareIO(motorHardwareMap(motors), maxWheelSpeedMetersPerSecond = 1.0)
+        val io = MecanumHardwareIO(motorHardwareMap(motors), HardwareRegistry(), maxWheelSpeedMetersPerSecond = 1.0)
 
         motors[2].rejectPowerWrites = true
         io.setMotorPowers(0.5, 0.5, 0.5, 0.5)

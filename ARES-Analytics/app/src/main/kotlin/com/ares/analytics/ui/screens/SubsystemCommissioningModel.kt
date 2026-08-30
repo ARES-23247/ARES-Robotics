@@ -3,8 +3,7 @@ package com.ares.analytics.service.commissioning
 import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemFeedforwardKind
-import com.areslib.subsystem.subsystemUnitCanRepresentVelocity
-import com.areslib.subsystem.subsystemUnitIsCanonicalAngle
+import com.areslib.subsystem.SubsystemUnits
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sign
@@ -68,7 +67,7 @@ internal fun defaultCommissioningPlant(
     targetUnit: String?,
 ): SubsystemCommissioningPlant = when {
     loop.strategy == SubsystemControlStrategy.SERVO_POSITION -> SubsystemCommissioningPlant.POSITIONAL_SERVO
-    loop.strategy == SubsystemControlStrategy.VELOCITY_PID || subsystemUnitCanRepresentVelocity(targetUnit) ->
+    loop.strategy == SubsystemControlStrategy.VELOCITY_PID || SubsystemUnits.canRepresentVelocity(targetUnit) ->
         SubsystemCommissioningPlant.FLYWHEEL
     loop.feedforward.kind == SubsystemFeedforwardKind.ELEVATOR -> SubsystemCommissioningPlant.ELEVATOR
     loop.feedforward.kind in setOf(
@@ -76,7 +75,7 @@ internal fun defaultCommissioningPlant(
         SubsystemFeedforwardKind.TWO_DOF_ARM,
         SubsystemFeedforwardKind.FOUR_BAR_LINKAGE,
     ) -> SubsystemCommissioningPlant.ROTARY_ARM
-    subsystemUnitIsCanonicalAngle(targetUnit) -> SubsystemCommissioningPlant.ROTARY_ARM
+    SubsystemUnits.isCanonicalAngle(targetUnit) -> SubsystemCommissioningPlant.ROTARY_ARM
     else -> SubsystemCommissioningPlant.ELEVATOR
 }
 

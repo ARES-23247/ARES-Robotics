@@ -1,10 +1,10 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.AlertRecord
-import com.ares.analytics.shared.AnalysisDiagnostic
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.AnalysisDiagnostic
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.service.AlignedDataRow
 import kotlinx.coroutines.Dispatchers

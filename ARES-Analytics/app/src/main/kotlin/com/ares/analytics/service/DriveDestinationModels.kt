@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.DriveDestinationType
+import com.ares.analytics.shared.models.DriveDestinationType
 
 data class DriveDestinationStatus(
     val type: DriveDestinationType,
@@ -42,7 +42,7 @@ internal fun canConfigureDriveDestination(
     DriveDestinationType.SHARED_DRIVE -> false // Existing folders are granted only through Google Picker.
 }
 
-internal fun requireValidDriveDestination(destination: com.ares.analytics.shared.DriveDestinationConfig) {
+internal fun requireValidDriveDestination(destination: com.ares.analytics.shared.models.DriveDestinationConfig) {
     require(destination.rootFolderId.matches(Regex("[A-Za-z0-9_-]{10,256}"))) {
         "Workspace Drive destination has an invalid root folder ID"
     }

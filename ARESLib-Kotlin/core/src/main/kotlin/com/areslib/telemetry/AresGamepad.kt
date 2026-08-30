@@ -9,7 +9,8 @@ import kotlin.math.sign
 private const val ANALOG_DEFAULT_FIRST_UPDATE_SECONDS = 0.02
 private const val ANALOG_MAX_SLEW_DT_SECONDS = 0.2
 
-internal fun interface GamepadFloatSelector {
+/** Primitive gamepad-axis source. Its [Float] return avoids boxed values in the robot loop. */
+fun interface GamepadAxisSource {
     fun read(state: GamepadState): Float
 }
 
@@ -96,19 +97,19 @@ class AresGamepad {
     val f12 = BindableButton { it.f12 }
 
     val leftStick = BindableStick(
-        GamepadFloatSelector { it.leftStickX },
-        GamepadFloatSelector { it.leftStickY }
+        GamepadAxisSource { it.leftStickX },
+        GamepadAxisSource { it.leftStickY }
     )
     val rightStick = BindableStick(
-        GamepadFloatSelector { it.rightStickX },
-        GamepadFloatSelector { it.rightStickY }
+        GamepadAxisSource { it.rightStickX },
+        GamepadAxisSource { it.rightStickY }
     )
-    val leftStickX = BindableAxis(GamepadFloatSelector { it.leftStickX })
-    val leftStickY = BindableAxis(GamepadFloatSelector { it.leftStickY })
-    val rightStickX = BindableAxis(GamepadFloatSelector { it.rightStickX })
-    val rightStickY = BindableAxis(GamepadFloatSelector { it.rightStickY })
-    val leftTrigger = BindableAxis(GamepadFloatSelector { it.leftTrigger })
-    val rightTrigger = BindableAxis(GamepadFloatSelector { it.rightTrigger })
+    val leftStickX = BindableAxis(GamepadAxisSource { it.leftStickX })
+    val leftStickY = BindableAxis(GamepadAxisSource { it.leftStickY })
+    val rightStickX = BindableAxis(GamepadAxisSource { it.rightStickX })
+    val rightStickY = BindableAxis(GamepadAxisSource { it.rightStickY })
+    val leftTrigger = BindableAxis(GamepadAxisSource { it.leftTrigger })
+    val rightTrigger = BindableAxis(GamepadAxisSource { it.rightTrigger })
 
     private val allButtons = listOf(
         a, b, x, y, 
@@ -276,14 +277,9 @@ class AresGamepad {
     }
 
     /** One continuously sampled analog input with deadband, curvature, and slew shaping. */
-    class BindableAxis private constructor(
-        private val primitiveSelector: GamepadFloatSelector?,
-        private val legacySelector: ((GamepadState) -> Float)?
+    class BindableAxis(
+        private val valueSource: GamepadAxisSource,
     ) {
-        internal constructor(valueSelector: GamepadFloatSelector) : this(valueSelector, null)
-
-        /** Compatibility constructor for custom axes; built-in ARES axes use the zero-boxing path. */
-        constructor(valueSelector: (GamepadState) -> Float) : this(null, valueSelector)
         var value: Float = 0.0f
             private set
 
@@ -340,7 +336,7 @@ class AresGamepad {
             notifyConsumer: Boolean,
             resetSlew: Boolean
         ) {
-            val selected = (primitiveSelector?.read(state) ?: legacySelector!!.invoke(state)).toDouble()
+            val selected = valueSource.read(state).toDouble()
             val raw = if (selected.isFinite()) selected.coerceIn(-1.0, 1.0) else 0.0
             value = raw.toFloat()
 
@@ -387,22 +383,10 @@ class AresGamepad {
     }
 
     /** Two continuously sampled analog axes with radial deadband and curve shaping. */
-    class BindableStick private constructor(
-        private val primitiveXSelector: GamepadFloatSelector?,
-        private val primitiveYSelector: GamepadFloatSelector?,
-        private val legacyXSelector: ((GamepadState) -> Float)?,
-        private val legacyYSelector: ((GamepadState) -> Float)?
+    class BindableStick(
+        private val xSource: GamepadAxisSource,
+        private val ySource: GamepadAxisSource,
     ) {
-        internal constructor(
-            xSelector: GamepadFloatSelector,
-            ySelector: GamepadFloatSelector
-        ) : this(xSelector, ySelector, null, null)
-
-        /** Compatibility constructor for custom sticks; built-in ARES sticks avoid boxed Floats. */
-        constructor(
-            xSelector: (GamepadState) -> Float,
-            ySelector: (GamepadState) -> Float
-        ) : this(null, null, xSelector, ySelector)
         var x: Float = 0.0f
             private set
         var y: Float = 0.0f
@@ -467,8 +451,8 @@ class AresGamepad {
             notifyConsumer: Boolean,
             resetSlew: Boolean
         ) {
-            val selectedX = (primitiveXSelector?.read(state) ?: legacyXSelector!!.invoke(state)).toDouble()
-            val selectedY = (primitiveYSelector?.read(state) ?: legacyYSelector!!.invoke(state)).toDouble()
+            val selectedX = xSource.read(state).toDouble()
+            val selectedY = ySource.read(state).toDouble()
             var rawX = if (selectedX.isFinite()) selectedX.coerceIn(-1.0, 1.0) else 0.0
             var rawY = if (selectedY.isFinite()) selectedY.coerceIn(-1.0, 1.0) else 0.0
             val rawMagnitude = hypot(rawX, rawY)

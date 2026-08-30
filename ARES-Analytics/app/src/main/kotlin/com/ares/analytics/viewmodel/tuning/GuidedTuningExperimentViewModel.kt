@@ -22,8 +22,8 @@ import com.ares.analytics.service.tuning.candidateRuns
 import com.ares.analytics.service.tuning.canAcceptSimulationResult
 import com.ares.analytics.service.tuning.numericValue
 import com.ares.analytics.service.tuning.restoredSeed
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.viewmodel.TuningState
 import com.areslib.tuning.TuningParameterType
 import com.areslib.tuning.TuningValue

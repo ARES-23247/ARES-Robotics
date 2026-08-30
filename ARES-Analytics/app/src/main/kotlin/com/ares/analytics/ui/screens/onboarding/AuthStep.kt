@@ -37,8 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ares.analytics.service.AuthState
-import com.ares.analytics.shared.DriveDestinationConfig
-import com.ares.analytics.shared.DriveDestinationType
+import com.ares.analytics.shared.models.DriveDestinationConfig
+import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan

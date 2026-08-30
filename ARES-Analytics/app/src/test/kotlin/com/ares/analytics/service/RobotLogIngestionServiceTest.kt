@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.service.log.HootDecoderService
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,11 +38,10 @@ class RobotLogIngestionServiceTest {
         val sysId = SysIdService(database)
         val summary = SummaryEngineService(database, sysId, DriverAnalysisService(database, sysId))
         val parser = LogParserService(database, summary)
-        val processManager = ProcessManagerService()
         val autoImport = AutoImportService(
             parser,
             HootDecoderService(database, summary, sysId),
-            processManager,
+            MutableStateFlow(false),
             configProvider = { null },
             scope = this,
         )
@@ -80,7 +80,6 @@ class RobotLogIngestionServiceTest {
         } finally {
             service.close()
             autoImport.stop()
-            processManager.shutdown()
             database.close()
             root.deleteRecursively()
         }

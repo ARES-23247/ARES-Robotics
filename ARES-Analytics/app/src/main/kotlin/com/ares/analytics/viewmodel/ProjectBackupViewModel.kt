@@ -1,10 +1,15 @@
 package com.ares.analytics.viewmodel
 
 import com.ares.analytics.service.versioncontrol.GitHubConnectionState
+import com.ares.analytics.service.versioncontrol.GitHubAuthenticationService
 import com.ares.analytics.service.versioncontrol.GitHubBackupCatalog
 import com.ares.analytics.service.versioncontrol.ProjectBackupPlan
 import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncState
+import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
+import com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryPlan
+import com.ares.analytics.service.versioncontrol.ProjectRecoveryService
+import com.ares.analytics.service.versioncontrol.ProjectRemoteBackupService
 import com.ares.analytics.service.versioncontrol.ProjectRestorePlan
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
 import kotlinx.coroutines.CancellationException
@@ -60,20 +65,25 @@ sealed class ProjectBackupIntent {
 /** Coordinates review-first project history and optional private GitHub backup. */
 class ProjectBackupViewModel(
     private val service: ProjectVersionControlService,
+    private val remoteBackup: ProjectRemoteBackupService,
+    private val recovery: ProjectRecoveryService,
+    private val githubAuthentication: GitHubAuthenticationService,
+    private val autoSync: ProjectBackupAutoSyncService,
+    private val archiveExporter: ProjectArchiveExporter,
     private val scope: CoroutineScope,
 ) {
-    private val _state = MutableStateFlow(ProjectBackupState(githubState = service.githubState.value))
+    private val _state = MutableStateFlow(ProjectBackupState(githubState = githubAuthentication.state.value))
     val state: StateFlow<ProjectBackupState> = _state.asStateFlow()
 
     init {
         scope.launch {
-            service.githubState.collectLatest { github ->
+            githubAuthentication.state.collectLatest { github ->
                 _state.update { it.copy(githubState = github) }
             }
         }
         scope.launch {
-            service.autoSyncState.collectLatest { autoSync ->
-                _state.update { it.copy(autoSync = autoSync) }
+            autoSync.state.collectLatest { state ->
+                _state.update { it.copy(autoSync = state) }
             }
         }
     }
@@ -87,20 +97,21 @@ class ProjectBackupViewModel(
                 "GitHub was disconnected. Local versions remain on this computer.",
                 clearCatalog = true,
             ) {
-                service.disconnectGitHub()
+                githubAuthentication.disconnect()
+                autoSync.pauseForSignedOutAccount()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.SignInToGitHub -> runAction(
                 "GitHub is connected. Choose an approved personal or team repository.",
                 refreshCatalog = true,
             ) {
-                service.signInToGitHub()
+                githubAuthentication.signIn()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.OpenGitHubAppInstallation -> runAction(
                 "GitHub opened the ARES App installation page. Return here and refresh destinations after approval.",
             ) {
-                service.openGitHubAppInstallation()
+                githubAuthentication.openInstallationPage()
                 service.inspect(requireProjectPath())
             }
             ProjectBackupIntent.RefreshGitHubDestinations -> runAction(
@@ -126,7 +137,7 @@ class ProjectBackupViewModel(
                 "Approved GitHub repository connected and synchronized.",
                 refreshCatalog = true,
             ) {
-                service.connectApprovedRepository(
+                remoteBackup.connectApprovedRepository(
                     requireProjectPath(),
                     intent.installationId,
                     intent.repositoryId,
@@ -136,7 +147,7 @@ class ProjectBackupViewModel(
                 "GitHub backup is up to date.",
                 refreshCatalog = true,
             ) {
-                service.pushBackup(requireProjectPath())
+                remoteBackup.pushBackup(requireProjectPath())
             }
             is ProjectBackupIntent.SetAutomaticGitHubBackup -> setAutomaticGitHubBackup(intent.enabled)
             ProjectBackupIntent.PreviewGitHubRestore -> previewRestore()
@@ -146,7 +157,7 @@ class ProjectBackupViewModel(
             is ProjectBackupIntent.ExportArchive -> exportArchive(intent.destinationPath)
             ProjectBackupIntent.DisconnectGitHubDestination -> runAction(
                 "The online destination was disconnected. No local or GitHub files were deleted.",
-            ) { service.disconnectBackupDestination(requireProjectPath()) }
+            ) { remoteBackup.disconnectBackupDestination(requireProjectPath()) }
         }
     }
 
@@ -160,7 +171,7 @@ class ProjectBackupViewModel(
             notice = null,
             refreshCatalog = _state.value.githubState is GitHubConnectionState.Connected,
         ) {
-            service.loadAutoSync(projectPath)
+            autoSync.load(projectPath)
             service.inspect(projectPath)
         }
     }
@@ -170,7 +181,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val autoSync = service.setAutoSyncEnabled(requireProjectPath(), enabled)
+                val autoSync = autoSync.setEnabled(requireProjectPath(), enabled)
                 _state.update {
                     it.copy(
                         isBusy = false,
@@ -209,7 +220,7 @@ class ProjectBackupViewModel(
                 val plan = block()
                 val catalog = when {
                     clearCatalog -> GitHubBackupCatalog()
-                    refreshCatalog -> service.discoverGitHubDestinations()
+                    refreshCatalog -> githubAuthentication.discoverDestinations()
                     else -> _state.value.githubCatalog
                 }
                 _state.update { current ->
@@ -243,7 +254,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, restorePlan = null, error = null, notice = null) }
             try {
-                val restore = service.previewGitHubRestore(requireProjectPath())
+                val restore = recovery.previewGitHubRestore(requireProjectPath())
                 _state.update {
                     it.copy(
                         isBusy = false,
@@ -276,7 +287,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val plan = service.restoreFromGitHub(requireProjectPath(), confirmationToken)
+                val plan = recovery.restoreFromGitHub(requireProjectPath(), confirmationToken)
                 _state.update {
                     it.copy(
                         plan = plan,
@@ -304,8 +315,8 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, restorePlan = null, recoveryPlan = null, error = null, notice = null) }
             try {
-                val recovery = service.previewRecovery(requireProjectPath(), refName)
-                _state.update { it.copy(isBusy = false, recoveryPlan = recovery) }
+                val plan = recovery.previewRecovery(requireProjectPath(), refName)
+                _state.update { it.copy(isBusy = false, recoveryPlan = plan) }
             } catch (cancelled: CancellationException) {
                 _state.update { it.copy(isBusy = false) }
                 throw cancelled
@@ -322,7 +333,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val plan = service.recoverToSafetyPoint(requireProjectPath(), refName, confirmationToken)
+                val plan = recovery.recoverToSafetyPoint(requireProjectPath(), refName, confirmationToken)
                 _state.update {
                     it.copy(
                         plan = plan,
@@ -348,7 +359,7 @@ class ProjectBackupViewModel(
         scope.launch {
             _state.update { it.copy(isBusy = true, error = null, notice = null) }
             try {
-                val exported = service.exportProjectArchive(requireProjectPath(), destinationPath)
+                val exported = archiveExporter.export(requireProjectPath(), destinationPath)
                 val skipped = exported.skippedSensitivePaths.takeIf(List<String>::isNotEmpty)
                     ?.let { " Private files were intentionally skipped: ${it.joinToString()}." }
                     .orEmpty()

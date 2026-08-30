@@ -1,6 +1,6 @@
 package com.ares.analytics.ui.input
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

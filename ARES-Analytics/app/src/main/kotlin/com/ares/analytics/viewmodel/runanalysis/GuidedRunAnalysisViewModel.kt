@@ -6,8 +6,8 @@ import com.ares.analytics.service.RUN_START_ALIGNMENT_ID
 import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.RunComparisonRepository
 import com.ares.analytics.service.RunComparisonRequest
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job

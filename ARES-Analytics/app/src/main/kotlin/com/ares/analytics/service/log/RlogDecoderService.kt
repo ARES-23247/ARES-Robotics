@@ -1,7 +1,7 @@
 package com.ares.analytics.service.log
 
 import com.ares.analytics.service.FrameBatcher
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.CancellationException
 import java.io.BufferedInputStream
 import java.io.DataInputStream

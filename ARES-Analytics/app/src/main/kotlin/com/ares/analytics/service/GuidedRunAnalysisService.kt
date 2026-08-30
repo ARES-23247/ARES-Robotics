@@ -1,9 +1,9 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.AlertRecord
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

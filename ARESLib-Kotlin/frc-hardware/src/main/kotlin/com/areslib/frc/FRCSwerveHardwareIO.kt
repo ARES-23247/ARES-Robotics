@@ -42,7 +42,6 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     private val visionStdDevs = Matrix<N3, N1>(Nat.N3(), Nat.N1())
 
     init {
-        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
     }
 
     /** Synchronously refreshes cached CAN signals across motor currents, encoders, and IMU status signals. */

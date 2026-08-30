@@ -1,6 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.service.db.*
 import com.ares.analytics.service.integration.IntegrationRepository
@@ -55,8 +56,10 @@ internal fun resolveDuckDbResourceSettings(
  * High-level embedded relational database service wrapping the DuckDB C++ engine over JDBC.
  *
  * Manages persistent on-disk database files (`telemetry.duckdb`) and fast ephemeral in-memory databases (`jdbc:duckdb:`).
- * Orchestrates schema migrations via [SchemaMigrationManager], encapsulates CRUD queries via [MatchLogRepository],
- * and handles Parquet import/export routines via [DatabaseBackupExporter].
+ * Initializes the current schema via [DatabaseSchemaInitializer], session metadata through
+ * [SessionMetadataRepository], telemetry through [TelemetryRepository], action history through
+ * [RobotActionRepository], run evidence through [RunEvidenceRepository], and Parquet import/export
+ * through [DatabaseBackupExporter].
  *
  * ### Database Engine Specifications:
  * - Driver: `org.duckdb.DuckDBDriver`
@@ -65,12 +68,12 @@ internal fun resolveDuckDbResourceSettings(
  *
  * ### Thread Safety & Performance Guarantees:
  * Multi-thread safe. All write and query transactions are synchronized through an asynchronous coroutine [dbMutex] lock.
- * Delegates SQL execution to `MatchLogRepository`.
+ * Domain repositories share one [DatabaseTransactionCoordinator].
  *
  * @param dbPath Absolute filesystem path to the DuckDB database file.
  *
- * @see SchemaMigrationManager
- * @see MatchLogRepository
+ * @see DatabaseSchemaInitializer
+ * @see TelemetryRepository
  * @see DatabaseBackupExporter
  */
 class DatabaseService(
@@ -96,8 +99,12 @@ class DatabaseService(
     private val readMutex = Mutex()
     val metrics = DatabaseMetrics()
 
-    private val schemaManager: SchemaMigrationManager
-    private val matchLogRepo: MatchLogRepository
+    private val schemaInitializer: DatabaseSchemaInitializer
+    private val transactionCoordinator: DatabaseTransactionCoordinator
+    private val sessionMetadataRepo: SessionMetadataRepository
+    private val telemetryRepo: TelemetryRepository
+    private val robotActionRepo: RobotActionRepository
+    private val runEvidenceRepo: RunEvidenceRepository
     private val backupExporter: DatabaseBackupExporter
     private val integrationRepository: IntegrationRepository
 
@@ -112,15 +119,6 @@ class DatabaseService(
     init {
         Class.forName("org.duckdb.DuckDBDriver")
         val dbFile = File(dbPath)
-        val defaultDbFile = AppDataPaths.file("telemetry.duckdb")
-            .canonicalFile
-        // Legacy import belongs only to the process' real application database. Unit tests and
-        // alternate workspaces must never ingest a user's home telemetry.db by coincidence.
-        val legacyDbPath = if (dbFile.canonicalFile == defaultDbFile) {
-            File(defaultDbFile.parentFile, "telemetry.db").absolutePath
-        } else {
-            null
-        }
         dbFile.parentFile?.mkdirs()
 
         if (dbFile.exists() && dbFile.length() == 0L) {
@@ -152,13 +150,25 @@ class DatabaseService(
         }
         ephemeralReadConn = ephemeralConn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate()
 
-        schemaManager = SchemaMigrationManager(conn, ephemeralConn)
-        matchLogRepo = MatchLogRepository(conn, readConn, ephemeralConn, ephemeralReadConn, dbMutex, readMutex, metrics)
+        schemaInitializer = DatabaseSchemaInitializer(conn, ephemeralConn)
+        transactionCoordinator = DatabaseTransactionCoordinator(
+            conn,
+            readConn,
+            ephemeralConn,
+            ephemeralReadConn,
+            dbMutex,
+            readMutex,
+            metrics,
+        )
+        sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
+        telemetryRepo = TelemetryRepository(transactionCoordinator)
+        robotActionRepo = RobotActionRepository(transactionCoordinator)
+        runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
         backupExporter = DatabaseBackupExporter(conn, dbMutex)
         integrationRepository = IntegrationRepository(conn, dbMutex)
         integrationEvents = IntegrationEventRecorder(integrationRepository, integrationRouting)
 
-        schemaManager.runMigrations(legacyDbPath)
+        schemaInitializer.initialize()
 
         // Periodic WAL checkpoint — replaces the per-appender-batch CHECKPOINT that dominated
         // import time with fsyncs on every frame batch. A 60s cadence bounds WAL growth for
@@ -166,37 +176,38 @@ class DatabaseService(
         checkpointJob = checkpointScope.launch {
             while (isActive) {
                 delay(CHECKPOINT_INTERVAL_MS)
-                runCatching { matchLogRepo.checkpoint() }
+                runCatching { transactionCoordinator.checkpoint() }
             }
         }
     }
 
-    suspend fun checkpoint() = matchLogRepo.checkpoint()
+    suspend fun checkpoint() = transactionCoordinator.checkpoint()
 
-    suspend fun executeNativeCsvImport(sql: String) = matchLogRepo.executeNativeCsvImport(sql)
+    suspend fun executeNativeCsvImport(sql: String) = telemetryRepo.executeNativeCsvImport(sql)
     suspend fun executeQueryRaw(
         sql: String,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT
-    ): QueryResult = matchLogRepo.executeQueryRaw(sql, rowLimit)
+    ): QueryResult = transactionCoordinator.readOnlyQueries.executeRaw(sql, rowLimit)
     suspend fun executeAiQuery(
         sql: String,
         rowLimit: Int = QueryResult.DEFAULT_RAW_QUERY_ROW_LIMIT,
-    ): QueryResult = matchLogRepo.executeAiQuery(sql, rowLimit)
-    suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult = matchLogRepo.executeQueryWithParams(sql, params)
-    suspend fun insertSession(session: Session) = matchLogRepo.insertSession(session)
-    internal suspend fun insertImportSession(session: Session) = matchLogRepo.insertImportSession(session)
-    suspend fun getSessions(): List<Session> = matchLogRepo.getSessions()
+    ): QueryResult = transactionCoordinator.readOnlyQueries.executeRaw(AiSqlQueryGuard.validate(sql), rowLimit)
+    suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult =
+        transactionCoordinator.readOnlyQueries.executeWithParams(sql, params)
+    suspend fun insertSession(session: Session) = sessionMetadataRepo.insertSession(session)
+    internal suspend fun insertImportSession(session: Session) = sessionMetadataRepo.insertImportSession(session)
+    suspend fun getSessions(): List<Session> = sessionMetadataRepo.getSessions()
     suspend fun getSessionsForWorkspace(teamId: String, seasonId: String, robotId: String): List<Session> =
-        matchLogRepo.getSessionsForWorkspace(teamId, seasonId, robotId)
+        sessionMetadataRepo.getSessionsForWorkspace(teamId, seasonId, robotId)
     internal suspend fun findCompletedSessionBySourceHashes(
         teamId: String,
         seasonId: String,
         robotId: String,
         sourceHashes: Set<String>,
-    ): Session? = matchLogRepo.findCompletedSessionBySourceHashes(teamId, seasonId, robotId, sourceHashes)
-    suspend fun deleteSession(sessionId: String) = matchLogRepo.deleteSession(sessionId)
+    ): Session? = sessionMetadataRepo.findCompletedSessionBySourceHashes(teamId, seasonId, robotId, sourceHashes)
+    suspend fun deleteSession(sessionId: String) = sessionMetadataRepo.deleteSession(sessionId)
     suspend fun insertSessionSummary(summary: SessionSummary) {
-        matchLogRepo.insertSessionSummary(summary)
+        sessionMetadataRepo.insertSessionSummary(summary)
         integrationEvents.analysisReady(summary)
     }
     suspend fun saveEngineeringNotebookRevision(
@@ -208,24 +219,24 @@ class DatabaseService(
         if (commitRange == null) integrationEvents.notebookDraftReady(entry, externalUpdatesAllowed)
         else integrationEvents.softwareDigestReady(entry, commitRange)
     }
-    override suspend fun getSessionSummary(sessionId: String): SessionSummary? = matchLogRepo.getSessionSummary(sessionId)
-    override suspend fun getAllSessionSummaries(): List<SessionSummary> = matchLogRepo.getAllSessionSummaries()
-    suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = matchLogRepo.insertTelemetryFrames(frames)
-    suspend fun insertRobotActionsBulk(actions: List<com.ares.analytics.shared.RobotActionRecord>) = matchLogRepo.insertRobotActionsBulk(actions)
-    suspend fun getActionsForSession(sessionId: String): List<com.ares.analytics.shared.RobotActionRecord> = matchLogRepo.getActionsForSession(sessionId)
-    override suspend fun getSessionTimestampRange(sessionId: String): Pair<Long, Long>? = matchLogRepo.getSessionTimestampRange(sessionId)
-    suspend fun getTelemetryRange(sessionId: String, startMs: Long, endMs: Long): List<TelemetryFrame> = matchLogRepo.getTelemetryRange(sessionId, startMs, endMs)
-    suspend fun getLatestTelemetryBefore(sessionId: String, timestampMs: Long): List<TelemetryFrame> = matchLogRepo.getLatestTelemetryBefore(sessionId, timestampMs)
-    suspend fun getTelemetryRangeBatched(sessionId: String, startMs: Long, endMs: Long, limit: Long, offset: Long): List<TelemetryFrame> = matchLogRepo.getTelemetryRangeBatched(sessionId, startMs, endMs, limit, offset)
-    suspend fun countTelemetryFrames(sessionId: String): Long = matchLogRepo.countTelemetryFrames(sessionId)
-    suspend fun getTelemetryForKey(sessionId: String, key: String): List<TelemetryFrame> = matchLogRepo.getTelemetryForKey(sessionId, key)
+    override suspend fun getSessionSummary(sessionId: String): SessionSummary? = sessionMetadataRepo.getSessionSummary(sessionId)
+    override suspend fun getAllSessionSummaries(): List<SessionSummary> = sessionMetadataRepo.getAllSessionSummaries()
+    suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = telemetryRepo.insertTelemetryFrames(frames)
+    suspend fun insertRobotActionsBulk(actions: List<RobotActionRecord>) = robotActionRepo.insert(actions)
+    suspend fun getActionsForSession(sessionId: String): List<RobotActionRecord> = robotActionRepo.getForSession(sessionId)
+    override suspend fun getSessionTimestampRange(sessionId: String): Pair<Long, Long>? = telemetryRepo.getSessionTimestampRange(sessionId)
+    suspend fun getTelemetryRange(sessionId: String, startMs: Long, endMs: Long): List<TelemetryFrame> = telemetryRepo.getTelemetryRange(sessionId, startMs, endMs)
+    suspend fun getLatestTelemetryBefore(sessionId: String, timestampMs: Long): List<TelemetryFrame> = telemetryRepo.getLatestTelemetryBefore(sessionId, timestampMs)
+    suspend fun getTelemetryRangeBatched(sessionId: String, startMs: Long, endMs: Long, limit: Long, offset: Long): List<TelemetryFrame> = telemetryRepo.getTelemetryRangeBatched(sessionId, startMs, endMs, limit, offset)
+    suspend fun countTelemetryFrames(sessionId: String): Long = telemetryRepo.countTelemetryFrames(sessionId)
+    suspend fun getTelemetryForKey(sessionId: String, key: String): List<TelemetryFrame> = telemetryRepo.getTelemetryForKey(sessionId, key)
     override suspend fun getTelemetrySeries(
         sessionId: String,
         key: String,
         startMs: Long,
         endMs: Long,
         maxPoints: Int
-    ): List<TelemetryFrame> = matchLogRepo.getTelemetrySeries(sessionId, key, startMs, endMs, maxPoints)
+    ): List<TelemetryFrame> = telemetryRepo.getTelemetrySeries(sessionId, key, startMs, endMs, maxPoints)
     suspend fun getTelemetryPageForKeys(
         sessionId: String,
         keys: List<String>,
@@ -233,34 +244,34 @@ class DatabaseService(
         endMs: Long,
         limit: Int = 5_000,
         offset: Long = 0
-    ): List<TelemetryFrame> = matchLogRepo.getTelemetryPageForKeys(sessionId, keys, startMs, endMs, limit, offset)
+    ): List<TelemetryFrame> = telemetryRepo.getTelemetryPageForKeys(sessionId, keys, startMs, endMs, limit, offset)
     suspend fun getTelemetryExportPreflight(
         sessionId: String,
         keys: List<String>,
         maximumFrames: Int,
-    ): TelemetryExportPreflight = matchLogRepo.getTelemetryExportPreflight(sessionId, keys, maximumFrames)
+    ): TelemetryExportPreflight = telemetryRepo.getTelemetryExportPreflight(sessionId, keys, maximumFrames)
     suspend fun getTelemetryExportValueTypes(
         sessionId: String,
         keys: List<String>,
-    ): Map<String, TelemetryExportValueType> = matchLogRepo.getTelemetryExportValueTypes(sessionId, keys)
+    ): Map<String, TelemetryExportValueType> = telemetryRepo.getTelemetryExportValueTypes(sessionId, keys)
     suspend fun getTelemetryExportPage(
         sessionId: String,
         keys: List<String>,
         after: TelemetryExportCursor?,
         limit: Int,
-    ): List<TelemetryFrame> = matchLogRepo.getTelemetryExportPage(sessionId, keys, after, limit)
-    override suspend fun getDistinctTelemetryKeys(sessionId: String): List<String> = matchLogRepo.getDistinctTelemetryKeys(sessionId)
+    ): List<TelemetryFrame> = telemetryRepo.getTelemetryExportPage(sessionId, keys, after, limit)
+    override suspend fun getDistinctTelemetryKeys(sessionId: String): List<String> = telemetryRepo.getDistinctTelemetryKeys(sessionId)
     suspend fun getTelemetryForKeyPatterns(sessionId: String, patterns: List<String>): List<TelemetryFrame> =
-        matchLogRepo.getTelemetryForKeyPatterns(sessionId, patterns)
-    suspend fun getDiagnosticsTelemetry(sessionId: String): List<TelemetryFrame> = matchLogRepo.getDiagnosticsTelemetry(sessionId)
+        telemetryRepo.getTelemetryForKeyPatterns(sessionId, patterns)
+    suspend fun getDiagnosticsTelemetry(sessionId: String): List<TelemetryFrame> = runEvidenceRepo.getDiagnosticsTelemetry(sessionId)
     suspend fun replaceAnalysisDiagnostics(sessionId: String, diagnostics: List<AnalysisDiagnostic>) =
-        matchLogRepo.replaceAnalysisDiagnostics(sessionId, diagnostics)
+        runEvidenceRepo.replaceAnalysisDiagnostics(sessionId, diagnostics)
     suspend fun getAnalysisDiagnostics(sessionId: String): List<AnalysisDiagnostic> =
-        matchLogRepo.getAnalysisDiagnostics(sessionId)
+        runEvidenceRepo.getAnalysisDiagnostics(sessionId)
     internal suspend fun replaceSessionImportReports(sessionId: String, reports: List<ImportReport>) =
-        matchLogRepo.replaceSessionImportReports(sessionId, reports)
+        runEvidenceRepo.replaceImportReports(sessionId, reports)
     internal suspend fun completeSessionImport(session: Session, reports: List<ImportReport>) {
-        matchLogRepo.completeSessionImport(session, reports)
+        runEvidenceRepo.completeImport(session, reports)
         // A completed import is a durable boundary. Checkpoint here instead of per batch so a
         // power loss never leaves an arbitrarily large WAL, while normal ingestion still avoids
         // an fsync on every frame batch.
@@ -268,33 +279,33 @@ class DatabaseService(
         integrationEvents.sessionImported(session, reports)
     }
     internal suspend fun getSessionImportReports(sessionId: String): List<ImportReport> =
-        matchLogRepo.getSessionImportReports(sessionId)
+        runEvidenceRepo.getImportReports(sessionId)
     suspend fun getTelemetryForFilters(
         sessionId: String,
         keys: List<String>,
         prefixes: List<String>,
         maxFrames: Int = 100_000,
         maxFramesPerTopic: Int = 2_048,
-    ): List<TelemetryFrame> = matchLogRepo.getTelemetryForFilters(
+    ): List<TelemetryFrame> = telemetryRepo.getTelemetryForFilters(
         sessionId,
         keys,
         prefixes,
         maxFrames,
         maxFramesPerTopic,
     )
-    suspend fun getDistinctTimestamps(sessionId: String): List<Long> = matchLogRepo.getDistinctTimestamps(sessionId)
+    suspend fun getDistinctTimestamps(sessionId: String): List<Long> = telemetryRepo.getDistinctTimestamps(sessionId)
     suspend fun countTimestampGaps(sessionId: String, minimumGapMs: Long): Long =
-        matchLogRepo.countTimestampGaps(sessionId, minimumGapMs)
-    suspend fun deleteTelemetryFrames(sessionId: String) = matchLogRepo.deleteTelemetryFrames(sessionId)
-    suspend fun pruneTelemetryFrames(sessionId: String, cutoffMs: Long) = matchLogRepo.pruneTelemetryFrames(sessionId, cutoffMs)
-    suspend fun insertAnnotation(annotation: SessionAnnotation) = matchLogRepo.insertAnnotation(annotation)
-    suspend fun getAnnotations(sessionId: String): List<SessionAnnotation> = matchLogRepo.getAnnotations(sessionId)
-    suspend fun updateSessionTags(sessionId: String, tags: List<String>) = matchLogRepo.updateSessionTags(sessionId, tags)
-    suspend fun updateSessionMatchDetails(sessionId: String, matchNumber: Int?, allianceColor: String?) = matchLogRepo.updateSessionMatchDetails(sessionId, matchNumber, allianceColor)
-    suspend fun associateSessionWithMatch(sessionId: String, matchNumber: Int, allianceColor: String, opponentTeams: List<String>) = matchLogRepo.associateSessionWithMatch(sessionId, matchNumber, allianceColor, opponentTeams)
+        telemetryRepo.countTimestampGaps(sessionId, minimumGapMs)
+    suspend fun deleteTelemetryFrames(sessionId: String) = telemetryRepo.deleteTelemetryFrames(sessionId)
+    suspend fun pruneTelemetryFrames(sessionId: String, cutoffMs: Long) = telemetryRepo.pruneTelemetryFrames(sessionId, cutoffMs)
+    suspend fun insertAnnotation(annotation: SessionAnnotation) = sessionMetadataRepo.insertAnnotation(annotation)
+    suspend fun getAnnotations(sessionId: String): List<SessionAnnotation> = sessionMetadataRepo.getAnnotations(sessionId)
+    suspend fun updateSessionTags(sessionId: String, tags: List<String>) = sessionMetadataRepo.updateSessionTags(sessionId, tags)
+    suspend fun updateSessionMatchDetails(sessionId: String, matchNumber: Int?, allianceColor: String?) = sessionMetadataRepo.updateSessionMatchDetails(sessionId, matchNumber, allianceColor)
+    suspend fun associateSessionWithMatch(sessionId: String, matchNumber: Int, allianceColor: String, opponentTeams: List<String>) = sessionMetadataRepo.associateSessionWithMatch(sessionId, matchNumber, allianceColor, opponentTeams)
     suspend fun insertAlert(alert: AlertRecord) {
-        matchLogRepo.insertAlert(alert)
-        val session = matchLogRepo.getSessions().firstOrNull { it.sessionId == alert.sessionId }
+        sessionMetadataRepo.insertAlert(alert)
+        val session = sessionMetadataRepo.getSessions().firstOrNull { it.sessionId == alert.sessionId }
         if (session != null) {
             integrationEvents.alertPersisted(
                 alert,
@@ -307,12 +318,12 @@ class DatabaseService(
             )
         }
     }
-    suspend fun getAlerts(sessionId: String): List<AlertRecord> = matchLogRepo.getAlerts(sessionId)
-    suspend fun insertTopology(topology: HardwareTopology) = matchLogRepo.insertTopology(topology)
-    suspend fun getTopology(robotId: String): HardwareTopology? = matchLogRepo.getTopology(robotId)
-    suspend fun insertConsoleMessages(messages: List<ConsoleMessage>, sessionId: String) = matchLogRepo.insertConsoleMessages(messages, sessionId)
-    suspend fun getConsoleMessages(sessionId: String): List<ConsoleMessage> = matchLogRepo.getConsoleMessages(sessionId)
-    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = matchLogRepo.getTelemetryDensity(sessionId, buckets)
+    suspend fun getAlerts(sessionId: String): List<AlertRecord> = sessionMetadataRepo.getAlerts(sessionId)
+    suspend fun insertTopology(topology: HardwareTopology) = sessionMetadataRepo.insertTopology(topology)
+    suspend fun getTopology(robotId: String): HardwareTopology? = sessionMetadataRepo.getTopology(robotId)
+    suspend fun insertConsoleMessages(messages: List<ConsoleMessage>, sessionId: String) = sessionMetadataRepo.insertConsoleMessages(messages, sessionId)
+    suspend fun getConsoleMessages(sessionId: String): List<ConsoleMessage> = sessionMetadataRepo.getConsoleMessages(sessionId)
+    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = telemetryRepo.getTelemetryDensity(sessionId, buckets)
 
     suspend fun importParquet(file: File) {
         backupExporter.importParquet(file)
@@ -366,7 +377,7 @@ class DatabaseService(
     }
 
     private suspend fun checkpointAfterDurableBoundary(operation: String) {
-        runCatching { matchLogRepo.checkpoint() }
+        runCatching { transactionCoordinator.checkpoint() }
             .onFailure { failure ->
                 // The transaction is already committed to DuckDB's WAL. A checkpoint failure must
                 // not relabel a successful, recoverable import as failed or quarantine its source.
@@ -399,7 +410,7 @@ class DatabaseService(
             // writers. Lock order here matches the repository's established write->read order.
             dbMutex.withLock {
                 readMutex.withLock {
-                    matchLogRepo.dispose()
+                    sessionMetadataRepo.dispose()
                     if (!readConn.isClosed) { readConn.close() }
                     if (!conn.isClosed) {
                         runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }
@@ -418,7 +429,7 @@ class DatabaseService(
         }
     }
 
-    /** Blocking compatibility bridge for non-coroutine owners and existing test fixtures. */
+    /** Blocking teardown for synchronous owners such as desktop shutdown hooks and test fixtures. */
     fun close() = runBlocking { closeAndJoin() }
 
     companion object {

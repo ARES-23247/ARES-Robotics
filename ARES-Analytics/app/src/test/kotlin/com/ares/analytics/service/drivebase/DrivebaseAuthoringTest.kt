@@ -1,6 +1,6 @@
 package com.ares.analytics.service.drivebase
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.drivebase.DriveLabState
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderIntent
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderStep
@@ -10,7 +10,7 @@ import com.ares.analytics.viewmodel.drivebase.canonicalRuntimeProjectUid
 import com.ares.analytics.viewmodel.drivebase.evaluateDriveLab
 import com.ares.analytics.viewmodel.drivebase.evaluateGeometryLab
 import com.ares.analytics.viewmodel.drivebase.evaluateLocalizationFailure
-import com.ares.analytics.viewmodel.drivebase.withCanonicalProjectIdentity
+import com.ares.analytics.viewmodel.drivebase.requireCanonicalProjectIdentity
 import com.ares.analytics.viewmodel.drivebase.LocalizationFailureScenario
 import java.io.File
 import java.nio.file.Files
@@ -108,7 +108,7 @@ class DrivebaseAuthoringTest {
     }
 
     @Test
-    fun `drivebase builder uses canonical project identity and repairs stale profile ownership`() = runBlocking {
+    fun `drivebase builder requires the canonical project identity without rewriting it`() = runBlocking {
         val root = Files.createTempDirectory("ares-drivebase-project-identity").toFile()
         File(root, ".ares/project.json").apply {
             parentFile.mkdirs()
@@ -118,29 +118,30 @@ class DrivebaseAuthoringTest {
         }
         val stale = canonicalTemplate("VisibleFrcRobot", DrivebaseKind.FRC_CTRE_SWERVE).toUiDrivebase()
         val runtimeProjectUid = "team99998.frc.season2026.visiblefrcrobot"
-        val repaired = stale.withCanonicalProjectIdentity(runtimeProjectUid)
+        val current = stale.copy(
+            projectId = runtimeProjectUid,
+            canonical = requireNotNull(stale.canonical).copy(
+                canonicalProfileUid = "$runtimeProjectUid.profile.competition",
+            ),
+        )
 
         assertEquals(runtimeProjectUid, canonicalRuntimeProjectUid(root.path, "VisibleFrcRobot", League.FRC))
-        assertEquals(runtimeProjectUid, repaired.projectId)
+        assertSame(current, current.requireCanonicalProjectIdentity(runtimeProjectUid))
         assertEquals(
             "$runtimeProjectUid.profile.competition",
-            repaired.canonical?.canonicalProfileUid,
+            current.canonical?.canonicalProfileUid,
         )
-        assertEquals(
-            runtimeProjectUid,
-            requireNotNull(repaired.canonical).toUiDrivebase().projectId,
-        )
-        assertEquals(
-            setOf("projectId", "canonicalProfileUid"),
-            diffDrivebase(stale, repaired).map { it.path }.toSet(),
-        )
+        val mismatch = assertFailsWith<IllegalArgumentException> {
+            stale.requireCanonicalProjectIdentity(runtimeProjectUid)
+        }
+        assertTrue(mismatch.message.orEmpty().contains("projectId"))
         root.deleteRecursively()
         Unit
     }
 
     @Test
-    fun `reviewed save migrates a legacy profile identity with an immutable history backup`() {
-        val root = Files.createTempDirectory("ares-drivebase-profile-identity-migration").toFile()
+    fun `reviewed save rejects a tuning profile owned by a different project`() {
+        val root = Files.createTempDirectory("ares-drivebase-profile-identity").toFile()
         try {
             val ares = File(root, ".ares")
             val drivetrainDirectory = File(ares, "drivetrains").apply { mkdirs() }
@@ -151,58 +152,38 @@ class DrivebaseAuthoringTest {
                 })
             }
             val currentFile = File(drivetrainDirectory, "primary.aresdrivetrain")
-            currentFile.writeText(DrivetrainDocumentCodec.encode(current))
+            val currentBytes = DrivetrainDocumentCodec.encode(current)
+            currentFile.writeText(currentBytes)
             val expectedProjectUid = "team99998.frc.season2026.visiblefrcrobot"
-            val legacyProfile = com.areslib.tuning.TuningProfileDocument(
+            val mismatchedProfile = com.areslib.tuning.TuningProfileDocument(
                 uid = current.canonicalProfileUid,
                 profileId = "competition",
                 displayName = "Competition",
-                description = "Legacy Studio identity",
+                description = "Wrong project identity",
                 projectUid = "visiblefrcrobot",
                 drivebaseUid = current.uid,
                 authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
                 values = emptyList(),
             )
-            val simulationProfile = legacyProfile.copy(
-                uid = "$expectedProjectUid.profile.simulation",
-                profileId = "simulation",
-                displayName = "Simulation",
-                projectUid = expectedProjectUid,
-                drivebaseUid = "retired.drivebase",
-                values = listOf(
-                    com.areslib.tuning.TuningAssignment(
-                        "frc.starter.path.velocity-scale",
-                        com.areslib.tuning.TuningValue(doubleValue = 0.5),
-                    ),
-                ),
-            )
-            val legacyFile = File(tuningDirectory, "legacy.arestuning")
-            legacyFile.writeText(com.areslib.tuning.TuningProfileDocumentCodec.encode(legacyProfile, emptyList()))
-            File(tuningDirectory, "simulation.arestuning").writeText(
-                com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(simulationProfile),
-            )
-            val repaired = current.toUiDrivebase().withCanonicalProjectIdentity(expectedProjectUid)
+            val profileFile = File(tuningDirectory, "competition.arestuning")
+            val profileBytes = com.areslib.tuning.TuningProfileDocumentCodec.encode(mismatchedProfile, emptyList())
+            profileFile.writeText(profileBytes)
+            val reviewed = current.toUiDrivebase().copy(
+                projectId = expectedProjectUid,
+                canonical = current.copy(canonicalProfileUid = "$expectedProjectUid.profile.competition"),
+            ).requireCanonicalProjectIdentity(expectedProjectUid)
             val repository = DrivebaseProjectRepository()
 
-            val repairIssues = repository.tuningProfileRepairIssues(root.path, repaired)
-            assertTrue(repairIssues.any { it.contains("removed parameter") })
-            assertTrue(repairIssues.any { it.contains("retired drivebase") })
-
-            repository.saveReviewed(
-                root.path,
-                DrivetrainDocumentCodec.contentHash(current),
-                repaired,
-            )
-
-            assertFalse(legacyFile.exists(), "The stale identity file should be replaced only after its backup is durable")
-            val loaded = com.ares.analytics.service.tuning.TuningProfileRepository().load(root.path).getOrThrow()
-            assertEquals(setOf(expectedProjectUid), loaded.profiles.map { it.projectUid }.toSet())
-            assertTrue(loaded.profiles.any { it.uid == "$expectedProjectUid.profile.competition" })
-            val repairedSimulation = loaded.profiles.single { it.profileId == "simulation" }
-            assertTrue(repairedSimulation.values.isEmpty())
-            assertEquals(current.uid, repairedSimulation.drivebaseUid)
-            assertTrue(File(ares, "history/tuning/${legacyProfile.uid}").walkTopDown().any { it.extension == "arestuning" })
-            assertTrue(File(ares, "history/tuning/${simulationProfile.uid}").walkTopDown().any { it.extension == "arestuning" })
+            val failure = assertFailsWith<IllegalArgumentException> {
+                repository.saveReviewed(
+                    root.path,
+                    DrivetrainDocumentCodec.contentHash(current),
+                    reviewed,
+                )
+            }
+            assertTrue(failure.message.orEmpty().contains("current project"))
+            assertEquals(currentBytes, currentFile.readText())
+            assertEquals(profileBytes, profileFile.readText())
         } finally {
             root.deleteRecursively()
         }
@@ -303,13 +284,13 @@ class DrivebaseAuthoringTest {
         try {
             val repository = DrivebaseProjectRepository()
             val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM)
-            val legacy = complete.copy(
+            val incomplete = complete.copy(
                 canonical = complete.canonical!!.copy(
                     parameters = complete.canonical.parameters.filterNot { it.key.startsWith("localization.pinpoint") },
                 ),
             )
 
-            val saved = repository.saveReviewed(root.path, null, legacy)
+            val saved = repository.saveReviewed(root.path, null, incomplete)
             val workspace = com.ares.analytics.service.tuning.TuningProfileRepository().load(root.path).getOrThrow()
             val requiredPinpointKeys = setOf(
                 "localization.pinpointCcwPositive",
@@ -335,21 +316,6 @@ class DrivebaseAuthoringTest {
         } finally {
             root.deleteRecursively()
         }
-    }
-
-    @Test
-    fun `legacy Pinpoint document reports actionable runtime repair before generation`() {
-        val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM).canonical!!
-        val legacy = complete.copy(
-            parameters = complete.parameters.filterNot { it.key == "localization.pinpointCcwPositive" },
-        )
-
-        val message = FtcMecanumRuntimeParameters.repairMessage(legacy)
-
-        assertNotNull(message)
-        assertTrue(message.contains("localization.pinpointCcwPositive"))
-        assertTrue(message.contains("Safety & Review"))
-        assertEquals(null, FtcMecanumRuntimeParameters.repairMessage(complete))
     }
 
     @Test
@@ -604,13 +570,13 @@ class DrivebaseAuthoringTest {
     }
 
     @Test
-    fun `builder loads an older Pinpoint drivebase as an explicit reviewed repair`() = runBlocking {
+    fun `builder rejects an incomplete persisted Pinpoint runtime contract`() = runBlocking {
         val root = Files.createTempDirectory("ares-drivebase-runtime-repair").toFile()
         val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM).canonical!!
         val removedPinpointUid = complete.components.single {
             it.role == DrivetrainComponentRole.ODOMETRY_SENSOR
         }.uid
-        val legacy = complete.copy(
+        val incompleteDraft = complete.copy(
             components = complete.components.filterNot { it.role == DrivetrainComponentRole.ODOMETRY_SENSOR },
             localization = complete.localization.copy(
                 primaryOdometry = complete.localization.primaryOdometry.copy(componentUids = emptyList()),
@@ -625,51 +591,19 @@ class DrivebaseAuthoringTest {
             ),
             parameters = complete.parameters.filterNot { it.componentUid == removedPinpointUid },
         )
-        File(root, ".ares/drivetrains/starter-mecanum.aresdrivetrain").apply {
+        val persistedFile = File(root, ".ares/drivetrains/starter-mecanum.aresdrivetrain").apply {
             parentFile.mkdirs()
-            writeText(DrivetrainDocumentCodec.encode(legacy))
+            writeText(DrivetrainDocumentCodec.encode(incompleteDraft))
         }
+        val persistedBytes = persistedFile.readBytes()
         val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val viewModel = DrivebaseBuilderViewModel(root.path, "team", League.FTC, viewModelScope)
         try {
             withTimeout(5_000) { viewModel.state.first { !it.loading } }
 
-            assertTrue(viewModel.state.value.dirty)
-            assertTrue(viewModel.state.value.status.contains("missing runtime parameters"))
-            assertTrue(
-                viewModel.state.value.draft.canonical!!.parameters.any {
-                    it.key == "localization.pinpointCcwPositive"
-                },
-            )
-            val repairedDraft = viewModel.state.value.draft.canonical!!
-            val repairedPinpointUid = repairedDraft.localization.primaryOdometry.componentUids.single()
-            assertEquals(
-                DrivetrainComponentRole.ODOMETRY_SENSOR,
-                repairedDraft.components.single { it.uid == repairedPinpointUid }.role,
-            )
-            assertTrue(repairedDraft.localization.visionFusion.isEmpty())
-
-            viewModel.onIntent(DrivebaseBuilderIntent.ReviewSave)
-            val review = assertNotNull(
-                viewModel.state.value.saveReview,
-                "error=${viewModel.state.value.error}; issues=${viewModel.state.value.issues}; status=${viewModel.state.value.status}",
-            )
-            assertTrue(review.changes.any { it.path == "runtimeParameters" })
-            viewModel.onIntent(DrivebaseBuilderIntent.ConfirmSave(review.confirmationToken))
-            withTimeout(5_000) { viewModel.state.first { !it.dirty && it.status.startsWith("Saved reviewed") } }
-
-            val saved = DrivebaseProjectRepository().load(root.path).getOrThrow()!!
-            assertTrue(saved.canonical!!.parameters.any { it.key == "localization.pinpointCcwPositive" })
-            val profile = com.ares.analytics.service.tuning.TuningProfileRepository()
-                .load(root.path).getOrThrow().profiles.single()
-            assertTrue(profile.values.any { it.parameterUid == "ftc.localization.pinpoint.ccw" })
-            val generated = DrivetrainKotlinGenerator.generateFtcMecanumRuntime(
-                saved.canonical,
-                listOf(profile),
-                "org.example.generated",
-            )
-            assertTrue(generated.content.contains("pinpointName ="))
-            assertFalse(generated.content.contains("pinpointName = null"))
+            assertTrue(viewModel.state.value.error.orEmpty().contains("current drivetrain runtime contract"))
+            assertNull(viewModel.state.value.saveReview)
+            assertContentEquals(persistedBytes, persistedFile.readBytes())
         } finally {
             viewModelScope.cancel()
             root.deleteRecursively()

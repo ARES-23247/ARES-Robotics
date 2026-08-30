@@ -67,18 +67,19 @@ class LearningProgressServiceTest {
     }
 
     @Test
-    fun `version one practice migrates without inventing checkpoint evidence`() {
+    fun `retired progress document is rejected and quarantined`() {
         val tempDir = Files.createTempDirectory("learning-progress-v1-test").toFile()
         val file = File(tempDir, "learning-progress.json").apply {
             writeText("""{"contentVersion":1,"practicedLessonIds":["start-simulator"]}""")
         }
 
-        val migrated = LearningProgressService(file).progress.value
+        val current = LearningProgressService(file).progress.value
 
-        assertEquals(CURRENT_LEARNING_CONTENT_VERSION, migrated.contentVersion)
-        assertEquals(setOf("start-simulator"), migrated.practicedLessonIds)
-        assertEquals(setOf("start-simulator"), migrated.startedLessonIds)
-        assertTrue(migrated.completedCheckpointIds.isEmpty())
+        assertEquals(CURRENT_LEARNING_CONTENT_VERSION, current.contentVersion)
+        assertTrue(current.practicedLessonIds.isEmpty())
+        assertEquals(1, tempDir.listFiles { candidate ->
+            candidate.name.startsWith("learning-progress.corrupt-")
+        }.orEmpty().size)
     }
 
     @Test

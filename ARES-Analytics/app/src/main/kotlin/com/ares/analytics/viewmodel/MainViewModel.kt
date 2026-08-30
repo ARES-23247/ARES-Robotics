@@ -3,12 +3,12 @@ package com.ares.analytics.viewmodel
 import com.ares.analytics.service.EnvironmentService
 import com.ares.analytics.service.EventApiService
 import com.ares.analytics.service.MatchInfo
-import com.ares.analytics.shared.ForensicsResponse
+import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.ui.components.NavigationTarget
-import com.ares.analytics.shared.WorkspaceConfig
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.AppWorkspaces
-import com.ares.analytics.shared.ControllerBinding
+import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.AppWorkspaces
+import com.ares.analytics.shared.models.ControllerBinding
 import com.ares.analytics.service.KeybindingParserService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -116,7 +116,7 @@ class MainViewModel(
                     }
                     val app = environmentService.loadWorkspaces()
                     val newList = app.workspaces.filter { it.id != configWithId.id } + configWithId
-                    val newApp = com.ares.analytics.shared.AppWorkspaces(activeWorkspaceId = configWithId.id, workspaces = newList)
+                    val newApp = com.ares.analytics.shared.models.AppWorkspaces(activeWorkspaceId = configWithId.id, workspaces = newList)
                     environmentService.saveWorkspaces(newApp)
 
                     _state.update { it.copy(config = configWithId, workspaces = newList) }
@@ -140,7 +140,7 @@ class MainViewModel(
                     } else {
                         app.activeWorkspaceId
                     }
-                    val newApp = com.ares.analytics.shared.AppWorkspaces(activeWorkspaceId = newActiveId, workspaces = newList)
+                    val newApp = com.ares.analytics.shared.models.AppWorkspaces(activeWorkspaceId = newActiveId, workspaces = newList)
                     environmentService.saveWorkspaces(newApp)
                     val newActiveConfig = newList.find { it.id == newActiveId }
                     _state.update { it.copy(config = newActiveConfig, workspaces = newList) }

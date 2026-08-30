@@ -1,6 +1,6 @@
 package com.areslib.frc.sim.io
 
-import com.areslib.frc.hardware.FeederIO
+import com.areslib.hardware.actuator.FeederIO
 import com.areslib.frc.Dyn4jSimulation
 
 /**

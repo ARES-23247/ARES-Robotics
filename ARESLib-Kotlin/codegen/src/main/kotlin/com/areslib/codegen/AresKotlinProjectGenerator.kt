@@ -44,8 +44,9 @@ import com.areslib.routine.RoutineValidationSeverity
 import com.areslib.routine.validateRoutineSet
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresLeague
 import com.areslib.project.compiler.RobotProjectIr
-import com.areslib.project.resolvedFtcRuntimeOptions
+import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.subsystemTargetCapabilities
@@ -206,12 +207,14 @@ object AresKotlinProjectGenerator {
                 append("    const val ROBOT_WIDTH_METERS: Double = ${doubleLiteral(metadata.robotWidthMeters)}\n")
                 append("    const val FIELD_LENGTH_METERS: Double = ${doubleLiteral(metadata.fieldLengthMeters)}\n")
                 append("    const val FIELD_WIDTH_METERS: Double = ${doubleLiteral(metadata.fieldWidthMeters)}\n\n")
-                val ftcRuntime = metadata.resolvedFtcRuntimeOptions()
-                append("    /** Canonical runtime choices reviewed in .ares/project.json. */\n")
-                append("    object RuntimeOptions {\n")
-                append("        const val FTC_HUB_COMMAND_TRANSPORT: String = ${stringLiteral(ftcRuntime.hubCommandTransport.name)}\n")
-                append("        const val FTC_LIMELIGHT_PROXY_ENABLED: Boolean = ${ftcRuntime.limelightProxyEnabled}\n")
-                append("    }\n\n")
+                if (metadata.league == AresLeague.FTC) {
+                    val ftcRuntime = metadata.requireFtcRuntimeOptions()
+                    append("    /** Canonical runtime choices reviewed in .ares/project.json. */\n")
+                    append("    object RuntimeOptions {\n")
+                    append("        const val FTC_HUB_COMMAND_TRANSPORT: String = ${stringLiteral(ftcRuntime.hubCommandTransport.name)}\n")
+                    append("        const val FTC_LIMELIGHT_PROXY_ENABLED: Boolean = ${ftcRuntime.limelightProxyEnabled}\n")
+                    append("    }\n\n")
+                }
             }
             append("    val knownActionKeys: Set<String> = ${renderStringSet(canonicalActions.map { it.key }, 1)}\n")
             append("    val knownConditionKeys: Set<String> = ${renderStringSet(canonicalConditions.map { it.key }, 1)}\n\n")
@@ -1470,32 +1473,10 @@ object AresKotlinProjectGenerator {
     private fun renderNullableString(value: String?): String = value?.let(::stringLiteral) ?: "null"
     private fun renderNullableDouble(value: Double?): String = value?.let(::doubleLiteral) ?: "null"
     private fun doubleLiteral(value: Double): String {
-        require(value.isFinite()) { "Cannot render a non-finite Kotlin number" }
-        return value.toString()
+        return value.kotlinDoubleLiteral()
     }
 
-    private fun stringLiteral(value: String): String = buildString(value.length + 2) {
-        append('"')
-        value.forEach { character ->
-            when (character) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '$' -> append("\\$")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                '\b' -> append("\\b")
-                else -> if (character.code < 0x20 || character.code in 0xD800..0xDFFF ||
-                    character == '\u2028' || character == '\u2029'
-                ) {
-                    append("\\u${character.code.toString(16).padStart(4, '0')}")
-                } else {
-                    append(character)
-                }
-            }
-        }
-        append('"')
-    }
+    private fun stringLiteral(value: String): String = value.kotlinStringLiteral()
 
     private fun String.isKotlinIdentifier(): Boolean =
         matches(Regex("[A-Za-z_][A-Za-z0-9_]*")) && this !in KOTLIN_KEYWORDS

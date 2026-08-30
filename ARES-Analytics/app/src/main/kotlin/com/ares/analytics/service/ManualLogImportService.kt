@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.service.log.HootDecoderService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers

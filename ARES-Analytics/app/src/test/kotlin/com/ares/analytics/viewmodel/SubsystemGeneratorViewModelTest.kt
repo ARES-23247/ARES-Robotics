@@ -4,7 +4,7 @@ import com.ares.analytics.service.AresGenerationState
 import com.ares.analytics.service.AresProjectGenerator
 import com.ares.analytics.service.SubsystemDesignAssistant
 import com.ares.analytics.service.SubsystemDesignProposal
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.help.toAcademySubsystemSnapshot
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.service.project.persistence.CapabilityCatalogProjectRepository

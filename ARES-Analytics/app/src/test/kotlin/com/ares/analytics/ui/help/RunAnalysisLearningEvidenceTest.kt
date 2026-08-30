@@ -11,7 +11,7 @@ import com.ares.analytics.service.RunAlignmentKind
 import com.ares.analytics.service.RunAlignmentOption
 import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.SessionComparison
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisState
 import kotlin.test.Test
 import kotlin.test.assertFalse

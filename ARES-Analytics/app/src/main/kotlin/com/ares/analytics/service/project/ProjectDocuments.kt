@@ -1,13 +1,13 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
 import com.ares.analytics.service.project.persistence.CapabilityCatalogProjectRepository
 import com.ares.analytics.service.project.persistence.ControlSchemeProjectRepository
 import com.ares.analytics.service.project.persistence.ControllerProfileProjectRepository
 import com.ares.analytics.service.project.persistence.ProjectDocumentDiagnostic
-import com.ares.analytics.service.project.persistence.ProjectDocumentKind
+import com.areslib.project.schema.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentListing
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.ares.analytics.service.project.persistence.RoutineProjectRepository

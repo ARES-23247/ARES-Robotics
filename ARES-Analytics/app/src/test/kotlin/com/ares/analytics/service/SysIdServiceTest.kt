@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.TelemetryFrame
-import com.ares.analytics.shared.TransientClassification
+import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.TransientClassification
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import kotlin.test.Test

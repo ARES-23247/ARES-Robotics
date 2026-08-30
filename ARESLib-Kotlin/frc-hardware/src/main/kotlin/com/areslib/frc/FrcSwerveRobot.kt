@@ -13,6 +13,7 @@ import com.areslib.subsystem.SwerveDriveFacade
 import com.areslib.telemetry.*
 import kotlin.math.abs
 import com.areslib.tuning.TuningManager
+import com.areslib.hardware.HardwareRegistry
 
 /**
  * FRC Swerve Robot — high-level drivebase robot container facade.
@@ -53,6 +54,7 @@ class FrcSwerveRobot(
         )
     ),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
+    hardwareRegistry: HardwareRegistry = HardwareRegistry(),
     baseTelemetry: ITelemetry = FRCTelemetry(),
     isEnabledProvider: () -> Boolean = {
         try {
@@ -78,6 +80,7 @@ class FrcSwerveRobot(
 ) : FrcBaseRobot(
     initialState = initialState,
     reducer = reducer,
+    hardwareRegistry = hardwareRegistry,
     baseTelemetry = baseTelemetry,
     telemetryManagerFactory = { store, telemetry -> telemetryManagerFactory(store, telemetry, swerveIO) },
     isEnabledProvider = isEnabledProvider,
@@ -95,7 +98,7 @@ class FrcSwerveRobot(
     /** Direct access to the swerve drivetrain IO layer. */
     val swerveDrivetrainIO: SwerveHardwareIO? get() = swerveIO
 
-    override val powerManager = FrcPowerManager()
+    override val powerManager = FrcPowerManager(hardwareRegistry)
     /** Optional declaration-driven typed tuning transport installed by the season robot. */
     var tuningManager: TuningManager? = null
     var isLiveTuningEnabled: Boolean = false
@@ -106,8 +109,8 @@ class FrcSwerveRobot(
         visionTracker = _visionTracker
 
         // Register swerve drivetrain with HardwareRegistry for automated lifecycle management
-        swerveIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Swerve", it) }
-        visionIO?.let { com.areslib.hardware.HardwareRegistry.registerDevice("Vision", it) }
+        swerveIO?.let { hardwareRegistry.registerDevice("Swerve", it) }
+        visionIO?.let { hardwareRegistry.registerDevice("Vision", it) }
     }
 
     // ── Pre-allocated buffers for zero-GC beached detection ──

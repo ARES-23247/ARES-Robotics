@@ -20,7 +20,10 @@ import com.areslib.subsystem.PowerManager
  * Hardware reads occur only from [update]; [batteryVoltage], [powerScale], and [currentAmps] expose
  * cached/registered state. This class is single-loop-owned and is not thread-safe.
  */
-class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
+class FtcPowerManager(
+    private val hardwareMap: HardwareMap,
+    private val hardwareRegistry: com.areslib.hardware.HardwareRegistry,
+) : PowerManager {
     private val currentSourceSampler = com.areslib.hardware.CurrentSourceSampler()
     private var lastVoltageReadTime = 0L
     private var cachedBatteryVoltage = 12.0
@@ -101,7 +104,7 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
         // 2. Always advance the model fallback. Beyond the drivetrain MotorIO slots, include all
         // registered mechanism current sources so shooter/intake load participates in the 20A fuse
         // budget. A valid Floodgate remains the authoritative total-current observation.
-        val motors = com.areslib.hardware.HardwareRegistry.getRegisteredMotors()
+        val motors = hardwareRegistry.getRegisteredMotors()
         val softwareScale = updateSoftwareCurrentBudget(motors, batteryVoltage)
         val modeledCurrent = currentBudgetManager?.totalEstimatedAmps ?: 0.0
         val floodgateSensor = floodgate
@@ -156,7 +159,7 @@ class FtcPowerManager(private val hardwareMap: HardwareMap) : PowerManager {
             if (!manager.isRegistered(motor)) manager.register(motor)
             motorIndex++
         }
-        val currentSources = com.areslib.hardware.HardwareRegistry.getRegisteredCurrentSources()
+        val currentSources = hardwareRegistry.getRegisteredCurrentSources()
         currentSourceSampler.sample(currentSources, includeMotorSources = false)
         var nonMotorMeasuredAmps = 0.0
         var coveredModeledMotorAmps = 0.0

@@ -45,7 +45,10 @@ import com.areslib.math.geometry.toFormattedString
  * @see ActionLogger
  * @see DataLoggingTelemetry
  */
-class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
+class FtcTelemetryManager(
+    private val store: Store,
+    private val hardwareRegistry: HardwareRegistry,
+) : RobotTelemetryManager {
     /** Unique UUID string identifying this match execution run. */
     val runId = java.util.UUID.randomUUID().toString()
     /** Standard robot identifier string (`"ares_robot"`). */
@@ -110,7 +113,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
     init {
         // Intercept and record all dispatched store actions asynchronously
         store.actionListener = { action -> actionLogger.logAction(action) }
-        HardwareRegistry.registerCloseable(this)
+        hardwareRegistry.registerCloseable(this)
     }
 
     /**
@@ -140,7 +143,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, activeBrownoutGuard)
 
         // Global custom hardware telemetry
-        HardwareRegistry.publishAll(dataLoggingTelemetry)
+        hardwareRegistry.publishAll(dataLoggingTelemetry)
 
         // Invoke all registered custom publishers
         for (i in 0 until customPublishers.size) {
@@ -207,7 +210,7 @@ class FtcTelemetryManager(private val store: Store) : RobotTelemetryManager {
         dataLoggingTelemetry.putString("Drive/Pinpoint_Status", com.areslib.telemetry.RobotStatusTracker.odometryStatus)
 
         // Global custom hardware telemetry (also governed by ntEnabled flag)
-        HardwareRegistry.publishAll(dataLoggingTelemetry)
+        hardwareRegistry.publishAll(dataLoggingTelemetry)
 
         // Invoke all registered custom publishers
         for (i in 0 until customPublishers.size) {

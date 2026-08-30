@@ -2,8 +2,8 @@ package com.ares.analytics.service.log
 
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.FrameBatcher
-import com.ares.analytics.shared.SessionAnnotation
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.SessionAnnotation
+import com.ares.analytics.shared.models.TelemetryFrame
 import java.io.DataInputStream
 import java.io.EOFException
 import java.io.File

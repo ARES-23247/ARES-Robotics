@@ -1377,7 +1377,7 @@ public final class com/areslib/hardware/CurrentSourceSampler {
 }
 
 public final class com/areslib/hardware/HardwareRegistry {
-	public static final field INSTANCE Lcom/areslib/hardware/HardwareRegistry;
+	public fun <init> ()V
 	public final fun buildTopology (Ljava/lang/String;)Lcom/areslib/hardware/HardwareTopology;
 	public final fun clear ()V
 	public final fun closeAll ()V
@@ -2069,38 +2069,6 @@ public abstract interface class com/areslib/hardware/sensor/MultizoneDistanceSen
 
 public final class com/areslib/hardware/sensor/MultizoneDistanceSensorIO$DefaultImpls {
 	public static fun copyDistancesMetersInto (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;[D)I
-}
-
-public final class com/areslib/hardware/sensor/ThreadedColorSensor : com/areslib/hardware/sensor/ColorSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/hardware/sensor/ColorSensorIO;J)V
-	public synthetic fun <init> (Lcom/areslib/hardware/sensor/ColorSensorIO;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun copyNormalizedRgbInto ([D)V
-	public fun getAlpha ()I
-	public fun getBlue ()I
-	public fun getGreen ()I
-	public fun getNormalizedRgb ()[D
-	public fun getRed ()I
-	public final fun shutdown ()V
-}
-
-public final class com/areslib/hardware/sensor/ThreadedDistanceSensor : com/areslib/hardware/sensor/DistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/hardware/sensor/DistanceSensorIO;J)V
-	public synthetic fun <init> (Lcom/areslib/hardware/sensor/DistanceSensorIO;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun getDistanceMeters ()D
-	public final fun shutdown ()V
-}
-
-public final class com/areslib/hardware/sensor/ThreadedMultizoneDistanceSensor : com/areslib/hardware/sensor/MultizoneDistanceSensorIO, java/lang/AutoCloseable {
-	public fun <init> (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;J)V
-	public synthetic fun <init> (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close ()V
-	public fun copyDistancesMetersInto ([D)I
-	public fun getColumns ()I
-	public fun getDistancesMeters ()[D
-	public fun getRows ()I
-	public final fun shutdown ()V
 }
 
 public final class com/areslib/hardware/vision/CompositeVisionIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
@@ -5106,11 +5074,6 @@ public final class com/areslib/reducer/VisionReducer {
 	public final fun reduce (Lcom/areslib/state/VisionState;Lcom/areslib/action/RobotAction;)Lcom/areslib/state/VisionState;
 }
 
-public final class com/areslib/reducer/controller/VisionMeasurementController {
-	public static final field INSTANCE Lcom/areslib/reducer/controller/VisionMeasurementController;
-	public final fun handle (Lcom/areslib/state/RobotState;Lcom/areslib/action/RobotAction$VisionMeasurementsReceived;)Lcom/areslib/state/RobotState;
-}
-
 public abstract interface annotation class com/areslib/routine/AresRoutineDsl : java/lang/annotation/Annotation {
 }
 
@@ -5630,7 +5593,6 @@ public final class com/areslib/sequencer/TaskExecutor {
 	public fun <init> ()V
 	public final fun addTask (Lcom/areslib/sequencer/Task;)V
 	public final fun cancelAll (Lcom/areslib/state/RobotState;)Ljava/util/List;
-	public final fun clear (Lcom/areslib/state/RobotState;)V
 	public final fun getActiveTaskName ()Ljava/lang/String;
 	public final fun getSize ()I
 	public final fun preempt (Lcom/areslib/sequencer/Task;Lcom/areslib/state/RobotState;J)Ljava/util/List;
@@ -6961,9 +6923,10 @@ public final class com/areslib/state/VisionTuningState {
 
 public class com/areslib/subsystem/AresRobot {
 	public fun <init> ()V
-	public fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;)V
-	public synthetic fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;)V
+	public synthetic fun <init> (Lcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun closeSubsystems ()V
+	public final fun getHardwareRegistry ()Lcom/areslib/hardware/HardwareRegistry;
 	public final fun getRegisteredSubsystems ()Ljava/util/List;
 	public final fun getStore ()Lcom/areslib/Store;
 	public final fun readAllSensors (J)V
@@ -7647,7 +7610,7 @@ public abstract interface class com/areslib/telemetry/AresGamepad$AxisConsumer {
 }
 
 public final class com/areslib/telemetry/AresGamepad$BindableAxis {
-	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Lcom/areslib/telemetry/GamepadAxisSource;)V
 	public final fun bindAxis (Lcom/areslib/telemetry/AresGamepad$AxisConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableAxis;
 	public final fun getShapedValue ()D
 	public final fun getValue ()F
@@ -7677,7 +7640,7 @@ public final class com/areslib/telemetry/AresGamepad$BindableButton {
 }
 
 public final class com/areslib/telemetry/AresGamepad$BindableStick {
-	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Lcom/areslib/telemetry/GamepadAxisSource;Lcom/areslib/telemetry/GamepadAxisSource;)V
 	public final fun bindStick (Lcom/areslib/telemetry/AresGamepad$StickConsumer;)Lcom/areslib/telemetry/AresGamepad$BindableStick;
 	public final fun getShapedX ()D
 	public final fun getShapedY ()D
@@ -7691,6 +7654,10 @@ public final class com/areslib/telemetry/AresGamepad$BindableStick {
 
 public abstract interface class com/areslib/telemetry/AresGamepad$StickConsumer {
 	public abstract fun accept (DD)V
+}
+
+public abstract interface class com/areslib/telemetry/GamepadAxisSource {
+	public abstract fun read (Lcom/areslib/telemetry/GamepadState;)F
 }
 
 public final class com/areslib/telemetry/GamepadState {

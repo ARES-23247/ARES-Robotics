@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes
 
-import com.areslib.hardware.HardwareRegistry
 import com.areslib.math.estimation.LocalizationCalibrationCheckpoint
 import com.areslib.math.estimation.LocalizationCalibrationPlatform
 import com.areslib.math.estimation.LocalizationCalibrationRecorder
@@ -42,7 +41,7 @@ class ARESLocalizationCalibration : AresTeleOpBase() {
     override fun define() = teleOp {
         setup {
             recorder = LocalizationCalibrationRecorder(LocalizationCalibrationPlatform.FTC).also {
-                HardwareRegistry.registerCloseable(it)
+                robot.base.hardwareRegistry.registerCloseable(it)
             }
             robot.base.isLiveTuningEnabled = false
             robot.addTelemetry("Calibration", "Use surveyed poses; do not use Limelight as truth")

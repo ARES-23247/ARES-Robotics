@@ -32,7 +32,7 @@ object SuperstructureKotlinGenerator {
             .filter { it.severity == SuperstructureIssueSeverity.ERROR }
         require(errors.isEmpty()) { errors.joinToString("; ") { "${it.path}: ${it.message}" } }
 
-        val typeName = document.superstructureId.pascalCase()
+        val typeName = document.superstructureId.kotlinPascalCase()
         val definitionName = "${typeName}SuperstructureDefinition"
         val bindingName = "${typeName}SuperstructureBinding"
         val basePackage = subsystemRegistryFqn.substringBeforeLast('.')
@@ -67,9 +67,9 @@ object SuperstructureKotlinGenerator {
             appendLine("import $subsystemRegistryFqn")
             appendLine()
             appendLine("object $definitionName {")
-            appendLine("    const val ID: String = ${document.superstructureId.quoted()}")
-            appendLine("    const val CONTENT_SHA256: String = ${SuperstructureDocumentCodec.contentHash(document).quoted()}")
-            appendLine("    val DOCUMENT = SuperstructureDocumentCodec.decode(${encoded.quoted()})")
+            appendLine("    const val ID: String = ${document.superstructureId.kotlinStringLiteral()}")
+            appendLine("    const val CONTENT_SHA256: String = ${SuperstructureDocumentCodec.contentHash(document).kotlinStringLiteral()}")
+            appendLine("    val DOCUMENT = SuperstructureDocumentCodec.decode(${encoded.kotlinStringLiteral()})")
             appendLine("}")
             appendLine()
             appendLine("private object $bindingName : SuperstructureRuntimeBinding {")
@@ -106,9 +106,9 @@ object SuperstructureKotlinGenerator {
             appendLine()
             appendLine("fun create${typeName}SuperstructureAction(actionKey: String): Task? = when (actionKey) {")
             machineActions.forEach { key ->
-                appendLine("    ${key.quoted()} -> SuperstructureRuntime.requestTask(")
+                appendLine("    ${key.kotlinStringLiteral()} -> SuperstructureRuntime.requestTask(")
                 appendLine("        $definitionName.ID,")
-                appendLine("        ${document.initialStateId.quoted()},")
+                appendLine("        ${document.initialStateId.kotlinStringLiteral()},")
                 appendLine("        actionKey,")
                 appendLine("    )")
             }
@@ -149,7 +149,7 @@ object SuperstructureKotlinGenerator {
                 appendLine("    fun createAll(): List<Subsystem> = emptyList()")
             } else {
                 appendLine("    fun createAll(): List<Subsystem> = listOf(")
-                sorted.forEach { appendLine("        create${it.superstructureId.pascalCase()}Superstructure(),") }
+                sorted.forEach { appendLine("        create${it.superstructureId.kotlinPascalCase()}Superstructure(),") }
                 appendLine("    )")
             }
             appendLine()
@@ -158,7 +158,7 @@ object SuperstructureKotlinGenerator {
             } else {
                 appendLine("    fun createActionTask(actionKey: String): Task? = when (actionKey) {")
                 routes.sortedBy { it.first }.forEach { (key, document) ->
-                    appendLine("        ${key.quoted()} -> create${document.superstructureId.pascalCase()}SuperstructureAction(actionKey)")
+                    appendLine("        ${key.kotlinStringLiteral()} -> create${document.superstructureId.kotlinPascalCase()}SuperstructureAction(actionKey)")
                 }
                 appendLine("        else -> null")
                 appendLine("    }")
@@ -175,9 +175,9 @@ object SuperstructureKotlinGenerator {
     private fun resolvePortFunction(ports: List<PortBinding>): String = buildString {
         appendLine("    override fun resolvePort(subsystemUid: String, fieldUid: String): Int = when (subsystemUid) {")
         ports.groupBy { it.subsystem.uid }.toSortedMap().forEach { (subsystemUid, subsystemPorts) ->
-            appendLine("        ${subsystemUid.quoted()} -> when (fieldUid) {")
+            appendLine("        ${subsystemUid.kotlinStringLiteral()} -> when (fieldUid) {")
             subsystemPorts.sortedBy { it.field.uid }.forEach { port ->
-                appendLine("            ${port.field.uid.quoted()} -> ${port.index}")
+                appendLine("            ${port.field.uid.kotlinStringLiteral()} -> ${port.index}")
             }
             appendLine("            else -> -1")
             appendLine("        }")
@@ -210,7 +210,7 @@ object SuperstructureKotlinGenerator {
             val segment = port.subsystem.documentId.replace('-', '_')
             val stateFqn = "$basePackage.$segment.${port.subsystem.kotlinTypeName}State"
             appendLine("            ${port.index} -> {")
-            appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.quoted()}] as? $stateFqn")
+                appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.kotlinStringLiteral()}] as? $stateFqn")
             appendLine("                    ?: return $fallback")
             appendLine("                $value")
             appendLine("            }")
@@ -233,7 +233,7 @@ object SuperstructureKotlinGenerator {
                 .mapNotNull { it.maxAgeMs }
                 .minOrNull() ?: port.subsystem.safety.feedbackTimeoutMs ?: 250L
             appendLine("            ${port.index} -> {")
-            appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.quoted()}] as? $stateFqn ?: return 0")
+                appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.kotlinStringLiteral()}] as? $stateFqn ?: return 0")
             appendLine("                var bits = 0")
             appendLine("                if (snapshot.feedbackValid) bits = bits or SuperstructurePortHealthBits.VALID")
             appendLine("                val ageMs = if (nowMs >= snapshot.feedbackTimestampMs) nowMs - snapshot.feedbackTimestampMs else Long.MAX_VALUE")
@@ -267,7 +267,7 @@ object SuperstructureKotlinGenerator {
         appendLine("    override fun $functionName(port: Int, value: $valueType): Task? = when (port) {")
         ports.filter { it.field.type == expectedType && it.field.role.name == "TARGET" }.forEach { port ->
             val key = subsystemTargetActionKey(port.subsystem.documentId, port.field.fieldId)
-            appendLine("        ${port.index} -> $registryFqn.createActionTask(${key.quoted()}, value)")
+            appendLine("        ${port.index} -> $registryFqn.createActionTask(${key.kotlinStringLiteral()}, value)")
         }
         appendLine("        else -> null")
         appendLine("    }")
@@ -296,27 +296,7 @@ private data class PortBinding(
     val index: Int = -1,
 )
 
-private fun String.pascalCase(): String = split(Regex("[^A-Za-z0-9]+"))
-    .filter(String::isNotBlank)
-    .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
-
 private fun String.isKotlinPackage(): Boolean =
     matches(Regex("[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*"))
 
 private fun String.isKotlinFqn(): Boolean = isKotlinPackage() && contains('.')
-
-private fun String.quoted(): String = buildString {
-    append('"')
-    this@quoted.forEach { character ->
-        when (character) {
-            '\\' -> append("\\\\")
-            '"' -> append("\\\"")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            '$' -> append("\\$")
-            else -> append(character)
-        }
-    }
-    append('"')
-}

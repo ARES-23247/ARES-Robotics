@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.AppWorkspaces
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.AppWorkspaces
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -62,7 +62,6 @@ class OAuthServiceTest {
         tempDir = File(System.getProperty("java.io.tmpdir"), "ares-oauth-test-${System.nanoTime()}").apply { mkdirs() }
         authFile = File(tempDir, "auth.json")
         envService = EnvironmentService(
-            configPath = File(tempDir, "config.json").absolutePath,
             workspacesPath = File(tempDir, "workspaces.json").absolutePath
         )
     }

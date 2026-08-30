@@ -2,7 +2,7 @@ package com.ares.analytics.viewmodel.field
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
 import org.jetbrains.skia.Image
 

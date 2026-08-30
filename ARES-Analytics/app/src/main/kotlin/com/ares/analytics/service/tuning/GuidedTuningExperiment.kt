@@ -8,11 +8,12 @@ import com.ares.analytics.service.RunComparisonRepository
 import com.ares.analytics.service.RunComparisonRequest
 import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.AppJsonPretty
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningProfileDocumentCodec
 import com.areslib.tuning.TuningValue
 import kotlinx.coroutines.Dispatchers
@@ -300,8 +301,8 @@ class GuidedTuningExperimentRepository(
 ) {
     fun create(
         workspace: WorkspaceConfig,
-        profile: RobotTuningProfile,
-        profiles: List<RobotTuningProfile>,
+        profile: TuningProfileDocument,
+        profiles: List<TuningProfileDocument>,
         declarations: List<TuningParameterDeclaration>,
         seed: GuidedTuningExperimentSeed,
         proposal: BoundedTuningProposal,
@@ -409,8 +410,8 @@ class GuidedTuningExperimentRepository(
 
     private fun snapshot(
         projectPath: String,
-        profile: RobotTuningProfile,
-        profiles: List<RobotTuningProfile>,
+        profile: TuningProfileDocument,
+        profiles: List<TuningProfileDocument>,
         declarations: List<TuningParameterDeclaration>,
     ): ExperimentSnapshot {
         val resolved = com.areslib.tuning.resolveTuningProfiles(profiles, declarations).getValue(profile.uid)

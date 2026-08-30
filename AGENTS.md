@@ -156,7 +156,7 @@ foundation and platform runtimes, and `ares-bom`. Published coordinates use
   - `pathing/` — `ThetaStarPlanner`, `HolonomicPathFollower`, `TrajectoryGenerator`, `SCurveTrajectoryParameterizer`, `BezierSpline`, `PathPlannerParser`/`PathPlannerAutoParser`, `AutoBuilder`, `NamedCommands`, `Costmap`, `VFHPlanner`
   - `state/` (`RobotState`, `DriveState`, `SuperstructureState`, `RobotFieldConfig`, `Alliance`), `reducer/` (`RootReducer` + slice reducers), `action/` (`RobotAction` sealed classes, `ActionLogger`)
   - `sequencer/` — `TaskExecutor`, `Task`, `RobotSequence` (NOT `auto/`)
-  - `hardware/` — `HardwareRegistry` (self-registering devices + topology), `TopologyModels`, `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`
+  - `hardware/` — per-robot `HardwareRegistry` (explicit lifecycle/telemetry/topology ownership), `TopologyModels`, `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`
   - `logging/` — `LogManagerServer` (NanoHTTPD:5002), `ARESDataLogger`, `CloudExporter`, `DiagnosticRingBuffer`
   - `telemetry/` — `ITelemetry`, `NT4Telemetry`, `ARESNetworkStatePublisher`, `RobotStatusTracker`, `AresGamepad`, `TelemetryTopicConstants`
   - `networktables/` — custom NT4 server (`NT4Server` :5810, Java-WebSocket + MessagePack) + `org/frcforftc/.../NT4Compatibility.kt`

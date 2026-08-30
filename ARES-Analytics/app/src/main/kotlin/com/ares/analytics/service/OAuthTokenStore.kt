@@ -27,29 +27,19 @@ internal class FileOAuthTokenStore(
 /** Windows DPAPI binds encrypted OAuth tokens to the current Windows user account. */
 internal class WindowsDpapiOAuthTokenStore(
     private val encryptedFile: File,
-    private val legacyFile: File,
     private val secretsWriter: (File, ByteArray) -> Unit = ::writeSecrets,
 ) : OAuthTokenStore {
-    override fun read(): ByteArray? {
-        if (encryptedFile.isFile) {
-            return Crypt32Util.cryptUnprotectData(encryptedFile.readBytes())
-        }
-        val legacy = legacyFile.takeIf(File::isFile)?.readBytes() ?: return null
-        write(legacy)
-        check(legacyFile.delete()) { "Migrated OAuth tokens, but could not remove the legacy token file" }
-        return legacy
-    }
+    override fun read(): ByteArray? = encryptedFile
+        .takeIf(File::isFile)
+        ?.readBytes()
+        ?.let(Crypt32Util::cryptUnprotectData)
 
     override fun write(bytes: ByteArray) {
         val encrypted = Crypt32Util.cryptProtectData(bytes)
         secretsWriter(encryptedFile, encrypted)
     }
 
-    override fun delete(): Boolean {
-        val encryptedRemoved = !encryptedFile.exists() || encryptedFile.delete()
-        val legacyRemoved = !legacyFile.exists() || legacyFile.delete()
-        return encryptedRemoved && legacyRemoved
-    }
+    override fun delete(): Boolean = !encryptedFile.exists() || encryptedFile.delete()
 
     override val protectionDescription: String = "Windows DPAPI (current user)"
 }
@@ -58,17 +48,16 @@ internal fun createOAuthTokenStore(
     authFilePath: String,
     secretsWriter: (File, ByteArray) -> Unit,
 ): OAuthTokenStore {
-    val legacyFile = File(authFilePath)
+    val authFile = File(authFilePath)
     val defaultPath = AppDataPaths.file("auth.json")
-    val isDefaultStore = runCatching { legacyFile.canonicalFile == defaultPath.canonicalFile }.getOrDefault(false)
+    val isDefaultStore = runCatching { authFile.canonicalFile == defaultPath.canonicalFile }.getOrDefault(false)
     val isWindows = System.getProperty("os.name").lowercase(Locale.ROOT).contains("win")
     return if (isWindows && isDefaultStore) {
         WindowsDpapiOAuthTokenStore(
-            encryptedFile = File(legacyFile.parentFile, "auth.dpapi"),
-            legacyFile = legacyFile,
+            encryptedFile = File(authFile.parentFile, "auth.dpapi"),
             secretsWriter = secretsWriter,
         )
     } else {
-        FileOAuthTokenStore(legacyFile, secretsWriter)
+        FileOAuthTokenStore(authFile, secretsWriter)
     }
 }

@@ -71,7 +71,6 @@ class SwerveModuleIOFtc(
         }
 
     init {
-        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         samplingThread.start()
     }
 

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
 import com.ares.analytics.shared.GamePieceType
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.PathPoint
 import com.ares.analytics.ui.theme.*

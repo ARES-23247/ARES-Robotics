@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.RobotProfile
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.RobotProfile
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

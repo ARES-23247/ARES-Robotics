@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode
 import com.areslib.Store
 import com.areslib.state.RobotState
 import com.areslib.subsystem.Subsystem
+import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.teamcode.opmodes.installGeneratedSubsystems
 import org.firstinspires.ftc.teamcode.opmodes.installGeneratedSuperstructures
@@ -18,9 +19,11 @@ class GeneratedSubsystemInstallationTest {
         val first = RecordingSubsystem()
         val second = RecordingSubsystem()
         val registered = mutableListOf<Subsystem>()
+        val hardwareRegistry = HardwareRegistry()
 
-        val installed = installGeneratedSubsystems(hardwareMap, registered::add) { receivedMap ->
+        val installed = installGeneratedSubsystems(hardwareMap, hardwareRegistry, registered::add) { receivedMap, receivedRegistry ->
             assertSame(hardwareMap, receivedMap)
+            assertSame(hardwareRegistry, receivedRegistry)
             listOf(first, second)
         }
 
@@ -32,10 +35,11 @@ class GeneratedSubsystemInstallationTest {
     fun `required generated factory failure is never converted into an optional subsystem`() {
         val hardwareMap = org.mockito.Mockito.mock(HardwareMap::class.java)
         val registered = mutableListOf<Subsystem>()
+        val hardwareRegistry = HardwareRegistry()
         val failure = IllegalStateException("required elevator motor is missing")
 
         val thrown = assertThrows(IllegalStateException::class.java) {
-            installGeneratedSubsystems(hardwareMap, registered::add) { throw failure }
+            installGeneratedSubsystems(hardwareMap, hardwareRegistry, registered::add) { _, _ -> throw failure }
         }
 
         assertSame(failure, thrown)

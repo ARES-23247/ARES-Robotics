@@ -127,7 +127,6 @@ class SrsHubDriver(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     init {
-        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
         thread.start()
     }
 

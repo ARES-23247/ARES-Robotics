@@ -2,7 +2,7 @@ package com.ares.analytics.di
 
 import com.ares.analytics.service.*
 import com.ares.analytics.service.log.*
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -39,7 +39,11 @@ class ServiceRegistry {
     // ── Tier 0: No dependencies ──────────────────────────────────────────────
     val databaseService by lazy { DatabaseService() }
     val environmentService by lazy { EnvironmentService() }
-    val processManagerService by lazy { ProcessManagerService() }
+    private val projectProcessGate by lazy { ProjectProcessGate() }
+    val projectBuildService by lazy { ProjectBuildService(operationGate = projectProcessGate) }
+    val robotDeploymentService by lazy { RobotDeploymentService(projectProcessGate) }
+    val simulatorProcessService by lazy { SimulatorProcessService() }
+    val adbService by lazy { AdbService() }
     val targetScannerService by lazy { TargetScannerService() }
     val keybindingParserService by lazy { KeybindingParserService() }
     val eventApiService by lazy { EventApiService() }
@@ -64,7 +68,35 @@ class ServiceRegistry {
     val robotProjectTemplateService by lazy { com.ares.analytics.service.project.RobotProjectTemplateService() }
     val projectIdeLauncher by lazy { com.ares.analytics.service.project.ProjectIdeLauncher() }
     val managedToolchainService by lazy { ManagedToolchainService() }
-    val projectVersionControlService by lazy { com.ares.analytics.service.versioncontrol.ProjectVersionControlService() }
+    val githubAuthenticationService by lazy {
+        com.ares.analytics.service.versioncontrol.GitHubAuthenticationService()
+    }
+    val projectBackupAutoSyncService: com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectBackupAutoSyncService(
+            inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
+            pushBackup = { projectPath -> projectRemoteBackupService.pushBackup(projectPath) },
+        )
+    }
+    val projectVersionControlService: com.ares.analytics.service.versioncontrol.ProjectVersionControlService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectVersionControlService(
+            onBackupRelevantChange = { projectPath -> projectBackupAutoSyncService.schedule(projectPath) },
+        )
+    }
+    val projectRemoteBackupService: com.ares.analytics.service.versioncontrol.ProjectRemoteBackupService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectRemoteBackupService(
+            githubAuthentication = githubAuthenticationService,
+            inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
+            onBackupRelevantChange = { projectPath -> projectBackupAutoSyncService.schedule(projectPath) },
+            onBackupSynchronized = { projectPath -> projectBackupAutoSyncService.markSynchronized(projectPath) },
+        )
+    }
+    val projectRecoveryService: com.ares.analytics.service.versioncontrol.ProjectRecoveryService by lazy {
+        com.ares.analytics.service.versioncontrol.ProjectRecoveryService(
+            githubAuthentication = githubAuthenticationService,
+            inspectProject = { projectPath -> projectVersionControlService.inspect(projectPath) },
+        )
+    }
+    val projectArchiveExporter by lazy { com.ares.analytics.service.versioncontrol.ProjectArchiveExporter() }
     val hardwareSetupService by lazy { com.ares.analytics.service.hardware.HardwareSetupService() }
     val integrationSettingsService by lazy { com.ares.analytics.service.integration.IntegrationSettingsService() }
     val tuningProposalInbox by lazy { com.ares.analytics.service.tuning.TuningProposalInbox() }
@@ -80,21 +112,24 @@ class ServiceRegistry {
     val projectExecutionCoordinator by lazy {
         com.ares.analytics.service.project.ProjectExecutionCoordinator(
             projectSession,
-            com.ares.analytics.service.project.ProcessManagerProjectGateway(processManagerService),
+            com.ares.analytics.service.project.StudioProjectProcessGateway(
+                projectBuildService,
+                simulatorProcessService,
+                robotDeploymentService,
+            ),
         )
     }
     val projectGenerator by lazy {
         com.ares.analytics.service.project.SessionProjectGenerator(
             projectSession,
             projectExecutionCoordinator,
-            processManagerService,
+            projectBuildService,
         )
     }
 
     // ── Tier 1: Depend on Tier 0 ─────────────────────────────────────────────
     val nt4ClientService by lazy { Nt4ClientService(databaseService) }
     val logParserService by lazy { LogParserService(databaseService, summaryEngineService) }
-    val parquetExporterService by lazy { ParquetExporterService(databaseService) }
     val replayEngineService by lazy { ReplayEngineService(databaseService, nt4ClientService) }
     val sysIdService by lazy { SysIdService(databaseService) }
     val autoTunerService by lazy { AutoTunerService(nt4ClientService, sysIdService, tuningProposalInbox) }
@@ -124,7 +159,7 @@ class ServiceRegistry {
             aiProvider = com.ares.analytics.service.integration.JsonStructuredDraftProvider(
                 providerId = "gemini.configured",
                 model = com.ares.analytics.shared.DEFAULT_GEMINI_MODEL,
-                requestJson = syncEngineService::requestNotebookDraftJson,
+                requestJson = generativeAiService::requestStructuredJson,
             ),
         )
     }
@@ -178,7 +213,7 @@ class ServiceRegistry {
         AutoImportService(
             logParserService = logParserService,
             hootDecoderService = hootDecoderService,
-            processManagerService = processManagerService,
+            adbConnected = adbService.connected,
             configProvider = autoImportConfig::get
         )
     }
@@ -189,7 +224,10 @@ class ServiceRegistry {
         ManualLogImportService(databaseService, logParserService, hootDecoderService, autoImportService)
     }
     val googleDriveService by lazy { GoogleDriveService(oauthService, environmentService) }
-    val syncEngineService by lazy { SyncEngineService(databaseService, parquetExporterService, environmentService, summaryEngineService, googleDriveService) }
+    val generativeAiService by lazy { GenerativeAiService(environmentService) }
+    val robotDesignAssistantService by lazy { RobotDesignAssistantService(generativeAiService) }
+    val aiDiagnosticsService by lazy { AiDiagnosticsService(generativeAiService, databaseService) }
+    val syncEngineService by lazy { SyncEngineService(databaseService, environmentService, summaryEngineService, googleDriveService) }
     val phoenixDiagnosticsService by lazy { PhoenixDiagnosticsService(nt4ClientService) }
     val dashboardHealthService by lazy {
         DashboardHealthService(nt4ClientService.telemetryStore, databaseService.metrics, nt4ClientService, replayEngineService)
@@ -251,12 +289,21 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::nt4ClientService)) {
                     telemetryPersisted = nt4ClientService.disposeAndJoin()
                 }
-                  if (lazyFieldInitialized(::processManagerService)) {
-                      processManagerService.shutdown()
-                  }
-                  if (lazyFieldInitialized(::projectVersionControlService)) {
-                      projectVersionControlService.closeAndJoin()
-                  }
+                if (lazyFieldInitialized(::projectBuildService)) {
+                    projectBuildService.shutdown()
+                }
+                if (lazyFieldInitialized(::robotDeploymentService)) {
+                    robotDeploymentService.shutdown()
+                }
+                if (lazyFieldInitialized(::simulatorProcessService)) {
+                    simulatorProcessService.shutdownAndJoin()
+                }
+                if (lazyFieldInitialized(::adbService)) {
+                    adbService.shutdownAndJoin()
+                }
+                if (lazyFieldInitialized(::projectBackupAutoSyncService)) {
+                    projectBackupAutoSyncService.closeAndJoin()
+                }
                 if (lazyFieldInitialized(::replayEngineService)) {
                     replayEngineService.disposeAndJoin()
                 }
@@ -272,8 +319,8 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::oauthService)) {
                     oauthService.dispose()
                 }
-                if (lazyFieldInitialized(::syncEngineService)) {
-                    syncEngineService.close()
+                if (lazyFieldInitialized(::generativeAiService)) {
+                    generativeAiService.close()
                 }
                 if (lazyFieldInitialized(::notificationIntegrationService)) {
                     notificationIntegrationService.closeAndJoin()

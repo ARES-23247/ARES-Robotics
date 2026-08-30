@@ -2,7 +2,7 @@ package com.areslib.tuning
 
 import com.google.gson.GsonBuilder
 import com.areslib.util.parseJsonElement
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 
 const val ARES_TUNING_PROFILE_SCHEMA_VERSION: Int = 1
 const val ARES_TUNING_COMPONENT_SCHEMA_VERSION: Int = 1
@@ -166,7 +166,7 @@ object TuningProfileDocumentCodec {
         return profile
     }
     fun contentHash(profile: TuningProfileDocument, declarations: Collection<TuningParameterDeclaration>): String =
-        MessageDigest.getInstance("SHA-256").digest(encode(profile, declarations).toByteArray()).joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        sha256Hex(encode(profile, declarations))
     private fun requireValid(profile: TuningProfileDocument, declarations: Collection<TuningParameterDeclaration>) {
         val issues = validateTuningProfileDocument(profile, declarations)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }

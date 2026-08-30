@@ -212,8 +212,8 @@ fun ControlInspectorBody(
     val supportsContinuousInput = loop.strategy in setOf(
         SubsystemControlStrategy.POSITION_PID,
         SubsystemControlStrategy.PROFILED_POSITION_PID,
-    ) && subsystemUnitIsCanonicalAngle(selectedTarget?.unit) &&
-        subsystemUnitIsCanonicalAngle(selectedMeasurement?.unit)
+    ) && SubsystemUnits.isCanonicalAngle(selectedTarget?.unit) &&
+        SubsystemUnits.isCanonicalAngle(selectedMeasurement?.unit)
     val outputUnit = when (actuator?.kind) {
         SubsystemHardwareKind.MOTOR -> "V"
         SubsystemHardwareKind.PRISM_DRIVER -> "µs"
@@ -271,7 +271,7 @@ fun ControlInspectorBody(
         if (loop.strategy.requiresMeasurement()) {
             val measurements = numericFields.filter {
                 it.role == SubsystemFieldRole.MEASUREMENT &&
-                    (selectedTarget == null || subsystemControlUnitsCompatible(selectedTarget.unit, it.unit))
+                    (selectedTarget == null || SubsystemUnits.controlUnitsCompatible(selectedTarget.unit, it.unit))
             }
             if (measurements.isNotEmpty()) {
                 val measurementOptions = measurements.associateBy(::stateFieldOptionLabel)
@@ -284,8 +284,8 @@ fun ControlInspectorBody(
                         it.copy(
                             measurementFieldId = measurement.fieldId,
                             continuousInput = it.continuousInput.copy(
-                                enabled = it.continuousInput.enabled && subsystemUnitIsCanonicalAngle(selectedTarget?.unit) &&
-                                    subsystemUnitIsCanonicalAngle(measurement.unit),
+                                enabled = it.continuousInput.enabled && SubsystemUnits.isCanonicalAngle(selectedTarget?.unit) &&
+                                    SubsystemUnits.isCanonicalAngle(measurement.unit),
                             ),
                         )
                     }
@@ -434,7 +434,7 @@ fun ControlInspectorBody(
                     SubsystemControlStrategy.PROFILED_POSITION_PID -> "Use the motion-profile velocity"
                     else -> "Use zero planned velocity"
                 }
-                val velocityOptions = numericFields.filter { subsystemUnitCanRepresentVelocity(it.unit) }.associateBy(::stateFieldOptionLabel)
+                val velocityOptions = numericFields.filter { SubsystemUnits.canRepresentVelocity(it.unit) }.associateBy(::stateFieldOptionLabel)
                 val selectedVelocity = velocityOptions.entries.firstOrNull { it.value.fieldId == loop.feedforward.velocityFieldId }?.key
                     ?: velocityDefault
                 DropdownSelector("Desired velocity source", selectedVelocity, listOf(velocityDefault) + velocityOptions.keys) { selected ->
@@ -447,7 +447,7 @@ fun ControlInspectorBody(
                 } else {
                     "Use zero planned acceleration"
                 }
-                val accelerationOptions = numericFields.filter { subsystemUnitCanRepresentAcceleration(it.unit) }.associateBy(::stateFieldOptionLabel)
+                val accelerationOptions = numericFields.filter { SubsystemUnits.canRepresentAcceleration(it.unit) }.associateBy(::stateFieldOptionLabel)
                 val selectedAcceleration = accelerationOptions.entries.firstOrNull { it.value.fieldId == loop.feedforward.accelerationFieldId }?.key
                     ?: accelerationDefault
                 DropdownSelector("Desired acceleration source", selectedAcceleration, listOf(accelerationDefault) + accelerationOptions.keys) { selected ->
@@ -455,7 +455,7 @@ fun ControlInspectorBody(
                         it.copy(feedforward = it.feedforward.copy(accelerationFieldId = accelerationOptions[selected]?.fieldId))
                     }
                 }
-                val angleOptions = numericFields.filter { subsystemUnitIsCanonicalAngle(it.unit) }.associateBy(::stateFieldOptionLabel)
+                val angleOptions = numericFields.filter { SubsystemUnits.isCanonicalAngle(it.unit) }.associateBy(::stateFieldOptionLabel)
                 if (loop.feedforward.kind == SubsystemFeedforwardKind.ARM && angleOptions.isNotEmpty()) {
                     val selectedAngle = angleOptions.entries.firstOrNull { it.value.fieldId == loop.feedforward.gravityAngleFieldId }?.key
                         ?: angleOptions.keys.first()

@@ -5,7 +5,7 @@ import com.ares.analytics.service.BuildExecutionState
 import com.ares.analytics.service.RobotProjectReadinessEvidence
 import com.ares.analytics.service.drivebase.DrivebaseKind
 import com.ares.analytics.service.hardware.HardwareReviewStatus
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.simulation.SimulationProductId
 import kotlin.test.Test
 import kotlin.test.assertEquals

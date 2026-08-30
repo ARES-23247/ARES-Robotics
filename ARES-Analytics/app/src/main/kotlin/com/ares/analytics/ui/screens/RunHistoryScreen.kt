@@ -39,11 +39,11 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.ui.graphics.SolidColor
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.TelemetryFrame
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.service.AiDiagnosticsService
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.history.RunFilterHeader
 import com.ares.analytics.ui.components.history.RunDataCard
 import com.ares.analytics.ui.theme.*
@@ -102,17 +102,18 @@ data class RowDefinition(
  * log scrubbing replay controls, and AI log breakdown chat threads.
  *
  * @param databaseService Primary [DatabaseService] backing DuckDB telemetry queries.
- * @param syncEngineService Sync engine service for downloading log files.
+ * @param aiDiagnosticsService AI interpretation boundary for read-only telemetry queries.
  * @param onOpenImports Opens the log-import workflow when no completed runs exist.
  * @param onOpenHelp Opens the beginner lesson that explains how to create and review a run.
  *
- * @see com.ares.analytics.service.MatchLogRepository
+ * @see com.ares.analytics.service.db.TelemetryRepository
+ * @see com.ares.analytics.service.db.RunEvidenceRepository
  * @see com.ares.analytics.service.ReplayEngineService
  */
 @Composable
 fun RunHistoryScreen(
     databaseService: DatabaseService,
-    syncEngineService: SyncEngineService,
+    aiDiagnosticsService: AiDiagnosticsService,
     workspace: WorkspaceConfig,
     reloadTrigger: Int = 0,
     onOpenImports: () -> Unit = {},
@@ -562,7 +563,7 @@ fun RunHistoryScreen(
                             isAnalystLoading = true
                             scope.launch {
                                 try {
-                                    val reply = syncEngineService.requestSqlAnalysis(queryCopy, databaseService)
+                                    val reply = aiDiagnosticsService.requestSqlAnalysis(queryCopy)
                                     analystChatHistory.add(Pair("analyst", reply))
                                 } catch (e: Exception) {
                                     analystChatHistory.add(Pair("analyst", "Error: ${e.message ?: "Failed to analyze query."}"))

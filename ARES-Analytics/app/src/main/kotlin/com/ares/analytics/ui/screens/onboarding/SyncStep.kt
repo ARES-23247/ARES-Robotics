@@ -40,8 +40,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.RobotProfile
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.RobotProfile
 import com.ares.analytics.ui.components.forms.AresTextField
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan

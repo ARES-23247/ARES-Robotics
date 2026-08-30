@@ -6,9 +6,9 @@ import com.ares.analytics.service.OAuthService
 import com.ares.analytics.service.DriveDestinationStatus
 import com.ares.analytics.service.GoogleDriveService
 import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.RobotProfile
-import com.ares.analytics.shared.WorkspaceConfig
-import com.ares.analytics.shared.DriveDestinationType
+import com.ares.analytics.shared.models.RobotProfile
+import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.shared.DEFAULT_GEMINI_MODEL
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -209,7 +209,7 @@ class ProfileViewModel(
                     _state.update { it.copy(syncStatus = "Running delta sync...") }
                     try {
                         withContext(Dispatchers.IO) {
-                            syncEngineService.performDeltaSync(cfg.teamId, cfg.seasonId, intent.firebaseToken)
+                            syncEngineService.performDeltaSync(cfg.teamId, cfg.seasonId)
                         }
                         _state.update { it.copy(syncStatus = "Sync successful!") }
                     } catch (e: Exception) {

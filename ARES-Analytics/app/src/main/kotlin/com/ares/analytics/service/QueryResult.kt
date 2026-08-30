@@ -22,7 +22,7 @@ package com.ares.analytics.service
  * @property truncatedCellCount Number of oversized cell values shortened before entering UI state.
  *
  * @see com.ares.analytics.service.DatabaseService
- * @see com.ares.analytics.service.db.MatchLogRepository
+ * @see com.ares.analytics.service.db.ReadOnlyQueryRepository
  */
 data class QueryResult(
     val columns: List<String>,

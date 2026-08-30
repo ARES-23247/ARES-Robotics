@@ -1,6 +1,6 @@
 package com.ares.analytics.service.verification
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.codegen.ProjectGeneratedTestNames
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec
@@ -13,7 +13,7 @@ import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemVerificationEvidence
 import com.areslib.subsystem.subsystemVerificationContract
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.superstructure.SuperstructureDocumentCodec
 import java.io.File
 import javax.xml.XMLConstants
@@ -108,7 +108,7 @@ object RobotVerificationReportLoader {
         }
 
         documents.forEach { document ->
-            val issues = validateSubsystemDocument(document)
+            val issues = SubsystemSchema.validate(document)
             items += VerificationReportItem(
                 id = "${document.documentId}.configuration",
                 layer = VerificationLayer.CONFIGURATION,
@@ -191,7 +191,7 @@ object RobotVerificationReportLoader {
             id = "project.platform-integration",
             layer = VerificationLayer.PLATFORM_INTEGRATION,
             title = "Platform lifecycle and integration tests",
-            explanation = "Hand-written tests protect ${league.name} lifecycle, Redux, autonomous orchestration, coordinates, telemetry, and migration behavior outside one robot descriptor.",
+            explanation = "Hand-written tests protect ${league.name} lifecycle, Redux, autonomous orchestration, coordinates, telemetry, and project-format behavior outside one robot descriptor.",
             results = testCases.filter {
                 it.layer == VerificationLayer.PLATFORM_INTEGRATION &&
                     !it.className.endsWith("GeneratedTest") &&

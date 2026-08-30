@@ -2,42 +2,7 @@ package com.ares.analytics.shared
 
 import kotlinx.serialization.Serializable
 
-// Keep these aliases while callers migrate to shared.models; removing them is a source-breaking change.
-import com.ares.analytics.shared.models.*
-
 const val DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
-
-typealias League = com.ares.analytics.shared.models.League
-typealias WorkspaceConfig = com.ares.analytics.shared.models.WorkspaceConfig
-typealias AppWorkspaces = com.ares.analytics.shared.models.AppWorkspaces
-typealias WorkspaceCollaborationMode = com.ares.analytics.shared.models.WorkspaceCollaborationMode
-typealias DriveDestinationType = com.ares.analytics.shared.models.DriveDestinationType
-typealias DriveDestinationConfig = com.ares.analytics.shared.models.DriveDestinationConfig
-typealias RobotProfile = com.ares.analytics.shared.models.RobotProfile
-
-typealias SessionMode = com.ares.analytics.shared.models.SessionMode
-typealias Session = com.ares.analytics.shared.models.Session
-typealias SessionSummary = com.ares.analytics.shared.models.SessionSummary
-typealias SessionAnnotation = com.ares.analytics.shared.models.SessionAnnotation
-typealias TelemetryFrame = com.ares.analytics.shared.models.TelemetryFrame
-typealias AnalysisDiagnostic = com.ares.analytics.shared.models.AnalysisDiagnostic
-typealias RobotActionRecord = com.ares.analytics.shared.models.RobotActionRecord
-typealias AlertRecord = com.ares.analytics.shared.models.AlertRecord
-typealias ThresholdRule = com.ares.analytics.shared.models.ThresholdRule
-typealias ConsoleMessage = com.ares.analytics.shared.models.ConsoleMessage
-typealias ControllerBinding = com.ares.analytics.shared.models.ControllerBinding
-typealias TrajectoryState = com.ares.analytics.shared.models.TrajectoryState
-typealias Trajectory = com.ares.analytics.shared.models.Trajectory
-
-typealias TopologyNodeType = com.ares.analytics.shared.models.TopologyNodeType
-typealias TopologyNode = com.ares.analytics.shared.models.TopologyNode
-typealias HardwareTopology = com.ares.analytics.shared.models.HardwareTopology
-typealias ForensicsRequest = com.ares.analytics.shared.models.ForensicsRequest
-typealias HardwareFaultLocus = com.ares.analytics.shared.models.HardwareFaultLocus
-typealias ForensicsResponse = com.ares.analytics.shared.models.ForensicsResponse
-typealias CalculatedSummary = com.ares.analytics.shared.models.CalculatedSummary
-typealias TransientClassification = com.ares.analytics.shared.models.TransientClassification
-typealias DriverProfile = com.ares.analytics.shared.models.DriverProfile
 
 /** A point in field coordinates, in meters. */
 @Serializable

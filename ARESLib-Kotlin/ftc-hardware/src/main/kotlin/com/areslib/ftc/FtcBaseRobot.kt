@@ -23,6 +23,7 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.ftc.core.FtcHardwareInitializer
 import com.areslib.ftc.core.FtcOpModeLifecycleController
+import com.areslib.hardware.HardwareRegistry
 
 /**
  * Abstract foundational base class for all FTC robots in ARESLib-Kotlin.
@@ -106,7 +107,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     val visionFilterConfig: VisionFilterConfig = VisionFilterConfig.ftcDefaults(),
     /** Canonical generated tuning state used before any controller or tuning transport initializes. */
     initialTuningState: com.areslib.state.TuningState = com.areslib.state.TuningState(),
-    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
+    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
+    hardwareRegistry: HardwareRegistry = HardwareRegistry(),
 ) : AresRobot(
     initialState = RobotState(
         vision = VisionState(
@@ -123,7 +125,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             )
         )
     ),
-    reducer = reducer
+    reducer = reducer,
+    hardwareRegistry = hardwareRegistry,
 ) {
     /** Optional simulator-only view of cached, post-safety season mechanism outputs. */
     @Volatile
@@ -138,7 +141,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     )
 
     init {
-        com.areslib.hardware.HardwareRegistry.clear()
         lifecycleController.init(hardwareMap)
         com.areslib.telemetry.RobotStatusTracker.odometrySource = FtcOdometrySource.UNINITIALIZED.name
         com.areslib.telemetry.RobotStatusTracker.odometryStatus = "UNKNOWN"
@@ -167,10 +169,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /** Telemetry manager handling dashboard NetworkTables and local logging pipelines. */
-    val telemetryManager = FtcTelemetryManager(store)
+    val telemetryManager = FtcTelemetryManager(store, hardwareRegistry)
 
     /** Robot power monitor tracking battery voltage ($V$) and total current consumption ($A$). */
-    val powerManager = FtcPowerManager(hardwareMap)
+    val powerManager = FtcPowerManager(hardwareMap, hardwareRegistry)
 
     /** High-precision loop profiler tracking nano-second hardware reads and subsystem compute stages. */
     val profiler = FtcLoopProfiler()

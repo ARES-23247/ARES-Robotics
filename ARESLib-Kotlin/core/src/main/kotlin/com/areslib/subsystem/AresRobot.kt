@@ -4,6 +4,7 @@ import com.areslib.Store
 import com.areslib.state.RobotState
 import com.areslib.action.RobotAction
 import com.areslib.reducer.rootReducer
+import com.areslib.hardware.HardwareRegistry
 
 /**
  * Platform-independent base class for all ARES robots (FTC and FRC).
@@ -27,7 +28,8 @@ import com.areslib.reducer.rootReducer
  */
 open class AresRobot(
     initialState: RobotState = RobotState(),
-    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
+    reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
+    val hardwareRegistry: HardwareRegistry = HardwareRegistry(),
 ) {
     val store = Store(initialState, reducer)
 
@@ -79,7 +81,7 @@ open class AresRobot(
 
     /**
      * Emergency-stops all registered subsystems by writing zero-power outputs.
-     * Also invokes [com.areslib.hardware.HardwareRegistry.safeAll] for any
+     * Also invokes [HardwareRegistry.safeAll] for any
      * hardware registered outside the subsystem lifecycle.
      */
     open fun safeAll() {
@@ -89,7 +91,7 @@ open class AresRobot(
                 subsystems[i].writeOutputs(state, 0.0)
             } catch (_: Throwable) {}
         }
-        com.areslib.hardware.HardwareRegistry.safeAll()
+        hardwareRegistry.safeAll()
     }
 
     /**

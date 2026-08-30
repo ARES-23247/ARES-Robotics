@@ -8,11 +8,11 @@ import com.ares.analytics.service.ManagedToolchainService
 import com.ares.analytics.service.SyncEngineService
 import com.ares.analytics.service.project.RobotProjectCreationRequest
 import com.ares.analytics.service.project.RobotProjectTemplateService
-import com.ares.analytics.shared.DriveDestinationConfig
-import com.ares.analytics.shared.DriveDestinationType
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.RobotProfile
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.DriveDestinationConfig
+import com.ares.analytics.shared.models.DriveDestinationType
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.RobotProfile
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.areslib.project.AresProjectAuthoringModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -9,6 +9,7 @@ import com.ares.analytics.service.RobotLogImportOutcome
 import com.ares.analytics.service.RobotLogIngestionService
 import com.ares.analytics.service.RobotLogSource
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow

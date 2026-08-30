@@ -1,6 +1,6 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.drivebase.DrivebaseKind
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.drivebase.defaultDrivebase
@@ -49,7 +49,7 @@ class RobotProjectTemplateServiceTest {
 
         League.entries.forEach { league ->
             val template = service.templateFor(league)
-            assertEquals("11.1.0", template.aresVersion)
+            assertEquals("12.0.0", template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
             assertEquals(
                 RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
@@ -405,6 +405,9 @@ class RobotProjectTemplateServiceTest {
                         robotWidthMeters = 0.45,
                         fieldLengthMeters = 3.6576,
                         fieldWidthMeters = 3.6576,
+                        runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                            ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                        ),
                     ),
                 ),
             )
@@ -475,6 +478,9 @@ class RobotProjectTemplateServiceTest {
                 robotWidthMeters = 0.45,
                 fieldLengthMeters = 3.65,
                 fieldWidthMeters = 3.65,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             ),
         )
         val drivebase = defaultDrivebase("template-project", DrivebaseKind.FTC_MECANUM).toCanonicalDrivebase()

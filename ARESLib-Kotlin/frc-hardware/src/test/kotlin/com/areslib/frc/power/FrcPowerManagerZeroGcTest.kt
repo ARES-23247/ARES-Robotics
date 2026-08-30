@@ -4,14 +4,10 @@ import com.areslib.hardware.HardwareRegistry
 import com.areslib.hardware.actuator.MotorIO
 import com.sun.management.ThreadMXBean
 import java.lang.management.ManagementFactory
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class FrcPowerManagerZeroGcTest {
-    @AfterEach
-    fun clearRegistry() = HardwareRegistry.clear()
-
     @Test
     fun `steady state power distribution uses indexed registry traversal`() {
         val allocationBean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
@@ -19,8 +15,9 @@ class FrcPowerManagerZeroGcTest {
         if (!allocationBean.isThreadAllocatedMemoryEnabled) {
             allocationBean.isThreadAllocatedMemoryEnabled = true
         }
-        repeat(4) { index -> HardwareRegistry.registerMotor("probe-$index", ProbeMotor()) }
-        val manager = FrcPowerManager().apply {
+        val hardwareRegistry = HardwareRegistry()
+        repeat(4) { index -> hardwareRegistry.registerMotor("probe-$index", ProbeMotor()) }
+        val manager = FrcPowerManager(hardwareRegistry).apply {
             batteryVoltageSupplier = java.util.function.DoubleSupplier { 12.0 }
             totalCurrentSupplier = java.util.function.DoubleSupplier { 0.0 }
             brownedOutSupplier = java.util.function.BooleanSupplier { false }

@@ -6,6 +6,8 @@ import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresFtcRuntimeOptionsDocument
+import com.areslib.project.AresRuntimeOptionsDocument
 import com.areslib.project.compiler.ProjectArtifactKind
 import com.areslib.project.compiler.RobotProjectCompiler
 import com.areslib.project.model.RobotProjectAssembler
@@ -30,6 +32,7 @@ class KotlinProjectArtifactRenderersTest {
                         robotWidthMeters = 0.46,
                         fieldLengthMeters = 3.6576,
                         fieldWidthMeters = 3.6576,
+                        runtimeOptions = AresRuntimeOptionsDocument(ftc = AresFtcRuntimeOptionsDocument()),
                     ),
                     baseCapabilityCatalog = CapabilityCatalogDocument(projectId = "minimal"),
                 ),

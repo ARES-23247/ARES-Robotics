@@ -1,7 +1,7 @@
 package com.areslib.controls
 
 import com.google.gson.GsonBuilder
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 
 const val ARES_CONTROLLER_PROFILE_SCHEMA_VERSION: Int = 1
 
@@ -193,9 +193,7 @@ object ControllerProfileCodec {
         return document.canonicalized()
     }
 
-    fun contentHash(document: ControllerProfileDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: ControllerProfileDocument): String = sha256Hex(encode(document))
 
     private fun requireValid(document: ControllerProfileDocument) {
         val errors = validateControllerProfile(document).filter { it.severity == ControlValidationSeverity.ERROR }

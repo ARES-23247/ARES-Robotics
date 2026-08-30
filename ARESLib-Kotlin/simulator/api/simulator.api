@@ -42,19 +42,17 @@ public final class com/areslib/sim/VerificationAppKt {
 
 public final class com/areslib/sim/cli/SimCliArgs {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ZZLjava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ZZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Z
-	public final fun component3 ()Z
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;ZZLjava/lang/String;)Lcom/areslib/sim/cli/SimCliArgs;
-	public static synthetic fun copy$default (Lcom/areslib/sim/cli/SimCliArgs;Ljava/lang/String;ZZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/sim/cli/SimCliArgs;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;ZLjava/lang/String;)Lcom/areslib/sim/cli/SimCliArgs;
+	public static synthetic fun copy$default (Lcom/areslib/sim/cli/SimCliArgs;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/sim/cli/SimCliArgs;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFieldConfigArg ()Ljava/lang/String;
 	public final fun getHeadless ()Z
 	public final fun getOpModeClassName ()Ljava/lang/String;
-	public final fun getWatchFieldConfig ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -470,12 +468,10 @@ public final class com/areslib/sim/network/TelemetryPublisher {
 	public final fun init (Lcom/areslib/telemetry/NT4Telemetry;Lcom/areslib/telemetry/ARESNetworkStatePublisher;)V
 	public final fun pollWebFieldConfig ()Ljava/lang/String;
 	public final fun pollWebInputs (Lcom/areslib/sim/infra/SimGamepadManager;)Ljava/lang/String;
-	public final fun publish (Lcom/areslib/state/RobotState;Ljava/lang/Double;)V
-	public static synthetic fun publish$default (Lcom/areslib/sim/network/TelemetryPublisher;Lcom/areslib/state/RobotState;Ljava/lang/Double;ILjava/lang/Object;)V
+	public final fun publish (Lcom/areslib/state/RobotState;Lcom/areslib/hardware/HardwareRegistry;Ljava/lang/Double;)V
+	public static synthetic fun publish$default (Lcom/areslib/sim/network/TelemetryPublisher;Lcom/areslib/state/RobotState;Lcom/areslib/hardware/HardwareRegistry;Ljava/lang/Double;ILjava/lang/Object;)V
 	public final fun publishChassisSpeeds (Lcom/areslib/math/geometry/ChassisSpeeds;)V
 	public final fun publishDriveMode (ZZZ)V
-	public final fun publishEstimatedPose (DDD)V
-	public final fun publishEstimatedPose (Lcom/areslib/math/geometry/Pose2d;)V
 	public final fun publishGamePieceFrame ([DI)V
 	public final fun publishGamePieces ([DI)V
 	public static synthetic fun publishGamePieces$default (Lcom/areslib/sim/network/TelemetryPublisher;[DIILjava/lang/Object;)V

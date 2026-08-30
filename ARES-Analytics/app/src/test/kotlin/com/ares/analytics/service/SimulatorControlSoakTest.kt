@@ -213,7 +213,7 @@ class SimulatorControlSoakTest {
             var rewindLateSequence = -1L
             var rewindEarlyTimestampMs = -1L
             var rewindLateTimestampMs = -1L
-            var persistedPoseSequences = emptyList<com.ares.analytics.shared.TelemetryFrame>()
+            var persistedPoseSequences = emptyList<com.ares.analytics.shared.models.TelemetryFrame>()
             var persistedPoseSpanMs = -1L
             var rewindLoadMs = -1L
             val expectedReplaySeconds = minOf(

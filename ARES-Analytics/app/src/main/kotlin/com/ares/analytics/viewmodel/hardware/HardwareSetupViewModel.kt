@@ -4,7 +4,7 @@ import com.ares.analytics.service.hardware.HardwareReviewRequest
 import com.ares.analytics.service.hardware.HardwarePhysicalValidationRequest
 import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.hardware.HardwareSetupSnapshot
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

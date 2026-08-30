@@ -2,7 +2,7 @@ package com.ares.analytics.viewmodel.field
 
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
 import kotlin.test.Test

@@ -22,14 +22,20 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.service.ProcessManagerService
-import com.ares.analytics.shared.League
+import com.ares.analytics.service.ProjectBuildService
+import com.ares.analytics.service.AdbService
+import com.ares.analytics.service.RobotDeploymentService
+import com.ares.analytics.service.SimulatorProcessService
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalDrawer(
-    processManagerService: ProcessManagerService,
+    projectBuildService: ProjectBuildService,
+    robotDeploymentService: RobotDeploymentService,
+    adbService: AdbService,
+    simulatorProcessService: SimulatorProcessService,
     projectPath: String,
     league: League,
     isOpen: Boolean,
@@ -37,7 +43,8 @@ fun TerminalDrawer(
     modifier: Modifier = Modifier
 ) {
     var activeTab by remember { mutableStateOf(0) } // 0 = Build, 1 = Logcat
-    val isBuildRunning by processManagerService.isBuildRunning.collectAsState()
+    val processState by projectBuildService.processState.collectAsState()
+    val isBuildRunning = processState.buildRunning
     val buildListState = rememberLazyListState()
     val logcatListState = rememberLazyListState()
     // Store lines in memory to render in LazyColumn
@@ -47,13 +54,25 @@ fun TerminalDrawer(
     // Collect flows
     LaunchedEffect(Unit) {
         launch {
-            processManagerService.buildOutput.collect { line ->
+            projectBuildService.buildOutput.collect { line ->
                 buildLog.add(line)
                 if (buildLog.size > 1000) buildLog.removeAt(0)
             }
         }
         launch {
-            processManagerService.logcatOutput.collect { line ->
+            robotDeploymentService.output.collect { line ->
+                buildLog.add(line)
+                if (buildLog.size > 1000) buildLog.removeAt(0)
+            }
+        }
+        launch {
+            simulatorProcessService.output.collect { line ->
+                buildLog.add(line)
+                if (buildLog.size > 1000) buildLog.removeAt(0)
+            }
+        }
+        launch {
+            adbService.logcatOutput.collect { line ->
                 logcatLog.add(line)
                 if (logcatLog.size > 1000) logcatLog.removeAt(0)
             }
@@ -109,7 +128,7 @@ fun TerminalDrawer(
                         Button(
                             onClick = {
                                 buildLog.clear()
-                                processManagerService.runBuild(projectPath, league)
+                                projectBuildService.runBuild(projectPath, league)
                             },
                             enabled = !isBuildRunning,
                             colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
@@ -128,7 +147,7 @@ fun TerminalDrawer(
                         Button(
                             onClick = {
                                 logcatLog.clear()
-                                processManagerService.startLogcat()
+                                adbService.startLogcat()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
                             shape = RoundedCornerShape(6.dp),
@@ -142,7 +161,12 @@ fun TerminalDrawer(
 
                     IconButton(
                         onClick = {
-                            if (activeTab == 0) processManagerService.killActiveBuild() else processManagerService.killActiveLogcat()
+                            if (activeTab == 0) {
+                                projectBuildService.killActiveBuild()
+                                robotDeploymentService.cancel()
+                            } else {
+                                adbService.stopLogcat()
+                            }
                         }
                     ) {
                         Icon(imageVector = Icons.Default.Cancel, contentDescription = "Kill Process", tint = AresError)

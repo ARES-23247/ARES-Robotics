@@ -1,7 +1,7 @@
 package com.areslib.catalog
 
 import com.google.gson.GsonBuilder
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 
 /** Current schema written to the offline ARES action catalog. */
 const val ARES_CAPABILITY_CATALOG_SCHEMA_VERSION: Int = 1
@@ -317,9 +317,7 @@ object CapabilityCatalogCodec {
         return document.canonicalized()
     }
 
-    fun contentHash(document: CapabilityCatalogDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: CapabilityCatalogDocument): String = sha256Hex(encode(document))
 
     private fun requireNoCatalogErrors(document: CapabilityCatalogDocument) {
         val errors = validateCapabilityCatalog(document).filter { it.severity == CatalogValidationSeverity.ERROR }

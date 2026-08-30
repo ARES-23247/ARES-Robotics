@@ -1,10 +1,10 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.DriveDestinationConfig
-import com.ares.analytics.shared.DriveDestinationType
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceCollaborationMode
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.DriveDestinationConfig
+import com.ares.analytics.shared.models.DriveDestinationType
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceCollaborationMode
+import com.ares.analytics.shared.models.WorkspaceConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -258,7 +258,6 @@ class GoogleDriveDestinationTest {
     ): Fixture {
         val directory = Files.createTempDirectory("ares-drive-destination").toFile()
         val environment = EnvironmentService(
-            configPath = directory.resolve("legacy.json").path,
             workspacesPath = directory.resolve("workspaces.json").path,
         )
         environment.saveConfig(

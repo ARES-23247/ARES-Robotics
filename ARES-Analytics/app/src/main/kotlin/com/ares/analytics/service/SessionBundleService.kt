@@ -1,14 +1,14 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.AnalysisDiagnostic
+import com.ares.analytics.shared.models.AnalysisDiagnostic
 import com.ares.analytics.shared.AppJson
-import com.ares.analytics.shared.ConsoleMessage
-import com.ares.analytics.shared.RobotActionRecord
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionAnnotation
-import com.ares.analytics.shared.SessionSummary
-import com.ares.analytics.shared.AlertRecord
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.ConsoleMessage
+import com.ares.analytics.shared.models.RobotActionRecord
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionAnnotation
+import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable

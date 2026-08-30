@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.CalculatedSummary
-import com.ares.analytics.shared.TelemetryFrame
-import com.ares.analytics.shared.TransientClassification
+import com.ares.analytics.shared.models.CalculatedSummary
+import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.TransientClassification
 import org.apache.commons.math3.transform.DftNormalization
 import org.apache.commons.math3.transform.FastFourierTransformer
 import org.apache.commons.math3.transform.TransformType

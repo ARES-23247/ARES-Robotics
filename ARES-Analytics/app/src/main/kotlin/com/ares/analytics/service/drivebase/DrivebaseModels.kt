@@ -1,6 +1,6 @@
 package com.ares.analytics.service.drivebase
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.drivetrain.*
 
 enum class DrivebaseKind { FTC_MECANUM, FRC_CTRE_SWERVE, DIFFERENTIAL, CUSTOM }
@@ -212,6 +212,9 @@ fun validateDrivebase(document: DrivebaseDocument): List<DrivebaseIssue> = build
     runCatching { document.toCanonicalDrivebase() }.fold(
         onSuccess = { canonical ->
             validateDrivetrainDocument(canonical).forEach { issue -> add(error("canonical.${issue.path}", issue.message)) }
+            FtcMecanumRuntimeParameters.validationIssues(canonical).forEach { issue ->
+                add(error("runtime", issue))
+            }
         },
         onFailure = { failure -> add(error("canonical", failure.message ?: "Could not adapt the drivebase to the shared canonical contract.")) }
     )

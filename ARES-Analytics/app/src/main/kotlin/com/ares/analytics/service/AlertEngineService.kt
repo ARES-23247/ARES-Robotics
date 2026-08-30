@@ -1,9 +1,9 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.AlertRecord
+import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.TelemetryMetricCatalog
-import com.ares.analytics.shared.ThresholdRule
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.ThresholdRule
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString

@@ -1,7 +1,7 @@
 package com.ares.analytics.ui.components.history
 
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.ui.screens.RowDefinition
 
 object RunDataDictionary {

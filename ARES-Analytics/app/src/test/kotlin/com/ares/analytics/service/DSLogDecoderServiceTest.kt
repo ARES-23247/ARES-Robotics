@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.service.log.*
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream

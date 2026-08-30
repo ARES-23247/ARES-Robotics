@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes
 
 import com.areslib.ftc.FtcMecanumRobot
+import com.areslib.hardware.HardwareRegistry
 import com.areslib.state.aprilTagPoseMap
 import com.areslib.subsystem.Subsystem
 import com.qualcomm.robotcore.hardware.HardwareMap
@@ -22,9 +23,10 @@ import org.firstinspires.ftc.teamcode.subsystems.superstructure.GeneratedSuperst
  */
 internal fun installGeneratedSubsystems(
     hardwareMap: HardwareMap,
+    hardwareRegistry: HardwareRegistry,
     register: (Subsystem) -> Unit,
-    createAll: (HardwareMap) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(hardwareMap).also { subsystems ->
+    createAll: (HardwareMap, HardwareRegistry) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
+): List<Subsystem> = createAll(hardwareMap, hardwareRegistry).also { subsystems ->
     subsystems.forEach(register)
 }
 
@@ -148,14 +150,14 @@ class AresRobot(
             addTelemetry("Field", "Canonical field unavailable; vision tags disabled: ${FtcFieldContractLoader.error}")
         }
 
-        // Registrations are process-global. Clear the previous OpMode's optional hardware catalog
-        // before discovering this robot instance so missing devices cannot inherit stale commands.
+        // NamedCommands is still a process-wide catalog. Clear the previous OpMode's optional
+        // commands before discovering this robot instance so missing devices cannot inherit them.
         com.areslib.pathing.NamedCommands.clear()
 
         // GENERATED - DO NOT EDIT registry entries still use the normal subsystem lifecycle:
         // readSensors -> immutable Redux state -> writeOutputs -> safe/close on every exit path.
         try {
-            installGeneratedSubsystems(hardwareMap, base::registerSubsystem)
+            installGeneratedSubsystems(hardwareMap, base.hardwareRegistry, base::registerSubsystem)
             installGeneratedSuperstructures(base::registerSubsystem)
         } catch (failure: Throwable) {
             // The facade constructor cannot return a partially initialized robot. The generated

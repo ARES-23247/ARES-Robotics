@@ -2,7 +2,7 @@
 
 package com.ares.analytics.viewmodel
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.AutonomousTourStep
 import com.ares.analytics.viewmodel.AutonomousTourTarget
 import com.ares.analytics.viewmodel.controls.ControlsEditorViewModel

@@ -385,7 +385,7 @@ private fun MotorMechanismConversionAssistant(
     val valid = nativeUnitsPerMotorRevolution.isFinite() && nativeUnitsPerMotorRevolution > 0.0 &&
         motorRevolutionsPerMechanismRevolution.isFinite() && motorRevolutionsPerMechanismRevolution > 0.0 &&
         stateUnitsPerMechanismRevolution.isFinite() && stateUnitsPerMechanismRevolution > 0.0
-    val scale = if (valid) subsystemMotorMeasurementScale(
+    val scale = if (valid) SubsystemUnits.motorMeasurementScale(
         nativeUnitsPerMotorRevolution,
         motorRevolutionsPerMechanismRevolution,
         stateUnitsPerMechanismRevolution,

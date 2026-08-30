@@ -54,7 +54,7 @@ class SubsystemVerificationContractTest {
         )
 
         assertTrue(subsystemVerificationContract(base).isNotEmpty())
-        assertTrue(validateSubsystemDocument(base.copy(generateTest = false)).any { it.path == "generateTest" })
+        assertTrue(SubsystemSchema.validate(base.copy(generateTest = false)).any { it.path == "generateTest" })
 
         val teachingStarter = SubsystemTemplates.createWithOwnership(
             template = SubsystemTemplate.SIMPLE_ACTUATOR,

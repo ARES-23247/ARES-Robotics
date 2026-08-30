@@ -6,12 +6,17 @@ import com.ares.analytics.service.dashboard.DashboardWidgetType
 import com.ares.analytics.service.dashboard.defaultProperties
 import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,6 +44,16 @@ data class DashboardState(
     val syncWarning: String? = null,
     val availableProfiles: List<String> = emptyList(),
     val savedLiveProfile: String? = null
+)
+
+/** Low-frequency dashboard fields consumed by the desktop navigation shell. */
+data class DashboardShellState(
+    val currentRoleProfile: String = "Standard",
+    val hasLayout: Boolean = false,
+    val isLayoutEditing: Boolean = false,
+    val primarySessionId: String? = null,
+    val compareSessionId: String? = null,
+    val availableProfiles: List<String> = emptyList(),
 )
 
 data class ReplayEvidenceTarget(
@@ -93,6 +108,19 @@ class DashboardViewModel(
 ) {
     private val _state = MutableStateFlow(DashboardState())
     val state: StateFlow<DashboardState> = _state.asStateFlow()
+    val shellState: StateFlow<DashboardShellState> = state
+        .map { dashboard ->
+            DashboardShellState(
+                currentRoleProfile = dashboard.currentRoleProfile,
+                hasLayout = dashboard.currentLayout != null,
+                isLayoutEditing = dashboard.isLayoutEditing,
+                primarySessionId = dashboard.primarySessionId,
+                compareSessionId = dashboard.compareSessionId,
+                availableProfiles = dashboard.availableProfiles,
+            )
+        }
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.Eagerly, DashboardShellState())
     private val layoutTransactions = DashboardLayoutTransactionQueue()
     private var replayEvidenceRequestId = 0L
 

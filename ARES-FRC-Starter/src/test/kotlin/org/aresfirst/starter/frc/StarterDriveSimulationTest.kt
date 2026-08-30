@@ -107,8 +107,9 @@ class StarterDriveSimulationTest {
 
         installGeneratedSubsystems(
             usePhysicalAdapters = false,
+            hardwareRegistry = com.areslib.hardware.HardwareRegistry(),
             register = {},
-            createAll = { physical ->
+            createAll = { physical, _ ->
                 requestedPhysicalAdapters = physical
                 emptyList()
             },

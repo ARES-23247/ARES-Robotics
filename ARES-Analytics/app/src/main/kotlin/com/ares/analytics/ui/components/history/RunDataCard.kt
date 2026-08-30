@@ -23,8 +23,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.ui.screens.RowDefinition
 import com.ares.analytics.ui.theme.*
 import java.time.Instant

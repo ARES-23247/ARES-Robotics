@@ -132,33 +132,10 @@ internal object RoutineKotlinRenderer {
     private fun nullableString(value: String?): String = value?.let(::stringLiteral) ?: "null"
 
     private fun doubleLiteral(value: Double): String {
-        require(value.isFinite()) { "Cannot render a non-finite Kotlin number" }
-        return value.toString()
+        return value.kotlinDoubleLiteral()
     }
 
-    private fun stringLiteral(value: String): String = buildString(value.length + 2) {
-        append('"')
-        value.forEach { character ->
-            when (character) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '$' -> append("\\$")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                '\b' -> append("\\b")
-                else -> if (
-                    character.code < 0x20 || character.code in 0xD800..0xDFFF ||
-                    character == '\u2028' || character == '\u2029'
-                ) {
-                    append("\\u${character.code.toString(16).padStart(4, '0')}")
-                } else {
-                    append(character)
-                }
-            }
-        }
-        append('"')
-    }
+    private fun stringLiteral(value: String): String = value.kotlinStringLiteral()
 
     private fun StringBuilder.appendIndent(level: Int, value: String) {
         repeat(level) { append("    ") }

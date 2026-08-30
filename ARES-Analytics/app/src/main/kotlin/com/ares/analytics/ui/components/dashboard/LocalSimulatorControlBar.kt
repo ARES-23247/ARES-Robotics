@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.RobotTopicContract
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.SIMULATION_SESSION_TAG
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder

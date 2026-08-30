@@ -39,7 +39,7 @@ import com.areslib.state.RobotFieldValidator
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.mergeSubsystemCapabilities
-import com.areslib.subsystem.validateSubsystemDocuments
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.superstructure.SuperstructureDocument
 import com.areslib.superstructure.SuperstructureIssueSeverity
 import com.areslib.superstructure.TransitionTriggerKind
@@ -274,7 +274,7 @@ object RobotProjectAssembler {
             }
         }
 
-        validateSubsystemDocuments(snapshot.subsystems).forEach {
+        SubsystemSchema.validateAll(snapshot.subsystems).forEach {
             issues.error(ProjectDocumentKind.SUBSYSTEM, null, it.path, "subsystem_validation", it.message)
         }
         snapshot.drivetrains.forEach { document ->

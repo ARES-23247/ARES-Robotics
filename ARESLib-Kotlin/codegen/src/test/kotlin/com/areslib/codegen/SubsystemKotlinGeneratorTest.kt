@@ -330,7 +330,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(io.contains("fun commandAutomaticRecovery(value: Double): Boolean"))
         assertTrue(physical.contains("override fun latchOutputFault()"))
         assertTrue(mock.contains("SimAppliedOutputRegistry.register"))
-        assertTrue(mock.contains("HardwareRegistry.registerTelemetryDevice(\"Subsystems/jam-safe-intake\", this)"))
+        assertTrue(!mock.contains("HardwareRegistry"))
         assertTrue(mock.contains("override var configurationHealthy: Boolean = true"))
     }
 
@@ -493,7 +493,7 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(definition.contains("val document = subsystem("))
         assertTrue(definition.contains("Student \\\"intake\\\"\\nwith notes"))
         assertTrue(io.contains("value.takeIf(Double::isFinite) ?: 0.0"))
-        assertTrue(io.contains("HardwareRegistry.registerTelemetryDevice(\"Subsystems/intake\", this)"))
+        assertTrue(!io.contains("HardwareRegistry"))
         assertTrue(io.contains("outputFaultLatched"))
         assertTrue(io.contains("recoverWithNeutral"))
         assertTrue(io.contains("configurationHealthy"))
@@ -528,6 +528,8 @@ class SubsystemKotlinGeneratorTest {
         assertTrue(registry.contains("current.copy(neutralRecoveryRequestSequence = nextSequence)"))
         assertTrue(registry.contains("(value as? Boolean)?.takeIf { it }"))
         assertTrue(registry.contains("GeneratedSubsystemRegistrySupport.install(this, \"intake\", false)"))
+        assertTrue(registry.contains("hardwareRegistry.registerTelemetryDevice(\"Subsystems/intake\", io)"))
+        assertTrue(registry.contains("fun createAll(hardwareMap: HardwareMap, hardwareRegistry: HardwareRegistry)"))
         assertTrue(registry.contains("import com.areslib.subsystem.GeneratedSubsystemRegistrySupport"))
     }
 

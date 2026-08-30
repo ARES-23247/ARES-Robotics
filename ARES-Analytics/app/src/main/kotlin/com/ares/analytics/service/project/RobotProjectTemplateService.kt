@@ -5,7 +5,7 @@ import com.ares.analytics.service.AppDataPaths
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.tuning.TuningProfileRepository
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.drivetrain.DrivetrainDocumentCodec
@@ -467,25 +467,25 @@ class RobotProjectTemplateService(
 
         val OFFICIAL_PROJECT_TEMPLATES: List<RobotProjectTemplate> = listOf(
             RobotProjectTemplate(
-                id = "ares-ftc-starter-11.1.0",
+                id = "ares-ftc-starter-12.0.0",
                 displayName = "ARES FTC Starter",
                 league = League.FTC,
-                aresVersion = "11.1.0",
+                aresVersion = "12.0.0",
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.3/ARES-FTC-Starter-11.1.0.zip",
-                archiveSha256 = "301ee048256bdbb8850e5e1f949cc732b10827314309c2b4762ec2f152091ad7",
-                bundledResourcePath = "/project-templates/ARES-FTC-Starter-11.1.0.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.0.0/ARES-FTC-Starter-12.0.0.zip",
+                archiveSha256 = "d4c76201d2b298188bd676567259cf2f7a2955a51b96d045d14a655e2796d563",
+                bundledResourcePath = "/project-templates/ARES-FTC-Starter-12.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
             RobotProjectTemplate(
-                id = "ares-frc-starter-11.1.0",
+                id = "ares-frc-starter-12.0.0",
                 displayName = "ARES FRC Starter",
                 league = League.FRC,
-                aresVersion = "11.1.0",
+                aresVersion = "12.0.0",
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v2.0.3/ARES-FRC-Starter-11.1.0.zip",
-                archiveSha256 = "1712101f89523a5ba75eca8026c301f5505f12ab85816516a357fe284026742b",
-                bundledResourcePath = "/project-templates/ARES-FRC-Starter-11.1.0.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.0.0/ARES-FRC-Starter-12.0.0.zip",
+                archiveSha256 = "41d51b41fbd4bfa8a9ca92b0153efb19fa5d63a184c46d3aa3ebec499730ef5c",
+                bundledResourcePath = "/project-templates/ARES-FRC-Starter-12.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
         )

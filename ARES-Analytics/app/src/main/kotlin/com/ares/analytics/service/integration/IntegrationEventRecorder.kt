@@ -1,9 +1,9 @@
 package com.ares.analytics.service.integration
 
 import com.ares.analytics.service.ImportReport
-import com.ares.analytics.shared.AlertRecord
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.shared.models.AnalysisReady
 import com.ares.analytics.shared.models.CloudUploadCommitted

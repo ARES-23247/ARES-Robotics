@@ -1,13 +1,14 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.service.ProcessManagerService
+import com.ares.analytics.service.ProjectBuildService
+import com.ares.analytics.service.RobotDeploymentService
+import com.ares.analytics.service.SimulatorProcessService
 import com.ares.analytics.service.drivebase.DrivebaseDocument
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
-import com.ares.analytics.service.tuning.RobotTuningProfile
 import com.ares.analytics.service.tuning.TuningProfileChange
 import com.ares.analytics.service.tuning.TuningProfileRepository
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.service.project.persistence.ProjectMutationTransaction
@@ -31,6 +32,7 @@ import com.areslib.subsystem.SubsystemDocument
 import com.areslib.superstructure.SuperstructureDocument
 import com.areslib.state.RobotFieldConfig
 import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningProfileDocument
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.locks.ReentrantLock
@@ -356,13 +358,13 @@ class ProjectSession(
 
     fun promoteTuningProfile(
         expectedRevision: ProjectSessionRevision,
-        current: RobotTuningProfile,
+        current: TuningProfileDocument,
         expectedContentHash: String,
         declarations: List<TuningParameterDeclaration>,
         changes: List<TuningProfileChange>,
         reviewedBy: String,
         reviewSummary: String,
-    ): ProjectSessionMutationResult<RobotTuningProfile> = mutate(expectedRevision, "Promoting tuning profile") { snapshot ->
+    ): ProjectSessionMutationResult<TuningProfileDocument> = mutate(expectedRevision, "Promoting tuning profile") { snapshot ->
         tuningRepository.promote(
             snapshot.selection.projectRoot,
             current,
@@ -621,18 +623,20 @@ interface ProjectProcessGateway {
     fun deploy(projectPath: String, league: League)
 }
 
-class ProcessManagerProjectGateway(
-    private val processManager: ProcessManagerService,
+class StudioProjectProcessGateway(
+    private val projectBuild: ProjectBuildService,
+    private val simulator: SimulatorProcessService,
+    private val deployment: RobotDeploymentService,
 ) : ProjectProcessGateway {
     override fun generate(projectPath: String, league: League) =
-        processManager.generateAresProject(projectPath, league)
+        projectBuild.generateAresProject(projectPath, league)
 
     override fun verifyAndBuild(projectPath: String, league: League) =
-        processManager.runBuild(projectPath, league)
+        projectBuild.runBuild(projectPath, league)
 
     override fun simulate(projectPath: String, product: SimulationProductId, simulatorCommand: String?) =
-        processManager.runSimulation(projectPath, product, simulatorCommand)
+        simulator.start(projectPath, product, simulatorCommand)
 
     override fun deploy(projectPath: String, league: League) =
-        processManager.deployToRobot(projectPath, league)
+        deployment.deploy(projectPath, league)
 }

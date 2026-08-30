@@ -1,7 +1,7 @@
 package com.ares.analytics.ui.help
 
 import com.ares.analytics.service.AresGenerationPhase
-import com.ares.analytics.shared.Trajectory
+import com.ares.analytics.shared.models.Trajectory
 import com.ares.analytics.viewmodel.PathPlannerState
 import com.ares.analytics.viewmodel.superstructure.SuperstructurePreviewSnapshot
 import com.ares.analytics.viewmodel.superstructure.SuperstructureSaveReview
@@ -174,6 +174,9 @@ class ProjectMissionEvidenceTest {
                 robotWidthMeters = 0.45,
                 fieldLengthMeters = 3.66,
                 fieldWidthMeters = 3.66,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             ),
             generationPhase = AresGenerationPhase.SUCCEEDED,
             routine = routine,
@@ -218,6 +221,9 @@ class ProjectMissionEvidenceTest {
                 robotWidthMeters = 0.45,
                 fieldLengthMeters = 3.66,
                 fieldWidthMeters = 3.66,
+                runtimeOptions = com.areslib.project.AresRuntimeOptionsDocument(
+                    ftc = com.areslib.project.AresFtcRuntimeOptionsDocument(),
+                ),
             ),
             generationPhase = AresGenerationPhase.SUCCEEDED,
             routine = routine,

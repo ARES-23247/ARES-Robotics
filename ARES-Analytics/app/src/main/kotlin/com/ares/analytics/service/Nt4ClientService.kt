@@ -1,6 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.service.nt4.Nt4ConnectionLifecycle
 import com.ares.analytics.service.nt4.Nt4InboundRouter
 import com.ares.analytics.service.nt4.Nt4OutboundPublisher

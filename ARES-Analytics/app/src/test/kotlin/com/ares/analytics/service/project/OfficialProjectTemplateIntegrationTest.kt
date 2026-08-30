@@ -1,9 +1,12 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.versioncontrol.DefaultGitHubProjectApi
+import com.ares.analytics.service.versioncontrol.GitHubAuthenticationService
 import com.ares.analytics.service.versioncontrol.ProjectBackupCredentialStore
 import com.ares.analytics.service.versioncontrol.ProjectVersionControlService
+import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
+import com.ares.analytics.service.versioncontrol.ProjectGitHubCredentialRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -106,14 +109,13 @@ class OfficialProjectTemplateIntegrationTest {
             assertTrue(requireNotNull(checkpoint).changes.isEmpty())
             val archive = File(output, "${league.name.lowercase()}-portable.zip")
             if (archive.exists()) archive.delete()
-            history.exportProjectArchive(result.destination.path, archive.path)
+            ProjectArchiveExporter().export(result.destination.path, archive.path)
             ZipFile(archive).use { zip ->
                 val names = zip.entries().asSequence().map { it.name }.toSet()
                 assertTrue(".ares/acceptance-checkpoint.txt" in names)
                 assertTrue(names.none { it.startsWith(".git/") || it.startsWith("build/") || it.contains("/build/") })
             }
         }
-        history.closeAndJoin()
     }
 
     private fun validateGeneratedProject(
@@ -171,17 +173,7 @@ class OfficialProjectTemplateIntegrationTest {
 
     private companion object {
         fun localHistoryService() = ProjectVersionControlService(
-            githubClientId = "",
-            githubAppSlug = "",
-            credentialStore = object : ProjectBackupCredentialStore {
-                override fun read(): ByteArray? = null
-                override fun write(bytes: ByteArray) = Unit
-                override fun delete(): Boolean = true
-                override val protectionDescription: String = "acceptance fixture"
-            },
-            githubApi = DefaultGitHubProjectApi(),
-            browserLauncher = {},
-            pollDelay = {},
+            onBackupRelevantChange = {},
         )
 
         fun validationRepositoryUri(value: String): String {

@@ -16,8 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.tuning.TuningParameterDeclaration
 import com.ares.analytics.service.tuning.TuningTransport
+import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.ares.analytics.ui.components.core.AnalyticsCard
 import com.ares.analytics.ui.components.core.CardHeader
@@ -55,7 +55,7 @@ fun TuningCard(
 @Composable
 private fun LiveDeclaredValue(nt4: Nt4ClientService, declaration: TuningParameterDeclaration) {
     val currentTopic = TuningTransport.current(declaration)
-    val frame by nt4.uiTelemetryFlow.filter { it.key == currentTopic }.map { it as com.ares.analytics.shared.TelemetryFrame? }
+    val frame by nt4.uiTelemetryFlow.filter { it.key == currentTopic }.map { it as com.ares.analytics.shared.models.TelemetryFrame? }
         .onStart { emit(nt4.latestValues[currentTopic]) }.collectAsState(initial = null)
     val display = when (declaration.type) {
         TuningParameterType.DOUBLE -> frame?.value?.takeIf { it.isFinite() }?.let(::format)

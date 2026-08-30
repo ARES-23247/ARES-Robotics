@@ -2,12 +2,16 @@ package com.ares.analytics.viewmodel.robotstudio
 
 import com.ares.analytics.service.RobotProjectReadinessEvidence
 import com.ares.analytics.service.RobotProjectReadinessService
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Read-only project orchestrator. Specialized builders remain the sole writers of canonical files. */
@@ -17,6 +21,10 @@ class RobotStudioViewModel(
 ) {
     private val _state = MutableStateFlow(RobotStudioState())
     val state: StateFlow<RobotStudioState> = _state.asStateFlow()
+    val shellState: StateFlow<RobotStudioShellState> = state
+        .map(RobotStudioState::toShellState)
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.Eagerly, RobotStudioState().toShellState())
 
     private var config: WorkspaceConfig? = null
     private var evidence: RobotProjectReadinessEvidence? = null

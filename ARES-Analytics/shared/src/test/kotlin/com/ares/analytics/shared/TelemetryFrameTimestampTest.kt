@@ -1,5 +1,6 @@
 package com.ares.analytics.shared
 
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import com.ares.analytics.shared.models.TelemetryFrame
 import kotlin.test.Test

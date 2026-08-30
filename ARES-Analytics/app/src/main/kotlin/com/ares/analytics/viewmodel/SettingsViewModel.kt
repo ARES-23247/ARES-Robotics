@@ -2,7 +2,7 @@ package com.ares.analytics.viewmodel
 
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.EnvironmentService
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.WorkspaceConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

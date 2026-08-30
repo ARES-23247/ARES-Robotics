@@ -1,7 +1,7 @@
 package com.ares.analytics.gateway.routes
 
-import com.ares.analytics.shared.ForensicsRequest
-import com.ares.analytics.shared.ForensicsResponse
+import com.ares.analytics.shared.models.ForensicsRequest
+import com.ares.analytics.shared.models.ForensicsResponse
 import com.google.genai.Client
 import com.google.genai.types.HttpOptions
 import io.ktor.http.*

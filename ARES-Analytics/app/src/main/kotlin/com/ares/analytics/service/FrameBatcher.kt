@@ -1,6 +1,6 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 
 /**
  * High-performance bounded channel buffer for accumulating [TelemetryFrame] objects during bulk log imports.

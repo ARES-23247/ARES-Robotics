@@ -10,6 +10,7 @@ import com.areslib.subsystem.VisionTracker
 import com.areslib.telemetry.*
 import java.util.function.BooleanSupplier
 import java.util.function.DoubleSupplier
+import com.areslib.hardware.HardwareRegistry
 
 /**
  * Abstract base container class for all FRC robots built on ARESLib.
@@ -38,6 +39,7 @@ abstract class FrcBaseRobot(
 
     initialState: RobotState = RobotState(),
     reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer,
+    hardwareRegistry: HardwareRegistry = HardwareRegistry(),
     baseTelemetry: ITelemetry = FRCTelemetry(),
     telemetryManagerFactory: (com.areslib.Store, ITelemetry) -> FrcTelemetryManager = { store, telemetry ->
         FrcTelemetryManager(telemetry, store)
@@ -61,7 +63,7 @@ abstract class FrcBaseRobot(
             "Active"
         }
     }
-) : AresRobot(initialState, reducer) {
+) : AresRobot(initialState, reducer, hardwareRegistry) {
 
     /**
      * The single FRC telemetry manager owned by this robot instance. Subclasses provide their
@@ -71,7 +73,7 @@ abstract class FrcBaseRobot(
     val telemetryManager: FrcTelemetryManager = telemetryManagerFactory(store, baseTelemetry)
 
     /** FRC power/brownout manager. */
-    open val powerManager: FrcPowerManager = FrcPowerManager()
+    open val powerManager: FrcPowerManager = FrcPowerManager(hardwareRegistry)
 
     /** Optional vision tracker for AprilTag pose correction. */
     open var visionTracker: VisionTracker? = null
@@ -127,7 +129,7 @@ abstract class FrcBaseRobot(
             throw failure
         }
         try {
-            com.areslib.hardware.HardwareRegistry.refreshAll()
+            hardwareRegistry.refreshAll()
             val isEnabled = isEnabledProvider()
             val mode = robotModeProvider()
 
@@ -171,7 +173,7 @@ abstract class FrcBaseRobot(
             telemetry.putNumber("Robot/CurrentPowerScale", powerManager.currentPowerScale)
             telemetry.putString("Robot/CurrentBudgetState", powerManager.currentBudgetState.name)
             telemetry.putBoolean("Robot/RioBrownedOut", powerManager.isBrownedOut)
-            com.areslib.hardware.HardwareRegistry.publishAll(telemetry)
+            hardwareRegistry.publishAll(telemetry)
             publishRobotTelemetry(timestamp)
             telemetryManager.dataLoggingTelemetry.update()
 
@@ -222,7 +224,7 @@ abstract class FrcBaseRobot(
      */
     fun publishHardwareTopology(robotId: String) {
         if (topologyPublished) return
-        val json = com.areslib.hardware.HardwareRegistry.getTopologyJson(robotId)
+        val json = hardwareRegistry.getTopologyJson(robotId)
         telemetryManager.publisher.publishTopology(json, flush = false)
         topologyPublished = true
     }
@@ -268,7 +270,7 @@ abstract class FrcBaseRobot(
             { safeHardware() },
             { telemetryManager.close() },
             { closeSubsystems() },
-            { com.areslib.hardware.HardwareRegistry.closeAll() }
+            { hardwareRegistry.closeAll() }
         )
     }
 

@@ -3,13 +3,15 @@ package com.ares.analytics.service.tuning
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.tuning.*
-import com.google.gson.GsonBuilder
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 
-data class TuningWorkspaceDocuments(val catalog: List<TuningParameterDeclaration>, val profiles: List<RobotTuningProfile>)
+data class TuningWorkspaceDocuments(
+    val catalog: List<TuningParameterDeclaration>,
+    val profiles: List<TuningProfileDocument>,
+)
 
 data class ReviewedTuningHistory(
     val profileUid: String,
@@ -21,21 +23,21 @@ data class ReviewedTuningHistory(
 )
 
 class TuningProfileRepository {
-    private val gson = GsonBuilder().create()
     fun evidenceErrors(projectPath: String, changes: List<TuningProfileChange>): List<String> =
         runCatching { validateEvidence(projectPath, changes) }.exceptionOrNull()?.message?.let(::listOf).orEmpty()
 
-    fun load(projectPath: String): Result<TuningWorkspaceDocuments> = loadInternal(projectPath, requireSingleProject = true)
+    fun load(projectPath: String): Result<TuningWorkspaceDocuments> =
+        loadInternal(projectPath, allowUnknownAssignments = false)
 
     /**
-     * Reads otherwise-valid checked-in tuning documents while allowing a legacy project UID
-     * mismatch to be repaired by a structured, history-backed authoring transaction.
-     * Normal consumers must use [load], which continues to fail closed.
+     * Allows one reviewed drivebase edit to remove or replace declarations and their assignments
+     * atomically. Project/profile identity remains strict; only assignment references made obsolete
+     * by the current edit are tolerated until the transaction writes the new documents.
      */
-    internal fun loadForIdentityRepair(projectPath: String): Result<TuningWorkspaceDocuments> =
-        loadInternal(projectPath, requireSingleProject = false)
+    internal fun loadForDrivebaseEdit(projectPath: String): Result<TuningWorkspaceDocuments> =
+        loadInternal(projectPath, allowUnknownAssignments = true)
 
-    private fun loadInternal(projectPath: String, requireSingleProject: Boolean): Result<TuningWorkspaceDocuments> = runCatching {
+    private fun loadInternal(projectPath: String, allowUnknownAssignments: Boolean): Result<TuningWorkspaceDocuments> = runCatching {
         val root = File(projectPath, ".ares")
         val drivetrainDeclarations = File(root, "drivetrains").listFiles { file -> file.extension == "aresdrivetrain" }
             ?.flatMap { DrivetrainDocumentCodec.decode(it.readText()).parameters }.orEmpty()
@@ -48,8 +50,8 @@ class TuningProfileRepository {
         require(declarations.map { it.key }.distinct().size == declarations.size) { "Tuning parameter keys must be unique across the project." }
         val profiles = File(root, "tuning").listFiles { file -> file.extension == "arestuning" }
             ?.map { file ->
-                if (requireSingleProject) TuningProfileDocumentCodec.decode(file.readText(), declarations)
-                else decodeForIdentityRepair(file.readText(), declarations)
+                if (allowUnknownAssignments) decodeForDrivebaseEdit(file.readText(), declarations)
+                else TuningProfileDocumentCodec.decode(file.readText(), declarations)
             }
             ?.sortedBy { it.displayName }.orEmpty()
         require(profiles.map { it.uid }.distinct().size == profiles.size) { "Tuning profile UIDs must be unique across the project." }
@@ -57,22 +59,23 @@ class TuningProfileRepository {
         require(profiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
             "Only checked-in canonical profiles belong in .ares/tuning; local experiments belong in .ares/local/tuning."
         }
-        if (requireSingleProject) {
-            require(profiles.map { it.projectUid }.distinct().size <= 1) { "Every tuning profile must target the same robot project." }
+        require(profiles.map { it.projectUid }.distinct().size <= 1) {
+            "Every tuning profile must target the same robot project."
         }
-        val resolvableProfiles = if (requireSingleProject) profiles else profiles.map { profile ->
+        val resolvableProfiles = if (allowUnknownAssignments) profiles.map { profile ->
             profile.copy(values = profile.values.filter { assignment -> declarations.any { it.uid == assignment.parameterUid } })
-        }
+        } else profiles
         resolveTuningProfiles(resolvableProfiles, declarations)
         TuningWorkspaceDocuments(declarations, profiles)
     }
 
-    private fun decodeForIdentityRepair(
+    private fun decodeForDrivebaseEdit(
         text: String,
         declarations: Collection<TuningParameterDeclaration>,
     ): TuningProfileDocument {
-        val profile = runCatching { gson.fromJson(text, TuningProfileDocument::class.java) }
-            .getOrElse { throw IllegalArgumentException("Invalid tuning profile: ${it.message}", it) }
+        val profile = runCatching {
+            com.google.gson.GsonBuilder().create().fromJson(text, TuningProfileDocument::class.java)
+        }.getOrElse { throw IllegalArgumentException("Invalid tuning profile: ${it.message}", it) }
         val blockingIssues = validateTuningProfileDocument(profile, declarations).filterNot { issue ->
             issue.path.matches(Regex("values\\[\\d+].parameterUid")) && issue.message.startsWith("Unknown parameter '")
         }
@@ -82,13 +85,13 @@ class TuningProfileRepository {
 
     fun promote(
         projectPath: String,
-        current: RobotTuningProfile,
+        current: TuningProfileDocument,
         expectedContentHash: String,
         declarations: List<TuningParameterDeclaration>,
         changes: List<TuningProfileChange>,
         reviewedBy: String,
         reviewSummary: String
-    ): RobotTuningProfile {
+    ): TuningProfileDocument {
         require(changes.isNotEmpty()) { "Review at least one change before promotion." }
         require(reviewedBy.isNotBlank() && reviewSummary.isNotBlank()) { "Reviewer and review summary are required." }
         validateEvidence(projectPath, changes)
@@ -143,7 +146,7 @@ class TuningProfileRepository {
         return promoted
     }
 
-    fun reviewToken(profile: RobotTuningProfile, declarations: List<TuningParameterDeclaration>, changes: List<TuningProfileChange>, reviewedBy: String, reviewSummary: String): String {
+    fun reviewToken(profile: TuningProfileDocument, declarations: List<TuningParameterDeclaration>, changes: List<TuningProfileChange>, reviewedBy: String, reviewSummary: String): String {
         val hash = TuningProfileDocumentCodec.contentHash(profile, declarations)
         val canonical = "$hash|$reviewedBy|$reviewSummary|" + changes.joinToString("|") {
             "${it.parameterUid}:${it.before?.displayValue()}->${it.after.displayValue()}:${it.provenance.source}:${it.provenance.note}:${it.provenance.evidencePath}:${it.provenance.evidenceSha256}"
@@ -153,7 +156,7 @@ class TuningProfileRepository {
 
     private fun profileFile(
         projectPath: String,
-        profile: RobotTuningProfile,
+        profile: TuningProfileDocument,
         declarations: List<TuningParameterDeclaration>
     ): File {
         val directory = File(projectPath, ".ares/tuning")

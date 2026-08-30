@@ -3,7 +3,7 @@ package com.areslib.project
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import java.security.MessageDigest
+import com.areslib.util.sha256Hex
 
 const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 4
 
@@ -79,9 +79,11 @@ data class AresProjectMetadataDocument(
     val runtimeOptions: AresRuntimeOptionsDocument = AresRuntimeOptionsDocument(),
 )
 
-/** Resolves the explicit FTC policy, defaulting legacy/in-memory documents to the safe SDK path. */
-fun AresProjectMetadataDocument.resolvedFtcRuntimeOptions(): AresFtcRuntimeOptionsDocument =
-    runtimeOptions.ftc ?: AresFtcRuntimeOptionsDocument()
+/** Returns the required FTC runtime policy from a current FTC project document. */
+fun AresProjectMetadataDocument.requireFtcRuntimeOptions(): AresFtcRuntimeOptionsDocument {
+    require(league == AresLeague.FTC) { "FTC runtime options are only valid for FTC projects" }
+    return requireNotNull(runtimeOptions.ftc) { "FTC projects must declare runtimeOptions.ftc" }
+}
 
 fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<String> = buildList {
     if (document.schemaVersion != ARES_PROJECT_METADATA_SCHEMA_VERSION) {
@@ -127,6 +129,9 @@ fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<Str
     if (document.league == AresLeague.FRC && document.runtimeOptions.ftc != null) {
         add("FRC projects cannot declare FTC runtime options")
     }
+    if (document.league == AresLeague.FTC && document.runtimeOptions.ftc == null) {
+        add("FTC projects must declare runtimeOptions.ftc")
+    }
 }
 
 object AresProjectMetadataCodec {
@@ -153,22 +158,15 @@ object AresProjectMetadataCodec {
         return document
     }
 
-    fun contentHash(document: AresProjectMetadataDocument): String = MessageDigest.getInstance("SHA-256")
-        .digest(encode(document).toByteArray(Charsets.UTF_8))
-        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    fun contentHash(document: AresProjectMetadataDocument): String = sha256Hex(encode(document))
 
     private fun requireValid(document: AresProjectMetadataDocument) {
         val issues = validateAresProjectMetadata(document)
         require(issues.isEmpty()) { issues.joinToString("; ") }
     }
 
-    private fun normalize(document: AresProjectMetadataDocument): AresProjectMetadataDocument = when (document.league) {
-        AresLeague.FTC -> document.copy(
-            schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,
-            runtimeOptions = AresRuntimeOptionsDocument(ftc = document.resolvedFtcRuntimeOptions()),
-        )
-        AresLeague.FRC -> document.copy(schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION)
-    }
+    private fun normalize(document: AresProjectMetadataDocument): AresProjectMetadataDocument =
+        document.copy(schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION)
 
     private fun decodeCurrent(root: JsonObject): AresProjectMetadataDocument {
         val league = root.requiredEnum<AresLeague>("league")

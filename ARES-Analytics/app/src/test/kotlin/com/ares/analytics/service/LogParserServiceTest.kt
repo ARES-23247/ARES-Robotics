@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.shared.RobotActionRecord
-import com.ares.analytics.shared.Session
+import com.ares.analytics.shared.models.RobotActionRecord
+import com.ares.analytics.shared.models.Session
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.delay

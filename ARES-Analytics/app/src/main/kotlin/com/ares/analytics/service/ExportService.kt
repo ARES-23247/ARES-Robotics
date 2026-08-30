@@ -3,7 +3,7 @@ package com.ares.analytics.service
 import com.ares.analytics.service.db.TelemetryExportCursor
 import com.ares.analytics.service.db.TelemetryExportPreflight
 import com.ares.analytics.service.db.TelemetryExportValueType
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

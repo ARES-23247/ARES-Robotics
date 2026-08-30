@@ -74,6 +74,31 @@ class AresKotlinProjectGeneratorTest {
     }
 
     @Test
+    fun `generated FRC project does not require or emit FTC runtime choices`() {
+        val result = AresKotlinProjectGenerator.generate(
+            KotlinProjectCodegenRequest(
+                packageName = "org.example.generated",
+                catalog = catalog(actions = emptyList()),
+                routines = emptyList(),
+                projectMetadata = AresProjectMetadataDocument(
+                    projectId = "test-project",
+                    identity = AresProjectIdentityDocument("99998", "2026", "test-frc-robot", "Test FRC Robot"),
+                    league = AresLeague.FRC,
+                    coordinateConvention = AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW,
+                    robotLengthMeters = 0.75,
+                    robotWidthMeters = 0.65,
+                    fieldLengthMeters = 16.54175,
+                    fieldWidthMeters = 8.21055,
+                ),
+            ),
+        )
+
+        assertTrue("PROJECT_LEAGUE: String = \"FRC\"" in result.source)
+        assertFalse("object RuntimeOptions" in result.source)
+        assertFalse("FTC_HUB_COMMAND_TRANSPORT" in result.source)
+    }
+
+    @Test
     fun `golden registry is typed readable and stable`() {
         val result = generate(
             catalog = catalog(

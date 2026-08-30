@@ -3,9 +3,7 @@ package com.ares.analytics.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
@@ -16,33 +14,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
 import com.ares.analytics.di.ServiceRegistry
-import com.ares.analytics.service.AutoImportService
 import com.ares.analytics.service.BuildExecutionPhase
-import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.service.UpdateCheckerService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
 import com.ares.analytics.ui.components.CommandPalette
 import com.ares.analytics.ui.components.LearningCoachDrawer
-import com.ares.analytics.ui.help.toAcademySubsystemSnapshot
-import com.ares.analytics.ui.help.toAcademyControlsSnapshot
-import com.ares.analytics.ui.help.toAcademyTuningSnapshot
-import com.ares.analytics.ui.help.toAcademySuperstructureSnapshot
-import com.ares.analytics.ui.help.toAcademyAutonomousSnapshot
-import com.ares.analytics.ui.help.toAcademyRunAnalysisSnapshot
-import com.ares.analytics.ui.help.toAcademyGraduationSnapshot
 import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.QuickNavigationMenu
 import com.ares.analytics.ui.components.SectionNavigationBar
 import com.ares.analytics.ui.components.Sidebar
+import com.ares.analytics.ui.components.WorkspaceSelector
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
 import com.ares.analytics.ui.input.DesktopDriveKeyDispatcher
@@ -51,11 +38,14 @@ import com.ares.analytics.ui.components.core.OneClickDeployDialog
 import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
+import com.ares.analytics.ui.components.dashboard.DashboardAnalysisWidgetServices
+import com.ares.analytics.ui.components.dashboard.DashboardLiveWidgetServices
+import com.ares.analytics.ui.components.dashboard.DashboardReplayWidgetServices
+import com.ares.analytics.ui.components.dashboard.DashboardWidgetServices
 import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.ui.components.dashboard.localSimulatorLaunchRequest
 import com.ares.analytics.ui.components.terminal.TerminalDrawer
-import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
 import com.ares.analytics.ui.help.LearningCatalog
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.*
@@ -66,12 +56,10 @@ import com.ares.analytics.viewmodel.robotstudio.RobotStudioRuntimeEvidence
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisViewModel
 import com.ares.analytics.viewmodel.tuning.GuidedExperimentProposal
-import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentIntent
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModel
 import kotlinx.coroutines.launch
-import java.io.File
 
 /**
  * Root UI frame container and screen routing shell for the ARES Robotics Studio desktop application.
@@ -84,7 +72,7 @@ import java.io.File
  * @param onUpdateConfig Callback for saving modified workspace settings.
  *
  * @see NavigationTarget
- * @see com.ares.analytics.service.ProcessManagerService
+ * @see com.ares.analytics.service.ProjectBuildService
  */
 @Composable
 fun MainScreen(services: ServiceRegistry) {
@@ -107,8 +95,6 @@ fun MainScreen(services: ServiceRegistry) {
     val isTerminalOpen = mainState.isTerminalOpen
     val showUpdateBanner = mainState.showUpdateBanner
     val updateState by services.updateCheckerService.updateState.collectAsState()
-    val gamepad1State by services.gamepadService.gamepad1State.collectAsState()
-    val gamepad2State by services.gamepadService.gamepad2State.collectAsState()
     var commandPaletteOpen by remember { mutableStateOf(false) }
     var workspacePendingDeletion by remember { mutableStateOf<Pair<String, String>?>(null) }
     var requestedLessonId by remember { mutableStateOf<String?>(null) }
@@ -293,12 +279,11 @@ fun MainScreen(services: ServiceRegistry) {
             projectGenerator = services.projectGenerator,
             checkpointRecorder = services.projectVersionControlService,
             designAssistant = com.ares.analytics.service.ControlsDesignAssistant { current, context, request ->
-                services.syncEngineService.requestControlsDesignProposal(current, context, request)
+                services.robotDesignAssistantService.requestControlsDesignProposal(current, context, request)
             },
             projectSession = services.projectSession,
         )
     }
-    val controlsEditorState by controlsEditorViewModel.state.collectAsState()
     DisposableEffect(controlsEditorViewModel) {
         onDispose { controlsEditorViewModel.close() }
     }
@@ -321,7 +306,7 @@ fun MainScreen(services: ServiceRegistry) {
             projectGenerator = services.projectGenerator,
             checkpointRecorder = services.projectVersionControlService,
             designAssistant = com.ares.analytics.service.SubsystemDesignAssistant { current, request ->
-                services.syncEngineService.requestSubsystemDesignProposal(current, request)
+                services.robotDesignAssistantService.requestSubsystemDesignProposal(current, request)
             },
             projectSession = services.projectSession,
         )
@@ -329,8 +314,6 @@ fun MainScreen(services: ServiceRegistry) {
     DisposableEffect(subsystemGeneratorViewModel) {
         onDispose { subsystemGeneratorViewModel.close() }
     }
-    val tuningState by tuningViewModel.state.collectAsState()
-    val subsystemGeneratorState by subsystemGeneratorViewModel.state.collectAsState()
     val drivebaseBuilderViewModel = remember(currentConfig.projectPath, currentConfig.robotId, currentConfig.league) {
         DrivebaseBuilderViewModel(
             projectPath = currentConfig.projectPath,
@@ -341,7 +324,7 @@ fun MainScreen(services: ServiceRegistry) {
             checkpointRecorder = services.projectVersionControlService,
             projectSession = services.projectSession,
             designAssistant = com.ares.analytics.service.DrivebaseDesignAssistant { current, request ->
-                services.syncEngineService.requestDrivebaseDesignProposal(current, request)
+                services.robotDesignAssistantService.requestDrivebaseDesignProposal(current, request)
             },
         )
     }
@@ -358,7 +341,15 @@ fun MainScreen(services: ServiceRegistry) {
         )
     }
     val projectBackupViewModel = remember(currentConfig.projectPath) {
-        ProjectBackupViewModel(services.projectVersionControlService, scope)
+        ProjectBackupViewModel(
+            service = services.projectVersionControlService,
+            remoteBackup = services.projectRemoteBackupService,
+            recovery = services.projectRecoveryService,
+            githubAuthentication = services.githubAuthenticationService,
+            autoSync = services.projectBackupAutoSyncService,
+            archiveExporter = services.projectArchiveExporter,
+            scope = scope,
+        )
     }
     val integrationCenterViewModel = remember {
         IntegrationCenterViewModel(services.integrationCenterService, scope)
@@ -411,31 +402,30 @@ fun MainScreen(services: ServiceRegistry) {
                 )
             },
             removeProposal = { key ->
-                services.processManagerService.killActiveSim()
+                services.simulatorProcessService.stop()
                 tuningViewModel.onIntent(TuningIntent.RemoveProposal(key))
             },
         )
     }
     // This ViewModel owns no independent scope or hardware/service resource. Its jobs run in the
     // screen's Compose scope and are cancelled automatically when MainScreen leaves composition.
-    val dashboardState by dashboardViewModel.state.collectAsState()
+    val dashboardShellState by dashboardViewModel.shellState.collectAsState()
     var dashboardMissionSnapshot by remember(currentConfig.id) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
     }
-    val superstructureStudioState by superstructureStudioViewModel.state.collectAsState()
-    val pathPlannerState by pathPlannerViewModel.state.collectAsState()
-    val guidedRunAnalysisState by guidedRunAnalysisViewModel.state.collectAsState()
-    val robotStudioState by robotStudioViewModel.state.collectAsState()
-    val primarySessionId = dashboardState.primarySessionId
-    val compareSessionId = dashboardState.compareSessionId
+    val robotStudioShellState by robotStudioViewModel.shellState.collectAsState()
+    val primarySessionId = dashboardShellState.primarySessionId
+    val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
-    val adbConnected by services.processManagerService.adbConnected.collectAsState()
-    val isSimRunning by services.processManagerService.isSimRunning.collectAsState()
-    val activeSimulationProjectPath by services.processManagerService.activeSimulationProjectPath.collectAsState()
-    val activeSimulationLeague by services.processManagerService.activeSimulationLeague.collectAsState()
-    val isBuildRunning by services.processManagerService.isBuildRunning.collectAsState()
-    val buildExecutionState by services.processManagerService.buildExecutionState.collectAsState()
-    val deployExecutionState by services.processManagerService.deployState.collectAsState()
+    val processState by services.projectBuildService.processState.collectAsState()
+    val deployExecutionState by services.robotDeploymentService.state.collectAsState()
+    val adbConnected by services.adbService.connected.collectAsState()
+    val simulatorState by services.simulatorProcessService.state.collectAsState()
+    val isSimRunning = simulatorState.running
+    val activeSimulationProjectPath = simulatorState.projectPath
+    val activeSimulationLeague = simulatorState.league
+    val isBuildRunning = processState.buildRunning
+    val buildExecutionState = processState.buildExecution
     var deployDialogOpen by remember { mutableStateOf(false) }
     var deployAwaitingConfirmation by remember { mutableStateOf(false) }
     var hardwareStudioInitialTab by remember { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }
@@ -466,12 +456,12 @@ fun MainScreen(services: ServiceRegistry) {
         league = currentConfig.league,
     )
     val unmanagedSimulatorOnline = isLocalSimOnline && !isSimRunning
-    val simulationProduct = robotStudioState.simulationProduct
-    val simulatorLaunchEnabled = robotStudioState.canRunSimulation && simulationProduct != null && !unmanagedSimulatorOnline
+    val simulationProduct = robotStudioShellState.simulationProduct
+    val simulatorLaunchEnabled = robotStudioShellState.canRunSimulation && simulationProduct != null && !unmanagedSimulatorOnline
     var pendingSimulatorLaunch by remember(currentConfig.id) { mutableStateOf(false) }
     val simulatorLaunchRequest = localSimulatorLaunchRequest(
         canRunSimulation = simulatorLaunchEnabled,
-        canRunBuild = robotStudioState.canRunBuild,
+        canRunBuild = robotStudioShellState.canRunBuild,
         isBuildRunning = isBuildRunning,
         isSimulatorRunning = isSimRunning,
         isSimulatorOnline = isLocalSimOnline,
@@ -482,7 +472,7 @@ fun MainScreen(services: ServiceRegistry) {
     val simulatorLaunchDisabledReason = if (unmanagedSimulatorOnline) {
         "A simulator is already online on port 5810. Use it from Dashboard, or stop it from the process that launched it."
     } else {
-        robotStudioState.simulationDisabledReason
+        robotStudioShellState.simulationDisabledReason
     }
     val executeProjectCommand: (ProjectExecutionCommand) -> Boolean = { command ->
         val decision = services.projectExecutionCoordinator.execute(currentConfig, command)
@@ -572,25 +562,130 @@ fun MainScreen(services: ServiceRegistry) {
             robotStudioViewModel.refresh()
         }
     }
-    val academyRuntime = AcademyRuntimeSnapshot(
-        isAvailable = true,
+    val academyFeatureScope = remember(
+        subsystemGeneratorViewModel,
+        controlsEditorViewModel,
+        tuningViewModel,
+        superstructureStudioViewModel,
+        pathPlannerViewModel,
+        guidedRunAnalysisViewModel,
+        robotStudioViewModel,
+    ) {
+        AcademyRuntimeFeatureScope(
+            subsystem = subsystemGeneratorViewModel,
+            controls = controlsEditorViewModel,
+            tuning = tuningViewModel,
+            superstructure = superstructureStudioViewModel,
+            autonomous = pathPlannerViewModel,
+            runAnalysis = guidedRunAnalysisViewModel,
+            graduation = robotStudioViewModel,
+        )
+    }
+    val dashboardFeatureServices = remember(services) {
+        DashboardFeatureServices(
+            widgets = DashboardWidgetServices(
+                live = DashboardLiveWidgetServices(
+                    nt4ClientService = services.nt4ClientService,
+                    alertEngineService = services.alertEngineService,
+                    dashboardHealthService = services.dashboardHealthService,
+                    keyboardDriveState = services.keyboardDriveState,
+                    gamepadService = services.gamepadService,
+                ),
+                analysis = DashboardAnalysisWidgetServices(
+                    databaseService = services.databaseService,
+                    advancedAnalyticsService = services.advancedAnalyticsService,
+                    aiDiagnosticsService = services.aiDiagnosticsService,
+                    driverAnalysisService = services.driverAnalysisService,
+                    diagnosticCoachService = services.diagnosticCoachService,
+                ),
+                replay = DashboardReplayWidgetServices(
+                    replayEngineService = services.replayEngineService,
+                ),
+            ),
+            simulator = services.simulatorProcessService,
+            tuningProfiles = services.tuningProfileRepository,
+        )
+    }
+    val workspaceRouteFeatureScope = remember(
+        dashboardViewModel,
+        pathPlannerViewModel,
+        fieldEditorViewModel,
+        cloudViewModel,
+        importCenterViewModel,
+        guidedRunAnalysisViewModel,
+        academyFeatureScope,
+        tuningViewModel,
+        sysIdViewModel,
+        guidedTuningExperimentViewModel,
+        robotStudioViewModel,
+        drivebaseBuilderViewModel,
+        subsystemGeneratorViewModel,
+        superstructureStudioViewModel,
+        controlsEditorViewModel,
+        hardwareSetupViewModel,
+        projectIdentityViewModel,
+        profileViewModel,
+        projectBackupViewModel,
+        integrationCenterViewModel,
+        dashboardFeatureServices,
+        services,
+    ) {
+        WorkspaceRouteFeatureScope(
+            dashboard = dashboardViewModel,
+            dashboardServices = dashboardFeatureServices,
+            pathPlanner = pathPlannerViewModel,
+            fieldEditor = fieldEditorViewModel,
+            runData = RunDataFeatureScope(
+                cloud = cloudViewModel,
+                imports = importCenterViewModel,
+                guidedAnalysis = guidedRunAnalysisViewModel,
+                database = services.databaseService,
+                sync = services.syncEngineService,
+                aiDiagnostics = services.aiDiagnosticsService,
+            ),
+            academy = academyFeatureScope,
+            learningProgress = services.learningProgressService,
+            academyPracticeWorkflow = services.academyPracticeWorkflowService,
+            tuning = tuningViewModel,
+            sysId = sysIdViewModel,
+            tuningExperiment = guidedTuningExperimentViewModel,
+            authoring = RobotAuthoringFeatureScope(
+                robotStudio = robotStudioViewModel,
+                drivebase = drivebaseBuilderViewModel,
+                subsystem = subsystemGeneratorViewModel,
+                superstructure = superstructureStudioViewModel,
+                pathPlanner = pathPlannerViewModel,
+                controls = controlsEditorViewModel,
+                hardwareSetup = hardwareSetupViewModel,
+                projectIdentity = projectIdentityViewModel,
+                gamepads = services.gamepadService,
+            ),
+            workspaceServices = WorkspaceServicesFeatureScope(
+                profile = profileViewModel,
+                projectBackup = projectBackupViewModel,
+                integrations = integrationCenterViewModel,
+                toolchains = services.managedToolchainService,
+                sync = services.syncEngineService,
+                oauth = services.oauthService,
+            ),
+            nt4 = services.nt4ClientService,
+            simulator = services.simulatorProcessService,
+        )
+    }
+    val academyEnvironment = AcademyRuntimeEnvironment(
         isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
         isSimulatorRunning = isSimRunning,
         isLocalSimulatorOnline = isLocalSimOnline,
         isNt4Connected = isNt4Connected,
-        subsystem = subsystemGeneratorState.toAcademySubsystemSnapshot(),
-        controls = controlsEditorState.toAcademyControlsSnapshot(),
-        tuning = tuningState.toAcademyTuningSnapshot(),
-        superstructure = superstructureStudioState.toAcademySuperstructureSnapshot(),
-        autonomous = pathPlannerState.toAcademyAutonomousSnapshot(),
-        runAnalysis = guidedRunAnalysisState.toAcademyRunAnalysisSnapshot(),
-        graduation = robotStudioState.toAcademyGraduationSnapshot(),
     )
 
-    // Lesson evidence keeps updating while the slide-out coach is closed.
-    LaunchedEffect(activeCoachLessonId, academyRuntime) {
-        if (activeCoachLessonId != null) {
-            services.learningProgressService.observeRuntime(academyRuntime)
+    // An active lesson continues observing evidence while its drawer is closed, without making
+    // the entire shell subscribe to every authoring feature.
+    if (activeCoachLessonId != null && activeNav != NavigationTarget.ACADEMY) {
+        AcademyRuntimeHost(academyFeatureScope, academyEnvironment) { runtime ->
+            LaunchedEffect(activeCoachLessonId, runtime) {
+                services.learningProgressService.observeRuntime(runtime)
+            }
         }
     }
 
@@ -639,7 +734,7 @@ fun MainScreen(services: ServiceRegistry) {
                 if (keyEvent.type == KeyEventType.KeyDown && isCtrl) {
                     when (keyEvent.key) {
                         Key.B -> {
-                            if (robotStudioState.canRunBuild && !isBuildRunning) {
+                            if (robotStudioShellState.canRunBuild && !isBuildRunning) {
                                 executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                             }
                             true
@@ -650,8 +745,9 @@ fun MainScreen(services: ServiceRegistry) {
                         }
                         Key.K -> {
                             if (keyEvent.isShiftPressed) {
-                                services.processManagerService.killActiveBuild()
-                                services.processManagerService.killActiveSim()
+                                services.projectBuildService.killActiveBuild()
+                                services.robotDeploymentService.cancel()
+                                services.simulatorProcessService.stop()
                             } else {
                                 commandPaletteOpen = true
                             }
@@ -707,153 +803,26 @@ fun MainScreen(services: ServiceRegistry) {
                             horizontalArrangement = Arrangement.spacedBy(if (compactShell) 6.dp else 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                        // Dropdown Selector for active Workspace/Robot configuration
-                        var dropdownExpanded by remember { mutableStateOf(false) }
-                        Box {
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { dropdownExpanded = true }
-                                    .background(AresSurface)
-                                    .border(1.dp, AresBorder, RoundedCornerShape(6.dp))
-                                    .padding(horizontal = if (compactShell) 8.dp else 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                val badgeBg = if (currentConfig.league == League.FTC) AresGold else AresCyan
-                                Text(
-                                    text = currentConfig.league.name,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AresBackground,
-                                    modifier = Modifier
-                                        .background(badgeBg, RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-
-                                Text(
-                                    text = if (compactShell) currentConfig.robotId else "${currentConfig.robotId} (Team ${currentConfig.teamId})",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AresTextPrimary
-                                )
-
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = AresTextSecondary
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = dropdownExpanded,
-                                onDismissRequest = { dropdownExpanded = false },
-                                modifier = Modifier.background(AresSurfaceElevated).border(1.dp, AresBorder)
-                            ) {
-                                Text(
-                                    "MY ROBOTS",
-                                    color = AresTextTertiary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                                mainState.workspaces.forEach { workspace ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                modifier = Modifier.width(220.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = "${workspace.robotId} (Team ${workspace.teamId})",
-                                                        fontWeight = if (workspace.id == currentConfig.id) FontWeight.Bold else FontWeight.Normal,
-                                                        color = if (workspace.id == currentConfig.id) AresCyan else AresTextPrimary
-                                                    )
-                                                    Text(
-                                                        text = "${workspace.league.name} • Season ${workspace.seasonId}",
-                                                        fontSize = 11.sp,
-                                                        color = AresTextSecondary
-                                                    )
-                                                }
-
-                                                IconButton(
-                                                    onClick = {
-                                                        val displayName = workspace.robotName.ifBlank {
-                                                            "${workspace.robotId} (Team ${workspace.teamId})"
-                                                        }
-                                                        workspacePendingDeletion = workspace.id to displayName
-                                                        dropdownExpanded = false
-                                                    },
-                                                    modifier = Modifier.size(24.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Delete,
-                                                        contentDescription = "Remove workspace",
-                                                        tint = AresError.copy(alpha = 0.8f),
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            mainViewModel.onIntent(MainIntent.SelectWorkspace(workspace.id))
-                                            dropdownExpanded = false
-                                        }
-                                    )
+                        WorkspaceSelector(
+                            current = currentConfig,
+                            workspaces = mainState.workspaces,
+                            compact = compactShell,
+                            onSelect = { mainViewModel.onIntent(MainIntent.SelectWorkspace(it)) },
+                            onRemove = { workspace ->
+                                val displayName = workspace.robotName.ifBlank {
+                                    "${workspace.robotId} (Team ${workspace.teamId})"
                                 }
-
-                                HorizontalDivider(color = AresBorder, modifier = Modifier.padding(vertical = 4.dp))
-
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Add,
-                                                contentDescription = null,
-                                                tint = AresCyan,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Text("Create or open a robot...", color = AresCyan, fontWeight = FontWeight.Bold)
-                                        }
-                                    },
-                                    onClick = {
-                                        requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
-                                        mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                        dropdownExpanded = false
-                                    }
-                                )
-                                HorizontalDivider(color = AresBorder, modifier = Modifier.padding(vertical = 4.dp))
-                                Text(
-                                    "EXAMPLES",
-                                    color = AresTextTertiary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text("Explore the demo robot", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-                                            Text(
-                                                "Create one editable, simulation-first FTC example",
-                                                color = AresTextSecondary,
-                                                fontSize = 11.sp,
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        requestedProjectSetupMode = ProjectSetupMode.EXPLORE_DEMO
-                                        mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                        dropdownExpanded = false
-                                    },
-                                )
-                            }
-                        }
+                                workspacePendingDeletion = workspace.id to displayName
+                            },
+                            onCreate = {
+                                requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                            },
+                            onExploreDemo = {
+                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_DEMO
+                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                            },
+                        )
 
                         val missionSnapshot = dashboardMissionSnapshot
                         if (activeNav == NavigationTarget.DASHBOARD && missionSnapshot != null) {
@@ -867,15 +836,15 @@ fun MainScreen(services: ServiceRegistry) {
                                     onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
                                     modifier = Modifier.weight(1f),
                                 )
-                                if (dashboardState.currentLayout != null) {
+                                if (dashboardShellState.hasLayout) {
                                     DashboardCommandBar(
-                                        profileName = dashboardState.currentRoleProfile,
-                                        availableProfiles = dashboardState.availableProfiles,
-                                        isEditing = dashboardState.isLayoutEditing,
+                                        profileName = dashboardShellState.currentRoleProfile,
+                                        availableProfiles = dashboardShellState.availableProfiles,
+                                        isEditing = dashboardShellState.isLayoutEditing,
                                         onSelectProfile = { dashboardViewModel.onIntent(DashboardIntent.ChangeProfile(it)) },
                                         onSaveLayoutAs = { dashboardViewModel.onIntent(DashboardIntent.SaveLayoutAs(it)) },
                                         onDeleteProfile = { dashboardViewModel.onIntent(DashboardIntent.DeleteLayout(it)) },
-                                        onToggleEditing = { dashboardViewModel.onIntent(DashboardIntent.SetLayoutEditing(!dashboardState.isLayoutEditing)) },
+                                        onToggleEditing = { dashboardViewModel.onIntent(DashboardIntent.SetLayoutEditing(!dashboardShellState.isLayoutEditing)) },
                                         onAddWidget = { dashboardViewModel.onIntent(DashboardIntent.SetPickerOpen(true)) },
                                         onResetLayout = { dashboardViewModel.onIntent(DashboardIntent.ResetProfile) },
                                         modifier = Modifier.widthIn(min = 145.dp, max = 250.dp),
@@ -898,8 +867,8 @@ fun MainScreen(services: ServiceRegistry) {
                             isLocalSimOnline = isLocalSimOnline,
                             isBuildRunning = isBuildRunning,
                             isSimRunning = isSimRunning,
-                            buildEnabled = robotStudioState.canRunBuild,
-                            buildDisabledReason = robotStudioState.buildDisabledReason,
+                            buildEnabled = robotStudioShellState.canRunBuild,
+                            buildDisabledReason = robotStudioShellState.buildDisabledReason,
                             simulationEnabled = simulatorLaunchRequestEnabled,
                             simulationDisabledReason = simulatorLaunchDisabledReason,
                             onTargetChanged = { targetSelection = it },
@@ -909,15 +878,16 @@ fun MainScreen(services: ServiceRegistry) {
                                 }
                             },
                             onRunBuild = {
-                                if (robotStudioState.canRunBuild) {
+                                if (robotStudioShellState.canRunBuild) {
                                     executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                                 }
                             },
                             onRunSim = requestSimulatorLaunch,
                             onStopAll = {
                                 pendingSimulatorLaunch = false
-                                services.processManagerService.killActiveBuild()
-                                services.processManagerService.killActiveSim()
+                                services.projectBuildService.killActiveBuild()
+                                services.robotDeploymentService.cancel()
+                                services.simulatorProcessService.stop()
                             },
                             compact = compactShell,
                         )
@@ -959,314 +929,80 @@ fun MainScreen(services: ServiceRegistry) {
                         }
                     }
 
-                    // ── Screen Router ────────────────────────────────────────
                     Box(modifier = Modifier.weight(1f)) {
-                        when (activeNav) {
-                            NavigationTarget.DASHBOARD -> DashboardScreen(
-                                viewModel = dashboardViewModel,
-                                services = services,
-                                currentConfig = currentConfig,
-                                isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
-                                isSimulatorLaunchPreparationRunning = pendingSimulatorLaunch,
-                                simulatorLaunchRequiresVerification = simulatorLaunchRequiresVerification,
-                                canLaunchSimulator = simulatorLaunchRequestEnabled && !isSimRunning,
-                                simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
-                                onLaunchSimulator = requestSimulatorLaunch,
-                                matches = matches,
-                                onForensicsCompleted = { mainViewModel.onIntent(MainIntent.SetDiagnosticsResponse(it)) },
-                                onSelectMatch = { match, allianceColor ->
-                                    if (primarySessionId != null) {
-                                        scope.launch {
-                                            val opponents = if (allianceColor == "red") match.blueAlliance else match.redAlliance
-                                            services.databaseService.associateSessionWithMatch(
-                                                sessionId = primarySessionId,
-                                                matchNumber = match.matchNumber,
-                                                allianceColor = allianceColor,
-                                                opponentTeams = opponents
-                                            )
-                                            mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                        }
-                                    }
-                                },
-                                reloadTrigger = runsIndexReloadTrigger,
-                                onImportSuccess = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
-                                onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
-                                onOpenKeybindings = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.CONTROLS)) },
-                                onOpenRunHistory = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY)) },
-                                onOpenHelp = { mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY)) },
-                                onMissionSnapshotChanged = { dashboardMissionSnapshot = it },
-                            )
-                            NavigationTarget.PATH_PLANNER -> PathPlannerScreen(
-                                viewModel = pathPlannerViewModel,
-                                league = currentConfig.league,
-                                projectPath = currentConfig.projectPath,
-                                robotDimensions = com.ares.analytics.viewmodel.pathing.RobotDimensions(
-                                    lengthMeters = currentConfig.robotLengthMeters
-                                        ?: com.ares.analytics.viewmodel.pathing.RobotDimensions
-                                            .defaultFor(currentConfig.league).lengthMeters,
-                                    widthMeters = currentConfig.robotWidthMeters
-                                        ?: com.ares.analytics.viewmodel.pathing.RobotDimensions
-                                            .defaultFor(currentConfig.league).widthMeters
-                                ),
-                                onProjectPathChanged = { selectedPath ->
-                                    mainViewModel.onIntent(
-                                        MainIntent.SaveConfig(currentConfig.copy(projectPath = selectedPath))
-                                    )
-                                },
-                                onRobotDimensionsChanged = { dimensions ->
-                                    mainViewModel.onIntent(
-                                        MainIntent.SaveConfig(
-                                            currentConfig.copy(
-                                                robotLengthMeters = dimensions.lengthMeters,
-                                                robotWidthMeters = dimensions.widthMeters
-                                            )
-                                        )
-                                    )
-                                }
-                            )
-                            NavigationTarget.CLOUD -> CloudScreen(
-                                viewModel = cloudViewModel,
-                                teamId = currentConfig.teamId,
-                                seasonId = currentConfig.seasonId,
-                                robotId = currentConfig.robotId
-                            )
-                            NavigationTarget.IMPORT_CENTER -> ImportCenterScreen(
-                                viewModel = importCenterViewModel,
-                                projectPath = currentConfig.projectPath.orEmpty(),
-                                onOpenRunHistory = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY))
-                                },
-                                onOpenGuidedAnalysis = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.GUIDED_RUN_ANALYSIS))
-                                },
-                                onOpenHelp = {
-                                    requestedLessonId = "compare-run-evidence"
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                }
-                            )
-                            NavigationTarget.FIELD_EDITOR -> FieldEditorScreen(
-                                viewModel = fieldEditorViewModel,
-                                league = currentConfig.league,
-                                projectPath = currentConfig.projectPath
-                            )
-                            NavigationTarget.ACADEMY -> AcademyScreen(
-                                progressService = services.learningProgressService,
-                                onOpenScreen = { destination ->
-                                    coachDrawerOpen = true
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
-                                },
-                                onStartSimulator = {
-                                    coachDrawerOpen = true
-                                    startSimulatorProcess()
-                                },
-                                onCreatePracticeProject = {
-                                    requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
-                                    mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                },
-                                onInstallAndImportPracticeRuns = {
-                                    val result = services.academyPracticeWorkflowService.installAndImport(
-                                        projectRoot = File(currentConfig.projectPath),
-                                        identity = com.ares.analytics.service.AcademyPracticeIdentity(
-                                            teamId = currentConfig.teamId,
-                                            seasonId = currentConfig.seasonId,
-                                            robotId = currentConfig.robotId,
-                                        ),
-                                    )
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    result
-                                },
-                                onOpenImports = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
-                                },
-                                onOpenRunReview = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.GUIDED_RUN_ANALYSIS))
-                                },
-                                projectPath = currentConfig.projectPath.orEmpty(),
-                                projectLabel = listOf(currentConfig.robotName, currentConfig.teamId)
-                                    .filter(String::isNotBlank)
-                                    .joinToString(" · "),
-                                initialLessonId = requestedLessonId,
-                                initialGlossaryTerm = requestedGlossaryTerm,
-                                runtime = academyRuntime,
-                            )
-                            NavigationTarget.KDOC_VIEWER -> KDocViewerScreen()
-                            NavigationTarget.PIT_DIAGNOSTICS -> HardwareSelfTestWizard(nt4ClientService = services.nt4ClientService)
-                            NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen()
-                            NavigationTarget.GUIDED_RUN_ANALYSIS -> GuidedRunAnalysisScreen(
-                                viewModel = guidedRunAnalysisViewModel,
-                                onOpenImports = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
-                                },
-                                onOpenDashboardReplay = { sessionId, timestampMs ->
-                                    dashboardViewModel.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
-                                },
-                                onOpenTuning = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.TUNING))
-                                },
-                                onCreateTuningExperiment = { seed ->
-                                    guidedTuningExperimentViewModel.onIntent(GuidedTuningExperimentIntent.Begin(seed))
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.TUNING))
-                                },
-                                onOpenAcademy = {
-                                    requestedLessonId = "compare-run-evidence"
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                },
-                                onOpenRunHistory = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY))
-                                },
-                            )
-                            NavigationTarget.RUN_HISTORY -> RunHistoryScreen(
-                                databaseService = services.databaseService,
-                                syncEngineService = services.syncEngineService,
+                        WorkspaceRouteHost(
+                            state = WorkspaceRouteState(
+                                route = activeNav,
                                 workspace = currentConfig,
-                                reloadTrigger = mainState.runsIndexReloadTrigger,
-                                onOpenImports = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
-                                },
-                                onOpenHelp = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                }
-                            )
-                            NavigationTarget.DATABASE_VIEWER -> DatabaseViewerScreen(
-                                databaseService = services.databaseService
-                            )
-
-                            NavigationTarget.TUNING -> TuningScreen(
-                                viewModel = tuningViewModel,
-                                sysIdViewModel = sysIdViewModel,
-                                experimentViewModel = guidedTuningExperimentViewModel,
-                                projectPath = currentConfig.projectPath,
+                                matches = matches,
+                                runsReloadTrigger = runsIndexReloadTrigger,
+                                primarySessionId = primarySessionId,
+                                targetSelection = targetSelection,
+                                simulatorRunning = isSimRunning,
+                                localSimulatorOnline = isLocalSimOnline,
+                                nt4Connected = isNt4Connected,
+                                simulatorLaunchPreparationRunning = pendingSimulatorLaunch,
+                                simulatorLaunchRequiresVerification = simulatorLaunchRequiresVerification,
                                 canLaunchSimulator = simulatorLaunchRequestEnabled,
-                                canApplyCandidateToSimulator =
-                                    targetSelection == TargetSelection.LOCAL_SIM &&
-                                        isLocalSimOnline &&
-                                        isNt4Connected &&
-                                        isLoopbackDriveControlHost(services.nt4ClientService.serverIp),
-                                simulatorStatus = when {
-                                    isSimRunning -> "managed simulator running"
-                                    isLocalSimOnline -> "simulator online"
-                                    else -> simulatorLaunchDisabledReason
-                                },
-                                onLaunchSimulator = requestSimulatorLaunch,
-                                onApplyCandidateToSimulator = {
-                                    val experiment = guidedTuningExperimentViewModel.state.value.experiment
-                                    if (
-                                        experiment != null &&
-                                        targetSelection == TargetSelection.LOCAL_SIM &&
-                                        isLocalSimOnline &&
-                                        isNt4Connected &&
-                                        isLoopbackDriveControlHost(services.nt4ClientService.serverIp)
-                                    ) {
-                                        tuningViewModel.onIntent(TuningIntent.PushToRobot(experiment.change.key))
+                                simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
+                                hardwareStudioInitialTab = hardwareStudioInitialTab,
+                                requestedLessonId = requestedLessonId,
+                                requestedGlossaryTerm = requestedGlossaryTerm,
+                            ),
+                            scope = workspaceRouteFeatureScope,
+                            actions = WorkspaceRouteActions(
+                                navigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
+                                saveWorkspace = { mainViewModel.onIntent(MainIntent.SaveConfig(it)) },
+                                reloadRuns = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
+                                associateSessionWithMatch = { sessionId, match, allianceColor ->
+                                    scope.launch {
+                                        val opponents = if (allianceColor == "red") {
+                                            match.blueAlliance
+                                        } else {
+                                            match.redAlliance
+                                        }
+                                        services.databaseService.associateSessionWithMatch(
+                                            sessionId = sessionId,
+                                            matchNumber = match.matchNumber,
+                                            allianceColor = allianceColor,
+                                            opponentTeams = opponents,
+                                        )
+                                        mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
                                     }
                                 },
-                                onOpenDashboard = {
-                                    targetSelection = TargetSelection.LOCAL_SIM
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
+                                setDiagnosticsResponse = {
+                                    mainViewModel.onIntent(MainIntent.SetDiagnosticsResponse(it))
                                 },
-                                onStopSimulator = { services.processManagerService.killActiveSim() },
-                                onOpenGuidedRunReview = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.GUIDED_RUN_ANALYSIS))
-                                },
-                                onOpenReplay = { sessionId, timestampMs ->
-                                    dashboardViewModel.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
-                                },
-                            )
-                            NavigationTarget.ROBOT_STUDIO -> RobotStudioScreen(
-                                viewModel = robotStudioViewModel,
-                                drivebaseViewModel = drivebaseBuilderViewModel,
-                                subsystemViewModel = subsystemGeneratorViewModel,
-                                superstructureViewModel = superstructureStudioViewModel,
-                                pathPlannerViewModel = pathPlannerViewModel,
-                                controlsViewModel = controlsEditorViewModel,
-                                controlsState = controlsEditorState,
-                                gamepad1State = gamepad1State,
-                                gamepad2State = gamepad2State,
-                                hardwareSetupViewModel = hardwareSetupViewModel,
-                                projectIdentityViewModel = projectIdentityViewModel,
-                                config = currentConfig,
-                                onOpenPitDiagnostics = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.PIT_DIAGNOSTICS))
-                                },
-                                onRunVerification = {
-                                    executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
-                                },
-                                onOpenInIde = {
-                                    services.projectIdeLauncher.open(currentConfig.projectPath, currentConfig.league).message
-                                },
-                                onCreateStandaloneProject = {
+                                updateMissionSnapshot = { dashboardMissionSnapshot = it },
+                                requestSimulatorLaunch = requestSimulatorLaunch,
+                                startSimulator = startSimulatorProcess,
+                                selectTarget = { targetSelection = it },
+                                openCoach = { coachDrawerOpen = true },
+                                createProject = {
                                     requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
                                     mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                                 },
-                            )
-                            NavigationTarget.CONTROLS -> com.ares.analytics.ui.components.controls.ControlsEditorPanel(
-                                state = controlsEditorState,
-                                viewModel = controlsEditorViewModel,
-                                gamepad1State = gamepad1State,
-                                gamepad2State = gamepad2State,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            NavigationTarget.SUPERSTRUCTURE_STUDIO -> SuperstructureStudioScreen(superstructureStudioViewModel)
-                            NavigationTarget.HARDWARE_STUDIO, NavigationTarget.HARDWARE_SETUP, NavigationTarget.DRIVEBASE_BUILDER, NavigationTarget.SUBSYSTEM_GEN -> HardwareStudioScreen(
-                                drivebaseViewModel = drivebaseBuilderViewModel,
-                                subsystemViewModel = subsystemGeneratorViewModel,
-                                hardwareSetupViewModel = hardwareSetupViewModel,
-                                initialTab = when (activeNav) {
-                                    NavigationTarget.DRIVEBASE_BUILDER -> HardwareStudioTab.DRIVETRAIN
-                                    NavigationTarget.SUBSYSTEM_GEN -> HardwareStudioTab.MECHANISMS
-                                    NavigationTarget.HARDWARE_SETUP -> HardwareStudioTab.PORT_MAP
-                                    else -> hardwareStudioInitialTab
+                                openAcademyLesson = {
+                                    requestedLessonId = it
+                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                                 },
-                                onBackToStudio = {
-                                    robotStudioViewModel.refresh()
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ROBOT_STUDIO))
+                                executeProjectCommand = executeProjectCommand,
+                                openInIde = {
+                                    services.projectIdeLauncher.open(
+                                        currentConfig.projectPath,
+                                        currentConfig.league,
+                                    ).message
                                 },
-                            )
-                            NavigationTarget.PROJECT_IDENTITY -> ProjectIdentityScreen(
-                                viewModel = projectIdentityViewModel,
-                                config = currentConfig,
-                                onBackToStudio = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ROBOT_STUDIO))
-                                },
-                            )
-                            NavigationTarget.PROFILE -> ProfileScreen(
-                                viewModel = profileViewModel,
-                                managedToolchainService = services.managedToolchainService,
-                                config = currentConfig,
-                                onConfigChanged = { newConfig ->
-                                    mainViewModel.onIntent(MainIntent.SaveConfig(newConfig))
-                                }
-                            )
-                            NavigationTarget.PROJECT_BACKUP -> ProjectBackupScreen(
-                                viewModel = projectBackupViewModel,
-                                projectPath = currentConfig.projectPath,
-                            )
-                            NavigationTarget.INTEGRATIONS -> IntegrationCenterScreen(
-                                viewModel = integrationCenterViewModel,
-                                workspace = com.ares.analytics.shared.models.IntegrationWorkspaceIdentity(
-                                    teamId = currentConfig.teamId,
-                                    seasonId = currentConfig.seasonId,
-                                    robotId = currentConfig.robotId,
-                                ),
-                            )
-                            NavigationTarget.ADMIN -> AdminScreen(
-                                syncEngineService = services.syncEngineService,
-                                oauthService = services.oauthService,
-                                config = currentConfig
-                            )
-                        }
+                            ),
+                        )
                     }
                 }
-
                 // Collapsible Terminal drawer overlay
                 TerminalDrawer(
-                    processManagerService = services.processManagerService,
+                    projectBuildService = services.projectBuildService,
+                    robotDeploymentService = services.robotDeploymentService,
+                    adbService = services.adbService,
+                    simulatorProcessService = services.simulatorProcessService,
                     projectPath = currentConfig.projectPath,
                     league = currentConfig.league,
                     isOpen = isTerminalOpen,
@@ -1306,7 +1042,7 @@ fun MainScreen(services: ServiceRegistry) {
                 onOpenDashboard = {
                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
                 },
-                onStopSimulator = { services.processManagerService.killActiveSim() },
+                onStopSimulator = services.simulatorProcessService::stop,
                 onDismiss = { coachDrawerOpen = false },
             )
         }
@@ -1383,7 +1119,7 @@ fun MainScreen(services: ServiceRegistry) {
                     deployDialogOpen = false
                     deployAwaitingConfirmation = false
                 },
-                onCancel = { services.processManagerService.killActiveBuild() },
+                onCancel = { services.robotDeploymentService.cancel() },
             )
         }
 

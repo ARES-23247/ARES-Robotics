@@ -1,6 +1,6 @@
 package com.areslib.frc.sim.io
 
-import com.areslib.frc.hardware.CowlIO
+import com.areslib.hardware.actuator.CowlIO
 import com.areslib.frc.Dyn4jSimulation
 import com.areslib.frc.marvin.MarvinConfig
 

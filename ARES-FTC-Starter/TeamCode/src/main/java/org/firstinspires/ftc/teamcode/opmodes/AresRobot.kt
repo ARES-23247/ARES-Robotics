@@ -5,6 +5,7 @@ package org.firstinspires.ftc.teamcode.opmodes
 import com.areslib.action.RobotAction
 import com.areslib.ftc.FtcBaseRobot
 import com.areslib.ftc.FtcMecanumRobot
+import com.areslib.hardware.HardwareRegistry
 import com.areslib.pathing.NamedCommands
 import com.areslib.state.FieldType
 import com.areslib.state.RobotFieldConfig
@@ -30,9 +31,10 @@ import java.nio.file.Paths
 
 internal fun installGeneratedSubsystems(
     hardwareMap: HardwareMap,
+    hardwareRegistry: HardwareRegistry,
     register: (Subsystem) -> Unit,
-    createAll: (HardwareMap) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(hardwareMap).also { created -> created.forEach(register) }
+    createAll: (HardwareMap, HardwareRegistry) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
+): List<Subsystem> = createAll(hardwareMap, hardwareRegistry).also { created -> created.forEach(register) }
 
 internal fun installGeneratedSuperstructures(
     register: (Subsystem) -> Unit,
@@ -120,7 +122,7 @@ class AresRobot(
 
         NamedCommands.clear()
         try {
-            installGeneratedSubsystems(hardwareMap, base::registerSubsystem).forEach { subsystem ->
+            installGeneratedSubsystems(hardwareMap, base.hardwareRegistry, base::registerSubsystem).forEach { subsystem ->
                 if (subsystem is TypedTuningConsumer) {
                     tuningConsumers += subsystem
                     applyCanonicalValues(subsystem)

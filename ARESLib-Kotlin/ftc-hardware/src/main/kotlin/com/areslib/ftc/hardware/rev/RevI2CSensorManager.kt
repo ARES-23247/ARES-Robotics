@@ -1,7 +1,6 @@
 package com.areslib.ftc.hardware.rev
 
 import com.areslib.hardware.sensor.ImuIO
-import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.IMU
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
@@ -91,7 +90,6 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
             }
         } catch (_: Exception) {}
 
-        HardwareRegistry.registerCloseable(this)
         imuThread.start()
     }
 
@@ -164,7 +162,6 @@ class RevAnalogSensorController(private val analogInput: AnalogInput) : AutoClos
     }
 
     init {
-        HardwareRegistry.registerCloseable(this)
         thread.start()
     }
 
@@ -224,7 +221,6 @@ class RevDigitalSensorController(private val digitalChannel: DigitalChannel) : A
             digitalChannel.mode = DigitalChannel.Mode.INPUT
         } catch (_: Exception) {}
 
-        HardwareRegistry.registerCloseable(this)
         thread.start()
     }
 
@@ -293,10 +289,6 @@ class RevAbsoluteAnalogEncoderController @kotlin.jvm.JvmOverloads constructor(
     }
 
     init {
-        if (name != null) {
-            HardwareRegistry.registerMotor(name, this)
-        }
-        HardwareRegistry.registerCloseable(this)
         thread.start()
     }
 

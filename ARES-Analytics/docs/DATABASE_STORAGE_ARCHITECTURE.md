@@ -7,9 +7,8 @@ queries Parquet directly, supports the comparisons and replay scans ARES needs, 
 student operate a database server. PostgreSQL or ClickHouse would add installation, networking,
 accounts, and backup administration without fixing the measured cold-start defect.
 
-The storage layout should evolve, however. DuckDB should become the small metadata/query catalog
-over immutable per-session Parquet files instead of remaining the only container for every raw
-sample.
+The current release uses one DuckDB store. A future immutable per-session Parquet layout remains a
+separate design option, not a compatibility path or partially implemented migration.
 
 ## What the cold-start investigation proved
 
@@ -20,16 +19,16 @@ index and three redundant secondary ART indexes remained in native WAL recovery 
 minutes.
 
 After removing the three secondary indexes, a crash-recovery probe reopened a 568 KiB WAL in 224
-ms while retaining the legacy primary key. A fully index-free rebuild also preserved all
-32,642,289 rows and reopened in 10 ms, but required about 100 seconds and a 1.5 GiB temporary native
-memory limit. ARES therefore does not perform that disruptive rewrite invisibly during startup.
+ms. A fully index-free rebuild also preserved all 32,642,289 rows and reopened in 10 ms, but
+required about 100 seconds and a 1.5 GiB temporary native memory limit. The current schema therefore
+creates the raw fact table without ART indexes from the outset.
 
 ## Current hardened layout
 
 - New `telemetry_frames` tables are append-only and have no primary, unique, or secondary ART
   indexes. `timestamp_us` plus `sample_order` carries deterministic replay order.
-- Existing databases transactionally drop the three historical secondary indexes and checkpoint;
-  they retain the implicit legacy primary-key index until an explicit storage migration.
+- `DatabaseSchemaInitializer` creates and verifies one current schema. It does not inspect or
+  transform superseded schemas.
 - Parquet and cloud imports preserve idempotence with bounded delete-then-insert transactions rather
   than a global index on every live sample.
 - Completed imports and clean shutdown are checkpoint boundaries. Frame batches are not individually
@@ -37,7 +36,7 @@ memory limit. ARES therefore does not perform that disruptive rewrite invisibly 
 - Interrupted imports remain owned by `IMPORTING` sessions and are removed on recovery. Completed
   sessions remain authoritative.
 
-## Target partitioned layout
+## Possible future partitioned layout
 
 The next storage milestone should use this conceptual ownership:
 
@@ -60,20 +59,17 @@ SHA-256, then atomically renames it and commits the catalog manifest. A crash be
 commit leaves a removable partial file; a crash after the commit leaves a verified immutable
 partition. Replacement creates a new verified generation before changing the catalog pointer.
 
-## Migration and recovery
+## Current recovery contract
 
-Migration must be explicit and resumable:
+ARES recovers only current-schema operations. An import owns an `IMPORTING` session until its final
+metadata transaction commits; startup removes rows owned by an interrupted import. A WAL remains
+DuckDB recovery evidence and is never silently deleted. If required current columns are missing,
+startup fails with instructions to create a new telemetry database instead of attempting an old-
+schema rewrite. Raw source logs and exported Parquet remain the portable evidence boundary.
 
-1. Preserve the existing DuckDB file and source-log archives.
-2. Export one completed session at a time to a partial Parquet partition.
-3. Verify identity, row count, timestamp bounds, strings, ordering fields, and digest.
-4. Atomically install the partition and commit its catalog record.
-5. Resume at the first session without a verified manifest after interruption.
-6. Keep the old database until every session passes comparison and the user confirms cleanup.
-
-If a WAL cannot be recovered promptly, ARES must not silently delete it. Preserve the database and
-WAL together in a recovery snapshot and offer an explicit choice between waiting for recovery and
-opening the last checkpoint. Export remains available so teams are never locked into the catalog.
+If the future partitioned design is adopted, it will replace the current storage contract across
+all in-repository producers and consumers in one release. It must not add dual readers or a
+long-lived migration framework.
 
 ## Boundaries that remain unchanged
 

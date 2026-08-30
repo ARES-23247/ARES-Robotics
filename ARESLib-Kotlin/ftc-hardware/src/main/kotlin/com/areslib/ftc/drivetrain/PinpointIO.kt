@@ -118,7 +118,6 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     private val reusablePoseUpdate = RobotAction.PoseUpdate(0.0, 0.0, 0.0, 0L)
 
     init {
-        com.areslib.hardware.HardwareRegistry.registerCloseable(this)
     }
 
     /**

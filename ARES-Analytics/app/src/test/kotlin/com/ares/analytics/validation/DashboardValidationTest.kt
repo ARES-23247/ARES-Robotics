@@ -3,8 +3,8 @@ package com.ares.analytics.validation
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.ExportService
 import com.ares.analytics.service.ReplayEngineService
-import com.ares.analytics.shared.Session
-import com.ares.analytics.shared.TelemetryFrame
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout

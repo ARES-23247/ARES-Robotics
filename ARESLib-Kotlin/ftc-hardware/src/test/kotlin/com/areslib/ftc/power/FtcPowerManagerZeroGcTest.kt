@@ -6,14 +6,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.VoltageSensor
 import com.sun.management.ThreadMXBean
 import java.lang.management.ManagementFactory
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class FtcPowerManagerZeroGcTest {
-    @AfterEach
-    fun clearRegistry() = HardwareRegistry.clear()
-
     @Test
     fun `steady state current budget and power distribution reuse registry views`() {
         val allocationBean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
@@ -27,8 +23,9 @@ class FtcPowerManagerZeroGcTest {
             @Suppress("UNCHECKED_CAST")
             override fun <T> getAll(classOrType: Class<out T>): List<T> = sensorList as List<T>
         }
-        repeat(4) { index -> HardwareRegistry.registerMotor("probe-$index", ProbeMotor()) }
-        val manager = FtcPowerManager(hardwareMap)
+        val hardwareRegistry = HardwareRegistry()
+        repeat(4) { index -> hardwareRegistry.registerMotor("probe-$index", ProbeMotor()) }
+        val manager = FtcPowerManager(hardwareMap, hardwareRegistry)
 
         repeat(2_000) { manager.update(0.02, 100L + it * 20L) }
         val threadId = Thread.currentThread().id

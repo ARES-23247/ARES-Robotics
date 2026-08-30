@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.AuthState
 import com.ares.analytics.service.OAuthService
 import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.RobotProfile
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.RobotProfile
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 

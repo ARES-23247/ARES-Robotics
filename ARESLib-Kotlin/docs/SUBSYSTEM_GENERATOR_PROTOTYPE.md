@@ -42,10 +42,12 @@ Input -> Redux action/reducer -> immutable state -> controller -> IO contract
                                                                `-> simulated adapter
 ```
 
-Hardware reads are registered with `HardwareRegistry` and refreshed once per platform loop. The
-lifecycle only transfers the cached snapshot into immutable Redux state; output writing never reads
-hardware. Teams customize units, physical mappings, controller gains, homing/calibration policy,
-mechanism interlocks, simulation dynamics, and additional verification in their six starter files.
+Each robot owns one `HardwareRegistry`. Its composition root explicitly registers generated and
+hand-authored IO, and the registry refreshes those cached inputs once per platform loop. Generated IO
+never mutates process-global state or self-registers from a constructor. The lifecycle only transfers
+the cached snapshot into immutable Redux state; output writing never reads hardware. Teams customize
+units, physical mappings, controller gains, homing/calibration policy, mechanism interlocks,
+simulation dynamics, and additional verification in their six starter files.
 
 ## Regeneration and build integration
 

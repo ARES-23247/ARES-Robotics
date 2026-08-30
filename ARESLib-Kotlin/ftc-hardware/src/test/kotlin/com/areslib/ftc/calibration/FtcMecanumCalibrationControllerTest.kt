@@ -15,6 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Proxy
 import kotlin.test.assertEquals
@@ -22,17 +23,24 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class FtcMecanumCalibrationControllerTest {
+    private lateinit var hardwareRegistry: HardwareRegistry
+
+    @BeforeEach
+    fun setUp() {
+        hardwareRegistry = HardwareRegistry()
+    }
+
     @AfterEach
     fun cleanUp() {
-        HardwareRegistry.clear()
+        hardwareRegistry.closeAll()
         NT4Instance.defaultInstance.closeServer()
         RobotClock.useSystemTime()
     }
 
     @Test
     fun `enabled but unarmed relinquishes drivetrain after one-shot neutral`() {
-        val telemetry = FtcTelemetryManager(Store())
-        val mecanumIO = MecanumHardwareIO(motorHardwareMap())
+        val telemetry = FtcTelemetryManager(Store(), hardwareRegistry)
+        val mecanumIO = MecanumHardwareIO(motorHardwareMap(), hardwareRegistry)
         val controller = FtcMecanumCalibrationController()
 
         mecanumIO.setMotorPowers(0.6, -0.5, 0.4, -0.3)
@@ -55,8 +63,8 @@ class FtcMecanumCalibrationControllerTest {
         RobotClock.useMockTime(1_000L)
         val server = NT4Instance.defaultInstance.startServer("127.0.0.1", 0)
         val store = Store()
-        val telemetry = FtcTelemetryManager(store)
-        val mecanumIO = MecanumHardwareIO(motorHardwareMap())
+        val telemetry = FtcTelemetryManager(store, hardwareRegistry)
+        val mecanumIO = MecanumHardwareIO(motorHardwareMap(), hardwareRegistry)
         val controller = FtcMecanumCalibrationController()
         val client = webSocketProxy()
         val handshake = proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) }
@@ -136,8 +144,8 @@ class FtcMecanumCalibrationControllerTest {
         RobotClock.useMockTime(1_000L)
         val server = NT4Instance.defaultInstance.startServer("127.0.0.1", 0)
         val store = Store()
-        val telemetry = FtcTelemetryManager(store)
-        val mecanumIO = MecanumHardwareIO(motorHardwareMap())
+        val telemetry = FtcTelemetryManager(store, hardwareRegistry)
+        val mecanumIO = MecanumHardwareIO(motorHardwareMap(), hardwareRegistry)
         val controller = FtcMecanumCalibrationController()
         val client = webSocketProxy()
         server.onOpen(client, proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) })

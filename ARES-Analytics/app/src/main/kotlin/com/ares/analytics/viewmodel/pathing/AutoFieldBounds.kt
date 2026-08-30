@@ -1,6 +1,6 @@
 package com.ares.analytics.viewmodel.pathing
 
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.math.coordinate.CoordinateTransformers
 import kotlin.math.abs
 import kotlin.math.cos

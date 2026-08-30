@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode
 import com.areslib.Store
 import com.areslib.state.RobotState
 import com.areslib.subsystem.Subsystem
+import com.areslib.hardware.HardwareRegistry
 import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.teamcode.opmodes.installGeneratedSubsystems
 import org.junit.Assert.assertEquals
@@ -15,9 +16,11 @@ class GeneratedSubsystemSimulatorParityTest {
         val hardwareMap = HardwareMap()
         val subsystem = RecordingSubsystem()
         val registered = mutableListOf<Subsystem>()
+        val hardwareRegistry = HardwareRegistry()
 
-        installGeneratedSubsystems(hardwareMap, registered::add) { receivedMap ->
+        installGeneratedSubsystems(hardwareMap, hardwareRegistry, registered::add) { receivedMap, receivedRegistry ->
             assertSame(hardwareMap, receivedMap)
+            assertSame(hardwareRegistry, receivedRegistry)
             listOf(subsystem)
         }
 

@@ -7,7 +7,7 @@ import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
-import com.ares.analytics.shared.League
+import com.ares.analytics.shared.models.League
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.CoroutineScope
@@ -234,10 +234,14 @@ class DrivebaseBuilderViewModel(
         result.fold(
             onSuccess = { saved ->
                 val draftResult = runCatching {
-                    (saved ?: defaultDrivebase(
-                        _state.value.projectId,
-                        defaultNoCodeDrivebaseKind(_state.value.league),
-                    )).withRuntimeRequirements().withCanonicalProjectIdentity(_state.value.projectId)
+                    if (saved == null) {
+                        defaultDrivebase(
+                            _state.value.projectId,
+                            defaultNoCodeDrivebaseKind(_state.value.league),
+                        ).withRuntimeRequirements().requireCanonicalProjectIdentity(_state.value.projectId)
+                    } else {
+                        saved.requireCanonicalProjectIdentity(_state.value.projectId)
+                    }
                 }
                 val draft = draftResult.getOrElse { failure ->
                     _state.update {
@@ -248,7 +252,6 @@ class DrivebaseBuilderViewModel(
                     }
                     return@fold
                 }
-                val runtimeRepairReady = saved != null && diffDrivebase(saved, draft).isNotEmpty()
                 val tuningProfileRepairs = if (saved != null) {
                     withContext(Dispatchers.IO) { repository.tuningProfileRepairIssues(_state.value.projectPath, draft) }
                 } else emptyList()
@@ -259,10 +262,10 @@ class DrivebaseBuilderViewModel(
                         draft = draft,
                         issues = validateDrivebaseForLeague(draft, it.league),
                         loading = false,
-                        dirty = runtimeRepairReady || tuningProfileRepairs.isNotEmpty(),
+                        dirty = tuningProfileRepairs.isNotEmpty(),
                         tuningProfileRepairIssues = tuningProfileRepairs,
-                        status = if (runtimeRepairReady || tuningProfileRepairs.isNotEmpty()) {
-                            "ARES prepared missing runtime parameters, hardware wiring, and/or tuning ownership repairs for review. Open Safety & Review to inspect and save them."
+                        status = if (tuningProfileRepairs.isNotEmpty()) {
+                            "ARES prepared tuning assignments affected by the current drivebase declaration for review. Open Safety & Review to inspect and save them."
                         } else "",
                         error = null,
                         selectedHardwareId = null,
@@ -629,18 +632,17 @@ private fun drivebaseForKind(state: DrivebaseBuilderState, kind: DrivebaseKind):
     )
 }
 
-internal fun DrivebaseDocument.withCanonicalProjectIdentity(projectId: String): DrivebaseDocument {
-    val canonicalDocument = canonical ?: return copy(projectId = projectId)
+internal fun DrivebaseDocument.requireCanonicalProjectIdentity(projectId: String): DrivebaseDocument {
+    val canonicalDocument = requireNotNull(canonical) { "The drivebase must use the canonical document contract." }
     val profileId = canonicalDocument.canonicalProfileUid.substringAfter(".profile.", "competition")
     val expectedProfileUid = "$projectId.profile.$profileId"
-    return if (this.projectId == projectId && canonicalDocument.canonicalProfileUid == expectedProfileUid) {
-        this
-    } else {
-        copy(
-            projectId = projectId,
-            canonical = canonicalDocument.copy(canonicalProfileUid = expectedProfileUid),
-        )
+    require(this.projectId == projectId) {
+        "The drivebase belongs to project '$projectId', but its projectId is '${this.projectId}'."
     }
+    require(canonicalDocument.canonicalProfileUid == expectedProfileUid) {
+        "The drivebase canonical profile must be '$expectedProfileUid'."
+    }
+    return this
 }
 
 data class GeometryLabResult(

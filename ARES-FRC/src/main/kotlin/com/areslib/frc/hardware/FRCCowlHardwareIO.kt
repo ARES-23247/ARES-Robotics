@@ -1,6 +1,7 @@
 package com.areslib.frc.hardware
 
 import com.areslib.frc.marvin.MarvinConfig
+import com.areslib.hardware.actuator.CowlIO
 import com.ctre.phoenix6.BaseStatusSignal
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.controls.VoltageOut

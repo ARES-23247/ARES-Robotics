@@ -20,8 +20,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.shared.League
-import com.ares.analytics.shared.WorkspaceConfig
+import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.project.ProjectIdentityEditorState
 import com.ares.analytics.viewmodel.project.ProjectIdentityField
@@ -343,7 +343,7 @@ private fun ProjectIdentityForm(
                 onValueChange = { onUpdate(ProjectIdentityField.ROBOT_ID, it) },
                 error = state.fieldErrors[ProjectIdentityField.ROBOT_ID],
                 enabled = state.currentDocument == null && runtimeOptionsEnabled,
-                help = "Used by generated files and evidence records; changing it later requires a migration.",
+                help = "Used by generated files and evidence records; change it only through a coordinated project rename.",
             )
             IdentityField(
                 label = "Robot display name",

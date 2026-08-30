@@ -1,7 +1,7 @@
 package com.ares.analytics.service.integration
 
 import com.ares.analytics.service.DatabaseService
-import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.IntegrationWorkspaceIdentity
 import com.ares.analytics.shared.models.NotebookReviewState
 import kotlinx.coroutines.test.runTest

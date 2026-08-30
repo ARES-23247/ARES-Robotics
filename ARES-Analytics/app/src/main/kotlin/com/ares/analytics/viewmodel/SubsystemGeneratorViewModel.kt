@@ -10,18 +10,10 @@ import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
-import com.ares.analytics.shared.League
-import com.ares.analytics.service.project.persistence.ProjectDocumentKind
+import com.ares.analytics.shared.models.League
+import com.areslib.project.schema.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
-import com.areslib.codegen.GeneratedSubsystemSourceSet
-import com.areslib.codegen.SubsystemArtifact
-import com.areslib.codegen.SubsystemArtifactGroup
-import com.areslib.codegen.SubsystemArtifactOwnership
-import com.areslib.codegen.SubsystemKotlinCodegenTarget
-import com.areslib.codegen.SubsystemKotlinGenerator
-import com.areslib.codegen.SubsystemStarterReconciler
-import com.areslib.codegen.SubsystemStarterChangeKind
 import com.areslib.subsystem.FaultRecoveryActionKind
 import com.areslib.subsystem.InterlockComparison
 import com.areslib.subsystem.SubsystemControlLoopDocument
@@ -55,10 +47,9 @@ import com.areslib.subsystem.SubsystemTeachingLevel
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
 import com.areslib.subsystem.SubsystemValueType
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.subsystem.supportsPlatform
-import com.areslib.subsystem.subsystemControlUnitsCompatible
-import com.areslib.subsystem.subsystemUnitIsCanonicalAngle
+import com.areslib.subsystem.SubsystemUnits
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.google.gson.GsonBuilder
@@ -73,294 +64,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
-enum class SubsystemProblemSeverity { WARNING, ERROR }
-
-/** Novice-facing authoring stages. The order mirrors the questions a student can answer safely. */
-enum class SubsystemBuilderStage(
-    val displayName: String,
-    val shortDescription: String,
-) {
-    PURPOSE("Purpose", "Choose what the subsystem does and how its source is owned."),
-    HARDWARE("Hardware", "Describe each motor, servo, sensor, or other device."),
-    STATE_AND_BEHAVIOR("State & behavior", "Define cached inputs, targets, and controller rules."),
-    TUNING("Tuning", "Declare typed values students may adjust through named robot profiles."),
-    SAFETY("Safety", "Decide when outputs are permitted and how faults recover."),
-    CAPABILITIES("Capabilities", "Review what drivers and autonomous routines can command."),
-    SIMULATION_AND_TESTING("Simulation & testing", "Choose mock support and generated verification."),
-    REVIEW("Review", "Check warnings, ownership, and generated files before saving."),
-}
-
-data class SubsystemProblem(
-    val severity: SubsystemProblemSeverity,
-    val path: String,
-    val message: String,
-)
-
-/** Review model for a whole-subsystem removal. Kotlin source is intentionally never included. */
-data class SubsystemRemovalRequest(
-    val documentId: String,
-    val displayName: String,
-    val persisted: Boolean,
-    val contentHash: String? = null,
-    val canonicalPath: String? = null,
-    val recoveryPath: String? = null,
-    val sourceFilesPreserved: List<String> = emptyList(),
-    val discardsUnsavedChanges: Boolean = false,
-)
-
-/** Session-local recovery action for the exact descriptor most recently removed. */
-data class SubsystemRecoveryNotice(
-    val documentId: String,
-    val displayName: String,
-    val contentHash: String,
-    val recoveryPath: String,
-)
-
-data class SubsystemPreviewFile(
-    val path: String,
-    val sourceSet: GeneratedSubsystemSourceSet,
-    val content: String,
-    val artifact: SubsystemArtifact,
-    val group: SubsystemArtifactGroup,
-    val ownership: SubsystemArtifactOwnership,
-    val description: String,
-    val moduleName: String,
-    val projectRelativePath: String,
-    val change: SubsystemFileChange,
-    val diff: List<SubsystemDiffLine> = emptyList(),
-)
-
-enum class SubsystemFileChange { CREATE, UNCHANGED, UPDATE_GENERATED, REPLACE_STARTER, PROTECTED_USER_OWNED }
-
-enum class SubsystemDiffLineKind { CONTEXT, ADDED, REMOVED }
-
-data class SubsystemDiffLine(val kind: SubsystemDiffLineKind, val text: String)
-
-data class SubsystemAiProposalReview(
-    val base: SubsystemDocument,
-    val proposal: SubsystemDesignProposal,
-    val diff: List<SubsystemDiffLine>,
-    val problems: List<SubsystemProblem>,
-) {
-    val canApply: Boolean get() = problems.none { it.severity == SubsystemProblemSeverity.ERROR }
-}
-
-data class SubsystemTemplateOption(
-    val template: SubsystemTemplate,
-    val label: String,
-    val description: String,
-    val category: String,
-    val beginnerRecommended: Boolean = false,
-)
-
-val subsystemTemplateOptions = listOf(
-    SubsystemTemplateOption(
-        SubsystemTemplate.SIMPLE_ACTUATOR,
-        "Simple actuator",
-        "Bounded open-loop motor output with a declared neutral state and fault monitoring.",
-        "Motors",
-        true,
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
-        "Position-controlled mechanism",
-        "Closed-loop position control with cached feedback, soft limits, and stale-signal handling.",
-        "Motors",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM,
-        "Velocity-controlled mechanism",
-        "Closed-loop velocity control with current monitoring and a safe spin-down path.",
-        "Motors",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.ELEVATOR_LIFT,
-        "Elevator or lift",
-        "Profiled height control, limit-switch homing, gravity feedforward, and soft limits.",
-        "Common mechanisms",
-        true,
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.ARM_PIVOT,
-        "Arm or pivot",
-        "Profiled angular control, homing, cosine gravity feedforward, and angular limits.",
-        "Common mechanisms",
-        true,
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.FLYWHEEL_SHOOTER,
-        "Flywheel or shooter",
-        "Velocity PID plus feedforward, ready tolerance, and current monitoring.",
-        "Common mechanisms",
-        true,
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.INTAKE_CONVEYOR,
-        "Intake, conveyor, or indexer",
-        "Open-loop motion with current-based jam detection, bounded recovery, and game-piece simulation.",
-        "Common mechanisms",
-        true,
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.DUAL_MOTOR_FOLLOWER,
-        "Dual-motor leader/follower",
-        "One controller drives a leader and an explicitly inverted follower with group-safe neutral behavior.",
-        "Motors",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.POSITIONAL_SERVO,
-        "Positional servo",
-        "Normalized 0–1 position commands, a reviewed safe position, inversion, and mirrored followers.",
-        "Servos and indicators",
-        true,
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.CONTINUOUS_SERVO,
-        "Continuous-rotation servo",
-        "Normalized bidirectional power with neutral, inversion, and follower support.",
-        "Servos and indicators",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.SENSOR_ONLY_SUBSYSTEM,
-        "Sensor-only subsystem",
-        "A cached, validity-aware input snapshot with telemetry and no actuator output.",
-        "Sensors",
-    ),
-    SubsystemTemplateOption(SubsystemTemplate.LIMIT_SWITCH_SENSOR, "Limit switch", "A cached digital end-stop with explicit active polarity and freshness.", "Sensors", true),
-    SubsystemTemplateOption(SubsystemTemplate.BEAM_BREAK_SENSOR, "Beam-break sensor", "A cached presence sensor for game pieces, indexing, and interlocks.", "Sensors", true),
-    SubsystemTemplateOption(SubsystemTemplate.POTENTIOMETER_SENSOR, "Potentiometer", "An analog position input with documented voltage-to-state conversion.", "Sensors"),
-    SubsystemTemplateOption(SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR, "Absolute encoder", "An absolute angular measurement published in canonical radians; controller wrap is not inferred.", "Sensors"),
-    SubsystemTemplateOption(SubsystemTemplate.QUADRATURE_ENCODER_SENSOR, "Quadrature encoder", "Position and velocity feedback with explicit counts-per-revolution calibration.", "Sensors"),
-    SubsystemTemplateOption(SubsystemTemplate.DISTANCE_SENSOR, "Distance sensor", "A cached metric distance signal with validity bounds and freshness.", "Sensors"),
-    SubsystemTemplateOption(SubsystemTemplate.IMU_SENSOR, "IMU or gyroscope", "Cached yaw and yaw-rate feedback in radians for orientation-aware mechanisms.", "Sensors"),
-    SubsystemTemplateOption(SubsystemTemplate.PNEUMATIC_ACTUATOR, "Pneumatic actuator", "An FRC solenoid with explicit module, channel, safe-off output, and generated mock.", "Actuators"),
-    SubsystemTemplateOption(
-        SubsystemTemplate.HOMED_MECHANISM,
-        "Homed mechanism",
-        "Position control gated on an explicit home reference, calibration health, and soft limits.",
-        "Homing",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.CURRENT_HOMED_MECHANISM,
-        "Current-stall homing",
-        "Bounded sensorless homing using fresh current evidence, dwell, timeout, and neutral-before-zero.",
-        "Homing",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.VELOCITY_HOMED_MECHANISM,
-        "Velocity-stall homing",
-        "Bounded sensorless homing using fresh low-velocity evidence, dwell, and timeout.",
-        "Homing",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.COMPOSITE_MECHANISM,
-        "Composite mechanism",
-        "Coordinated devices with one atomic snapshot, neutral policy, and partial-failure handling.",
-        "Advanced mechanisms",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.TWO_DOF_ARM,
-        "Two-joint arm",
-        "Two profiled joints with explicit geometry, coupled gravity feedforward, and generated linkage simulation.",
-        "Advanced mechanisms",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.INDICATOR_LIGHT_PWM,
-        "PWM indicator light",
-        "Color-safe named lighting output with a declared off state.",
-        "Servos and indicators",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.PRISM_LED_DRIVER,
-        "goBILDA Prism LED driver",
-        "Pattern pulse-width control, brightness metadata, and a safe off preset.",
-        "Servos and indicators",
-    ),
-    SubsystemTemplateOption(
-        SubsystemTemplate.ADVANCED_CUSTOM,
-        "Advanced/custom",
-        "An explicit starting point that requires every applicable hardware and safety choice.",
-        "Advanced mechanisms",
-    ),
-)
-
-/**
- * UI editing session kept separate from the strict persisted descriptor.
- *
- * The canonical document remains the generation contract; this layer owns reversible student
- * edits and exposes a single compile boundary through [document].
- */
-data class SubsystemEditorDraft(
-    val document: SubsystemDocument,
-    val undo: List<SubsystemDocument> = emptyList(),
-    val redo: List<SubsystemDocument> = emptyList(),
-) {
-    val canUndo: Boolean get() = undo.isNotEmpty()
-    val canRedo: Boolean get() = redo.isNotEmpty()
-
-    fun edit(transform: (SubsystemDocument) -> SubsystemDocument): SubsystemEditorDraft {
-        val next = transform(document)
-        if (next == document) return this
-        return copy(document = next, undo = (undo + document).takeLast(50), redo = emptyList())
-    }
-
-    fun undo(): SubsystemEditorDraft = undo.lastOrNull()?.let { previous ->
-        copy(document = previous, undo = undo.dropLast(1), redo = (redo + document).takeLast(50))
-    } ?: this
-
-    fun redo(): SubsystemEditorDraft = redo.lastOrNull()?.let { next ->
-        copy(document = next, undo = (undo + document).takeLast(50), redo = redo.dropLast(1))
-    } ?: this
-}
-
-data class SubsystemGeneratorState(
-    val projectPath: String,
-    val league: League,
-    val documents: List<SubsystemDocument> = emptyList(),
-    val selectedDocumentId: String? = null,
-    val draft: SubsystemEditorDraft? = null,
-    val selectedHardwareUid: String? = null,
-    val selectedFieldUid: String? = null,
-    val selectedLoopUid: String? = null,
-    val selectedInterlockId: String? = null,
-    val selectedTuningParameterUid: String? = null,
-    val activeStage: SubsystemBuilderStage = SubsystemBuilderStage.PURPOSE,
-    /** Session-local navigation evidence used by guided learning; never persisted as safety proof. */
-    val visitedStages: Set<SubsystemBuilderStage> = setOf(SubsystemBuilderStage.PURPOSE),
-    val selectedTemplate: SubsystemTemplate = SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
-    val previewFiles: List<SubsystemPreviewFile> = emptyList(),
-    val generatedPlumbingExpanded: Boolean = false,
-    val pendingStarterReplacements: List<SubsystemPreviewFile> = emptyList(),
-    val starterConfirmationToken: String? = null,
-    val problems: List<SubsystemProblem> = emptyList(),
-    val dirty: Boolean = false,
-    val generationPhase: AresGenerationPhase = AresGenerationPhase.IDLE,
-    val generationMessage: String? = null,
-    val generatedContentHash: String? = null,
-    val status: String? = null,
-    val loadError: String? = null,
-    val projectRevision: ProjectSessionRevision? = null,
-    val aiProposalInProgress: Boolean = false,
-    val aiProposal: SubsystemAiProposalReview? = null,
-    val aiProposalError: String? = null,
-    val showTemplatePicker: Boolean = false,
-    val pendingRemoval: SubsystemRemovalRequest? = null,
-    val recentRecovery: SubsystemRecoveryNotice? = null,
-) {
-    val canSave: Boolean
-        get() = dirty && loadError == null && problems.none { it.severity == SubsystemProblemSeverity.ERROR }
-
-    val canGenerate: Boolean
-        get() = !dirty && draft != null && loadError == null &&
-            generationPhase != AresGenerationPhase.RUNNING &&
-            problems.none { it.severity == SubsystemProblemSeverity.ERROR }
-
-    val hasProtectedUserOwnedConflict: Boolean
-        get() = previewFiles.any { it.change == SubsystemFileChange.PROTECTED_USER_OWNED }
-
-    val canUndo: Boolean get() = draft?.canUndo == true
-    val canRedo: Boolean get() = draft?.canRedo == true
-}
 
 /**
  * Project-backed subsystem editor. GUI documents and hand-authored subsystem DSL use the same
@@ -384,6 +87,7 @@ class SubsystemGeneratorViewModel(
         League.FTC -> "org.firstinspires.ftc.teamcode.subsystems"
         League.FRC -> "com.areslib.frc.subsystems"
     }
+    private val previewPlanner = SubsystemBuilderPreviewPlanner(league, platform, basePackage)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var aiProposalGeneration = 0L
     private val _state = MutableStateFlow(SubsystemGeneratorState(projectPath, league))
@@ -724,7 +428,7 @@ class SubsystemGeneratorViewModel(
                 val rawProposal = assistant.propose(base, request)
                 val candidate = sanitizeSubsystemDesignCandidate(base, rawProposal.candidate)
                 val proposal = rawProposal.copy(candidate = candidate)
-                val problems = validateSubsystemDocument(candidate).map {
+                val problems = SubsystemSchema.validate(candidate).map {
                     SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
                 } + safetyWarnings(candidate)
                 SubsystemAiProposalReview(
@@ -1017,7 +721,7 @@ class SubsystemGeneratorViewModel(
             ?: return@edit document
         val measurement = document.stateFields.firstOrNull {
             it.role == SubsystemFieldRole.MEASUREMENT && it.type.isNumeric() &&
-                subsystemControlUnitsCompatible(target.unit, it.unit)
+                SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
         }
         val strategy = when {
             actuator.kind == SubsystemHardwareKind.POSITIONAL_SERVO -> SubsystemControlStrategy.SERVO_POSITION
@@ -1072,17 +776,17 @@ class SubsystemGeneratorViewModel(
                     document.stateFields.firstOrNull { it.fieldId == measurementId }
                 }
                 val compatibleMeasurement = currentMeasurement?.takeIf {
-                    subsystemControlUnitsCompatible(target.unit, it.unit)
+                    SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
                 } ?: document.stateFields.firstOrNull {
                     it.role == SubsystemFieldRole.MEASUREMENT && it.type.isNumeric() &&
-                        subsystemControlUnitsCompatible(target.unit, it.unit)
+                        SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
                 }
                 loop.copy(
                     targetFieldId = targetFieldId,
                     measurementFieldId = if (loop.strategy.requiresMeasurement()) compatibleMeasurement?.fieldId else null,
                     continuousInput = loop.continuousInput.copy(
-                        enabled = loop.continuousInput.enabled && subsystemUnitIsCanonicalAngle(target.unit) &&
-                            subsystemUnitIsCanonicalAngle(compatibleMeasurement?.unit),
+                        enabled = loop.continuousInput.enabled && SubsystemUnits.isCanonicalAngle(target.unit) &&
+                            SubsystemUnits.isCanonicalAngle(compatibleMeasurement?.unit),
                     ),
                 )
             }
@@ -1114,11 +818,11 @@ class SubsystemGeneratorViewModel(
         val preferredMeasurement = preferredSource?.let { source ->
             actuator?.measurements?.firstOrNull { it.source == source }?.fieldId
         }?.let { fieldId -> document.stateFields.firstOrNull { it.fieldId == fieldId } }
-            ?.takeIf { target == null || subsystemControlUnitsCompatible(target.unit, it.unit) }
+            ?.takeIf { target == null || SubsystemUnits.controlUnitsCompatible(target.unit, it.unit) }
             ?.fieldId
             ?: document.stateFields.firstOrNull {
             it.role == SubsystemFieldRole.MEASUREMENT && it.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT) &&
-                (target == null || subsystemControlUnitsCompatible(target.unit, it.unit))
+                (target == null || SubsystemUnits.controlUnitsCompatible(target.unit, it.unit))
         }?.fieldId
         val supportsFeedforward = strategy in setOf(
             SubsystemControlStrategy.POSITION_PID,
@@ -1543,96 +1247,7 @@ class SubsystemGeneratorViewModel(
 
     private fun SubsystemGeneratorState.revalidated(
         external: List<SubsystemProblem> = problems.filter { it.path.startsWith("project:") },
-    ): SubsystemGeneratorState {
-        val document = draft?.document ?: return copy(previewFiles = emptyList(), problems = external)
-        val validation = validateSubsystemDocument(document).map {
-            SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
-        } + projectConnectionProblems(document, documents)
-        val generated = if (validation.isEmpty() && document.implementation.kind.isAresGenerated()) {
-            val sourceFiles = SubsystemKotlinGenerator.generate(document, SubsystemKotlinCodegenTarget(platform, basePackage))
-            val starterPlan = SubsystemStarterReconciler.plan(starterRoot().toPath(), sourceFiles)
-            val starterChanges = starterPlan.changes.associateBy { it.relativePath }
-            sourceFiles.map { file ->
-                val destination = artifactDestination(file.relativePath, file.sourceSet, file.ownership)
-                val existing = safeExistingFile(destination)?.takeIf(File::isFile)?.readText()
-                val planned = starterChanges[file.relativePath.replace('\\', '/')]
-                val change = when (planned?.kind) {
-                    SubsystemStarterChangeKind.ADD -> SubsystemFileChange.CREATE
-                    SubsystemStarterChangeKind.UNCHANGED -> SubsystemFileChange.UNCHANGED
-                    SubsystemStarterChangeKind.REPLACE -> SubsystemFileChange.REPLACE_STARTER
-                    SubsystemStarterChangeKind.PROTECTED -> SubsystemFileChange.PROTECTED_USER_OWNED
-                    null -> when {
-                        existing == null -> SubsystemFileChange.CREATE
-                        existing == file.content -> SubsystemFileChange.UNCHANGED
-                        file.ownership == SubsystemArtifactOwnership.USER_OWNED -> SubsystemFileChange.PROTECTED_USER_OWNED
-                        else -> SubsystemFileChange.UPDATE_GENERATED
-                    }
-                }
-                SubsystemPreviewFile(
-                    path = file.relativePath,
-                    sourceSet = file.sourceSet,
-                    content = file.content,
-                    artifact = file.artifact,
-                    group = file.group,
-                    ownership = file.ownership,
-                    description = file.description,
-                    moduleName = if (league == League.FTC) "ARES-FTC · :TeamCode" else "ARES-FRC · root",
-                    projectRelativePath = destination,
-                    change = change,
-                    diff = planned?.diff?.takeIf(String::isNotBlank)?.let(::parseUnifiedDiff)
-                        ?: existing?.takeIf { it != file.content }?.let { structuredLineDiff(it, file.content) }.orEmpty(),
-                )
-            }
-        } else emptyList()
-        val token = if (validation.isEmpty() && document.implementation.kind == SubsystemImplementationKind.GENERATED_STARTER) {
-            val sources = SubsystemKotlinGenerator.generate(document, SubsystemKotlinCodegenTarget(platform, basePackage))
-            SubsystemStarterReconciler.plan(starterRoot().toPath(), sources).confirmationToken
-        } else null
-        return copy(
-            previewFiles = generated,
-            starterConfirmationToken = token,
-            problems = (external + validation + safetyWarnings(document))
-                .distinctBy { Triple(it.severity, it.path, it.message) },
-        )
-    }
-
-    private fun artifactDestination(
-        relativePath: String,
-        sourceSet: GeneratedSubsystemSourceSet,
-        ownership: SubsystemArtifactOwnership,
-    ): String {
-        val packagePath = basePackage.replace('.', '/')
-        val sourceKind = if (sourceSet == GeneratedSubsystemSourceSet.TEST) "test" else "main"
-        val root = when {
-            ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT && league == League.FTC ->
-                "TeamCode/build/generated/ares/$sourceKind/kotlin/$packagePath"
-            ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT ->
-                "build/generated/ares/$sourceKind/kotlin/$packagePath"
-            league == League.FTC && sourceSet == GeneratedSubsystemSourceSet.TEST -> "TeamCode/src/test/java/$packagePath"
-            league == League.FTC -> "TeamCode/src/main/java/$packagePath"
-            sourceSet == GeneratedSubsystemSourceSet.TEST -> "src/test/kotlin/$packagePath"
-            else -> "src/main/kotlin/$packagePath"
-        }
-        return "$root/${relativePath.replace('\\', '/')}"
-    }
-
-    private fun safeExistingFile(projectRelativePath: String): File? {
-        val root = File(_state.value.projectPath).canonicalFile
-        val candidate = File(root, projectRelativePath).canonicalFile
-        return candidate.takeIf { it.toPath().startsWith(root.toPath()) }
-    }
-
-    private fun starterRoot(): File {
-        val relative = if (league == League.FTC) {
-            "TeamCode/src/main/java/${basePackage.replace('.', '/')}"
-        } else {
-            "src/main/kotlin/${basePackage.replace('.', '/')}"
-        }
-        val root = File(_state.value.projectPath).canonicalFile
-        return File(root, relative).canonicalFile.also {
-            require(it.toPath().startsWith(root.toPath())) { "Subsystem starter root escaped the project" }
-        }
-    }
+    ): SubsystemGeneratorState = previewPlanner.plan(this, external)
 
     override fun close() = scope.cancel()
 
@@ -1655,244 +1270,3 @@ class SubsystemGeneratorViewModel(
         }
     }
 }
-
-private fun safetyWarnings(document: SubsystemDocument): List<SubsystemProblem> = buildList {
-    fun warn(path: String, message: String) = add(SubsystemProblem(SubsystemProblemSeverity.WARNING, path, message))
-    val hasActuators = document.hardware.any { it.kind.isActuator() }
-    if (!hasActuators) return@buildList
-    if (!document.safety.requiresConfigurationHealth) {
-        warn("safety.requiresConfigurationHealth", "Configuration health is not gating actuator output.")
-    }
-    if (!document.safety.latchOutputFaults) {
-        warn("safety.latchOutputFaults", "Failed output writes will not latch a fault; verify this is intentional.")
-    }
-    if (!document.safety.requiresExplicitNeutralRecovery) {
-        warn("safety.requiresExplicitNeutralRecovery", "Fault recovery does not require a successful explicit neutral command.")
-    }
-    if (!document.safety.zeroAllocationPeriodic) {
-        warn("safety.zeroAllocationPeriodic", "The periodic-path zero-allocation contract is disabled.")
-    }
-    if (!document.safety.telemetryEnabled) {
-        warn("safety.telemetryEnabled", "Safety telemetry is disabled, reducing pit-side fault visibility.")
-    }
-    if (document.safety.requiresCurrentMonitoring && document.hardware.none { device ->
-            device.measurements.any { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
-        }
-    ) {
-        warn("safety.requiresCurrentMonitoring", "Current monitoring is required but no cached current measurement is configured.")
-    }
-    document.hardware.forEachIndexed { hardwareIndex, device ->
-        if (device.kind != SubsystemHardwareKind.MOTOR) return@forEachIndexed
-        device.measurements.forEachIndexed { measurementIndex, measurement ->
-            if (measurement.source !in setOf(
-                    SubsystemMeasurementSource.MOTOR_POSITION_NATIVE,
-                    SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND,
-                ) || measurement.scale != 1.0
-            ) return@forEachIndexed
-            val field = document.stateFields.firstOrNull { it.fieldId == measurement.fieldId }
-            if (!field?.unit.isNullOrBlank()) {
-                warn(
-                    "hardware[$hardwareIndex].measurements[$measurementIndex].scale",
-                    "${field.displayName} is labeled '${field.unit}' but still uses a 1:1 native motor scale. Review gearing/encoder conversion before tuning or physical use.",
-                )
-            }
-        }
-    }
-}
-
-private fun SubsystemHardwareKind.isActuator(): Boolean = this == SubsystemHardwareKind.MOTOR ||
-    this == SubsystemHardwareKind.POSITIONAL_SERVO || this == SubsystemHardwareKind.CONTINUOUS_SERVO ||
-    this == SubsystemHardwareKind.INDICATOR_LIGHT || this == SubsystemHardwareKind.PRISM_DRIVER ||
-    this == SubsystemHardwareKind.SOLENOID
-
-private fun SubsystemValueType.isNumeric(): Boolean = this == SubsystemValueType.DOUBLE || this == SubsystemValueType.INT
-
-private fun SubsystemControlStrategy.requiresMeasurement(): Boolean = this == SubsystemControlStrategy.POSITION_PID ||
-    this == SubsystemControlStrategy.PROFILED_POSITION_PID || this == SubsystemControlStrategy.VELOCITY_PID ||
-    this == SubsystemControlStrategy.BANG_BANG
-
-/**
- * Gives a newly applied GUI template addresses that do not immediately collide with another
- * subsystem. FTC keeps a familiar short default until it is already owned; FRC mechanism CAN
- * devices start in the intentionally separate 20-62 range because the drivetrain commonly owns
- * the low IDs. Every value remains an editable draft and still goes through Hardware Setup.
- */
-private fun SubsystemDocument.withAvailableTemplateConnections(
-    existingDocuments: Collection<SubsystemDocument>,
-): SubsystemDocument {
-    val existingHardware = existingDocuments
-        .filterNot { it.documentId == documentId }
-        .flatMap { it.hardware }
-    val usedNames = existingHardware.mapNotNullTo(linkedSetOf()) {
-        it.connection.hardwareMapName?.trim()?.takeIf(String::isNotEmpty)
-    }
-    val usedCan = existingHardware.mapNotNullTo(linkedSetOf()) { device ->
-        device.connection.canId?.let { device.connection.canBus.trim().lowercase() to it }
-    }
-    val usedChannels = existingHardware.flatMapTo(linkedSetOf()) { device ->
-        buildList {
-            device.connection.channel?.let { add(device.kind.channelNamespace() to it) }
-            device.connection.secondaryChannel?.let { add(device.kind.channelNamespace() to it) }
-        }
-    }
-    val namePrefix = documentId
-        .lowercase()
-        .replace(Regex("[^a-z0-9_]+"), "_")
-        .trim('_')
-        .ifBlank { "subsystem" }
-
-    return copy(hardware = hardware.map { device ->
-        var connection = device.connection
-        if (platform == SubsystemPlatform.FTC) {
-            val currentName = connection.hardwareMapName?.trim()
-            if (!currentName.isNullOrEmpty()) {
-                val chosen = if (usedNames.add(currentName)) {
-                    currentName
-                } else {
-                    uniqueTextValue("${namePrefix}_${device.hardwareId}", usedNames)
-                }
-                connection = connection.copy(hardwareMapName = chosen)
-            }
-        } else {
-            connection.canId?.let { requested ->
-                val bus = connection.canBus.trim().lowercase()
-                val chosen = requested.takeIf { it in 20..62 && (bus to it) !in usedCan }
-                    ?: (20..62).firstOrNull { (bus to it) !in usedCan }
-                    ?: requested
-                usedCan += bus to chosen
-                connection = connection.copy(canId = chosen)
-            }
-            connection.channel?.let { requested ->
-                val namespace = device.kind.channelNamespace()
-                val chosen = requested.takeIf { (namespace to it) !in usedChannels }
-                    ?: (0..31).firstOrNull { (namespace to it) !in usedChannels }
-                    ?: requested
-                usedChannels += namespace to chosen
-                connection = connection.copy(channel = chosen)
-            }
-            connection.secondaryChannel?.let { requested ->
-                val namespace = device.kind.channelNamespace()
-                val chosen = requested.takeIf { (namespace to it) !in usedChannels }
-                    ?: (0..31).firstOrNull { (namespace to it) !in usedChannels }
-                    ?: requested
-                usedChannels += namespace to chosen
-                connection = connection.copy(secondaryChannel = chosen)
-            }
-        }
-        device.copy(connection = connection)
-    })
-}
-
-private fun uniqueTextValue(base: String, used: MutableSet<String>): String {
-    var candidate = base
-    var suffix = 2
-    while (!used.add(candidate)) candidate = "${base}_${suffix++}"
-    return candidate
-}
-
-private fun SubsystemHardwareKind.channelNamespace(): String = when (this) {
-    SubsystemHardwareKind.POSITIONAL_SERVO,
-    SubsystemHardwareKind.CONTINUOUS_SERVO,
-    SubsystemHardwareKind.INDICATOR_LIGHT,
-    SubsystemHardwareKind.PRISM_DRIVER -> "pwm"
-    SubsystemHardwareKind.DIGITAL_INPUT,
-    SubsystemHardwareKind.QUADRATURE_ENCODER -> "dio"
-    SubsystemHardwareKind.ANALOG_INPUT,
-    SubsystemHardwareKind.ABSOLUTE_ENCODER,
-    SubsystemHardwareKind.DISTANCE_SENSOR -> "analog"
-    SubsystemHardwareKind.SOLENOID -> "solenoid"
-    else -> name.lowercase()
-}
-
-/** Cross-document ownership is a builder error, not a surprise deferred to Verify & build. */
-private fun projectConnectionProblems(
-    document: SubsystemDocument,
-    savedDocuments: Collection<SubsystemDocument>,
-): List<SubsystemProblem> {
-    val others = savedDocuments.filterNot { it.documentId == document.documentId }
-    val nameOwners = mutableMapOf<String, String>()
-    val canOwners = mutableMapOf<Pair<String, Int>, String>()
-    val channelOwners = mutableMapOf<Pair<String, Int>, String>()
-    others.forEach { owner ->
-        owner.hardware.forEach { device ->
-            val label = "${owner.displayName} / ${device.displayName}"
-            device.connection.hardwareMapName?.trim()?.takeIf(String::isNotEmpty)?.let { nameOwners.putIfAbsent(it, label) }
-            device.connection.canId?.let { canOwners.putIfAbsent(device.connection.canBus.trim().lowercase() to it, label) }
-            val namespace = device.kind.channelNamespace()
-            device.connection.channel?.let { channelOwners.putIfAbsent(namespace to it, label) }
-            device.connection.secondaryChannel?.let { channelOwners.putIfAbsent(namespace to it, label) }
-        }
-    }
-    return buildList {
-        document.hardware.forEachIndexed { index, device ->
-            device.connection.hardwareMapName?.trim()?.takeIf(String::isNotEmpty)?.let { name ->
-                nameOwners[name]?.let { owner ->
-                    add(SubsystemProblem(
-                        SubsystemProblemSeverity.ERROR,
-                        "hardware[$index].connection.hardwareMapName",
-                        "Hardware-map name '$name' is already owned by $owner. Give every subsystem device a unique configured name.",
-                    ))
-                }
-            }
-            device.connection.canId?.let { canId ->
-                val bus = device.connection.canBus.trim().lowercase()
-                canOwners[bus to canId]?.let { owner ->
-                    add(SubsystemProblem(
-                        SubsystemProblemSeverity.ERROR,
-                        "hardware[$index].connection.canId",
-                        "CAN ID $canId on ${device.connection.canBus} is already owned by $owner. Choose an unused device ID.",
-                    ))
-                }
-            }
-            val namespace = device.kind.channelNamespace()
-            listOfNotNull(device.connection.channel, device.connection.secondaryChannel).forEach { channel ->
-                channelOwners[namespace to channel]?.let { owner ->
-                    add(SubsystemProblem(
-                        SubsystemProblemSeverity.ERROR,
-                        "hardware[$index].connection.channel",
-                        "${namespace.uppercase()} channel $channel is already owned by $owner. Choose an unused channel.",
-                    ))
-                }
-            }
-        }
-    }
-}
-
-/**
- * Small deterministic line diff for starter replacement review. Common context is intentionally
- * bounded so a large generated file cannot bury the customization that would be replaced.
- */
-internal fun structuredLineDiff(existing: String, proposed: String, contextLines: Int = 3): List<SubsystemDiffLine> {
-    val before = existing.lines()
-    val after = proposed.lines()
-    var prefix = 0
-    while (prefix < before.size && prefix < after.size && before[prefix] == after[prefix]) prefix++
-    var suffix = 0
-    while (
-        suffix < before.size - prefix && suffix < after.size - prefix &&
-        before[before.lastIndex - suffix] == after[after.lastIndex - suffix]
-    ) suffix++
-
-    val leadingStart = (prefix - contextLines.coerceAtLeast(0)).coerceAtLeast(0)
-    val trailingCount = suffix.coerceAtMost(contextLines.coerceAtLeast(0))
-    return buildList {
-        before.subList(leadingStart, prefix).forEach { add(SubsystemDiffLine(SubsystemDiffLineKind.CONTEXT, it)) }
-        before.subList(prefix, before.size - suffix).forEach { add(SubsystemDiffLine(SubsystemDiffLineKind.REMOVED, it)) }
-        after.subList(prefix, after.size - suffix).forEach { add(SubsystemDiffLine(SubsystemDiffLineKind.ADDED, it)) }
-        if (trailingCount > 0) {
-            after.subList(after.size - suffix, after.size - suffix + trailingCount)
-                .forEach { add(SubsystemDiffLine(SubsystemDiffLineKind.CONTEXT, it)) }
-        }
-    }
-}
-
-internal fun parseUnifiedDiff(diff: String): List<SubsystemDiffLine> = diff.lineSequence()
-    .filterNot { it.startsWith("@@") }
-    .map { line ->
-        when {
-            line.startsWith("+") -> SubsystemDiffLine(SubsystemDiffLineKind.ADDED, line.drop(1))
-            line.startsWith("-") -> SubsystemDiffLine(SubsystemDiffLineKind.REMOVED, line.drop(1))
-            else -> SubsystemDiffLine(SubsystemDiffLineKind.CONTEXT, line.removePrefix(" "))
-        }
-    }
-    .toList()

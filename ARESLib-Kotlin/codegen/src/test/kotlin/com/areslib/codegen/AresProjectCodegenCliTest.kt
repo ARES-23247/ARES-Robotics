@@ -12,6 +12,8 @@ import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresFtcRuntimeOptionsDocument
+import com.areslib.project.AresRuntimeOptionsDocument
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemFieldRole
@@ -79,6 +81,7 @@ class AresProjectCodegenCliTest {
                     robotWidthMeters = 0.45,
                     fieldLengthMeters = 3.6576,
                     fieldWidthMeters = 3.6576,
+                    runtimeOptions = AresRuntimeOptionsDocument(ftc = AresFtcRuntimeOptionsDocument()),
                 )
             )
         )
@@ -337,6 +340,7 @@ class AresProjectCodegenCliTest {
                     coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
                     robotLengthMeters = 0.45, robotWidthMeters = 0.45,
                     fieldLengthMeters = 3.6576, fieldWidthMeters = 3.6576,
+                    runtimeOptions = AresRuntimeOptionsDocument(ftc = AresFtcRuntimeOptionsDocument()),
                 )
             ),
         )
@@ -441,6 +445,7 @@ class AresProjectCodegenCliTest {
             robotWidthMeters = 0.45,
             fieldLengthMeters = 3.6576,
             fieldWidthMeters = 3.6576,
+            runtimeOptions = AresRuntimeOptionsDocument(ftc = AresFtcRuntimeOptionsDocument()),
         ),
     )
 

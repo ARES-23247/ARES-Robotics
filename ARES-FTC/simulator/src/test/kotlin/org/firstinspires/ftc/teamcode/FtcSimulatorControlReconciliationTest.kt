@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode
 import com.areslib.action.RobotAction
 import com.areslib.ftc.FtcMecanumRobot
 import com.areslib.ftc.FtcTeleopDriveFrame
-import com.areslib.hardware.HardwareRegistry
 import com.areslib.sim.model.MecanumRobotDouble
 import com.areslib.state.Alliance
 import com.areslib.telemetry.AresGamepad
@@ -20,7 +19,6 @@ class FtcSimulatorControlReconciliationTest {
 
     @After fun cleanUp() {
         runCatching { robot?.close() }
-        HardwareRegistry.clear()
         RobotClock.useSystemTime()
     }
 
