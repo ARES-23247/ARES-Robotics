@@ -4,6 +4,7 @@ import com.ares.analytics.service.ImportReport
 import com.ares.analytics.shared.AlertRecord
 import com.ares.analytics.shared.Session
 import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.shared.models.AnalysisReady
 import com.ares.analytics.shared.models.CloudUploadCommitted
 import com.ares.analytics.shared.models.IntegrationEvent
@@ -42,7 +43,7 @@ class IntegrationEventRecorder(
     private val store: IntegrationStore,
     private val routingPolicy: IntegrationRoutingPolicy,
 ) {
-    suspend fun sessionImported(session: Session, reports: List<ImportReport>) = recordSafely(
+    suspend fun sessionImported(session: Session, reports: List<ImportReport>) = recordAutomatically(
         IntegrationEvent(
             eventId = "session-imported:${session.sessionId}",
             occurredAtMs = session.createdAt,
@@ -52,10 +53,11 @@ class IntegrationEventRecorder(
                 sourceNames = reports.map(ImportReport::sourceName).distinct().sorted(),
                 sourceSha256 = reports.map(ImportReport::sourceSha256).distinct().sorted(),
             ),
-        )
+        ),
+        externalUpdatesAllowed = session.allowsAutomaticExternalUpdates(),
     )
 
-    suspend fun analysisReady(summary: SessionSummary, analysisVersion: String = "summary-v1") = recordSafely(
+    suspend fun analysisReady(summary: SessionSummary, analysisVersion: String = "summary-v1") = recordAutomatically(
         IntegrationEvent(
             eventId = "analysis-ready:${summary.sessionId}:$analysisVersion",
             occurredAtMs = summary.createdAt,
@@ -64,12 +66,17 @@ class IntegrationEventRecorder(
                 sessionId = summary.sessionId,
                 analysisVersion = analysisVersion,
             ),
-        )
+        ),
+        externalUpdatesAllowed = summary.allowsAutomaticExternalUpdates(),
     )
 
-    suspend fun alertPersisted(alert: AlertRecord, workspace: IntegrationWorkspaceIdentity): Boolean {
+    suspend fun alertPersisted(
+        alert: AlertRecord,
+        workspace: IntegrationWorkspaceIdentity,
+        externalUpdatesAllowed: Boolean,
+    ): Boolean {
         val resolvedAtMs = alert.resolveTimestampMs
-        return recordSafely(
+        return recordAutomatically(
             if (resolvedAtMs == null) {
             IntegrationEvent(
                 eventId = "robot-issue-opened:${alert.alertId}",
@@ -94,7 +101,8 @@ class IntegrationEventRecorder(
                         resolution = "Alert rule ${alert.ruleKey} resolved",
                     ),
                 )
-            }
+            },
+            externalUpdatesAllowed,
         )
     }
 
@@ -105,7 +113,8 @@ class IntegrationEventRecorder(
         manifestRevision: String,
         occurredAtMs: Long,
         remoteUrl: String? = null,
-    ) = recordSafely(
+        externalUpdatesAllowed: Boolean = true,
+    ) = recordAutomatically(
         IntegrationEvent(
             eventId = "cloud-upload-committed:$sessionId:$remoteObjectId",
             occurredAtMs = occurredAtMs,
@@ -116,12 +125,20 @@ class IntegrationEventRecorder(
                 manifestRevision = manifestRevision,
                 remoteUrl = remoteUrl,
             ),
-        )
+        ),
+        externalUpdatesAllowed,
     )
 
-    suspend fun notebookDraftReady(entry: EngineeringNotebookEntry) = recordSafely(
+    suspend fun notebookDraftReady(
+        entry: EngineeringNotebookEntry,
+        externalUpdatesAllowed: Boolean = true,
+    ) = recordSafely(
         notebookEvent(entry),
-        routingPolicy.notificationProvidersFor(IntegrationEventType.NOTEBOOK_DRAFT_READY),
+        if (externalUpdatesAllowed) {
+            routingPolicy.notificationProvidersFor(IntegrationEventType.NOTEBOOK_DRAFT_READY)
+        } else {
+            emptySet()
+        },
     )
 
     suspend fun submitNotebookRevision(entry: EngineeringNotebookEntry, publisherIds: Set<String>): Boolean {
@@ -194,6 +211,14 @@ class IntegrationEventRecorder(
         )
         false
     }
+
+    private suspend fun recordAutomatically(
+        event: IntegrationEvent,
+        externalUpdatesAllowed: Boolean,
+    ): Boolean = recordSafely(
+        event,
+        if (externalUpdatesAllowed) routingPolicy.providersFor(event.payload.eventType()) else emptySet(),
+    )
 
     private fun Session.workspaceIdentity() = IntegrationWorkspaceIdentity(teamId, seasonId, robotId)
 

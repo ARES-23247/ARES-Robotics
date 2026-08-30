@@ -5,6 +5,7 @@ import com.ares.analytics.service.ImportReport
 import com.ares.analytics.service.ImportStatus
 import com.ares.analytics.shared.Session
 import com.ares.analytics.shared.SessionSummary
+import com.ares.analytics.shared.AlertRecord
 import com.ares.analytics.shared.models.EngineeringNotebookEntry
 import com.ares.analytics.shared.models.EngineeringNotebookHasher
 import com.ares.analytics.shared.models.IntegrationEvent
@@ -146,6 +147,82 @@ class IntegrationOutboxIntegrationTest {
                     "webhook.primary",
                 )?.state,
             )
+        }
+    }
+
+    @Test
+    fun `simulation evidence is persisted locally without external deliveries`() = runTest {
+        withDatabase { database ->
+            database.integrationRouting.replace(
+                IntegrationEventType.entries.associateWith {
+                    setOf("zulip.primary", "webhook.primary", "cms.primary")
+                },
+                notebookPublisherIds = setOf("cms.primary"),
+            )
+            val session = Session(
+                sessionId = "session-simulation",
+                teamId = "23247",
+                seasonId = "2026",
+                robotId = "lightbot",
+                createdAt = 5_000L,
+                tags = listOf("SIMULATION", "studio-experiment"),
+            )
+            val report = ImportReport(
+                sourceName = "simulator.jsonl",
+                sourceSha256 = "c".repeat(64),
+                sourceSizeBytes = 321L,
+                decoder = "jsonl",
+                status = ImportStatus.SUCCESS,
+                sessionId = session.sessionId,
+            )
+
+            database.insertImportSession(session)
+            database.completeSessionImport(session, listOf(report))
+            database.insertSessionSummary(
+                SessionSummary(
+                    session.sessionId,
+                    session.teamId,
+                    session.seasonId,
+                    session.robotId,
+                    session.createdAt,
+                    tags = session.tags,
+                )
+            )
+            database.insertAlert(
+                AlertRecord(
+                    alertId = "sim-alert",
+                    sessionId = session.sessionId,
+                    ruleKey = "Robot/LoopTimeMs",
+                    triggerTimestampMs = 5_100L,
+                )
+            )
+            val notebook = notebookEntry(1, "# Simulation notes", 5_200L)
+            database.saveEngineeringNotebookRevision(notebook, externalUpdatesAllowed = false)
+            database.integrationEvents.cloudUploadCommitted(
+                workspace = workspace,
+                sessionId = session.sessionId,
+                remoteObjectId = "drive-object",
+                manifestRevision = "d".repeat(64),
+                occurredAtMs = 5_300L,
+                externalUpdatesAllowed = false,
+            )
+
+            val eventIds = listOf(
+                "session-imported:${session.sessionId}",
+                "analysis-ready:${session.sessionId}:summary-v1",
+                "robot-issue-opened:sim-alert",
+                "notebook-draft-ready:${notebook.entryId}:${notebook.contentHash}",
+                "cloud-upload-committed:${session.sessionId}:drive-object",
+            )
+            eventIds.forEach { eventId ->
+                assertTrue(database.integrations.getEvent(eventId) != null, "$eventId was not recorded locally")
+                listOf("zulip.primary", "webhook.primary", "cms.primary").forEach { providerId ->
+                    assertNull(
+                        database.integrations.getDelivery(eventId, providerId),
+                        "$eventId created an external $providerId delivery",
+                    )
+                }
+            }
         }
     }
 

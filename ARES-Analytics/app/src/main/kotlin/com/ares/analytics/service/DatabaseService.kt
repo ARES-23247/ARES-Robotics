@@ -1,6 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.service.db.*
 import com.ares.analytics.service.integration.IntegrationRepository
 import com.ares.analytics.service.integration.IntegrationStore
@@ -201,9 +202,10 @@ class DatabaseService(
     suspend fun saveEngineeringNotebookRevision(
         entry: com.ares.analytics.shared.models.EngineeringNotebookEntry,
         commitRange: String? = null,
+        externalUpdatesAllowed: Boolean = true,
     ) {
         integrationRepository.saveNotebookRevision(entry)
-        if (commitRange == null) integrationEvents.notebookDraftReady(entry)
+        if (commitRange == null) integrationEvents.notebookDraftReady(entry, externalUpdatesAllowed)
         else integrationEvents.softwareDigestReady(entry, commitRange)
     }
     override suspend fun getSessionSummary(sessionId: String): SessionSummary? = matchLogRepo.getSessionSummary(sessionId)
@@ -301,6 +303,7 @@ class DatabaseService(
                     session.seasonId,
                     session.robotId,
                 ),
+                session.allowsAutomaticExternalUpdates(),
             )
         }
     }

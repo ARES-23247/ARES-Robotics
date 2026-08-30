@@ -18,6 +18,17 @@ enum class SessionMode {
     HISTORICAL_REPLAY
 }
 
+/** Canonical tag applied to Studio-recorded simulator sessions. */
+const val SIMULATION_SESSION_TAG: String = "simulation"
+
+/**
+ * External integrations are opt-in for simulation evidence. Simulation runs remain fully usable
+ * for local analysis, replay, comparison, and reports, but must not automatically notify team or
+ * publishing destinations.
+ */
+fun Iterable<String>.isSimulationSessionTags(): Boolean =
+    any { it.equals(SIMULATION_SESSION_TAG, ignoreCase = true) }
+
 /** Persisted recording identity. [createdAt] and [durationMs] are milliseconds. */
 @Serializable
 data class Session(
@@ -31,6 +42,8 @@ data class Session(
     val matchNumber: Int? = null,
     val allianceColor: String? = null
 )
+
+fun Session.allowsAutomaticExternalUpdates(): Boolean = !tags.isSimulationSessionTags()
 
 /**
  * Precomputed session metrics used by history and cloud indexes.
@@ -71,6 +84,8 @@ data class SessionSummary(
     /** Stable league/team/season/robot boundary that owns the cloud object. */
     val cloudWorkspaceKey: String? = null,
 )
+
+fun SessionSummary.allowsAutomaticExternalUpdates(): Boolean = !tags.isSimulationSessionTags()
 
 @Serializable
 data class SessionAnnotation(
