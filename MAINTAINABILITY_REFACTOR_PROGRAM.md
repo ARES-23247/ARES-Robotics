@@ -131,6 +131,13 @@ inputs to that owner instead of retaining the commissioning state machine. Exist
 autonomous inhibition, homing recovery, SysId gating, and simulator tests exercise the extracted
 controller through the real season composition root.
 
+The Academy slice replaced the 1,500-line Kotlin curriculum body with one bundled
+`academy/catalog.json` document. `AcademyCatalogCodec` enforces the one current schema version,
+exact root and nested fields, stable unique IDs, valid cross-references, complete lab coverage, and
+valid contextual navigation before `LearningCatalog` exposes indexed queries. Unsupported schemas
+and unknown fields fail immediately. There is no legacy reader, fallback catalog, compatibility
+alias, or second source of truth; all Studio consumers use the validated resource.
+
 **Exit criteria:** catalog validation, lesson navigation and progress tests, FRC unit/simulation tests,
 and explicit lifecycle methods remain readable and fail closed.
 
