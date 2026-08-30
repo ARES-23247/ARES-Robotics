@@ -58,7 +58,7 @@ two verified desktop launches and graceful shutdowns, and no regression in simul
 - Separate Google Drive synchronization from Gemini/forensics/chat/SQL assistance.
 - Split match-log persistence into domain repositories over one DuckDB transaction coordinator.
 
-**Exit criteria:** facade compatibility tests, cancellation/shutdown tests, offline behavior, database
+**Exit criteria:** current boundary contract tests, cancellation/shutdown tests, offline behavior, database
 transaction/recovery tests, Git backup/restore fixture, and cloud/AI failures remain isolated.
 
 ## Goal 6 — Reuse and runtime ownership
