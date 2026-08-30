@@ -1026,27 +1026,39 @@ fun MainScreen(services: ServiceRegistry) {
                                     )
                                 }
                             )
-                            NavigationTarget.CLOUD -> CloudScreen(
-                                viewModel = cloudViewModel,
-                                teamId = currentConfig.teamId,
-                                seasonId = currentConfig.seasonId,
-                                robotId = currentConfig.robotId
-                            )
-                            NavigationTarget.IMPORT_CENTER -> ImportCenterScreen(
-                                viewModel = importCenterViewModel,
-                                projectPath = currentConfig.projectPath.orEmpty(),
-                                onOpenRunHistory = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY))
-                                },
-                                onOpenGuidedAnalysis = {
-                                    mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.GUIDED_RUN_ANALYSIS))
-                                },
-                                onOpenHelp = {
-                                    requestedLessonId = "compare-run-evidence"
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                }
+                            NavigationTarget.CLOUD,
+                            NavigationTarget.IMPORT_CENTER,
+                            NavigationTarget.GUIDED_RUN_ANALYSIS,
+                            NavigationTarget.RUN_HISTORY,
+                            NavigationTarget.DATABASE_VIEWER -> RunDataRouteHost(
+                                route = activeNav,
+                                scope = RunDataFeatureScope(
+                                    cloud = cloudViewModel,
+                                    imports = importCenterViewModel,
+                                    guidedAnalysis = guidedRunAnalysisViewModel,
+                                    database = services.databaseService,
+                                    sync = services.syncEngineService,
+                                ),
+                                workspace = currentConfig,
+                                reloadTrigger = mainState.runsIndexReloadTrigger,
+                                actions = RunDataRouteActions(
+                                    navigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
+                                    reloadRuns = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
+                                    openDashboardReplay = { sessionId, timestampMs ->
+                                        dashboardViewModel.onIntent(
+                                            DashboardIntent.SelectPrimarySession(sessionId, timestampMs),
+                                        )
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
+                                    },
+                                    beginTuningExperiment = { seed ->
+                                        guidedTuningExperimentViewModel.onIntent(GuidedTuningExperimentIntent.Begin(seed))
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.TUNING))
+                                    },
+                                    openAcademyLesson = { lessonId ->
+                                        requestedLessonId = lessonId
+                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                                    },
+                                ),
                             )
                             NavigationTarget.FIELD_EDITOR -> FieldEditorScreen(
                                 viewModel = fieldEditorViewModel,
@@ -1097,46 +1109,6 @@ fun MainScreen(services: ServiceRegistry) {
                             NavigationTarget.KDOC_VIEWER -> KDocViewerScreen()
                             NavigationTarget.PIT_DIAGNOSTICS -> HardwareSelfTestWizard(nt4ClientService = services.nt4ClientService)
                             NavigationTarget.MATCH_STRATEGY -> MatchStrategyScreen()
-                            NavigationTarget.GUIDED_RUN_ANALYSIS -> GuidedRunAnalysisScreen(
-                                viewModel = guidedRunAnalysisViewModel,
-                                onOpenImports = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
-                                },
-                                onOpenDashboardReplay = { sessionId, timestampMs ->
-                                    dashboardViewModel.onIntent(DashboardIntent.SelectPrimarySession(sessionId, timestampMs))
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
-                                },
-                                onOpenTuning = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.TUNING))
-                                },
-                                onCreateTuningExperiment = { seed ->
-                                    guidedTuningExperimentViewModel.onIntent(GuidedTuningExperimentIntent.Begin(seed))
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.TUNING))
-                                },
-                                onOpenAcademy = {
-                                    requestedLessonId = "compare-run-evidence"
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                },
-                                onOpenRunHistory = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.RUN_HISTORY))
-                                },
-                            )
-                            NavigationTarget.RUN_HISTORY -> RunHistoryScreen(
-                                databaseService = services.databaseService,
-                                syncEngineService = services.syncEngineService,
-                                workspace = currentConfig,
-                                reloadTrigger = mainState.runsIndexReloadTrigger,
-                                onOpenImports = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.IMPORT_CENTER))
-                                },
-                                onOpenHelp = {
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                }
-                            )
-                            NavigationTarget.DATABASE_VIEWER -> DatabaseViewerScreen(
-                                databaseService = services.databaseService
-                            )
-
                             NavigationTarget.TUNING -> TuningScreen(
                                 viewModel = tuningViewModel,
                                 sysIdViewModel = sysIdViewModel,
