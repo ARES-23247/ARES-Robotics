@@ -20,9 +20,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.net.URI
-import java.util.Locale
-import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -136,22 +133,11 @@ class ProcessManagerService internal constructor(
         aresVersion = null,
     )
 
-    private val aresRepositoryFileUri = aresRepositoryUri
-        ?.takeIf(String::isNotBlank)
-        ?.let(::validatedAresRepositoryUri)
-    private val aresRepositoryArgument = aresRepositoryFileUri
-        ?.let { "-ParesRepository=$it" }
-    private val explicitAresVersion = aresVersion
-        ?.takeIf(String::isNotBlank)
-        ?.let(::validatedAresVersion)
-    private val aresVersionArgument = explicitAresVersion
-        ?.let { "-ParesVersion=$it" }
-    private val gradleJavaInstallationsArgument = gradleJavaInstallations
-        .mapNotNull { runCatching { it.canonicalFile }.getOrNull() }
-        .distinctBy { it.path.lowercase(Locale.ROOT) }
-        .takeIf(List<File>::isNotEmpty)
-        ?.joinToString(",") { it.path }
-        ?.let { "-Porg.gradle.java.installations.paths=$it" }
+    private val commandFactory = ProjectProcessCommandFactory(
+        aresRepositoryUri = aresRepositoryUri,
+        aresVersion = aresVersion,
+        gradleJavaInstallations = gradleJavaInstallations,
+    )
 
     // Build tools can emit thousands of lines in a burst. Terminal rendering must never apply
     // back-pressure to the child process or its stdout pipe can fill and deadlock Gradle.
@@ -264,19 +250,19 @@ class ProcessManagerService internal constructor(
         try {
             val projectRoot = requireSafeProjectRoot(projectPath)
             val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-            requireProjectGradleWrapper(projectRoot, isWindows)
-            val command = verificationBuildCommand(league, isWindows)
+            commandFactory.requireGradleWrapper(projectRoot, isWindows)
+            val command = commandFactory.verificationBuild(league, isWindows)
             val pendingRun = VerificationRunStore.begin(
                 projectRoot = projectRoot,
                 command = command,
-                aresVersion = explicitAresVersion ?: projectPinnedAresVersion(projectRoot) ?: "unknown",
+                aresVersion = commandFactory.explicitAresVersion ?: commandFactory.projectPinnedAresVersion(projectRoot) ?: "unknown",
             )
 
             _buildOutput.emit("[SYSTEM] Starting compile-only project verification: ${command.joinToString(" ")}")
             var transientGradleCacheMoveFailure = false
             suspend fun runVerificationAttempt(): Int = runOwnedBuildProcess(
                 generation,
-                withAresRepositoryEnvironment(ProcessBuilder(command)
+                commandFactory.configureEnvironment(ProcessBuilder(command)
                     .directory(projectRoot)
                     .redirectErrorStream(true))
             ) { line ->
@@ -348,47 +334,6 @@ class ProcessManagerService internal constructor(
         }
     }
 
-    private fun verificationBuildCommand(league: League, isWindows: Boolean): List<String> =
-        withAresRepository(buildList {
-            if (isWindows) {
-                add("cmd.exe")
-                add("/c")
-                add("gradlew.bat")
-            } else {
-                add("./gradlew")
-            }
-            when (league) {
-                League.FTC -> addAll(
-                    listOf(
-                        "generateAresProject",
-                        ":TeamCode:verifyAresProject",
-                        ":TeamCode:testDebugUnitTest",
-                        ":simulator:test",
-                        ":TeamCode:assembleDebug",
-                    )
-                )
-                League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
-            }
-            addDesktopGradleProcessOptions()
-            add("--rerun-tasks")
-        })
-
-    private fun projectPinnedAresVersion(projectRoot: File): String? =
-        listOf("gradle.properties", "gradle/libs.versions.toml")
-            .map { File(projectRoot, it) }
-            .firstNotNullOfOrNull { file ->
-                file.takeIf(File::isFile)?.useLines { lines ->
-                    lines.map(String::trim)
-                        .firstOrNull { line ->
-                            line.startsWith("aresVersion=") || line.startsWith("ares = ")
-                        }
-                        ?.substringAfter('=')
-                        ?.trim()
-                        ?.trim('"')
-                        ?.takeIf(String::isNotBlank)
-                }
-            }
-
     /**
      * Regenerates the checked-in Kotlin bridge from canonical `.ares` documents.
      *
@@ -436,13 +381,13 @@ class ProcessManagerService internal constructor(
         val taskName = if (confirmationToken == null) "generateSubsystemStarters" else "replaceSubsystemStarters"
         val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
         val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-        requireProjectGradleWrapper(root, isWindows)
-        val command = authoringGradleCommand(task, isWindows, confirmationToken)
+        commandFactory.requireGradleWrapper(root, isWindows)
+        val command = commandFactory.authoring(task, isWindows, confirmationToken)
         val diagnosticLines = ArrayDeque<String>(GENERATION_DIAGNOSTIC_LINE_LIMIT)
         try {
             val exitCode = runOwnedBuildProcess(
                 generation,
-                withAresRepositoryEnvironment(ProcessBuilder(command).directory(root).redirectErrorStream(true)),
+                commandFactory.configureEnvironment(ProcessBuilder(command).directory(root).redirectErrorStream(true)),
             ) { line ->
                 if (diagnosticLines.size == GENERATION_DIAGNOSTIC_LINE_LIMIT) diagnosticLines.removeFirst()
                 diagnosticLines.addLast(line)
@@ -506,13 +451,13 @@ class ProcessManagerService internal constructor(
                 "This directory does not contain canonical .ares project documents"
             }
             val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-            requireProjectGradleWrapper(root, isWindows)
+            commandFactory.requireGradleWrapper(root, isWindows)
 
-            val command = authoringGradleCommand("generateAresProject", isWindows)
+            val command = commandFactory.authoring("generateAresProject", isWindows)
             _buildOutput.emit("[ARES] Generating checked-in Kotlin from canonical project files")
             val exitCode = runOwnedBuildProcess(
                 generation,
-                withAresRepositoryEnvironment(ProcessBuilder(command)
+                commandFactory.configureEnvironment(ProcessBuilder(command)
                     .directory(root)
                     .redirectErrorStream(true))
             ) { line ->
@@ -724,14 +669,14 @@ class ProcessManagerService internal constructor(
                     _buildOutput.emit("[DEPLOY] Connecting wireless ADB ($FTC_ADB_TARGET)...")
                     val connectExit = runOwnedBuildProcess(
                         generation,
-                        ProcessBuilder(adbConnectCommandForDeploy(adb)).directory(root).redirectErrorStream(true),
+                        ProcessBuilder(commandFactory.adbConnect(adb)).directory(root).redirectErrorStream(true),
                     ) { line -> _buildOutput.emit("[ADB] $line") }
                     check(connectExit == 0) { "ADB could not connect to $FTC_ADB_TARGET (exit $connectExit)" }
 
                     val identityOutput = StringBuilder()
                     val identityExit = runOwnedBuildProcess(
                         generation,
-                        ProcessBuilder(adbIdentityCommandForDeploy(adb)).directory(root).redirectErrorStream(true),
+                        ProcessBuilder(commandFactory.adbIdentity(adb)).directory(root).redirectErrorStream(true),
                     ) { line ->
                         identityOutput.appendLine(line)
                         _buildOutput.emit("[ADB] $line")
@@ -752,11 +697,11 @@ class ProcessManagerService internal constructor(
                         ),
                     )
 
-                    val buildCommand = withAresRepository(ftcDeployBuildCommand(isWindows))
+                    val buildCommand = commandFactory.ftcDeployBuild(isWindows)
 
                     val buildExit = runOwnedBuildProcess(
                         generation,
-                        withAresRepositoryEnvironment(ProcessBuilder(buildCommand).directory(root).redirectErrorStream(true)),
+                        commandFactory.configureEnvironment(ProcessBuilder(buildCommand).directory(root).redirectErrorStream(true)),
                     ) { line -> _buildOutput.emit(line) }
 
                     check(buildExit == 0) { "FTC compilation failed with exit code $buildExit" }
@@ -778,7 +723,7 @@ class ProcessManagerService internal constructor(
 
                     val installExit = runOwnedBuildProcess(
                         generation,
-                        ProcessBuilder(adbInstallCommandForDeploy(adb, apkTarget)).directory(root).redirectErrorStream(true),
+                        ProcessBuilder(commandFactory.adbInstall(adb, apkTarget)).directory(root).redirectErrorStream(true),
                     ) { line -> _buildOutput.emit("[INSTALL] $line") }
 
                     check(installExit == 0) { "APK installation failed with exit code $installExit" }
@@ -786,7 +731,7 @@ class ProcessManagerService internal constructor(
                     val packageOutput = StringBuilder()
                     val packageCheckExit = runOwnedBuildProcess(
                         generation,
-                        ProcessBuilder(adbPackageCheckCommandForDeploy(adb)).directory(root).redirectErrorStream(true),
+                        ProcessBuilder(commandFactory.adbPackageCheck(adb)).directory(root).redirectErrorStream(true),
                     ) { line ->
                         packageOutput.appendLine(line)
                         _buildOutput.emit("[VERIFY] $line")
@@ -820,11 +765,11 @@ class ProcessManagerService internal constructor(
                         ),
                     )
 
-                    val deployCommand = withAresRepository(frcDeployBuildCommand(isWindows))
+                    val deployCommand = commandFactory.frcDeployBuild(isWindows)
 
                     val deployExit = runOwnedBuildProcess(
                         generation,
-                        withAresRepositoryEnvironment(ProcessBuilder(deployCommand).directory(root).redirectErrorStream(true)),
+                        commandFactory.configureEnvironment(ProcessBuilder(deployCommand).directory(root).redirectErrorStream(true)),
                     ) { line -> _buildOutput.emit(line) }
 
                     check(deployExit == 0) { "FRC deploy failed with exit code $deployExit" }
@@ -871,122 +816,6 @@ class ProcessManagerService internal constructor(
         }
     }
 
-    internal fun ftcDeployBuildCommandForTest(isWindows: Boolean): List<String> =
-        ftcDeployBuildCommand(isWindows)
-
-    internal fun frcDeployBuildCommandForTest(isWindows: Boolean): List<String> =
-        frcDeployBuildCommand(isWindows)
-
-    internal fun adbInstallCommandForTest(adb: String, apkPath: String): List<String> =
-        adbInstallCommandForDeploy(adb, apkPath)
-
-    private fun ftcDeployBuildCommand(isWindows: Boolean): List<String> = buildList {
-        addGradleWrapper(isWindows)
-        add("generateAresProject")
-        add("verifyAresProject")
-        add(":TeamCode:testDebugUnitTest")
-        add(":simulator:test")
-        add(":TeamCode:assembleDebug")
-        addDesktopGradleProcessOptions()
-    }
-
-    private fun frcDeployBuildCommand(isWindows: Boolean): List<String> = buildList {
-        addGradleWrapper(isWindows)
-        add("generateAresProject")
-        add("verifyAresProject")
-        add("test")
-        add("build")
-        add("deploy")
-        addDesktopGradleProcessOptions()
-    }
-
-    private fun MutableList<String>.addGradleWrapper(isWindows: Boolean) {
-        if (isWindows) {
-            add("cmd.exe")
-            add("/c")
-            add("gradlew.bat")
-        } else {
-            add("./gradlew")
-        }
-    }
-
-    private fun requireProjectGradleWrapper(root: File, isWindows: Boolean) {
-        val wrapperScript = File(root, if (isWindows) "gradlew.bat" else "gradlew").canonicalFile
-        require(wrapperScript.isFile && wrapperScript.toPath().startsWith(root.toPath())) {
-            "This directory does not contain ${wrapperScript.name}"
-        }
-        val wrapperJar = File(root, "gradle/wrapper/gradle-wrapper.jar").canonicalFile
-        require(wrapperJar.isFile && wrapperJar.toPath().startsWith(root.toPath())) {
-            "This directory does not contain gradle/wrapper/gradle-wrapper.jar"
-        }
-        if (isWindows) return
-        normalizeUnixGradleWrapper(wrapperScript)
-        check(wrapperScript.setExecutable(true, false) || wrapperScript.canExecute()) {
-            "Could not make ${wrapperScript.path} executable"
-        }
-    }
-
-    /**
-     * Desktop-owned Gradle children must not attach to an arbitrary long-lived daemon. The app can
-     * itself be running from Gradle while a different FTC/FRC wrapper version is active, and sharing
-     * daemon state between those processes has caused authoring tasks to wait indefinitely. A
-     * single-use daemon is a little slower to start, but gives save, build, and simulator operations
-     * deterministic ownership and lets cancellation terminate the complete process tree.
-     */
-    private fun MutableList<String>.addDesktopGradleProcessOptions() {
-        add("--no-parallel")
-        add("--no-daemon")
-        add("--console=plain")
-    }
-
-    private fun simulationGradleCommand(isWindows: Boolean, product: SimulationProductId): List<String> {
-        val league = product.league
-        val command = withAresRepository(buildList {
-            addGradleWrapper(isWindows)
-            add(
-                when (product) {
-                    SimulationProductId.FTC_DESKTOP_OPMODE -> ":TeamCode:runSim"
-                    SimulationProductId.FRC_WPILIB_DESKTOP -> "simulateJava"
-                },
-            )
-            addDesktopGradleProcessOptions()
-        })
-        val studioOwnedSimulationCommand = if (league == League.FRC) {
-            command + "-ParesFrcHalGui=false"
-        } else {
-            command
-        }
-        if (!isWindows || league != League.FRC) return studioOwnedSimulationCommand
-        val javaExecutable = ManagedToolchainPaths.resolveFrcSimulationJavaHome()
-            ?.let { File(it, "bin/java.exe") }
-            ?.takeIf(File::isFile)
-            ?: return studioOwnedSimulationCommand
-        return studioOwnedSimulationCommand + "-ParesFrcJavaExecutable=${javaExecutable.path}"
-    }
-
-    private fun authoringGradleCommand(
-        task: String,
-        isWindows: Boolean,
-        confirmationToken: String? = null,
-    ): List<String> = withAresRepository(buildList {
-        addGradleWrapper(isWindows)
-        add(task)
-        addDesktopGradleProcessOptions()
-        confirmationToken?.let { add("-Pares.subsystemReplacementToken=$it") }
-    })
-
-    private fun adbConnectCommandForDeploy(adb: String): List<String> =
-        listOf(adb, "connect", FTC_ADB_TARGET)
-
-    private fun adbIdentityCommandForDeploy(adb: String): List<String> =
-        listOf(adb, "-s", FTC_ADB_TARGET, "shell", "getprop", "ro.product.model")
-
-    private fun adbInstallCommandForDeploy(adb: String, apkPath: String): List<String> =
-        listOf(adb, "-s", FTC_ADB_TARGET, "install", "-r", "-d", apkPath)
-
-    private fun adbPackageCheckCommandForDeploy(adb: String): List<String> =
-        listOf(adb, "-s", FTC_ADB_TARGET, "shell", "pm", "path", FTC_ROBOT_CONTROLLER_PACKAGE)
-
     fun runSimulation(projectPath: String, product: SimulationProductId, simulatorCommand: String? = null) {
         if (shuttingDown.get()) return
         val league = product.league
@@ -1022,11 +851,11 @@ class ProcessManagerService internal constructor(
                     userCmd != null -> listOf("sh", "-c", userCmd)
                     product == SimulationProductId.FTC_DESKTOP_OPMODE && fatJarFile.exists() ->
                         listOf(javaExe, "-jar", fatJarFile.absolutePath)
-                    else -> simulationGradleCommand(isWindows, product)
+                    else -> commandFactory.simulation(isWindows, product)
                 }
 
                 _buildOutput.emit("[SYSTEM] Starting Simulation: ${cmd.joinToString(" ")}")
-                val pb = withAresRepositoryEnvironment(ProcessBuilder(cmd)
+                val pb = commandFactory.configureEnvironment(ProcessBuilder(cmd)
                     .directory(projectRoot)
                     .redirectErrorStream(true))
                 if (league == League.FRC && simulationJavaHome != null) {
@@ -1278,51 +1107,6 @@ class ProcessManagerService internal constructor(
         return root
     }
 
-    private fun withAresRepository(command: List<String>): List<String> = buildList {
-        addAll(command)
-        gradleJavaInstallationsArgument?.let(::add)
-        aresRepositoryArgument?.let(::add)
-        aresVersionArgument?.let(::add)
-    }
-
-    private fun withAresRepositoryEnvironment(processBuilder: ProcessBuilder): ProcessBuilder =
-        processBuilder.also { builder ->
-            ManagedToolchainPaths.configureEnvironment(builder)
-            aresRepositoryFileUri?.let { uri ->
-                builder.environment()[ARES_REPOSITORY_GRADLE_ENVIRONMENT] = uri
-            }
-            explicitAresVersion?.let { version ->
-                builder.environment()[ARES_VERSION_GRADLE_ENVIRONMENT] = version
-            }
-        }
-
-    private fun validatedAresVersion(rawVersion: String): String {
-        val version = rawVersion.trim()
-        require(ARES_VERSION_PATTERN.matches(version)) {
-            "ARES version override must be a semantic version or release candidate without whitespace"
-        }
-        return version
-    }
-
-    /** Focused test seam for the shared command decoration used by build, generation, and sim. */
-    internal fun configuredGradleCommandForTest(command: List<String>): List<String> =
-        withAresRepository(command)
-
-    /** Exact compile-only verification command used by the student-facing Build action. */
-    internal fun verificationBuildCommandForTest(league: League, isWindows: Boolean): List<String> =
-        verificationBuildCommand(league, isWindows)
-
-    /** Exact simulator wrapper command; proves app-owned Gradle children stay isolated. */
-    internal fun simulationGradleCommandForTest(product: SimulationProductId, isWindows: Boolean): List<String> =
-        simulationGradleCommand(isWindows, product)
-
-    /** Exact fixed-argument command used for descriptor and starter generation. */
-    internal fun authoringGradleCommandForTest(
-        task: String,
-        isWindows: Boolean,
-        confirmationToken: String? = null,
-    ): List<String> = authoringGradleCommand(task, isWindows, confirmationToken)
-
     /** Test seam for success, failure, cancellation, and replacement result ownership. */
     internal fun runVerificationProcessForTest(command: List<String>, projectPath: String, league: League) {
         require(command.isNotEmpty()) { "Process command must not be empty" }
@@ -1370,29 +1154,6 @@ class ProcessManagerService internal constructor(
         }
     }
 
-    /** Focused test seam for environment propagation into arbitrary child simulator commands. */
-    internal fun configuredAresRepositoryEnvironmentForTest(): String? =
-        withAresRepositoryEnvironment(ProcessBuilder("ares-environment-test"))
-            .environment()[ARES_REPOSITORY_GRADLE_ENVIRONMENT]
-
-    internal fun configuredAresVersionEnvironmentForTest(): String? =
-        withAresRepositoryEnvironment(ProcessBuilder("ares-version-environment-test"))
-            .environment()[ARES_VERSION_GRADLE_ENVIRONMENT]
-
-    private fun validatedAresRepositoryUri(rawUri: String): String {
-        val uri = runCatching { URI.create(rawUri) }.getOrElse {
-            throw IllegalArgumentException("ARES repository override must be a valid file URI", it)
-        }
-        require(uri.scheme.equals("file", ignoreCase = true)) {
-            "ARES repository override must use a file URI; remote and implicit local repositories are not forwarded"
-        }
-        val directory = runCatching { Paths.get(uri).toFile().canonicalFile }.getOrElse {
-            throw IllegalArgumentException("ARES repository override must identify a local directory", it)
-        }
-        require(directory.isDirectory) { "ARES repository override directory does not exist: $directory" }
-        return directory.toURI().toASCIIString()
-    }
-
     private fun normalizedProjectIdentity(projectPath: String): String =
         runCatching { File(projectPath).absoluteFile.normalize().path }
             .getOrDefault(projectPath.trim())
@@ -1408,19 +1169,12 @@ class ProcessManagerService internal constructor(
     }
 
     private companion object {
-        const val FTC_ADB_TARGET = "192.168.43.1:5555"
-        const val FTC_ROBOT_CONTROLLER_PACKAGE = "com.qualcomm.ftcrobotcontroller"
-        const val ARES_REPOSITORY_URI_PROPERTY = "ares.repository.uri"
-        const val ARES_VERSION_PROPERTY = "ares.version"
-        const val ARES_REPOSITORY_GRADLE_ENVIRONMENT = "ORG_GRADLE_PROJECT_aresRepository"
-        const val ARES_VERSION_GRADLE_ENVIRONMENT = "ORG_GRADLE_PROJECT_aresVersion"
         const val GENERATION_DIAGNOSTIC_LINE_LIMIT = 24
         const val GENERATION_DIAGNOSTIC_CHARACTER_LIMIT = 4_000
         const val MAX_MONITOR_OUTPUT_CHARS = 64 * 1024
         const val PROCESS_TREE_KILL_GRACE_MS = 2_000L
         const val PROCESS_TREE_POLL_MS = 10L
         val GENERATED_CONTENT_HASH = Regex("CONTENT_SHA256:\\s*String\\s*=\\s*\"([0-9a-fA-F]{64})\"")
-        val ARES_VERSION_PATTERN = Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?")
     }
 }
 

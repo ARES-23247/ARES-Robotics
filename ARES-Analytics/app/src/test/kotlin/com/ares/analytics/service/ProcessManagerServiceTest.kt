@@ -50,20 +50,20 @@ class ProcessManagerServiceTest {
     @Test
     fun `explicit isolated repository file URI decorates every nested Gradle command`() {
         val repository = Files.createTempDirectory("ares-release-repository").toFile()
-        val service = ProcessManagerService(
-            monitorAdbConnection = false,
+        val commands = ProjectProcessCommandFactory(
             aresRepositoryUri = repository.toURI().toASCIIString(),
             aresVersion = "9.6.0-rc.guided1",
+            gradleJavaInstallations = ManagedToolchainPaths.gradleJavaInstallations(),
         )
         try {
             val expectedRepository = "-ParesRepository=${repository.canonicalFile.toURI().toASCIIString()}"
             val expectedVersion = "-ParesVersion=9.6.0-rc.guided1"
             assertEquals(
                 repository.canonicalFile.toURI().toASCIIString(),
-                service.configuredAresRepositoryEnvironmentForTest(),
+                commands.configuredRepositoryEnvironment(),
                 "Arbitrary child simulator commands must inherit the equivalent Gradle project property without shell mutation",
             )
-            assertEquals("9.6.0-rc.guided1", service.configuredAresVersionEnvironmentForTest())
+            assertEquals("9.6.0-rc.guided1", commands.configuredVersionEnvironment())
             val representativeCommands = listOf(
                 listOf("gradlew.bat", ":TeamCode:assembleDebug"),
                 listOf("java", "org.gradle.wrapper.GradleWrapperMain", "generateAresProject"),
@@ -71,14 +71,13 @@ class ProcessManagerServiceTest {
             )
 
             representativeCommands.forEach { base ->
-                val configured = service.configuredGradleCommandForTest(base)
+                val configured = commands.decorateGradle(base)
                 assertEquals(base, configured.take(base.size))
                 assertTrue(configured.any { it.startsWith("-Porg.gradle.java.installations.paths=") })
                 assertEquals(listOf(expectedRepository, expectedVersion), configured.takeLast(2))
                 assertFalse(configured.any { it.contains("mavenLocal", ignoreCase = true) })
             }
         } finally {
-            service.shutdown()
             repository.deleteRecursively()
         }
     }
@@ -86,37 +85,35 @@ class ProcessManagerServiceTest {
     @Test
     fun `repository forwarding rejects non-file and missing locations`() {
         assertFailsWith<IllegalArgumentException> {
-            ProcessManagerService(false, "https://repo.example/ares")
+            ProjectProcessCommandFactory("https://repo.example/ares", null, emptyList())
         }
         val missing = Files.createTempDirectory("missing-ares-repository").resolve("gone").toFile()
         assertFailsWith<IllegalArgumentException> {
-            ProcessManagerService(false, missing.toURI().toASCIIString())
+            ProjectProcessCommandFactory(missing.toURI().toASCIIString(), null, emptyList())
         }
         assertFailsWith<IllegalArgumentException> {
-            ProcessManagerService(false, null, "9.6.0 invalid")
+            ProjectProcessCommandFactory(null, "9.6.0 invalid", emptyList())
         }
     }
 
     @Test
     fun `normal installer command construction adds no implicit local repository`() {
-        val service = ProcessManagerService(monitorAdbConnection = false)
-        try {
-            val configured = service.configuredGradleCommandForTest(listOf("./gradlew", "assemble"))
+        val commands = ProjectProcessCommandFactory(null, null, ManagedToolchainPaths.gradleJavaInstallations())
+        run {
+            val configured = commands.decorateGradle(listOf("./gradlew", "assemble"))
             assertEquals(listOf("./gradlew", "assemble"), configured.take(2))
             assertTrue(configured.single { it.startsWith("-Porg.gradle.java.installations.paths=") }.isNotBlank())
-            assertEquals(null, service.configuredAresRepositoryEnvironmentForTest())
-            assertEquals(null, service.configuredAresVersionEnvironmentForTest())
-        } finally {
-            service.shutdown()
+            assertEquals(null, commands.configuredRepositoryEnvironment())
+            assertEquals(null, commands.configuredVersionEnvironment())
         }
     }
 
     @Test
     fun `student build command verifies tests and packages without deployment`() {
-        val service = ProcessManagerService(monitorAdbConnection = false)
-        try {
-            val ftc = service.verificationBuildCommandForTest(League.FTC, isWindows = true)
-            val frc = service.verificationBuildCommandForTest(League.FRC, isWindows = false)
+        val commands = ProjectProcessCommandFactory(null, null, ManagedToolchainPaths.gradleJavaInstallations())
+        run {
+            val ftc = commands.verificationBuild(League.FTC, isWindows = true)
+            val frc = commands.verificationBuild(League.FRC, isWindows = false)
 
             assertTrue(":TeamCode:verifyAresProject" in ftc)
             assertTrue("generateAresProject" in ftc)
@@ -141,17 +138,15 @@ class ProcessManagerServiceTest {
                 assertFalse(argument.contains("deploy", ignoreCase = true))
                 assertFalse(argument.contains("install", ignoreCase = true))
             }
-        } finally {
-            service.shutdown()
         }
     }
 
     @Test
     fun `desktop simulator wrapper is isolated from ambient Gradle daemons`() {
-        val service = ProcessManagerService(monitorAdbConnection = false)
-        try {
-            val ftc = service.simulationGradleCommandForTest(SimulationProductId.FTC_DESKTOP_OPMODE, isWindows = true)
-            val frc = service.simulationGradleCommandForTest(SimulationProductId.FRC_WPILIB_DESKTOP, isWindows = false)
+        val commands = ProjectProcessCommandFactory(null, null, ManagedToolchainPaths.gradleJavaInstallations())
+        run {
+            val ftc = commands.simulation(isWindows = true, product = SimulationProductId.FTC_DESKTOP_OPMODE)
+            val frc = commands.simulation(isWindows = false, product = SimulationProductId.FRC_WPILIB_DESKTOP)
 
             assertEquals(listOf("cmd.exe", "/c", "gradlew.bat"), ftc.take(3))
             assertTrue(":TeamCode:runSim" in ftc)
@@ -166,25 +161,23 @@ class ProcessManagerServiceTest {
             }
             val frcJavaHome = ManagedToolchainPaths.resolveFrcSimulationJavaHome()
             if (frcJavaHome != null && File(frcJavaHome, "bin/java.exe").isFile) {
-                val windowsFrc = service.simulationGradleCommandForTest(SimulationProductId.FRC_WPILIB_DESKTOP, isWindows = true)
+                val windowsFrc = commands.simulation(isWindows = true, product = SimulationProductId.FRC_WPILIB_DESKTOP)
                 assertTrue(windowsFrc.any { it.startsWith("-ParesFrcJavaExecutable=") })
             }
-        } finally {
-            service.shutdown()
         }
     }
 
     @Test
     fun `desktop authoring uses platform wrapper and fixed isolated arguments`() {
-        val service = ProcessManagerService(monitorAdbConnection = false)
-        try {
+        val commands = ProjectProcessCommandFactory(null, null, ManagedToolchainPaths.gradleJavaInstallations())
+        run {
             val token = "a".repeat(64)
-            val windows = service.authoringGradleCommandForTest(
+            val windows = commands.authoring(
                 task = ":TeamCode:replaceSubsystemStarters",
                 isWindows = true,
                 confirmationToken = token,
             )
-            val unix = service.authoringGradleCommandForTest(
+            val unix = commands.authoring(
                 task = "generateSubsystemStarters",
                 isWindows = false,
             )
@@ -200,18 +193,16 @@ class ProcessManagerServiceTest {
                 assertTrue("--no-daemon" in command)
                 assertTrue("--console=plain" in command)
             }
-        } finally {
-            service.shutdown()
         }
     }
 
     @Test
     fun `confirmed deploy plan verifies before a target-scoped install`() {
-        val service = ProcessManagerService(monitorAdbConnection = false)
-        try {
-            val ftc = service.ftcDeployBuildCommandForTest(isWindows = true)
-            val frc = service.frcDeployBuildCommandForTest(isWindows = false)
-            val install = service.adbInstallCommandForTest("adb", "robot.apk")
+        val commands = ProjectProcessCommandFactory(null, null, ManagedToolchainPaths.gradleJavaInstallations())
+        run {
+            val ftc = commands.ftcDeployBuild(isWindows = true)
+            val frc = commands.frcDeployBuild(isWindows = false)
+            val install = commands.adbInstall("adb", "robot.apk")
 
             assertTrue("generateAresProject" in ftc)
             assertTrue("verifyAresProject" in ftc)
@@ -231,8 +222,6 @@ class ProcessManagerServiceTest {
                 install,
                 "FTC install must never target an arbitrary connected Android device",
             )
-        } finally {
-            service.shutdown()
         }
     }
 
