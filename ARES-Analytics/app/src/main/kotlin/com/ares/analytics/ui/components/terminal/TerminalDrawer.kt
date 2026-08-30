@@ -37,7 +37,8 @@ fun TerminalDrawer(
     modifier: Modifier = Modifier
 ) {
     var activeTab by remember { mutableStateOf(0) } // 0 = Build, 1 = Logcat
-    val isBuildRunning by processManagerService.isBuildRunning.collectAsState()
+    val processState by processManagerService.processState.collectAsState()
+    val isBuildRunning = processState.buildRunning
     val buildListState = rememberLazyListState()
     val logcatListState = rememberLazyListState()
     // Store lines in memory to render in LazyColumn

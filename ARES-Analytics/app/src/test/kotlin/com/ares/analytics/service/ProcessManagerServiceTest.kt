@@ -240,11 +240,11 @@ class ProcessManagerServiceTest {
                 League.FTC,
             )
             withTimeout(5_000L) {
-                while (service.buildExecutionState.value.phase == BuildExecutionPhase.IDLE) delay(10L)
+                while (service.processState.value.buildExecution.phase == BuildExecutionPhase.IDLE) delay(10L)
             }
             service.awaitBuildIdleForTest()
 
-            val success = service.buildExecutionState.value
+            val success = service.processState.value.buildExecution
             assertEquals(BuildExecutionPhase.SUCCEEDED, success.phase)
             assertEquals(project.absoluteFile.normalize().path, success.projectPath)
             assertEquals(League.FTC, success.league)
@@ -256,11 +256,11 @@ class ProcessManagerServiceTest {
                 League.FTC,
             )
             withTimeout(5_000L) {
-                while (service.buildExecutionState.value.requestId == success.requestId) delay(10L)
+                while (service.processState.value.buildExecution.requestId == success.requestId) delay(10L)
             }
             service.awaitBuildIdleForTest()
 
-            val failure = service.buildExecutionState.value
+            val failure = service.processState.value.buildExecution
             assertEquals(BuildExecutionPhase.FAILED, failure.phase)
             assertTrue((failure.exitCode ?: 0) != 0)
             assertEquals(success.requestId + 1L, failure.requestId)
@@ -287,7 +287,7 @@ class ProcessManagerServiceTest {
             service.killActiveBuildAndJoin()
 
             awaitProcessExit(pid)
-            val canceled = service.buildExecutionState.value
+            val canceled = service.processState.value.buildExecution
             assertEquals(BuildExecutionPhase.CANCELED, canceled.phase)
             assertEquals(League.FRC, canceled.league)
             assertTrue(canceled.message.contains("canceled", ignoreCase = true))
@@ -360,14 +360,14 @@ class ProcessManagerServiceTest {
 
             awaitProcessExit(oldParent)
             awaitProcessExit(oldChild)
-            assertTrue(service.isBuildRunning.value, "old cleanup cleared the replacement's running state")
+            assertTrue(service.processState.value.buildRunning, "old cleanup cleared the replacement's running state")
             assertTrue(isAlive(newPid), "replacement exited before the release signal")
             assertEquals(AresGenerationPhase.FAILED, service.aresGenerationState.value.phase)
 
             releaseNew.writeText("release")
             service.awaitBuildIdleForTest()
             awaitProcessExit(newPid)
-            assertFalse(service.isBuildRunning.value)
+            assertFalse(service.processState.value.buildRunning)
         } finally {
             withContext(Dispatchers.IO) { service.shutdown() }
             directory.deleteRecursively()
@@ -385,7 +385,7 @@ class ProcessManagerServiceTest {
         try {
             service.runManagedProcessForTest(probeCommand("flood"))
             withTimeout(10_000L) { service.awaitBuildIdleForTest() }
-            assertFalse(service.isBuildRunning.value)
+            assertFalse(service.processState.value.buildRunning)
         } finally {
             slowCollector.cancelAndJoin()
             withContext(Dispatchers.IO) { service.shutdown() }
@@ -411,7 +411,7 @@ class ProcessManagerServiceTest {
 
             awaitProcessExit(parentPid)
             awaitProcessExit(childPid)
-            assertFalse(service.isBuildRunning.value)
+            assertFalse(service.processState.value.buildRunning)
         } finally {
             withContext(Dispatchers.IO) { service.shutdown() }
             directory.deleteRecursively()

@@ -422,13 +422,14 @@ fun MainScreen(services: ServiceRegistry) {
     val primarySessionId = dashboardShellState.primarySessionId
     val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
-    val adbConnected by services.processManagerService.adbConnected.collectAsState()
-    val isSimRunning by services.processManagerService.isSimRunning.collectAsState()
-    val activeSimulationProjectPath by services.processManagerService.activeSimulationProjectPath.collectAsState()
-    val activeSimulationLeague by services.processManagerService.activeSimulationLeague.collectAsState()
-    val isBuildRunning by services.processManagerService.isBuildRunning.collectAsState()
-    val buildExecutionState by services.processManagerService.buildExecutionState.collectAsState()
-    val deployExecutionState by services.processManagerService.deployState.collectAsState()
+    val processState by services.processManagerService.processState.collectAsState()
+    val adbConnected = processState.adbConnected
+    val isSimRunning = processState.simulatorRunning
+    val activeSimulationProjectPath = processState.activeSimulationProjectPath
+    val activeSimulationLeague = processState.activeSimulationLeague
+    val isBuildRunning = processState.buildRunning
+    val buildExecutionState = processState.buildExecution
+    val deployExecutionState = processState.deployExecution
     var deployDialogOpen by remember { mutableStateOf(false) }
     var deployAwaitingConfirmation by remember { mutableStateOf(false) }
     var hardwareStudioInitialTab by remember { mutableStateOf(HardwareStudioTab.DRIVETRAIN) }

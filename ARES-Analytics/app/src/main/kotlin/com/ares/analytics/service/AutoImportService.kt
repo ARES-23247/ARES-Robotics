@@ -140,7 +140,7 @@ class AutoImportService(
             importLocalLogs(config)
             when (config.league) {
                 League.FTC -> {
-                    if (processManagerService.adbConnected.value) {
+                    if (processManagerService.processState.value.adbConnected) {
                         // Local logs must not wait for Android tooling discovery. Resolve ADB only
                         // when a robot connection actually requires it, then retain that result for
                         // later scan cycles.

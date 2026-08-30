@@ -69,6 +69,17 @@ data class DeployExecutionState(
     val requestId: Long = 0L,
 )
 
+/** Canonical observable state for project builds, deployment, ADB, and simulation processes. */
+data class ProjectProcessState(
+    val simulatorRunning: Boolean = false,
+    val activeSimulationProjectPath: String? = null,
+    val activeSimulationLeague: League? = null,
+    val buildRunning: Boolean = false,
+    val buildExecution: BuildExecutionState = BuildExecutionState(),
+    val adbConnected: Boolean = false,
+    val deployExecution: DeployExecutionState = DeployExecutionState(),
+)
+
 /** Small testable boundary used by offline authoring screens. */
 interface AresProjectGenerator {
     val aresGenerationState: StateFlow<AresGenerationState>
@@ -155,18 +166,8 @@ class ProcessManagerService internal constructor(
     )
     val logcatOutput: SharedFlow<String> = _logcatOutput.asSharedFlow()
 
-    private val _isSimRunning = MutableStateFlow(false)
-    val isSimRunning: StateFlow<Boolean> = _isSimRunning.asStateFlow()
-    private val _activeSimulationProjectPath = MutableStateFlow<String?>(null)
-    val activeSimulationProjectPath: StateFlow<String?> = _activeSimulationProjectPath.asStateFlow()
-    private val _activeSimulationLeague = MutableStateFlow<League?>(null)
-    val activeSimulationLeague: StateFlow<League?> = _activeSimulationLeague.asStateFlow()
-
-    private val _isBuildRunning = MutableStateFlow(false)
-    val isBuildRunning: StateFlow<Boolean> = _isBuildRunning.asStateFlow()
-
-    private val _buildExecutionState = MutableStateFlow(BuildExecutionState())
-    val buildExecutionState: StateFlow<BuildExecutionState> = _buildExecutionState.asStateFlow()
+    private val _processState = MutableStateFlow(ProjectProcessState())
+    val processState: StateFlow<ProjectProcessState> = _processState.asStateFlow()
 
     private val _aresGenerationState = MutableStateFlow(AresGenerationState())
     override val aresGenerationState: StateFlow<AresGenerationState> = _aresGenerationState.asStateFlow()
@@ -174,12 +175,6 @@ class ProcessManagerService internal constructor(
     internal fun rejectAresGeneration(message: String) {
         _aresGenerationState.value = AresGenerationState(AresGenerationPhase.FAILED, message)
     }
-
-    private val _adbConnected = MutableStateFlow(false)
-    val adbConnected: StateFlow<Boolean> = _adbConnected.asStateFlow()
-
-    private val _deployState = MutableStateFlow(DeployExecutionState())
-    val deployState: StateFlow<DeployExecutionState> = _deployState.asStateFlow()
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -220,9 +215,9 @@ class ProcessManagerService internal constructor(
                     val text = output.toString()
                     val isConnected = exitCode == 0 &&
                         (text.contains("192.168.43.1:5555") || text.contains("device\n") || text.contains("device\r"))
-                    _adbConnected.value = isConnected
+                    _processState.update { it.copy(adbConnected = isConnected) }
                 } catch (e: Exception) {
-                    _adbConnected.value = false
+                    _processState.update { it.copy(adbConnected = false) }
                 }
                 delay(5000)
             }
@@ -523,7 +518,7 @@ class ProcessManagerService internal constructor(
                     activeBuildJob = replacement
                     buildProcess = null
                 }
-                _isBuildRunning.value = true
+                _processState.update { it.copy(buildRunning = true) }
                 replacement.start()
             }
         }
@@ -616,7 +611,7 @@ class ProcessManagerService internal constructor(
                 activeBuildKind = null
                 activeBuildJob = null
                 buildProcess = null
-                _isBuildRunning.value = false
+                _processState.update { it.copy(buildRunning = false) }
             }
         }
     }
@@ -632,7 +627,7 @@ class ProcessManagerService internal constructor(
     private fun updateBuildExecutionStateIfOwner(generation: Long, state: BuildExecutionState) {
         synchronized(buildStateLock) {
             if (activeBuildGeneration == generation && activeBuildKind == BuildOperationKind.BUILD) {
-                _buildExecutionState.value = state
+                _processState.update { it.copy(buildExecution = state) }
             }
         }
     }
@@ -640,7 +635,7 @@ class ProcessManagerService internal constructor(
     private fun updateDeployStateIfOwner(generation: Long, state: DeployExecutionState) {
         synchronized(buildStateLock) {
             if (activeBuildGeneration == generation) {
-                _deployState.value = state
+                _processState.update { it.copy(deployExecution = state) }
             }
         }
     }
@@ -830,9 +825,13 @@ class ProcessManagerService internal constructor(
         val replacement = serviceScope.launch(start = CoroutineStart.LAZY) {
             var ownedProcess: Process? = null
             try {
-                _isSimRunning.value = true
-                _activeSimulationProjectPath.value = projectRoot.path
-                _activeSimulationLeague.value = league
+                _processState.update {
+                    it.copy(
+                        simulatorRunning = true,
+                        activeSimulationProjectPath = projectRoot.path,
+                        activeSimulationLeague = league,
+                    )
+                }
                 val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
                 val userCmd = simulatorCommand?.takeIf { it.isNotBlank() }
                 val fatJarFile = File(projectRoot, "simulator/build/libs/simulator-all.jar")
@@ -885,9 +884,13 @@ class ProcessManagerService internal constructor(
             } finally {
                 ownedProcess?.let { if (it.isAlive) terminateProcessTree(it) }
                 if (simProcess === ownedProcess) simProcess = null
-                _isSimRunning.value = false
-                _activeSimulationProjectPath.value = null
-                _activeSimulationLeague.value = null
+                _processState.update {
+                    it.copy(
+                        simulatorRunning = false,
+                        activeSimulationProjectPath = null,
+                        activeSimulationLeague = null,
+                    )
+                }
             }
         }
         activeSimJob = replacement
@@ -973,16 +976,22 @@ class ProcessManagerService internal constructor(
                 true
             }
         }
-        if (released || ownership.job != null) _isBuildRunning.value = false
+        if (released || ownership.job != null) {
+            _processState.update { it.copy(buildRunning = false) }
+        }
         if (
             ownership.kind == BuildOperationKind.BUILD &&
-            _buildExecutionState.value.phase == BuildExecutionPhase.RUNNING
+            _processState.value.buildExecution.phase == BuildExecutionPhase.RUNNING
         ) {
-            _buildExecutionState.value = _buildExecutionState.value.copy(
-                phase = BuildExecutionPhase.CANCELED,
-                message = "Project verification was canceled before a result was available. No deployment was performed.",
-                exitCode = null,
-            )
+            _processState.update {
+                it.copy(
+                    buildExecution = it.buildExecution.copy(
+                        phase = BuildExecutionPhase.CANCELED,
+                        message = "Project verification was canceled before a result was available. No deployment was performed.",
+                        exitCode = null,
+                    ),
+                )
+            }
         }
         if (ownership.kind == BuildOperationKind.GENERATION &&
             _aresGenerationState.value.phase == AresGenerationPhase.RUNNING
@@ -1032,9 +1041,13 @@ class ProcessManagerService internal constructor(
         job?.cancelAndJoin()
         if (simProcess === process) simProcess = null
         if (activeSimJob === job) activeSimJob = null
-        _isSimRunning.value = false
-        _activeSimulationProjectPath.value = null
-        _activeSimulationLeague.value = null
+        _processState.update {
+            it.copy(
+                simulatorRunning = false,
+                activeSimulationProjectPath = null,
+                activeSimulationLeague = null,
+            )
+        }
     }
 
     /** Drains output concurrently so a verbose child cannot fill its pipe before the timeout. */

@@ -96,7 +96,8 @@ internal fun DashboardScreen(
     var lastUpdateTimestampMs by remember { mutableStateOf(-1L) }
     var lastUpdateAgeMs by remember { mutableStateOf(-1L) }
 
-    val isSimRunning by services.processManager.isSimRunning.collectAsState()
+    val processState by services.processManager.processState.collectAsState()
+    val isSimRunning = processState.simulatorRunning
     val isLocalSimulator = isLocalSimulatorSelected
     val healthSnapshot by liveServices.dashboardHealthService.health.collectAsState()
     val frameRateHz = healthSnapshot.ingestFramesPerSecond
