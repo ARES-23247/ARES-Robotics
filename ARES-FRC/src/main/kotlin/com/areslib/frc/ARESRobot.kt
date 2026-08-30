@@ -6,24 +6,7 @@ import com.areslib.state.SuperstructureState
 import com.areslib.state.VisionState
 import com.areslib.frc.marvin.*
 import com.areslib.telemetry.GamepadState
-import com.areslib.hardware.actuator.FlywheelIO
-import com.areslib.hardware.actuator.CowlIO
-import com.areslib.hardware.actuator.IntakeIO
-import com.areslib.hardware.actuator.FeederIO
-import com.areslib.hardware.actuator.FloorIO
-import com.areslib.hardware.actuator.ClimberIO
-import com.areslib.frc.hardware.FRCClimberHardwareIO
-import com.areslib.frc.hardware.FRCCowlHardwareIO
-import com.areslib.frc.hardware.FRCFeederHardwareIO
-import com.areslib.frc.hardware.FRCFloorHardwareIO
-import com.areslib.frc.hardware.FRCFlywheelHardwareIO
-import com.areslib.frc.hardware.FRCIntakeHardwareIO
-
-import edu.wpi.first.math.VecBuilder
-
-import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.hardware.HardwareRegistry
-import com.areslib.hardware.vision.VisionIO
 
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.XboxController
@@ -211,103 +194,18 @@ class ARESRobot : TimedRobot() {
             )
         }
 
-        // 1. Declare the hardware IO instances (either physical or simulation)
-        val swerveIO: SwerveHardwareIO?
-        val visionIO: VisionIO?
-        val flywheelIO: FlywheelIO
-        val cowlIO: CowlIO
-        val intakeIO: IntakeIO
-        val feederIO: FeederIO
-        val floorIO: FloorIO
-        val climberIO: ClimberIO
-
-        if (isReal) {
-            powerDistribution = try {
-                edu.wpi.first.wpilibj.PowerDistribution()
-            } catch (error: Exception) {
-                DriverStation.reportError(
-                    "ARES: PowerDistribution initialization failed; current monitoring will fail closed: " +
-                        error.message,
-                    false
-                )
-                null
-            }
-            // can2Bus is already defined as a class property
-            val leftMasterFX = com.ctre.phoenix6.hardware.TalonFX(9, can2Bus)
-            val leftFollowerFX = com.ctre.phoenix6.hardware.TalonFX(10, can2Bus)
-            val rightMasterFX = com.ctre.phoenix6.hardware.TalonFX(11, can2Bus)
-            val rightFollowerFX = com.ctre.phoenix6.hardware.TalonFX(12, can2Bus)
-            val cowlFX = com.ctre.phoenix6.hardware.TalonFX(13, can2Bus)
-            val pivotFX = com.ctre.phoenix6.hardware.TalonFX(14, can2Bus)
-            val rollerFX = com.ctre.phoenix6.hardware.TalonFX(15, can2Bus)
-            val floorFX = com.ctre.phoenix6.hardware.TalonFX(16, can2Bus)
-            val climberFX = com.ctre.phoenix6.hardware.TalonFX(19, can2Bus)
-            val feederFX = com.ctre.phoenix6.hardware.TalonFX(20, can2Bus)
-
-            val defaultOffsets = frc.robot.generated.TunerConstants.getDefaultOffsets()
-            val activeOffsets = com.areslib.drivetrain.SwerveOffsetManager.loadOffsets(
-                defaultOffsets = defaultOffsets,
-                typedTuningOffsets = com.areslib.frc.config.CanonicalDrivebaseConfig.profiledOffsets()
-            )
-
-            val ctreDrivetrain = frc.robot.generated.TunerConstants.TunerSwerveDrivetrain(
-                frc.robot.generated.TunerConstants.DrivetrainConstants,
-                0.0,
-                VecBuilder.fill(0.1, 0.1, 0.1),
-                VecBuilder.fill(0.9, 0.9, 0.9),
-                frc.robot.generated.TunerConstants.createFrontLeft(edu.wpi.first.units.Units.Rotations.of(activeOffsets.frontLeft)),
-                frc.robot.generated.TunerConstants.createFrontRight(edu.wpi.first.units.Units.Rotations.of(activeOffsets.frontRight)),
-                frc.robot.generated.TunerConstants.createBackLeft(edu.wpi.first.units.Units.Rotations.of(activeOffsets.backLeft)),
-                frc.robot.generated.TunerConstants.createBackRight(edu.wpi.first.units.Units.Rotations.of(activeOffsets.backRight))
-            )
-            swerveIO = FRCSwerveHardwareIO(ctreDrivetrain)
-
-            // Each Limelight retains its independently surveyed robot-space transform from
-            // its own web UI. Passing no pose is intentional: never overwrite either camera
-            // with a shared placeholder extrinsic.
-            val validTagIds = fieldContract?.config?.apriltags
-                ?.sortedBy(com.areslib.state.RobotFieldAprilTag::id)
-                ?.map(com.areslib.state.RobotFieldAprilTag::id)
-                ?.toIntArray()
-                ?: IntArray(0)
-            visionIO = if (validTagIds.isNotEmpty()) {
-                val limelightShooter = FrcLimelightIO(
-                    tableName = "limelight-shooter",
-                    validFiducialIds = validTagIds,
-                )
-                val limelightBack = FrcLimelightIO(
-                    tableName = "limelight-back",
-                    validFiducialIds = validTagIds,
-                )
-                com.areslib.hardware.vision.CompositeVisionIO(listOf(limelightShooter, limelightBack))
-            } else {
-                null
-            }
-
-            flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX)
-            cowlIO = FRCCowlHardwareIO(cowlFX)
-            intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX)
-            feederIO = FRCFeederHardwareIO(feederFX)
-            floorIO = FRCFloorHardwareIO(floorFX)
-            climberIO = FRCClimberHardwareIO(climberFX)
-        } else {
-            // Simulation IOs
-            val simInstance = fieldContract?.config?.let { config ->
-                Dyn4jSimulation(config = config, seed = 42L)
-            } ?: Dyn4jSimulation(seed = 42L)
-            sim = simInstance
-            // Desktop control is intentionally constructed only in simulation. A dashboard frame
-            // can never replace physical driver input on a real RoboRIO.
-            dashboardDriveInput = FrcDashboardDriveInput()
-            swerveIO = null
-            visionIO = null
-            flywheelIO = simInstance.flywheelIO
-            cowlIO = simInstance.cowlIO
-            intakeIO = simInstance.intakeIO
-            feederIO = simInstance.feederIO
-            floorIO = simInstance.floorIO
-            climberIO = simInstance.climberIO
-        }
+        val hardware = FrcSeasonHardwareFactory.create(isReal, fieldContract, can2Bus)
+        powerDistribution = hardware.powerDistribution
+        sim = hardware.simulation
+        dashboardDriveInput = hardware.dashboardDriveInput
+        val swerveIO = hardware.swerveIO
+        val visionIO = hardware.visionIO
+        val flywheelIO = hardware.flywheelIO
+        val cowlIO = hardware.cowlIO
+        val intakeIO = hardware.intakeIO
+        val feederIO = hardware.feederIO
+        val floorIO = hardware.floorIO
+        val climberIO = hardware.climberIO
 
         mechanismConfigurationDevices = listOf(
             flywheelIO, cowlIO, intakeIO, feederIO, floorIO, climberIO

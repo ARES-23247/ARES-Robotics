@@ -117,6 +117,13 @@ hardware reads remain once per loop, and zero-allocation regression tests remain
 - Retain Compose renderers as presentation rather than curriculum storage.
 - Extract FRC real/sim hardware factories and mechanism commissioning from `TimedRobot` lifecycle.
 
+The first FRC composition slice moved physical CTRE/Limelight/mechanism construction and the
+Dyn4j/dashboard simulation graph into `FrcSeasonHardwareFactory`. `ARESRobot.robotInit()` now
+receives one coherent season IO graph and remains responsible for lifecycle orchestration. The
+factory preserves separate FRC real and FRC simulation adapters; it does not introduce a universal
+FTC/FRC simulator abstraction. A focused factory test proves every simulated mechanism comes from
+the same FRC physics instance and that real-only swerve, vision, and PDH objects stay absent.
+
 **Exit criteria:** catalog validation, lesson navigation and progress tests, FRC unit/simulation tests,
 and explicit lifecycle methods remain readable and fail closed.
 
