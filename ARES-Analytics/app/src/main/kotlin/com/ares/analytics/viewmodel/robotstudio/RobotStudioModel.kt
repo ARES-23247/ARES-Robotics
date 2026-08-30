@@ -147,8 +147,25 @@ data class RobotStudioState(
             simulationStage == null -> "No simulation stage is available. Refresh Robot Studio."
             simulationStage?.status == RobotStudioStageStatus.RUNNING -> "The simulator is already running."
             else -> simulationStage?.explanation ?: "Verify the project before starting simulation."
-        }
+    }
 }
+
+/** Low-frequency readiness projection consumed by the global build/simulator toolbar. */
+data class RobotStudioShellState(
+    val simulationProduct: SimulationProductId? = null,
+    val canRunBuild: Boolean = false,
+    val buildDisabledReason: String = "Project readiness is still being checked.",
+    val canRunSimulation: Boolean = false,
+    val simulationDisabledReason: String = "Project readiness is still being checked.",
+)
+
+internal fun RobotStudioState.toShellState() = RobotStudioShellState(
+    simulationProduct = simulationProduct,
+    canRunBuild = canRunBuild,
+    buildDisabledReason = buildDisabledReason,
+    canRunSimulation = canRunSimulation,
+    simulationDisabledReason = simulationDisabledReason,
+)
 
 /** Converts validated project facts into the one novice-facing Studio sequence. */
 internal fun evaluateRobotStudioStages(

@@ -418,7 +418,7 @@ fun MainScreen(services: ServiceRegistry) {
     var dashboardMissionSnapshot by remember(currentConfig.id) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
     }
-    val robotStudioState by robotStudioViewModel.state.collectAsState()
+    val robotStudioShellState by robotStudioViewModel.shellState.collectAsState()
     val primarySessionId = dashboardShellState.primarySessionId
     val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
@@ -459,12 +459,12 @@ fun MainScreen(services: ServiceRegistry) {
         league = currentConfig.league,
     )
     val unmanagedSimulatorOnline = isLocalSimOnline && !isSimRunning
-    val simulationProduct = robotStudioState.simulationProduct
-    val simulatorLaunchEnabled = robotStudioState.canRunSimulation && simulationProduct != null && !unmanagedSimulatorOnline
+    val simulationProduct = robotStudioShellState.simulationProduct
+    val simulatorLaunchEnabled = robotStudioShellState.canRunSimulation && simulationProduct != null && !unmanagedSimulatorOnline
     var pendingSimulatorLaunch by remember(currentConfig.id) { mutableStateOf(false) }
     val simulatorLaunchRequest = localSimulatorLaunchRequest(
         canRunSimulation = simulatorLaunchEnabled,
-        canRunBuild = robotStudioState.canRunBuild,
+        canRunBuild = robotStudioShellState.canRunBuild,
         isBuildRunning = isBuildRunning,
         isSimulatorRunning = isSimRunning,
         isSimulatorOnline = isLocalSimOnline,
@@ -475,7 +475,7 @@ fun MainScreen(services: ServiceRegistry) {
     val simulatorLaunchDisabledReason = if (unmanagedSimulatorOnline) {
         "A simulator is already online on port 5810. Use it from Dashboard, or stop it from the process that launched it."
     } else {
-        robotStudioState.simulationDisabledReason
+        robotStudioShellState.simulationDisabledReason
     }
     val executeProjectCommand: (ProjectExecutionCommand) -> Boolean = { command ->
         val decision = services.projectExecutionCoordinator.execute(currentConfig, command)
@@ -646,7 +646,7 @@ fun MainScreen(services: ServiceRegistry) {
                 if (keyEvent.type == KeyEventType.KeyDown && isCtrl) {
                     when (keyEvent.key) {
                         Key.B -> {
-                            if (robotStudioState.canRunBuild && !isBuildRunning) {
+                            if (robotStudioShellState.canRunBuild && !isBuildRunning) {
                                 executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                             }
                             true
@@ -905,8 +905,8 @@ fun MainScreen(services: ServiceRegistry) {
                             isLocalSimOnline = isLocalSimOnline,
                             isBuildRunning = isBuildRunning,
                             isSimRunning = isSimRunning,
-                            buildEnabled = robotStudioState.canRunBuild,
-                            buildDisabledReason = robotStudioState.buildDisabledReason,
+                            buildEnabled = robotStudioShellState.canRunBuild,
+                            buildDisabledReason = robotStudioShellState.buildDisabledReason,
                             simulationEnabled = simulatorLaunchRequestEnabled,
                             simulationDisabledReason = simulatorLaunchDisabledReason,
                             onTargetChanged = { targetSelection = it },
@@ -916,7 +916,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 }
                             },
                             onRunBuild = {
-                                if (robotStudioState.canRunBuild) {
+                                if (robotStudioShellState.canRunBuild) {
                                     executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
                                 }
                             },

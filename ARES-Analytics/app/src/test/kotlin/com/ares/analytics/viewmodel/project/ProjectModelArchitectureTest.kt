@@ -134,6 +134,10 @@ class ProjectModelArchitectureTest {
             "MainScreen must observe DashboardShellState instead of full dashboard/replay/alert state.",
         )
         assertTrue(
+            "robotStudioViewModel.state.collectAsState()" !in mainScreen,
+            "MainScreen must observe RobotStudioShellState instead of the full authoring-stage model.",
+        )
+        assertTrue(
             "AcademyRuntimeFeatureScope" in runtimeHost && "ServiceRegistry" !in runtimeHost,
             "Academy evidence must be collected behind a typed, feature-owned boundary.",
         )
