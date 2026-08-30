@@ -124,6 +124,13 @@ factory preserves separate FRC real and FRC simulation adapters; it does not int
 FTC/FRC simulator abstraction. A focused factory test proves every simulated mechanism comes from
 the same FRC physics instance and that real-only swerve, vision, and PDH objects stay absent.
 
+The second FRC composition slice moved configuration health, homing evidence, live-tuning health,
+fault latching, Disabled dual-operator recovery, and fail-closed telemetry into
+`FrcMechanismCommissioningController`. `TimedRobot` now forwards lifecycle facts and controller
+inputs to that owner instead of retaining the commissioning state machine. Existing timed-lifecycle,
+autonomous inhibition, homing recovery, SysId gating, and simulator tests exercise the extracted
+controller through the real season composition root.
+
 **Exit criteria:** catalog validation, lesson navigation and progress tests, FRC unit/simulation tests,
 and explicit lifecycle methods remain readable and fail closed.
 
