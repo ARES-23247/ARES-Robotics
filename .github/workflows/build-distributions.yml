@@ -130,7 +130,7 @@ jobs:
           modules=(
             ares-bom codegen core frc-hardware frc-runtime ftc-hardware ftc-mocks
             project-compiler project-model project-schema simulation-foundation simulator
-            simulator-runtime-linux simulator-runtime-macos simulator-runtime-windows
+            simulator-runtime-linux simulator-runtime-macos simulator-runtime-windows telemetry-schema
           )
           published=0
           for module in "${modules[@]}"; do
@@ -164,6 +164,68 @@ jobs:
           path: ARESLib-Kotlin/build/github-repository/
           if-no-files-found: error
           retention-days: 3
+
+  studio-verification:
+    name: Verify all Studio suites, coverage, and maintainability gates
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-validation-repository
+          path: .release-validation
+
+      - name: Verify Gradle configuration does not mutate user settings
+        shell: bash
+        run: |
+          isolated_home="$(mktemp -d)"
+          ./ARESLib-Kotlin/gradlew -p ARESLib-Kotlin help "-Duser.home=$isolated_home" --no-daemon --console=plain
+          ./ARES-Analytics/gradlew -p ARES-Analytics help "-Duser.home=$isolated_home" --no-daemon --console=plain
+          ./ARES-FTC/gradlew -p ARES-FTC help "-Duser.home=$isolated_home" --no-daemon --console=plain
+          ./ARES-FTC-Starter/gradlew -p ARES-FTC-Starter help "-Duser.home=$isolated_home" --no-daemon --console=plain
+          if [[ -e "$isolated_home/.gradle/gradle.properties" ]]; then
+            echo "Gradle configuration wrote user-level Gradle properties" >&2
+            cat "$isolated_home/.gradle/gradle.properties" >&2
+            exit 1
+          fi
+
+      - name: Resolve validation repository URI
+        id: repository
+        shell: pwsh
+        run: |
+          $uri = [Uri]::new((Resolve-Path '.release-validation').Path).AbsoluteUri
+          "uri=$uri" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Run the complete released Studio verification contract
+        working-directory: ARES-Analytics
+        run: >-
+          ./gradlew studioReleaseVerification
+          -ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}
+          -ParesRepository=${{ steps.repository.outputs.uri }}
+          --no-parallel --no-daemon --console=plain
+
+      - name: Upload deterministic test, coverage, and dashboard reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: studio-release-verification
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            ARES-Analytics/app/build/reports/tests/test/**
+            ARES-Analytics/shared/build/reports/tests/test/**
+            ARES-Analytics/gateway/build/reports/tests/test/**
+            ARES-Analytics/app/build/reports/kover/**
+            ARES-Analytics/shared/build/reports/kover/**
+            ARES-Analytics/gateway/build/reports/kover/**
+            ARES-Analytics/app/build/reports/dashboard-validation/**
 
   zero-code-project-acceptance:
     name: Verify generated starter mirrors
@@ -215,7 +277,7 @@ jobs:
 
   build-packages:
     name: Native package (${{ matrix.os }})
-    needs: candidate
+    needs: [candidate, studio-verification]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
