@@ -18,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,7 +37,6 @@ import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.ConditionDescriptor
 import com.areslib.routine.*
-import java.util.Locale
 
 /** The empty draft created by New is only a launch surface; replacing it loses no student work. */
 internal fun shouldConfirmRoutineReplacement(state: PathPlannerState): Boolean =
@@ -66,7 +64,6 @@ internal fun routineReferenceLabel(
     !itemsAvailable -> emptyLabel
     else -> placeholder
 }
-
 /** Primary trigger-neutral routine editor shared by autonomous, teleop macros, and tests. */
 @Composable
 fun RoutineEditorPanel(
@@ -1058,125 +1055,6 @@ private fun RoutinePoseEditors(pose: RoutinePose, onChanged: (RoutinePose) -> Un
 }
 
 @Composable
-private fun ActionPicker(actions: List<ActionDescriptor>, selectedKey: String?, onSelected: (ActionDescriptor) -> Unit) =
-    DescriptorPicker(
-        selected = actions.firstOrNull { it.key == selectedKey }?.displayName,
-        missingSelectedKey = selectedKey,
-        emptyLabel = "No project actions declared",
-        placeholder = "Choose robot action",
-        items = actions,
-        category = ActionDescriptor::category,
-        title = ActionDescriptor::displayName,
-        description = ActionDescriptor::description,
-        onSelected = onSelected
-    )
-
-@Composable
-private fun ConditionPicker(conditions: List<ConditionDescriptor>, selectedKey: String?, onSelected: (ConditionDescriptor) -> Unit) =
-    DescriptorPicker(
-        selected = conditions.firstOrNull { it.key == selectedKey }?.displayName,
-        missingSelectedKey = selectedKey,
-        emptyLabel = "No project conditions declared",
-        placeholder = "Choose robot state condition",
-        items = conditions,
-        category = ConditionDescriptor::category,
-        title = ConditionDescriptor::displayName,
-        description = ConditionDescriptor::description,
-        onSelected = onSelected
-    )
-
-@Composable
-private fun <T> DescriptorPicker(
-    selected: String?,
-    missingSelectedKey: String? = null,
-    emptyLabel: String,
-    placeholder: String,
-    items: List<T>,
-    category: (T) -> String,
-    title: (T) -> String,
-    description: (T) -> String,
-    onSelected: (T) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val missing = routineReferenceIsMissing(missingSelectedKey, selected)
-    val label = routineReferenceLabel(
-        selectedKey = missingSelectedKey,
-        selectedDisplayName = selected,
-        itemsAvailable = items.isNotEmpty(),
-        emptyLabel = emptyLabel,
-        placeholder = placeholder,
-    )
-    Box {
-        OutlinedButton(
-            onClick = { expanded = true },
-            enabled = items.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = if (missing) AresError else AresTextPrimary,
-                disabledContentColor = if (missing) AresError else AresTextSecondary,
-            ),
-            border = BorderStroke(1.dp, if (missing) AresError else AresBorder),
-        ) {
-            if (missing) {
-                Icon(Icons.Default.ErrorOutline, "Missing project reference", Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(label)
-            Spacer(Modifier.weight(1f))
-            Icon(Icons.Default.ArrowDropDown, null)
-        }
-        DropdownMenu(expanded, { expanded = false }) {
-            items.groupBy(category).forEach { (group, descriptors) ->
-                DropdownMenuItem({ Text(group, color = AresCyan, fontWeight = FontWeight.Bold) }, {}, enabled = false)
-                descriptors.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Column { Text(title(item)); Text(description(item), style = MaterialTheme.typography.labelSmall) } },
-                        onClick = { onSelected(item); expanded = false }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RoutinePicker(routines: List<RoutineDocument>, selectedId: String?, onSelected: (RoutineDocument) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    val selected = routines.firstOrNull { it.documentId == selectedId }
-    val missing = routineReferenceIsMissing(selectedId, selected?.name)
-    Box {
-        OutlinedButton(
-            onClick = { expanded = true },
-            enabled = routines.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = if (missing) AresError else AresTextPrimary,
-                disabledContentColor = if (missing) AresError else AresTextSecondary,
-            ),
-            border = BorderStroke(1.dp, if (missing) AresError else AresBorder),
-        ) {
-            if (missing) {
-                Icon(Icons.Default.ErrorOutline, "Missing routine reference", Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(
-                routineReferenceLabel(
-                    selectedKey = selectedId,
-                    selectedDisplayName = selected?.name,
-                    itemsAvailable = routines.isNotEmpty(),
-                    emptyLabel = "No other routines saved",
-                    placeholder = "Choose routine",
-                ),
-            )
-            Spacer(Modifier.weight(1f)); Icon(Icons.Default.ArrowDropDown, null)
-        }
-        DropdownMenu(expanded, { expanded = false }) {
-            routines.forEach { routine -> DropdownMenuItem({ Text(routine.name) }, { onSelected(routine); expanded = false }) }
-        }
-    }
-}
-
-@Composable
 private fun ParameterEditors(
     descriptors: List<CapabilityParameterDescriptor>,
     arguments: Map<String, String>,
@@ -1484,66 +1362,3 @@ private fun RoutineDecimalEditor(value: Double, label: String, suffix: String, m
         colors = routineTextFieldColors()
     )
 }
-
-private fun defaultsFor(parameters: List<CapabilityParameterDescriptor>): Map<String, String> = buildMap {
-    parameters.forEach { parameter -> defaultValue(parameter).takeIf(String::isNotEmpty)?.let { put(parameter.key, it) } }
-}
-
-private fun defaultValue(parameter: CapabilityParameterDescriptor): String = when (parameter.type) {
-    CapabilityParameterType.NUMBER -> parameter.defaultNumber?.toString().orEmpty()
-    CapabilityParameterType.BOOLEAN -> parameter.defaultBoolean?.toString().orEmpty()
-    CapabilityParameterType.TEXT,
-    CapabilityParameterType.ENUM -> parameter.defaultText ?: parameter.options.firstOrNull().orEmpty()
-}
-
-private fun routineStepTitle(kind: RoutineStepKind): String = when (kind) {
-    RoutineStepKind.ACTION -> "Run robot action"
-    RoutineStepKind.DRIVE_TO -> "Drive to field goal"
-    RoutineStepKind.WAIT -> "Wait"
-    RoutineStepKind.WAIT_UNTIL -> "Wait for robot state"
-    RoutineStepKind.TOGETHER -> "Run together"
-    RoutineStepKind.FIRST_TO_FINISH -> "Race: first to finish"
-    RoutineStepKind.DEADLINE -> "Run until deadline"
-    RoutineStepKind.CALL -> "Run reusable routine"
-    RoutineStepKind.REPEAT -> "Repeat steps"
-    RoutineStepKind.BRANCH -> "Choose based on robot state"
-}
-
-private fun routineStepDescription(kind: RoutineStepKind): String = when (kind) {
-    RoutineStepKind.ACTION -> "Run one action from this robot project"
-    RoutineStepKind.DRIVE_TO -> "Move to a position and heading on the field"
-    RoutineStepKind.WAIT -> "Pause for a fixed amount of time"
-    RoutineStepKind.WAIT_UNTIL -> "Continue when a robot condition becomes true"
-    RoutineStepKind.TOGETHER -> "Run every child step at the same time"
-    RoutineStepKind.FIRST_TO_FINISH -> "Run children together and stop when one finishes"
-    RoutineStepKind.DEADLINE -> "Run companions until the main step finishes"
-    RoutineStepKind.CALL -> "Place another saved routine inside this routine"
-    RoutineStepKind.REPEAT -> "Run a group of steps a fixed number of times"
-    RoutineStepKind.BRANCH -> "Choose between two groups using robot state"
-}
-
-private fun routineStepSubtitle(step: RoutineStep): String = when (step.kind) {
-    RoutineStepKind.ACTION -> step.actionKey ?: "Choose an action"
-    RoutineStepKind.DRIVE_TO -> step.drive?.let { drive ->
-        "${formatRoutineNumber(drive.target.xMeters)} m, ${formatRoutineNumber(drive.target.yMeters)} m · ${drive.motionPresetKey}"
-    } ?: "Missing target"
-    RoutineStepKind.WAIT -> "${formatRoutineNumber(step.durationSeconds ?: 0.0)} seconds"
-    RoutineStepKind.WAIT_UNTIL -> "${step.conditionKey ?: "Choose condition"} · timeout ${formatRoutineNumber(step.timeoutSeconds ?: 0.0)} s"
-    RoutineStepKind.CALL -> step.routineId ?: "Choose routine"
-    RoutineStepKind.REPEAT -> "${step.repeatCount ?: 0} times · ${step.children.size} step(s)"
-    RoutineStepKind.BRANCH -> "${step.conditionKey ?: "Choose condition"} · ${step.children.size}/${step.elseChildren.size} step(s)"
-    RoutineStepKind.DEADLINE -> "${step.children.size} companion step(s)"
-    RoutineStepKind.TOGETHER,
-    RoutineStepKind.FIRST_TO_FINISH -> "${step.children.size} parallel step(s)"
-}
-
-private fun formatRoutineNumber(value: Double): String = String.format(Locale.US, "%.2f", value)
-private fun statusColor(status: String): Color = if (status.contains("fail", true) || status.contains("fix", true)) AresError else AresTextSecondary
-
-@Composable
-private fun routineTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AresCyan,
-    unfocusedBorderColor = AresBorder,
-    focusedTextColor = AresTextPrimary,
-    unfocusedTextColor = AresTextPrimary
-)
