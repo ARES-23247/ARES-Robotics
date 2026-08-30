@@ -55,10 +55,9 @@ import com.areslib.subsystem.SubsystemTeachingLevel
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
 import com.areslib.subsystem.SubsystemValueType
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.subsystem.supportsPlatform
-import com.areslib.subsystem.subsystemControlUnitsCompatible
-import com.areslib.subsystem.subsystemUnitIsCanonicalAngle
+import com.areslib.subsystem.SubsystemUnits
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.google.gson.GsonBuilder
@@ -724,7 +723,7 @@ class SubsystemGeneratorViewModel(
                 val rawProposal = assistant.propose(base, request)
                 val candidate = sanitizeSubsystemDesignCandidate(base, rawProposal.candidate)
                 val proposal = rawProposal.copy(candidate = candidate)
-                val problems = validateSubsystemDocument(candidate).map {
+                val problems = SubsystemSchema.validate(candidate).map {
                     SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
                 } + safetyWarnings(candidate)
                 SubsystemAiProposalReview(
@@ -1017,7 +1016,7 @@ class SubsystemGeneratorViewModel(
             ?: return@edit document
         val measurement = document.stateFields.firstOrNull {
             it.role == SubsystemFieldRole.MEASUREMENT && it.type.isNumeric() &&
-                subsystemControlUnitsCompatible(target.unit, it.unit)
+                SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
         }
         val strategy = when {
             actuator.kind == SubsystemHardwareKind.POSITIONAL_SERVO -> SubsystemControlStrategy.SERVO_POSITION
@@ -1072,17 +1071,17 @@ class SubsystemGeneratorViewModel(
                     document.stateFields.firstOrNull { it.fieldId == measurementId }
                 }
                 val compatibleMeasurement = currentMeasurement?.takeIf {
-                    subsystemControlUnitsCompatible(target.unit, it.unit)
+                    SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
                 } ?: document.stateFields.firstOrNull {
                     it.role == SubsystemFieldRole.MEASUREMENT && it.type.isNumeric() &&
-                        subsystemControlUnitsCompatible(target.unit, it.unit)
+                        SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
                 }
                 loop.copy(
                     targetFieldId = targetFieldId,
                     measurementFieldId = if (loop.strategy.requiresMeasurement()) compatibleMeasurement?.fieldId else null,
                     continuousInput = loop.continuousInput.copy(
-                        enabled = loop.continuousInput.enabled && subsystemUnitIsCanonicalAngle(target.unit) &&
-                            subsystemUnitIsCanonicalAngle(compatibleMeasurement?.unit),
+                        enabled = loop.continuousInput.enabled && SubsystemUnits.isCanonicalAngle(target.unit) &&
+                            SubsystemUnits.isCanonicalAngle(compatibleMeasurement?.unit),
                     ),
                 )
             }
@@ -1114,11 +1113,11 @@ class SubsystemGeneratorViewModel(
         val preferredMeasurement = preferredSource?.let { source ->
             actuator?.measurements?.firstOrNull { it.source == source }?.fieldId
         }?.let { fieldId -> document.stateFields.firstOrNull { it.fieldId == fieldId } }
-            ?.takeIf { target == null || subsystemControlUnitsCompatible(target.unit, it.unit) }
+            ?.takeIf { target == null || SubsystemUnits.controlUnitsCompatible(target.unit, it.unit) }
             ?.fieldId
             ?: document.stateFields.firstOrNull {
             it.role == SubsystemFieldRole.MEASUREMENT && it.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT) &&
-                (target == null || subsystemControlUnitsCompatible(target.unit, it.unit))
+                (target == null || SubsystemUnits.controlUnitsCompatible(target.unit, it.unit))
         }?.fieldId
         val supportsFeedforward = strategy in setOf(
             SubsystemControlStrategy.POSITION_PID,
@@ -1545,7 +1544,7 @@ class SubsystemGeneratorViewModel(
         external: List<SubsystemProblem> = problems.filter { it.path.startsWith("project:") },
     ): SubsystemGeneratorState {
         val document = draft?.document ?: return copy(previewFiles = emptyList(), problems = external)
-        val validation = validateSubsystemDocument(document).map {
+        val validation = SubsystemSchema.validate(document).map {
             SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
         } + projectConnectionProblems(document, documents)
         val generated = if (validation.isEmpty() && document.implementation.kind.isAresGenerated()) {

@@ -1786,15 +1786,8 @@ public final class com/areslib/subsystem/SubsystemDocumentKt {
 	public static final fun canonicalUnit (Lcom/areslib/subsystem/SubsystemMeasurementSource;)Ljava/lang/String;
 	public static final fun compatibleMeasurementSources (Lcom/areslib/subsystem/SubsystemHardwareKind;)Ljava/util/List;
 	public static final fun isAresGenerated (Lcom/areslib/subsystem/SubsystemImplementationKind;)Z
-	public static final fun subsystemControlUnitsCompatible (Ljava/lang/String;Ljava/lang/String;)Z
-	public static final fun subsystemMotorMeasurementScale (DDD)D
-	public static final fun subsystemUnitCanRepresentAcceleration (Ljava/lang/String;)Z
-	public static final fun subsystemUnitCanRepresentVelocity (Ljava/lang/String;)Z
-	public static final fun subsystemUnitIsCanonicalAngle (Ljava/lang/String;)Z
 	public static final fun supportsPlatform (Lcom/areslib/subsystem/SubsystemHardwareKind;Lcom/areslib/subsystem/SubsystemPlatform;)Z
 	public static final fun supportsPlatform (Lcom/areslib/subsystem/SubsystemTemplate;Lcom/areslib/subsystem/SubsystemPlatform;)Z
-	public static final fun validateSubsystemDocument (Lcom/areslib/subsystem/SubsystemDocument;)Ljava/util/List;
-	public static final fun validateSubsystemDocuments (Ljava/util/List;)Ljava/util/List;
 	public static final fun valueType (Lcom/areslib/subsystem/SubsystemMeasurementSource;)Lcom/areslib/subsystem/SubsystemValueType;
 }
 
@@ -2280,6 +2273,12 @@ public final class com/areslib/subsystem/SubsystemSafetyDocument {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/subsystem/SubsystemSchema {
+	public static final field INSTANCE Lcom/areslib/subsystem/SubsystemSchema;
+	public final fun validate (Lcom/areslib/subsystem/SubsystemDocument;)Ljava/util/List;
+	public final fun validateAll (Ljava/util/List;)Ljava/util/List;
+}
+
 public final class com/areslib/subsystem/SubsystemSimInteractionDocument {
 	public fun <init> ()V
 	public fun <init> (Lcom/areslib/subsystem/SimInteractionRole;Ljava/lang/String;DIDDDDLjava/lang/String;)V
@@ -2440,6 +2439,15 @@ public final class com/areslib/subsystem/SubsystemTemplate : java/lang/Enum {
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemTemplate;
 	public static fun values ()[Lcom/areslib/subsystem/SubsystemTemplate;
+}
+
+public final class com/areslib/subsystem/SubsystemUnits {
+	public static final field INSTANCE Lcom/areslib/subsystem/SubsystemUnits;
+	public final fun canRepresentAcceleration (Ljava/lang/String;)Z
+	public final fun canRepresentVelocity (Ljava/lang/String;)Z
+	public final fun controlUnitsCompatible (Ljava/lang/String;Ljava/lang/String;)Z
+	public final fun isCanonicalAngle (Ljava/lang/String;)Z
+	public final fun motorMeasurementScale (DDD)D
 }
 
 public final class com/areslib/subsystem/SubsystemValidationIssue {

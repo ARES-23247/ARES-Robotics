@@ -26,7 +26,7 @@ class SubsystemDocumentTest {
             SubsystemTemplate.entries.filter { it.supportsPlatform(platform) }.forEach { template ->
                 val id = "sample-${template.name.lowercase().replace('_', '-')}"
                 val document = SubsystemTemplates.create(template, id, "Sample${template.name.toTypeName()}", platform)
-                val issues = validateSubsystemDocument(document)
+                val issues = SubsystemSchema.validate(document)
                 assertTrue(issues.isEmpty()) { "$platform $template was invalid: $issues" }
                 assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
             }
@@ -69,7 +69,7 @@ class SubsystemDocumentTest {
         assertEquals(SubsystemHubFacingDirection.UP, imu.hardware.single().imuLogoFacingDirection)
         assertEquals(SubsystemHubFacingDirection.FORWARD, imu.hardware.single().imuUsbFacingDirection)
         listOf(absolute, quadrature, distance, imu).forEach {
-            assertTrue(validateSubsystemDocument(it).isEmpty()) { validateSubsystemDocument(it).toString() }
+            assertTrue(SubsystemSchema.validate(it).isEmpty()) { SubsystemSchema.validate(it).toString() }
         }
     }
 
@@ -91,8 +91,8 @@ class SubsystemDocumentTest {
             )
         })
 
-        assertTrue(validateSubsystemDocument(missing).any { it.path.endsWith("imuUsbFacingDirection") })
-        assertTrue(validateSubsystemDocument(parallel).any { it.message.contains("perpendicular") })
+        assertTrue(SubsystemSchema.validate(missing).any { it.path.endsWith("imuUsbFacingDirection") })
+        assertTrue(SubsystemSchema.validate(parallel).any { it.message.contains("perpendicular") })
     }
 
     @Test
@@ -114,7 +114,7 @@ class SubsystemDocumentTest {
         assertEquals(SubsystemHardwareKind.SOLENOID, frc.hardware.single().kind)
         assertEquals(SubsystemPneumaticsModuleType.REV_PH, frc.hardware.single().connection.pneumaticsModuleType)
         assertEquals(0.0, frc.hardware.single().safeOutput)
-        assertTrue(validateSubsystemDocument(frc).isEmpty()) { validateSubsystemDocument(frc).toString() }
+        assertTrue(SubsystemSchema.validate(frc).isEmpty()) { SubsystemSchema.validate(frc).toString() }
     }
 
     @Test
@@ -200,12 +200,12 @@ class SubsystemDocumentTest {
             }
         }
 
-        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(SubsystemSchema.validate(document).isEmpty())
         assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
         assertEquals(0.01, document.hardware.single().measurements.single().scale)
         assertEquals(64, SubsystemDocumentCodec.contentHash(document).length)
         assertTrue(
-            validateSubsystemDocument(document.copy(documentId = "when"))
+            SubsystemSchema.validate(document.copy(documentId = "when"))
                 .any { it.path == "documentId" && it.message.contains("keyword") }
         )
     }
@@ -238,7 +238,7 @@ class SubsystemDocumentTest {
             ),
         )
 
-        val issues = validateSubsystemDocument(document).map { it.message }
+        val issues = SubsystemSchema.validate(document).map { it.message }
         assertTrue(issues.any { it.contains("CAN ID") })
         assertTrue(issues.any { it.contains("requires a measurement") })
         assertThrows(IllegalArgumentException::class.java) { SubsystemDocumentCodec.encode(document) }
@@ -260,7 +260,7 @@ class SubsystemDocumentTest {
             )
         )
 
-        val issues = validateSubsystemDocument(duplicate)
+        val issues = SubsystemSchema.validate(duplicate)
 
         assertTrue(issues.any { it.path == "controlLoops" && it.message.contains("exactly one controller") })
     }
@@ -279,18 +279,18 @@ class SubsystemDocumentTest {
             }
         )
 
-        val issues = validateSubsystemDocument(incompatible)
+        val issues = SubsystemSchema.validate(incompatible)
 
         assertTrue(issues.any { it.path.endsWith("measurementFieldId") && it.message.contains("same unit") })
-        assertTrue(subsystemControlUnitsCompatible("radians", "rad"))
-        assertTrue(!subsystemControlUnitsCompatible("deg", "rad"))
+        assertTrue(SubsystemUnits.controlUnitsCompatible("radians", "rad"))
+        assertTrue(!SubsystemUnits.controlUnitsCompatible("deg", "rad"))
     }
 
     @Test
     fun `motor conversion uses encoder resolution gearing and mechanism travel`() {
         assertEquals(
             0.10 / (537.7 * 5.0),
-            subsystemMotorMeasurementScale(
+            SubsystemUnits.motorMeasurementScale(
                 nativeUnitsPerMotorRevolution = 537.7,
                 motorRevolutionsPerMechanismRevolution = 5.0,
                 stateUnitsPerMechanismRevolution = 0.10,
@@ -298,7 +298,7 @@ class SubsystemDocumentTest {
             1e-12,
         )
         assertThrows(IllegalArgumentException::class.java) {
-            subsystemMotorMeasurementScale(0.0, 5.0, 0.10)
+            SubsystemUnits.motorMeasurementScale(0.0, 5.0, 0.10)
         }
     }
 
@@ -324,14 +324,14 @@ class SubsystemDocumentTest {
             })
         }
 
-        assertTrue(validateSubsystemDocument(invalidVelocity).any {
+        assertTrue(SubsystemSchema.validate(invalidVelocity).any {
             it.path.endsWith("velocityFieldId") && it.message.contains("rad/s")
         })
-        assertTrue(validateSubsystemDocument(arm).any {
+        assertTrue(SubsystemSchema.validate(arm).any {
             it.path.endsWith("gravityAngleFieldId") && it.message.contains("radians")
         })
-        assertTrue(subsystemUnitCanRepresentVelocity("radians/second"))
-        assertTrue(subsystemUnitCanRepresentAcceleration("m/s²"))
+        assertTrue(SubsystemUnits.canRepresentVelocity("radians/second"))
+        assertTrue(SubsystemUnits.canRepresentAcceleration("m/s²"))
     }
 
     @Test
@@ -343,7 +343,7 @@ class SubsystemDocumentTest {
             SubsystemPlatform.FTC,
         )
 
-        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(SubsystemSchema.validate(document).isEmpty())
         assertEquals(SubsystemHomingMethod.DIGITAL_SENSOR, document.safety.homing.method)
         assertTrue(document.safety.requiresCurrentMonitoring)
         assertEquals(setOf("position", "velocity", "currentAmps"), document.hardware.first().measurements.map { it.fieldId }.toSet())
@@ -382,9 +382,9 @@ class SubsystemDocumentTest {
             )
         )
 
-        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(SubsystemSchema.validate(document).isEmpty())
         assertTrue(
-            validateSubsystemDocument(
+            SubsystemSchema.validate(
                 document.copy(safety = document.safety.copy(
                     homing = document.safety.homing.copy(searchOutput = 8.0, timeoutMs = 100L)
                 ))
@@ -404,7 +404,7 @@ class SubsystemDocumentTest {
             control.direct("flywheel", "Flywheel", leader, volts)
         }
 
-        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(SubsystemSchema.validate(document).isEmpty())
         assertEquals("leader", document.hardware.single { it.hardwareId == "follower" }.following?.leaderId)
 
         val competing = document.copy(
@@ -414,20 +414,20 @@ class SubsystemDocumentTest {
                 actuatorId = "follower",
             )
         )
-        assertTrue(validateSubsystemDocument(competing).any { it.message.contains("follower cannot own", ignoreCase = true) })
+        assertTrue(SubsystemSchema.validate(competing).any { it.message.contains("follower cannot own", ignoreCase = true) })
 
         val mirroredMotor = document.copy(hardware = document.hardware.map {
             if (it.hardwareId == "follower") it.copy(
                 following = it.following?.copy(transform = SubsystemFollowerTransform.MIRRORED_POSITION)
             ) else it
         })
-        assertTrue(validateSubsystemDocument(mirroredMotor).any { it.message.contains("positional servos") })
+        assertTrue(SubsystemSchema.validate(mirroredMotor).any { it.message.contains("positional servos") })
 
         val signedPositionalFollower = document.copy(hardware = document.hardware.map {
             it.copy(kind = SubsystemHardwareKind.POSITIONAL_SERVO, safeOutput = 0.5)
         })
         assertTrue(
-            validateSubsystemDocument(signedPositionalFollower)
+            SubsystemSchema.validate(signedPositionalFollower)
                 .any { it.message.contains("mirrored position rather than signed inversion") }
         )
 
@@ -435,14 +435,14 @@ class SubsystemDocumentTest {
             if (index == 0) device.copy(kind = SubsystemHardwareKind.DIGITAL_INPUT, inverted = true, safeOutput = null)
             else device
         })
-        assertTrue(validateSubsystemDocument(invertedSensor).any { it.path == "hardware[0].inverted" })
+        assertTrue(SubsystemSchema.validate(invertedSensor).any { it.path == "hardware[0].inverted" })
     }
 
     @Test
     fun `hand-authored descriptor records user ownership without scanning source`() {
         val document = handAuthoredPrismDocument()
 
-        assertTrue(validateSubsystemDocument(document).isEmpty())
+        assertTrue(SubsystemSchema.validate(document).isEmpty())
         assertEquals(document, SubsystemDocumentCodec.decode(SubsystemDocumentCodec.encode(document)))
         assertEquals(SubsystemSourceOwnership.USER_OWNED, document.implementation.ownership)
         assertEquals(SubsystemTeachingLevel.BEGINNER, document.implementation.teaching.level)
@@ -456,7 +456,7 @@ class SubsystemDocumentTest {
             sourceFiles = listOf("../PrismSubsystem.kt"),
             subsystemClassName = "PrismSubsystem",
         )
-        val issues = validateSubsystemDocument(handAuthoredPrismDocument().copy(implementation = implementation))
+        val issues = SubsystemSchema.validate(handAuthoredPrismDocument().copy(implementation = implementation))
 
         assertTrue(issues.any { it.path == "implementation.ownership" })
         assertTrue(issues.any { it.path == "implementation.sourceFiles[0]" })
@@ -474,19 +474,19 @@ class SubsystemDocumentTest {
         val wrapped = arm.copy(controlLoops = arm.controlLoops.map { loop ->
             loop.copy(continuousInput = SubsystemContinuousInputDocument(enabled = true))
         })
-        assertTrue(validateSubsystemDocument(wrapped).isEmpty())
+        assertTrue(SubsystemSchema.validate(wrapped).isEmpty())
 
         val wrongPeriod = wrapped.copy(controlLoops = wrapped.controlLoops.map { loop ->
             loop.copy(continuousInput = loop.continuousInput.copy(maximumInput = Math.PI / 2.0))
         })
-        assertTrue(validateSubsystemDocument(wrongPeriod).any {
+        assertTrue(SubsystemSchema.validate(wrongPeriod).any {
             it.path.endsWith("continuousInput") && it.message.contains("2π")
         })
 
         val wrongStrategy = wrapped.copy(controlLoops = wrapped.controlLoops.map { loop ->
             loop.copy(strategy = SubsystemControlStrategy.VELOCITY_PID)
         })
-        assertTrue(validateSubsystemDocument(wrongStrategy).any {
+        assertTrue(SubsystemSchema.validate(wrongStrategy).any {
             it.path.endsWith("continuousInput.enabled")
         })
 
@@ -499,8 +499,8 @@ class SubsystemDocumentTest {
                 hysteresis = 0.02,
             )
         })
-        assertTrue(validateSubsystemDocument(onOff).isEmpty())
-        assertTrue(validateSubsystemDocument(arm.copy(controlLoops = arm.controlLoops.map { it.copy(hysteresis = 0.02) })).any {
+        assertTrue(SubsystemSchema.validate(onOff).isEmpty())
+        assertTrue(SubsystemSchema.validate(arm.copy(controlLoops = arm.controlLoops.map { it.copy(hysteresis = 0.02) })).any {
             it.path.endsWith("hysteresis")
         })
     }

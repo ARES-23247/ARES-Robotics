@@ -556,40 +556,6 @@ data class SubsystemDocument(
 
 data class SubsystemValidationIssue(val path: String, val message: String)
 
-/**
- * Returns true when two controller-facing state fields use the same declared numeric unit.
- * Blank units remain compatible; this validates dimensions and intentionally does not convert.
- */
-fun subsystemControlUnitsCompatible(first: String?, second: String?): Boolean =
-    SubsystemUnitPolicy.controlUnitsCompatible(first, second)
-
-/** Unit predicates used by validation and catalog-backed editors. Blank means advanced/native. */
-fun subsystemUnitCanRepresentVelocity(unit: String?): Boolean =
-    SubsystemUnitPolicy.canRepresentVelocity(unit)
-
-fun subsystemUnitCanRepresentAcceleration(unit: String?): Boolean =
-    SubsystemUnitPolicy.canRepresentAcceleration(unit)
-
-fun subsystemUnitIsCanonicalAngle(unit: String?): Boolean =
-    SubsystemUnitPolicy.isCanonicalAngle(unit)
-
-/** Converts a native motor sample to mechanism state units after validating every ratio. */
-fun subsystemMotorMeasurementScale(
-    nativeUnitsPerMotorRevolution: Double,
-    motorRevolutionsPerMechanismRevolution: Double,
-    stateUnitsPerMechanismRevolution: Double,
-): Double = SubsystemUnitPolicy.motorMeasurementScale(
-    nativeUnitsPerMotorRevolution,
-    motorRevolutionsPerMechanismRevolution,
-    stateUnitsPerMechanismRevolution,
-)
-
-fun validateSubsystemDocument(document: SubsystemDocument): List<SubsystemValidationIssue> =
-    SubsystemValidator.validateDocument(document)
-
-fun validateSubsystemDocuments(documents: List<SubsystemDocument>): List<SubsystemValidationIssue> =
-    SubsystemValidator.validateDocuments(documents)
-
 fun SubsystemHardwareKind.compatibleMeasurementSources(): List<SubsystemMeasurementSource> = when (this) {
     SubsystemHardwareKind.MOTOR -> listOf(
         SubsystemMeasurementSource.MOTOR_POSITION_NATIVE,

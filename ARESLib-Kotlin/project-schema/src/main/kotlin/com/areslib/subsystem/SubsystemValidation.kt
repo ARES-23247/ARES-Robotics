@@ -2,8 +2,9 @@ package com.areslib.subsystem
 
 import com.areslib.tuning.validateTuningParameterDeclarations
 
-internal object SubsystemValidator {
-    fun validateDocument(document: SubsystemDocument): List<SubsystemValidationIssue> = buildList {
+/** Public validation façade for canonical subsystem documents and project-wide relationships. */
+object SubsystemSchema {
+    fun validate(document: SubsystemDocument): List<SubsystemValidationIssue> = buildList {
         fun issue(path: String, message: String) {
             add(SubsystemValidationIssue(path, message))
         }
@@ -346,7 +347,7 @@ internal object SubsystemValidator {
             if (needsMeasurement && measurement == null) issue("$path.measurementFieldId", "This strategy requires a measurement field")
             if (measurement != null && measurement.type !in SUBSYSTEM_NUMERIC_TYPES) issue("$path.measurementFieldId", "Control measurements must be numeric")
             if (needsMeasurement && target != null && measurement != null &&
-                !subsystemControlUnitsCompatible(target.unit, measurement.unit)
+                !SubsystemUnits.controlUnitsCompatible(target.unit, measurement.unit)
             ) {
                 issue(
                     "$path.measurementFieldId",
@@ -388,10 +389,10 @@ internal object SubsystemValidator {
                 if (loop.strategy !in SUBSYSTEM_CONTINUOUS_POSITION_STRATEGIES) {
                     issue("$path.continuousInput.enabled", "Continuous input is available only for position PID control")
                 }
-                if (target != null && !subsystemUnitIsCanonicalAngle(target.unit)) {
+                if (target != null && !SubsystemUnits.isCanonicalAngle(target.unit)) {
                     issue("$path.targetFieldId", "Continuous position targets must use canonical radians (rad)")
                 }
-                if (measurement != null && !subsystemUnitIsCanonicalAngle(measurement.unit)) {
+                if (measurement != null && !SubsystemUnits.isCanonicalAngle(measurement.unit)) {
                     issue("$path.measurementFieldId", "Continuous position feedback must use canonical radians (rad)")
                 }
                 val period = loop.continuousInput.maximumInput - loop.continuousInput.minimumInput
@@ -455,7 +456,7 @@ internal object SubsystemValidator {
      * Validates relationships that cannot be proven from one subsystem document in isolation.
      * Missing or ambiguous interlock targets are build errors, never runtime permits.
      */
-    fun validateDocuments(documents: List<SubsystemDocument>): List<SubsystemValidationIssue> = buildList {
+    fun validateAll(documents: List<SubsystemDocument>): List<SubsystemValidationIssue> = buildList {
         val byUid = documents.groupBy { it.uid }
         byUid.filterValues { it.size > 1 }.keys.sorted().forEach { uid ->
             add(SubsystemValidationIssue("subsystems", "Subsystem UID '$uid' is duplicated"))
@@ -553,13 +554,13 @@ internal object SubsystemValidator {
         }
         feedforward.velocityFieldId?.let { id ->
             val field = fieldsById[id]
-            if (field != null && !subsystemUnitCanRepresentVelocity(field.unit)) {
+            if (field != null && !SubsystemUnits.canRepresentVelocity(field.unit)) {
                 issue("$path.feedforward.velocityFieldId", "Desired velocity must use m/s, rad/s, rot/s, or an explicitly unitless advanced field")
             }
         }
         feedforward.accelerationFieldId?.let { id ->
             val field = fieldsById[id]
-            if (field != null && !subsystemUnitCanRepresentAcceleration(field.unit)) {
+            if (field != null && !SubsystemUnits.canRepresentAcceleration(field.unit)) {
                 issue("$path.feedforward.accelerationFieldId", "Desired acceleration must use m/s², rad/s², rot/s², or an explicitly unitless advanced field")
             }
         }
@@ -569,7 +570,7 @@ internal object SubsystemValidator {
         if (feedforward.kind == SubsystemFeedforwardKind.ARM) {
             feedforward.gravityAngleFieldId?.let { id ->
                 val field = fieldsById[id]
-                if (field != null && !subsystemUnitIsCanonicalAngle(field.unit)) {
+                if (field != null && !SubsystemUnits.isCanonicalAngle(field.unit)) {
                     issue("$path.feedforward.gravityAngleFieldId", "Arm gravity angle must declare canonical radians (rad)")
                 }
             }

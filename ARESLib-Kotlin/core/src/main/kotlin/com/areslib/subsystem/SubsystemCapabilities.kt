@@ -55,7 +55,7 @@ fun subsystemCalibrationConfirmationActionKey(subsystemId: String): String =
 /** Derives typed, novice-facing actions without duplicating them in `action-catalog.json`. */
 fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<SubsystemTargetCapability> =
     documents.sortedBy { it.documentId }.flatMap { document ->
-        require(validateSubsystemDocument(document).isEmpty()) {
+        require(SubsystemSchema.validate(document).isEmpty()) {
             "Subsystem '${document.documentId}' must be valid before deriving actions"
         }
         if (document.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED) {

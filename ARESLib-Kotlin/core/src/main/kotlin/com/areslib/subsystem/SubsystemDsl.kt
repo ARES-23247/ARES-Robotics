@@ -72,7 +72,7 @@ class SubsystemBuilder internal constructor(
             generateMockIo = generateMockIo,
             generateTest = generateTest,
         )
-        val issues = validateSubsystemDocument(document)
+        val issues = SubsystemSchema.validate(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
         return document
     }

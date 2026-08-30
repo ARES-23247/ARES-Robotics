@@ -13,7 +13,7 @@ import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemVerificationEvidence
 import com.areslib.subsystem.subsystemVerificationContract
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.superstructure.SuperstructureDocumentCodec
 import java.io.File
 import javax.xml.XMLConstants
@@ -108,7 +108,7 @@ object RobotVerificationReportLoader {
         }
 
         documents.forEach { document ->
-            val issues = validateSubsystemDocument(document)
+            val issues = SubsystemSchema.validate(document)
             items += VerificationReportItem(
                 id = "${document.documentId}.configuration",
                 layer = VerificationLayer.CONFIGURATION,

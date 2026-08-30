@@ -63,8 +63,7 @@ import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemFeedforwardKind
-import com.areslib.subsystem.subsystemUnitCanRepresentVelocity
-import com.areslib.subsystem.subsystemUnitIsCanonicalAngle
+import com.areslib.subsystem.SubsystemUnits
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -100,9 +99,9 @@ internal fun SubsystemCommissioningLab(
         loop.strategy == SubsystemControlStrategy.SERVO_POSITION ->
             listOf(SubsystemCommissioningPlant.POSITIONAL_SERVO)
         loop.strategy == SubsystemControlStrategy.VELOCITY_PID ||
-            subsystemUnitCanRepresentVelocity(targetField?.unit) ->
+            SubsystemUnits.canRepresentVelocity(targetField?.unit) ->
             listOf(SubsystemCommissioningPlant.FLYWHEEL)
-        subsystemUnitIsCanonicalAngle(targetField?.unit) ->
+        SubsystemUnits.isCanonicalAngle(targetField?.unit) ->
             listOf(SubsystemCommissioningPlant.ROTARY_ARM)
         loop.feedforward.kind == SubsystemFeedforwardKind.ELEVATOR ->
             listOf(SubsystemCommissioningPlant.ELEVATOR)

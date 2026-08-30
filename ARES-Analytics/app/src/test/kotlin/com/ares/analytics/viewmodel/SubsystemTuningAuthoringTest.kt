@@ -8,7 +8,7 @@ import com.areslib.subsystem.SubsystemFeedforwardKind
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningAssignment
 import com.areslib.tuning.TuningParameterType
@@ -40,7 +40,7 @@ class SubsystemTuningAuthoringTest {
 
         assertEquals(TuningParameterType.entries.toSet(), typed.take(TuningParameterType.entries.size).mapTo(hashSetOf()) { it.type })
         assertEquals(TuningApplyPolicy.entries.toSet(), typed.mapTo(hashSetOf()) { it.applyPolicy })
-        assertTrue(validateSubsystemDocument(document).none { it.path.startsWith("tuningParameters") })
+        assertTrue(SubsystemSchema.validate(document).none { it.path.startsWith("tuningParameters") })
     }
 
     @Test
@@ -60,7 +60,7 @@ class SubsystemTuningAuthoringTest {
             enumOptions = emptyList(),
             defaultValue = TuningValue(textValue = "missing"),
         )
-        val issues = validateSubsystemDocument(base.copy(tuningParameters = listOf(first, duplicate, invalidBounds, invalidEnum)))
+        val issues = SubsystemSchema.validate(base.copy(tuningParameters = listOf(first, duplicate, invalidBounds, invalidEnum)))
 
         assertTrue(issues.any { it.message.contains("UID") && it.message.contains("duplicated") })
         assertTrue(issues.any { it.message.contains("key") && it.message.contains("duplicated") })

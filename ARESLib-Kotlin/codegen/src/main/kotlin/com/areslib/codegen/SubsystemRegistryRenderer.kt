@@ -6,13 +6,12 @@ import com.areslib.subsystem.SubsystemImplementationKind
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.isAresGenerated
 import com.areslib.subsystem.subsystemTargetCapabilities
-import com.areslib.subsystem.validateSubsystemDocument
-import com.areslib.subsystem.validateSubsystemDocuments
+import com.areslib.subsystem.SubsystemSchema
 
 /** Renders only the generated subsystem composition/action/interlock registry. */
 internal object SubsystemRegistryRenderer {
     fun render(documents: List<SubsystemDocument>, target: SubsystemKotlinCodegenTarget): String {
-        val projectIssues = validateSubsystemDocuments(documents)
+        val projectIssues = SubsystemSchema.validateAll(documents)
         require(projectIssues.isEmpty()) {
             projectIssues.joinToString("; ") { "${it.path}: ${it.message}" }
         }
@@ -20,7 +19,7 @@ internal object SubsystemRegistryRenderer {
             require(document.platform == target.platform) {
                 "Subsystem '${document.documentId}' targets ${document.platform}, not ${target.platform}"
             }
-            require(validateSubsystemDocument(document).isEmpty()) { "Subsystem '${document.documentId}' is invalid" }
+            require(SubsystemSchema.validate(document).isEmpty()) { "Subsystem '${document.documentId}' is invalid" }
         }
         val generatedDocuments = documents.filter { it.implementation.kind.isAresGenerated() }
         val handAuthoredDocuments = documents.filter {

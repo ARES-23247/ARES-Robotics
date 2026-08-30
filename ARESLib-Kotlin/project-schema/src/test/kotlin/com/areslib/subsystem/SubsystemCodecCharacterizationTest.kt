@@ -67,7 +67,7 @@ class SubsystemCodecCharacterizationTest {
                 SubsystemValidationIssue("revision", "Revision must be positive"),
                 SubsystemValidationIssue("parentContentHash", "Parent content hash must be SHA-256"),
             ),
-            validateSubsystemDocument(invalid),
+            SubsystemSchema.validate(invalid),
         )
     }
 

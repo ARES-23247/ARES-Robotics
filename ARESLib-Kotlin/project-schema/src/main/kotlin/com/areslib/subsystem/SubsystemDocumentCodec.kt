@@ -355,7 +355,7 @@ object SubsystemDocumentCodec {
         .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
 
     private fun requireValid(document: SubsystemDocument) {
-        val issues = validateSubsystemDocument(document)
+        val issues = SubsystemSchema.validate(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
     }
 }

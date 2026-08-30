@@ -29,26 +29,26 @@ class SubsystemPolicyTest {
 
     @Test
     fun `unit aliases normalize without silently converting incompatible dimensions`() {
-        assertTrue(subsystemControlUnitsCompatible("radians", "rad"))
-        assertFalse(subsystemControlUnitsCompatible("degrees", "rad"))
-        assertTrue(subsystemUnitCanRepresentVelocity("rotations/second"))
-        assertTrue(subsystemUnitCanRepresentAcceleration("m/s²"))
-        assertTrue(subsystemUnitIsCanonicalAngle("radians"))
-        assertFalse(subsystemUnitIsCanonicalAngle("degrees"))
+        assertTrue(SubsystemUnits.controlUnitsCompatible("radians", "rad"))
+        assertFalse(SubsystemUnits.controlUnitsCompatible("degrees", "rad"))
+        assertTrue(SubsystemUnits.canRepresentVelocity("rotations/second"))
+        assertTrue(SubsystemUnits.canRepresentAcceleration("m/s²"))
+        assertTrue(SubsystemUnits.isCanonicalAngle("radians"))
+        assertFalse(SubsystemUnits.isCanonicalAngle("degrees"))
     }
 
     @Test
     fun `motor measurement scale validates every physical ratio`() {
         assertEquals(
             0.1 / (28.0 * 5.0),
-            subsystemMotorMeasurementScale(28.0, 5.0, 0.1),
+            SubsystemUnits.motorMeasurementScale(28.0, 5.0, 0.1),
             1e-12,
         )
         assertThrows(IllegalArgumentException::class.java) {
-            subsystemMotorMeasurementScale(0.0, 5.0, 0.1)
+            SubsystemUnits.motorMeasurementScale(0.0, 5.0, 0.1)
         }
         assertThrows(IllegalArgumentException::class.java) {
-            subsystemMotorMeasurementScale(28.0, Double.NaN, 0.1)
+            SubsystemUnits.motorMeasurementScale(28.0, Double.NaN, 0.1)
         }
     }
 }

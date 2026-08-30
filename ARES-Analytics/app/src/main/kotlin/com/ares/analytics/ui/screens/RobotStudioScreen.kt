@@ -50,7 +50,7 @@ import com.ares.analytics.viewmodel.robotstudio.RobotStudioState
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.areslib.subsystem.SubsystemTemplate
-import com.areslib.subsystem.validateSubsystemDocument
+import com.areslib.subsystem.SubsystemSchema
 import com.areslib.project.AresProjectAuthoringModel
 import kotlinx.coroutines.delay
 
@@ -114,7 +114,7 @@ fun RobotStudioScreen(
             val hasErrors = if (subsystem.documentId == draftId) {
                 subsystemState.problems.any { it.severity == SubsystemProblemSeverity.ERROR }
             } else {
-                validateSubsystemDocument(subsystem).isNotEmpty()
+                SubsystemSchema.validate(subsystem).isNotEmpty()
             }
             SubsystemTreeItem(
                 documentId = subsystem.documentId,

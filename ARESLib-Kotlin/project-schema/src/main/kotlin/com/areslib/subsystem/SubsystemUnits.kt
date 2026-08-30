@@ -1,7 +1,7 @@
 package com.areslib.subsystem
 
-/** Internal unit policy shared by validation and catalog-backed editors. */
-internal object SubsystemUnitPolicy {
+/** Canonical unit policy shared by validation, code generation, and catalog-backed editors. */
+object SubsystemUnits {
     fun controlUnitsCompatible(first: String?, second: String?): Boolean {
         if (first.isNullOrBlank() || second.isNullOrBlank()) return true
         return normalize(first) == normalize(second)
