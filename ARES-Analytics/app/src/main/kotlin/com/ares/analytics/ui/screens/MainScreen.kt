@@ -414,13 +414,13 @@ fun MainScreen(services: ServiceRegistry) {
     }
     // This ViewModel owns no independent scope or hardware/service resource. Its jobs run in the
     // screen's Compose scope and are cancelled automatically when MainScreen leaves composition.
-    val dashboardState by dashboardViewModel.state.collectAsState()
+    val dashboardShellState by dashboardViewModel.shellState.collectAsState()
     var dashboardMissionSnapshot by remember(currentConfig.id) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
     }
     val robotStudioState by robotStudioViewModel.state.collectAsState()
-    val primarySessionId = dashboardState.primarySessionId
-    val compareSessionId = dashboardState.compareSessionId
+    val primarySessionId = dashboardShellState.primarySessionId
+    val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
     val adbConnected by services.processManagerService.adbConnected.collectAsState()
     val isSimRunning by services.processManagerService.isSimRunning.collectAsState()
@@ -874,15 +874,15 @@ fun MainScreen(services: ServiceRegistry) {
                                     onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
                                     modifier = Modifier.weight(1f),
                                 )
-                                if (dashboardState.currentLayout != null) {
+                                if (dashboardShellState.hasLayout) {
                                     DashboardCommandBar(
-                                        profileName = dashboardState.currentRoleProfile,
-                                        availableProfiles = dashboardState.availableProfiles,
-                                        isEditing = dashboardState.isLayoutEditing,
+                                        profileName = dashboardShellState.currentRoleProfile,
+                                        availableProfiles = dashboardShellState.availableProfiles,
+                                        isEditing = dashboardShellState.isLayoutEditing,
                                         onSelectProfile = { dashboardViewModel.onIntent(DashboardIntent.ChangeProfile(it)) },
                                         onSaveLayoutAs = { dashboardViewModel.onIntent(DashboardIntent.SaveLayoutAs(it)) },
                                         onDeleteProfile = { dashboardViewModel.onIntent(DashboardIntent.DeleteLayout(it)) },
-                                        onToggleEditing = { dashboardViewModel.onIntent(DashboardIntent.SetLayoutEditing(!dashboardState.isLayoutEditing)) },
+                                        onToggleEditing = { dashboardViewModel.onIntent(DashboardIntent.SetLayoutEditing(!dashboardShellState.isLayoutEditing)) },
                                         onAddWidget = { dashboardViewModel.onIntent(DashboardIntent.SetPickerOpen(true)) },
                                         onResetLayout = { dashboardViewModel.onIntent(DashboardIntent.ResetProfile) },
                                         modifier = Modifier.widthIn(min = 145.dp, max = 250.dp),

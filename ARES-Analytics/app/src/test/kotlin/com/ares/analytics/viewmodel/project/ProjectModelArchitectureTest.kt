@@ -130,6 +130,10 @@ class ProjectModelArchitectureTest {
             "Hidden authoring evidence must not invalidate MainScreen: ${forbiddenRootSubscriptions.joinToString()}",
         )
         assertTrue(
+            "dashboardViewModel.state.collectAsState()" !in mainScreen,
+            "MainScreen must observe DashboardShellState instead of full dashboard/replay/alert state.",
+        )
+        assertTrue(
             "AcademyRuntimeFeatureScope" in runtimeHost && "ServiceRegistry" !in runtimeHost,
             "Academy evidence must be collected behind a typed, feature-owned boundary.",
         )
