@@ -106,7 +106,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
             "application-version source",
         )
         requireContains(templateServiceFile, "id = \"ares-ftc-starter-$ftcVersion\"", "FTC template ID")
-        requireContains(templateServiceFile, "aresVersion = \"$ftcVersion\"", "FTC template version")
+        requireContains(templateServiceFile, "aresVersion = \"$aresVersion\"", "FTC ARES dependency version")
         requireContains(
             templateServiceFile,
             "ARES-Robotics/releases/download/v$appVersion/ARES-FTC-Starter-$ftcVersion.zip",
@@ -119,7 +119,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
             "FTC bundled-template path",
         )
         requireContains(templateServiceFile, "id = \"ares-frc-starter-$frcVersion\"", "FRC template ID")
-        requireContains(templateServiceFile, "aresVersion = \"$frcVersion\"", "FRC template version")
+        requireContains(templateServiceFile, "aresVersion = \"$aresVersion\"", "FRC ARES dependency version")
         requireContains(
             templateServiceFile,
             "ARES-Robotics/releases/download/v$appVersion/ARES-FRC-Starter-$frcVersion.zip",
