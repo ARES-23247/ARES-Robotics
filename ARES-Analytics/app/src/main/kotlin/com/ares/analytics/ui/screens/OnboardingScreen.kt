@@ -97,19 +97,30 @@ fun OnboardingScreen(
             color = AresSurface,
             tonalElevation = 8.dp,
         ) {
-            Box {
-                Column(
-                    modifier = Modifier
-                        .padding(start = 28.dp, top = 28.dp, end = 42.dp, bottom = 28.dp)
-                        .fillMaxWidth()
-                        .verticalScroll(contentScrollState),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
-                ) {
+            Column(
+                modifier = Modifier
+                    .padding(28.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
                 WelcomeStep(state.currentStep)
                 HorizontalDivider(color = AresBorder)
 
-                if (state.currentStep == OnboardingStep.OPTIONAL) {
-                    AuthStep(
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 14.dp)
+                            .verticalScroll(contentScrollState),
+                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                    ) {
+                        if (state.currentStep == OnboardingStep.OPTIONAL) {
+                            AuthStep(
                         authState = authState,
                         managedGoogleSignInAvailable = oauthService.managedGoogleClientAvailable,
                         driveDestination = state.driveDestination,
@@ -139,10 +150,10 @@ fun OnboardingScreen(
                                 )
                             }
                         },
-                    )
-                }
+                            )
+                        }
 
-                SyncStep(
+                        SyncStep(
                     step = state.currentStep,
                     projectSetupMode = state.projectSetupMode,
                     projectPath = state.projectPath,
@@ -216,47 +227,52 @@ fun OnboardingScreen(
                     },
                     fieldErrors = state.fieldErrors,
                     cloudConfigured = authState is AuthState.Authenticated,
-                )
+                        )
 
-                if (state.currentStep == OnboardingStep.REVIEW) {
-                    JavaVerificationStep(
+                        if (state.currentStep == OnboardingStep.REVIEW) {
+                            JavaVerificationStep(
                         isValid = state.javaEnvValid,
                         isVerifying = state.isVerifyingJava,
                         message = state.javaEnvMsg,
                         installState = state.toolchainInstallState,
                         onVerifyClick = { viewModel.handleIntent(OnboardingIntent.VerifyJava) },
                         onInstallClick = { viewModel.handleIntent(OnboardingIntent.InstallManagedJdk) },
+                            )
+                        }
+
+                        state.errorMessage?.let { error ->
+                            Text(error, color = AresError, style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (state.isSaving && !state.projectCreationMessage.isNullOrBlank()) {
+                            Text(
+                                state.projectCreationMessage!!,
+                                color = AresCyan,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+
+                    VerticalScrollbar(
+                        adapter = rememberScrollbarAdapter(contentScrollState),
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .fillMaxHeight(),
                     )
                 }
 
-                state.errorMessage?.let { error ->
-                    Text(error, color = AresError, style = MaterialTheme.typography.bodySmall)
-                }
-                if (state.isSaving && !state.projectCreationMessage.isNullOrBlank()) {
-                    Text(state.projectCreationMessage!!, color = AresCyan, style = MaterialTheme.typography.bodySmall)
-                }
-
-                    NavigationButtons(
-                        step = state.currentStep,
-                        isSaving = state.isSaving,
-                        finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
-                            "Create demo copy"
-                        } else {
-                            "Create standalone project"
-                        },
-                        onCancel = onCancel,
-                        onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },
-                        onNext = { viewModel.handleIntent(OnboardingIntent.NextStep) },
-                        onFinish = { viewModel.handleIntent(OnboardingIntent.SubmitConfig) },
-                    )
-                }
-
-                VerticalScrollbar(
-                    adapter = rememberScrollbarAdapter(contentScrollState),
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .fillMaxHeight()
-                        .padding(horizontal = 8.dp, vertical = 16.dp),
+                HorizontalDivider(color = AresBorder)
+                NavigationButtons(
+                    step = state.currentStep,
+                    isSaving = state.isSaving,
+                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
+                        "Create demo copy"
+                    } else {
+                        "Create standalone project"
+                    },
+                    onCancel = onCancel,
+                    onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },
+                    onNext = { viewModel.handleIntent(OnboardingIntent.NextStep) },
+                    onFinish = { viewModel.handleIntent(OnboardingIntent.SubmitConfig) },
                 )
             }
         }
