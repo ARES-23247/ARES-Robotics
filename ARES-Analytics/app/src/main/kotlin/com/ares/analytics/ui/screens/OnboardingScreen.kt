@@ -4,17 +4,20 @@ import com.ares.analytics.ui.theme.AresOnAccent
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -67,6 +70,7 @@ fun OnboardingScreen(
     val authState by oauthService.authState.collectAsState()
     val drivePickerState by oauthService.drivePickerState.collectAsState()
     val token = (authState as? AuthState.Authenticated)?.idToken
+    val contentScrollState = rememberScrollState()
 
     LaunchedEffect(state.teamId, token) {
         if (token != null && state.teamId.isNotBlank()) {
@@ -93,13 +97,14 @@ fun OnboardingScreen(
             color = AresSurface,
             tonalElevation = 8.dp,
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(28.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
+            Box {
+                Column(
+                    modifier = Modifier
+                        .padding(start = 28.dp, top = 28.dp, end = 42.dp, bottom = 28.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(contentScrollState),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
                 WelcomeStep(state.currentStep)
                 HorizontalDivider(color = AresBorder)
 
@@ -231,18 +236,27 @@ fun OnboardingScreen(
                     Text(state.projectCreationMessage!!, color = AresCyan, style = MaterialTheme.typography.bodySmall)
                 }
 
-                NavigationButtons(
-                    step = state.currentStep,
-                    isSaving = state.isSaving,
-                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
-                        "Create demo copy"
-                    } else {
-                        "Create standalone project"
-                    },
-                    onCancel = onCancel,
-                    onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },
-                    onNext = { viewModel.handleIntent(OnboardingIntent.NextStep) },
-                    onFinish = { viewModel.handleIntent(OnboardingIntent.SubmitConfig) },
+                    NavigationButtons(
+                        step = state.currentStep,
+                        isSaving = state.isSaving,
+                        finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
+                            "Create demo copy"
+                        } else {
+                            "Create standalone project"
+                        },
+                        onCancel = onCancel,
+                        onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },
+                        onNext = { viewModel.handleIntent(OnboardingIntent.NextStep) },
+                        onFinish = { viewModel.handleIntent(OnboardingIntent.SubmitConfig) },
+                    )
+                }
+
+                VerticalScrollbar(
+                    adapter = rememberScrollbarAdapter(contentScrollState),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .padding(horizontal = 8.dp, vertical = 16.dp),
                 )
             }
         }
