@@ -42,7 +42,7 @@ The boundary is implemented as two publishable ARESLib modules:
 - capability ownership collisions;
 - inconsistent tuning scopes.
 
-The canonical project ID and the current tuning runtime scope are explicitly distinct. Existing tuning documents use a legacy `projectUid` such as `team23247.ftc.season2026.gobilda`; the canonical metadata ID is `team23247-gobilda`. The effective model exposes the former as `tuningScopeUid` and requires all tuning documents to agree without rewriting saved projects.
+The canonical project ID and the current tuning runtime scope are explicitly distinct. Existing tuning documents use a legacy `projectId` such as `team23247.ftc.season2026.gobilda`; the canonical metadata ID is `team23247-gobilda`. The effective model exposes the former as `tuningScopeUid` and requires all tuning documents to agree without rewriting saved projects.
 
 `ProjectSchemaVersions` makes every schema-owned document's current version explicit and fails closed for every non-current version. Project metadata schema 4 requires explicit authoring ownership; no legacy identity decoder or schema migration path remains before public rollout.
 

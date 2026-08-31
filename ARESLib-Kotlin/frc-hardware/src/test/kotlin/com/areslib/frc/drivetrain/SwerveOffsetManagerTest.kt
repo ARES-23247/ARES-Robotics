@@ -45,7 +45,7 @@ class SwerveOffsetManagerTest {
         System.setProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY, tempDir.toString())
         try {
             SwerveOffsetManager.saveRuntimeOffsets(testData)
-            val loaded = SwerveOffsetManager.loadOffsets()
+            val loaded = SwerveOffsetManager.loadOffsets(SwerveOffsetData(9.0, 9.0, 9.0, 9.0))
 
             assertEquals(testData.frontLeft, loaded.frontLeft, 1e-4)
             assertEquals(testData.frontRight, loaded.frontRight, 1e-4)
@@ -79,14 +79,28 @@ class SwerveOffsetManagerTest {
     }
 
     @Test
-    fun `corrupt runtime falls through to strict deployed offsets`() {
-        val deployed = SwerveOffsetData(0.1, 0.2, 0.3, 0.4)
+    fun `corrupt runtime falls back only to canonical offsets`() {
+        val canonical = SwerveOffsetData(0.1, 0.2, 0.3, 0.4)
         System.setProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY, tempDir.toString())
         try {
             SwerveOffsetManager.runtimeFile.writeText("""{"frontLeft":0}""")
-            SwerveOffsetManager.deployFile.parentFile.mkdirs()
-            SwerveOffsetManager.deployFile.writeText(deployed.toJsonString())
-            assertEquals(deployed, SwerveOffsetManager.loadOffsets())
+            assertEquals(canonical, SwerveOffsetManager.loadOffsets(canonical))
+        } finally {
+            System.clearProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY)
+        }
+    }
+
+    @Test
+    fun `backup recovery is explicit and never part of normal loading`() {
+        val canonical = SwerveOffsetData(0.1, 0.2, 0.3, 0.4)
+        val calibrated = SwerveOffsetData(0.5, 0.6, 0.7, 0.8)
+        System.setProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY, tempDir.toString())
+        try {
+            SwerveOffsetManager.saveRuntimeOffsets(calibrated)
+            assertTrue(SwerveOffsetManager.runtimeFile.delete())
+
+            assertEquals(canonical, SwerveOffsetManager.loadOffsets(canonical))
+            assertEquals(calibrated, SwerveOffsetManager.loadLatestBackup())
         } finally {
             System.clearProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY)
         }

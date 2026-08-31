@@ -252,12 +252,6 @@ class StateActionTask(
     override val requiredResources: Long = TaskResources.NONE,
     private val actionFactory: (RobotState) -> RobotAction
 ) : Task {
-    /** Source-compatible overload for existing callers that pass the factory positionally. */
-    constructor(
-        name: String,
-        actionFactory: (RobotState) -> RobotAction
-    ) : this(name, TaskResources.NONE, actionFactory)
-
     private var dispatched = false
 
     init {

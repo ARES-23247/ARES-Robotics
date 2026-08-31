@@ -515,7 +515,6 @@ private fun DriveHardwareRole.toCanonicalRole(): DrivetrainComponentRole = when 
 }
 
 internal fun canonicalTemplate(projectId: String, kind: DrivebaseKind): DrivetrainDocument {
-    val projectUid = projectId.lowercase().replace(Regex("[^a-z0-9]+"), ".").trim('.').ifBlank { "robot.project" }
     fun drive(
         uid: String,
         hardware: String,
@@ -588,7 +587,7 @@ internal fun canonicalTemplate(projectId: String, kind: DrivebaseKind): Drivetra
         // Physical geometry is authoritative here. It must never be duplicated as a tuning value.
         parameters = emptyList(),
         ctreImport = if (kind == DrivebaseKind.FRC_CTRE_SWERVE) CtreSwerveImportDocument("src/main/java/frc/robot/generated/TunerConstants.java", "0".repeat(64), "CTRE Tuner", "unknown", "frc.robot.generated.TunerConstants", "rio") else null,
-        canonicalProfileUid = "$projectUid.profile.competition"
+        canonicalProfileUid = "$projectId.profile.competition"
     )
     return if (kind == DrivebaseKind.FTC_MECANUM) {
         FtcMecanumRuntimeParameters.reconcile(document)

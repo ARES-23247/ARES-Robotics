@@ -12,7 +12,7 @@ published library have different toolchains and release boundaries.
 |---|---|---|---|
 | **ARESLib-Kotlin/** | Published foundation, schema/model/compiler, codegen, hardware modules, and simulation foundations | Kotlin 2.4.10, JDK 17, Gradle 8.14.5 | `project-schema/`, `project-model/`, `project-compiler/`, `telemetry-schema/`, `core/`, `codegen/`, hardware/runtime/simulator modules, `ares-bom/` |
 | **ARES-FTC/** | GUI-authored Lightbot reference robot and FTC season/simulator product | Kotlin 2.4.10, FTC SDK 11.1.0, AGP 8.7.0, Gradle 8.14.5 | `TeamCode/`, `simulator/`, `.ares/` |
-| **ARES-FRC/** | FRC season, roboRIO/vendor adapters, and WPILib/HAL simulator product | Kotlin 2.4.10, WPILib 2026.2.1, Phoenix 26.1.1, Gradle 8.14.5 | `src/main/kotlin/com/areslib/frc/`, `.ares/` |
+| **ARES-FRC/** | FRC season, roboRIO/vendor adapters, and WPILib/HAL simulator product | Kotlin 2.4.10, WPILib 2026.2.1, Phoenix 26.1.1, Gradle 8.14.5 | `src/main/kotlin/org/aresfirst/marvin/`, `.ares/` |
 | **ARES-Analytics/** | ARES Robotics Studio desktop app, analytics database, cloud-optional services, and gateway | Kotlin 2.4.10, Compose 1.12.0, Ktor 3.5.2, DuckDB 1.5.5.1, Gradle 8.14.5 | `app/`, `gateway/`, `shared/` |
 | **ARES-FTC-Starter/** | Canonical standalone FTC starter source exported into deterministic release archives | Same FTC toolchain | project root |
 | **ARES-FRC-Starter/** | Canonical standalone FRC starter source exported into deterministic release archives | Same FRC toolchain | project root |
@@ -57,7 +57,11 @@ cd ARESLib-Kotlin
 - **Unpublished binary validation:** pass `-ParesRepository=<path>/build/release-repository` after running ARESLib's `publishReleaseValidation`.
 - **Focused source development:** pass `-ParesUseSiblingLib=true` to opt into the sibling composite build. This is never automatic.
 
-> **Gotcha:** The package `com.areslib.frc` is **split across two repos** — base classes (`FrcSwerveRobot`, `FrcBaseRobot`, `FRCSwerveHardwareIO`, `FrcTelemetryManager`, `FrcPowerManager`, `FrcLimelightIO`) live in **ARESLib-Kotlin**'s `frc-hardware/` module, while the season layer (`ARESRobot`, `Marvin*`) lives in **ARES-FRC** in the *same package*. Same for FTC: `FtcMecanumRobot`/`FtcBaseRobot` are in ARESLib; `AresRobot`/OpModes are in ARES-FTC.
+> **Ownership boundary:** reusable FRC classes (`FrcSwerveRobot`, `FrcBaseRobot`,
+> `FRCSwerveHardwareIO`, `FrcTelemetryManager`, `FrcPowerManager`, `FrcLimelightIO`) live in
+> ARESLib's `com.areslib.frc` namespace. The season product owns `org.aresfirst.marvin`; never split
+> product classes back into the library namespace. FTC follows the same module boundary even though
+> its SDK-mandated team package remains `org.firstinspires.ftc.teamcode`.
 
 ## 3. The "Season Layer" Pattern (ARES-FTC & ARES-FRC)
 
@@ -152,12 +156,12 @@ foundation and platform runtimes, and `ares-bom`. Published coordinates use
 
 - **`core/src/main/kotlin/com/areslib/`** packages:
   - `math/` — `geometry/` (Pose2d, Rotation2d, ChassisSpeeds, Matrix3x3), `kinematics/`, `filter/`, `coordinate/`, **`estimation/`** (EKF `PoseEstimator`, `KalmanFilter`, `OdometryFusionController`, `VisionMahalanobisFilter` — note: estimation lives under `math/`, not `control/`)
-  - `control/` — `feedback/` (PID, LQR, LinearADRC), `profile/` (TrapezoidProfile), `safety/` (CurrentBudgetManager, BrownoutGuard, CBF), `drivetrain/` (HolonomicDriveController), `assist/` (SysIdManager, ShotSetup, VisionExtrinsicCalibrationController)
-  - `pathing/` — `ThetaStarPlanner`, `HolonomicPathFollower`, `TrajectoryGenerator`, `SCurveTrajectoryParameterizer`, `BezierSpline`, `PathPlannerParser`/`PathPlannerAutoParser`, `AutoBuilder`, `NamedCommands`, `Costmap`, `VFHPlanner`
+  - `control/` — `feedback/` (PID, feedforward, LinearADRC), `profile/` (TrapezoidProfile), `safety/` (CurrentBudgetManager, BrownoutGuard), `drivetrain/` (HolonomicDriveController), `assist/` (SysId and shot-setup primitives)
+  - `pathing/` — the canonical trajectory/path followers, `SCurveTrajectoryParameterizer`, `BezierSpline`, `PathPlannerParser`/`PathPlannerAutoParser`, `AutoBuilder`, `NamedCommands`, `Costmap`, and `VFHPlanner`; abandoned alternate planners and generators are not retained as compatibility APIs
   - `state/` (`RobotState`, `DriveState`, `SuperstructureState`, `RobotFieldConfig`, `Alliance`), `reducer/` (`RootReducer` + slice reducers), `action/` (`RobotAction` sealed classes, `ActionLogger`)
   - `sequencer/` — `TaskExecutor`, `Task`, `RobotSequence` (NOT `auto/`)
   - `hardware/` — per-robot `HardwareRegistry` (explicit lifecycle/telemetry/topology ownership), `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`; published topology wire DTOs/codecs live in `telemetry-schema`
-  - `logging/` — `LogManagerServer` (NanoHTTPD:5002), `ARESDataLogger`, `CloudExporter`, `DiagnosticRingBuffer`
+  - `logging/` — `LogManagerServer` (NanoHTTPD:5002), `ARESDataLogger`, and explicit offline export contracts
   - `telemetry/` — `ITelemetry`, `NT4Telemetry`, `ARESNetworkStatePublisher`, `RobotStatusTracker`, `AresGamepad`, `TelemetryTopicConstants`
   - `networktables/` — custom NT4 server (`NT4Server` :5810, Java-WebSocket + MessagePack) + `org/frcforftc/.../NT4Compatibility.kt`
   - `subsystem/` — `Subsystem`, `SubsystemControllerBase`, `AresRobot`, `DrivetrainSubsystem`, `MecanumDriveFacade`, `SwerveDriveFacade`, `PowerManager`, `VisionTracker`
@@ -191,7 +195,7 @@ FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `
 ### ARES-FRC (`ARES-FRC/`)
 FRC RoboRIO code, **2024 Crescendo** ("Marvin XIX"), WPILib **2026.2.1**, CTRE Phoenix 6 v26.1.1 (all-TalonFX, CAN bus "CAN2"), dyn4j sim. Kotlin-first (single auto-generated `TunerConstants.java`).
 
-- `src/main/kotlin/com/areslib/frc/`:
+- `src/main/kotlin/org/aresfirst/marvin/`:
   - `Main.kt` (`object Main`), `ARESRobot.kt` (TimedRobot 446 lines), `PathLoader.kt`, `Dyn4jSimulation.kt`
   - `hardware/` — `FRCFlywheelHardwareIO` (4× TalonFX dev 9-12), `FRCCowlHardwareIO`, `FRCIntakeHardwareIO`, `FRCFloorHardwareIO`, `FRCClimberHardwareIO`, `FRCFeederHardwareIO`, `SeasonInterfaces`
   - `marvin/` — season logic: `MarvinState`, `MarvinAction`, `MarvinReducer` (composes `rootReducer`), `MarvinSuperstructure` (the `Subsystem`), `MarvinShooterSubsystem`/`MarvinIntakeSubsystem`/`MarvinClimberSubsystem` facades + sub-controllers (`MarvinFlywheel/Cowl/FeederController`), `MarvinConfig` (shot LUTs)
@@ -199,7 +203,7 @@ FRC RoboRIO code, **2024 Crescendo** ("Marvin XIX"), WPILib **2026.2.1**, CTRE P
   - `robot/` — `FRCTeleOpDriveController`, `FRCAutoOrchestrator`
 - `src/main/deploy/swerve_offsets.json`; `marvin19_layout.json` = custom dashboard layout. Custom Gradle task `fetchOffsets` pulls swerve calibration off the RIO.
 - **No WPILib Command-Based** usage despite the vendordep — it's Redux actions all the way down.
-- **Build/test:** `.\gradlew.bat simulateJava` (sim), `deploy` (RIO). Kover coverage; JUnit 5 tests under `src/test/kotlin/com/areslib/frc/` incl. `pathing/E2EAutonomousSimulationTest`.
+- **Build/test:** `.\gradlew.bat simulateJava` (sim), `deploy` (RIO). Kover coverage; JUnit 5 tests under `src/test/kotlin/org/aresfirst/marvin/`.
 
 ### ARES-Analytics (`ARES-Analytics/`)
 ARES Robotics Studio plus its Ktor gateway. Kotlin 2.4.10, Compose 1.12.0, Ktor 3.5.2, DuckDB
@@ -392,7 +396,7 @@ Preserve these invariants:
 | Hardware registry/topology | `ARESLib-Kotlin/core/.../hardware/HardwareRegistry.kt`, `ARESLib-Kotlin/telemetry-schema/.../HardwareTopology.kt` |
 | Log server endpoints | `ARESLib-Kotlin/core/.../logging/LogManagerServer.kt` |
 | FTC robot facade | `ARES-FTC/TeamCode/.../teamcode/opmodes/robot/AresRobot.kt` |
-| FRC robot lifecycle | `ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt` |
+| FRC robot lifecycle | `ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt` |
 | Dashboard business logic index | `ARES-Analytics/app/.../di/ServiceRegistry.kt` |
 | Gateway HTTP surface | `ARES-Analytics/gateway/.../Application.kt`, `routes/DiagnosticsRoutes.kt` |
 | PathPlanner file format | `ARES-Analytics/shared/.../PathPlannerModels.kt`, `ARESLib-Kotlin/core/.../pathing/PathPlannerParser.kt` |

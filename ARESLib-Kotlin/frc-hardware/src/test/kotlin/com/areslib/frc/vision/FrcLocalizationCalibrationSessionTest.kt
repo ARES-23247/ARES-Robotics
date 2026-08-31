@@ -3,6 +3,7 @@ package com.areslib.frc.vision
 import com.areslib.Store
 import com.areslib.action.RobotAction
 import com.areslib.hardware.drive.SwerveHardwareIO
+import com.areslib.frc.TestSwerveHardwareIO
 import com.areslib.math.estimation.LocalizationCalibrationCsv
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Pose3d
@@ -21,7 +22,7 @@ class FrcLocalizationCalibrationSessionTest {
     @TempDir
     lateinit var tempDir: Path
 
-    private class SeedRecordingIO : SwerveHardwareIO {
+    private class SeedRecordingIO : TestSwerveHardwareIO() {
         var seeded = Pose2d()
         var seedCount = 0
 

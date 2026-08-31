@@ -72,8 +72,8 @@
     "zeroAllocationPeriodicRequired": true
   },
   "simulation": {
-    "modelClassName": "com.areslib.frc.Dyn4jSimulation",
-    "adapterClassName": "com.areslib.frc.sim.Dyn4jSwerveModuleSim",
+    "modelClassName": "org.aresfirst.marvin.Dyn4jSimulation",
+    "adapterClassName": "org.aresfirst.marvin.sim.Dyn4jSwerveModuleSim",
     "usesPhysicalGeometry": true,
     "usesCanonicalProfile": true,
     "behavioralParityRequired": true

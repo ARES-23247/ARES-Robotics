@@ -9,6 +9,9 @@ import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.shared.models.League
 import com.areslib.math.InputMath
+import com.areslib.telemetry.schema.DesktopDriveFrameGate
+import com.areslib.telemetry.schema.DesktopDriveProtocol
+import com.areslib.telemetry.schema.DesktopDriveReceiverStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
@@ -85,27 +88,29 @@ internal class DesktopDriveFrameSession(
     val sessionNonce: Double,
     private val clockMs: () -> Long = { System.nanoTime() / 1_000_000L },
 ) {
-    private val frame = DoubleArray(FRAME_VALUE_COUNT)
+    private val frame = DoubleArray(DesktopDriveProtocol.VALUE_COUNT)
     private var sequence = 0L
     private var neutralHandshakeFramesTransmitted = 0
     private var lastSuccessfulTransmissionMs: Long? = null
     private val createdAtMs = clockMs()
     private var lastAcknowledgedSequence = -1L
     private var lastAcknowledgedAtMs: Long? = null
+    private var receiverHandshakeComplete = false
 
     private val neutralHandshakeComplete: Boolean
         get() = neutralHandshakeFramesTransmitted >= NEUTRAL_HANDSHAKE_FRAME_COUNT
 
     fun frameFor(intent: DesktopDriveIntent): DoubleArray = frame.apply {
-        this[VERSION_INDEX] = FRAME_VERSION
-        this[SESSION_INDEX] = sessionNonce
-        this[SEQUENCE_INDEX] = sequence.toDouble()
-        this[CLIENT_TIME_INDEX] = clockMs().toDouble()
-        this[VX_INDEX] = if (neutralHandshakeComplete) intent.command.vxMetersPerSecond else 0.0
-        this[VY_INDEX] = if (neutralHandshakeComplete) intent.command.vyMetersPerSecond else 0.0
-        this[OMEGA_INDEX] = if (neutralHandshakeComplete) intent.command.omegaRadiansPerSecond else 0.0
-        this[FLAGS_INDEX] = (
-            intent.modeFlags or if (neutralHandshakeComplete) intent.actuationFlags else 0L
+        val actuationAuthorized = neutralHandshakeComplete && receiverHandshakeComplete
+        this[DesktopDriveProtocol.VERSION_INDEX] = DesktopDriveProtocol.VERSION
+        this[DesktopDriveProtocol.SESSION_INDEX] = sessionNonce
+        this[DesktopDriveProtocol.SEQUENCE_INDEX] = sequence.toDouble()
+        this[DesktopDriveProtocol.CLIENT_TIME_INDEX] = clockMs().toDouble()
+        this[DesktopDriveProtocol.VX_INDEX] = if (actuationAuthorized) intent.command.vxMetersPerSecond else 0.0
+        this[DesktopDriveProtocol.VY_INDEX] = if (actuationAuthorized) intent.command.vyMetersPerSecond else 0.0
+        this[DesktopDriveProtocol.OMEGA_INDEX] = if (actuationAuthorized) intent.command.omegaRadiansPerSecond else 0.0
+        this[DesktopDriveProtocol.FLAGS_INDEX] = (
+            intent.modeFlags or if (actuationAuthorized) intent.actuationFlags else 0L
         ).toDouble()
     }
 
@@ -131,6 +136,7 @@ internal class DesktopDriveFrameSession(
         if (receiverSequence > lastAcknowledgedSequence) {
             lastAcknowledgedSequence = receiverSequence
             lastAcknowledgedAtMs = clockMs()
+            receiverHandshakeComplete = true
         }
     }
 
@@ -146,13 +152,15 @@ internal class DesktopDriveFrameSession(
         acknowledgementContractAvailable: Boolean,
         receiverStatusCode: Int? = null,
     ): Boolean {
-        if (!acknowledgementContractAvailable) return false
+        if (!acknowledgementContractAvailable) {
+            return clockMs() - createdAtMs >= RECEIVER_ACK_STARTUP_TIMEOUT_MS
+        }
         // A launched simulator without an active TeleOp intentionally leaves the receiver in
         // WAITING_FOR_FRAME. Replacing an already-neutral sender session cannot make that dormant
         // receiver poll, and doing so every startup timeout only floods diagnostics. Once a TeleOp
         // polls, the acknowledgement changes to an armed, active, or explicit rejection state and
         // the normal fail-closed timeout remains authoritative.
-        if (receiverStatusCode == DRIVE_ACK_WAITING_FOR_FRAME) return false
+        if (receiverStatusCode == DesktopDriveReceiverStatus.WAITING_FOR_FRAME.code) return false
         return receiverAcknowledgementAgeMs()?.let { it >= RECEIVER_ACK_TIMEOUT_MS }
             ?: (clockMs() - createdAtMs >= RECEIVER_ACK_STARTUP_TIMEOUT_MS)
     }
@@ -216,22 +224,22 @@ internal fun desktopDriveIntent(
 
     var actuationFlags = 0L
     if (inputActive && inputPressed(keyboard, gamepad, keyboard.isQPressed) { it.leftBumper }) {
-        actuationFlags = actuationFlags or FLAG_INTAKE
+        actuationFlags = actuationFlags or DesktopDriveProtocol.FLAG_INTAKE
     }
     if (inputActive && inputPressed(keyboard, gamepad, keyboard.isEPressed) { it.rightBumper }) {
-        actuationFlags = actuationFlags or FLAG_FLYWHEEL
+        actuationFlags = actuationFlags or DesktopDriveProtocol.FLAG_FLYWHEEL
     }
     if (inputActive && inputPressed(keyboard, gamepad, keyboard.isShiftPressed) { it.rightTrigger > 0.5f }) {
-        actuationFlags = actuationFlags or FLAG_TRANSFER
+        actuationFlags = actuationFlags or DesktopDriveProtocol.FLAG_TRANSFER
     }
     if (inputActive && inputPressed(keyboard, gamepad, keyboard.isJPressed) { it.a }) {
-        actuationFlags = actuationFlags or FLAG_BUTTON_A
+        actuationFlags = actuationFlags or DesktopDriveProtocol.FLAG_BUTTON_A
     }
     if (inputActive && inputPressed(keyboard, gamepad, keyboard.isLPressed) { it.b }) {
-        actuationFlags = actuationFlags or FLAG_BUTTON_B
+        actuationFlags = actuationFlags or DesktopDriveProtocol.FLAG_BUTTON_B
     }
     if (inputActive && inputPressed(keyboard, gamepad, keyboard.isUPressed) { it.x }) {
-        actuationFlags = actuationFlags or FLAG_BUTTON_X
+        actuationFlags = actuationFlags or DesktopDriveProtocol.FLAG_BUTTON_X
     }
 
     return DesktopDriveIntent(
@@ -289,7 +297,7 @@ internal fun DesktopDriveInputPublisher(
                             break
                         }
                         val acknowledgement = nt4ClientService.driveInputAcknowledgement.value
-                        val acknowledgementAvailable = acknowledgement?.version == DRIVE_ACK_VERSION
+                        val acknowledgementAvailable = acknowledgement?.version == DesktopDriveFrameGate.ACK_VERSION
                         session.observeReceiverAcknowledgement(
                             receiverSession = acknowledgement?.acceptedSession,
                             receiverSequence = acknowledgement?.acceptedSequence,
@@ -353,21 +361,3 @@ internal const val NEUTRAL_HANDSHAKE_FRAME_COUNT = 5
 // manufacture a neutral-handshake pause while the simulator is still accepting fresh commands.
 internal const val RECEIVER_ACK_TIMEOUT_MS = 2_000L
 internal const val RECEIVER_ACK_STARTUP_TIMEOUT_MS = 2_500L
-internal const val DRIVE_ACK_VERSION = 1.0
-internal const val DRIVE_ACK_WAITING_FOR_FRAME = 0
-private const val FRAME_VALUE_COUNT = 8
-private const val FRAME_VERSION = 2.0
-private const val VERSION_INDEX = 0
-private const val SESSION_INDEX = 1
-private const val SEQUENCE_INDEX = 2
-private const val CLIENT_TIME_INDEX = 3
-private const val VX_INDEX = 4
-private const val VY_INDEX = 5
-private const val OMEGA_INDEX = 6
-private const val FLAGS_INDEX = 7
-private const val FLAG_INTAKE = 1L shl 0
-private const val FLAG_FLYWHEEL = 1L shl 1
-private const val FLAG_TRANSFER = 1L shl 2
-private const val FLAG_BUTTON_A = 1L shl 6
-private const val FLAG_BUTTON_B = 1L shl 7
-private const val FLAG_BUTTON_X = 1L shl 8

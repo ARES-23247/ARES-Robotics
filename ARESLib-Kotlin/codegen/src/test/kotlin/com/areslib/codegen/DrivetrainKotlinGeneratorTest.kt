@@ -24,14 +24,14 @@ class DrivetrainKotlinGeneratorTest {
         val declarations = drivetrain.parameters + vision
         val profile = TuningProfileDocument(
             uid = drivetrain.canonicalProfileUid, profileId = "competition", displayName = "Competition",
-            description = "Canonical competition profile", projectUid = "project.ftc", drivebaseUid = drivetrain.uid,
+            description = "Canonical competition profile", projectId = "project.ftc", drivebaseUid = drivetrain.uid,
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = declarations.map { TuningAssignment(it.uid, it.defaultValue) },
         )
 
         val drive = DrivetrainKotlinGenerator.generate(drivetrain, listOf(profile), "example.generated", listOf(vision))
         val project = DrivetrainKotlinGenerator.generateProjectTuning(
-            profile.projectUid, profile.uid, drivetrain.uid, declarations, listOf(profile), "example.generated",
+            profile.projectId, profile.uid, drivetrain.uid, declarations, listOf(profile), "example.generated",
         )
         assertEquals("GeneratedAresDrivebaseConfig.kt", drive.relativePath)
         assertEquals("GeneratedAresTuningConfig.kt", project.relativePath)
@@ -55,7 +55,7 @@ class DrivetrainKotlinGeneratorTest {
         val drivetrain = mecanumDocument()
         val local = TuningProfileDocument(
             uid = "local.test", profileId = "local-test", displayName = "Local", description = "Not authoritative",
-            projectUid = "project.ftc", drivebaseUid = drivetrain.uid,
+            projectId = "project.ftc", drivebaseUid = drivetrain.uid,
             authority = TuningProfileAuthority.LOCAL_EXPERIMENTAL, values = emptyList(),
         )
         val error = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
@@ -73,13 +73,13 @@ class DrivetrainKotlinGeneratorTest {
         )
         val profile = TuningProfileDocument(
             uid = "profile.competition", profileId = "competition", displayName = "Competition",
-            description = "Subsystem-only robot profile", projectUid = "project.arm",
+            description = "Subsystem-only robot profile", projectId = "project.arm",
             drivebaseUid = null, authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = listOf(TuningAssignment(declaration.uid, declaration.defaultValue)),
         )
 
         val generated = DrivetrainKotlinGenerator.generateProjectTuning(
-            profile.projectUid, profile.uid, null, listOf(declaration), listOf(profile), "example.generated",
+            profile.projectId, profile.uid, null, listOf(declaration), listOf(profile), "example.generated",
         )
 
         assertTrue(generated.content.contains("val DRIVEBASE_UID: String? = null"))
@@ -187,18 +187,18 @@ class DrivetrainKotlinGeneratorTest {
         val colliding = escaped.copy(uid = "drive.other", key = "drive.heading.kp")
         val profile = TuningProfileDocument(
             uid = drivetrain.canonicalProfileUid, profileId = "competition", displayName = "Competition",
-            description = "Canonical", projectUid = "project.ftc", drivebaseUid = drivetrain.uid,
+            description = "Canonical", projectId = "project.ftc", drivebaseUid = drivetrain.uid,
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = listOf(TuningAssignment(escaped.uid, escaped.defaultValue)),
         )
 
         val generated = DrivetrainKotlinGenerator.generateProjectTuning(
-            profile.projectUid, profile.uid, drivetrain.uid, listOf(escaped), listOf(profile), "example.generated",
+            profile.projectId, profile.uid, drivetrain.uid, listOf(escaped), listOf(profile), "example.generated",
         )
         assertTrue(generated.content.contains("Dollar \\$ and\\nnext line"))
         org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
             DrivetrainKotlinGenerator.generateProjectTuning(
-                profile.projectUid, profile.uid, drivetrain.uid, listOf(escaped, colliding),
+                profile.projectId, profile.uid, drivetrain.uid, listOf(escaped, colliding),
                 listOf(profile.copy(values = listOf(
                     TuningAssignment(escaped.uid, escaped.defaultValue),
                     TuningAssignment(colliding.uid, colliding.defaultValue),
@@ -323,7 +323,7 @@ class DrivetrainKotlinGeneratorTest {
             profileId = "competition",
             displayName = "Competition",
             description = "Canonical competition profile",
-            projectUid = "project.ftc",
+            projectId = "project.ftc",
             drivebaseUid = document.uid,
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = document.parameters.map { TuningAssignment(it.uid, it.defaultValue) },

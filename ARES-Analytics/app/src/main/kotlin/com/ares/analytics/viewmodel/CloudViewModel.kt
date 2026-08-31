@@ -54,12 +54,9 @@ data class RobotRun(
 private val ROBOT_LOG_RUN_UUID = Regex(
     "(?i)[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
 )
-private val ROBOT_LOG_TIMESTAMP_SECOND = Regex("\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}")
-
-/** Stable grouping key shared by telemetry and action logs, with a legacy timestamp fallback. */
+/** Stable grouping key shared by canonical telemetry and action logs. */
 internal fun robotLogRunKey(fileName: String): String {
     ROBOT_LOG_RUN_UUID.find(fileName)?.value?.let { return it.lowercase() }
-    ROBOT_LOG_TIMESTAMP_SECOND.find(fileName)?.value?.let { return "legacy-$it" }
     return fileName
 }
 

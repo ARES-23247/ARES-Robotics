@@ -17,14 +17,8 @@ class TuningManager(
     private val contextProvider: () -> TuningApplyContext,
     /** Returns true only after the robot consumer committed the value to its Redux/control boundary. */
     private val onApplied: (parameterUid: String, value: TuningValue) -> Boolean,
-    /**
-     * Declares whether the running robot has a compiled consumer for this parameter.
-     *
-     * The default preserves compatibility with existing robots. Generated/runtime composition
-     * roots should pass their real capability predicate so authoring tools can hide impossible
-     * live experiments before a student sends a request.
-     */
-    private val isConsumerSupported: (parameterUid: String) -> Boolean = { true },
+    /** Declares whether the running robot has a compiled consumer for this parameter. */
+    private val isConsumerSupported: (parameterUid: String) -> Boolean,
     private val localProjectRoot: Path? = null,
     private val localOverlayFile: Path? = null,
 ) {
@@ -41,7 +35,7 @@ class TuningManager(
 
     fun publishMetadataAndValues() {
         telemetry.putNumber(TuningTopics.SCHEMA_VERSION_TOPIC, TuningTopics.SCHEMA_VERSION.toDouble())
-        telemetry.putString("${TuningTopics.ROOT}/ProjectUid", runtime.metadata.projectUid)
+        telemetry.putString("${TuningTopics.ROOT}/ProjectId", runtime.metadata.projectId)
         telemetry.putString("${TuningTopics.ROOT}/DrivebaseUid", runtime.metadata.drivebaseUid.orEmpty())
         telemetry.putString("${TuningTopics.ROOT}/CanonicalProfileUid", runtime.metadata.canonicalProfileUid)
         runtime.metadata.declarations.forEach { declaration ->
@@ -123,7 +117,7 @@ class TuningManager(
         val projectRoot = localProjectRoot ?: return
         val output = localOverlayFile ?: return
         val overlay = runtime.localOverlay(
-            uid = "local.${runtime.metadata.projectUid}.runtime",
+            uid = "local.${runtime.metadata.projectId}.runtime",
             profileId = "runtime-experiment",
             displayName = "Runtime experiment",
         )

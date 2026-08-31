@@ -40,20 +40,20 @@ class DrivebaseProjectRepository {
         val tuningWorkspace = tuningRepository.loadForDrivebaseEdit(projectPath).getOrThrow()
         val matchingProfiles = tuningWorkspace.profiles.filter { it.uid == canonical.canonicalProfileUid }
         require(matchingProfiles.size <= 1) { "Multiple tuning profiles claim ${canonical.canonicalProfileUid}. Resolve them before saving." }
-        val canonicalProjectUid = canonical.canonicalProfileUid.substringBefore(".profile.")
-        require(tuningWorkspace.profiles.all { it.projectUid == canonicalProjectUid }) {
-            "Every tuning profile must target current project $canonicalProjectUid before the drivebase can be saved."
+        val canonicalProjectId = canonical.canonicalProfileUid.substringBefore(".profile.")
+        require(tuningWorkspace.profiles.all { it.projectId == canonicalProjectId }) {
+            "Every tuning profile must target current project $canonicalProjectId before the drivebase can be saved."
         }
         val matchingProfile = matchingProfiles.singleOrNull()
         require(matchingProfile == null ||
-            (matchingProfile.projectUid == canonicalProjectUid && matchingProfile.drivebaseUid == canonical.uid && matchingProfile.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN)
+            (matchingProfile.projectId == canonicalProjectId && matchingProfile.drivebaseUid == canonical.uid && matchingProfile.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN)
         ) { "Canonical tuning profile ${canonical.canonicalProfileUid} targets a different project or drivebase." }
         val baseProfile = matchingProfile ?: TuningProfileDocument(
             uid = canonical.canonicalProfileUid,
             profileId = canonical.canonicalProfileUid.substringAfterLast('.'),
             displayName = "Competition",
             description = "Canonical values for ${canonical.displayName}",
-            projectUid = canonicalProjectUid,
+            projectId = canonicalProjectId,
             drivebaseUid = canonical.uid,
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = canonical.parameters.map { TuningAssignment(it.uid, it.defaultValue) },
@@ -91,7 +91,7 @@ class DrivebaseProjectRepository {
             .filterNot { it.uid == matchingProfile?.uid }
             .mapNotNull { profile ->
                 val repaired = profile.copy(
-                    drivebaseUid = if (profile.projectUid == canonicalProjectUid && profile.drivebaseUid != null) canonical.uid else profile.drivebaseUid,
+                    drivebaseUid = if (profile.projectId == canonicalProjectId && profile.drivebaseUid != null) canonical.uid else profile.drivebaseUid,
                     values = profile.values.filter { it.parameterUid in allowedParameterUids },
                 )
                 if (repaired == profile) null else requireNotNull(profileFileFor(profile)) to repaired
@@ -159,17 +159,17 @@ class DrivebaseProjectRepository {
         val canonical = document.canonical ?: return emptyList()
         return runCatching {
             val workspace = TuningProfileRepository().loadForDrivebaseEdit(projectPath).getOrThrow()
-            val projectUid = canonical.canonicalProfileUid.substringBefore(".profile.")
+            val projectId = canonical.canonicalProfileUid.substringBefore(".profile.")
             val declared = (workspace.catalog + canonical.parameters).mapTo(hashSetOf()) { it.uid }
             buildList {
                 if (workspace.profiles.none { it.uid == canonical.canonicalProfileUid }) {
                     add("Create canonical profile ${canonical.canonicalProfileUid}.")
                 }
                 workspace.profiles.forEach { profile ->
-                    if (profile.projectUid != projectUid) {
-                        add("Profile ${profile.uid} targets a different project ${profile.projectUid}.")
+                    if (profile.projectId != projectId) {
+                        add("Profile ${profile.uid} targets a different project ${profile.projectId}.")
                     }
-                    if (profile.projectUid == projectUid && profile.drivebaseUid != null && profile.drivebaseUid != canonical.uid) {
+                    if (profile.projectId == projectId && profile.drivebaseUid != null && profile.drivebaseUid != canonical.uid) {
                         add("Profile ${profile.uid} targets a different drivebase ${profile.drivebaseUid}.")
                     }
                     val obsolete = profile.values.map { it.parameterUid }.filterNot(declared::contains)

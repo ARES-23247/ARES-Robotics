@@ -392,36 +392,6 @@ public final class com/areslib/sim/model/SimServo : com/qualcomm/robotcore/hardw
 	public fun setPosition (D)V
 }
 
-public final class com/areslib/sim/model/SwerveRobotDouble {
-	public fun <init> ()V
-	public final fun getDrivePositions ()[D
-	public final fun getDrivePowers ()[D
-	public final fun getDriveVelocities ()[D
-	public final fun getFlywheelPosition ()[D
-	public final fun getFlywheelPower ()D
-	public final fun getFlywheelRPM ()D
-	public final fun getFlywheelTargetRPM ()D
-	public final fun getHasBallInIntake ()Z
-	public final fun getHasBallInTransfer ()Z
-	public final fun getIntakePosition ()[D
-	public final fun getIntakePower ()D
-	public final fun getModuleX ()[D
-	public final fun getModuleY ()[D
-	public final fun getOctoQuadI2c ()Lcom/areslib/sim/infra/MockI2cDeviceSynch;
-	public final fun getSrsHubI2c ()Lcom/areslib/sim/infra/MockI2cDeviceSynch;
-	public final fun getSteerAngles ()[D
-	public final fun getSteerPowers ()[D
-	public final fun getTransferPosition ()[D
-	public final fun getTransferPower ()D
-	public final fun setFlywheelPower (D)V
-	public final fun setFlywheelTargetRPM (D)V
-	public final fun setHasBallInIntake (Z)V
-	public final fun setHasBallInTransfer (Z)V
-	public final fun setIntakePower (D)V
-	public final fun setTransferPower (D)V
-	public final fun update (D)V
-}
-
 public final class com/areslib/sim/network/DynamicElementPose {
 	public fun <init> (Ljava/lang/String;DDD)V
 	public final fun component1 ()Ljava/lang/String;

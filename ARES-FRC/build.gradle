@@ -43,7 +43,7 @@ sourceSets {
     test.kotlin.srcDir generatedAresSubsystemTestDir
 }
 
-def ROBOT_MAIN_CLASS = "com.areslib.frc.Main"
+def ROBOT_MAIN_CLASS = "org.aresfirst.marvin.Main"
 
 application {
     mainClass = ROBOT_MAIN_CLASS
@@ -235,7 +235,7 @@ kover {
     reports {
         filters {
             excludes {
-                classes("frc.robot.generated.*", "com.areslib.frc.Main*")
+                classes("frc.robot.generated.*", "org.aresfirst.marvin.Main*")
             }
         }
     }
@@ -291,11 +291,11 @@ def subsystemCodegenArgs = [
     "--subsystems-starter-output", subsystemStarterSource.absolutePath,
     "--subsystems-generated-output", generatedAresSubsystemMainDir.absolutePath,
     "--subsystems-generated-test-output", generatedAresSubsystemTestDir.absolutePath,
-    "--subsystems-package", "com.areslib.frc.generated.subsystems",
+    "--subsystems-package", "org.aresfirst.marvin.generated.subsystems",
 ]
 def drivebaseCodegenArgs = [
     "--drivebase-output", generatedAresDrivebaseMainDir.absolutePath,
-    "--drivebase-package", "com.areslib.frc.generated.drivebase",
+    "--drivebase-package", "org.aresfirst.marvin.generated.drivebase",
 ]
 
 tasks.register("generateAresProject", JavaExec) {
@@ -305,7 +305,7 @@ tasks.register("generateAresProject", JavaExec) {
     mainClass = "com.areslib.codegen.AresProjectCodegenCli"
     args "--project", projectDir.absolutePath,
         "--output", generatedAresSource.absolutePath,
-        "--package", "com.areslib.frc.generated",
+        "--package", "org.aresfirst.marvin.generated",
         "--platform", "FRC"
     args subsystemCodegenArgs
     args drivebaseCodegenArgs
@@ -318,7 +318,7 @@ tasks.register("prepareAresSubsystemPlumbing", JavaExec) {
     mainClass = "com.areslib.codegen.AresProjectCodegenCli"
     args "--project", projectDir.absolutePath,
         "--output", generatedAresSource.absolutePath,
-        "--package", "com.areslib.frc.generated",
+        "--package", "org.aresfirst.marvin.generated",
         "--platform", "FRC"
     args subsystemCodegenArgs
     args drivebaseCodegenArgs
@@ -331,7 +331,7 @@ tasks.register("previewSubsystemChanges", JavaExec) {
     mainClass = "com.areslib.codegen.AresProjectCodegenCli"
     args "--project", projectDir.absolutePath,
         "--output", generatedAresSource.absolutePath,
-        "--package", "com.areslib.frc.generated",
+        "--package", "org.aresfirst.marvin.generated",
         "--platform", "FRC",
         "--subsystems-only",
         "--preview-subsystem-starters"
@@ -346,7 +346,7 @@ tasks.register("generateSubsystemStarters", JavaExec) {
     mainClass = "com.areslib.codegen.AresProjectCodegenCli"
     args "--project", projectDir.absolutePath,
         "--output", generatedAresSource.absolutePath,
-        "--package", "com.areslib.frc.generated",
+        "--package", "org.aresfirst.marvin.generated",
         "--platform", "FRC",
         "--subsystems-only",
         "--apply-subsystem-starters"
@@ -361,7 +361,7 @@ tasks.register("replaceSubsystemStarters", JavaExec) {
     mainClass = "com.areslib.codegen.AresProjectCodegenCli"
     args "--project", projectDir.absolutePath,
         "--output", generatedAresSource.absolutePath,
-        "--package", "com.areslib.frc.generated",
+        "--package", "org.aresfirst.marvin.generated",
         "--platform", "FRC",
         "--subsystems-only",
         "--apply-subsystem-starters"
@@ -387,7 +387,7 @@ tasks.register("verifyAresProject", JavaExec) {
     mainClass = "com.areslib.codegen.AresProjectCodegenCli"
     args "--project", projectDir.absolutePath,
         "--output", generatedAresSource.absolutePath,
-        "--package", "com.areslib.frc.generated",
+        "--package", "org.aresfirst.marvin.generated",
         "--platform", "FRC",
         "--check"
     args subsystemCodegenArgs
@@ -396,4 +396,28 @@ tasks.register("verifyAresProject", JavaExec) {
 
 tasks.named("compileKotlin").configure {
     dependsOn tasks.named("verifyAresProject")
+}
+tasks.register("verifyNamespaceOwnership") {
+    group = "verification"
+    description = "Reject consumer-owned production code declared in ARESLib's com.areslib namespace."
+    def productionSources = fileTree("src/main") {
+        include "**/*.kt", "**/*.java"
+    }
+    inputs.files(productionSources)
+    doLast {
+        def packagePattern = ~/^\s*package\s+com\.areslib(?:\..*)?\s*;?\s*$/
+        def violations = productionSources.files.findAll { source ->
+            source.readLines("UTF-8").any { line -> line ==~ packagePattern }
+        }.sort { it.path }
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                "FRC product code must use a team-owned namespace; ARESLib owns com.areslib. Violations: " +
+                    violations.collect { project.relativePath(it) }.join(", ")
+            )
+        }
+    }
+}
+
+tasks.named("compileKotlin").configure {
+    dependsOn tasks.named("verifyNamespaceOwnership")
 }

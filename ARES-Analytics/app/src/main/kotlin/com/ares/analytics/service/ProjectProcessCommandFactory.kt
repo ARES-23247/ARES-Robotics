@@ -6,6 +6,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Locale
+import java.util.Properties
 
 internal const val ARES_REPOSITORY_URI_PROPERTY = "ares.repository.uri"
 internal const val ARES_VERSION_PROPERTY = "ares.version"
@@ -136,17 +137,14 @@ internal class ProjectProcessCommandFactory(
     }
 
     fun projectPinnedAresVersion(projectRoot: File): String? =
-        listOf("gradle.properties", "gradle/libs.versions.toml")
-            .map { File(projectRoot, it) }
-            .firstNotNullOfOrNull { file ->
-                file.takeIf(File::isFile)?.useLines { lines ->
-                    lines.map(String::trim)
-                        .firstOrNull { line -> line.startsWith("aresVersion=") || line.startsWith("ares = ") }
-                        ?.substringAfter('=')
-                        ?.trim()
-                        ?.trim('"')
-                        ?.takeIf(String::isNotBlank)
-                }
+        File(projectRoot, "release/ares-versions.properties")
+            .takeIf(File::isFile)
+            ?.inputStream()
+            ?.use { input ->
+                Properties().apply { load(input) }
+                    .getProperty("aresVersion")
+                    ?.trim()
+                    ?.takeIf(String::isNotEmpty)
             }
 
     fun requireProjectDependenciesCompatible(projectRoot: File) {
@@ -154,6 +152,7 @@ internal class ProjectProcessCommandFactory(
             projectRoot = projectRoot,
             expectedVersion = explicitAresVersion,
             pinnedVersion = projectPinnedAresVersion(projectRoot),
+            isolatedRepositoryConfigured = aresRepositoryFileUri != null,
         ).requireCompatible()
     }
 

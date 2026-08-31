@@ -158,7 +158,7 @@ class SimulatorProcessService internal constructor(
         scope.coroutineContext[Job]?.cancelAndJoin()
     }
 
-    private suspend fun stopAndJoin() = withContext(NonCancellable) {
+    internal suspend fun stopAndJoin() = withContext(NonCancellable) {
         val ownedProcess = process
         val ownedJob = job
         ownedJob?.cancel()

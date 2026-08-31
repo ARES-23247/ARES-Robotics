@@ -152,11 +152,7 @@ class SyncEngineService(
             "TeleOp" in summary.tags -> "TeleOp"
             else -> "Init"
         }
-        val extension = if (summary.cloudBundleVersion >= CURRENT_SESSION_BUNDLE_VERSION) {
-            ".ares-session.zip"
-        } else {
-            ".parquet"
-        }
+        val extension = ".ares-session.zip"
         return "ARES_Telemetry_${date}_${safeFileComponent(summary.robotId)}$match${alliance}_${mode}_${safeFileComponent(summary.sessionId)}$extension"
     }
 
@@ -232,13 +228,11 @@ class SyncEngineService(
         require(summary.cloudSha256?.matches(Regex("[0-9a-f]{64}")) == true) {
             "Cloud session SHA-256 is invalid"
         }
-        require(summary.cloudBundleVersion in 0..CURRENT_SESSION_BUNDLE_VERSION) {
+        require(summary.cloudBundleVersion == CURRENT_SESSION_BUNDLE_VERSION) {
             "Cloud session bundle version is unsupported"
         }
-        if (summary.cloudBundleVersion >= CURRENT_SESSION_BUNDLE_VERSION) {
-            require(summary.cloudWorkspaceKey?.matches(Regex("[A-Za-z0-9._:-]{1,320}")) == true) {
-                "Cloud session workspace identity is invalid"
-            }
+        require(summary.cloudWorkspaceKey?.matches(Regex("[A-Za-z0-9._:-]{1,320}")) == true) {
+            "Cloud session workspace identity is invalid"
         }
     }
 
@@ -550,22 +544,14 @@ class SyncEngineService(
         }
     }
 
-    /**
-     * Downloads a session object from Google Drive. Versioned bundles restore ancillary records;
-     * legacy telemetry-only Parquet objects remain readable for backward compatibility.
-     */
+    /** Downloads and atomically restores one complete session bundle from Google Drive. */
     suspend fun downloadSession(summary: SessionSummary) = withContext(Dispatchers.IO) {
         validateCloudSummary(summary)
         val cloudFileId = requireNotNull(summary.cloudFileId) { "Cloud manifest is missing its immutable file id" }
         val cloudFileName = requireNotNull(summary.cloudFileName) { "Cloud manifest is missing its canonical filename" }
         val cloudSha256 = requireNotNull(summary.cloudSha256) { "Cloud manifest is missing its SHA-256" }
         require(summary.fileSizeBytes > 0L) { "Cloud manifest file size is invalid" }
-        val suffix = if (summary.cloudBundleVersion >= CURRENT_SESSION_BUNDLE_VERSION) {
-            ".ares-session.zip"
-        } else {
-            ".parquet"
-        }
-        val tempFile = File.createTempFile("cloud_sync_${summary.sessionId}_", suffix)
+        val tempFile = File.createTempFile("cloud_sync_${summary.sessionId}_", ".ares-session.zip")
         var attempt = 0
         var success = false
         var delayMs = 1000L
@@ -588,35 +574,20 @@ class SyncEngineService(
         }
 
         try {
-            if (summary.cloudBundleVersion >= CURRENT_SESSION_BUNDLE_VERSION) {
-                sessionBundleService.extractAndValidate(tempFile, summary).use { extracted ->
-                    val manifest = extracted.manifest
-                    databaseService.importCloudSessionBundleAtomically(
-                        file = extracted.telemetryFile,
-                        summary = manifest.summary,
-                        session = manifest.session,
-                        actions = manifest.actions,
-                        annotations = manifest.annotations,
-                        alerts = manifest.alerts,
-                        consoleMessages = manifest.consoleMessages,
-                        analysisDiagnostics = manifest.analysisDiagnostics,
-                        importReports = manifest.importReports,
-                    )
-                }
-                return@withContext
+            sessionBundleService.extractAndValidate(tempFile, summary).use { extracted ->
+                val manifest = extracted.manifest
+                databaseService.importCloudSessionBundleAtomically(
+                    file = extracted.telemetryFile,
+                    summary = manifest.summary,
+                    session = manifest.session,
+                    actions = manifest.actions,
+                    annotations = manifest.annotations,
+                    alerts = manifest.alerts,
+                    consoleMessages = manifest.consoleMessages,
+                    analysisDiagnostics = manifest.analysisDiagnostics,
+                    importReports = manifest.importReports,
+                )
             }
-            val session = Session(
-                sessionId = summary.sessionId,
-                teamId = summary.teamId,
-                seasonId = summary.seasonId,
-                robotId = summary.robotId,
-                createdAt = summary.createdAt,
-                durationMs = summary.durationMs,
-                tags = summary.tags,
-                matchNumber = summary.matchNumber,
-                allianceColor = summary.allianceColor
-            )
-            databaseService.importCloudSessionAtomically(tempFile, summary, session)
         } finally {
             tempFile.delete()
         }

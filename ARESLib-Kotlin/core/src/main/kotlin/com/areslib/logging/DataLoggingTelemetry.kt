@@ -35,25 +35,8 @@ class DataLoggingTelemetry private constructor(
     @Suppress("UNUSED_PARAMETER") internalMarker: Unit
 ) : ITelemetry {
 
-    constructor() : this(
-        null,
-        RobotLogEnvironment.loggingPolicy(),
-        RobotLogEnvironment.logDirectory,
-        null,
-        Unit
-    )
-
-    /** Binary-compatible constructor retained for existing ARESLib consumers. */
-    constructor(ntTelemetry: ITelemetry? = null) : this(
-        ntTelemetry,
-        RobotLogEnvironment.loggingPolicy(),
-        RobotLogEnvironment.logDirectory,
-        null,
-        Unit
-    )
-
-    /** Associates every mode-specific telemetry file with the matching action-log run. */
-    constructor(ntTelemetry: ITelemetry?, runId: String) : this(
+    /** Canonical runtime constructor. */
+    constructor(ntTelemetry: ITelemetry? = null, runId: String? = null) : this(
         ntTelemetry,
         RobotLogEnvironment.loggingPolicy(),
         RobotLogEnvironment.logDirectory,

@@ -13,14 +13,12 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 
 /**
- * Manages the persistence, multi-tier fallback loading hierarchy, timestamped flash backups,
- * and live NetworkTables sync of Swerve Module zero offsets on FRC and FTC robots.
+ * Persists a reviewed runtime calibration overlay for canonical typed swerve offsets.
  *
- * ### 4-Tier Fallback Loading Hierarchy:
- * 1. **Tier 1 (Runtime Zero):** `swerve_offsets_runtime.json` in root directory (Latest pit calibration)
- * 2. **Tier 2 (Git Deployed Base):** `deploy/swerve_offsets.json` or `assets/swerve_offsets.json`
- * 3. **Tier 3 (Local Backup):** Most recent `backups/swerve_offsets_*.json` file
- * 4. **Tier 4 (Hardcoded Code Fallback):** Code defaults supplied from [SwerveConstants]
+ * Normal startup has exactly two sources: the required canonical offsets supplied by the
+ * generated robot configuration, and a valid runtime calibration overlay when one exists.
+ * Timestamped backups are retained for explicit operator recovery only; they never silently
+ * replace canonical configuration during startup.
  */
 object SwerveOffsetManager {
 
@@ -49,51 +47,19 @@ object SwerveOffsetManager {
             }
         }
 
-    val deployDir: File
-        get() {
-            val override = configuredRootDir
-            return when {
-                override != null -> File(override, "deploy")
-                isRoboRio -> File("/home/lvuser/deploy")
-                isFtcControlHub -> File("/sdcard/FIRST/deploy")
-                else -> File("./src/main/deploy")
-            }
-        }
-
     val backupsDir: File
         get() = File(rootDir, "backups")
 
     val runtimeFile: File
         get() = File(rootDir, "swerve_offsets_runtime.json")
 
-    val deployFile: File
-        get() = File(deployDir, "swerve_offsets.json")
-
     /**
-     * Resolves and loads the active swerve offsets according to the fallback hierarchy:
-     * 1. Tier 1 (Runtime Zero): Local runtime overlay
-     * 2. Tier 2 (Typed Tuning Profile): Canonical schema-declared values from .ares/tuning/
-     * 3. Tier 3 (Legacy Deployed JSON): deploy/swerve_offsets.json
-     * 4. Tier 4 (Local Backup): Most recent backups/swerve_offsets_*.json
-     * 5. Tier 5 (Hardcoded Defaults)
-     *
-     * @param defaultOffsets Baseline offsets from code constants ([SwerveOffsetData]).
-     * @param typedTuningOffsets Optional schema-declared profile offsets from .ares/tuning/.
-     * @return Resolved [SwerveOffsetData] object.
+     * Loads a valid runtime calibration overlay or returns the required canonical offsets.
+     * A corrupt overlay is reported and ignored; legacy deploy JSON and backups are not startup
+     * configuration sources.
      */
-    fun loadOffsets(
-        defaultOffsets: SwerveOffsetData = SwerveOffsetData(),
-        typedTuningOffsets: SwerveOffsetData? = null
-    ): SwerveOffsetData {
-        return readOffsetFile(runtimeFile, "Tier 1 runtime")
-            ?: typedTuningOffsets
-            ?: readOffsetFile(deployFile, "Tier 2 deployed")
-            ?: readLatestBackupFile()
-            ?: run {
-                println("ARES SwerveOffsetManager: Falling back to Tier 5 hardcoded defaults.")
-                defaultOffsets
-            }
-    }
+    fun loadOffsets(canonicalOffsets: SwerveOffsetData): SwerveOffsetData =
+        readOffsetFile(runtimeFile, "runtime calibration") ?: canonicalOffsets
 
     /**
      * Reads and parses a specified offset JSON file safely without nested conditional branches.
@@ -111,17 +77,15 @@ object SwerveOffsetManager {
         }
     }
 
-    /**
-     * Locates and loads the most recent timestamped backup file in the backups directory.
-     */
-    private fun readLatestBackupFile(): SwerveOffsetData? {
+    /** Returns the newest valid recovery backup for an explicit repair workflow. */
+    fun loadLatestBackup(): SwerveOffsetData? {
         val backupDir = backupsDir.takeIf { it.exists() } ?: return null
         val latestFile = backupDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
             ?.filter { it.length() > 0 }
             ?.maxByOrNull { it.lastModified() }
             ?: return null
 
-        return readOffsetFile(latestFile, "Tier 3 backup")
+        return readOffsetFile(latestFile, "recovery backup")
     }
 
     /**

@@ -128,6 +128,57 @@ apiValidation {
     )
 }
 
+val largeProductionKotlinBaseline = file("config/maintainability/large-production-kotlin-baseline.txt")
+val verifyAresLibSourceFileSizes = tasks.register("verifyAresLibSourceFileSizes") {
+    group = "verification"
+    description = "Prevents ARESLib monoliths from growing and new production Kotlin files from exceeding 500 lines."
+    inputs.file(largeProductionKotlinBaseline)
+    inputs.files(fileTree(rootDir) { include("*/src/main/**/*.kt") })
+
+    doLast {
+        val allowed = largeProductionKotlinBaseline.readLines()
+            .map(String::trim)
+            .filter { it.isNotEmpty() && !it.startsWith('#') }
+            .associate { line ->
+                val separator = line.lastIndexOf('=')
+                require(separator > 0) { "Invalid maintainability baseline entry: $line" }
+                line.substring(0, separator) to line.substring(separator + 1).toInt()
+            }
+        val violations = rootDir.walkTopDown()
+            .filter { source ->
+                source.isFile && source.extension == "kt" &&
+                    source.invariantSeparatorsPath.contains("/src/main/") &&
+                    !source.invariantSeparatorsPath.contains("/build/")
+            }
+            .mapNotNull { source ->
+                val relative = source.relativeTo(rootDir).invariantSeparatorsPath
+                val lineCount = source.useLines { lines -> lines.count() }
+                val baseline = allowed[relative]
+                when {
+                    lineCount <= 500 -> null
+                    baseline == null -> "$relative is a new $lineCount-line production file (limit 500)."
+                    lineCount > baseline -> "$relative grew from the $baseline-line baseline to $lineCount lines."
+                    else -> null
+                }
+            }
+            .toList()
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                "ARESLib production Kotlin size ratchet failed:\n" +
+                    violations.joinToString("\n") { " - $it" } +
+                    "\nExtract a cohesive component instead of increasing the baseline.",
+            )
+        }
+        logger.lifecycle(
+            "ARESLib Kotlin size ratchet passed (${allowed.size} grandfathered files, 500-line new-file limit).",
+        )
+    }
+}
+
+tasks.matching { it.name == "apiCheck" }.configureEach {
+    dependsOn(verifyAresLibSourceFileSizes)
+}
+
 tasks.register("validateAresVersion") {
     group = "verification"
     description = "Validates the shared ARES Maven version and any Git tag/version agreement."

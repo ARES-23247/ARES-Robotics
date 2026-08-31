@@ -1,7 +1,7 @@
 package com.areslib.frc.drivetrain
 
 import com.areslib.hardware.HardwareRegistry
-import com.areslib.hardware.drive.SwerveHardwareIO
+import com.areslib.frc.TestSwerveHardwareIO
 import com.areslib.math.geometry.Pose2d
 import com.areslib.state.DriveState
 import com.ctre.phoenix6.swerve.SwerveRequest
@@ -16,7 +16,7 @@ class SwerveCtreSafetyRequestTest {
     fun `registry safety preserves a physical CTRE X brake through the full writer path`() {
         val requests = mutableListOf<SwerveRequest>()
         val writer = SwerveCtreSpeedRequestWriter { request -> requests.add(request) }
-        val io = object : SwerveHardwareIO {
+        val io = object : TestSwerveHardwareIO() {
             override fun read(): DriveState = DriveState()
             override fun write(driveState: DriveState, powerScale: Double) = writer.write(driveState, powerScale)
             override fun safe() = writer.safe()

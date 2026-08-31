@@ -34,7 +34,7 @@ class AresGamepadDslTest {
         var pressCount = 0
         var releaseCount = 0
 
-        gamepad.a.bindTo("Test Action") {
+        gamepad.a.onPress("Test Action") {
             pressCount++
         }
         gamepad.a.onRelease("Release Action") {

@@ -50,10 +50,10 @@ import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.validateTuningParameterDeclarations
 import com.areslib.tuning.validateTuningProfileDocument
 
-enum class ProjectModelSeverity { WARNING, ERROR }
+public enum class ProjectModelSeverity { WARNING, ERROR }
 
 /** Pure diagnostic: filesystem repositories may attach a concrete path at their boundary. */
-data class ProjectModelIssue(
+public data class ProjectModelIssue(
     val severity: ProjectModelSeverity,
     val kind: ProjectDocumentKind,
     val documentId: String? = null,
@@ -69,7 +69,7 @@ data class ProjectModelIssue(
  * subsystem-derived effective catalog. Decode failures are supplied as [loadIssues] so Studio and
  * codegen feed the same assembler without giving the model filesystem responsibilities.
  */
-data class RobotProjectSnapshot(
+public data class RobotProjectSnapshot(
     val projectRoot: String,
     val metadata: AresProjectMetadataDocument?,
     val baseCapabilityCatalog: CapabilityCatalogDocument?,
@@ -87,11 +87,9 @@ data class RobotProjectSnapshot(
 )
 
 /** One validated, derived project view consumed by Studio, codegen, verification, and simulation. */
-data class EffectiveRobotProject(
+public data class EffectiveRobotProject(
     val raw: RobotProjectSnapshot,
     val projectId: ProjectId?,
-    /** Legacy runtime tuning scope, intentionally distinct from canonical project identity. */
-    val tuningScopeUid: String?,
     val target: AresProjectTarget?,
     /** Simulator product and capability evidence derived from the same canonical project. */
     val simulationPlan: SimulationProjectPlan?,
@@ -105,13 +103,13 @@ data class EffectiveRobotProject(
     val drivetrains: Map<ProjectDocumentId, DrivetrainDocument>,
     val issues: List<ProjectModelIssue>,
 ) {
-    val isValid: Boolean get() = issues.none { it.severity == ProjectModelSeverity.ERROR }
+    public val isValid: Boolean get() = issues.none { it.severity == ProjectModelSeverity.ERROR }
 }
 
 /** Shared pure assembler. Callers own bytes and filesystem paths; this owns project semantics. */
-object RobotProjectAssembler {
+public object RobotProjectAssembler {
     @JvmStatic
-    fun assemble(
+    public fun assemble(
         snapshot: RobotProjectSnapshot,
         inputPlatform: ControllerInputPlatform? = null,
     ): EffectiveRobotProject {
@@ -163,7 +161,7 @@ object RobotProjectAssembler {
                 .getOrNull()
         }
 
-        val tuningScopeUid = validateProjectIds(metadata, baseCatalog, snapshot.autonomousCatalog, snapshot, issues)
+        validateProjectIds(metadata, baseCatalog, snapshot.autonomousCatalog, snapshot, issues)
         validatePlatforms(metadata, snapshot, issues)
         validateDocuments(snapshot, effectiveCatalog, inputPlatform, issues)
 
@@ -183,7 +181,6 @@ object RobotProjectAssembler {
         return EffectiveRobotProject(
             raw = snapshot,
             projectId = projectId,
-            tuningScopeUid = tuningScopeUid,
             target = target,
             simulationPlan = simulationPlan,
             capabilityCatalog = effectiveCatalog,
@@ -205,7 +202,7 @@ object RobotProjectAssembler {
         autonomous: AutonomousCatalogDocument?,
         snapshot: RobotProjectSnapshot,
         issues: MutableList<ProjectModelIssue>,
-    ): String? {
+    ) {
         val expected = metadata?.projectId
         fun check(kind: ProjectDocumentKind, documentId: String?, actual: String, path: String) {
             if (expected != null && actual != expected) {
@@ -214,24 +211,12 @@ object RobotProjectAssembler {
         }
         catalog?.let { check(ProjectDocumentKind.CAPABILITY_CATALOG, it.projectId, it.projectId, "projectId") }
         autonomous?.let { check(ProjectDocumentKind.AUTONOMOUS_CATALOG, it.projectId, it.projectId, "projectId") }
-
-        // `projectUid` predates canonical .ares/project.json and scopes the typed tuning runtime;
-        // it is not the user-facing project ID. Preserve that distinction while requiring every
-        // tuning document in one project to target one unambiguous runtime scope.
-        val tuningScopes = buildSet {
-            snapshot.tuningComponents.mapTo(this) { it.projectUid }
-            snapshot.tuningProfiles.mapTo(this) { it.projectUid }
+        snapshot.tuningComponents.forEach {
+            check(ProjectDocumentKind.TUNING_COMPONENT, it.uid, it.projectId, "projectId")
         }
-        if (tuningScopes.size > 1) {
-            issues.error(
-                ProjectDocumentKind.TUNING_PROFILE,
-                null,
-                "projectUid",
-                "tuning_scope_mismatch",
-                "Tuning documents target multiple runtime scopes: ${tuningScopes.sorted().joinToString()}",
-            )
+        snapshot.tuningProfiles.forEach {
+            check(ProjectDocumentKind.TUNING_PROFILE, it.uid, it.projectId, "projectId")
         }
-        return tuningScopes.singleOrNull()
     }
 
     private fun validatePlatforms(

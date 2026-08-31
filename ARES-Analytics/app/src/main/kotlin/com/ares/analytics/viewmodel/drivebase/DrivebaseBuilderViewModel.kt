@@ -125,7 +125,7 @@ class DrivebaseBuilderViewModel(
     private val checkpointRecorder: ProjectCheckpointRecorder = ProjectCheckpointRecorder.NONE,
     private val projectSession: ProjectSession? = null,
 ) {
-    private val canonicalProjectId = canonicalRuntimeProjectUid(projectPath, projectId, league)
+    private val canonicalProjectId = canonicalRuntimeProjectId(projectPath, projectId, league)
     private val _state = MutableStateFlow(DrivebaseBuilderState(projectPath, canonicalProjectId, league))
     val state: StateFlow<DrivebaseBuilderState> = _state.asStateFlow()
 
@@ -597,20 +597,10 @@ private fun League.targetPlatform() = when (this) {
     League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
 }
 
-internal fun canonicalRuntimeProjectUid(projectPath: String, fallback: String, league: League): String {
+internal fun canonicalRuntimeProjectId(projectPath: String, fallback: String, league: League): String {
     val identity = File(projectPath, ".ares/project.json")
-    return runCatching { AresProjectMetadataCodec.decode(identity.readText()) }
-        .getOrNull()
-        ?.identity
-        ?.let { config ->
-            listOf(
-                "team${config.teamId.filter(Char::isDigit)}",
-                league.name.lowercase(),
-                uidSegment("season${config.seasonId}", "seasonunknown"),
-                uidSegment(config.robotId, "robot"),
-            ).joinToString(".")
-        }
-        ?: fallback.lowercase().replace(Regex("[^a-z0-9]+"), ".").trim('.').ifBlank { "robot.project" }
+    return runCatching { AresProjectMetadataCodec.decode(identity.readText()).projectId }
+        .getOrElse { fallback }
 }
 
 private fun uidSegment(value: String, fallback: String): String =

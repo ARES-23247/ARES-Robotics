@@ -175,7 +175,6 @@ public class com/areslib/ftc/FtcMecanumRobot : com/areslib/ftc/FtcBaseRobot {
 	public final fun setSysIdFlywheelIO (Lcom/areslib/hardware/actuator/FlywheelIO;)V
 	public final fun setTeleopDriveFrame (Lcom/areslib/ftc/FtcTeleopDriveFrame;)V
 	public final fun setTuningManager (Lcom/areslib/tuning/TuningManager;)V
-	public final fun stop ()V
 	public final fun stopAll ()V
 	protected fun updateHardwareInputs ()V
 	protected fun updateSubsystems (DDD)V
@@ -272,21 +271,6 @@ public final class com/areslib/ftc/config/RobotConfig {
 	public final fun getAprilTagVision (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;)Lcom/areslib/hardware/vision/VisionIO;
 	public final fun getLimelight (Ljava/lang/String;)Lcom/areslib/hardware/vision/VisionIO;
 	public static synthetic fun getLimelight$default (Lcom/areslib/ftc/config/RobotConfig;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/hardware/vision/VisionIO;
-}
-
-public final class com/areslib/ftc/control/FtcMecanumPathFollower {
-	public fun <init> (Lcom/areslib/ftc/FtcMecanumRobot;)V
-	public fun <init> (Lcom/areslib/ftc/FtcMecanumRobot;Lcom/areslib/control/feedback/PIDController;)V
-	public fun <init> (Lcom/areslib/ftc/FtcMecanumRobot;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;)V
-	public fun <init> (Lcom/areslib/ftc/FtcMecanumRobot;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;)V
-	public synthetic fun <init> (Lcom/areslib/ftc/FtcMecanumRobot;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;Lcom/areslib/control/feedback/PIDController;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getDriveController ()Lcom/areslib/control/drivetrain/HolonomicDriveController;
-	public final fun getRobot ()Lcom/areslib/ftc/FtcMecanumRobot;
-	public final fun getThetaController ()Lcom/areslib/control/feedback/PIDController;
-	public final fun getXController ()Lcom/areslib/control/feedback/PIDController;
-	public final fun getYController ()Lcom/areslib/control/feedback/PIDController;
-	public final fun stop ()V
-	public final fun update (Lcom/areslib/pathing/PathPoint;D)V
 }
 
 public final class com/areslib/ftc/core/FtcHardwareInitializer {
@@ -1637,10 +1621,7 @@ public final class com/areslib/ftc/telemetry/FtcTelemetryManager : com/areslib/t
 	public final fun getRunId ()Ljava/lang/String;
 	public fun publish (Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DD)V
 	public final fun publishFull (Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DDLcom/areslib/control/safety/BrownoutGuard;Lcom/areslib/ftc/vision/FtcVisionTracker;JLorg/firstinspires/ftc/robotcore/external/Telemetry;Lkotlin/jvm/functions/Function0;)V
-	public final fun publishFull (Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DDLcom/areslib/ftc/vision/FtcVisionTracker;JLorg/firstinspires/ftc/robotcore/external/Telemetry;Lkotlin/jvm/functions/Function0;)V
 	public static synthetic fun publishFull$default (Lcom/areslib/ftc/telemetry/FtcTelemetryManager;Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DDLcom/areslib/control/safety/BrownoutGuard;Lcom/areslib/ftc/vision/FtcVisionTracker;JLorg/firstinspires/ftc/robotcore/external/Telemetry;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
-	public static synthetic fun publishFull$default (Lcom/areslib/ftc/telemetry/FtcTelemetryManager;Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DDLcom/areslib/ftc/vision/FtcVisionTracker;JLorg/firstinspires/ftc/robotcore/external/Telemetry;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
-	public final fun publishMotors (D)V
 	public final fun setEnableNetworkStreaming (Z)V
 }
 

@@ -217,11 +217,6 @@ class AresGamepad {
             this.onPressAction = action
         }
 
-        /** Declarative alias for [onPress]. */
-        fun bindTo(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
-            onPress(description, action)
-        }
-
         /**
          * Binds an action to execute exactly once when the button transitions from pressed to unpressed.
          * 
@@ -240,11 +235,6 @@ class AresGamepad {
          */
         fun whilePressed(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.whilePressedAction = action
-        }
-
-        /** Declarative alias for [whilePressed]. */
-        fun whileHeld(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
-            whilePressed(description, action)
         }
 
         /**

@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "uid": "ares.starter.profile.simulation",
   "profileId": "simulation",
   "displayName": "Uncalibrated simulation baseline",
   "description": "Conservative simulation values. These are not physical calibration evidence and must not be used to approve deployment.",
-  "projectUid": "ares.starter.ftc",
+  "projectId": "ares-ftc-starter",
   "drivebaseUid": "ares.starter.drivebase.mecanum",
   "authority": "CANONICAL_CHECKED_IN",
   "values": [

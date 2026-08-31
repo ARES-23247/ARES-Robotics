@@ -20,17 +20,8 @@ interface FlywheelIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
         setAppliedVoltage(0.0)
     }
 
-    /** Sets the target velocity of the flywheel using closed-loop controller on the motor */
-    fun setVelocityRpm(rpm: Double)
-
-    /**
-     * Preserves the requested terminal speed while limiting the electrical effort available to
-     * reach it. Hardware implementations should override when their controller supports an output
-     * or current cap; the fallback preserves the lifecycle emergency-stop contract.
-     */
-    fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
-        if (maxEffortScale <= 0.0) setAppliedVoltage(0.0) else setVelocityRpm(rpm)
-    }
+    /** Preserves terminal speed while limiting the electrical effort available to reach it. */
+    fun setVelocityRpm(rpm: Double, maxEffortScale: Double)
 
     /** Sets the applied voltage of the flywheel motors directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
@@ -71,20 +62,8 @@ interface CowlIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
         setAppliedVoltage(0.0)
     }
 
-    /** Sets the target absolute position angle in rotations */
-    fun setTargetAngle(rotations: Double)
-
-    /**
-     * Sets the target angle without scaling mechanism geometry while limiting the
-     * closed-loop effort available to reach it.
-     *
-     * Implementations with hardware closed-loop control should override this method.
-     * The compatibility fallback can only provide a full-effort command or a zero-effort
-     * safety stop.
-     */
-    fun setTargetAngle(rotations: Double, maxEffortScale: Double) {
-        if (maxEffortScale <= 0.0) setAppliedVoltage(0.0) else setTargetAngle(rotations)
-    }
+    /** Preserves target geometry while limiting the closed-loop effort available to reach it. */
+    fun setTargetAngle(rotations: Double, maxEffortScale: Double)
 
     /** Sets the applied voltage directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)
@@ -117,13 +96,8 @@ interface IntakeIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
         setRollerVoltage(0.0)
     }
 
-    /** Sets the target absolute angle of the pivot arm in degrees */
-    fun setPivotAngle(degrees: Double)
-
-    /** Sets the pivot target while independently limiting closed-loop effort. */
-    fun setPivotAngle(degrees: Double, maxEffortScale: Double) {
-        if (maxEffortScale <= 0.0) setPivotVoltage(0.0) else setPivotAngle(degrees)
-    }
+    /** Preserves the pivot target while independently limiting closed-loop effort. */
+    fun setPivotAngle(degrees: Double, maxEffortScale: Double)
 
     /** Sets the applied voltage of the pivot motor directly (-12.0 to 12.0 volts) */
     fun setPivotVoltage(volts: Double)
@@ -132,9 +106,7 @@ interface IntakeIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     fun setRollerVoltage(volts: Double)
 
     /** Sets the target velocity of the intake rollers in RPS */
-    fun setRollerVelocityRps(rps: Double) {
-        setRollerVoltage((rps / 10.0) * 12.0)
-    }
+    fun setRollerVelocityRps(rps: Double)
 
     /** Gets the current absolute angle of the pivot arm in degrees */
     val pivotAngleDegrees: Double
@@ -221,13 +193,8 @@ interface ClimberIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
         setAppliedVoltage(0.0)
     }
 
-    /** Sets the target mechanism position in rotations. */
-    fun setTargetPositionRotations(rotations: Double)
-
-    /** Sets the target mechanism position while independently limiting closed-loop effort. */
-    fun setTargetPositionRotations(rotations: Double, maxEffortScale: Double) {
-        if (maxEffortScale <= 0.0) setAppliedVoltage(0.0) else setTargetPositionRotations(rotations)
-    }
+    /** Preserves the target position while independently limiting closed-loop effort. */
+    fun setTargetPositionRotations(rotations: Double, maxEffortScale: Double)
 
     /** Sets the applied voltage of the climber motor directly (-12.0 to 12.0 volts) */
     fun setAppliedVoltage(volts: Double)

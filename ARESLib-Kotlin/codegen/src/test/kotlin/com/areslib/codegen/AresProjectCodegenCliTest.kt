@@ -412,7 +412,7 @@ class AresProjectCodegenCliTest {
             profileId = "simulation",
             displayName = "Simulation",
             description = "Ownership with no assignments",
-            projectUid = "project.ftc",
+            projectId = "test",
             drivebaseUid = drivetrain.uid,
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = emptyList(),

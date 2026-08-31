@@ -88,6 +88,7 @@ class TuningManagerTest {
             telemetry,
             { TuningApplyContext(sessionArmed = true, robotDisabled = false) },
             { _, _ -> error("consumer rejected update") },
+            { true },
         )
         val root = "Tuning/Parameters/drive.heading.kp"
         telemetry.numbers["$root/Requested"] = 3.0
@@ -110,6 +111,7 @@ class TuningManagerTest {
             telemetry,
             { TuningApplyContext(sessionArmed = true, robotDisabled = false) },
             { _, _ -> false },
+            { true },
         )
         val root = "Tuning/Parameters/drive.heading.kp"
         telemetry.numbers["$root/Requested"] = 3.0
@@ -158,6 +160,7 @@ class TuningManagerTest {
         fixture.manager = TuningManager(
             runtime, telemetry, { TuningApplyContext(fixture.armed, fixture.disabled) },
             { _, value -> fixture.applied += requireNotNull(value.doubleValue); true },
+            { true },
         )
         return fixture
     }

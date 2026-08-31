@@ -49,7 +49,7 @@ class AresSuperstructureControllerTest {
     fun `alliance intent is accepted after the debounce interval`() {
         val (base, controller) = controller(Alliance.RED)
         controller.toggleAlliance()
-        RobotClock.setMockTimeMs(1_250L)
+        RobotClock.useMockTime(1_250L)
 
         controller.toggleAlliance()
 

@@ -42,7 +42,7 @@ interface SwerveHardwareIO : SubsystemIO {
     }
 
     /** Refreshes cached status signals from the hardware. */
-    override fun refresh() {}
+    override fun refresh()
 
     /** Reads the drive state from the hardware. */
     fun read(): DriveState
@@ -54,11 +54,10 @@ interface SwerveHardwareIO : SubsystemIO {
     fun write(driveState: DriveState, powerScale: Double)
 
     /** Gets measured motor supply currents. */
-    fun getCurrents(out: DoubleArray) {}
+    fun getCurrents(out: DoubleArray)
 
     /** Whether the last hardware refresh produced a fresh current snapshot. */
     val currentMeasurementsValid: Boolean
-        get() = false
 
     /** Checked cached-current read; invalid hardware must not be represented as a healthy zero. */
     fun getCurrentsIfValid(out: DoubleArray): Boolean {
@@ -71,40 +70,38 @@ interface SwerveHardwareIO : SubsystemIO {
     }
 
     /** Gets measured absolute encoder positions. */
-    fun getEncoderPositions(out: DoubleArray) {}
+    fun getEncoderPositions(out: DoubleArray)
 
     /** Whether the last hardware refresh produced a trustworthy encoder snapshot. */
     val encoderPositionsValid: Boolean
-        get() = true
 
     /**
-     * Backward-compatible checked read. Existing implementations remain valid by default; hardware
-     * implementations with refresh status override [encoderPositionsValid].
+     * Checked cached read. Invalid hardware is represented as an unavailable sample, never a
+     * healthy zero.
      */
     fun getEncoderPositionsIfValid(out: DoubleArray): Boolean {
-        if (!encoderPositionsValid) return false
+        if (!encoderPositionsValid) {
+            out.fill(Double.NaN)
+            return false
+        }
         getEncoderPositions(out)
         return true
     }
 
     /** Gets gyro absolute pitch degrees. */
     val pitchDegrees: Double
-        get() = 0.0
 
     /** Gets gyro absolute roll degrees. */
     val rollDegrees: Double
-        get() = 0.0
 
     /** Gets raw gyro yaw degrees (unfused, for MegaTag2). */
     val rawGyroYawDegrees: Double
-        get() = 0.0
 
     /** Gets raw gyro yaw rate in degrees per second (for MegaTag2). */
     val yawRateDegreesPerSecond: Double
-        get() = 0.0
 
     /** Gets measured module linear velocities. */
-    fun getModuleSpeeds(out: DoubleArray) {}
+    fun getModuleSpeeds(out: DoubleArray)
 
     /**
      * Feeds an AprilTag observation into the drivetrain pose estimator.
@@ -133,15 +130,14 @@ interface SwerveHardwareIO : SubsystemIO {
      * Samples the authoritative estimator at an historical timestamp. Implementations write
      * X, Y, and CCW-positive heading radians into [out] and return false when history is absent.
      */
-    fun samplePoseAt(timestampSeconds: Double, out: DoubleArray): Boolean = false
+    fun samplePoseAt(timestampSeconds: Double, out: DoubleArray): Boolean
 
     /** Resets/seeds the underlying pose estimator. */
-    fun seedPose(pose: Pose2d) {}
+    fun seedPose(pose: Pose2d)
 
     /** Gets any active motor fault codes (bitfields). */
-    fun getFaults(out: IntArray) {}
+    fun getFaults(out: IntArray)
 
     /** Gets the signal latency in milliseconds of the swerve sensors. */
     val signalLatencyMs: Double
-        get() = Double.POSITIVE_INFINITY
 }

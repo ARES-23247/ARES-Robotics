@@ -348,7 +348,7 @@ class GuidedTuningExperimentTest {
         profileId = "competition",
         displayName = "Competition",
         description = "Test profile",
-        projectUid = "robot.project",
+        projectId = "robot.project",
         drivebaseUid = "drive.primary",
         authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
         values = listOf(TuningAssignment(declaration.uid, declaration.defaultValue)),

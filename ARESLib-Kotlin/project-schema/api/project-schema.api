@@ -1391,6 +1391,29 @@ public final class com/areslib/routine/AutonomousCatalogKt {
 	public static synthetic fun validateAutonomousCatalog$default (Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/List;
 }
 
+public final class com/areslib/routine/AutonomousCatalogResolution {
+	public fun <init> (Lcom/areslib/routine/AutonomousCatalogEntry;Ljava/lang/String;Z)V
+	public final fun component1 ()Lcom/areslib/routine/AutonomousCatalogEntry;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun copy (Lcom/areslib/routine/AutonomousCatalogEntry;Ljava/lang/String;Z)Lcom/areslib/routine/AutonomousCatalogResolution;
+	public static synthetic fun copy$default (Lcom/areslib/routine/AutonomousCatalogResolution;Lcom/areslib/routine/AutonomousCatalogEntry;Ljava/lang/String;ZILjava/lang/Object;)Lcom/areslib/routine/AutonomousCatalogResolution;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEntry ()Lcom/areslib/routine/AutonomousCatalogEntry;
+	public final fun getRequestedId ()Ljava/lang/String;
+	public final fun getUsedFallback ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/routine/AutonomousCatalogResolver {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAvailableEntryIds ()Ljava/util/List;
+	public final fun getEnabledEntries ()Ljava/util/List;
+	public final fun resolve (Ljava/lang/String;)Lcom/areslib/routine/AutonomousCatalogResolution;
+}
+
 public final class com/areslib/routine/RoutineAlliance : java/lang/Enum {
 	public static final field BLUE Lcom/areslib/routine/RoutineAlliance;
 	public static final field RED Lcom/areslib/routine/RoutineAlliance;
@@ -2881,7 +2904,7 @@ public final class com/areslib/tuning/TuningComponentDocument {
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getParameters ()Ljava/util/List;
-	public final fun getProjectUid ()Ljava/lang/String;
+	public final fun getProjectId ()Ljava/lang/String;
 	public final fun getSchemaVersion ()I
 	public final fun getUid ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -2970,7 +2993,7 @@ public final class com/areslib/tuning/TuningProfileDocument {
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getDrivebaseUid ()Ljava/lang/String;
 	public final fun getProfileId ()Ljava/lang/String;
-	public final fun getProjectUid ()Ljava/lang/String;
+	public final fun getProjectId ()Ljava/lang/String;
 	public final fun getPromotion ()Lcom/areslib/tuning/TuningPromotionData;
 	public final fun getSchemaVersion ()I
 	public final fun getUid ()Ljava/lang/String;

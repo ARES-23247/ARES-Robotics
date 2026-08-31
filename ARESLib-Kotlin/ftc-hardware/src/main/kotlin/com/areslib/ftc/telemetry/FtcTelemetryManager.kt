@@ -278,39 +278,6 @@ class FtcTelemetryManager(
     }
 
     /**
-     * Source-compatible overload for the original FTC telemetry API. Once the actuator power
-     * manager has supplied its guard, this path retains that same authoritative instance.
-     */
-    fun publishFull(
-        state: RobotState,
-        gamepad1: GamepadState?,
-        gamepad2: GamepadState?,
-        dtSeconds: Double,
-        batteryVoltage: Double,
-        visionTracker: FtcVisionTracker,
-        timestamp: Long,
-        localTelemetry: Telemetry?,
-        onSubclassPublish: () -> Unit = {}
-    ) = publishFull(
-        state = state,
-        gamepad1 = gamepad1,
-        gamepad2 = gamepad2,
-        dtSeconds = dtSeconds,
-        batteryVoltage = batteryVoltage,
-        powerBrownoutGuard = activeBrownoutGuard,
-        visionTracker = visionTracker,
-        timestamp = timestamp,
-        localTelemetry = localTelemetry,
-        onSubclassPublish = onSubclassPublish
-    )
-
-    /** Legacy motor telemetry hook (obsolete, retained for compatibility). */
-    @Suppress("UNUSED_PARAMETER")
-    fun publishMotors(batteryVoltage: Double) {
-        // Obsolete: Handled by Unified ARESDataLogger
-    }
-
-    /**
      * Stops background Driver Station thread and flushes active log files.
      */
     override fun close() {

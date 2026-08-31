@@ -3,6 +3,8 @@ package com.ares.analytics.ui.input
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.GamepadState
 import com.ares.analytics.shared.models.League
+import com.areslib.telemetry.schema.DesktopDriveProtocol
+import com.areslib.telemetry.schema.DesktopDriveReceiverStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -24,13 +26,13 @@ class DesktopDriveInputPublisherTest {
     }
 
     @Test
-    fun `legacy simulator without acknowledgement keeps transport fallback`() {
+    fun `receiver acknowledgement contract is mandatory before motion`() {
         var nowMs = 1_000L
         val session = DesktopDriveFrameSession(sessionNonce = 45.0) { nowMs }
         session.markTransmitted()
         nowMs += RECEIVER_ACK_STARTUP_TIMEOUT_MS * 2
 
-        assertFalse(session.needsReceiverRehandshake(acknowledgementContractAvailable = false))
+        assertTrue(session.needsReceiverRehandshake(acknowledgementContractAvailable = false))
     }
 
     @Test
@@ -43,7 +45,7 @@ class DesktopDriveInputPublisherTest {
         assertFalse(
             session.needsReceiverRehandshake(
                 acknowledgementContractAvailable = true,
-                receiverStatusCode = DRIVE_ACK_WAITING_FOR_FRAME,
+                receiverStatusCode = DesktopDriveReceiverStatus.WAITING_FOR_FRAME.code,
             )
         )
     }
@@ -114,6 +116,8 @@ class DesktopDriveInputPublisherTest {
             assertEquals(listOf(0.0, 0.0, 0.0), session.frameFor(intent).slice(4..6))
             session.markTransmitted()
         }
+        assertEquals(listOf(0.0, 0.0, 0.0), session.frameFor(intent).slice(4..6))
+        session.observeReceiverAcknowledgement(receiverSession = 77L, receiverSequence = 4L)
         val active = session.frameFor(intent).copyOf()
         assertEquals(listOf(1.0, 2.0, 3.0), active.slice(4..6))
         assertEquals((intent.modeFlags or intent.actuationFlags).toDouble(), active[7])
@@ -126,7 +130,7 @@ class DesktopDriveInputPublisherTest {
         val intent = DesktopDriveIntent(
             command = DesktopFieldDriveCommand(4.0, 0.0, 0.0),
             modeFlags = desktopDriveModeFlags(isRedAlliance = false),
-            actuationFlags = 1L shl 1,
+            actuationFlags = DesktopDriveProtocol.FLAG_FLYWHEEL,
         )
 
         val firstAttempt = session.frameFor(intent).copyOf()
@@ -160,7 +164,7 @@ class DesktopDriveInputPublisherTest {
         )
 
         assertTrue(intent.command.vxMetersPerSecond > 0.0)
-        assertTrue(intent.actuationFlags and (1L shl 0) != 0L)
-        assertTrue(intent.actuationFlags and (1L shl 6) != 0L)
+        assertTrue(intent.actuationFlags and DesktopDriveProtocol.FLAG_INTAKE != 0L)
+        assertTrue(intent.actuationFlags and DesktopDriveProtocol.FLAG_BUTTON_A != 0L)
     }
 }

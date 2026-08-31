@@ -1,6 +1,5 @@
 package com.areslib.telemetry
 
-import com.areslib.networktables.NT4BufferPool
 import com.areslib.networktables.NT4Entry
 import com.areslib.networktables.NT4Instance
 import com.areslib.networktables.NT4Json
@@ -66,14 +65,4 @@ class NT4ServerTest {
         assertTrue(json.contains("\"type\":\"double\""))
     }
 
-    @Test
-    fun testBufferPoolAcquireAndRelease() {
-        val buf1 = NT4BufferPool.acquireByteArray(1024)
-        assertNotNull(buf1)
-        assertTrue(buf1.size >= 1024)
-        NT4BufferPool.releaseByteArray(buf1)
-
-        val buf2 = NT4BufferPool.acquireByteArray(1024)
-        assertEquals(buf1, buf2)
-    }
 }

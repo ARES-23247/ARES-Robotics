@@ -398,7 +398,7 @@ class ProjectModelArchitectureTest {
             File("src/main/kotlin/com/ares/analytics"),
         ).firstOrNull(File::isDirectory)
         checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
-        val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
+        val workspaceGraph = File(sourceRoot, "ui/screens/WorkspaceViewModelGraph.kt").readText()
 
         val constructors = listOf(
             "PathPlannerViewModel(",
@@ -411,15 +411,21 @@ class ProjectModelArchitectureTest {
             "TuningViewModel(",
         )
         constructors.forEach { constructor ->
-            val start = mainScreen.indexOf(constructor)
-            assertTrue(start >= 0, "MainScreen no longer constructs $constructor; update this boundary test intentionally.")
-            val end = mainScreen.indexOf("\n        )", start).takeIf { it >= 0 } ?: (start + 800).coerceAtMost(mainScreen.length)
-            val construction = mainScreen.substring(start, end)
+            val start = workspaceGraph.indexOf(constructor)
+            assertTrue(start >= 0, "WorkspaceViewModelGraph no longer constructs $constructor; update this boundary test intentionally.")
+            val end = workspaceGraph.indexOf("\n        )", start).takeIf { it >= 0 }
+                ?: (start + 800).coerceAtMost(workspaceGraph.length)
+            val construction = workspaceGraph.substring(start, end)
             assertTrue(
                 "projectSession = services.projectSession" in construction,
                 "$constructor must receive the application ProjectSession instead of reconstructing project meaning.",
             )
         }
+
+        assertTrue(
+            "remember(config.id)" in workspaceGraph,
+            "Workspace-scoped view models must be recreated when the selected workspace changes.",
+        )
     }
 
     @Test

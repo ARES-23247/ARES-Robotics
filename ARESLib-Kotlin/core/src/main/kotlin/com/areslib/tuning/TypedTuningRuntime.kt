@@ -26,7 +26,7 @@ data class TuningApplyContext(
 
 /** Immutable UI/transport metadata. Runtime access uses pre-indexed arrays and does not serialize state. */
 data class TuningMetadataSnapshot(
-    val projectUid: String,
+    val projectId: String,
     /** Selected drivebase, or null for a project containing only subsystem/global tuning. */
     val drivebaseUid: String?,
     val canonicalProfileUid: String,
@@ -64,7 +64,7 @@ class TypedTuningRuntime(
         if (validateTuningProfileDocument(
                 TuningProfileDocument(
                     uid = "runtime.validation", profileId = "runtime-validation", displayName = "Runtime validation",
-                    description = "Typed runtime candidate", projectUid = metadata.projectUid,
+                    description = "Typed runtime candidate", projectId = metadata.projectId,
                     drivebaseUid = metadata.drivebaseUid,
                     authority = TuningProfileAuthority.LOCAL_EXPERIMENTAL,
                     values = listOf(TuningAssignment(parameterUid, candidate)),
@@ -107,7 +107,7 @@ class TypedTuningRuntime(
             profileId = profileId,
             displayName = displayName,
             description = "Robot-local experimental tuning overlay; not authoritative.",
-            projectUid = metadata.projectUid,
+            projectId = metadata.projectId,
             drivebaseUid = metadata.drivebaseUid,
             authority = TuningProfileAuthority.LOCAL_EXPERIMENTAL,
             baseProfileUid = metadata.canonicalProfileUid,

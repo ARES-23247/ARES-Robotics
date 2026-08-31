@@ -2,8 +2,9 @@
 
 Cycle evidence: [product improvement cycle log](CYCLE_LOG.md).
 
-Community copy and verified feature-tour media for the current patch are in the
-[Studio 3.1.1 launch drafts](announcements/ARES_ROBOTICS_STUDIO_3_1_1.md).
+Community copy and verified feature-tour media for the current clean-slate milestone are in the
+[Studio 4.0.0 preview and launch draft](announcements/ARES_ROBOTICS_STUDIO_4_0_0_PREVIEW.md). The
+[Studio 3.1.1 launch draft](announcements/ARES_ROBOTICS_STUDIO_3_1_1.md) remains as the prior release record.
 
 Start here if ARES Robotics Studio is new to you. You do not need to understand every screen before you begin.
 

@@ -166,7 +166,7 @@ abstract class FrcBaseRobot(
             previousEnabled = isEnabled
 
             // 7. Telemetry
-            telemetryManager.logBrownout(powerManager.brownoutGuard, powerManager.batteryVoltage)
+            telemetryManager.setBrownoutGuard(powerManager.brownoutGuard)
             telemetryManager.publish(store.state, gamepad1, gamepad2, dtSeconds, powerManager.batteryVoltage)
             telemetry.putNumber("Robot/TotalCurrentAmps", powerManager.currentAmps)
             telemetry.putBoolean("Robot/CurrentMeasurementValid", powerManager.currentMeasurementValid)

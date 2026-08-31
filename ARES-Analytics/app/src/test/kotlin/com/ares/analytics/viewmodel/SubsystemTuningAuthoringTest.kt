@@ -160,13 +160,13 @@ class SubsystemTuningAuthoringTest {
             profileId = "test",
             displayName = "Test profile",
             description = "Canonical metadata inclusion test",
-            projectUid = "project.test",
+            projectId = "project.test",
             drivebaseUid = "drive.test",
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = catalog.map { TuningAssignment(it.uid, it.defaultValue) },
         )
         val generated = DrivetrainKotlinGenerator.generateProjectTuning(
-            projectUid = profile.projectUid,
+            projectId = profile.projectId,
             canonicalProfileUid = profile.uid,
             drivebaseUid = requireNotNull(profile.drivebaseUid),
             declarations = catalog,

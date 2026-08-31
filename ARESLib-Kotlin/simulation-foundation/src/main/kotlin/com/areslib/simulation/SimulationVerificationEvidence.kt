@@ -1,7 +1,7 @@
 package com.areslib.simulation
 
 /** Evidence levels intentionally stop short of claiming physical validation from simulation. */
-enum class VerificationEvidenceLevel {
+public enum class VerificationEvidenceLevel {
     CONFIGURATION_REVIEWED,
     COMPILED_SUCCESSFULLY,
     SIMULATION_VERIFIED,
@@ -10,7 +10,7 @@ enum class VerificationEvidenceLevel {
 }
 
 /** Immutable, run-scoped evidence emitted by simulator and verification products. */
-data class SimulationVerificationEvidence(
+public data class SimulationVerificationEvidence(
     val verificationRunId: String,
     val checkId: String,
     val level: VerificationEvidenceLevel,

@@ -35,7 +35,7 @@ class TuningLearningEvidenceTest {
         profileId = "competition",
         displayName = "Competition",
         description = "Practice tuning profile",
-        projectUid = "student-robot",
+        projectId = "student-robot",
         authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
         values = listOf(TuningAssignment(velocityFeedforward.uid, velocityFeedforward.defaultValue)),
     )

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes
 
+import com.areslib.telemetry.schema.DesktopDriveFrameGate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -9,23 +10,23 @@ class ARESRemoteDriveSafetyTest {
 
     @Test
     fun retainedNonzeroV2FrameCannotArmStartup() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
 
         assertFalse(gate.observe(frame(session = 41, sequence = 9, vx = 1.5), 5_000L, 4.0, 8.0))
         assertFalse(gate.motionAuthorized)
-        assertEquals(0.0, gate.vx, 0.0)
+        assertEquals(0.0, gate.vxMetersPerSecond, 0.0)
         assertFalse(gate.observe(frame(session = 41, sequence = 9, vx = 1.5), 5_100L, 4.0, 8.0))
 
         assertTrue(gate.observe(frame(session = 41, sequence = 10), 5_101L, 4.0, 8.0))
         assertFalse("The neutral handshake itself must never authorize motion", gate.motionAuthorized)
         assertTrue(gate.observe(frame(session = 41, sequence = 11, vx = 1.5), 5_102L, 4.0, 8.0))
         assertTrue(gate.motionAuthorized)
-        assertEquals(1.5, gate.vx, 0.0)
+        assertEquals(1.5, gate.vxMetersPerSecond, 0.0)
     }
 
     @Test
     fun receiverLeaseExpiresAtExactlyTwoHundredMillisecondsAndRequiresNeutralFirst() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
 
         assertTrue(gate.observe(frame(session = 7, sequence = 1), 1_000L, 4.0, 8.0))
         val moving = frame(session = 7, sequence = 2, vx = 2.0)
@@ -35,7 +36,7 @@ class ARESRemoteDriveSafetyTest {
 
         assertFalse(gate.observe(moving, 1_210L, 4.0, 8.0))
         assertFalse(gate.motionAuthorized)
-        assertEquals(0.0, gate.vx, 0.0)
+        assertEquals(0.0, gate.vxMetersPerSecond, 0.0)
         assertFalse(gate.observe(frame(session = 8, sequence = 0, vx = 3.0), 1_211L, 4.0, 8.0))
         assertTrue(gate.observe(frame(session = 8, sequence = 1), 1_212L, 4.0, 8.0))
         assertFalse(gate.motionAuthorized)
@@ -44,7 +45,7 @@ class ARESRemoteDriveSafetyTest {
 
     @Test
     fun readFailureHardZerosAndRequiresAnotherNeutralHandshake() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
 
         assertTrue(gate.observe(frame(session = 12, sequence = 1), 100L, 4.0, 8.0))
         assertTrue(gate.observe(frame(session = 12, sequence = 2, omega = 2.5), 110L, 4.0, 8.0))
@@ -52,7 +53,7 @@ class ARESRemoteDriveSafetyTest {
 
         assertFalse(gate.observe(null, 120L, 4.0, 8.0))
         assertFalse(gate.motionAuthorized)
-        assertEquals(0.0, gate.omega, 0.0)
+        assertEquals(0.0, gate.omegaRadiansPerSecond, 0.0)
         assertFalse(gate.observe(frame(session = 12, sequence = 3, omega = 2.5), 130L, 4.0, 8.0))
         assertTrue(gate.observe(frame(session = 12, sequence = 4), 140L, 4.0, 8.0))
         assertTrue(gate.observe(frame(session = 12, sequence = 5, omega = 1.0), 150L, 4.0, 8.0))
@@ -60,12 +61,12 @@ class ARESRemoteDriveSafetyTest {
 
     @Test
     fun sameSequenceMutationRollbackAndMalformedFramesFailClosed() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
 
         assertTrue(gate.observe(frame(session = 3, sequence = 10), 1_000L, 4.0, 8.0))
         assertTrue(gate.observe(frame(session = 3, sequence = 11, vy = -1.0), 1_010L, 4.0, 8.0))
         assertFalse(gate.observe(frame(session = 3, sequence = 11, vy = 1.0), 1_011L, 4.0, 8.0))
-        assertEquals(0.0, gate.vy, 0.0)
+        assertEquals(0.0, gate.vyMetersPerSecond, 0.0)
 
         assertFalse(gate.observe(frame(session = 3, sequence = 10), 1_012L, 4.0, 8.0))
         assertFalse(gate.observe(doubleArrayOf(2.0, 3.0), 1_013L, 4.0, 8.0))
@@ -75,7 +76,7 @@ class ARESRemoteDriveSafetyTest {
 
     @Test
     fun metadataAndFlagsAreValidatedExactly() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
 
         val modeOnlyFlags = (1L shl 3) or (1L shl 4) or (1L shl 5)
         assertTrue(gate.observe(frame(1, 1, clientMs = 20, flags = modeOnlyFlags), 1_000L, 4.0, 8.0))
@@ -100,7 +101,7 @@ class ARESRemoteDriveSafetyTest {
 
     @Test
     fun receiverClockRollbackFailsClosed() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
         assertTrue(gate.observe(frame(4, 1), 1_000L, 4.0, 8.0))
         val moving = frame(4, 2, vx = 1.0)
         assertTrue(gate.observe(moving, 1_010L, 4.0, 8.0))
@@ -114,7 +115,7 @@ class ARESRemoteDriveSafetyTest {
     fun actuatingAndEdgeFlagsCannotServeAsNeutralHandshake() {
         val actuatingBits = listOf(0, 1, 2, 6, 7, 8, 9)
         actuatingBits.forEachIndexed { index, bit ->
-            val gate = RemoteDriveFrameGate()
+            val gate = DesktopDriveFrameGate(timeoutMs = 200L)
             assertFalse(
                 "Bit $bit must not arm a fresh session",
                 gate.observe(frame(index + 1L, 1, flags = 1L shl bit), 100L, 4.0, 8.0)
@@ -130,7 +131,7 @@ class ARESRemoteDriveSafetyTest {
             frame(2, 1, vy = -1e-12),
             frame(3, 1, omega = 1e-12),
         ).forEachIndexed { index, candidate ->
-            val gate = RemoteDriveFrameGate()
+            val gate = DesktopDriveFrameGate(timeoutMs = 200L)
             assertFalse(gate.observe(candidate, 100L + index, 4.0, 8.0))
             assertFalse(gate.motionAuthorized)
         }
@@ -138,12 +139,12 @@ class ARESRemoteDriveSafetyTest {
 
     @Test
     fun `physical receiver enforces shared hard axis limits above runtime tuning limits`() {
-        val gate = RemoteDriveFrameGate()
+        val gate = DesktopDriveFrameGate(timeoutMs = 200L)
         assertTrue(gate.observe(frame(90, 0), 1_000L, 20.0, 20.0))
         assertTrue(gate.observe(frame(90, 1, vx = 8.0, omega = 4.0 * Math.PI), 1_010L, 20.0, 20.0))
         assertFalse(gate.observe(frame(90, 2, vx = 8.01), 1_020L, 20.0, 20.0))
 
-        val omegaGate = RemoteDriveFrameGate()
+        val omegaGate = DesktopDriveFrameGate(timeoutMs = 200L)
         assertTrue(omegaGate.observe(frame(91, 0), 2_000L, 20.0, 20.0))
         assertFalse(omegaGate.observe(frame(91, 1, omega = 4.0 * Math.PI + 0.01), 2_010L, 20.0, 20.0))
     }

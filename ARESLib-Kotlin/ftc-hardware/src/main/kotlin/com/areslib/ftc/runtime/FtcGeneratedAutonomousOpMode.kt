@@ -9,6 +9,7 @@ import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.routine.AutonomousCatalogEntry
+import com.areslib.routine.AutonomousCatalogResolver
 import com.areslib.routine.RoutineAlliance
 import com.areslib.routine.RoutineManager
 import com.areslib.routine.RoutinePose
@@ -502,11 +503,7 @@ class FtcAutonomousSelector(
     private val lockedEntryId: String? = null,
     private val lockedAlliance: Alliance? = null,
 ) {
-    val entries: List<AutonomousCatalogEntry> = entries
-        .asSequence()
-        .filter(AutonomousCatalogEntry::enabled)
-        .sortedWith(compareBy<AutonomousCatalogEntry> { it.sortOrder }.thenBy { it.entryId })
-        .toList()
+    val entries: List<AutonomousCatalogEntry> = AutonomousCatalogResolver(entries, defaultEntryId).enabledEntries
 
     private var index = selectInitialIndex(lockedEntryId ?: defaultEntryId)
     private var previousLeft = false

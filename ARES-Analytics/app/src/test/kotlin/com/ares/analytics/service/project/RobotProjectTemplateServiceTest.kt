@@ -49,7 +49,7 @@ class RobotProjectTemplateServiceTest {
 
         League.entries.forEach { league ->
             val template = service.templateFor(league)
-            assertEquals("13.0.1", template.aresVersion)
+            assertEquals("14.0.0", template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
             assertEquals(
                 RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
@@ -127,10 +127,10 @@ class RobotProjectTemplateServiceTest {
             )
             val tuning = com.ares.analytics.service.tuning.TuningProfileRepository()
                 .load(result.destination.path).getOrThrow().profiles.single()
-            assertEquals("team23247.ftc.season2026.studentbot.drivebase.primary", drivebase.uid)
-            assertEquals("team23247.ftc.season2026.studentbot.profile.competition", drivebase.canonicalProfileUid)
+            assertEquals("team23247-studentbot.drivebase.primary", drivebase.uid)
+            assertEquals("team23247-studentbot.profile.competition", drivebase.canonicalProfileUid)
             assertEquals(drivebase.canonicalProfileUid, tuning.uid)
-            assertEquals("team23247.ftc.season2026.studentbot", tuning.projectUid)
+            assertEquals("team23247-studentbot", tuning.projectId)
             assertEquals(drivebase.uid, tuning.drivebaseUid)
             val localProperties = File(result.destination, "local.properties").readText()
             assertTrue(localProperties.startsWith("sdk.dir="))
@@ -314,6 +314,34 @@ class RobotProjectTemplateServiceTest {
     }
 
     @Test
+    fun `official bundled starters create projects accepted by current tuning schema`() = runBlocking {
+        val root = Files.createTempDirectory("ares-official-starter-schema-test").toFile()
+        try {
+            RobotProjectTemplateService.OFFICIAL_PROJECT_TEMPLATES.forEach { template ->
+                val service = RobotProjectTemplateService(
+                    cacheDirectory = File(root, "cache-${template.league.name.lowercase()}"),
+                    templates = listOf(template),
+                    archiveDownloader = { _, _ -> error("Bundled starter unexpectedly attempted a download") },
+                    bundledArchiveLoader = { resourcePath ->
+                        RobotProjectTemplateService::class.java.getResourceAsStream(resourcePath)
+                    },
+                    androidSdkLocator = { File(root, "fixture-android-sdk").apply { mkdirs() } },
+                )
+                val parent = File(root, "projects-${template.league.name.lowercase()}").apply { mkdirs() }
+                val project = service.create(
+                    request(parent, "student-${template.league.name.lowercase()}").copy(league = template.league),
+                )
+
+                val tuning = TuningProfileRepository().load(project.destination.path)
+                assertTrue(tuning.isSuccess, "${template.displayName}: ${tuning.exceptionOrNull()?.message}")
+                assertTrue(tuning.getOrThrow().profiles.isNotEmpty(), "${template.displayName} has no tuning profile")
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `hash mismatch and zip slip both leave destination absent`() = runBlocking {
         val root = Files.createTempDirectory("ares-project-reject-test").toFile()
         try {
@@ -489,7 +517,7 @@ class RobotProjectTemplateServiceTest {
             profileId = "competition",
             displayName = "Competition",
             description = "Reviewed fixture tuning",
-            projectUid = drivebase.canonicalProfileUid.substringBefore(".profile."),
+            projectId = drivebase.canonicalProfileUid.substringBefore(".profile."),
             drivebaseUid = drivebase.uid,
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = emptyList(),

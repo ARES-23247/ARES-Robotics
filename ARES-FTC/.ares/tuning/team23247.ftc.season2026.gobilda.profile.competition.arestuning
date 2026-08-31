@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "uid": "team23247.ftc.season2026.gobilda.profile.competition",
   "profileId": "competition",
   "displayName": "Competition baseline",
   "description": "Reviewed FTC mecanum baseline. Runtime calibration writes a local experimental overlay and never changes this file.",
-  "projectUid": "team23247.ftc.season2026.gobilda",
+  "projectId": "team23247-gobilda",
   "drivebaseUid": "team23247.drivebase.gobilda-mecanum",
   "authority": "CANONICAL_CHECKED_IN",
   "values": [

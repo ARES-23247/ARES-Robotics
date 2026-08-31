@@ -23,7 +23,19 @@ class SwerveHardwareIOTest {
             override fun getString(key: String, defaultValue: String) = defaultValue
         }
         val io = object : SwerveHardwareIO {
+            override fun refresh() = Unit
+            override fun getCurrents(out: DoubleArray) = out.fill(Double.NaN)
+            override val currentMeasurementsValid = false
+            override fun getEncoderPositions(out: DoubleArray) = out.fill(Double.NaN)
             override val encoderPositionsValid = false
+            override val pitchDegrees = Double.NaN
+            override val rollDegrees = Double.NaN
+            override val rawGyroYawDegrees = Double.NaN
+            override val yawRateDegreesPerSecond = Double.NaN
+            override fun getModuleSpeeds(out: DoubleArray) = out.fill(Double.NaN)
+            override fun samplePoseAt(timestampSeconds: Double, out: DoubleArray) = false
+            override fun seedPose(pose: Pose2d) = Unit
+            override val signalLatencyMs = Double.POSITIVE_INFINITY
             override fun getFaults(out: IntArray) {
                 out[0] = 0x01; out[1] = 0x12; out[2] = 0x24; out[3] = 0x3f
             }

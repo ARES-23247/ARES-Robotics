@@ -91,7 +91,7 @@ class TuningProfileDocumentTest {
             baseProfileUid: String? = null,
         ) = TuningProfileDocument(
             uid = uid, profileId = uid.substringAfter('.').replace('.', '-'), displayName = uid,
-            description = "Test robot profile", projectUid = "project.test", drivebaseUid = "drive.main",
+            description = "Test robot profile", projectId = "project.test", drivebaseUid = "drive.main",
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN, baseProfileUid = baseProfileUid, values = values,
         )
     }

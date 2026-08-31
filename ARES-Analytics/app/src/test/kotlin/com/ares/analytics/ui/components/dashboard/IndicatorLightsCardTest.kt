@@ -32,14 +32,6 @@ class IndicatorLightsCardTest {
     }
 
     @Test
-    fun `legacy indicator recordings remain readable`() {
-        assertEquals(
-            RobotLightingReading("left", RobotLightingKind.INDICATOR, 0.611),
-            robotLightingReading("Superstructure/IndicatorLight/left", 0.611),
-        )
-    }
-
-    @Test
     fun `unrelated telemetry is ignored`() {
         assertNull(robotLightingReading("Drive/Pose_X", 1.0))
     }

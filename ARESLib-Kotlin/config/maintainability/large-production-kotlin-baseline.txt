@@ -1,0 +1,27 @@
+# Grandfathered production files above 500 lines. Values are hard ceilings, not targets.
+# Any touched file should shrink; new production files must remain at or below 500 lines.
+codegen/src/main/kotlin/com/areslib/codegen/AresKotlinProjectGenerator.kt=1353
+codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenCli.kt=567
+codegen/src/main/kotlin/com/areslib/codegen/DrivetrainKotlinGenerator.kt=668
+codegen/src/main/kotlin/com/areslib/codegen/SubsystemControllerRenderer.kt=617
+codegen/src/main/kotlin/com/areslib/codegen/SubsystemGeneratedTestRenderer.kt=514
+codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt=661
+core/src/main/kotlin/com/areslib/logging/ARESDataLogger.kt=638
+core/src/main/kotlin/com/areslib/logging/LogManagerServer.kt=525
+core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt=685
+core/src/main/kotlin/com/areslib/networktables/NT4Server.kt=1056
+core/src/main/kotlin/com/areslib/sequencer/Task.kt=525
+core/src/main/kotlin/com/areslib/subsystem/SubsystemDsl.kt=669
+core/src/main/kotlin/com/areslib/subsystem/SubsystemTemplates.kt=755
+core/src/main/kotlin/com/areslib/superstructure/SuperstructureRuntime.kt=825
+core/src/main/kotlin/com/areslib/telemetry/AresGamepad.kt=515
+ftc-hardware/src/main/kotlin/com/areslib/ftc/calibration/FtcMecanumCalibrationController.kt=566
+ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt=574
+ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumRobot.kt=504
+ftc-hardware/src/main/kotlin/com/areslib/ftc/runtime/FtcGeneratedAutonomousOpMode.kt=601
+project-schema/src/main/kotlin/com/areslib/routine/RoutineValidation.kt=621
+project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt=609
+project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt=1039
+project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDocument.kt=757
+simulator/src/main/kotlin/com/areslib/sim/DesktopSimLauncher.kt=664
+simulator/src/main/kotlin/com/areslib/sim/infra/SimGamepadManager.kt=582

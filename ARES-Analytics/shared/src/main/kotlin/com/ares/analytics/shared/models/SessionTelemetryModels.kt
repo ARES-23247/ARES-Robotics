@@ -79,7 +79,7 @@ data class SessionSummary(
     val cloudFileName: String? = null,
     /** Lowercase SHA-256 of the uploaded cloud object bytes. */
     val cloudSha256: String? = null,
-    /** Zero identifies a legacy telemetry-only Parquet object; newer values are session bundles. */
+    /** Version of the complete, immutable cloud session bundle. Zero means not uploaded yet. */
     val cloudBundleVersion: Int = 0,
     /** Stable league/team/season/robot boundary that owns the cloud object. */
     val cloudWorkspaceKey: String? = null,
@@ -109,7 +109,7 @@ data class TelemetryFrame(
     val key: String,
     val value: Double,
     val stringValue: String? = null,
-    /** Original source timestamp. Defaults to millisecond precision for legacy decoders. */
+    /** Original source timestamp in microseconds. */
     val timestampUs: Long = timestampMillisToMicros(timestampMs),
     /** Stable order for samples that share a source timestamp and topic. */
     val sampleOrder: Long = 0L

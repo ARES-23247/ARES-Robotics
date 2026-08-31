@@ -54,7 +54,7 @@ class FrcSwerveRobotTest {
      * @param args Standard arguments (if applicable).
      * @return Corresponding output value or Unit.
      */
-    class MockSwerveHardwareIO : SwerveHardwareIO {
+    class MockSwerveHardwareIO : TestSwerveHardwareIO() {
         var mockPitch = 0.0
         var mockRoll = 0.0
         var mockCurrents = doubleArrayOf(5.0, 5.0, 5.0, 5.0)

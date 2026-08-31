@@ -7,6 +7,8 @@ import com.areslib.sequencer.Task
 import com.areslib.state.RobotState
 import com.areslib.state.RoutineExecutionStatus
 import com.areslib.util.RobotClock
+import com.sun.management.ThreadMXBean
+import java.lang.management.ManagementFactory
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -79,6 +81,40 @@ class RoutineManagerTest {
         assertTrue(actions.any { it is TestAction && it.value == "started" })
         assertEquals(RoutineExecutionStatus.COMPLETED, store.state.routineState.lastTerminalExecution?.status)
         assertTrue(store.state.routineState.executions.isEmpty())
+    }
+
+    @Test
+    fun `steady running routine manager update allocates zero bytes after warmup`() {
+        val allocationBean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
+        if (!allocationBean.isThreadAllocatedMemorySupported) return
+        if (!allocationBean.isThreadAllocatedMemoryEnabled) allocationBean.isThreadAllocatedMemoryEnabled = true
+        manager.register(
+            RoutineDocument(
+                documentId = "allocation-hold",
+                name = "Allocation hold",
+                steps = listOf(RoutineStep.action("test.hold")),
+            )
+        )
+        manager.request("allocation-hold")
+        repeat(2_000) { manager.update() }
+
+        val threadId = Thread.currentThread().id
+        var consecutiveZeroWindows = 0
+        var attempts = 0
+        var lastAllocatedBytes = -1L
+        while (attempts < 8 && consecutiveZeroWindows < 2) {
+            val before = allocationBean.getThreadAllocatedBytes(threadId)
+            repeat(10_000) { manager.update() }
+            lastAllocatedBytes = allocationBean.getThreadAllocatedBytes(threadId) - before
+            consecutiveZeroWindows = if (lastAllocatedBytes == 0L) consecutiveZeroWindows + 1 else 0
+            attempts++
+        }
+
+        assertEquals(
+            2,
+            consecutiveZeroWindows,
+            "routine manager never reached two zero-allocation windows; last=$lastAllocatedBytes bytes/10,000 updates",
+        )
     }
 
     @Test
