@@ -7,6 +7,13 @@ the recommended starting point for a student who does not already have an ARES r
 > Team 23247 season mechanisms or calibration. Builds and simulation are available immediately,
 > but ARES blocks physical deployment until Hardware Setup and commissioning evidence are complete.
 
+Studio checks dependency identity before it starts a robot build, simulator, or deployment. The
+project's pinned `aresVersion` must match the ARES runtime bundled with Studio, and project build
+files must use the monorepo Maven channel at
+`https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven`. A project from an older runtime
+is not silently rewritten or compiled against a different API. Export a current standalone project,
+or update its pinned dependency and USER-OWNED Kotlin extensions together.
+
 ## What the installer includes
 
 The setup screen names the exact **ARES FTC** or **ARES FRC** starter and its ARES version. The app

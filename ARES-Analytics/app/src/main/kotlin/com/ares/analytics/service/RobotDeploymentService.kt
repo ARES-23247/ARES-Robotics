@@ -140,6 +140,7 @@ class RobotDeploymentService internal constructor(
         try {
             val root = requireSafeProjectRoot(projectPath)
             canonicalProjectPath = root.path
+            commandFactory.requireProjectDependenciesCompatible(root)
             templateDeploymentBlockReason(root)?.let { reason -> error(reason) }
             if (league == League.FTC) {
                 deployFtc(generation, root, isWindows)

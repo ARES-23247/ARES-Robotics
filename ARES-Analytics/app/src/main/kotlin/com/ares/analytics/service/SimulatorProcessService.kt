@@ -71,6 +71,12 @@ class SimulatorProcessService internal constructor(
             }
             return
         }
+        runCatching { commandFactory.requireProjectDependenciesCompatible(projectRoot) }.onFailure { error ->
+            scope.launch {
+                _output.emit("[SYSTEM] Simulation could not start: ${error.message ?: "incompatible ARES project"}")
+            }
+            return
+        }
         stop()
 
         val replacement = scope.launch(start = CoroutineStart.LAZY) {

@@ -90,7 +90,9 @@ private fun launchDesktopApplication() {
         val creationWatchdog = remember {
             DesktopWindowCreationWatchdog(
                 machine = startupMachine,
-                onUnrecoverableWindow = DesktopShutdownCoordinator::terminateForUnusableWindow,
+                onUnrecoverableWindow = { reason ->
+                    DesktopShutdownCoordinator.terminateForUnusableWindow(reason, services)
+                },
             )
         }
         var startupAlwaysOnTop by remember { mutableStateOf(true) }
@@ -145,7 +147,9 @@ private fun launchDesktopApplication() {
                     isShutdownStarted = shutdownCoordinator::isShutdownStarted,
                     onStartupAlwaysOnTopChange = { startupAlwaysOnTop = it },
                     onFocusLost = services.keyboardDriveState::releaseAll,
-                    onUnrecoverableWindowLoss = DesktopShutdownCoordinator::terminateForUnusableWindow,
+                    onUnrecoverableWindowLoss = { reason ->
+                        DesktopShutdownCoordinator.terminateForUnusableWindow(reason, services)
+                    },
                 )
                 presentationController.attach()
 

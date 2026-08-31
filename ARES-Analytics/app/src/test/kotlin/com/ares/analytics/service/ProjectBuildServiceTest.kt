@@ -109,6 +109,45 @@ class ProjectBuildServiceTest {
     }
 
     @Test
+    fun `dependency preflight rejects stale runtime and retired repository before Gradle`() {
+        val root = Files.createTempDirectory("ares-project-preflight-stale").toFile()
+        try {
+            File(root, "gradle.properties").writeText("aresVersion=12.0.0\n")
+            File(root, "build.gradle").writeText(
+                "maven { url 'https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven' }\n",
+            )
+
+            val result = ProjectDependencyPreflight.inspect(root, "13.0.0", "12.0.0")
+
+            assertFalse(result.isCompatible)
+            assertTrue(result.problems.any { it.contains("pins ARES 12.0.0") })
+            assertTrue(result.problems.any { it.contains("Retired ARESLib-Kotlin") })
+            val failure = assertFailsWith<IllegalArgumentException> { result.requireCompatible() }
+            assertTrue(failure.message!!.contains("Export a current standalone project"))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `dependency preflight accepts current immutable monorepo channel`() {
+        val root = Files.createTempDirectory("ares-project-preflight-current").toFile()
+        try {
+            File(root, "gradle.properties").writeText("aresVersion=13.0.0\n")
+            File(root, "build.gradle.kts").writeText(
+                "maven(\"https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven\")\n",
+            )
+
+            val result = ProjectDependencyPreflight.inspect(root, "13.0.0", "13.0.0")
+
+            assertTrue(result.isCompatible)
+            result.requireCompatible()
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `student build command verifies tests and packages without deployment`() {
         val commands = ProjectProcessCommandFactory(null, null, ManagedToolchainPaths.gradleJavaInstallations())
         run {

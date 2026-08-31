@@ -2,6 +2,9 @@
 
 Cycle evidence: [product improvement cycle log](CYCLE_LOG.md).
 
+Community copy and verified feature-tour media for the current patch are in the
+[Studio 3.1.1 launch drafts](announcements/ARES_ROBOTICS_STUDIO_3_1_1.md).
+
 Start here if ARES Robotics Studio is new to you. You do not need to understand every screen before you begin.
 
 ## Choose what you are trying to do

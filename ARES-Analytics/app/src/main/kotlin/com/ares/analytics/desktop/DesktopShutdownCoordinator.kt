@@ -3,7 +3,11 @@ package com.ares.analytics.desktop
 import com.ares.analytics.di.ServiceRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
@@ -70,10 +74,46 @@ internal class DesktopShutdownCoordinator(
     }
 
     companion object {
-        /** Unexpected loss of the only usable window must not leave a lock-owning zombie JVM. */
-        fun terminateForUnusableWindow(reason: String): Nothing {
+        /**
+         * Unexpected loss of the only usable window must not leave either a lock-owning Studio JVM
+         * or a simulator/build child process. Normal Compose shutdown is unavailable at this point,
+         * so give the same service registry one bounded cleanup opportunity before exiting nonzero.
+         */
+        fun terminateForUnusableWindow(reason: String, services: ServiceRegistry): Nothing {
             System.err.println("[ARES-Analytics] $reason")
+            val disposed = runBlocking {
+                awaitBoundedEmergencyDisposal(SHUTDOWN_TIMEOUT_MS) {
+                    services.disposeAndJoin()
+                }
+            }
+            if (!disposed) {
+                System.err.println(
+                    "[ARES-Analytics] Emergency service disposal exceeded $SHUTDOWN_TIMEOUT_MS ms; exiting.",
+                )
+            }
             exitProcess(1)
         }
+    }
+}
+
+/** Testable emergency boundary used before the process exits after unrecoverable window loss. */
+internal suspend fun awaitBoundedEmergencyDisposal(
+    timeoutMs: Long,
+    dispose: suspend () -> Unit,
+): Boolean {
+    val cleanupScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    val cleanupJob: Job = cleanupScope.launch {
+        runCatching { dispose() }
+            .onFailure { failure ->
+                System.err.println("[ARES-Analytics] Emergency service disposal failed: ${failure.message}")
+            }
+    }
+    return try {
+        withTimeoutOrNull(timeoutMs) {
+            cleanupJob.join()
+            true
+        } ?: false
+    } finally {
+        cleanupScope.cancel()
     }
 }
