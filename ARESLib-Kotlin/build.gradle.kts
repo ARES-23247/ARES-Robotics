@@ -7,6 +7,8 @@ plugins {
     id("org.jetbrains.dokka") version "1.9.20"
     id("org.jetbrains.kotlinx.kover") version "0.9.9"
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1"
+    // 0.37.0 requires the Dokka v2 / Gradle 9 publishing stack. Keep 0.34.0 until
+    // that toolchain migration is validated as one release milestone.
     id("com.vanniktech.maven.publish") version "0.34.0" apply false
 }
 

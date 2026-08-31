@@ -89,10 +89,10 @@ dependencies {
     // RobotCore carries an older Gson on the Android compile classpath. The desktop simulator
     // decodes current ARES descriptors and therefore needs the current Gson API first on its
     // isolated runtime classpath; this dependency is not packaged into the Robot Controller APK.
-    simRun 'com.google.code.gson:gson:2.10.1'
+    simRun 'com.google.code.gson:gson:2.14.0'
     aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
     aresCodegen 'org.aresfirst.ares:codegen'
-    aresCodegen 'com.google.code.gson:gson:2.10.1'
+    aresCodegen 'com.google.code.gson:gson:2.14.0'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.23.0'

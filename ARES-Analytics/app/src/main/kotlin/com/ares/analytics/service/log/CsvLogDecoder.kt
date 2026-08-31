@@ -133,6 +133,11 @@ class CsvLogDecoder(private val databaseService: DatabaseService) {
         // Detect the timestamp column name from the header
         val headers = boundedCsvReader(file).use { it.readRecord() }
             ?: throw IllegalArgumentException("CSV log ${file.name} is empty")
+        // DuckDB 1.5 accepts an unterminated final quoted field even when
+        // ignore_errors=false. Validate the RFC 4180 record envelope ourselves before the
+        // native INSERT so malformed files can never commit a valid prefix. This scanner is
+        // allocation-free and keeps the native column conversion/unpivot hot path intact.
+        validateNativeCsvStructure(file, headers.size)
         if (detectSchema(headers, file.name) == CsvSchema.CANONICAL_LONG) {
             parseCanonicalLongFormNative(file, sessionId, absolutePath)
             return
@@ -261,6 +266,99 @@ class CsvLogDecoder(private val databaseService: DatabaseService) {
         databaseService.executeNativeCsvImport(importSql)
         val importedFrames = databaseService.countTelemetryFrames(sessionId) - frameCountBefore
         require(importedFrames > 0L) { "CSV log ${file.name} contained no usable telemetry frames" }
+    }
+
+    /**
+     * Performs a bounded, allocation-free structural pass over a native CSV import.
+     *
+     * DuckDB remains responsible for type inference and unpivoting. ARES owns the stricter
+     * safety contract: quotes must terminate and every logical record must retain the header's
+     * field count before any database mutation begins.
+     */
+    private fun validateNativeCsvStructure(file: File, expectedColumns: Int) {
+        require(expectedColumns in 1..MAX_CSV_COLUMNS) { "CSV contains an invalid header" }
+        FileInputStream(file).buffered(64 * 1024).use { input ->
+            val buffer = ByteArray(64 * 1024)
+            var inQuotes = false
+            var pendingQuote = false
+            var atFieldStart = true
+            var fields = 1
+            var recordBytes = 0
+            var fieldBytes = 0
+            var recordHasInput = false
+            var previousWasCr = false
+
+            fun finishRecord() {
+                require(fields == expectedColumns) {
+                    "CSV row has $fields fields, expected $expectedColumns"
+                }
+                fields = 1
+                recordBytes = 0
+                fieldBytes = 0
+                atFieldStart = true
+                recordHasInput = false
+            }
+
+            fun consumeOutside(value: Int) {
+                when (value) {
+                    '"'.code -> {
+                        require(atFieldStart) { "Quote must begin a CSV field" }
+                        inQuotes = true
+                        pendingQuote = false
+                        atFieldStart = false
+                        recordHasInput = true
+                    }
+                    ','.code -> {
+                        require(fields < MAX_CSV_COLUMNS) { "CSV contains too many columns" }
+                        fields++
+                        fieldBytes = 0
+                        atFieldStart = true
+                        recordHasInput = true
+                    }
+                    '\n'.code -> if (!previousWasCr) finishRecord()
+                    '\r'.code -> finishRecord()
+                    else -> {
+                        atFieldStart = false
+                        recordHasInput = true
+                        fieldBytes++
+                        require(fieldBytes <= MAX_CSV_FIELD_CHARS) { "CSV field exceeds the size limit" }
+                    }
+                }
+                previousWasCr = value == '\r'.code
+            }
+
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                for (index in 0 until read) {
+                    val value = buffer[index].toInt() and 0xff
+                    recordBytes++
+                    require(recordBytes <= MAX_CSV_RECORD_CHARS) { "CSV record exceeds the size limit" }
+                    if (inQuotes) {
+                        if (value == '"'.code) {
+                            if (pendingQuote) {
+                                pendingQuote = false // Escaped quote: ""
+                                fieldBytes++
+                            } else {
+                                pendingQuote = true
+                            }
+                        } else if (pendingQuote) {
+                            inQuotes = false
+                            pendingQuote = false
+                            consumeOutside(value)
+                        } else {
+                            fieldBytes++
+                            require(fieldBytes <= MAX_CSV_FIELD_CHARS) { "CSV field exceeds the size limit" }
+                        }
+                    } else {
+                        consumeOutside(value)
+                    }
+                }
+            }
+
+            require(!inQuotes || pendingQuote) { "CSV ends inside a quoted field" }
+            if (recordHasInput || fields > 1) finishRecord()
+        }
     }
 
     /**

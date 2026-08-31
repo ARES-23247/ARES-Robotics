@@ -19,8 +19,8 @@ dependencies {
     listOf("wpinet", "ntcore", "wpiutil", "wpimath", "hal").forEach { module ->
         runtimeOnly("edu.wpi.first.$module:$module-jni:$wpiVersion:linuxx86-64")
     }
-    runtimeOnly("org.lwjgl:lwjgl:3.3.3:natives-linux")
-    runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-linux")
+    runtimeOnly("org.lwjgl:lwjgl:3.4.3:natives-linux")
+    runtimeOnly("org.lwjgl:lwjgl-glfw:3.4.3:natives-linux")
 }
 
 java {

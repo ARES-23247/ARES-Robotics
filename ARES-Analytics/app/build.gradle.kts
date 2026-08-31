@@ -80,7 +80,7 @@ dependencies {
     implementation("org.aresfirst.ares:project-model")
 
     // Database — DuckDB via JDBC
-    implementation("org.duckdb:duckdb_jdbc:1.1.3")
+    implementation("org.duckdb:duckdb_jdbc:1.5.5.1")
 
     // Networking — Ktor client
     implementation("io.ktor:ktor-client-cio:3.5.2")
@@ -95,7 +95,7 @@ dependencies {
     implementation("io.ktor:ktor-server-cio:3.5.2")
 
     // Serialization
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.14.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
@@ -123,7 +123,7 @@ dependencies {
     implementation("org.tukaani:xz:1.12")
 
     // Gamepad Support (LWJGL / GLFW — no external SDL dependency)
-    val lwjglVersion = "3.4.2"
+    val lwjglVersion = "3.4.3"
     val lwjglOs = System.getProperty("os.name").lowercase()
     val lwjglArch = System.getProperty("os.arch").lowercase()
     val lwjglNatives = when {
