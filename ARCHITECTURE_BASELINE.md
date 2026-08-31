@@ -122,8 +122,8 @@ correctly did not prevent local project authoring.
 
 ## Known warnings and non-goals
 
-- FTC uses Gradle 8.9 and FRC uses Gradle 8.11; Kotlin reports that future releases will require at
-  least Gradle 8.14.4. This is recorded debt, not a failure of the baseline.
+- FTC and FRC use Gradle 8.14.5, satisfying the current Kotlin toolchain's Gradle 8.14.4 minimum.
+  Future wrapper upgrades remain compatibility milestones rather than automatic release changes.
 - Existing Kotlin compiler warnings remain. They were not introduced or broadly cleaned during the
   behavioral-baseline milestone.
 - FRC verification previously allowed production log retention to prune tracked sample logs because

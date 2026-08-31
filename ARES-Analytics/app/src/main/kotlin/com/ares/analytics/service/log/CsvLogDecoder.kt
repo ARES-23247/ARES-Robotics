@@ -42,7 +42,6 @@ import java.util.zip.GZIPInputStream
  * @see FrameBatcher
  */
 class CsvLogDecoder(private val databaseService: DatabaseService) {
-
     private enum class CsvSchema {
         WIDE,
         CANONICAL_LONG,
@@ -133,6 +132,7 @@ class CsvLogDecoder(private val databaseService: DatabaseService) {
         // Detect the timestamp column name from the header
         val headers = boundedCsvReader(file).use { it.readRecord() }
             ?: throw IllegalArgumentException("CSV log ${file.name} is empty")
+        CsvStructuralValidator.validate(file, headers.size, MAX_CSV_COLUMNS, MAX_CSV_FIELD_CHARS, MAX_CSV_RECORD_CHARS)
         if (detectSchema(headers, file.name) == CsvSchema.CANONICAL_LONG) {
             parseCanonicalLongFormNative(file, sessionId, absolutePath)
             return

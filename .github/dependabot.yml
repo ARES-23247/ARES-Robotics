@@ -13,61 +13,25 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-  # Keep Gradle updates scoped to the product that owns the dependency. A single
-  # multi-directory group produced misleading PR titles and mixed wrappers and
-  # build plugins from otherwise independent FTC, FRC, Studio, and library builds.
-  # Major upgrades require an explicit compatibility milestone and visible-app or
-  # simulator validation; Dependabot continues to propose routine minor/patch work.
+  # Scan every isolated Gradle root together, but group only by dependency identity.
+  # This keeps Gson, LWJGL, and the Gradle wrapper synchronized across products and
+  # generated starters without combining unrelated libraries into one review.
+  # Major upgrades still require an explicit compatibility milestone and visible-app
+  # or simulator validation.
   - package-ecosystem: gradle
-    directory: /ARESLib-Kotlin
+    directories:
+      - /ARESLib-Kotlin
+      - /ARES-FTC
+      - /ARES-FRC
+      - /ARES-FTC-Starter
+      - /ARES-FRC-Starter
+      - /ARES-Analytics
     schedule: { interval: weekly, day: monday, time: "09:00", timezone: America/New_York }
-    open-pull-requests-limit: 4
+    open-pull-requests-limit: 8
     labels: [dependencies]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: gradle
-    directory: /ARES-FTC
-    schedule: { interval: weekly, day: monday, time: "09:10", timezone: America/New_York }
-    open-pull-requests-limit: 4
-    labels: [dependencies]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: gradle
-    directory: /ARES-FRC
-    schedule: { interval: weekly, day: monday, time: "09:20", timezone: America/New_York }
-    open-pull-requests-limit: 4
-    labels: [dependencies]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: gradle
-    directory: /ARES-FTC-Starter
-    schedule: { interval: weekly, day: monday, time: "09:30", timezone: America/New_York }
-    open-pull-requests-limit: 4
-    labels: [dependencies]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: gradle
-    directory: /ARES-FRC-Starter
-    schedule: { interval: weekly, day: monday, time: "09:40", timezone: America/New_York }
-    open-pull-requests-limit: 4
-    labels: [dependencies]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: gradle
-    directory: /ARES-Analytics
-    schedule: { interval: weekly, day: monday, time: "09:50", timezone: America/New_York }
-    open-pull-requests-limit: 4
-    labels: [dependencies]
+    groups:
+      same-dependency-across-products:
+        group-by: dependency-name
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

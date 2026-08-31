@@ -211,7 +211,7 @@ class DrivebaseBuilderViewModel(
         }
     }
 
-    private fun load() = scope.launch {
+    private fun load() = scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
         _state.update { it.copy(loading = true, error = null) }
         val loaded = withContext(Dispatchers.IO) {
             runCatching {
