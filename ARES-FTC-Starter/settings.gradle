@@ -1,50 +1,10 @@
-// Auto-detect and configure Java 17 if running on an older version
-def currentVersion = System.getProperty("java.version")
-if (!currentVersion.startsWith("17") && !currentVersion.startsWith("21") && !currentVersion.startsWith("22")) {
-    def homeDir = System.getProperty("user.home")
-    def gradlePropertiesFile = new File(homeDir, ".gradle/gradle.properties")
-    def standardJdk17 = new File("C:/Program Files/Java/jdk-17")
-    def androidStudioJdk = new File("C:/Program Files/Android/Android Studio/jbr")
-
-    def detectedJdk = null
-    if (standardJdk17.exists()) {
-        detectedJdk = standardJdk17
-    } else if (androidStudioJdk.exists()) {
-        detectedJdk = androidStudioJdk
-    }
-
-    if (detectedJdk != null) {
-        gradlePropertiesFile.parentFile.mkdirs()
-        gradlePropertiesFile.append("\norg.gradle.java.home=${detectedJdk.absolutePath.replace('\\', '/')}\n")
-        throw new GradleException(
-            "\n" +
-            "=================================================================================\n" +
-            "ARES BUILD ENVIRONMENT AUTO-CONFIGURED\n" +
-            "=================================================================================\n" +
-            "We detected that you were running with Java $currentVersion, but AGP requires Java 17.\n" +
-            "We have automatically configured your local user-level gradle.properties file at:\n" +
-            "  ${gradlePropertiesFile.absolutePath}\n" +
-            "to use the detected JDK 17 at:\n" +
-            "  ${detectedJdk.absolutePath}\n\n" +
-            "Please run your command again now!\n" +
-            "=================================================================================\n"
-        )
-    } else {
-        throw new GradleException(
-            "\n" +
-            "=================================================================================\n" +
-            "ERROR: JAVA 17 REQUIRED\n" +
-            "=================================================================================\n" +
-            "Your current Gradle JVM is running on Java $currentVersion, but the Android Gradle\n" +
-            "Plugin requires Java 17 to build the project.\n\n" +
-            "Please install JDK 17 and either:\n" +
-            "  1. Set your JAVA_HOME environment variable to point to it, or\n" +
-            "  2. Add the following line to your local user-level gradle.properties file\n" +
-            "     (located at ${gradlePropertiesFile.absolutePath}):\n\n" +
-            "     org.gradle.java.home=C:/Program Files/Java/jdk-17\n" +
-            "=================================================================================\n"
-        )
-    }
+// Configuration must not mutate user-wide Gradle settings. The launcher or IDE owns JDK choice.
+if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+    throw new GradleException(
+        "ARES FTC Starter requires a Gradle JVM on Java 17 or newer " +
+        "(currently ${System.getProperty('java.version')}). Set JAVA_HOME or select a compatible " +
+        "Gradle JVM in the IDE, then run the command again. No user-level Gradle files were changed."
+    )
 }
 
 include ':FtcRobotController'

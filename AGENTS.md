@@ -10,7 +10,7 @@ published library have different toolchains and release boundaries.
 
 | Project | Role | Tech | Key entry points |
 |---|---|---|---|
-| **ARESLib-Kotlin/** | Published foundation, schema/model/compiler, codegen, hardware modules, and simulation foundations | Kotlin 2.4.10, JDK 17, Gradle 8.14.5 | `project-schema/`, `project-model/`, `project-compiler/`, `core/`, `codegen/`, hardware/runtime/simulator modules, `ares-bom/` |
+| **ARESLib-Kotlin/** | Published foundation, schema/model/compiler, codegen, hardware modules, and simulation foundations | Kotlin 2.4.10, JDK 17, Gradle 8.14.5 | `project-schema/`, `project-model/`, `project-compiler/`, `telemetry-schema/`, `core/`, `codegen/`, hardware/runtime/simulator modules, `ares-bom/` |
 | **ARES-FTC/** | GUI-authored Lightbot reference robot and FTC season/simulator product | Kotlin 2.4.10, FTC SDK 11.1.0, AGP 8.7.0, Gradle 8.9 | `TeamCode/`, `simulator/`, `.ares/` |
 | **ARES-FRC/** | FRC season, roboRIO/vendor adapters, and WPILib/HAL simulator product | Kotlin 2.4.10, WPILib 2026.2.1, Phoenix 26.1.1, Gradle 8.11 | `src/main/kotlin/com/areslib/frc/`, `.ares/` |
 | **ARES-Analytics/** | ARES Robotics Studio desktop app, analytics database, cloud-optional services, and gateway | Kotlin 2.4.10, Compose 1.11.1, Ktor 3.5.2, DuckDB 1.1.3, Gradle 8.14.5 | `app/`, `gateway/`, `shared/` |
@@ -156,7 +156,7 @@ foundation and platform runtimes, and `ares-bom`. Published coordinates use
   - `pathing/` — `ThetaStarPlanner`, `HolonomicPathFollower`, `TrajectoryGenerator`, `SCurveTrajectoryParameterizer`, `BezierSpline`, `PathPlannerParser`/`PathPlannerAutoParser`, `AutoBuilder`, `NamedCommands`, `Costmap`, `VFHPlanner`
   - `state/` (`RobotState`, `DriveState`, `SuperstructureState`, `RobotFieldConfig`, `Alliance`), `reducer/` (`RootReducer` + slice reducers), `action/` (`RobotAction` sealed classes, `ActionLogger`)
   - `sequencer/` — `TaskExecutor`, `Task`, `RobotSequence` (NOT `auto/`)
-  - `hardware/` — per-robot `HardwareRegistry` (explicit lifecycle/telemetry/topology ownership), `TopologyModels`, `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`
+  - `hardware/` — per-robot `HardwareRegistry` (explicit lifecycle/telemetry/topology ownership), `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`; published topology wire DTOs/codecs live in `telemetry-schema`
   - `logging/` — `LogManagerServer` (NanoHTTPD:5002), `ARESDataLogger`, `CloudExporter`, `DiagnosticRingBuffer`
   - `telemetry/` — `ITelemetry`, `NT4Telemetry`, `ARESNetworkStatePublisher`, `RobotStatusTracker`, `AresGamepad`, `TelemetryTopicConstants`
   - `networktables/` — custom NT4 server (`NT4Server` :5810, Java-WebSocket + MessagePack) + `org/frcforftc/.../NT4Compatibility.kt`
@@ -388,7 +388,7 @@ Preserve these invariants:
 | Field→canvas transform | `ARES-Analytics/app/.../ui/components/pathplanner/FieldCanvasUtils.kt`, `PathRenderer.kt` |
 | Redux state shape | `ARESLib-Kotlin/core/.../state/RobotState.kt` |
 | Root reducer | `ARESLib-Kotlin/core/.../reducer/RootReducer.kt` |
-| Hardware registry/topology | `ARESLib-Kotlin/core/.../hardware/HardwareRegistry.kt`, `TopologyModels.kt` |
+| Hardware registry/topology | `ARESLib-Kotlin/core/.../hardware/HardwareRegistry.kt`, `ARESLib-Kotlin/telemetry-schema/.../HardwareTopology.kt` |
 | Log server endpoints | `ARESLib-Kotlin/core/.../logging/LogManagerServer.kt` |
 | FTC robot facade | `ARES-FTC/TeamCode/.../teamcode/opmodes/robot/AresRobot.kt` |
 | FRC robot lifecycle | `ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt` |

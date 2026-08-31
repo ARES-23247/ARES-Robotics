@@ -17,6 +17,7 @@ javaPlatform {
 
 dependencies {
     constraints {
+        api(project(":telemetry-schema"))
         api(project(":project-schema"))
         api(project(":simulation-foundation"))
         api(project(":project-model"))

@@ -118,7 +118,7 @@ class ARESRobotSafetyBoundaryTest {
         assertEquals("CAN2", topology.canBus)
         assertEquals(9, topology.canId)
         assertEquals("9,10,11,12", topology.metadata["canIds"])
-        assertEquals(com.areslib.hardware.TopologyNodeType.CAN_MOTOR_CONTROLLER, topology.type)
+        assertEquals(com.areslib.telemetry.schema.TopologyNodeType.CAN_MOTOR_CONTROLLER, topology.type)
     }
 
     @Test

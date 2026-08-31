@@ -153,21 +153,29 @@ Supported properties are:
 
 ## GitHub Actions
 
-`.github/workflows/dashboard-validation.yml` runs:
+The root `.github/workflows/analytics-validation.yml` runs:
 
 - `dashboardPerformanceBaseline` (which runs `dashboardSmoke` first) for relevant pull requests and pushes to `main`.
 - `dashboardSoak` nightly and when manually selected through `workflow_dispatch`.
 - Report and JUnit artifact upload even when a budget fails.
 
-The workflow checks out `ARESLib-Kotlin` beside `ARES-Analytics`, matching the composite-build layout used by local development.
+The workflow uses the ARESLib sources imported in the authoritative monorepo. Published-binary
+validation still requires one explicit candidate version and isolated Maven repository; sibling
+source substitution is opt-in and is not release evidence.
 
-`.github/workflows/build-distributions.yml` gates every installer build on the official-template
-acceptance test. It creates fresh FTC and FRC projects from the same hash-pinned archives used by
-onboarding, personalizes their canonical ARES identities, and then generates, verifies, tests, and
-packages both projects through their normal immutable dependency repositories. The FTC project also
-runs the headless drivetrain verifier, which must demonstrate translation, field-centric control,
-and rotation before an installer can be produced. This is simulator evidence, not physical-hardware
-validation.
+`.github/workflows/build-distributions.yml` first publishes one unique ARES release candidate to an
+isolated repository. Before any installer build, `studioReleaseVerification` runs all `app`,
+`shared`, and `gateway` tests; Kover line-coverage floors (38%, 52%, and 52%); the 500-line production
+source ratchet; release-version alignment; and dashboard performance budgets against that exact
+candidate. The workflow also configures representative products with an isolated Gradle user home
+and rejects any build that writes user-global `gradle.properties`.
+
+The workflow separately gates every installer on official-template acceptance. It creates fresh FTC
+and FRC projects from the same hash-pinned archives used by onboarding, personalizes their canonical
+ARES identities, and then generates, verifies, tests, and packages both projects through their
+normal immutable dependency repositories. The FTC project also runs the headless drivetrain
+verifier, which must demonstrate translation, field-centric control, and rotation before an
+installer can be produced. This is simulator evidence, not physical-hardware validation.
 
 On Windows, the package job then selects the newest earlier stable GitHub release, installs its MSI
 on the clean runner, upgrades it with the candidate MSI, verifies that no side-by-side older product

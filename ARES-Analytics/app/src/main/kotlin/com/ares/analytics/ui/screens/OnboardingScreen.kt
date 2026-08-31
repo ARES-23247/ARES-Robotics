@@ -4,17 +4,20 @@ import com.ares.analytics.ui.theme.AresOnAccent
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -67,6 +70,7 @@ fun OnboardingScreen(
     val authState by oauthService.authState.collectAsState()
     val drivePickerState by oauthService.drivePickerState.collectAsState()
     val token = (authState as? AuthState.Authenticated)?.idToken
+    val contentScrollState = rememberScrollState()
 
     LaunchedEffect(state.teamId, token) {
         if (token != null && state.teamId.isNotBlank()) {
@@ -97,14 +101,26 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .padding(28.dp)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 WelcomeStep(state.currentStep)
                 HorizontalDivider(color = AresBorder)
 
-                if (state.currentStep == OnboardingStep.OPTIONAL) {
-                    AuthStep(
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 14.dp)
+                            .verticalScroll(contentScrollState),
+                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                    ) {
+                        if (state.currentStep == OnboardingStep.OPTIONAL) {
+                            AuthStep(
                         authState = authState,
                         managedGoogleSignInAvailable = oauthService.managedGoogleClientAvailable,
                         driveDestination = state.driveDestination,
@@ -134,10 +150,10 @@ fun OnboardingScreen(
                                 )
                             }
                         },
-                    )
-                }
+                            )
+                        }
 
-                SyncStep(
+                        SyncStep(
                     step = state.currentStep,
                     projectSetupMode = state.projectSetupMode,
                     projectPath = state.projectPath,
@@ -211,26 +227,40 @@ fun OnboardingScreen(
                     },
                     fieldErrors = state.fieldErrors,
                     cloudConfigured = authState is AuthState.Authenticated,
-                )
+                        )
 
-                if (state.currentStep == OnboardingStep.REVIEW) {
-                    JavaVerificationStep(
+                        if (state.currentStep == OnboardingStep.REVIEW) {
+                            JavaVerificationStep(
                         isValid = state.javaEnvValid,
                         isVerifying = state.isVerifyingJava,
                         message = state.javaEnvMsg,
                         installState = state.toolchainInstallState,
                         onVerifyClick = { viewModel.handleIntent(OnboardingIntent.VerifyJava) },
                         onInstallClick = { viewModel.handleIntent(OnboardingIntent.InstallManagedJdk) },
+                            )
+                        }
+
+                        state.errorMessage?.let { error ->
+                            Text(error, color = AresError, style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (state.isSaving && !state.projectCreationMessage.isNullOrBlank()) {
+                            Text(
+                                state.projectCreationMessage!!,
+                                color = AresCyan,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+
+                    VerticalScrollbar(
+                        adapter = rememberScrollbarAdapter(contentScrollState),
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .fillMaxHeight(),
                     )
                 }
 
-                state.errorMessage?.let { error ->
-                    Text(error, color = AresError, style = MaterialTheme.typography.bodySmall)
-                }
-                if (state.isSaving && !state.projectCreationMessage.isNullOrBlank()) {
-                    Text(state.projectCreationMessage!!, color = AresCyan, style = MaterialTheme.typography.bodySmall)
-                }
-
+                HorizontalDivider(color = AresBorder)
                 NavigationButtons(
                     step = state.currentStep,
                     isSaving = state.isSaving,
