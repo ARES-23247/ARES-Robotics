@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       publish:
-        description: Publish a GitHub release after every package and acceptance gate passes
+        description: Emergency full-rebuild publish; normal releases promote an attested candidate
         required: true
         default: false
         type: boolean
@@ -88,8 +88,7 @@ jobs:
           if [[ -n "$REQUESTED_VERSION" ]]; then
             studio_version="$REQUESTED_VERSION"
           else
-            build=$((10#$RUN_NUMBER % 65535))
-            studio_version="254.0.$build"
+            studio_version="$(sed -n 's/^studioVersion=//p' release/ares-versions.properties)"
           fi
           if [[ ! "$studio_version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             echo "Invalid application version: $studio_version (expected MAJOR.MINOR.BUILD)" >&2
@@ -390,13 +389,10 @@ jobs:
           }
 
       - name: Record Windows installer trust evidence
-        if: >-
-          runner.os == 'Windows' &&
-          github.event_name == 'workflow_dispatch' &&
-          inputs.publish
+        if: runner.os == 'Windows'
         shell: pwsh
         env:
-          WINDOWS_INSTALLER_TRUST: ${{ inputs.windows_installer_trust }}
+          WINDOWS_INSTALLER_TRUST: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && inputs.windows_installer_trust || 'checksum' }}
         run: |
           $installers = @(Get-ChildItem `
             -LiteralPath 'ARES-Analytics/app/build/compose/binaries/main-release/msi' `
@@ -459,6 +455,75 @@ jobs:
             $actual = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
             if ($actual -ne $expected[$key]) { throw "$league starter archive hash changed: $actual" }
           }
+
+  seal-candidate:
+    name: Seal attested release candidate
+    needs: [candidate, studio-verification, zero-code-project-acceptance, build-packages, starter-archives]
+    if: github.event_name != 'workflow_dispatch' || !inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ARES-Robotics-Studio-*
+          merge-multiple: true
+          path: release-candidate/release-assets
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: starter-release-assets
+          path: release-candidate/release-assets
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: final-ares-repository
+          path: release-candidate/final-ares-repository
+
+      - name: Seal every promotable file to this exact Git tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/release_candidate.py seal \
+            --root release-candidate \
+            --manifest release-candidate/release-candidate.json \
+            --repository "$GITHUB_REPOSITORY" \
+            --source-tree "$(git rev-parse 'HEAD^{tree}')" \
+            --source-commit "$(git rev-parse HEAD)" \
+            --event "$GITHUB_EVENT_NAME" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --ares-version "${{ needs.candidate.outputs.ares-version }}" \
+            --studio-version "${{ needs.candidate.outputs.studio-version }}"
+          python scripts/release_candidate.py verify \
+            --root release-candidate \
+            --manifest release-candidate/release-candidate.json \
+            --expected-repository "$GITHUB_REPOSITORY" \
+            --expected-tree "$(git rev-parse 'HEAD^{tree}')" \
+            --expected-event "$GITHUB_EVENT_NAME" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-ares-version "${{ needs.candidate.outputs.ares-version }}" \
+            --expected-studio-version "${{ needs.candidate.outputs.studio-version }}" >/dev/null
+          tar -czf "release-candidate-${GITHUB_RUN_ID}.tar.gz" -C release-candidate .
+
+      - name: Attest the sealed candidate archive
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: release-candidate-${{ github.run_id }}.tar.gz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-candidate
+          path: release-candidate-${{ github.run_id }}.tar.gz
+          if-no-files-found: error
+          retention-days: 30
 
   publish-release:
     name: Publish verified Studio release

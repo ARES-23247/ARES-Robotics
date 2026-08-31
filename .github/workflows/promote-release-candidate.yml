@@ -1,0 +1,320 @@
+name: Promote Verified Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run_id:
+        description: Successful Build Desktop Packages run containing the exact main Git tree
+        required: true
+        type: string
+      publish:
+        description: Publish after provenance verification; leave false to test promotion safely
+        required: true
+        default: false
+        type: boolean
+      windows_installer_trust:
+        description: Sign with the pinned certificate, or publish the attested SHA-256 bootstrap MSI
+        required: true
+        default: checksum
+        type: choice
+        options:
+          - checksum
+          - authenticode
+
+permissions:
+  contents: read
+  actions: read
+  attestations: read
+
+concurrency:
+  group: promote-release-candidate
+  cancel-in-progress: false
+
+jobs:
+  verify-candidate:
+    name: Verify attested candidate against protected main
+    runs-on: ubuntu-latest
+    outputs:
+      ares-version: ${{ steps.identity.outputs.ares-version }}
+      studio-version: ${{ steps.identity.outputs.studio-version }}
+    steps:
+      - name: Require protected main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo 'Release candidates may only be promoted from the protected main branch.' >&2
+          exit 1
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify candidate workflow provenance
+        id: run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'candidate_run_id must be a positive GitHub Actions run ID.' >&2
+            exit 1
+          fi
+          run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_RUN_ID}")"
+          conclusion="$(jq -r '.conclusion' <<<"$run_json")"
+          event="$(jq -r '.event' <<<"$run_json")"
+          repository="$(jq -r '.repository.full_name' <<<"$run_json")"
+          head_repository="$(jq -r '.head_repository.full_name // empty' <<<"$run_json")"
+          workflow_id="$(jq -r '.workflow_id' <<<"$run_json")"
+          run_attempt="$(jq -r '.run_attempt' <<<"$run_json")"
+          workflow_path="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id}" --jq '.path')"
+          if [[ "$conclusion" != 'success' ]]; then
+            echo "Candidate run is not successful: $conclusion" >&2
+            exit 1
+          fi
+          if [[ "$event" != 'pull_request' && "$event" != 'merge_group' && "$event" != 'workflow_dispatch' ]]; then
+            echo "Candidate run has an unsupported event: $event" >&2
+            exit 1
+          fi
+          if [[ "$repository" != "$GITHUB_REPOSITORY" || (-n "$head_repository" && "$head_repository" != "$GITHUB_REPOSITORY") ]]; then
+            echo 'Candidate artifacts must originate in this repository, not a fork.' >&2
+            exit 1
+          fi
+          if [[ "$workflow_path" != '.github/workflows/build-distributions.yml' ]]; then
+            echo "Candidate came from an untrusted workflow path: $workflow_path" >&2
+            exit 1
+          fi
+          echo "event=$event" >> "$GITHUB_OUTPUT"
+          echo "run-attempt=$run_attempt" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate
+          path: candidate-download
+          run-id: ${{ inputs.candidate_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify GitHub build provenance attestation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="$(find candidate-download -maxdepth 1 -type f -name 'release-candidate-*.tar.gz' -print -quit)"
+          if [[ -z "$archive" ]]; then
+            echo 'The candidate artifact contains no sealed release-candidate archive.' >&2
+            exit 1
+          fi
+          gh attestation verify "$archive" --repo "$GITHUB_REPOSITORY"
+          python scripts/release_candidate.py extract --archive "$archive" --root verified-candidate
+
+      - name: Verify exact Git tree, versions, and every candidate file
+        id: identity
+        shell: bash
+        env:
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_EVENT: ${{ steps.run.outputs.event }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          expected_tree="$(git rev-parse 'HEAD^{tree}')"
+          expected_ares="$(sed -n 's/^aresVersion=//p' release/ares-versions.properties)"
+          expected_studio="$(sed -n 's/^studioVersion=//p' release/ares-versions.properties)"
+          python scripts/release_candidate.py verify \
+            --root verified-candidate \
+            --manifest verified-candidate/release-candidate.json \
+            --expected-repository "$GITHUB_REPOSITORY" \
+            --expected-tree "$expected_tree" \
+            --expected-event "$CANDIDATE_EVENT" \
+            --expected-run-id "$CANDIDATE_RUN_ID" \
+            --expected-run-attempt "${{ steps.run.outputs.run-attempt }}" \
+            --expected-ares-version "$expected_ares" \
+            --expected-studio-version "$expected_studio" >/dev/null
+          test -d verified-candidate/final-ares-repository
+          test "$(find verified-candidate/release-assets -type f -name '*.msi' | wc -l)" -eq 1
+          test "$(find verified-candidate/release-assets -type f -name '*.dmg' | wc -l)" -eq 1
+          test "$(find verified-candidate/release-assets -type f -name '*.zip' | wc -l)" -eq 2
+          if [[ "$PUBLISH" == 'true' ]] && gh release view "v${expected_studio}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v${expected_studio} already exists; immutable releases cannot be replaced." >&2
+            exit 1
+          fi
+          echo "ares-version=$expected_ares" >> "$GITHUB_OUTPUT"
+          echo "studio-version=$expected_studio" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: verified-release-candidate
+          path: verified-candidate/
+          if-no-files-found: error
+          retention-days: 1
+
+  sign-windows:
+    name: Authenticode sign verified Windows candidate
+    needs: verify-candidate
+    if: inputs.publish && inputs.windows_installer_trust == 'authenticode'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: verified-release-candidate
+          path: verified-candidate
+
+      - name: Sign and verify exact candidate MSI
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
+          WINDOWS_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
+          EXPECTED_SIGNER_THUMBPRINTS: ${{ vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)) {
+            throw 'Protected Windows signing certificate secrets are required for Authenticode promotion.'
+          }
+          $expectedThumbprints = @($env:EXPECTED_SIGNER_THUMBPRINTS -split ',' | ForEach-Object {
+            ($_ -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
+          } | Where-Object { $_ -match '^[A-F0-9]{40}$' })
+          if ($expectedThumbprints.Count -eq 0) {
+            throw 'ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS must name a trusted SHA-1 certificate thumbprint.'
+          }
+          $installers = @(Get-ChildItem -LiteralPath 'verified-candidate/release-assets' -Filter '*.msi' -File -Recurse)
+          if ($installers.Count -ne 1) { throw "Expected exactly one MSI, found $($installers.Count)." }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "ares-windows-signing-$env:GITHUB_RUN_ID.pfx"
+          try {
+            [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_SIGNING_PFX_BASE64))
+            $signTool = Get-ChildItem -LiteralPath "${env:ProgramFiles(x86)}\Windows Kits\10\bin" `
+              -Filter 'signtool.exe' -File -Recurse |
+              Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+              Sort-Object FullName -Descending | Select-Object -First 1
+            if ($null -eq $signTool) { throw 'Windows SDK signtool.exe was not found.' }
+            & $signTool.FullName sign /fd SHA256 /td SHA256 /tr 'http://timestamp.digicert.com' `
+              /f $certificatePath /p $env:WINDOWS_SIGNING_PFX_PASSWORD $installers[0].FullName
+            if ($LASTEXITCODE -ne 0) { throw "signtool failed with exit code $LASTEXITCODE." }
+            & $signTool.FullName verify /pa /all /v $installers[0].FullName
+            if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed with exit code $LASTEXITCODE." }
+            $signature = Get-AuthenticodeSignature -LiteralPath $installers[0].FullName
+            $actualThumbprint = $signature.SignerCertificate.Thumbprint.ToUpperInvariant()
+            if ($signature.Status -ne 'Valid' -or $actualThumbprint -notin $expectedThumbprints) {
+              throw "Installer signer is not trusted ($($signature.Status), $actualThumbprint)."
+            }
+            $evidence = [ordered]@{
+              schemaVersion = 1
+              assetName = $installers[0].Name
+              trustMode = 'authenticode'
+              sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $installers[0].FullName).Hash.ToLowerInvariant()
+              authenticodeStatus = $signature.Status.ToString()
+              signerThumbprint = $actualThumbprint
+            }
+            $evidence | ConvertTo-Json | Set-Content `
+              -LiteralPath (Join-Path $installers[0].DirectoryName 'windows-installer-trust.json') `
+              -Encoding UTF8
+          } finally {
+            if (Test-Path -LiteralPath $certificatePath) { Remove-Item -LiteralPath $certificatePath -Force }
+          }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: signed-windows-candidate
+          path: |
+            verified-candidate/release-assets/**/*.msi
+            verified-candidate/release-assets/**/windows-installer-trust.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-release:
+    name: Publish verified candidate without rebuilding
+    needs: [verify-candidate, sign-windows]
+    if: >-
+      always() &&
+      inputs.publish &&
+      needs.verify-candidate.result == 'success' &&
+      (needs.sign-windows.result == 'success' || needs.sign-windows.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: verified-release-candidate
+          path: verified-candidate
+
+      - name: Reverify promoted files after artifact transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/release_candidate.py verify \
+            --root verified-candidate \
+            --manifest verified-candidate/release-candidate.json \
+            --expected-repository "$GITHUB_REPOSITORY" \
+            --expected-tree "$(git rev-parse 'HEAD^{tree}')" \
+            --expected-run-id "${{ inputs.candidate_run_id }}" \
+            --expected-ares-version "${{ needs.verify-candidate.outputs.ares-version }}" \
+            --expected-studio-version "${{ needs.verify-candidate.outputs.studio-version }}" >/dev/null
+
+      - uses: actions/download-artifact@v8
+        if: inputs.windows_installer_trust == 'authenticode'
+        with:
+          name: signed-windows-candidate
+          path: signed-windows-candidate
+
+      - name: Apply the verified Authenticode overlay
+        if: inputs.windows_installer_trust == 'authenticode'
+        shell: bash
+        run: |
+          set -euo pipefail
+          signed_msi="$(find signed-windows-candidate -type f -name '*.msi' -print -quit)"
+          signed_trust="$(find signed-windows-candidate -type f -name 'windows-installer-trust.json' -print -quit)"
+          target_msi="$(find verified-candidate/release-assets -type f -name '*.msi' -print -quit)"
+          target_trust="$(find verified-candidate/release-assets -type f -name 'windows-installer-trust.json' -print -quit)"
+          test -n "$signed_msi" && test -n "$signed_trust" && test -n "$target_msi" && test -n "$target_trust"
+          cp "$signed_msi" "$target_msi"
+          cp "$signed_trust" "$target_trust"
+
+      - name: Verify selected Windows trust evidence
+        shell: bash
+        env:
+          EXPECTED_TRUST: ${{ inputs.windows_installer_trust }}
+        run: |
+          set -euo pipefail
+          trust="$(find verified-candidate/release-assets -type f -name 'windows-installer-trust.json' -print -quit)"
+          msi="$(find verified-candidate/release-assets -type f -name '*.msi' -print -quit)"
+          test "$(jq -r '.trustMode' "$trust")" = "$EXPECTED_TRUST"
+          test "$(jq -r '.sha256' "$trust")" = "$(sha256sum "$msi" | cut -d' ' -f1)"
+
+      - name: Publish immutable ARES Maven content first
+        shell: pwsh
+        run: >-
+          .\scripts\publish-immutable-maven-repository.ps1
+          -StagedRepository verified-candidate/final-ares-repository
+          -RepositoryRoot $env:GITHUB_WORKSPACE
+          -Push
+
+      - name: Generate release checksums
+        shell: bash
+        run: |
+          find verified-candidate/release-assets -type f \( -name '*.msi' -o -name '*.dmg' -o -name '*.zip' \) -print0 |
+            while IFS= read -r -d '' asset; do sha256sum "$asset" > "$asset.sha256"; done
+
+      - name: Publish immutable GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.verify-candidate.outputs.studio-version }}
+          name: ARES Robotics Studio ${{ needs.verify-candidate.outputs.studio-version }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          body: |
+            Promoted without rebuilding from attested candidate run `${{ inputs.candidate_run_id }}`.
+
+            Windows installer trust mode: `${{ inputs.windows_installer_trust }}`.
+
+            `authenticode` promotion signs and verifies the already-tested MSI. `checksum` promotion publishes the exact attested bootstrap MSI; Windows identifies its publisher as unsigned. See `windows-installer-trust.json` for machine-readable evidence.
+          fail_on_unmatched_files: true
+          files: |
+            verified-candidate/release-assets/**/*.msi
+            verified-candidate/release-assets/**/*.dmg
+            verified-candidate/release-assets/**/*.zip
+            verified-candidate/release-assets/**/*.sha256
+            verified-candidate/release-assets/**/windows-installer-trust.json

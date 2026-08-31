@@ -57,6 +57,16 @@ cd ARESLib-Kotlin
 - **Unpublished binary validation:** pass `-ParesRepository=<path>/build/release-repository` after running ARESLib's `publishReleaseValidation`.
 - **Focused source development:** pass `-ParesUseSiblingLib=true` to opt into the sibling composite build. This is never automatic.
 
+**Protected artifact promotion:** `Build Desktop Packages` performs release tests and native
+packaging once on a pull-request or merge-queue tree, then uploads a 30-day attested
+`release-candidate` archive. After protected merge, use `Promote Verified Release Candidate` with
+that run ID. Promotion must verify the GitHub attestation, same-repository workflow provenance,
+complete `main` Git-tree equality, canonical versions, and every declared file hash before
+publishing. A mismatch requires a fresh candidate; never relax the check. Checksum promotion
+publishes the byte-identical candidate MSI. Authenticode may sign that tested MSI as a bounded trust
+overlay but must not rebuild it. The legacy `publish=true` packaging dispatch is an emergency
+full-rebuild fallback during the first protected promotion cycle, not the normal release path.
+
 > **Ownership boundary:** reusable FRC classes (`FrcSwerveRobot`, `FrcBaseRobot`,
 > `FRCSwerveHardwareIO`, `FrcTelemetryManager`, `FrcPowerManager`, `FrcLimelightIO`) live in
 > ARESLib's `com.areslib.frc` namespace. The season product owns `org.aresfirst.marvin`; never split

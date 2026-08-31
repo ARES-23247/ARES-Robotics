@@ -82,6 +82,12 @@ Protected pull requests run:
 - dashboard performance validation and CodeQL
 - real Windows MSI and native macOS DMG packaging, including packaged-project loading
 
+The packaging run seals those exact outputs into an attested release candidate. After merge, the
+protected promotion workflow accepts only a candidate whose complete Git tree equals `main`, whose
+originating run and workflow are trusted, and whose file hashes and canonical versions still match.
+It publishes the verified Maven, starter, MSI, and DMG bytes without rerunning compilation or tests.
+See [`RELEASE_TRANSITION.md`](RELEASE_TRANSITION.md) for the fail-closed promotion sequence.
+
 Simulation and compilation evidence never claim physical wiring or robot validation.
 
 ## Migration and rollback
