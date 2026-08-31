@@ -33,5 +33,9 @@ updates:
       same-dependency-across-products:
         group-by: dependency-name
     ignore:
+      # 0.36+ requires Gradle 9 and Dokka v2. Keep this boundary explicit until
+      # the coordinated build-tool migration is implemented and validated.
+      - dependency-name: "com.vanniktech.maven.publish"
+        versions: [">= 0.36.0"]
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
