@@ -456,25 +456,25 @@ class RobotProjectTemplateService(
 
         val OFFICIAL_PROJECT_TEMPLATES: List<RobotProjectTemplate> = listOf(
             RobotProjectTemplate(
-                id = "ares-ftc-starter-14.0.0",
+                id = "ares-ftc-starter-14.0.1",
                 displayName = "ARES FTC Starter",
                 league = League.FTC,
                 aresVersion = "14.0.0",
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.0/ARES-FTC-Starter-14.0.0.zip",
-                archiveSha256 = "78afaaa270be1e83aa0ee15132f7fcdb664dc7443f9f339034f0b413bfa4424e",
-                bundledResourcePath = "/project-templates/ARES-FTC-Starter-14.0.0.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.1/ARES-FTC-Starter-14.0.1.zip",
+                archiveSha256 = "edd6712a23aeeabbea7b99e85ed34edb5c8646caed411dfba91050226151c822",
+                bundledResourcePath = "/project-templates/ARES-FTC-Starter-14.0.1.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
             RobotProjectTemplate(
-                id = "ares-frc-starter-14.0.0",
+                id = "ares-frc-starter-14.0.1",
                 displayName = "ARES FRC Starter",
                 league = League.FRC,
                 aresVersion = "14.0.0",
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.0/ARES-FRC-Starter-14.0.0.zip",
-                archiveSha256 = "847b8a47ed60947dd1e6dbe424c305c42a49736ab2f7b01bbe7616fb373268f8",
-                bundledResourcePath = "/project-templates/ARES-FRC-Starter-14.0.0.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.1/ARES-FRC-Starter-14.0.1.zip",
+                archiveSha256 = "d4c5724e07c275ce0c896d3fe37a890352720f507290053576704bafbd70128e",
+                bundledResourcePath = "/project-templates/ARES-FRC-Starter-14.0.1.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
         )
