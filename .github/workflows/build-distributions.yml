@@ -5,24 +5,6 @@ on:
     branches: [main]
   merge_group:
   workflow_dispatch:
-    inputs:
-      version:
-        description: Application version to package (for example, 1.8.0)
-        required: true
-        type: string
-      publish:
-        description: Emergency full-rebuild publish; normal releases promote an attested candidate
-        required: true
-        default: false
-        type: boolean
-      windows_installer_trust:
-        description: Require pinned Authenticode, or publish a disclosed GitHub-release SHA-256 bootstrap installer
-        required: true
-        default: checksum
-        type: choice
-        options:
-          - checksum
-          - authenticode
 
 permissions:
   contents: read
@@ -65,8 +47,6 @@ jobs:
         id: identity
         shell: bash
         env:
-          REQUESTED_VERSION: ${{ inputs.version }}
-          PUBLISH: ${{ inputs.publish }}
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
@@ -85,11 +65,7 @@ jobs:
             exit 1
           fi
           ares_candidate_version="${ares_base}-rc.${GITHUB_SHA::12}"
-          if [[ -n "$REQUESTED_VERSION" ]]; then
-            studio_version="$REQUESTED_VERSION"
-          else
-            studio_version="$(sed -n 's/^studioVersion=//p' release/ares-versions.properties)"
-          fi
+          studio_version="$(sed -n 's/^studioVersion=//p' release/ares-versions.properties)"
           if [[ ! "$studio_version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             echo "Invalid application version: $studio_version (expected MAJOR.MINOR.BUILD)" >&2
             exit 1
@@ -99,11 +75,6 @@ jobs:
           build=$((10#${BASH_REMATCH[3]}))
           if (( major > 255 || minor > 255 || build > 65535 )); then
             echo "Application version exceeds native package limits: $studio_version" >&2
-            exit 1
-          fi
-          manifest_studio="$(sed -n 's/^studioVersion=//p' release/ares-versions.properties)"
-          if [[ "$PUBLISH" == "true" && "$studio_version" != "$manifest_studio" ]]; then
-            echo "Published Studio version must equal release/ares-versions.properties ($manifest_studio)." >&2
             exit 1
           fi
           echo "ares-version=$ares_base" >> "$GITHUB_OUTPUT"
@@ -315,7 +286,6 @@ jobs:
           ARES_GOOGLE_OAUTH_BROKER_URL: ${{ vars.ARES_GOOGLE_OAUTH_BROKER_URL }}
           ARES_GITHUB_APP_CLIENT_ID: ${{ vars.ARES_GITHUB_APP_CLIENT_ID }}
           ARES_GITHUB_APP_SLUG: ${{ vars.ARES_GITHUB_APP_SLUG }}
-          ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && inputs.windows_installer_trust == 'authenticode' && vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS || '' }}
         run: |
           chmod +x ./gradlew
           ./gradlew ${{ matrix.task }} \
@@ -324,75 +294,11 @@ jobs:
             -ParesRepository=${{ steps.repository.outputs.uri }} \
             --no-parallel --no-daemon --console=plain
 
-      - name: Sign and verify Windows release installer
-        if: >-
-          runner.os == 'Windows' &&
-          github.event_name == 'workflow_dispatch' &&
-          inputs.publish &&
-          inputs.windows_installer_trust == 'authenticode'
-        shell: pwsh
-        env:
-          WINDOWS_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
-          WINDOWS_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
-          EXPECTED_SIGNER_THUMBPRINTS: ${{ vars.ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64) -or
-              [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)) {
-            throw 'Protected Windows signing certificate secrets are required for a public release.'
-          }
-          $expectedThumbprints = @($env:EXPECTED_SIGNER_THUMBPRINTS -split ',' | ForEach-Object {
-            ($_ -replace '[^A-Fa-f0-9]', '').ToUpperInvariant()
-          } | Where-Object { $_ -match '^[A-F0-9]{40}$' })
-          if ($expectedThumbprints.Count -eq 0) {
-            throw 'ARES_WINDOWS_UPDATE_SIGNER_THUMBPRINTS must name at least one trusted SHA-1 certificate thumbprint.'
-          }
-          $installers = @(Get-ChildItem `
-            -LiteralPath 'ARES-Analytics/app/build/compose/binaries/main-release/msi' `
-            -Filter '*.msi')
-          if ($installers.Count -ne 1) {
-            throw "Expected exactly one MSI to sign, found $($installers.Count)."
-          }
-          $certificatePath = Join-Path $env:RUNNER_TEMP "ares-windows-signing-$env:GITHUB_RUN_ID.pfx"
-          try {
-            [IO.File]::WriteAllBytes(
-              $certificatePath,
-              [Convert]::FromBase64String($env:WINDOWS_SIGNING_PFX_BASE64)
-            )
-            $signTool = Get-ChildItem `
-              -LiteralPath "${env:ProgramFiles(x86)}\Windows Kits\10\bin" `
-              -Filter 'signtool.exe' `
-              -File `
-              -Recurse |
-              Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
-              Sort-Object FullName -Descending |
-              Select-Object -First 1
-            if ($null -eq $signTool) { throw 'Windows SDK signtool.exe was not found.' }
-            & $signTool.FullName sign `
-              /fd SHA256 `
-              /td SHA256 `
-              /tr 'http://timestamp.digicert.com' `
-              /f $certificatePath `
-              /p $env:WINDOWS_SIGNING_PFX_PASSWORD `
-              $installers[0].FullName
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed with exit code $LASTEXITCODE." }
-            & $signTool.FullName verify /pa /all /v $installers[0].FullName
-            if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed with exit code $LASTEXITCODE." }
-            $signature = Get-AuthenticodeSignature -LiteralPath $installers[0].FullName
-            $actualThumbprint = $signature.SignerCertificate.Thumbprint.ToUpperInvariant()
-            if ($signature.Status -ne 'Valid' -or $actualThumbprint -notin $expectedThumbprints) {
-              throw "Installer signer is not trusted by this release ($($signature.Status), $actualThumbprint)."
-            }
-          } finally {
-            if (Test-Path -LiteralPath $certificatePath) {
-              Remove-Item -LiteralPath $certificatePath -Force
-            }
-          }
-
       - name: Record Windows installer trust evidence
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          WINDOWS_INSTALLER_TRUST: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && inputs.windows_installer_trust || 'checksum' }}
+          WINDOWS_INSTALLER_TRUST: checksum
         run: |
           $installers = @(Get-ChildItem `
             -LiteralPath 'ARES-Analytics/app/build/compose/binaries/main-release/msi' `
@@ -404,9 +310,6 @@ jobs:
           $thumbprint = if ($null -ne $signature.SignerCertificate) {
             $signature.SignerCertificate.Thumbprint.ToUpperInvariant()
           } else { $null }
-          if ($env:WINDOWS_INSTALLER_TRUST -eq 'authenticode' -and $signature.Status -ne 'Valid') {
-            throw "Authenticode trust mode produced an invalid signature ($($signature.Status))."
-          }
           $evidence = [ordered]@{
             schemaVersion = 1
             assetName = $installers[0].Name
@@ -459,7 +362,6 @@ jobs:
   seal-candidate:
     name: Seal attested release candidate
     needs: [candidate, studio-verification, zero-code-project-acceptance, build-packages, starter-archives]
-    if: github.event_name != 'workflow_dispatch' || !inputs.publish
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -524,70 +426,3 @@ jobs:
           path: release-candidate-${{ github.run_id }}.tar.gz
           if-no-files-found: error
           retention-days: 30
-
-  publish-release:
-    name: Publish verified Studio release
-    needs: [candidate, zero-code-project-acceptance, build-packages, starter-archives]
-    if: github.event_name == 'workflow_dispatch' && inputs.publish
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Require protected main
-        if: github.ref != 'refs/heads/main'
-        run: |
-          echo 'Public releases may only be dispatched from the protected main branch.' >&2
-          exit 1
-
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: ARES-Robotics-Studio-*
-          merge-multiple: true
-          path: release-assets
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: starter-release-assets
-          path: release-assets
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: final-ares-repository
-          path: final-ares-repository
-
-      - name: Publish immutable ARES Maven content first
-        shell: pwsh
-        run: >-
-          .\scripts\publish-immutable-maven-repository.ps1
-          -StagedRepository final-ares-repository
-          -RepositoryRoot $env:GITHUB_WORKSPACE
-          -Push
-
-      - name: Generate checksums
-        shell: bash
-        run: |
-          find release-assets -type f \( -name '*.msi' -o -name '*.dmg' -o -name '*.zip' \) -print0 |
-            while IFS= read -r -d '' asset; do sha256sum "$asset" > "$asset.sha256"; done
-
-      - name: Publish immutable GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.candidate.outputs.studio-version }}
-          name: ARES Robotics Studio ${{ needs.candidate.outputs.studio-version }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
-          body: |
-            Windows installer trust mode: `${{ inputs.windows_installer_trust }}`.
-
-            `authenticode` releases require a valid certificate pinned into Studio. `checksum` releases are bootstrap packages: Studio verifies the exact MSI against the SHA-256 asset from this immutable GitHub release, but Windows will identify the publisher as unsigned. See `windows-installer-trust.json` for the machine-readable evidence.
-          fail_on_unmatched_files: true
-          files: |
-            release-assets/**/*.msi
-            release-assets/**/*.dmg
-            release-assets/**/*.zip
-            release-assets/**/*.sha256
-            release-assets/**/windows-installer-trust.json
