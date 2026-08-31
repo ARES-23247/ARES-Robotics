@@ -149,6 +149,14 @@ internal class ProjectProcessCommandFactory(
                 }
             }
 
+    fun requireProjectDependenciesCompatible(projectRoot: File) {
+        ProjectDependencyPreflight.inspect(
+            projectRoot = projectRoot,
+            expectedVersion = explicitAresVersion,
+            pinnedVersion = projectPinnedAresVersion(projectRoot),
+        ).requireCompatible()
+    }
+
     fun decorateGradle(command: List<String>): List<String> = buildList {
         addAll(command)
         gradleJavaInstallationsArgument?.let(::add)

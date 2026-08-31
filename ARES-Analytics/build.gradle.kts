@@ -333,6 +333,13 @@ tasks.register("killExisting") {
                         if (pid != null && pid != ProcessHandle.current().pid()) {
                             ProcessHandle.of(pid).ifPresent { handle ->
                                 println("[ARES-Analytics] Killing orphaned process $mainClass (PID $pid)...")
+                                val descendants = handle.descendants().toList().asReversed()
+                                descendants.forEach { child ->
+                                    if (child.isAlive) child.destroy()
+                                }
+                                descendants.forEach { child ->
+                                    if (child.isAlive) child.destroyForcibly()
+                                }
                                 handle.destroyForcibly()
                                 killedCount++
                             }

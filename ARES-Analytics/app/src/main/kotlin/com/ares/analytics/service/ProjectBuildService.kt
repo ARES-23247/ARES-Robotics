@@ -4,14 +4,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.verification.RobotVerificationReport
 import com.ares.analytics.service.verification.RobotVerificationReportLoader
 import com.ares.analytics.service.verification.VerificationRunStore
-import com.areslib.codegen.GeneratedSubsystemFile
-import com.areslib.codegen.SubsystemKotlinCodegenTarget
-import com.areslib.codegen.SubsystemKotlinGenerator
 import com.areslib.codegen.SubsystemStarterPlan
-import com.areslib.codegen.SubsystemStarterReconciler
-import com.areslib.subsystem.SubsystemDocumentCodec
-import com.areslib.subsystem.SubsystemPlatform
-import com.areslib.subsystem.isAresGenerated
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -70,11 +63,6 @@ private data class BuildOwnership(
     val process: Process?
 )
 
-private data class SubsystemStarterInputs(
-    val root: File,
-    val files: List<GeneratedSubsystemFile>,
-)
-
 /**
  * Owns external OS process lifecycle for project generation and verification builds.
  *
@@ -112,6 +100,7 @@ class ProjectBuildService internal constructor(
         aresVersion = aresVersion,
         gradleJavaInstallations = gradleJavaInstallations,
     )
+    private val subsystemStarterPlanner = SubsystemStarterPlanner()
 
     // Build tools can emit thousands of lines in a burst. Terminal rendering must never apply
     // back-pressure to the child process or its stdout pipe can fill and deadlock Gradle.
@@ -168,6 +157,7 @@ class ProjectBuildService internal constructor(
         try {
             val projectRoot = requireSafeProjectRoot(projectPath)
             val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
+            commandFactory.requireProjectDependenciesCompatible(projectRoot)
             commandFactory.requireGradleWrapper(projectRoot, isWindows)
             val command = commandFactory.verificationBuild(league, isWindows)
             val pendingRun = VerificationRunStore.begin(
@@ -268,8 +258,7 @@ class ProjectBuildService internal constructor(
     }
 
     override fun previewSubsystemStarters(projectPath: String, league: League): SubsystemStarterPlan {
-        val inputs = subsystemStarterInputs(requireSafeProjectRoot(projectPath), league)
-        return SubsystemStarterReconciler.plan(inputs.root.toPath(), inputs.files)
+        return subsystemStarterPlanner.plan(requireSafeProjectRoot(projectPath), league)
     }
 
     override fun applySubsystemStarters(projectPath: String, league: League, confirmationToken: String?) {
@@ -299,6 +288,7 @@ class ProjectBuildService internal constructor(
         val taskName = if (confirmationToken == null) "generateSubsystemStarters" else "replaceSubsystemStarters"
         val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
         val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
+        commandFactory.requireProjectDependenciesCompatible(root)
         commandFactory.requireGradleWrapper(root, isWindows)
         val command = commandFactory.authoring(task, isWindows, confirmationToken)
         val diagnosticLines = ArrayDeque<String>(GENERATION_DIAGNOSTIC_LINE_LIMIT)
@@ -330,30 +320,6 @@ class ProjectBuildService internal constructor(
         }
     }
 
-    private fun subsystemStarterInputs(root: File, league: League): SubsystemStarterInputs {
-        val platform = if (league == League.FTC) SubsystemPlatform.FTC else SubsystemPlatform.FRC
-        val basePackage = if (league == League.FTC) {
-            "org.firstinspires.ftc.teamcode.subsystems"
-        } else {
-            "com.areslib.frc.subsystems"
-        }
-        val starterRoot = if (league == League.FTC) {
-            File(root, "TeamCode/src/main/java/${basePackage.replace('.', '/')}")
-        } else {
-            File(root, "src/main/kotlin/${basePackage.replace('.', '/')}")
-        }.canonicalFile
-        require(starterRoot.toPath().startsWith(root.toPath())) { "Subsystem starter root escaped the project" }
-        val documentsRoot = File(root, ".ares/subsystems").canonicalFile
-        val documents = documentsRoot.listFiles { file -> file.isFile && file.extension.equals("aressubsystem", true) }
-            .orEmpty()
-            .sortedBy { it.name.lowercase() }
-            .map { SubsystemDocumentCodec.decode(it.readText()) }
-            .filter { it.platform == platform }
-            .filter { it.implementation.kind.isAresGenerated() }
-        val target = SubsystemKotlinCodegenTarget(platform, basePackage)
-        return SubsystemStarterInputs(starterRoot, documents.flatMap { SubsystemKotlinGenerator.generate(it, target) })
-    }
-
     private suspend fun executeAresGeneration(generation: Long, projectPath: String, league: League) {
         updateGenerationStateIfOwner(
             generation,
@@ -369,6 +335,7 @@ class ProjectBuildService internal constructor(
                 "This directory does not contain canonical .ares project documents"
             }
             val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
+            commandFactory.requireProjectDependenciesCompatible(root)
             commandFactory.requireGradleWrapper(root, isWindows)
 
             val command = commandFactory.authoring("generateAresProject", isWindows)

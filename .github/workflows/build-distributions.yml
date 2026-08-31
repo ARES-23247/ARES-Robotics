@@ -29,10 +29,10 @@ permissions:
 
 env:
   ARES_VERSION: 13.0.0
-  STUDIO_VERSION: 3.1.0
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.1.0/ARES-FTC-Starter-13.0.0.zip
+  STUDIO_VERSION: 3.1.1
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.1.1/ARES-FTC-Starter-13.0.0.zip
   FTC_STARTER_SHA256: 488c997d24f03baed4e898f4965233c58cd75d43e5dfee80aa1904ec67f6636a
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.1.0/ARES-FRC-Starter-13.0.0.zip
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.1.1/ARES-FRC-Starter-13.0.0.zip
   FRC_STARTER_SHA256: 170c7bac4231018c2610bbb6b531b2a5c4c93b3139b30e06209fe15ab0697160
 
 concurrency:
