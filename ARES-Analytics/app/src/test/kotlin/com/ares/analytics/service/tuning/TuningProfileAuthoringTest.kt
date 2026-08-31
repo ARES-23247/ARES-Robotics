@@ -211,7 +211,7 @@ class TuningProfileAuthoringTest {
 
     private fun profile(uid: String, id: String, parent: String?, values: List<TuningAssignment>) = TuningProfileDocument(
         uid = uid, profileId = id, displayName = id.replaceFirstChar(Char::uppercase), description = "Test profile",
-        projectUid = "robot.project", drivebaseUid = "drive.primary", authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+        projectId = "robot.project", drivebaseUid = "drive.primary", authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
         baseProfileUid = parent, values = values
     )
 }

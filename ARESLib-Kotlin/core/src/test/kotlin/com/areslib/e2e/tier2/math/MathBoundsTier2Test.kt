@@ -1,6 +1,5 @@
 package com.areslib.e2e.tier2.math
 
-import com.areslib.control.feedback.LQRController
 import com.areslib.math.estimation.PoseEstimator
 import com.areslib.math.estimation.PoseEstimatorState
 import com.areslib.math.geometry.Translation2d
@@ -76,18 +75,4 @@ class MathBoundsTier2Test {
         assertFalse(stateAt11Point99.isBeached)
     }
 
-    @Test
-    fun testLqrControllerSingularMatrixHandling() {
-        val lqr = LQRController(1, 1, 1)
-        
-        // Feeding completely uninitialized / zero system coefficients
-        lqr.setSystemCoefficients(doubleArrayOf(0.0), doubleArrayOf(0.0), doubleArrayOf(0.0))
-        lqr.reset(doubleArrayOf(0.0))
-        
-        // Zero division or singular checks should prevent crash and safely produce a bounded response
-        assertDoesNotThrow {
-            val out = lqr.calculate(doubleArrayOf(0.0), doubleArrayOf(10.0), 0.02)
-            assertNotNull(out)
-        }
-    }
 }

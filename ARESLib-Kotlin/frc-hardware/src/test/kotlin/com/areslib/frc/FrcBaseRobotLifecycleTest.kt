@@ -48,7 +48,7 @@ class FrcBaseRobotLifecycleTest {
         assertEquals(listOf(1.0), subsystem.outputScales)
 
         enabled = false
-        RobotClock.setMockTimeMs(1_020L)
+        RobotClock.useMockTime(1_020L)
         robot.update()
         assertEquals(1, robot.platformWrites.size, "normal platform writes must be gated while disabled")
         assertEquals(listOf(1.0, 0.0), subsystem.outputScales)
@@ -58,12 +58,12 @@ class FrcBaseRobotLifecycleTest {
         assertEquals(DriveMode.X_BRAKE, robot.store.state.drive.driveMode)
         assertTrue(robot.store.state.drive.isXLock)
 
-        RobotClock.setMockTimeMs(1_040L)
+        RobotClock.useMockTime(1_040L)
         robot.update()
         assertEquals(listOf(1.0, 0.0), subsystem.outputScales, "safety runs on the transition, not every disabled frame")
 
         enabled = true
-        RobotClock.setMockTimeMs(1_060L)
+        RobotClock.useMockTime(1_060L)
         robot.update()
         assertEquals(2, robot.platformWrites.size)
         assertEquals(DriveMode.X_BRAKE, robot.platformWrites.last().driveMode)

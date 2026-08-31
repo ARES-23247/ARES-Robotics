@@ -68,15 +68,6 @@ class ARESDataLogger private constructor(
     @Suppress("UNUSED_PARAMETER") internalMarker: Unit
 ) {
 
-    constructor() : this(
-        "Init",
-        RobotLogEnvironment.logDirectory,
-        RobotLogEnvironment.loggingPolicy(),
-        null,
-        Unit
-    )
-
-    /** Binary-compatible constructor retained for existing ARESLib consumers. */
     constructor(
         mode: String = "Init",
         logDirectory: File = RobotLogEnvironment.logDirectory

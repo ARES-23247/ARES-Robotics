@@ -66,10 +66,6 @@ public final class com/areslib/project/compiler/ProjectArtifactManifestEntry {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/areslib/project/compiler/ProjectArtifactManifestKt {
-	public static final fun sha256 (Ljava/lang/String;)Ljava/lang/String;
-}
-
 public final class com/areslib/project/compiler/ProjectArtifactOwnership : java/lang/Enum {
 	public static final field GENERATED_DO_NOT_EDIT Lcom/areslib/project/compiler/ProjectArtifactOwnership;
 	public static final field GENERATED_STARTER Lcom/areslib/project/compiler/ProjectArtifactOwnership;
@@ -236,8 +232,8 @@ public final class com/areslib/project/compiler/RobotProjectCompilerKt {
 }
 
 public final class com/areslib/project/compiler/RobotProjectIr {
-	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component10 ()Ljava/util/List;
 	public final fun component11 ()Ljava/util/List;
@@ -251,7 +247,6 @@ public final class com/areslib/project/compiler/RobotProjectIr {
 	public final fun component19 ()Ljava/util/List;
 	public final fun component2-eHhCgmk ()Ljava/lang/String;
 	public final fun component20 ()Ljava/lang/String;
-	public final fun component21 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/areslib/project/schema/AresProjectTarget;
 	public final fun component4 ()Lcom/areslib/simulation/SimulationProductId;
 	public final fun component5 ()Lcom/areslib/controls/ControllerInputPlatform;
@@ -259,8 +254,8 @@ public final class com/areslib/project/compiler/RobotProjectIr {
 	public final fun component7 ()Lcom/areslib/catalog/CapabilityCatalogDocument;
 	public final fun component8 ()Lcom/areslib/routine/AutonomousCatalogDocument;
 	public final fun component9 ()Ljava/util/List;
-	public final fun copy-Id5s9N8 (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/project/compiler/RobotProjectIr;
-	public static synthetic fun copy-Id5s9N8$default (Lcom/areslib/project/compiler/RobotProjectIr;ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/compiler/RobotProjectIr;
+	public final fun copy-3Zhm_QQ (ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/project/compiler/RobotProjectIr;
+	public static synthetic fun copy-3Zhm_QQ$default (Lcom/areslib/project/compiler/RobotProjectIr;ILjava/lang/String;Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/simulation/SimulationProductId;Lcom/areslib/controls/ControllerInputPlatform;Lcom/areslib/project/AresProjectMetadataDocument;Lcom/areslib/catalog/CapabilityCatalogDocument;Lcom/areslib/routine/AutonomousCatalogDocument;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lcom/areslib/project/compiler/ProjectDrivetrainIr;Lcom/areslib/state/RobotFieldConfig;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/project/compiler/RobotProjectIr;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getActions ()Ljava/util/List;
 	public final fun getAutonomousCatalog ()Lcom/areslib/routine/AutonomousCatalogDocument;
@@ -282,7 +277,6 @@ public final class com/areslib/project/compiler/RobotProjectIr {
 	public final fun getTuningComponents ()Ljava/util/List;
 	public final fun getTuningDeclarations ()Ljava/util/List;
 	public final fun getTuningProfiles ()Ljava/util/List;
-	public final fun getTuningScopeUid ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

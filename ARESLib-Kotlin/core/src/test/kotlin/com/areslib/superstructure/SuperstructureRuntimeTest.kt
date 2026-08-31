@@ -562,7 +562,7 @@ class SuperstructureRuntimeTest {
             if (rejectTargets || fieldId == rejectedFieldId
             ) return null
             createdTargetTasks++
-            return StateActionTask("Set fake mechanism") { state ->
+            return StateActionTask(name = "Set fake mechanism", actionFactory = { state ->
                 dispatchedTargetTasks++
                 val current = state.superstructure.subsystems.getValue(MECHANISM_ID) as FakeMechanismState
                 val next = when (fieldId) {
@@ -570,7 +570,7 @@ class SuperstructureRuntimeTest {
                     else -> current.copy(target2 = value)
                 }
                 RobotAction.UpdateNamedSubsystemState(MECHANISM_ID, next)
-            }
+            })
         }
 
         override fun createIntTargetTask(port: Int, value: Int): Task? = null

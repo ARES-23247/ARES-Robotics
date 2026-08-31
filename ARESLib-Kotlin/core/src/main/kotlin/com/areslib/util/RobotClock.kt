@@ -59,13 +59,6 @@ object RobotClock {
     }
 
     /**
-     * Compatibility alias for [useMockTime].
-     */
-    fun setMockTimeMs(timeMs: Long) {
-        useMockTime(timeMs)
-    }
-
-    /**
      * Leaves mock mode and resumes the process's monotonic live timeline.
      */
     fun useSystemTime() {

@@ -114,6 +114,7 @@ class AresRobot(
                     false
                 }
             },
+            isConsumerSupported = GeneratedAresFtcMecanumRuntimeConfig::supportsRuntimeParameter,
             localProjectRoot = tuningProjectRoot,
             localOverlayFile = tuningProjectRoot.resolve(".ares/local/tuning/runtime.arestuning"),
         )
@@ -311,20 +312,13 @@ internal object FtcFieldContractLoader {
     fun load(bytes: ByteArray): FtcFieldContract? {
         error = null
         val config = runCatching {
-            bytes.decodeToString().reader().use { reader ->
-                com.areslib.state.RobotFieldDocument.decode(reader.readText())
-            }
+            com.areslib.state.ValidatedRobotFieldLoader.load(
+                bytes,
+                requiredFieldType = com.areslib.state.FieldType.FTC,
+                requireAprilTags = true,
+            )
         }.getOrElse { failure ->
             error = failure.message ?: failure::class.java.simpleName
-            return null
-        }
-        val validationIssues = com.areslib.state.RobotFieldValidator.validate(
-            config = config,
-            requiredFieldType = com.areslib.state.FieldType.FTC,
-            requireAprilTags = true,
-        )
-        if (validationIssues.isNotEmpty()) {
-            error = validationIssues.first().message
             return null
         }
         val tags = config.aprilTagPoseMap()

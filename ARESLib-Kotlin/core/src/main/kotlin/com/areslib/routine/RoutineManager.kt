@@ -62,16 +62,16 @@ class RoutineManager(
         val executor: TaskExecutor?
     )
 
-    private data class UpdateOutcome(
-        val execution: ActiveExecution,
-        val actions: List<RobotAction>,
-        val terminalStatus: TaskStatus?
-    )
-
     private val documents = LinkedHashMap<String, RoutineDocument>()
     private val pending = ArrayDeque<PendingExecution>()
     private val active = LinkedHashMap<Long, ActiveExecution>()
+    private val activeInStartOrder = ArrayList<ActiveExecution>()
     private val dispatchQueue = ArrayDeque<RobotAction>()
+    private val updateLock = Any()
+    private val updateSnapshot = ArrayList<ActiveExecution>()
+    private val updateActionBatches = ArrayList<List<RobotAction>>()
+    private val updateTerminalStatuses = ArrayList<TaskStatus?>()
+    private val updateEmissions = ArrayList<RobotAction>()
     private var dispatching = false
     private var nextExecutionId = 1L
 
@@ -180,34 +180,56 @@ class RoutineManager(
     }
 
     /** Advances active tasks and starts the next queued invocation when the manager becomes idle. */
-    fun update() {
-        val now = RobotClock.currentTimeMillis()
-        val snapshot = synchronized(this) { active.values.toList() }
-        val outcomes = snapshot.map { execution ->
-            val actions = execution.executor.update(stateProvider(), now).toList()
-            val terminalStatus = if (execution.executor.size == 0) {
-                TaskStateMachine.getStatus(execution.task)
-            } else {
-                null
+    fun update() = synchronized(updateLock) {
+        updateSnapshot.clear()
+        updateActionBatches.clear()
+        updateTerminalStatuses.clear()
+        updateEmissions.clear()
+        try {
+            val now = RobotClock.currentTimeMillis()
+            synchronized(this) {
+                var activeIndex = 0
+                while (activeIndex < activeInStartOrder.size) {
+                    updateSnapshot.add(activeInStartOrder[activeIndex])
+                    activeIndex++
+                }
             }
-            UpdateOutcome(execution, actions, terminalStatus)
-        }
+            val state = stateProvider()
+            var index = 0
+            while (index < updateSnapshot.size) {
+                val execution = updateSnapshot[index]
+                updateActionBatches.add(execution.executor.update(state, now))
+                updateTerminalStatuses.add(
+                    if (execution.executor.size == 0) TaskStateMachine.getStatus(execution.task) else null
+                )
+                index++
+            }
 
-        val emissions = mutableListOf<RobotAction>()
-        synchronized(this) {
-            for (outcome in outcomes) {
-                val execution = outcome.execution
-                if (active[execution.executionId] !== execution) continue
-                emissions.addAll(outcome.actions)
-                val status = outcome.terminalStatus ?: continue
-                active.remove(execution.executionId)
-                emissions.add(terminalAction(execution, status, now))
+            synchronized(this) {
+                index = 0
+                while (index < updateSnapshot.size) {
+                    val execution = updateSnapshot[index]
+                    if (active[execution.executionId] === execution) {
+                        updateEmissions.addAll(updateActionBatches[index])
+                        val status = updateTerminalStatuses[index]
+                        if (status != null) {
+                            removeActiveLocked(execution.executionId)
+                            updateEmissions.add(terminalAction(execution, status, now))
+                        }
+                    }
+                    index++
+                }
+                if (active.isEmpty() && pending.isNotEmpty()) {
+                    updateEmissions.add(startLocked(pending.removeFirst(), now))
+                }
             }
-            if (active.isEmpty() && pending.isNotEmpty()) {
-                emissions.add(startLocked(pending.removeFirst(), now))
-            }
+            emit(updateEmissions)
+        } finally {
+            updateSnapshot.clear()
+            updateActionBatches.clear()
+            updateTerminalStatuses.clear()
+            updateEmissions.clear()
         }
-        emit(emissions)
     }
 
     /** Cancels one running or queued invocation and dispatches safe task cleanup first. */
@@ -251,13 +273,15 @@ class RoutineManager(
 
     private fun startLocked(execution: PendingExecution, timestampMs: Long): RobotAction.RoutineStarted {
         val executor = TaskExecutor().also { it.addTask(execution.task) }
-        active[execution.executionId] = ActiveExecution(
+        val activeExecution = ActiveExecution(
             execution.executionId,
             execution.routineId,
             execution.task,
             execution.resourceKeys,
             executor
         )
+        active[execution.executionId] = activeExecution
+        activeInStartOrder.add(activeExecution)
         return RobotAction.RoutineStarted(
             execution.executionId,
             execution.routineId,
@@ -290,11 +314,12 @@ class RoutineManager(
         matchesRoutineId: (String) -> Boolean,
         destination: MutableList<DetachedExecution>
     ) {
-        val activeIterator = active.entries.iterator()
-        while (activeIterator.hasNext()) {
-            val execution = activeIterator.next().value
+        var activeIndex = 0
+        while (activeIndex < activeInStartOrder.size) {
+            val execution = activeInStartOrder[activeIndex]
             if (matchesRoutineId(execution.routineId)) {
-                activeIterator.remove()
+                activeInStartOrder.removeAt(activeIndex)
+                active.remove(execution.executionId)
                 destination.add(
                     DetachedExecution(
                         execution.executionId,
@@ -303,6 +328,8 @@ class RoutineManager(
                         execution.executor
                     )
                 )
+            } else {
+                activeIndex++
             }
         }
         val pendingIterator = pending.iterator()
@@ -318,7 +345,7 @@ class RoutineManager(
     }
 
     private fun detachExecutionLocked(executionId: Long): DetachedExecution? {
-        active.remove(executionId)?.let { execution ->
+        removeActiveLocked(executionId)?.let { execution ->
             return DetachedExecution(
                 execution.executionId,
                 execution.routineId,
@@ -335,6 +362,19 @@ class RoutineManager(
             }
         }
         return null
+    }
+
+    private fun removeActiveLocked(executionId: Long): ActiveExecution? {
+        val execution = active.remove(executionId) ?: return null
+        var index = 0
+        while (index < activeInStartOrder.size) {
+            if (activeInStartOrder[index] === execution) {
+                activeInStartOrder.removeAt(index)
+                break
+            }
+            index++
+        }
+        return execution
     }
 
     private fun appendCancellationActions(

@@ -36,7 +36,8 @@ class RobotDeploymentServiceTest {
     @Test
     fun `stale project fails before FTC device discovery`() = runBlocking {
         val project = Files.createTempDirectory("robot-deployment-stale").toFile()
-        project.resolve("gradle.properties").writeText("aresVersion=12.0.0\n")
+        project.resolve("release").mkdirs()
+        project.resolve("release/ares-versions.properties").writeText("aresVersion=12.0.0\n")
         val service = RobotDeploymentService(
             aresRepositoryUri = null,
             aresVersion = "13.0.0",
@@ -51,7 +52,7 @@ class RobotDeploymentServiceTest {
             }
 
             assertEquals(DeployExecutionPhase.FAILED, result.phase)
-            assertTrue(result.message.contains("pins ARES 12.0.0"))
+            assertTrue(result.message.contains("release manifest declares ARES 12.0.0"))
         } finally {
             service.shutdownAndJoin()
             project.deleteRecursively()

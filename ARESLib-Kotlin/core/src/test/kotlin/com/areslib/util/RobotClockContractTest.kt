@@ -25,7 +25,7 @@ class RobotClockContractTest {
         assertEquals(1_234L, RobotClock.currentTimeMillis())
         assertEquals(1_234_000_000L, RobotClock.nanoTime())
 
-        RobotClock.setMockTimeMs(9_876L)
+        RobotClock.useMockTime(9_876L)
         assertEquals(9_876L, RobotClock.currentTimeMillis())
         assertEquals(9_876_000_000L, RobotClock.nanoTime())
     }

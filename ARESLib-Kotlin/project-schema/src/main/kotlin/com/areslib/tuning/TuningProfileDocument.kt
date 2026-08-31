@@ -1,11 +1,12 @@
 package com.areslib.tuning
 
 import com.google.gson.GsonBuilder
+import com.areslib.project.schema.ProjectId
 import com.areslib.util.parseJsonElement
 import com.areslib.util.sha256Hex
 
-const val ARES_TUNING_PROFILE_SCHEMA_VERSION: Int = 1
-const val ARES_TUNING_COMPONENT_SCHEMA_VERSION: Int = 1
+const val ARES_TUNING_PROFILE_SCHEMA_VERSION: Int = 2
+const val ARES_TUNING_COMPONENT_SCHEMA_VERSION: Int = 2
 
 enum class TuningParameterType { DOUBLE, INT, BOOLEAN, TEXT, ENUM }
 enum class TuningApplyPolicy {
@@ -43,7 +44,7 @@ data class TuningAssignment(val parameterUid: String, val value: TuningValue)
 data class TuningComponentDocument(
     val schemaVersion: Int = ARES_TUNING_COMPONENT_SCHEMA_VERSION,
     val uid: String,
-    val projectUid: String,
+    val projectId: String,
     val displayName: String,
     val description: String,
     val parameters: List<TuningParameterDeclaration>,
@@ -66,7 +67,7 @@ data class TuningProfileDocument(
     val profileId: String,
     val displayName: String,
     val description: String,
-    val projectUid: String,
+    val projectId: String,
     val drivebaseUid: String? = null,
     val authority: TuningProfileAuthority,
     val baseProfileUid: String? = null,
@@ -109,7 +110,7 @@ fun validateTuningProfileDocument(
     if (profile.schemaVersion != ARES_TUNING_PROFILE_SCHEMA_VERSION) issue("schemaVersion", "Unsupported tuning profile schema ${profile.schemaVersion}")
     if (!profile.uid.matches(UID)) issue("uid", "Profile UID is invalid")
     if (!profile.profileId.matches(ID)) issue("profileId", "Profile ID is invalid")
-    if (!profile.projectUid.matches(UID)) issue("projectUid", "Project UID is invalid")
+    if (runCatching { ProjectId(profile.projectId) }.isFailure) issue("projectId", "Project ID is invalid")
     if (profile.drivebaseUid?.matches(UID) == false) issue("drivebaseUid", "Drivebase UID is invalid")
     if (profile.displayName.isBlank() || profile.description.isBlank()) issue("displayName", "Display name and description are required")
     if (profile.baseProfileUid == profile.uid) issue("baseProfileUid", "A profile cannot inherit itself")
@@ -141,7 +142,7 @@ fun resolveTuningProfiles(
         profile.baseProfileUid?.let { parentUid ->
             val parent = requireNotNull(byUid[parentUid]) { "Profile '${profile.uid}' has missing parent '$parentUid'" }
             require(parent.baseProfileUid == null) { "Profile '${profile.uid}' exceeds one-level shallow composition" }
-            require(parent.projectUid == profile.projectUid) { "Profile '${profile.uid}' and parent target different projects" }
+            require(parent.projectId == profile.projectId) { "Profile '${profile.uid}' and parent target different projects" }
         }
     }
     return profiles.sortedBy { it.uid }.associate { profile ->
@@ -182,14 +183,14 @@ object TuningComponentDocumentCodec {
     fun decode(json: String): TuningComponentDocument {
         val root = runCatching { parseJsonElement(json).asJsonObject }.getOrElse { throw IllegalArgumentException("Tuning component is not valid JSON", it) }
         require(root.get("schemaVersion")?.asInt == ARES_TUNING_COMPONENT_SCHEMA_VERSION) { "Unsupported tuning component schema ${root.get("schemaVersion")}" }
-        setOf("schemaVersion", "uid", "projectUid", "displayName", "description", "parameters").forEach {
+        setOf("schemaVersion", "uid", "projectId", "displayName", "description", "parameters").forEach {
             require(root.has(it)) { "Tuning component field '$it' is required" }
         }
         return gson.fromJson(root, TuningComponentDocument::class.java).also(::requireValid)
     }
     private fun requireValid(document: TuningComponentDocument) {
         require(document.schemaVersion == ARES_TUNING_COMPONENT_SCHEMA_VERSION)
-        require(document.uid.matches(UID) && document.projectUid.matches(UID)) { "Tuning component/project UID is invalid" }
+        require(document.uid.matches(UID) && runCatching { ProjectId(document.projectId) }.isSuccess) { "Tuning component UID or project ID is invalid" }
         require(document.displayName.isNotBlank() && document.description.isNotBlank()) { "Tuning component name and description are required" }
         val issues = validateTuningParameterDeclarations(document.parameters)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
@@ -224,7 +225,7 @@ private fun validatePromotion(promotion: TuningPromotionData, issue: (String, St
     if (promotion.reviewedBy.isBlank() || promotion.reviewSummary.isBlank()) issue("promotion", "Reviewer and review summary are required")
 }
 
-private val REQUIRED = setOf("schemaVersion", "uid", "profileId", "displayName", "description", "projectUid", "authority", "values")
+private val REQUIRED = setOf("schemaVersion", "uid", "profileId", "displayName", "description", "projectId", "authority", "values")
 private val UID = Regex("[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*")
 private val ID = Regex("[a-z][a-z0-9-]{0,63}")
 private val KEY = Regex("[a-z][A-Za-z0-9]*(?:[.][a-z][A-Za-z0-9]*)+")

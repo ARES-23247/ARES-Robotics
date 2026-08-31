@@ -102,6 +102,42 @@ foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Sta
         throw "$component is still a nested Git repository; source must be owned by the monorepo."
     }
 }
+$localLauncher = Get-Content -Raw -LiteralPath (Join-Path $root 'ARES-Analytics/scripts/run-local-ares.ps1')
+if ($localLauncher -notmatch 'release\\ares-versions\.properties' -or $localLauncher -match 'ARESLib.*gradle\.properties') {
+    throw 'The local Studio launcher must derive its candidate base version from the canonical release manifest.'
+}
+
+# Pre-rollout source cleanup is intentionally breaking. Keep retired implementation files and the
+# old FRC product namespace from returning as accidental compatibility layers.
+$retiredProductionTypes = @(
+    'ActionLogEnvelope', 'ActionReplaySession', 'AresRobotBuilder', 'ARESController',
+    'ControlBarrierFunction', 'DiagnosticRingBuffer', 'FtcMecanumPathFollower',
+    'GoBildaMotor', 'GridCostmapInflator', 'LocalTelemetry', 'LogArchivePackager',
+    'LQRController', 'NT4BufferPool', 'PathChainer', 'PathOptimizationService',
+    'PathSafetyEvaluator', 'ReplayPublisher', 'RobotInputsFrame', 'SensoryReplayRunner',
+    'SwerveConstants', 'SwerveRobotDouble', 'TrajectoryGenerator', 'VisionHardware',
+    'VisionMeasurementBuffer'
+)
+$productionSources = Get-ChildItem -LiteralPath $root -Recurse -File |
+    Where-Object {
+        $_.FullName -match '[\\/]src[\\/]main[\\/]' -and
+            $_.Extension -in @('.kt', '.java') -and
+            $_.FullName -notmatch '[\\/]build[\\/]'
+    }
+foreach ($retiredType in $retiredProductionTypes) {
+    $matches = $productionSources | Where-Object { $_.BaseName -eq $retiredType }
+    if ($matches) {
+        throw "Retired production type $retiredType returned: $($matches.FullName -join ', ')"
+    }
+}
+
+$frcProductSources = Get-ChildItem -LiteralPath (Join-Path $root 'ARES-FRC/src') -Recurse -File |
+    Where-Object { $_.Extension -in @('.kt', '.java') }
+foreach ($source in $frcProductSources) {
+    if ((Get-Content -Raw -LiteralPath $source.FullName) -match '(?m)^\s*package\s+com\.areslib\.frc(?:\.|\s|$)') {
+        throw "ARES-FRC product source returned to the retired library namespace: $($source.FullName)"
+    }
+}
 
 # Operational agent guidance and tester skills are executable contracts. Keep machine-specific paths,
 # retired branch names, and the former product title out of the files agents actually follow. Dated

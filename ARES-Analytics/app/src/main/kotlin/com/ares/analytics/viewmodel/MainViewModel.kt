@@ -63,7 +63,8 @@ class MainViewModel(
     private val environmentService: EnvironmentService,
     private val eventApiService: EventApiService,
     private val keybindingParserService: KeybindingParserService,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val beforeWorkspaceChange: suspend () -> Unit = {},
 ) {
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state.asStateFlow()
@@ -117,6 +118,7 @@ class MainViewModel(
                     val app = environmentService.loadWorkspaces()
                     val newList = app.workspaces.filter { it.id != configWithId.id } + configWithId
                     val newApp = com.ares.analytics.shared.models.AppWorkspaces(activeWorkspaceId = configWithId.id, workspaces = newList)
+                    if (_state.value.config?.id != configWithId.id) beforeWorkspaceChange()
                     environmentService.saveWorkspaces(newApp)
 
                     _state.update { it.copy(config = configWithId, workspaces = newList) }
@@ -127,6 +129,7 @@ class MainViewModel(
                     val target = app.workspaces.find { it.id == intent.id }
                     if (target != null) {
                         val newApp = app.copy(activeWorkspaceId = target.id)
+                        if (_state.value.config?.id != target.id) beforeWorkspaceChange()
                         environmentService.saveWorkspaces(newApp)
                         _state.update { it.copy(config = target, workspaces = app.workspaces) }
                         loadMatchSchedule(target)
@@ -141,6 +144,7 @@ class MainViewModel(
                         app.activeWorkspaceId
                     }
                     val newApp = com.ares.analytics.shared.models.AppWorkspaces(activeWorkspaceId = newActiveId, workspaces = newList)
+                    if (_state.value.config?.id == intent.id) beforeWorkspaceChange()
                     environmentService.saveWorkspaces(newApp)
                     val newActiveConfig = newList.find { it.id == newActiveId }
                     _state.update { it.copy(config = newActiveConfig, workspaces = newList) }
@@ -151,6 +155,7 @@ class MainViewModel(
                     }
                 }
                 is MainIntent.AddNewWorkspace -> {
+                    if (_state.value.config != null) beforeWorkspaceChange()
                     _state.update { it.copy(config = null) }
                 }
                 is MainIntent.CancelAddNewWorkspace -> {

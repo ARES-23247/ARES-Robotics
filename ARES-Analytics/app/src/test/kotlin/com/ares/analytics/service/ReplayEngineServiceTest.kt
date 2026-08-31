@@ -143,7 +143,7 @@ class ReplayEngineServiceTest {
     }
 
     @Test
-    fun `string telemetry survives replay state and emitted flow`() = runBlocking {
+    fun `string telemetry survives the atomic replay snapshot`() = runBlocking {
         val tempDb = File.createTempFile("replay_strings", ".db").apply { deleteOnExit() }
         val databaseService = DatabaseService(tempDb.absolutePath)
         val replayEngine = ReplayEngineService(databaseService)
@@ -153,16 +153,9 @@ class ReplayEngineServiceTest {
             databaseService.insertTelemetryFrames(
                 listOf(TelemetryFrame(1000L, session.sessionId, "Robot/Mode", 0.0, "AUTO"))
             )
-            val emitted = async(start = CoroutineStart.UNDISPATCHED) {
-                withTimeout(5_000) {
-                    replayEngine.replayTelemetryFlow.first { it.key == "Robot/Mode" }
-                }
-            }
-
             replayEngine.loadSession(session.sessionId)
 
             assertEquals("AUTO", replayEngine.currentFrame.value?.stringValues?.get("Robot/Mode"))
-            assertEquals("AUTO", emitted.await().stringValue)
         } finally {
             replayEngine.dispose()
             databaseService.close()
@@ -171,7 +164,7 @@ class ReplayEngineServiceTest {
     }
 
     @Test
-    fun `stop resets playhead without emitting another telemetry frame`() = runTest {
+    fun `stop resets playhead as one atomic replay snapshot`() = runTest {
         val tempDb = File.createTempFile("replay_stop_emission", ".db").apply { deleteOnExit() }
         val databaseService = DatabaseService(tempDb.absolutePath)
         val replayEngine = ReplayEngineService(databaseService)
@@ -180,13 +173,8 @@ class ReplayEngineServiceTest {
             databaseService.insertSession(session)
             databaseService.insertTelemetryFrames(listOf(TelemetryFrame(1000L, session.sessionId, "Test", 1.0)))
             replayEngine.loadSession(session.sessionId)
-            delay(100)
-            val beforeStop = replayEngine.replayTelemetryFlow.replayCache.toList()
-
             replayEngine.stop()
-            delay(100)
 
-            assertEquals(beforeStop, replayEngine.replayTelemetryFlow.replayCache)
             assertEquals(1000L, replayEngine.currentFrame.value?.timestampMs)
         } finally {
             replayEngine.dispose()

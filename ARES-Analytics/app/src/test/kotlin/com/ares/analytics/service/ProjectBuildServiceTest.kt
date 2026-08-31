@@ -112,7 +112,7 @@ class ProjectBuildServiceTest {
     fun `dependency preflight rejects stale runtime and retired repository before Gradle`() {
         val root = Files.createTempDirectory("ares-project-preflight-stale").toFile()
         try {
-            File(root, "gradle.properties").writeText("aresVersion=12.0.0\n")
+            writeReleaseManifest(root, "12.0.0")
             File(root, "build.gradle").writeText(
                 "maven { url 'https://raw.githubusercontent.com/ARES-23247/ARESLib-Kotlin/maven' }\n",
             )
@@ -120,7 +120,7 @@ class ProjectBuildServiceTest {
             val result = ProjectDependencyPreflight.inspect(root, "13.0.0", "12.0.0")
 
             assertFalse(result.isCompatible)
-            assertTrue(result.problems.any { it.contains("pins ARES 12.0.0") })
+            assertTrue(result.problems.any { it.contains("declares ARES 12.0.0") })
             assertTrue(result.problems.any { it.contains("Retired ARESLib-Kotlin") })
             val failure = assertFailsWith<IllegalArgumentException> { result.requireCompatible() }
             assertTrue(failure.message!!.contains("Export a current standalone project"))
@@ -133,7 +133,7 @@ class ProjectBuildServiceTest {
     fun `dependency preflight accepts current immutable monorepo channel`() {
         val root = Files.createTempDirectory("ares-project-preflight-current").toFile()
         try {
-            File(root, "gradle.properties").writeText("aresVersion=13.0.0\n")
+            writeReleaseManifest(root, "13.0.0")
             File(root, "build.gradle.kts").writeText(
                 "maven(\"https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven\")\n",
             )
@@ -142,6 +142,54 @@ class ProjectBuildServiceTest {
 
             assertTrue(result.isCompatible)
             result.requireCompatible()
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `command factory reads only the canonical release manifest`() {
+        val root = Files.createTempDirectory("ares-project-release-manifest").toFile()
+        try {
+            File(root, "gradle.properties").writeText("aresVersion=1.0.0\n")
+            writeReleaseManifest(root, "14.0.0")
+
+            val commands = ProjectProcessCommandFactory(null, "14.0.0", emptyList())
+
+            assertEquals("14.0.0", commands.projectPinnedAresVersion(root))
+            commands.requireProjectDependenciesCompatible(root)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `isolated local candidate accepts matching immutable base only`() {
+        val root = Files.createTempDirectory("ares-project-local-candidate").toFile()
+        try {
+            writeReleaseManifest(root, "14.0.0")
+
+            val accepted = ProjectDependencyPreflight.inspect(
+                projectRoot = root,
+                expectedVersion = "14.0.0-rc.local.20260831183301",
+                pinnedVersion = "14.0.0",
+                isolatedRepositoryConfigured = true,
+            )
+            val noRepository = ProjectDependencyPreflight.inspect(
+                projectRoot = root,
+                expectedVersion = "14.0.0-rc.local.20260831183301",
+                pinnedVersion = "14.0.0",
+            )
+            val wrongBase = ProjectDependencyPreflight.inspect(
+                projectRoot = root,
+                expectedVersion = "15.0.0-rc.local.20260831183301",
+                pinnedVersion = "14.0.0",
+                isolatedRepositoryConfigured = true,
+            )
+
+            assertTrue(accepted.isCompatible)
+            assertFalse(noRepository.isCompatible)
+            assertFalse(wrongBase.isCompatible)
         } finally {
             root.deleteRecursively()
         }
@@ -465,6 +513,13 @@ class ProjectBuildServiceTest {
             delay(10L)
         }
         error("unreachable")
+    }
+
+    private fun writeReleaseManifest(root: File, aresVersion: String) {
+        root.resolve("release/ares-versions.properties").apply {
+            parentFile.mkdirs()
+            writeText("aresVersion=$aresVersion\n")
+        }
     }
 
     private suspend fun awaitProcessExit(pid: Long) {

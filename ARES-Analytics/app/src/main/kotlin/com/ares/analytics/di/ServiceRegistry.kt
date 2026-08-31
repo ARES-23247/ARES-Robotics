@@ -258,6 +258,16 @@ class ServiceRegistry {
         }
     }
 
+    /** Releases every project-scoped runtime owner before another workspace becomes observable. */
+    internal suspend fun releaseWorkspaceOwnership() = withContext(NonCancellable) {
+        keyboardDriveState.disarm()
+        nt4ClientService.stop()
+        phoenixDiagnosticsService.stop()
+        projectBuildService.killActiveBuildAndJoin()
+        robotDeploymentService.cancelAndJoin()
+        simulatorProcessService.stopAndJoin()
+    }
+
     /** Tears down services that hold coroutine scopes or background jobs, in dependency order. */
     internal suspend fun disposeAndJoin() {
         var telemetryPersisted = true

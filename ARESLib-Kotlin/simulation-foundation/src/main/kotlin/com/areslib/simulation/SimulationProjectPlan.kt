@@ -13,13 +13,13 @@ import com.areslib.subsystem.SubsystemSimulationSupport
  * A concrete league simulator product. These are intentionally not one universal physics engine:
  * FTC owns its OpMode/Driver Station model while FRC owns WPILib/HAL and TimedRobot behavior.
  */
-enum class SimulationProductId(val stableId: String, val displayName: String) {
+public enum class SimulationProductId(public val stableId: String, public val displayName: String) {
     FTC_DESKTOP_OPMODE("ftc.desktop-opmode", "FTC desktop OpMode simulator"),
     FRC_WPILIB_DESKTOP("frc.wpilib-desktop", "FRC WPILib desktop simulator"),
 }
 
 /** Proven behavior a simulator product can supply without substituting a generic device model. */
-enum class SimulationCapability {
+public enum class SimulationCapability {
     FTC_OPMODE_LIFECYCLE,
     FRC_TIMED_ROBOT_LIFECYCLE,
     MECANUM_DRIVETRAIN_PHYSICS,
@@ -30,31 +30,31 @@ enum class SimulationCapability {
     NT4_TELEMETRY,
 }
 
-data class SimulationProductContract(
+public data class SimulationProductContract(
     val id: SimulationProductId,
     val controller: AresControllerTarget,
     val simulator: AresSimulatorTarget,
     val capabilities: Set<SimulationCapability>,
 )
 
-data class SimulationCompatibilityIssue(
+public data class SimulationCompatibilityIssue(
     val code: String,
     val documentId: String?,
     val message: String,
 )
 
 /** Deterministic simulator selection derived from canonical project documents. */
-data class SimulationProjectPlan(
+public data class SimulationProjectPlan(
     val target: AresProjectTarget,
     val product: SimulationProductContract,
     val requiredCapabilities: Set<SimulationCapability>,
     val issues: List<SimulationCompatibilityIssue>,
 ) {
-    val isSupported: Boolean get() = issues.isEmpty()
+    public val isSupported: Boolean get() = issues.isEmpty()
 }
 
-object SimulationProducts {
-    val FTC = SimulationProductContract(
+public object SimulationProducts {
+    public val FTC: SimulationProductContract = SimulationProductContract(
         id = SimulationProductId.FTC_DESKTOP_OPMODE,
         controller = AresControllerTarget.FTC_CONTROL_HUB,
         simulator = AresSimulatorTarget.FTC,
@@ -68,7 +68,7 @@ object SimulationProducts {
         ),
     )
 
-    val FRC = SimulationProductContract(
+    public val FRC: SimulationProductContract = SimulationProductContract(
         id = SimulationProductId.FRC_WPILIB_DESKTOP,
         controller = AresControllerTarget.FRC_ROBORIO,
         simulator = AresSimulatorTarget.FRC,
@@ -82,7 +82,7 @@ object SimulationProducts {
         ),
     )
 
-    fun forTarget(target: AresProjectTarget): SimulationProductContract = when (target.simulator) {
+    public fun forTarget(target: AresProjectTarget): SimulationProductContract = when (target.simulator) {
         AresSimulatorTarget.FTC -> FTC
         AresSimulatorTarget.FRC -> FRC
     }
@@ -92,9 +92,9 @@ object SimulationProducts {
  * Pure compatibility planner shared by code generation, Studio, and tests. It never launches a
  * process and never infers a generic substitute for an unsupported drivetrain or mechanism.
  */
-object SimulationProjectPlanner {
+public object SimulationProjectPlanner {
     @JvmStatic
-    fun plan(
+    public fun plan(
         target: AresProjectTarget,
         drivetrain: DrivetrainDocument?,
         subsystems: Collection<SubsystemDocument>,

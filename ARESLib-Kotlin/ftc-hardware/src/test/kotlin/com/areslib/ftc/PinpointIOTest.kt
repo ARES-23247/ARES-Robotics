@@ -205,7 +205,7 @@ class PinpointIOTest {
             assertTrue(pinpointIO.isHealthy(1_000L))
             assertEquals(0.25, healthy.xMeters, 1e-6)
 
-            RobotClock.setMockTimeMs(1_020L)
+            RobotClock.useMockTime(1_020L)
             rawDriver.posX = Double.NaN
             val rejected = pinpointIO.getPoseUpdate()
 
@@ -240,7 +240,7 @@ class PinpointIOTest {
             val pinpointIO = PinpointIO(rawDriver)
             pinpointIO.getPoseUpdate()
 
-            RobotClock.setMockTimeMs(3_020L)
+            RobotClock.useMockTime(3_020L)
             rawDriver.posX = 5.0
             val rejected = pinpointIO.getPoseUpdate()
 

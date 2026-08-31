@@ -1,6 +1,5 @@
 package com.areslib.telemetry
 
-import com.areslib.control.safety.BrownoutGuard
 import com.areslib.hardware.actuator.MotorIO
 import com.areslib.math.geometry.Pose2d
 
@@ -107,17 +106,6 @@ fun ITelemetry.logPose3d(key: String, x: Double, y: Double, headingRad: Double) 
  */
 fun ITelemetry.logPose3d(key: String, pose: Pose2d) {
     logPose3d(key, pose.x, pose.y, pose.heading.radians)
-}
-
-/**
- * Extension to log brownout guard state and diagnostics.
- */
-fun ITelemetry.logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
-    putNumber("Robot/BatteryVoltage", batteryVoltage)
-    putNumber("Robot/BrownoutPowerScale", brownoutGuard.powerScale)
-    putString("Robot/BrownoutState", brownoutGuard.state.name)
-    putNumber("Robot/BatteryPercent", brownoutGuard.batteryPercent)
-    putNumber("Diagnostics/Power/BrownoutCount", brownoutGuard.tripCount.toDouble())
 }
 
 /**

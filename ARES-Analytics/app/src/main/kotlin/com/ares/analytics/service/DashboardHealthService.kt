@@ -100,7 +100,7 @@ class DashboardHealthService(
                 val status = when {
                     replay.truncatedWindows > 0 || database.p95QueryMs >= CRITICAL_QUERY_P95_MS ||
                         robotLogging.queueDepth >= CRITICAL_LOG_QUEUE_DEPTH -> DashboardHealthStatus.CRITICAL
-                    replay.droppedEmissionFrames > 0 || database.p95QueryMs >= DEGRADED_QUERY_P95_MS ||
+                    database.p95QueryMs >= DEGRADED_QUERY_P95_MS ||
                         connection.reconnects >= DEGRADED_RECONNECTS || robotLogging.droppedFrames > 0L ||
                         robotLogging.queueDepth >= DEGRADED_LOG_QUEUE_DEPTH -> DashboardHealthStatus.DEGRADED
                     else -> DashboardHealthStatus.HEALTHY
@@ -110,7 +110,7 @@ class DashboardHealthService(
                     ingestFramesPerSecond = ingestRate,
                     activeTopics = telemetry.activeTopics,
                     bufferedFrames = telemetry.bufferedFrames,
-                    droppedFrames = replay.droppedEmissionFrames,
+                    droppedFrames = 0,
                     databaseP95Ms = database.p95QueryMs,
                     databaseMaxMs = database.maxQueryMs,
                     databaseQueries = database.queryCount,

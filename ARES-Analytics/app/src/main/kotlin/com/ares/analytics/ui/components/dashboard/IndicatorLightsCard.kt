@@ -46,9 +46,7 @@ internal fun lightingDisplayName(stableName: String): String = when (stableName.
  * hardware/simulator value in real time. Each output is shown with a representative color, its
  * stable generated name, device kind, and raw accepted value.
  *
- * Generated robots publish `Subsystems/<document>/AppliedOutputs/<hardware>/<kind>`. The legacy
- * `Superstructure/IndicatorLight/{name}` topic remains readable for recorded and hand-authored
- * robots, but new GUI-owned robots never need to duplicate their generated telemetry.
+ * Generated robots publish `Subsystems/<document>/AppliedOutputs/<hardware>/<kind>`.
  */
 @Composable
 fun IndicatorLightsCard(

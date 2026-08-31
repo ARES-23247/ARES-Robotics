@@ -43,7 +43,7 @@ class CalibrationTestOpMode : LinearOpMode() {
             cachedVelocityRpm += (targetRpm - cachedVelocityRpm) * RESPONSE_PER_LOOP
         }
 
-        override fun setVelocityRpm(rpm: Double) {
+        override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
             appliedVoltage = (rpm / RPM_PER_VOLT).coerceIn(-12.0, 12.0)
         }
 

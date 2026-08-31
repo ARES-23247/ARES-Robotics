@@ -90,7 +90,7 @@ class ZeroCodeLifecycleEndToEndTest {
             rawOpMode.gamepad1.right_stick_x = 0.0f
 
             repeat(50) {
-                RobotClock.setMockTimeMs(RobotClock.currentTimeMillis() + 20L)
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20L)
                 opModeLifecycle.tick()
 
                 val driveCmd = robot.store.state.drive
@@ -129,7 +129,7 @@ class ZeroCodeLifecycleEndToEndTest {
             rawOpMode.gamepad1.right_stick_x = -1.0f
 
             repeat(50) {
-                RobotClock.setMockTimeMs(RobotClock.currentTimeMillis() + 20L)
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20L)
                 opModeLifecycle.tick()
 
                 val driveCmd = robot.store.state.drive

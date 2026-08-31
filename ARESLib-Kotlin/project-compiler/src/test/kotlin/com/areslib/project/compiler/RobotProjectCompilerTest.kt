@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.security.MessageDigest
 
 class RobotProjectCompilerTest {
     @Test
@@ -56,13 +57,13 @@ class RobotProjectCompilerTest {
             ProjectArtifactSourceSet.MAIN,
             ProjectArtifactOwnership.GENERATED_DO_NOT_EDIT,
             ProjectArtifactKind.PROJECT_RUNTIME,
-            sha256("generated source"),
+            testSha256("generated source"),
         )
 
         val first = ProjectVerificationManifestBuilder.build(project, listOf(entry))
         val changed = ProjectVerificationManifestBuilder.build(
             project,
-            listOf(entry.copy(contentSha256 = sha256("different source"))),
+            listOf(entry.copy(contentSha256 = testSha256("different source"))),
         )
 
         assertNotEquals(first.manifestSha256, changed.manifestSha256)
@@ -91,4 +92,8 @@ class RobotProjectCompilerTest {
             ),
         ),
     )
+
+    private fun testSha256(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(Charsets.UTF_8))
+        .joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
 }

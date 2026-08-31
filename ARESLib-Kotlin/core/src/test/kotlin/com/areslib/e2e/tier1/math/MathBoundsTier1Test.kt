@@ -1,6 +1,5 @@
 package com.areslib.e2e.tier1.math
 
-import com.areslib.control.feedback.LQRController
 import com.areslib.math.estimation.PoseEstimator
 import com.areslib.math.estimation.PoseEstimatorState
 import com.areslib.math.geometry.Vector3
@@ -16,40 +15,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class MathBoundsTier1Test {
-
-    @Test
-    fun testLqrVoltageBounds_shouldClamp() {
-        val lqr = LQRController(1, 1, 1)
-        lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
-        lqr.K = LQRController.Matrix(1, 1, doubleArrayOf(10.0)) // High gain
-        lqr.reset(doubleArrayOf(0.0))
-        lqr.minU = -12.0
-        lqr.maxU = 12.0
-        
-        // Large error to force max voltage
-        val outPos = lqr.calculate(doubleArrayOf(0.0), doubleArrayOf(10.0), 0.02)
-        assertEquals(12.0, outPos[0], 1e-6)
-
-        // Large error in opposite direction
-        val outNeg = lqr.calculate(doubleArrayOf(10.0), doubleArrayOf(-10.0), 0.02)
-        assertEquals(-12.0, outNeg[0], 1e-6)
-    }
-
-    @Test
-    fun testLqrSlewRateBounds_shouldLimitChange() {
-        val lqr = LQRController(1, 1, 1)
-        lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
-        lqr.K = LQRController.Matrix(1, 1, doubleArrayOf(10.0))
-        lqr.reset(doubleArrayOf(0.0))
-        lqr.minU = -12.0
-        lqr.maxU = 12.0
-        lqr.maxUChangePerSec = 5.0 // Max 5V per second
-
-        // Step 1: Initial large request -> should be limited by slew rate
-        // Max change = 5.0 * 0.02 = 0.1V
-        val out1 = lqr.calculate(doubleArrayOf(0.0), doubleArrayOf(10.0), 0.02)
-        assertEquals(0.1, out1[0], 1e-6)
-    }
 
     @Test
     fun testEkfOutlierRejection_shouldRejectExceedingMahalanobis() {

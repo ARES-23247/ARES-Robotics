@@ -5,12 +5,12 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-const val HARDWARE_TOPOLOGY_TOPIC: String = "Topology/HardwareMap"
-const val HARDWARE_TOPOLOGY_SCHEMA_VERSION: Int = 1
+public const val HARDWARE_TOPOLOGY_TOPIC: String = "Topology/HardwareMap"
+public const val HARDWARE_TOPOLOGY_SCHEMA_VERSION: Int = 1
 
 /** Hardware categories exchanged through [HARDWARE_TOPOLOGY_TOPIC]. */
 @Serializable
-enum class TopologyNodeType {
+public enum class TopologyNodeType {
     CONTROL_HUB,
     EXPANSION_HUB,
     SRS_HUB,
@@ -33,7 +33,7 @@ enum class TopologyNodeType {
 
 /** A node in the physical hardware tree; absent port and CAN fields are not applicable. */
 @Serializable
-data class TopologyNode(
+public data class TopologyNode(
     val id: String,
     val type: TopologyNodeType,
     val displayName: String,
@@ -48,26 +48,26 @@ data class TopologyNode(
 
 /** Complete versioned hardware tree for one robot. Parent links refer to [TopologyNode.id]. */
 @Serializable
-data class HardwareTopology(
+public data class HardwareTopology(
     val robotId: String,
     val nodes: List<TopologyNode> = emptyList(),
     val schemaVersion: Int = HARDWARE_TOPOLOGY_SCHEMA_VERSION,
 )
 
 /** The canonical JSON boundary shared by robot publishers and desktop consumers. */
-object HardwareTopologyCodec {
+public object HardwareTopologyCodec {
     private val json = Json {
         encodeDefaults = true
         explicitNulls = false
         ignoreUnknownKeys = true
     }
 
-    fun encode(topology: HardwareTopology): String {
+    public fun encode(topology: HardwareTopology): String {
         requireSupported(topology)
         return json.encodeToString(topology)
     }
 
-    fun decode(payload: String): HardwareTopology {
+    public fun decode(payload: String): HardwareTopology {
         return json.decodeFromString<HardwareTopology>(payload).also(::requireSupported)
     }
 

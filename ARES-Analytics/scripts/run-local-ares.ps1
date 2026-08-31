@@ -11,11 +11,15 @@ $aresLibGradle = Join-Path $aresLibRoot "gradlew.bat"
 $analyticsGradle = Join-Path $analyticsRoot "gradlew.bat"
 
 if ([string]::IsNullOrWhiteSpace($CandidateVersion)) {
-    $baseVersionLine = Select-String -Path (Join-Path $aresLibRoot "gradle.properties") -Pattern '^aresVersion=' | Select-Object -First 1
-    if ($null -eq $baseVersionLine) {
-        throw "ARESLib gradle.properties does not declare aresVersion."
+    $releaseManifest = Join-Path $analyticsRoot "..\release\ares-versions.properties"
+    if (-not (Test-Path -LiteralPath $releaseManifest -PathType Leaf)) {
+        throw "Canonical release manifest is missing: $releaseManifest"
     }
-    $baseVersion = ($baseVersionLine.Line -split '=', 2)[1].Trim()
+    $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $releaseManifest)
+    $baseVersion = $release["aresVersion"]
+    if ([string]::IsNullOrWhiteSpace($baseVersion)) {
+        throw "Canonical release manifest does not declare aresVersion."
+    }
     $stamp = [DateTime]::UtcNow.ToString("yyyyMMddHHmmss")
     $CandidateVersion = "$baseVersion-rc.local.$stamp"
 }

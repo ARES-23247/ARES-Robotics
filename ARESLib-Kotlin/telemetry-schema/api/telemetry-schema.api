@@ -1,3 +1,77 @@
+public final class com/areslib/telemetry/schema/DesktopDriveFrameGate {
+	public static final field ACK_VALUE_COUNT I
+	public static final field ACK_VERSION D
+	public static final field Companion Lcom/areslib/telemetry/schema/DesktopDriveFrameGate$Companion;
+	public fun <init> ()V
+	public fun <init> (J)V
+	public synthetic fun <init> (JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun copyAcknowledgement ([DJ)I
+	public final fun getButtonA ()Z
+	public final fun getButtonB ()Z
+	public final fun getButtonX ()Z
+	public final fun getFlags ()J
+	public final fun getMotionAuthorized ()Z
+	public final fun getOmegaRadiansPerSecond ()D
+	public final fun getStatus ()Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public final fun getTimeoutMs ()J
+	public final fun getVxMetersPerSecond ()D
+	public final fun getVyMetersPerSecond ()D
+	public final fun isFieldCentric ()Z
+	public final fun isFresh (J)Z
+	public final fun isRedAlliance ()Z
+	public final fun isTeleopMode ()Z
+	public final fun observe ([DJDD)Z
+	public static synthetic fun observe$default (Lcom/areslib/telemetry/schema/DesktopDriveFrameGate;[DJDDILjava/lang/Object;)Z
+	public final fun receiverReady (J)Z
+}
+
+public final class com/areslib/telemetry/schema/DesktopDriveFrameGate$Companion {
+}
+
+public final class com/areslib/telemetry/schema/DesktopDriveProtocol {
+	public static final field ACTUATING_OR_EDGE_FLAGS J
+	public static final field CLIENT_TIME_INDEX I
+	public static final field FLAGS_INDEX I
+	public static final field FLAG_BUTTON_A J
+	public static final field FLAG_BUTTON_B J
+	public static final field FLAG_BUTTON_X J
+	public static final field FLAG_FIELD_CENTRIC J
+	public static final field FLAG_FLYWHEEL J
+	public static final field FLAG_INTAKE J
+	public static final field FLAG_POSE_RESET J
+	public static final field FLAG_RED_ALLIANCE J
+	public static final field FLAG_TELEOP J
+	public static final field FLAG_TRANSFER J
+	public static final field INSTANCE Lcom/areslib/telemetry/schema/DesktopDriveProtocol;
+	public static final field KNOWN_FLAGS_MASK J
+	public static final field MAX_ANGULAR_RADIANS_PER_SECOND D
+	public static final field MAX_SAFE_INTEGER_DOUBLE D
+	public static final field MAX_SAFE_INTEGER_LONG J
+	public static final field MAX_TRANSLATION_METERS_PER_SECOND D
+	public static final field OMEGA_INDEX I
+	public static final field SEQUENCE_INDEX I
+	public static final field SESSION_INDEX I
+	public static final field VALUE_COUNT I
+	public static final field VERSION D
+	public static final field VERSION_INDEX I
+	public static final field VX_INDEX I
+	public static final field VY_INDEX I
+}
+
+public final class com/areslib/telemetry/schema/DesktopDriveReceiverStatus : java/lang/Enum {
+	public static final field ACTIVE Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static final field ARMED_NEUTRAL Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static final field EXPIRED Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static final field INVALID_FRAME Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static final field OUT_OF_ORDER Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static final field WAITING_FOR_FRAME Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static final field WAITING_FOR_NEUTRAL Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public final fun getCode ()I
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+	public static fun values ()[Lcom/areslib/telemetry/schema/DesktopDriveReceiverStatus;
+}
+
 public final class com/areslib/telemetry/schema/HardwareTopology {
 	public static final field Companion Lcom/areslib/telemetry/schema/HardwareTopology$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/util/List;I)V

@@ -12,21 +12,21 @@ import com.areslib.util.RobotClock
 import edu.wpi.first.wpilibj.GenericHID
 
 /** Samples one configured FRC Driver Station port into caller-owned storage. */
-interface FrcControllerPortSampler {
-    fun prepare(port: Int)
-    fun sampleInto(port: Int, frame: InputFrame, nowNanos: Long)
+public interface FrcControllerPortSampler {
+    public fun prepare(port: Int): Unit
+    public fun sampleInto(port: Int, frame: InputFrame, nowNanos: Long): Unit
 }
 
 /** Vendor-neutral WPILib sampler with one reusable adapter per active generated port. */
-class WpilibFrcControllerPortSampler : FrcControllerPortSampler {
+public class WpilibFrcControllerPortSampler : FrcControllerPortSampler {
     private val adapters = arrayOfNulls<FrcInputFrameAdapter>(MAX_FRC_CONTROLLER_PORTS)
 
-    override fun prepare(port: Int) {
+    public override fun prepare(port: Int): Unit {
         require(port in adapters.indices) { "FRC Driver Station port $port is outside 0..${adapters.lastIndex}" }
         if (adapters[port] == null) adapters[port] = FrcInputFrameAdapter(GenericHID(port))
     }
 
-    override fun sampleInto(port: Int, frame: InputFrame, nowNanos: Long) {
+    public override fun sampleInto(port: Int, frame: InputFrame, nowNanos: Long): Unit {
         requireNotNull(adapters[port]) { "FRC Driver Station port $port was not prepared" }
             .sampleInto(frame, nowNanos)
     }
@@ -38,7 +38,7 @@ class WpilibFrcControllerPortSampler : FrcControllerPortSampler {
  * WPILib owns Driver Station sampling. The caller owns TimedRobot/FMS lifecycle, generated
  * capabilities, drive arbitration, hardware IO, and simulation selection.
  */
-class FrcGeneratedProjectControlsRuntime<C>(
+public class FrcGeneratedProjectControlsRuntime<C>(
     definition: GeneratedProjectDefinition<C>,
     stateProvider: () -> RobotState,
     dispatch: (RobotAction) -> Unit,
@@ -64,7 +64,7 @@ class FrcGeneratedProjectControlsRuntime<C>(
     }
 
     /** Samples active ports and advances generated work once during an enabled TeleOp frame. */
-    fun update() {
+    public fun update(): Unit {
         val nowNanos = RobotClock.nanoTime()
         var port = 0
         while (port < runtime.controllerPortCapacity) {
@@ -79,20 +79,20 @@ class FrcGeneratedProjectControlsRuntime<C>(
         runtime.updateTasks()
     }
 
-    fun requestRoutine(
+    public fun requestRoutine(
         routineId: String,
         policy: RoutineStartPolicy = RoutineStartPolicy.RESTART_EXISTING,
     ): RoutineRequestResult = runtime.requestRoutine(routineId, policy)
 
-    fun updateRoutines() = runtime.updateRoutines()
+    public fun updateRoutines(): Unit = runtime.updateRoutines()
 
     /** Releases all generated input and work; the TimedRobot host decides when modes transition. */
-    fun cancelAll(reason: String) = runtime.cancelAll(reason)
+    public fun cancelAll(reason: String): Unit = runtime.cancelAll(reason)
 
-    val controlsSource: String
+    public val controlsSource: String
         get() = runtime.controlsSource
 
-    val activeControllerPortCount: Int
+    public val activeControllerPortCount: Int
         get() = runtime.activeControllerPortCount
 }
 

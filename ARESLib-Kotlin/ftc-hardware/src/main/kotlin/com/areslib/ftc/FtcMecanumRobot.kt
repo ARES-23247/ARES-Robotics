@@ -468,9 +468,6 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /** Stops all hardware devices registered in [com.areslib.hardware.HardwareRegistry]. */
     fun stopAll() = hardwareRegistry.safeAll()
     
-    /** Alias for [stopAll]. */
-    fun stop() = stopAll()
-
     /**
      * Computes dead-reckoning fallback odometry when Pinpoint hardware is offline.
      *

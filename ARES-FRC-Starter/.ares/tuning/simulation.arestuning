@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "uid": "ares.starter.frc.profile.simulation",
   "profileId": "simulation",
   "displayName": "Simulation-only baseline",
   "description": "No physical gains or calibrations are claimed. Complete Hardware Review before deployment.",
-  "projectUid": "ares.starter.frc",
+  "projectId": "ares-frc-starter",
   "drivebaseUid": "ares.starter.frc.drivebase",
   "authority": "CANONICAL_CHECKED_IN",
   "values": [

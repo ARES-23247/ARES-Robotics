@@ -167,8 +167,8 @@ public class com/areslib/frc/telemetry/FrcTelemetryManager : com/areslib/telemet
 	public fun getCustomPublishers ()Ljava/util/List;
 	public fun getDataLoggingTelemetry ()Lcom/areslib/logging/DataLoggingTelemetry;
 	public final fun getPublisher ()Lcom/areslib/telemetry/ARESNetworkStatePublisher;
-	public final fun logBrownout (Lcom/areslib/control/safety/BrownoutGuard;D)V
 	public fun publish (Lcom/areslib/state/RobotState;Lcom/areslib/telemetry/GamepadState;Lcom/areslib/telemetry/GamepadState;DD)V
+	public final fun setBrownoutGuard (Lcom/areslib/control/safety/BrownoutGuard;)V
 }
 
 public final class com/areslib/frc/telemetry/FrcTelemetryManager$Companion {

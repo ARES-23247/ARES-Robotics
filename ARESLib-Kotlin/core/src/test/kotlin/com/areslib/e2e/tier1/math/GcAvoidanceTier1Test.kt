@@ -1,6 +1,5 @@
 package com.areslib.e2e.tier1.math
 
-import com.areslib.control.feedback.LQRController
 import com.areslib.control.feedback.PIDController
 import com.areslib.math.estimation.HistoryBuffer
 import com.areslib.math.geometry.Pose2d
@@ -9,19 +8,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class GcAvoidanceTier1Test {
-
-    @Test
-    fun testLqrCalculate_returnsSameArrayInstance() {
-        val lqr = LQRController(1, 1, 1)
-        lqr.setSystemCoefficients(doubleArrayOf(1.0), doubleArrayOf(1.0), doubleArrayOf(1.0))
-        lqr.reset(doubleArrayOf(0.0))
-        
-        val result1 = lqr.calculate(doubleArrayOf(0.0), doubleArrayOf(1.0), 0.02)
-        val result2 = lqr.calculate(doubleArrayOf(0.0), doubleArrayOf(1.0), 0.02)
-        
-        // Ensure that the controller reuses the array internally for zero-allocation
-        assertSame(result1, result2, "LQR calculate should return the same array instance to avoid GC")
-    }
 
     @Test
     fun testPidCalculate_returnsPrimitiveDouble() {
@@ -68,18 +54,4 @@ class GcAvoidanceTier1Test {
         assertEquals(200L, entry.timestampMs)
     }
 
-    @Test
-    fun testMatrixMultiplication_primitiveBackedAndInPlace() {
-        val m1 = LQRController.Matrix(2, 2, doubleArrayOf(1.0, 2.0, 3.0, 4.0))
-        val m2 = LQRController.Matrix(2, 2, doubleArrayOf(2.0, 0.0, 1.0, 2.0))
-        val mOut = LQRController.Matrix(2, 2)
-        
-        m1.multiplyInto(m2, mOut)
-        
-        // Output matrix should have correctly multiplied values in place
-        assertEquals(4.0, mOut.get(0, 0), 1e-6)
-        assertEquals(4.0, mOut.get(0, 1), 1e-6)
-        assertEquals(10.0, mOut.get(1, 0), 1e-6)
-        assertEquals(8.0, mOut.get(1, 1), 1e-6)
-    }
 }

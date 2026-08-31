@@ -78,10 +78,10 @@ class RobotProjectAssemblerTest {
     }
 
     @Test
-    fun `legacy tuning scope is explicit and cannot split inside one project`() {
+    fun `tuning documents use the canonical project identity`() {
         val component = TuningComponentDocument(
             uid = "component.drive",
-            projectUid = "runtime.lightbot",
+            projectId = "lightbot",
             displayName = "Drive",
             description = "Typed drive tuning scope",
             parameters = emptyList(),
@@ -93,15 +93,15 @@ class RobotProjectAssemblerTest {
             validSnapshot().copy(
                 tuningComponents = listOf(
                     component,
-                    component.copy(uid = "component.lights", projectUid = "runtime.another-robot"),
+                    component.copy(uid = "component.lights", projectId = "another-robot"),
                 ),
             ),
         )
 
         assertTrue(effective.isValid, effective.issues.joinToString())
-        assertEquals("runtime.lightbot", effective.tuningScopeUid)
+        assertEquals("lightbot", effective.projectId?.value)
         assertFalse(split.isValid)
-        assertTrue(split.issues.any { it.code == "tuning_scope_mismatch" })
+        assertTrue(split.issues.any { it.code == "project_identity_mismatch" && it.path == "projectId" })
     }
 
     private fun validSnapshot() = RobotProjectSnapshot(

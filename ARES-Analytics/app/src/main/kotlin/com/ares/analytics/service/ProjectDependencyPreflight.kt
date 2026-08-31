@@ -31,7 +31,7 @@ internal data class ProjectDependencyPreflightResult(
 /**
  * Fast, read-only dependency check that runs before Studio starts Gradle, a simulator, or deployment.
  *
- * A command-line `-ParesVersion` override can otherwise hide an older project's declared runtime until
+ * A command-line `-ParesVersion` override can otherwise hide an older project's canonical release manifest until
  * Kotlin compilation fails deep inside generated or USER-OWNED code. ARES intentionally does not maintain
  * compatibility shims for unreleased projects, so mismatches fail here with a direct migration path.
  */
@@ -53,16 +53,28 @@ internal object ProjectDependencyPreflight {
         projectRoot: File,
         expectedVersion: String?,
         pinnedVersion: String?,
+        isolatedRepositoryConfigured: Boolean = false,
     ): ProjectDependencyPreflightResult {
         val canonicalRoot = projectRoot.canonicalFile
         val normalizedExpected = expectedVersion?.trim()?.takeIf(String::isNotEmpty)
         val normalizedPinned = pinnedVersion?.trim()?.takeIf(String::isNotEmpty)
         val problems = buildList {
             if (normalizedExpected != null && normalizedPinned == null) {
-                add("The project does not pin aresVersion; this Studio requires ARES $normalizedExpected.")
-            } else if (normalizedExpected != null && normalizedPinned != normalizedExpected) {
                 add(
-                    "The project pins ARES $normalizedPinned, while this Studio requires ARES " +
+                    "The canonical release/ares-versions.properties manifest does not declare aresVersion; " +
+                        "this Studio requires ARES $normalizedExpected.",
+                )
+            } else if (
+                normalizedExpected != null &&
+                normalizedPinned != normalizedExpected &&
+                !isCompatibleIsolatedCandidate(
+                    expectedVersion = normalizedExpected,
+                    pinnedVersion = normalizedPinned,
+                    isolatedRepositoryConfigured = isolatedRepositoryConfigured,
+                )
+            ) {
+                add(
+                    "The canonical release manifest declares ARES $normalizedPinned, while this Studio requires ARES " +
                         "$normalizedExpected.",
                 )
             }
@@ -88,4 +100,12 @@ internal object ProjectDependencyPreflight {
             problems = problems,
         )
     }
+
+    private fun isCompatibleIsolatedCandidate(
+        expectedVersion: String,
+        pinnedVersion: String?,
+        isolatedRepositoryConfigured: Boolean,
+    ): Boolean = isolatedRepositoryConfigured &&
+        pinnedVersion != null &&
+        expectedVersion.startsWith("$pinnedVersion-")
 }

@@ -11,35 +11,35 @@ class FiltersTest {
 
     @BeforeEach
     fun setUp() {
-        RobotClock.setMockTimeMs(0)
+        RobotClock.useMockTime(0)
     }
 
     @Test
     fun testDebouncer() {
         val debouncer = Debouncer(risingTimeMs = 50, fallingTimeMs = 50)
         
-        RobotClock.setMockTimeMs(0)
+        RobotClock.useMockTime(0)
         assertFalse(debouncer.calculate(false))
         
         // Input goes true, but only for 10ms
-        RobotClock.setMockTimeMs(10)
+        RobotClock.useMockTime(10)
         assertFalse(debouncer.calculate(true))
         
-        RobotClock.setMockTimeMs(20)
+        RobotClock.useMockTime(20)
         assertFalse(debouncer.calculate(false)) // Input bounced back to false
 
         // Input goes true and stays true for 60ms
-        RobotClock.setMockTimeMs(30)
+        RobotClock.useMockTime(30)
         assertFalse(debouncer.calculate(true))
         
-        RobotClock.setMockTimeMs(85)
+        RobotClock.useMockTime(85)
         assertTrue(debouncer.calculate(true)) // It has been 55ms since baseline changed to true!
         
         // Test falling edge
-        RobotClock.setMockTimeMs(90)
+        RobotClock.useMockTime(90)
         assertTrue(debouncer.calculate(false)) // False for only 5ms
         
-        RobotClock.setMockTimeMs(150)
+        RobotClock.useMockTime(150)
         assertFalse(debouncer.calculate(false)) // False for 60ms, correctly registers false
     }
 

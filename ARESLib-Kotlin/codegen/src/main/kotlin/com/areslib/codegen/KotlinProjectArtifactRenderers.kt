@@ -11,11 +11,11 @@ import com.areslib.project.compiler.ProjectArtifactOwnership
 import com.areslib.project.compiler.ProjectArtifactPlan
 import com.areslib.project.compiler.ProjectArtifactSourceSet
 import com.areslib.project.compiler.RobotProjectIr
-import com.areslib.project.compiler.sha256
 import com.areslib.routine.AresRoutineCodec
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.isAresGenerated
+import java.security.MessageDigest
 
 /** Rendered content paired with the plan that authorized its destination and ownership. */
 data class RenderedKotlinArtifact(
@@ -179,7 +179,7 @@ object DrivebaseKotlinArtifactRenderer {
         if (drivetrain == null && project.tuningDeclarations.isEmpty()) return emptyList()
         val profiles = project.tuningProfiles
         val files = if (drivetrain != null) {
-            val projectUid = requireNotNull(profiles.firstOrNull()?.projectUid) {
+            val projectId = requireNotNull(profiles.firstOrNull()?.projectId) {
                 "Drivebase '${drivetrain.uid}' requires a checked-in canonical tuning profile"
             }
             val additional = project.tuningDeclarations.filterNot { candidate ->
@@ -189,7 +189,7 @@ object DrivebaseKotlinArtifactRenderer {
                 add(DrivetrainKotlinGenerator.generate(drivetrain, profiles, packageName, additional))
                 add(
                     DrivetrainKotlinGenerator.generateProjectTuning(
-                        projectUid,
+                        projectId,
                         drivetrain.canonicalProfileUid,
                         drivetrain.uid,
                         project.tuningDeclarations,
@@ -209,7 +209,7 @@ object DrivebaseKotlinArtifactRenderer {
                 ?: error("A project without a drivebase requires exactly one root canonical tuning profile")
             listOf(
                 DrivetrainKotlinGenerator.generateProjectTuning(
-                    canonical.projectUid,
+                    canonical.projectId,
                     canonical.uid,
                     null,
                     project.tuningDeclarations,
@@ -296,3 +296,7 @@ private fun artifactSuffix(path: String): String = path.removeSuffix(".kt")
     .lowercase()
 
 private fun String.camelToKebab(): String = replace(Regex("([a-z0-9])([A-Z])"), "$1-$2").lowercase()
+
+private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+    .digest(value.toByteArray(Charsets.UTF_8))
+    .joinToString(separator = "") { byte -> (byte.toInt() and 0xff).toString(16).padStart(2, '0') }

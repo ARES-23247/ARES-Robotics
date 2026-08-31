@@ -37,46 +37,46 @@ import com.areslib.tuning.TuningProfileDocumentCodec
 import java.security.MessageDigest
 
 /** Version of the platform-neutral compiler IR, independent of individual document schemas. */
-const val ARES_PROJECT_COMPILER_IR_VERSION: Int = 2
+public const val ARES_PROJECT_COMPILER_IR_VERSION: Int = 2
 
 /** An effective action with a stable, validated project key. */
-data class ProjectActionIr(
+public data class ProjectActionIr(
     val key: ProjectActionKey,
     val descriptor: ActionDescriptor,
 )
 
 /** A canonical routine after whole-project reference validation. */
-data class ProjectRoutineIr(
+public data class ProjectRoutineIr(
     val id: ProjectDocumentId,
     val document: RoutineDocument,
 )
 
 /** A canonical controller scheme after whole-project reference validation. */
-data class ProjectControlSchemeIr(
+public data class ProjectControlSchemeIr(
     val id: ProjectDocumentId,
     val document: ControlSchemeDocument,
 )
 
 /** A controller profile selected by a validated control scheme. */
-data class ProjectControllerProfileIr(
+public data class ProjectControllerProfileIr(
     val id: ProjectDocumentId,
     val document: ControllerProfileDocument,
 )
 
 /** A subsystem compiler input with typed identity; renderers may not reopen project files. */
-data class ProjectSubsystemIr(
+public data class ProjectSubsystemIr(
     val id: ProjectDocumentId,
     val document: SubsystemDocument,
 )
 
 /** A superstructure compiler input with typed identity. */
-data class ProjectSuperstructureIr(
+public data class ProjectSuperstructureIr(
     val id: ProjectDocumentId,
     val document: SuperstructureDocument,
 )
 
 /** The single active drivetrain compiler input, when the project declares one. */
-data class ProjectDrivetrainIr(
+public data class ProjectDrivetrainIr(
     val id: ProjectDocumentId,
     val document: DrivetrainDocument,
 )
@@ -88,7 +88,7 @@ data class ProjectDrivetrainIr(
  * stages. The important boundary is that renderers receive this sorted IR, never raw repositories,
  * partially merged catalogs, or an invalid [EffectiveRobotProject].
  */
-data class RobotProjectIr(
+public data class RobotProjectIr(
     val irVersion: Int = ARES_PROJECT_COMPILER_IR_VERSION,
     val projectId: ProjectId,
     val target: AresProjectTarget,
@@ -108,14 +108,13 @@ data class RobotProjectIr(
     val tuningComponents: List<TuningComponentDocument>,
     val tuningProfiles: List<TuningProfileDocument>,
     val tuningDeclarations: List<TuningParameterDeclaration>,
-    val tuningScopeUid: String?,
     val canonicalProjectSha256: String,
 )
 
 /** Pure lowering boundary between the effective model and every code generator. */
-object RobotProjectCompiler {
+public object RobotProjectCompiler {
     @JvmStatic
-    fun lower(
+    public fun lower(
         project: EffectiveRobotProject,
         requestedInputPlatform: ControllerInputPlatform? = null,
     ): RobotProjectIr {
@@ -176,7 +175,6 @@ object RobotProjectCompiler {
             tuningComponents = project.raw.tuningComponents.sortedBy { it.uid },
             tuningProfiles = project.raw.tuningProfiles.sortedBy { it.uid },
             tuningDeclarations = declarations,
-            tuningScopeUid = project.tuningScopeUid,
             canonicalProjectSha256 = canonicalProjectHash(project, declarations),
         )
     }

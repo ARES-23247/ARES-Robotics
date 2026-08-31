@@ -27,47 +27,47 @@ import com.areslib.tuning.TuningProfileDocument
  * authoring repository order. Raw documents that do not yet have a derived index remain explicitly
  * named canonical inputs here, keeping filesystem and merge semantics out of feature code.
  */
-class EffectiveRobotProjectQueries(private val project: EffectiveRobotProject) {
-    val projectRoot: String get() = project.raw.projectRoot
-    val isValid: Boolean get() = project.isValid
-    val projectId: ProjectId? get() = project.projectId
-    val target: AresProjectTarget? get() = project.target
-    val issues: List<ProjectModelIssue> get() = project.issues
-    val metadata: AresProjectMetadataDocument? get() = project.raw.metadata
-    val capabilityCatalog: CapabilityCatalogDocument? get() = project.capabilityCatalog
-    val autonomousCatalog: AutonomousCatalogDocument? get() = project.raw.autonomousCatalog
-    val field: RobotFieldConfig? get() = project.raw.field
-    val simulationPlan: SimulationProjectPlan? get() = project.simulationPlan
-    val tuningComponents: List<TuningComponentDocument> get() = project.raw.tuningComponents.sortedBy { it.uid }
-    val tuningProfiles: List<TuningProfileDocument> get() = project.raw.tuningProfiles.sortedBy { it.uid }
-    val tuningParameters: List<TuningParameterDeclaration> get() =
+public class EffectiveRobotProjectQueries(private val project: EffectiveRobotProject) {
+    public val projectRoot: String get() = project.raw.projectRoot
+    public val isValid: Boolean get() = project.isValid
+    public val projectId: ProjectId? get() = project.projectId
+    public val target: AresProjectTarget? get() = project.target
+    public val issues: List<ProjectModelIssue> get() = project.issues
+    public val metadata: AresProjectMetadataDocument? get() = project.raw.metadata
+    public val capabilityCatalog: CapabilityCatalogDocument? get() = project.capabilityCatalog
+    public val autonomousCatalog: AutonomousCatalogDocument? get() = project.raw.autonomousCatalog
+    public val field: RobotFieldConfig? get() = project.raw.field
+    public val simulationPlan: SimulationProjectPlan? get() = project.simulationPlan
+    public val tuningComponents: List<TuningComponentDocument> get() = project.raw.tuningComponents.sortedBy { it.uid }
+    public val tuningProfiles: List<TuningProfileDocument> get() = project.raw.tuningProfiles.sortedBy { it.uid }
+    public val tuningParameters: List<TuningParameterDeclaration> get() =
         (drivetrains.flatMap { it.parameters } +
             subsystems.flatMap { it.tuningParameters } +
             tuningComponents.flatMap { it.parameters })
             .sortedBy { it.uid }
 
-    val actions: List<ActionDescriptor> get() = project.actions.entries.sortedBy { it.key.value }.map { it.value }
-    val actionKeys: Set<ProjectActionKey> get() = project.actions.keys
-    val routines: List<RoutineDocument> get() = project.routines.entries.sortedBy { it.key.value }.map { it.value }
-    val controlSchemes: List<ControlSchemeDocument> get() =
+    public val actions: List<ActionDescriptor> get() = project.actions.entries.sortedBy { it.key.value }.map { it.value }
+    public val actionKeys: Set<ProjectActionKey> get() = project.actions.keys
+    public val routines: List<RoutineDocument> get() = project.routines.entries.sortedBy { it.key.value }.map { it.value }
+    public val controlSchemes: List<ControlSchemeDocument> get() =
         project.controlSchemes.entries.sortedBy { it.key.value }.map { it.value }
-    val controllerProfiles: List<ControllerProfileDocument> get() =
+    public val controllerProfiles: List<ControllerProfileDocument> get() =
         project.controllerProfiles.entries.sortedBy { it.key.value }.map { it.value }
-    val subsystems: List<SubsystemDocument> get() = project.subsystems.entries.sortedBy { it.key.value }.map { it.value }
-    val superstructures: List<SuperstructureDocument> get() =
+    public val subsystems: List<SubsystemDocument> get() = project.subsystems.entries.sortedBy { it.key.value }.map { it.value }
+    public val superstructures: List<SuperstructureDocument> get() =
         project.superstructures.entries.sortedBy { it.key.value }.map { it.value }
-    val drivetrains: List<DrivetrainDocument> get() = project.drivetrains.entries.sortedBy { it.key.value }.map { it.value }
+    public val drivetrains: List<DrivetrainDocument> get() = project.drivetrains.entries.sortedBy { it.key.value }.map { it.value }
 
-    fun action(key: String): ActionDescriptor? = runCatching { ProjectActionKey(key) }.getOrNull()?.let(project.actions::get)
-    fun routine(id: String): RoutineDocument? = document(id, project.routines)
-    fun controlScheme(id: String): ControlSchemeDocument? = document(id, project.controlSchemes)
-    fun controllerProfile(id: String): ControllerProfileDocument? = document(id, project.controllerProfiles)
-    fun subsystem(id: String): SubsystemDocument? = document(id, project.subsystems)
-    fun superstructure(id: String): SuperstructureDocument? = document(id, project.superstructures)
-    fun drivetrain(id: String): DrivetrainDocument? = document(id, project.drivetrains)
+    public fun action(key: String): ActionDescriptor? = runCatching { ProjectActionKey(key) }.getOrNull()?.let(project.actions::get)
+    public fun routine(id: String): RoutineDocument? = document(id, project.routines)
+    public fun controlScheme(id: String): ControlSchemeDocument? = document(id, project.controlSchemes)
+    public fun controllerProfile(id: String): ControllerProfileDocument? = document(id, project.controllerProfiles)
+    public fun subsystem(id: String): SubsystemDocument? = document(id, project.subsystems)
+    public fun superstructure(id: String): SuperstructureDocument? = document(id, project.superstructures)
+    public fun drivetrain(id: String): DrivetrainDocument? = document(id, project.drivetrains)
 
     private fun <T> document(id: String, index: Map<ProjectDocumentId, T>): T? =
         runCatching { ProjectDocumentId(id) }.getOrNull()?.let(index::get)
 }
 
-fun EffectiveRobotProject.queries(): EffectiveRobotProjectQueries = EffectiveRobotProjectQueries(this)
+public fun EffectiveRobotProject.queries(): EffectiveRobotProjectQueries = EffectiveRobotProjectQueries(this)

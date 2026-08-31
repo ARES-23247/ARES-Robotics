@@ -3,7 +3,7 @@ package com.areslib.simulation
 import com.areslib.util.RobotClock
 
 /** Fault classes shared by fault-injection labs without prescribing a league-specific device API. */
-enum class SimulationFaultKind {
+public enum class SimulationFaultKind {
     STALE_INPUT,
     INVALID_INPUT,
     FROZEN_INPUT,
@@ -17,7 +17,7 @@ enum class SimulationFaultKind {
  * One deterministic fault interval. [targetId] is a canonical drivetrain component, subsystem
  * hardware, bus, or power-source ID; adapters decide which IDs they own and must reject unknowns.
  */
-data class SimulationFaultCommand(
+public data class SimulationFaultCommand(
     val commandId: String,
     val targetId: String,
     val kind: SimulationFaultKind,
@@ -33,7 +33,7 @@ data class SimulationFaultCommand(
         }
     }
 
-    fun isActiveAt(timeMillis: Long): Boolean =
+    public fun isActiveAt(timeMillis: Long): Boolean =
         timeMillis >= startsAtMillis && (endsAtMillis == null || timeMillis < endsAtMillis)
 }
 
@@ -41,7 +41,7 @@ data class SimulationFaultCommand(
  * Pre-sorted, immutable fault schedule. The indexed hot-path lookup creates no collections and uses
  * [RobotClock], keeping live simulation and deterministic replay on the same time source.
  */
-class SimulationFaultTimeline(commands: Collection<SimulationFaultCommand>) {
+public class SimulationFaultTimeline(commands: Collection<SimulationFaultCommand>) {
     private val scheduled = commands.sortedWith(
         compareBy<SimulationFaultCommand> { it.startsAtMillis }
             .thenBy { it.targetId }
@@ -55,10 +55,10 @@ class SimulationFaultTimeline(commands: Collection<SimulationFaultCommand>) {
         }
     }
 
-    val size: Int get() = scheduled.size
+    public val size: Int get() = scheduled.size
 
     /** First active fault in explicit stable priority order, or null when this target is healthy. */
-    fun activeFault(targetId: String, timeMillis: Long = RobotClock.currentTimeMillis()): SimulationFaultCommand? {
+    public fun activeFault(targetId: String, timeMillis: Long = RobotClock.currentTimeMillis()): SimulationFaultCommand? {
         var index = 0
         while (index < scheduled.size) {
             val command = scheduled[index]
@@ -70,7 +70,7 @@ class SimulationFaultTimeline(commands: Collection<SimulationFaultCommand>) {
     }
 
     /** Allocation-free predicate used when adapters must react to more than one simultaneous fault. */
-    fun isActive(
+    public fun isActive(
         targetId: String,
         kind: SimulationFaultKind,
         timeMillis: Long = RobotClock.currentTimeMillis(),

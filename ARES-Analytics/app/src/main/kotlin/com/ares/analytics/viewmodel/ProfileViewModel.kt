@@ -6,7 +6,6 @@ import com.ares.analytics.service.OAuthService
 import com.ares.analytics.service.DriveDestinationStatus
 import com.ares.analytics.service.GoogleDriveService
 import com.ares.analytics.service.SyncEngineService
-import com.ares.analytics.shared.models.RobotProfile
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.shared.DEFAULT_GEMINI_MODEL
@@ -23,7 +22,6 @@ import kotlinx.coroutines.withContext
 data class ProfileState(
     val authState: AuthState = AuthState.Unauthenticated,
     val config: WorkspaceConfig? = null,
-    val robotProfiles: List<RobotProfile> = emptyList(),
     val syncStatus: String = "",
     val googleClientId: String = "",
     val googleOAuthBrokerUrl: String = "",
@@ -95,14 +93,6 @@ class ProfileViewModel(
                 if (state is AuthState.Authenticated) {
                     if (_state.value.config?.driveDestination != null) {
                         onIntent(ProfileIntent.PerformDeltaSync(state.idToken))
-                        try {
-                            val remoteProfiles = syncEngineService.getRemoteRobotProfiles()
-                            _state.update { it.copy(robotProfiles = remoteProfiles) }
-                        } catch (e: Exception) {
-                            _state.update {
-                                it.copy(errorMessage = e.message ?: "The Drive destination is unavailable.")
-                            }
-                        }
                     } else {
                         _state.update {
                             it.copy(syncStatus = "Signed in. Choose a Drive destination for this workspace to enable cloud sync.")
@@ -132,20 +122,9 @@ class ProfileViewModel(
             when (intent) {
                 is ProfileIntent.LoadConfig -> {
                     val cfg = intent.config
-                    val remoteProfiles = if (
-                        cfg.driveDestination != null && oauthService.authState.value is AuthState.Authenticated
-                    ) {
-                        try {
-                            syncEngineService.getRemoteRobotProfiles()
-                        } catch (_: Exception) {
-                            emptyList()
-                        }
-                    } else emptyList()
-
                     _state.update {
                         it.copy(
                             config = cfg,
-                            robotProfiles = remoteProfiles,
                             googleClientId = cfg.googleClientId ?: "",
                             googleOAuthBrokerUrl = cfg.googleOAuthBrokerUrl ?: "",
                             googleOAuthUseCustomClient = cfg.googleOAuthUseCustomClient,

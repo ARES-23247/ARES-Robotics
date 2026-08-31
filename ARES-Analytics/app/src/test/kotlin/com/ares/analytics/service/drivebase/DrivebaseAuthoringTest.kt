@@ -6,7 +6,7 @@ import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderIntent
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderStep
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderViewModel
 import com.ares.analytics.viewmodel.drivebase.DrivebaseDiscardAction
-import com.ares.analytics.viewmodel.drivebase.canonicalRuntimeProjectUid
+import com.ares.analytics.viewmodel.drivebase.canonicalRuntimeProjectId
 import com.ares.analytics.viewmodel.drivebase.evaluateDriveLab
 import com.ares.analytics.viewmodel.drivebase.evaluateGeometryLab
 import com.ares.analytics.viewmodel.drivebase.evaluateLocalizationFailure
@@ -116,23 +116,23 @@ class DrivebaseAuthoringTest {
                 """{"schemaVersion":4,"projectId":"visible-frc-project","identity":{"teamId":"99998","seasonId":"2026","robotId":"VisibleFrcRobot","displayName":"Visible FRC Robot"},"league":"FRC","coordinateConvention":"BLUE_CORNER_ORIGIN_CCW","robotLengthMeters":0.75,"robotWidthMeters":0.65,"fieldLengthMeters":16.54175,"fieldWidthMeters":8.21055,"authoringModel":"GUI_OWNED","runtimeOptions":{}}""",
             )
         }
-        val stale = canonicalTemplate("VisibleFrcRobot", DrivebaseKind.FRC_CTRE_SWERVE).toUiDrivebase()
-        val runtimeProjectUid = "team99998.frc.season2026.visiblefrcrobot"
+        val stale = canonicalTemplate("stale-project", DrivebaseKind.FRC_CTRE_SWERVE).toUiDrivebase()
+        val runtimeProjectId = "visible-frc-project"
         val current = stale.copy(
-            projectId = runtimeProjectUid,
+            projectId = runtimeProjectId,
             canonical = requireNotNull(stale.canonical).copy(
-                canonicalProfileUid = "$runtimeProjectUid.profile.competition",
+                canonicalProfileUid = "$runtimeProjectId.profile.competition",
             ),
         )
 
-        assertEquals(runtimeProjectUid, canonicalRuntimeProjectUid(root.path, "VisibleFrcRobot", League.FRC))
-        assertSame(current, current.requireCanonicalProjectIdentity(runtimeProjectUid))
+        assertEquals(runtimeProjectId, canonicalRuntimeProjectId(root.path, "VisibleFrcRobot", League.FRC))
+        assertSame(current, current.requireCanonicalProjectIdentity(runtimeProjectId))
         assertEquals(
-            "$runtimeProjectUid.profile.competition",
+            "$runtimeProjectId.profile.competition",
             current.canonical?.canonicalProfileUid,
         )
         val mismatch = assertFailsWith<IllegalArgumentException> {
-            stale.requireCanonicalProjectIdentity(runtimeProjectUid)
+            stale.requireCanonicalProjectIdentity(runtimeProjectId)
         }
         assertTrue(mismatch.message.orEmpty().contains("projectId"))
         root.deleteRecursively()
@@ -146,7 +146,7 @@ class DrivebaseAuthoringTest {
             val ares = File(root, ".ares")
             val drivetrainDirectory = File(ares, "drivetrains").apply { mkdirs() }
             val tuningDirectory = File(ares, "tuning").apply { mkdirs() }
-            val current = canonicalTemplate("VisibleFrcRobot", DrivebaseKind.FRC_CTRE_SWERVE).let { template ->
+            val current = canonicalTemplate("visible-frc-project", DrivebaseKind.FRC_CTRE_SWERVE).let { template ->
                 template.copy(components = template.components.mapIndexed { index, component ->
                     component.copy(hardwareId = (index + 1).toString())
                 })
@@ -154,13 +154,13 @@ class DrivebaseAuthoringTest {
             val currentFile = File(drivetrainDirectory, "primary.aresdrivetrain")
             val currentBytes = DrivetrainDocumentCodec.encode(current)
             currentFile.writeText(currentBytes)
-            val expectedProjectUid = "team99998.frc.season2026.visiblefrcrobot"
+            val expectedProjectId = "visible-frc-project"
             val mismatchedProfile = com.areslib.tuning.TuningProfileDocument(
                 uid = current.canonicalProfileUid,
                 profileId = "competition",
                 displayName = "Competition",
                 description = "Wrong project identity",
-                projectUid = "visiblefrcrobot",
+                projectId = "visiblefrcrobot",
                 drivebaseUid = current.uid,
                 authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
                 values = emptyList(),
@@ -169,9 +169,9 @@ class DrivebaseAuthoringTest {
             val profileBytes = com.areslib.tuning.TuningProfileDocumentCodec.encode(mismatchedProfile, emptyList())
             profileFile.writeText(profileBytes)
             val reviewed = current.toUiDrivebase().copy(
-                projectId = expectedProjectUid,
-                canonical = current.copy(canonicalProfileUid = "$expectedProjectUid.profile.competition"),
-            ).requireCanonicalProjectIdentity(expectedProjectUid)
+                projectId = expectedProjectId,
+                canonical = current.copy(canonicalProfileUid = "$expectedProjectId.profile.competition"),
+            ).requireCanonicalProjectIdentity(expectedProjectId)
             val repository = DrivebaseProjectRepository()
 
             val failure = assertFailsWith<IllegalArgumentException> {

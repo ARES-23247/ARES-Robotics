@@ -282,7 +282,7 @@ class RobotProjectTemplateService(
             AutonomousCatalogCodec.encode(autonomousCatalog.copy(projectId = personalizedProjectId)),
         )
 
-        personalizeRuntimeIdentity(root, request)
+        personalizeRuntimeIdentity(root, personalizedProjectId)
 
         val provenance = RobotProjectTemplateProvenance(
             templateId = template.id,
@@ -321,7 +321,7 @@ class RobotProjectTemplateService(
      * Parameter and component UIDs remain stable because they identify schema fields consumed by
      * the reviewed season runtime. Only robot-, drivebase-, and profile-level ownership changes.
      */
-    private fun personalizeRuntimeIdentity(root: File, request: RobotProjectCreationRequest) {
+    private fun personalizeRuntimeIdentity(root: File, projectId: String) {
         val ares = File(root, ".ares")
         val tuningRepository = TuningProfileRepository()
         val originalTuning = tuningRepository.load(root.path).getOrThrow()
@@ -333,12 +333,11 @@ class RobotProjectTemplateService(
             "The reviewed starter contains multiple drivebases. Choose one explicitly before using it as a novice template."
         }
         val drivetrains = drivetrainFiles.associateWith { file -> DrivetrainDocumentCodec.decode(file.readText()) }
-        val projectUid = runtimeProjectUid(request)
         val drivebaseUidMap = drivetrains.values.associate { drivetrain ->
-            drivetrain.uid to "$projectUid.drivebase.${uidSegment(drivetrain.drivebaseId, "primary", maxLength = 13)}"
+            drivetrain.uid to boundedStableId("$projectId.drivebase.${uidSegment(drivetrain.drivebaseId, "primary", maxLength = 13)}", 64)
         }
         val profileUidMap = originalTuning.profiles.associate { profile ->
-            profile.uid to "$projectUid.profile.${uidSegment(profile.profileId, "competition", maxLength = 15)}"
+            profile.uid to boundedStableId("$projectId.profile.${uidSegment(profile.profileId, "competition", maxLength = 15)}", 64)
         }
 
         drivetrains.forEach { (file, drivetrain) ->
@@ -369,7 +368,7 @@ class RobotProjectTemplateService(
             .orEmpty()
             .forEach { file ->
                 val document = TuningComponentDocumentCodec.decode(file.readText())
-                writeTextAtomically(file, TuningComponentDocumentCodec.encode(document.copy(projectUid = projectUid)))
+                writeTextAtomically(file, TuningComponentDocumentCodec.encode(document.copy(projectId = projectId)))
             }
 
         val profileFiles = File(ares, "tuning").listFiles { file -> file.extension == "arestuning" }
@@ -381,7 +380,7 @@ class RobotProjectTemplateService(
             require(profilesByUid.containsKey(profile.uid)) { "Unexpected tuning profile '${profile.uid}' in reviewed starter." }
             val personalized = profile.copy(
                 uid = profileUidMap.getValue(profile.uid),
-                projectUid = projectUid,
+                projectId = projectId,
                 drivebaseUid = profile.drivebaseUid?.let { oldUid ->
                     requireNotNull(drivebaseUidMap[oldUid]) { "Tuning profile '${profile.uid}' references missing drivebase '$oldUid'." }
                 },
@@ -395,16 +394,6 @@ class RobotProjectTemplateService(
         tuningRepository.load(root.path).getOrThrow()
         DrivebaseProjectRepository().load(root.path).getOrThrow()
     }
-
-    private fun runtimeProjectUid(request: RobotProjectCreationRequest): String = boundedStableId(
-        value = listOf(
-            "team${request.teamId.filter(Char::isDigit)}",
-            request.league.name.lowercase(),
-            uidSegment("season${request.seasonId}", "seasonunknown"),
-            uidSegment(request.robotId, "robot"),
-        ).joinToString("."),
-        maxLength = 40,
-    )
 
     private fun uidSegment(value: String, fallback: String, maxLength: Int = 64): String {
         val normalized = value.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
@@ -467,25 +456,25 @@ class RobotProjectTemplateService(
 
         val OFFICIAL_PROJECT_TEMPLATES: List<RobotProjectTemplate> = listOf(
             RobotProjectTemplate(
-                id = "ares-ftc-starter-13.0.1",
+                id = "ares-ftc-starter-14.0.0",
                 displayName = "ARES FTC Starter",
                 league = League.FTC,
-                aresVersion = "13.0.1",
+                aresVersion = "14.0.0",
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.1.2/ARES-FTC-Starter-13.0.1.zip",
-                archiveSha256 = "5576161030672029a08a3f984f9b5cd06f4879c2e604ddbb4c7a4fc37ecb9a58",
-                bundledResourcePath = "/project-templates/ARES-FTC-Starter-13.0.1.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.0/ARES-FTC-Starter-14.0.0.zip",
+                archiveSha256 = "78afaaa270be1e83aa0ee15132f7fcdb664dc7443f9f339034f0b413bfa4424e",
+                bundledResourcePath = "/project-templates/ARES-FTC-Starter-14.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
             RobotProjectTemplate(
-                id = "ares-frc-starter-13.0.1",
+                id = "ares-frc-starter-14.0.0",
                 displayName = "ARES FRC Starter",
                 league = League.FRC,
-                aresVersion = "13.0.1",
+                aresVersion = "14.0.0",
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v3.1.2/ARES-FRC-Starter-13.0.1.zip",
-                archiveSha256 = "e0f3469ee3b054229bf73c17b502d8c86e69bdc90ce292a22abb7f4514319fd4",
-                bundledResourcePath = "/project-templates/ARES-FRC-Starter-13.0.1.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.0/ARES-FRC-Starter-14.0.0.zip",
+                archiveSha256 = "847b8a47ed60947dd1e6dbe424c305c42a49736ab2f7b01bbe7616fb373268f8",
+                bundledResourcePath = "/project-templates/ARES-FRC-Starter-14.0.0.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
         )

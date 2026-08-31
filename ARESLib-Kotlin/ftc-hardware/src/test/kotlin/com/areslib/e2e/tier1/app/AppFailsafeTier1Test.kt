@@ -54,19 +54,19 @@ class AppFailsafeTier1Test {
         val baseTime = 1000L
         
         // Simulated execution (loop takes 10ms - healthy)
-        com.areslib.util.RobotClock.setMockTimeMs(baseTime)
+        com.areslib.util.RobotClock.useMockTime(baseTime)
         robot.update()
         val loop1Elapsed = 10L
-        com.areslib.util.RobotClock.setMockTimeMs(baseTime + loop1Elapsed)
+        com.areslib.util.RobotClock.useMockTime(baseTime + loop1Elapsed)
         loopCount++
         if (loop1Elapsed > 30L) overrunCount++
 
         // Simulated execution (loop takes 45ms - overrun!)
         val baseTime2 = 2000L
-        com.areslib.util.RobotClock.setMockTimeMs(baseTime2)
+        com.areslib.util.RobotClock.useMockTime(baseTime2)
         robot.update()
         val loop2Elapsed = 45L
-        com.areslib.util.RobotClock.setMockTimeMs(baseTime2 + loop2Elapsed)
+        com.areslib.util.RobotClock.useMockTime(baseTime2 + loop2Elapsed)
         loopCount++
         if (loop2Elapsed > 30L) overrunCount++
 

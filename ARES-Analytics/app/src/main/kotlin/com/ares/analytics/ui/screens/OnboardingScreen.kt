@@ -52,6 +52,7 @@ import com.ares.analytics.ui.theme.AresCyanGlow
 import com.ares.analytics.ui.theme.AresError
 import com.ares.analytics.ui.theme.AresSurface
 import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.viewmodel.OnboardingIntent
 import com.ares.analytics.viewmodel.ProjectSetupMode
 import com.ares.analytics.viewmodel.OnboardingStep
@@ -71,6 +72,15 @@ fun OnboardingScreen(
     val drivePickerState by oauthService.drivePickerState.collectAsState()
     val token = (authState as? AuthState.Authenticated)?.idToken
     val contentScrollState = rememberScrollState()
+
+    LaunchedEffect(state.currentStep) {
+        contentScrollState.scrollTo(0)
+    }
+    LaunchedEffect(state.currentStep, state.fieldErrors) {
+        if (state.currentStep == OnboardingStep.PROJECT && state.fieldErrors.projectPath != null) {
+            contentScrollState.animateScrollTo(contentScrollState.maxValue)
+        }
+    }
 
     LaunchedEffect(state.teamId, token) {
         if (token != null && state.teamId.isNotBlank()) {
@@ -260,6 +270,9 @@ fun OnboardingScreen(
                     )
                 }
 
+                onboardingReadinessHint(state)?.let { hint ->
+                    Text(hint, color = AresTextSecondary, style = MaterialTheme.typography.bodySmall)
+                }
                 HorizontalDivider(color = AresBorder)
                 NavigationButtons(
                     step = state.currentStep,
@@ -277,6 +290,16 @@ fun OnboardingScreen(
             }
         }
     }
+}
+
+internal fun onboardingReadinessHint(state: com.ares.analytics.viewmodel.OnboardingState): String? = when {
+    state.currentStep == OnboardingStep.PROJECT && !state.isProjectReady && state.projectSetupMode.createsProject ->
+        "Required next: choose a parent folder and enter a new project folder name."
+    state.currentStep == OnboardingStep.PROJECT && !state.isProjectReady ->
+        "Required next: choose an existing ARES robot project."
+    state.currentStep == OnboardingStep.ROBOT && !state.isRobotReady ->
+        "Required next: enter the team, season, and robot ID."
+    else -> null
 }
 
 @Composable

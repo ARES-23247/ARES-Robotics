@@ -83,7 +83,8 @@ fun MainScreen(services: ServiceRegistry) {
             environmentService = services.environmentService,
             eventApiService = services.eventApiService,
             keybindingParserService = services.keybindingParserService,
-            scope = scope
+            scope = scope,
+            beforeWorkspaceChange = services::releaseWorkspaceOwnership,
         )
     }
     val mainState by mainViewModel.state.collectAsState()
@@ -176,239 +177,35 @@ fun MainScreen(services: ServiceRegistry) {
         return
     }
 
-    // Instantiate ViewModels
-    val dashboardViewModel = remember(currentConfig.id) {
-        DashboardViewModel(
-            databaseService = services.databaseService,
-            nt4ClientService = services.nt4ClientService,
-            alertEngineService = services.alertEngineService,
-            syncEngineService = services.syncEngineService,
-            hootDecoderService = services.hootDecoderService,
-            logParserService = services.logParserService,
-            layoutPreferenceService = services.layoutPreferenceService,
-            widgetCatalog = DashboardWidgetRegistry,
-            scope = scope
-        )
-    }
-    val pathPlannerViewModel = remember(currentConfig.id) {
-        PathPlannerViewModel(
-            scope = scope,
-            nt4ClientService = services.nt4ClientService,
-            projectGenerator = services.projectGenerator,
-            checkpointRecorder = services.projectVersionControlService,
-            projectSession = services.projectSession,
-        )
-    }
-    val fieldEditorViewModel = remember(currentConfig.id) {
-        FieldEditorViewModel(
-            scope = scope,
-            nt4ClientService = services.nt4ClientService,
-            projectSession = services.projectSession,
-        )
-    }
-    val sysIdViewModel = remember(currentConfig.id) {
-        SysIdViewModel(
-            databaseService = services.databaseService,
-            sysIdService = services.sysIdService,
-            driverAnalysisService = services.driverAnalysisService,
-            autoTunerService = services.autoTunerService,
-            nt4ClientService = services.nt4ClientService,
-            scope = scope,
-            tuningProposalInbox = services.tuningProposalInbox
-        )
-    }
-    val tuningViewModel = remember(currentConfig.id) {
-        TuningViewModel(
-            nt4ClientService = services.nt4ClientService,
-            scope = scope,
-            repository = services.tuningProfileRepository,
-            proposalInbox = services.tuningProposalInbox,
-            checkpointRecorder = services.projectVersionControlService,
-            projectSession = services.projectSession,
-            targetPlatform = when (currentConfig.league) {
-                League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
-                League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
-            },
-        )
-    }
-    LaunchedEffect(currentConfig.league) {
-        sysIdViewModel.onIntent(SysIdIntent.ConfigurePlatform(currentConfig.league == League.FTC))
-    }
-    LaunchedEffect(activeNav) {
-        if (activeNav != NavigationTarget.TUNING) {
-            sysIdViewModel.onIntent(SysIdIntent.DisarmCalibration("Left the Tuning screen"))
-        }
-    }
-    val profileViewModel = remember(currentConfig.id) {
-        ProfileViewModel(
-            oauthService = services.oauthService,
-            googleDriveService = services.googleDriveService,
-            syncEngineService = services.syncEngineService,
-            scope = scope
-        )
-    }
-    val cloudViewModel = remember(currentConfig.id) {
-        com.ares.analytics.viewmodel.CloudViewModel(
-            databaseService = services.databaseService,
-            syncEngineService = services.syncEngineService,
-            oauthService = services.oauthService,
-            nt4ClientService = services.nt4ClientService,
-            robotLogIngestionService = services.robotLogIngestionService,
-            workspaceConfig = currentConfig,
-            scope = scope
-        )
-    }
-    val importCenterViewModel = remember(currentConfig.id, currentConfig.projectPath) {
-        ImportCenterViewModel(
-            archiveService = services.importArchiveService,
-            manualLogImportService = services.manualLogImportService,
-            workspace = currentConfig,
-            scope = scope,
-            onImportCompleted = {
-                mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-            },
-        )
-    }
-    DisposableEffect(importCenterViewModel) {
-        onDispose { importCenterViewModel.dispose() }
-    }
-    val controlsEditorViewModel = remember(currentConfig.projectPath, currentConfig.league) {
-        com.ares.analytics.viewmodel.controls.ControlsEditorViewModel(
-            projectPath = currentConfig.projectPath,
-            league = currentConfig.league,
-            projectGenerator = services.projectGenerator,
-            checkpointRecorder = services.projectVersionControlService,
-            designAssistant = com.ares.analytics.service.ControlsDesignAssistant { current, context, request ->
-                services.robotDesignAssistantService.requestControlsDesignProposal(current, context, request)
-            },
-            projectSession = services.projectSession,
-        )
-    }
-    DisposableEffect(controlsEditorViewModel) {
-        onDispose { controlsEditorViewModel.close() }
-    }
-    LaunchedEffect(autoImportService, importCenterViewModel) {
-        autoImportService.importNotifications.collect {
-            importCenterViewModel.onIntent(ImportCenterIntent.Refresh)
-        }
-    }
-    DisposableEffect(cloudViewModel) {
-        onDispose {
-            // CloudViewModel owns its own HttpClient; close it on screen exit to avoid
-            // leaking the CIO engine + connection pool across navigations.
-            cloudViewModel.dispose()
-        }
-    }
-    val subsystemGeneratorViewModel = remember(currentConfig.projectPath, currentConfig.league) {
-        SubsystemGeneratorViewModel(
-            projectPath = currentConfig.projectPath,
-            league = currentConfig.league,
-            projectGenerator = services.projectGenerator,
-            checkpointRecorder = services.projectVersionControlService,
-            designAssistant = com.ares.analytics.service.SubsystemDesignAssistant { current, request ->
-                services.robotDesignAssistantService.requestSubsystemDesignProposal(current, request)
-            },
-            projectSession = services.projectSession,
-        )
-    }
-    DisposableEffect(subsystemGeneratorViewModel) {
-        onDispose { subsystemGeneratorViewModel.close() }
-    }
-    val drivebaseBuilderViewModel = remember(currentConfig.projectPath, currentConfig.robotId, currentConfig.league) {
-        DrivebaseBuilderViewModel(
-            projectPath = currentConfig.projectPath,
-            projectId = currentConfig.robotId,
-            league = currentConfig.league,
-            scope = scope,
-            repository = services.drivebaseProjectRepository,
-            checkpointRecorder = services.projectVersionControlService,
-            projectSession = services.projectSession,
-            designAssistant = com.ares.analytics.service.DrivebaseDesignAssistant { current, request ->
-                services.robotDesignAssistantService.requestDrivebaseDesignProposal(current, request)
-            },
-        )
-    }
-    val superstructureStudioViewModel = remember(currentConfig.projectPath) {
-        SuperstructureStudioViewModel(
-            projectPath = currentConfig.projectPath,
-            scope = scope,
-            checkpointRecorder = services.projectVersionControlService,
-            targetPlatform = when (currentConfig.league) {
-                League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
-                League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
-            },
-            projectSession = services.projectSession,
-        )
-    }
-    val projectBackupViewModel = remember(currentConfig.projectPath) {
-        ProjectBackupViewModel(
-            service = services.projectVersionControlService,
-            remoteBackup = services.projectRemoteBackupService,
-            recovery = services.projectRecoveryService,
-            githubAuthentication = services.githubAuthenticationService,
-            autoSync = services.projectBackupAutoSyncService,
-            archiveExporter = services.projectArchiveExporter,
-            scope = scope,
-        )
-    }
-    val integrationCenterViewModel = remember {
-        IntegrationCenterViewModel(services.integrationCenterService, scope)
-    }
-    val hardwareSetupViewModel = remember(currentConfig.projectPath, currentConfig.league) {
-        HardwareSetupViewModel(
-            projectPath = currentConfig.projectPath,
-            league = currentConfig.league,
-            service = services.hardwareSetupService,
-            scope = scope,
-        )
-    }
-    val robotStudioViewModel = remember(currentConfig.id) {
-        RobotStudioViewModel(
-            readinessService = services.robotProjectReadinessService,
-            scope = scope,
-        )
-    }
-    val projectIdentityViewModel = remember(currentConfig.id) {
-        ProjectIdentityViewModel(scope = scope, projectSession = services.projectSession)
-    }
-    val guidedRunAnalysisViewModel = remember(currentConfig.id) {
-        GuidedRunAnalysisViewModel(
-            service = services.guidedRunAnalysisService,
-            comparisonService = services.runComparisonService,
-            scope = scope,
-        )
-    }
-    LaunchedEffect(currentConfig.projectPath) {
-        tuningViewModel.onIntent(TuningIntent.LoadConstants(currentConfig.projectPath))
-    }
-    val guidedTuningExperimentViewModel = remember(currentConfig.id) {
-        GuidedTuningExperimentViewModel(
-            workspace = currentConfig,
-            scope = scope,
-            runRepository = services.guidedRunAnalysisService,
-            repository = services.guidedTuningExperimentRepository,
-            evaluator = services.guidedTuningExperimentEvaluator,
-            tuningState = { tuningViewModel.state.value },
-            stageProposal = { proposal: GuidedExperimentProposal ->
-                tuningViewModel.onIntent(TuningIntent.UpdateTypedConstant(proposal.key, proposal.value))
-                tuningViewModel.onIntent(
-                    TuningIntent.SetProposalProvenance(
-                        key = proposal.key,
-                        source = proposal.provenance.source,
-                        note = proposal.provenance.note,
-                        evidencePath = proposal.provenance.evidencePath,
-                        evidenceSha256 = proposal.provenance.evidenceSha256,
-                    )
-                )
-            },
-            removeProposal = { key ->
-                services.simulatorProcessService.stop()
-                tuningViewModel.onIntent(TuningIntent.RemoveProposal(key))
-            },
-        )
-    }
-    // This ViewModel owns no independent scope or hardware/service resource. Its jobs run in the
-    // screen's Compose scope and are cancelled automatically when MainScreen leaves composition.
+    val workspaceScope = rememberWorkspaceCoroutineScope(currentConfig.id)
+    val workspaceModels = rememberWorkspaceViewModelGraph(
+        services = services,
+        config = currentConfig,
+        workspaceScope = workspaceScope,
+        mainViewModel = mainViewModel,
+        activeNavigation = activeNav,
+    )
+    val dashboardViewModel = workspaceModels.dashboard
+    val pathPlannerViewModel = workspaceModels.pathPlanner
+    val fieldEditorViewModel = workspaceModels.fieldEditor
+    val sysIdViewModel = workspaceModels.sysId
+    val tuningViewModel = workspaceModels.tuning
+    val profileViewModel = workspaceModels.profile
+    val cloudViewModel = workspaceModels.cloud
+    val importCenterViewModel = workspaceModels.importCenter
+    val controlsEditorViewModel = workspaceModels.controlsEditor
+    val subsystemGeneratorViewModel = workspaceModels.subsystemGenerator
+    val drivebaseBuilderViewModel = workspaceModels.drivebaseBuilder
+    val superstructureStudioViewModel = workspaceModels.superstructureStudio
+    val projectBackupViewModel = workspaceModels.projectBackup
+    val integrationCenterViewModel = workspaceModels.integrationCenter
+    val hardwareSetupViewModel = workspaceModels.hardwareSetup
+    val robotStudioViewModel = workspaceModels.robotStudio
+    val projectIdentityViewModel = workspaceModels.projectIdentity
+    val guidedRunAnalysisViewModel = workspaceModels.guidedRunAnalysis
+    val guidedTuningExperimentViewModel = workspaceModels.guidedTuningExperiment
+    // These view models share the keyed workspace scope and are cancelled together before a new
+    // workspace can observe or mutate the prior project's state.
     val dashboardShellState by dashboardViewModel.shellState.collectAsState()
     var dashboardMissionSnapshot by remember(currentConfig.id) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
@@ -955,7 +752,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 saveWorkspace = { mainViewModel.onIntent(MainIntent.SaveConfig(it)) },
                                 reloadRuns = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
                                 associateSessionWithMatch = { sessionId, match, allianceColor ->
-                                    scope.launch {
+                                    workspaceScope.launch {
                                         val opponents = if (allianceColor == "red") {
                                             match.blueAlliance
                                         } else {

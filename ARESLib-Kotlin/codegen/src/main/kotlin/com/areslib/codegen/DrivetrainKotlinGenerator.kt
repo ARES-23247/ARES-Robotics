@@ -27,8 +27,8 @@ object DrivetrainKotlinGenerator {
         require(profiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
             "Build generation accepts only checked-in canonical tuning profiles"
         }
-        require(profiles.map { it.projectUid }.distinct().size == 1) { "Every tuning profile must target one robot project" }
-        val projectUid = profiles.singleProjectUid()
+        require(profiles.map { it.projectId }.distinct().size == 1) { "Every tuning profile must target one robot project" }
+        val projectId = profiles.singleProjectId()
         require(profiles.all { it.drivebaseUid == null || it.drivebaseUid == document.uid }) {
             "Drivebase-selected tuning profiles must target '${document.uid}'"
         }
@@ -58,7 +58,7 @@ object DrivetrainKotlinGenerator {
             appendLine()
             appendLine("object GeneratedAresDrivebaseConfig {")
             appendLine("    const val DRIVEBASE_UID: String = ${document.uid.q()}")
-            appendLine("    const val PROJECT_UID: String = ${projectUid.q()}")
+            appendLine("    const val PROJECT_ID: String = ${projectId.q()}")
             appendLine("    const val DRIVEBASE_ID: String = ${document.drivebaseId.q()}")
             appendLine("    const val KIND: String = ${document.kind.name.q()}")
             appendLine("    const val DOCUMENT_SHA256: String = ${DrivetrainDocumentCodec.contentHash(document).q()}")
@@ -459,14 +459,14 @@ object DrivetrainKotlinGenerator {
     }
 
     fun generateProjectTuning(
-        projectUid: String,
+        projectId: String,
         canonicalProfileUid: String,
         drivebaseUid: String?,
         declarations: List<TuningParameterDeclaration>,
         profiles: List<TuningProfileDocument>,
         packageName: String,
     ): GeneratedDrivebaseFile {
-        require(profiles.all { it.projectUid == projectUid && it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN })
+        require(profiles.all { it.projectId == projectId && it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN })
         require(declarations.map { it.uid }.distinct().size == declarations.size) { "Project tuning parameter UIDs are duplicated" }
         require(declarations.map { it.key }.distinct().size == declarations.size) { "Project tuning parameter keys are duplicated" }
         require(declarations.map { it.key.constantName() }.distinct().size == declarations.size) {
@@ -486,7 +486,7 @@ object DrivetrainKotlinGenerator {
             appendLine("import com.areslib.tuning.*")
             appendLine()
             appendLine("object GeneratedAresTuningConfig {")
-            appendLine("    const val PROJECT_UID: String = ${projectUid.q()}")
+            appendLine("    const val PROJECT_ID: String = ${projectId.q()}")
             appendLine("    val DRIVEBASE_UID: String? = ${drivebaseUid?.q() ?: "null"}")
             appendLine("    const val CANONICAL_PROFILE_UID: String = ${canonicalProfileUid.q()}")
             appendLine("    object Parameters {")
@@ -497,7 +497,7 @@ object DrivetrainKotlinGenerator {
             appendLine("    }")
             appendLine()
             appendLine("    fun metadata(): TuningMetadataSnapshot = TuningMetadataSnapshot(")
-            appendLine("        projectUid = PROJECT_UID, drivebaseUid = DRIVEBASE_UID,")
+            appendLine("        projectId = PROJECT_ID, drivebaseUid = DRIVEBASE_UID,")
             appendLine("        canonicalProfileUid = CANONICAL_PROFILE_UID,")
             appendLine("        declarations = declarations(),")
             appendLine("        profileUids = listOf(${profiles.sortedBy { it.uid }.joinToString { it.uid.q() }}),")
@@ -533,10 +533,10 @@ object DrivetrainKotlinGenerator {
     }
 }
 
-private fun List<TuningProfileDocument>.singleProjectUid(): String {
-    val projectUids = map { it.projectUid }.distinct()
-    require(projectUids.size == 1) { "At least one canonical profile for exactly one robot project is required" }
-    return projectUids.single()
+private fun List<TuningProfileDocument>.singleProjectId(): String {
+    val projectIds = map { it.projectId }.distinct()
+    require(projectIds.size == 1) { "At least one canonical profile for exactly one robot project is required" }
+    return projectIds.single()
 }
 
 private val FTC_MECANUM_COMMON_PARAMETER_TYPES: Map<String, TuningParameterType> = linkedMapOf(

@@ -7,17 +7,17 @@ import com.areslib.simulation.SimulationProductId
 import java.security.MessageDigest
 
 @JvmInline
-value class ProjectArtifactId(val value: String) {
+public value class ProjectArtifactId(public val value: String) {
     init {
         require(value.matches(Regex("[a-z][a-z0-9._-]{0,159}"))) { "Invalid generated artifact ID '$value'" }
     }
 }
 
-enum class ProjectArtifactSourceSet { MAIN, TEST, METADATA }
+public enum class ProjectArtifactSourceSet { MAIN, TEST, METADATA }
 
-enum class ProjectArtifactOwnership { USER_OWNED, GENERATED_STARTER, GENERATED_DO_NOT_EDIT }
+public enum class ProjectArtifactOwnership { USER_OWNED, GENERATED_STARTER, GENERATED_DO_NOT_EDIT }
 
-enum class ProjectArtifactKind {
+public enum class ProjectArtifactKind {
     PROJECT_RUNTIME,
     PROJECT_VERIFICATION,
     SUBSYSTEM_DOMAIN,
@@ -35,7 +35,7 @@ enum class ProjectArtifactKind {
 }
 
 /** Content-free artifact plan produced before any filesystem mutation. */
-data class ProjectArtifactPlan(
+public data class ProjectArtifactPlan(
     val id: ProjectArtifactId,
     val relativePath: String,
     val sourceSet: ProjectArtifactSourceSet,
@@ -54,7 +54,7 @@ data class ProjectArtifactPlan(
 }
 
 /** Hash evidence for one rendered artifact. */
-data class ProjectArtifactManifestEntry(
+public data class ProjectArtifactManifestEntry(
     val id: ProjectArtifactId,
     val relativePath: String,
     val sourceSet: ProjectArtifactSourceSet,
@@ -67,7 +67,7 @@ data class ProjectArtifactManifestEntry(
     }
 }
 
-data class ProjectVerificationManifest(
+public data class ProjectVerificationManifest(
     val schemaVersion: Int = 2,
     val compilerIrVersion: Int,
     val projectId: ProjectId,
@@ -79,9 +79,9 @@ data class ProjectVerificationManifest(
     val manifestSha256: String,
 )
 
-object ProjectVerificationManifestBuilder {
+public object ProjectVerificationManifestBuilder {
     @JvmStatic
-    fun build(
+    public fun build(
         project: RobotProjectIr,
         entries: Collection<ProjectArtifactManifestEntry>,
     ): ProjectVerificationManifest {
@@ -105,9 +105,9 @@ object ProjectVerificationManifestBuilder {
 }
 
 /** Minimal deterministic JSON codec so build evidence has no renderer-specific dependency. */
-object ProjectVerificationManifestCodec {
+public object ProjectVerificationManifestCodec {
     @JvmStatic
-    fun encode(manifest: ProjectVerificationManifest): String = encode(manifest, includeHash = true)
+    public fun encode(manifest: ProjectVerificationManifest): String = encode(manifest, includeHash = true)
 
     internal fun encode(manifest: ProjectVerificationManifest, includeHash: Boolean): String = buildString {
         append("{\n")
@@ -136,7 +136,7 @@ object ProjectVerificationManifestCodec {
     }
 }
 
-fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
     .digest(value.toByteArray(Charsets.UTF_8))
     .joinToString(separator = "") { byte -> (byte.toInt() and 0xff).toString(16).padStart(2, '0') }
 

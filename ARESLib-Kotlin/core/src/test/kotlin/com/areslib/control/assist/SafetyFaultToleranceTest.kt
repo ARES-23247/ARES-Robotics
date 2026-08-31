@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.areslib.control.feedback.PIDController
-import com.areslib.control.feedback.LQRController
 import com.areslib.control.feedback.GravityFeedforward
 import com.areslib.control.safety.CurrentBudgetManager
 
@@ -39,34 +38,6 @@ class SafetyFaultToleranceTest {
 
         val outputNegDt = pid.calculate(2.0, -0.01)
         assertEquals(0.0, outputNegDt)
-    }
-
-    @Test
-    fun `test LQRController is immune to NaN infinite and non-positive dt`() {
-        val lqr = LQRController(numStates = 2, numInputs = 1, numOutputs = 1)
-        lqr.setSystemCoefficients(
-            aData = doubleArrayOf(1.0, 0.1, 0.0, 1.0),
-            bData = doubleArrayOf(0.005, 0.1),
-            cData = doubleArrayOf(1.0, 0.0)
-        )
-        lqr.reset(doubleArrayOf(0.0, 0.0))
-
-        // NaN measurement
-        val outputNaN = lqr.calculate(
-            y = doubleArrayOf(Double.NaN),
-            xRef = doubleArrayOf(1.0, 0.0),
-            dtSeconds = 0.02
-        )
-        assertEquals(1, outputNaN.size)
-        assertEquals(0.0, outputNaN[0])
-
-        // Non-positive dt
-        val outputZeroDt = lqr.calculate(
-            y = doubleArrayOf(0.5),
-            xRef = doubleArrayOf(1.0, 0.0),
-            dtSeconds = 0.0
-        )
-        assertEquals(0.0, outputZeroDt[0])
     }
 
     @Test

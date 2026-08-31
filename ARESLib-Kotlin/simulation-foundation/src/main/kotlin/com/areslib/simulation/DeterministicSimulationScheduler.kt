@@ -3,9 +3,9 @@ package com.areslib.simulation
 import com.areslib.util.RobotClock
 
 /** One pre-registered phase in a deterministic simulator tick. */
-fun interface SimulationTickParticipant {
+public fun interface SimulationTickParticipant {
     /** Invoked in registration order with the same immutable tick timestamp. */
-    fun tick(timestampNanos: Long)
+    public fun tick(timestampNanos: Long)
 }
 
 /**
@@ -15,17 +15,17 @@ fun interface SimulationTickParticipant {
  * The scheduler advances [RobotClock] before each tick, which makes reducers, replay, fault
  * injection, and telemetry observe one deterministic timeline.
  */
-class DeterministicSimulationScheduler(
-    val stepNanos: Long,
+public class DeterministicSimulationScheduler(
+    public val stepNanos: Long,
     participants: Collection<SimulationTickParticipant>,
     startTimeNanos: Long = 0L,
 ) {
     private val orderedParticipants = participants.toTypedArray()
 
-    var timestampNanos: Long = startTimeNanos
+    public var timestampNanos: Long = startTimeNanos
         private set
 
-    var tickSequence: Long = 0L
+    public var tickSequence: Long = 0L
         private set
 
     init {
@@ -39,7 +39,7 @@ class DeterministicSimulationScheduler(
         }
     }
 
-    fun step() {
+    public fun step(): Unit {
         timestampNanos = Math.addExact(timestampNanos, stepNanos)
         tickSequence = Math.addExact(tickSequence, 1L)
         RobotClock.useMockTime(timestampNanos / 1_000_000L)
@@ -50,7 +50,7 @@ class DeterministicSimulationScheduler(
         }
     }
 
-    fun step(count: Int) {
+    public fun step(count: Int): Unit {
         require(count >= 0) { "Simulation step count must be non-negative" }
         repeat(count) { step() }
     }

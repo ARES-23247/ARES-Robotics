@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "uid": "team23247.profile.marvin-competition",
   "profileId": "marvin-competition",
   "displayName": "Marvin competition baseline",
   "description": "Read-only CTRE metadata plus the reviewed ARES trajectory, simulator, and azimuth-offset overlay.",
-  "projectUid": "team23247.frc.2024.marvin-xix",
+  "projectId": "team23247-marvin-xix",
   "drivebaseUid": "team23247.drivebase.marvin-ctre-swerve",
   "authority": "CANONICAL_CHECKED_IN",
   "values": [

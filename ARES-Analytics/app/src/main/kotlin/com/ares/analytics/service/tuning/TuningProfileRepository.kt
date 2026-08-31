@@ -59,7 +59,7 @@ class TuningProfileRepository {
         require(profiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
             "Only checked-in canonical profiles belong in .ares/tuning; local experiments belong in .ares/local/tuning."
         }
-        require(profiles.map { it.projectUid }.distinct().size <= 1) {
+        require(profiles.map { it.projectId }.distinct().size <= 1) {
             "Every tuning profile must target the same robot project."
         }
         val resolvableProfiles = if (allowUnknownAssignments) profiles.map { profile ->

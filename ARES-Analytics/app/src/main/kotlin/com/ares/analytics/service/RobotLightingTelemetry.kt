@@ -21,13 +21,9 @@ data class RobotLightingTelemetryState(
             .associate { it.stableName to it.value }
 }
 
-/** Decodes generated and recorded legacy topics into one semantic lighting contract. */
+/** Decodes the canonical descriptor-owned lighting telemetry contract. */
 fun robotLightingReading(topic: String, value: Double): RobotLightingReading? {
     if (!value.isFinite()) return null
-    if (topic.startsWith("Superstructure/IndicatorLight/")) {
-        val name = topic.substringAfterLast('/').takeIf(String::isNotBlank) ?: return null
-        return RobotLightingReading(name, RobotLightingKind.INDICATOR, value)
-    }
     val segments = topic.split('/')
     if (segments.size != 5 || segments[0] != "Subsystems" || segments[2] != "AppliedOutputs") return null
     val kind = when (segments[4]) {

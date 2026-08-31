@@ -12,11 +12,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -99,8 +96,6 @@ data class ReplayCacheMetrics(
     val windowLoads: Long = 0,
     val prefetchHits: Long = 0,
     val truncatedWindows: Long = 0,
-    /** Compatibility-flow drops never affect [ReplayEngineService.currentFrame]. */
-    val droppedEmissionFrames: Long = 0,
 )
 
 /**
@@ -152,16 +147,6 @@ class ReplayEngineService(
     private val _cacheMetrics = MutableStateFlow(ReplayCacheMetrics())
     val cacheMetrics: StateFlow<ReplayCacheMetrics> = _cacheMetrics.asStateFlow()
 
-    /**
-     * Legacy per-topic compatibility stream. Dashboard widgets must consume [currentFrame]
-     * instead, because a stream of scalar topics cannot represent an atomic logical instant.
-     */
-    private val _replayTelemetryFlow = MutableSharedFlow<TelemetryFrame>(
-        replay = 100,
-        extraBufferCapacity = 65_536,
-    )
-    val replayTelemetryFlow: SharedFlow<TelemetryFrame> = _replayTelemetryFlow.asSharedFlow()
-
     private var replayJob: Job? = null
     private var prefetchJob: Job? = null
     private var windowLoadJob: Job? = null
@@ -182,7 +167,6 @@ class ReplayEngineService(
     private val stringValues = LinkedHashMap<String, String>()
     private var windowLoadCount = 0L
     private var prefetchHitCount = 0L
-    private var droppedEmissionFrameCount = 0L
 
     suspend fun loadSession(sessionId: String) {
         require(sessionId.isNotBlank()) { "Replay session ID must not be blank" }
@@ -249,7 +233,7 @@ class ReplayEngineService(
                 _sessionStartTimestampMs.value = startTimestampMs
                 _sessionDurationMs.value = endTimestampMs - startTimestampMs
                 applyWindowLocked(requireNotNull(loaded.initialWindow))
-                commitAtPlayheadLocked(emitCompatibility = true)
+                commitAtPlayheadLocked()
                 _sessionInfo.value = ReplaySessionInfo(
                     sessionId = sessionId,
                     startTimestampMs = startTimestampMs,
@@ -418,7 +402,7 @@ class ReplayEngineService(
         fractionalPlaybackMs = 0.0
         if (resetToStart && timestamps.isNotEmpty()) {
             currentPlayheadMs = startTimestampMs
-            commitOrLoadLocked(emitCompatibility = false)
+            commitOrLoadLocked()
         }
     }
 
@@ -447,7 +431,6 @@ class ReplayEngineService(
         commitSequence = 0L
         windowLoadCount = 0L
         prefetchHitCount = 0L
-        droppedEmissionFrameCount = 0L
         _currentFrame.value = null
         _sessionInfo.value = null
         _sessionActions.value = emptyList()
@@ -462,21 +445,21 @@ class ReplayEngineService(
         _cacheMetrics.value = ReplayCacheMetrics()
     }
 
-    private fun commitOrLoadLocked(emitCompatibility: Boolean = true) {
+    private fun commitOrLoadLocked() {
         val window = activeWindow
         if (window != null && currentPlayheadMs in window.startMs..window.endMs) {
-            commitAtPlayheadLocked(emitCompatibility)
+            commitAtPlayheadLocked()
         } else {
-            requestWindowLocked(currentPlayheadMs, emitCompatibility)
+            requestWindowLocked(currentPlayheadMs)
         }
     }
 
-    private fun requestWindowLocked(playheadMs: Long, emitCompatibility: Boolean = true) {
+    private fun requestWindowLocked(playheadMs: Long) {
         prefetchedWindow?.takeIf { playheadMs in it.startMs..it.endMs }?.let { ready ->
             prefetchedWindow = null
             prefetchHitCount += 1L
             applyWindowLocked(ready)
-            commitAtPlayheadLocked(emitCompatibility)
+            commitAtPlayheadLocked()
             scheduleForwardPrefetchLocked(ready, generation)
             return
         }
@@ -501,10 +484,10 @@ class ReplayEngineService(
                 _isSeeking.value = false
                 windowLoadJob = null
                 if (currentPlayheadMs in loaded.startMs..loaded.endMs) {
-                    commitAtPlayheadLocked(emitCompatibility)
+                    commitAtPlayheadLocked()
                     scheduleForwardPrefetchLocked(loaded, requestedGeneration)
                 } else {
-                    requestWindowLocked(currentPlayheadMs, emitCompatibility)
+                    requestWindowLocked(currentPlayheadMs)
                 }
             }
         }
@@ -527,7 +510,7 @@ class ReplayEngineService(
         publishCacheMetricsLocked()
     }
 
-    private fun commitAtPlayheadLocked(emitCompatibility: Boolean) {
+    private fun commitAtPlayheadLocked() {
         val window = activeWindow ?: return
         if (timestamps.isEmpty()) return
         var timestampIndex = timestamps.binarySearch(currentPlayheadMs)
@@ -541,12 +524,10 @@ class ReplayEngineService(
             window.baseline.forEach(::applyFrameLocked)
         }
         lastTargetTimestamp = targetTimestamp
-        val changed = LinkedHashMap<String, TelemetryFrame>()
         while (lastFrameIndex < window.frames.size) {
             val frame = window.frames[lastFrameIndex]
             if (frame.timestampMs > targetTimestamp) break
             applyFrameLocked(frame)
-            changed[frame.key] = frame
             lastFrameIndex += 1
         }
         commitSequence += 1L
@@ -564,16 +545,6 @@ class ReplayEngineService(
         _progress.value = if (duration <= 0L) 0.0 else {
             (currentPlayheadMs - startTimestampMs).toDouble() / duration.toDouble()
         }.coerceIn(0.0, 1.0)
-        if (emitCompatibility) {
-            val framesToEmit = if (changed.isEmpty()) {
-                snapshot.values.map { (key, value) ->
-                    TelemetryFrame(targetTimestamp, currentSessionId, key, value, snapshot.stringValues[key])
-                }
-            } else changed.values
-            framesToEmit.forEach { frame ->
-                if (!_replayTelemetryFlow.tryEmit(frame.copy(sessionId = currentSessionId))) droppedEmissionFrameCount += 1L
-            }
-        }
         publishCacheMetricsLocked()
     }
 
@@ -611,7 +582,6 @@ class ReplayEngineService(
             hasPrefetchedWindow = prefetchedWindow != null,
             windowLoads = windowLoadCount,
             prefetchHits = prefetchHitCount,
-            droppedEmissionFrames = droppedEmissionFrameCount,
         )
     }
 

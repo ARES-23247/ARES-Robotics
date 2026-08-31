@@ -78,8 +78,7 @@ open class FrcTelemetryManager(
      * @param gamepad1 Driver 1 gamepad input state (or `null`).
      * @param gamepad2 Operator gamepad input state (or `null`).
      * @param dtSeconds Loop cycle delta time in seconds; forwarded to the shared publisher.
-     * @param batteryVoltage Retained for interface compatibility; brownout telemetry comes from the
-     * guard configured through [logBrownout].
+     * @param batteryVoltage Current robot supply voltage forwarded to the shared publisher.
      */
     override fun publish(
         state: RobotState,
@@ -148,10 +147,8 @@ open class FrcTelemetryManager(
      * Updates internal reference to active [BrownoutGuard] for brownout logging.
      *
      * @param brownoutGuard Active brownout guard instance.
-     * @param batteryVoltage Retained for API compatibility; publication uses the guard reference.
      */
-    @Suppress("UNUSED_PARAMETER")
-    fun logBrownout(brownoutGuard: BrownoutGuard, batteryVoltage: Double) {
+    fun setBrownoutGuard(brownoutGuard: BrownoutGuard) {
         this.activeBrownoutGuard = brownoutGuard
     }
 

@@ -23,7 +23,7 @@ The initial measured line-coverage baselines are:
 Floors are ratchets, not targets. New work should raise them when durable coverage improves. A
 release must never lower a floor merely to make a failing build green.
 
-## Source-size ratchet
+## Source-size ratchets
 
 Studio production Kotlin files are limited to 500 lines. Existing larger files from the 3.0.0
 baseline are enumerated in
@@ -31,9 +31,32 @@ baseline are enumerated in
 shrink, but may not grow; a new production file may not exceed the limit. The
 `verifyProductionKotlinFileSizes` task enforces this without requiring a risky mass rewrite.
 
+ARESLib applies the same policy through `verifyAresLibSourceFileSizes` and
+`ARESLib-Kotlin/config/maintainability/large-production-kotlin-baseline.txt`. The aggregate
+`apiCheck` gate depends on that ratchet, so a published API cannot grow a grandfathered monolith or
+introduce a new production file above 500 lines without first extracting a cohesive component.
+
 When changing a grandfathered file, extract one cohesive responsibility when practical. Prefer
 domain services, policies, codecs, and presentation components with direct tests over filename-only
 splits or forwarding wrappers.
+
+## Public API and compatibility policy
+
+ARES has not shipped to student teams yet, so the source tree intentionally carries no compatibility
+layer for abandoned prototypes or superseded project schemas. Remove an obsolete implementation,
+alias, overload, topic, or schema branch outright and update every product, starter, generated
+artifact, test, and document in the same change. Do not add deprecated delegating wrappers merely to
+preserve an unreleased signature.
+
+Published modules use Kotlin explicit-API mode where their surface is deliberately small:
+`telemetry-schema`, `simulation-foundation`, `project-model`, `project-compiler`, and `frc-runtime`.
+Serialized descriptor modules remain protected by binary API validation rather than hundreds of
+mechanical visibility modifiers. `apiDump` is a reviewed source change; `apiCheck` is the release
+gate. The monorepo policy verifier rejects known retired production types and the former FRC product
+namespace.
+
+The FRC product owns `org.aresfirst.marvin`; reusable FRC library code remains under
+`com.areslib.frc`. Product and library packages must not be split across that boundary.
 
 ## Published wire contracts
 

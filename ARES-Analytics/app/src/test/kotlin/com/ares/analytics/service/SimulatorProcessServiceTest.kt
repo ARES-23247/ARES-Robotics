@@ -44,7 +44,8 @@ class SimulatorProcessServiceTest {
         val project = Files.createTempDirectory("simulator-process-stale-project").toFile()
         val service = SimulatorProcessService(aresRepositoryUri = null, aresVersion = "13.0.0")
         try {
-            project.resolve("gradle.properties").writeText("aresVersion=12.0.0\n")
+            project.resolve("release").mkdirs()
+            project.resolve("release/ares-versions.properties").writeText("aresVersion=12.0.0\n")
 
             service.start(
                 project.absolutePath,
@@ -52,7 +53,7 @@ class SimulatorProcessServiceTest {
                 simulatorCommand = "this command must never execute",
             )
             val message = withTimeout(5_000L) {
-                service.output.firstOrNull { it.contains("pins ARES 12.0.0") }
+                service.output.firstOrNull { it.contains("release manifest declares ARES 12.0.0") }
             }
 
             assertNotNull(message)

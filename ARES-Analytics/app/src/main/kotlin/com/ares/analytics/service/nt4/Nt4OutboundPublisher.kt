@@ -1,6 +1,7 @@
 package com.ares.analytics.service.nt4
 
 import com.ares.analytics.service.DriveFrameContractValidator
+import com.areslib.telemetry.schema.DesktopDriveProtocol
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.send
@@ -32,7 +33,7 @@ internal class Nt4OutboundPublisher(
     private val driveFramePublishMutex = Mutex()
     private val driveFrameValidator = DriveFrameContractValidator()
     private val driveSessionNonceCounter = AtomicLong(
-        ThreadLocalRandom.current().nextLong(1L, DriveFrameContractValidator.MAX_SAFE_INTEGER_LONG)
+        ThreadLocalRandom.current().nextLong(1L, DesktopDriveProtocol.MAX_SAFE_INTEGER_LONG)
     )
     private val dynamicPubMutex = Mutex()
     private var nextPubUid = 2_000
@@ -88,7 +89,7 @@ internal class Nt4OutboundPublisher(
     }
 
     fun nextDriveSessionNonce(): Double = driveSessionNonceCounter.getAndUpdate { current ->
-        if (current >= DriveFrameContractValidator.MAX_SAFE_INTEGER_LONG) 1L else current + 1L
+        if (current >= DesktopDriveProtocol.MAX_SAFE_INTEGER_LONG) 1L else current + 1L
     }.toDouble()
 
     suspend fun publishDriveFrame(values: DoubleArray): Boolean = driveFramePublishMutex.withLock {
@@ -196,7 +197,7 @@ internal class Nt4OutboundPublisher(
     }
 
     private suspend fun publishInputDoubleArray(pubUid: Int, values: DoubleArray): Boolean {
-        require(values.size == DriveFrameContractValidator.VALUE_COUNT) {
+        require(values.size == DesktopDriveProtocol.VALUE_COUNT) {
             "drive frame must contain 8 doubles"
         }
         val valueBytes = publishDoubleArrayBuffer.get()

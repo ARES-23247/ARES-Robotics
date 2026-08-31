@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import com.areslib.hardware.drive.SwerveHardwareIO
+import com.areslib.frc.TestSwerveHardwareIO
 import com.areslib.state.DriveState
 import com.areslib.math.geometry.Pose2d
 import com.areslib.state.VisionSolverType
@@ -70,7 +71,7 @@ class MockFrcVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList(
  * @return Corresponding output value or Unit.
  */
 class FrcVisionTrackerTest {
-    private class RecordingSwerveIO : SwerveHardwareIO {
+    private class RecordingSwerveIO : TestSwerveHardwareIO() {
         var visionCalls = 0
         var lastTimestampSeconds = Double.NaN
         var lastStdDevX = Double.NaN

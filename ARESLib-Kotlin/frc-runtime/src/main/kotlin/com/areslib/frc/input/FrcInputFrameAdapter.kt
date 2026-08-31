@@ -13,16 +13,16 @@ import edu.wpi.first.wpilibj.GenericHID
  * buttons at indexes 120–123 so its location does not shift when a Vader 5 Pro or another HID
  * reports more raw buttons than a standard Xbox controller.
  */
-object FrcButtonIndex {
-    const val MAX_RAW_BUTTON_COUNT: Int = 120
-    const val POV_UP: Int = 120
-    const val POV_RIGHT: Int = 121
-    const val POV_DOWN: Int = 122
-    const val POV_LEFT: Int = 123
-    const val COUNT_WITH_PRIMARY_POV: Int = 124
+public object FrcButtonIndex {
+    public const val MAX_RAW_BUTTON_COUNT: Int = 120
+    public const val POV_UP: Int = 120
+    public const val POV_RIGHT: Int = 121
+    public const val POV_DOWN: Int = 122
+    public const val POV_LEFT: Int = 123
+    public const val COUNT_WITH_PRIMARY_POV: Int = 124
 
     /** Converts one WPILib one-based raw button number to its [InputFrame] index. */
-    fun fromWpilibRawButton(buttonNumber: Int): Int {
+    public fun fromWpilibRawButton(buttonNumber: Int): Int {
         require(buttonNumber >= 1 && buttonNumber <= MAX_RAW_BUTTON_COUNT) {
             "WPILib raw button must be in 1..$MAX_RAW_BUTTON_COUNT"
         }
@@ -37,31 +37,31 @@ object FrcButtonIndex {
  * numbers passed to [rawButton] retain WPILib's one-based convention; axes and POV indexes are
  * zero-based.
  */
-interface FrcHidSource {
-    fun isConnected(): Boolean
-    fun axisCount(): Int
-    fun buttonCount(): Int
-    fun povCount(): Int
-    fun rawAxis(axisIndex: Int): Double
-    fun rawButton(buttonNumber: Int): Boolean
-    fun pov(povIndex: Int): Int
+public interface FrcHidSource {
+    public fun isConnected(): Boolean
+    public fun axisCount(): Int
+    public fun buttonCount(): Int
+    public fun povCount(): Int
+    public fun rawAxis(axisIndex: Int): Double
+    public fun rawButton(buttonNumber: Int): Boolean
+    public fun pov(povIndex: Int): Int
 }
 
 /** Production [FrcHidSource] backed by a WPILib [GenericHID] and Driver Station metadata. */
-class WpilibGenericHidSource(private val hid: GenericHID) : FrcHidSource {
-    override fun isConnected(): Boolean = DriverStation.isJoystickConnected(hid.port)
+public class WpilibGenericHidSource(private val hid: GenericHID) : FrcHidSource {
+    public override fun isConnected(): Boolean = DriverStation.isJoystickConnected(hid.port)
 
-    override fun axisCount(): Int = DriverStation.getStickAxisCount(hid.port)
+    public override fun axisCount(): Int = DriverStation.getStickAxisCount(hid.port)
 
-    override fun buttonCount(): Int = DriverStation.getStickButtonCount(hid.port)
+    public override fun buttonCount(): Int = DriverStation.getStickButtonCount(hid.port)
 
-    override fun povCount(): Int = DriverStation.getStickPOVCount(hid.port)
+    public override fun povCount(): Int = DriverStation.getStickPOVCount(hid.port)
 
-    override fun rawAxis(axisIndex: Int): Double = hid.getRawAxis(axisIndex)
+    public override fun rawAxis(axisIndex: Int): Double = hid.getRawAxis(axisIndex)
 
-    override fun rawButton(buttonNumber: Int): Boolean = hid.getRawButton(buttonNumber)
+    public override fun rawButton(buttonNumber: Int): Boolean = hid.getRawButton(buttonNumber)
 
-    override fun pov(povIndex: Int): Int = hid.getPOV(povIndex)
+    public override fun pov(povIndex: Int): Int = hid.getPOV(povIndex)
 }
 
 /**
@@ -76,13 +76,13 @@ class WpilibGenericHidSource(private val hid: GenericHID) : FrcHidSource {
  * The backing [InputFrame] is owned by the caller and reused on every robot loop. Normal sampling
  * performs no collection, array, lambda, or snapshot allocation.
  */
-class FrcInputFrameAdapter(
+public class FrcInputFrameAdapter(
     private val source: FrcHidSource,
 ) {
-    constructor(hid: GenericHID) : this(WpilibGenericHidSource(hid))
+    public constructor(hid: GenericHID) : this(WpilibGenericHidSource(hid))
 
     /** Samples the current HID values into [frame] without allocating on the normal path. */
-    fun sampleInto(
+    public fun sampleInto(
         frame: InputFrame,
         sampleTimeNanos: Long = RobotClock.nanoTime(),
     ) {
