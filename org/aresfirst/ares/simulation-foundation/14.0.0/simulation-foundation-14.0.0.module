@@ -1,0 +1,122 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "simulation-foundation",
+    "version": "14.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "14.0.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulation-foundation-14.0.0.jar",
+          "url": "simulation-foundation-14.0.0.jar",
+          "size": 46590,
+          "sha512": "624275544b7169d8b9394cdf65457e057d640992cc1a577c3658fa2732a5ddfde1940ff602ca005fcdb60c24a98746edad6e8d3c49b42babc1414ddf99cfeae9",
+          "sha256": "c6af3e3bcdd228f50f8d60eeb3260d3aef6a63d629ae33fe6232ea520aea5acb",
+          "sha1": "7a67bf78e57b670f5c2bcd80141bf0ec0ae0a4b8",
+          "md5": "d66f7db8dd9ee28aa05de6352f967835"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "14.0.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "14.0.0"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulation-foundation-14.0.0.jar",
+          "url": "simulation-foundation-14.0.0.jar",
+          "size": 46590,
+          "sha512": "624275544b7169d8b9394cdf65457e057d640992cc1a577c3658fa2732a5ddfde1940ff602ca005fcdb60c24a98746edad6e8d3c49b42babc1414ddf99cfeae9",
+          "sha256": "c6af3e3bcdd228f50f8d60eeb3260d3aef6a63d629ae33fe6232ea520aea5acb",
+          "sha1": "7a67bf78e57b670f5c2bcd80141bf0ec0ae0a4b8",
+          "md5": "d66f7db8dd9ee28aa05de6352f967835"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "simulation-foundation-14.0.0-sources.jar",
+          "url": "simulation-foundation-14.0.0-sources.jar",
+          "size": 11553,
+          "sha512": "f3acc3f815aec4ebece25c0aa9cfd9c22952ff814f488fba9def97e1d8cb2dfa713c0db7c4c8f21233e64609b3874e22d7f640ac8f4ea08fc16441a7a3f8badb",
+          "sha256": "045611b74eb3c7e402d7a43116aa059f240b82da27c3a2b4538abd376f3e69c2",
+          "sha1": "c982b4abb1af5878e60de3cb97729d6d73d98654",
+          "md5": "54f761d0abfb61eebda700a12d9a8d17"
+        }
+      ]
+    }
+  ]
+}
