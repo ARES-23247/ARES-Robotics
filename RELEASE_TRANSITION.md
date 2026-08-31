@@ -37,9 +37,9 @@ the state at the time they were written and are not operational instructions.
    publishes the exact attested MSI. Authenticode mode signs and verifies that MSI as a bounded
    post-build trust overlay, without rebuilding it.
 
-The older `publish=true` input on `Build Desktop Packages` remains a full-rebuild emergency fallback
-until the candidate-promotion path completes a protected production cycle. Normal releases must use
-candidate promotion so PR evidence and published bytes are the same files.
+`Build Desktop Packages` only creates attested candidates. Public release creation exists exclusively
+in `Promote Verified Release Candidate`, so the reviewed, tested package bytes cannot be replaced by
+a second build after approval.
 
 Studio must never advertise a final dependency that is not available in the same completed release
 sequence.

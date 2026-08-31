@@ -64,8 +64,8 @@ that run ID. Promotion must verify the GitHub attestation, same-repository workf
 complete `main` Git-tree equality, canonical versions, and every declared file hash before
 publishing. A mismatch requires a fresh candidate; never relax the check. Checksum promotion
 publishes the byte-identical candidate MSI. Authenticode may sign that tested MSI as a bounded trust
-overlay but must not rebuild it. The legacy `publish=true` packaging dispatch is an emergency
-full-rebuild fallback during the first protected promotion cycle, not the normal release path.
+overlay but must not rebuild it. `Build Desktop Packages` only creates candidates; public release
+creation exists exclusively in the promotion workflow so no path can rebuild after approval.
 
 > **Ownership boundary:** reusable FRC classes (`FrcSwerveRobot`, `FrcBaseRobot`,
 > `FRCSwerveHardwareIO`, `FrcTelemetryManager`, `FrcPowerManager`, `FrcLimelightIO`) live in
