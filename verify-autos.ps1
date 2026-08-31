@@ -111,9 +111,9 @@ if ($Full) {
     Invoke-AresGradle "ARES-FRC" (@("verifyAresProject") + $consumerArguments + @("--console=plain"))
     Invoke-AresGradle "ARES-FRC" (@(
         "test",
-        "--tests", "com.areslib.frc.robot.FrcNativeAutoContractTest",
-        "--tests", "com.areslib.frc.robot.FRCAutoAllianceMirroringContractTest",
-        "--tests", "com.areslib.frc.generatedruntime.FrcGeneratedRoutineRuntimeTest",
+        "--tests", "org.aresfirst.marvin.robot.FrcNativeAutoContractTest",
+        "--tests", "org.aresfirst.marvin.robot.FRCAutoAllianceMirroringContractTest",
+        "--tests", "org.aresfirst.marvin.generatedruntime.FrcGeneratedRoutineRuntimeTest",
         "--console=plain"
     ) + $consumerArguments)
 }
