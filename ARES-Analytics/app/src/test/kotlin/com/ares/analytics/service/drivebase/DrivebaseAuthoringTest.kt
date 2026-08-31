@@ -562,6 +562,7 @@ class DrivebaseAuthoringTest {
             assertEquals(DrivebaseDiscardAction.RELOAD, viewModel.state.value.pendingDiscardAction)
             assertEquals(0.42, viewModel.state.value.draft.geometry.trackWidthMeters, 1e-9)
             viewModel.onIntent(DrivebaseBuilderIntent.ConfirmDiscard)
+            assertTrue(viewModel.state.value.loading, "Confirmed reload must enter loading state before returning")
             withTimeout(5_000) { viewModel.state.first { !it.loading && !it.dirty } }
             assertEquals(0.36, viewModel.state.value.draft.geometry.trackWidthMeters, 1e-9)
         } finally {
