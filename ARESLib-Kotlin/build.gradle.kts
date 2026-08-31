@@ -9,7 +9,7 @@ plugins {
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.1"
     // 0.37.0 requires the Dokka v2 / Gradle 9 publishing stack. Keep 0.34.0 until
     // that toolchain migration is validated as one release milestone.
-    id("com.vanniktech.maven.publish") version "0.34.0" apply false
+    id("com.vanniktech.maven.publish") version "0.35.0" apply false
 }
 
 val aresVersionPolicy = listOf(
