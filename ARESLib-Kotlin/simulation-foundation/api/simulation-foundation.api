@@ -1,13 +1,3 @@
-public final class com/areslib/simulation/DeterministicSimulationScheduler {
-	public fun <init> (JLjava/util/Collection;J)V
-	public synthetic fun <init> (JLjava/util/Collection;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getStepNanos ()J
-	public final fun getTickSequence ()J
-	public final fun getTimestampNanos ()J
-	public final fun step ()V
-	public final fun step (I)V
-}
-
 public final class com/areslib/simulation/SimulationCapability : java/lang/Enum {
 	public static final field CTRE_SWERVE_DRIVETRAIN_PHYSICS Lcom/areslib/simulation/SimulationCapability;
 	public static final field FIELD_CONFIGURATION Lcom/areslib/simulation/SimulationCapability;
@@ -35,46 +25,6 @@ public final class com/areslib/simulation/SimulationCompatibilityIssue {
 	public final fun getMessage ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/areslib/simulation/SimulationDeviceHealth : java/lang/Enum {
-	public static final field BUS_FAULT Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static final field DISCONNECTED Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static final field HEALTHY Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static final field INVALID Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static final field STALE Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static final field WRITE_FAULT Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/simulation/SimulationDeviceHealth;
-	public static fun values ()[Lcom/areslib/simulation/SimulationDeviceHealth;
-}
-
-public abstract interface class com/areslib/simulation/SimulationDeviceModel {
-	public abstract fun close ()V
-	public abstract fun getDeviceId ()Ljava/lang/String;
-	public abstract fun neutralize (J)Z
-	public abstract fun sampleInto (JLcom/areslib/simulation/SimulationDeviceObservation;)V
-	public abstract fun write (DJ)Z
-}
-
-public final class com/areslib/simulation/SimulationDeviceObservation {
-	public fun <init> ()V
-	public final fun ageNanos (J)J
-	public final fun getConfigurationHealthy ()Z
-	public final fun getHealth ()Lcom/areslib/simulation/SimulationDeviceHealth;
-	public final fun getHomed ()Z
-	public final fun getSampleTimestampNanos ()J
-	public final fun getSequence ()J
-	public final fun getTargetVisible ()Z
-	public final fun getValid ()Z
-	public final fun getValue ()D
-	public final fun setConfigurationHealthy (Z)V
-	public final fun setHealth (Lcom/areslib/simulation/SimulationDeviceHealth;)V
-	public final fun setHomed (Z)V
-	public final fun setSampleTimestampNanos (J)V
-	public final fun setSequence (J)V
-	public final fun setTargetVisible (Z)V
-	public final fun setValue (D)V
 }
 
 public final class com/areslib/simulation/SimulationFaultCommand {
@@ -175,9 +125,5 @@ public final class com/areslib/simulation/SimulationProjectPlan {
 public final class com/areslib/simulation/SimulationProjectPlanner {
 	public static final field INSTANCE Lcom/areslib/simulation/SimulationProjectPlanner;
 	public static final fun plan (Lcom/areslib/project/schema/AresProjectTarget;Lcom/areslib/drivetrain/DrivetrainDocument;Ljava/util/Collection;)Lcom/areslib/simulation/SimulationProjectPlan;
-}
-
-public abstract interface class com/areslib/simulation/SimulationTickParticipant {
-	public abstract fun tick (J)V
 }
 
