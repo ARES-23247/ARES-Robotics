@@ -605,7 +605,6 @@ private fun ReviewChecklist(
         }
     }
 }
-
 @Composable
 private fun ReviewCheck(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.Top) {
@@ -621,12 +620,7 @@ private fun MessageCard(title: String, message: String, severity: HardwareIssueS
         HardwareIssueSeverity.WARNING -> AresAmber
         HardwareIssueSeverity.ERROR -> AresRed
     }
-    AresCard(
-        backgroundColor = tint.copy(alpha = 0.08f),
-        borderColor = tint,
-        cornerRadius = 10.dp,
-        contentPadding = 12.dp,
-    ) {
+    AresCard(backgroundColor = tint.copy(alpha = 0.08f), borderColor = tint, cornerRadius = 10.dp, contentPadding = 12.dp) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Icon(if (severity == HardwareIssueSeverity.ERROR) Icons.Default.Error else Icons.Default.Warning, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))

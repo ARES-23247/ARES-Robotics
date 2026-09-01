@@ -232,10 +232,7 @@ private fun ProjectSelection(
                     )
                 }
             }
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AresBorder),
-            ) {
+            Card(colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated), border = androidx.compose.foundation.BorderStroke(1.dp, AresBorder)) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         if (mode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
@@ -243,8 +240,7 @@ private fun ProjectSelection(
                         } else {
                             "Verified starter: $templateName $templateVersion"
                         },
-                        color = AresTextPrimary,
-                        fontWeight = FontWeight.SemiBold,
+                        color = AresTextPrimary, fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         if (mode == ProjectSetupMode.EXPLORE_LIGHTBOT) {

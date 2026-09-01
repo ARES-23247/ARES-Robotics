@@ -33,9 +33,7 @@ enum class OnboardingStep(val number: Int) {
 }
 
 enum class ProjectSetupMode(val createsProject: Boolean) {
-    CREATE_NEW(true),
-    EXPLORE_LIGHTBOT(true),
-    OPEN_EXISTING(false),
+    CREATE_NEW(true), EXPLORE_LIGHTBOT(true), OPEN_EXISTING(false),
 }
 
 data class OnboardingFieldErrors(
@@ -176,10 +174,7 @@ class OnboardingViewModel(
                         when (intent.mode) {
                             ProjectSetupMode.CREATE_NEW -> selected.copy(projectPath = plannedProjectPath(selected))
                             ProjectSetupMode.EXPLORE_LIGHTBOT -> {
-                                val template = projectTemplateService.templateFor(
-                                    League.FTC,
-                                    RobotProjectTemplateKind.EXAMPLE,
-                                )
+                                val template = projectTemplateService.templateFor(League.FTC, RobotProjectTemplateKind.EXAMPLE)
                                 val lightbot = selected.copy(
                                     projectFolderName = LIGHTBOT_PROJECT_FOLDER,
                                     teamId = LIGHTBOT_TEAM_ID,

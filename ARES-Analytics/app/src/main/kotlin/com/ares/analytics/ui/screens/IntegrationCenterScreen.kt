@@ -555,11 +555,7 @@ private fun ProviderEditorDialog(
 
 @Composable
 private fun EmptyCard(title: String, detail: String) {
-    AresCard(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = 24.dp,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    AresCard(Modifier.fillMaxWidth(), contentPadding = 24.dp, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold)
         Text(detail, color = AresTextSecondary, fontSize = 12.sp)
     }

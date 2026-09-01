@@ -275,10 +275,7 @@ fun CloudScreen(
                             CircularProgressIndicator(color = AresCyan, modifier = Modifier.align(Alignment.Center))
                         }
                         state.robotRuns.isEmpty() -> {
-                            AresEmptyState(
-                                title = "No logs found on connected robot.",
-                                modifier = Modifier.align(Alignment.Center),
-                            )
+                            AresEmptyState("No logs found on connected robot.", modifier = Modifier.align(Alignment.Center))
                         }
                         else -> {
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -307,9 +304,7 @@ fun CloudScreen(
             }
 
             // Right Pane: Database & Google Drive Sync
-            Column(
-                modifier = Modifier.weight(1.2f).fillMaxHeight()
-            ) {
+            Column(modifier = Modifier.weight(1.2f).fillMaxHeight()) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -401,10 +396,7 @@ fun CloudScreen(
                         .padding(8.dp)
                 ) {
                     if (state.sessions.isEmpty()) {
-                        AresEmptyState(
-                            title = "No sessions found in local DuckDB or Google Drive.",
-                            modifier = Modifier.align(Alignment.Center),
-                        )
+                        AresEmptyState("No sessions found in local DuckDB or Google Drive.", modifier = Modifier.align(Alignment.Center))
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(state.sessions, key = { it.summary.sessionId }) { sessionInfo ->
