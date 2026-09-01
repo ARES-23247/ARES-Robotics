@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -26,6 +27,7 @@ fun AresCard(
     cornerRadius: Dp = 12.dp,
     contentPadding: Dp = 16.dp,
     contentSpacing: Dp = 0.dp,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -38,6 +40,7 @@ fun AresCard(
         Column(
             modifier = Modifier.fillMaxWidth().padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(contentSpacing),
+            horizontalAlignment = horizontalAlignment,
             content = content,
         )
     }

@@ -63,6 +63,7 @@ import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.RunTrajectoryOverlay
 import com.ares.analytics.service.shortRunLabel
 import com.ares.analytics.shared.models.Session
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -431,12 +432,10 @@ private fun GuidedFindings(
 
 @Composable
 private fun EvidenceCard(title: String, explanation: String, content: @Composable () -> Unit) {
-    Surface(color = AresSurface, border = BorderStroke(1.dp, AresBorder), shape = RoundedCornerShape(10.dp)) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold)
-            Text(explanation, color = AresTextSecondary, fontSize = 11.sp)
-            content()
-        }
+    AresCard(backgroundColor = AresSurface, cornerRadius = 10.dp, contentPadding = 12.dp, contentSpacing = 8.dp) {
+        Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold)
+        Text(explanation, color = AresTextSecondary, fontSize = 11.sp)
+        content()
     }
 }
 

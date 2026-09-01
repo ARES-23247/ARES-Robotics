@@ -64,6 +64,7 @@ import com.ares.analytics.service.tuning.canAcceptSimulationResult
 import com.ares.analytics.service.tuning.ExperimentValue
 import com.ares.analytics.service.tuning.displayValue
 import com.ares.analytics.service.tuning.numericValue
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -631,17 +632,15 @@ private fun DecisionStep(
 
 @Composable
 private fun StepCard(title: String, explanation: String, content: @Composable () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AresSurface),
-        border = BorderStroke(1.dp, AresBorder),
-        shape = RoundedCornerShape(12.dp),
+    AresCard(
+        backgroundColor = AresSurface,
+        contentPadding = 16.dp,
+        contentSpacing = 10.dp,
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(explanation, color = AresTextSecondary, fontSize = 11.sp)
-            HorizontalDivider(color = AresBorder)
-            content()
-        }
+        Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(explanation, color = AresTextSecondary, fontSize = 11.sp)
+        HorizontalDivider(color = AresBorder)
+        content()
     }
 }
 
