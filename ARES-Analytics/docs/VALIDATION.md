@@ -177,7 +177,7 @@ source substitution is opt-in and is not release evidence.
 
 `.github/workflows/build-distributions.yml` first publishes one unique ARES release candidate to an
 isolated repository. Before any installer build, `studioReleaseVerification` runs all `app`,
-`shared`, and `gateway` tests; Kover line-coverage floors (38%, 52%, and 52%); the 500-line production
+`shared`, and `gateway` tests; Kover line-coverage floors (38%, 54%, and 54%); the 500-line production
 source ratchet; release-version alignment; and dashboard performance budgets against that exact
 candidate. The workflow also configures representative products with an isolated Gradle user home
 and rejects any build that writes user-global `gradle.properties`.

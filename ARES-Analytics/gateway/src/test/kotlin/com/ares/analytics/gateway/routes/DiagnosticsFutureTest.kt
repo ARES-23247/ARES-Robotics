@@ -27,4 +27,13 @@ class DiagnosticsFutureTest {
 
         assertEquals("ok", awaitCompletableFuture(future))
     }
+
+    @Test
+    fun `failed RPC future preserves the asynchronous failure`() = runBlocking {
+        val failure = IllegalStateException("diagnostics unavailable")
+        val future = CompletableFuture<String>().also { it.completeExceptionally(failure) }
+
+        val thrown = assertFailsWith<IllegalStateException> { awaitCompletableFuture(future) }
+        assertEquals(failure.message, thrown.message)
+    }
 }

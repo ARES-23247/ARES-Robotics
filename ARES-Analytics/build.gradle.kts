@@ -210,7 +210,7 @@ subprojects {
 
     val lineCoverageFloor = when (name) {
         "app" -> 38
-        "gateway", "shared" -> 52
+        "gateway", "shared" -> 54
         else -> null
     }
     if (lineCoverageFloor != null) {

@@ -21,8 +21,8 @@ import kotlin.test.assertEquals
  * valid token authenticates, invalid token is rejected (401), and a missing/ malformed
  * Authorization header is rejected (401).
  *
- * Audience enforcement lives in [verifyGoogleIdToken] (always built with a non-empty
- * audience via [DEFAULT_OIDC_AUDIENCE]) and is delegated to google-api-client, which
+ * Audience enforcement lives in [verifyGoogleIdToken] (always built with the configured
+ * `GOOGLE_OIDC_CLIENT_ID`) and is delegated to google-api-client, which
  * cannot be unit-tested without Google's signing keys; the injectable verifier bypasses
  * it by design, so these tests do not exercise the audience check directly.
  */
@@ -82,6 +82,17 @@ class GoogleOidcAuthTest {
         val response = client.get("/secure") {
             header(HttpHeaders.Authorization, "Basic dXNlcjpwdw==")
         }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `verifier failure is contained and rejected with 401`() = testApplication {
+        installSecuredRoute { throw IllegalStateException("identity provider unavailable") }
+
+        val response = client.get("/secure") {
+            header(HttpHeaders.Authorization, "Bearer valid-shape-token")
+        }
+
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }
