@@ -12,10 +12,10 @@ import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.shared.models.League
 import com.areslib.project.schema.ProjectDocumentKind
-import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentAuthoring
 import com.ares.analytics.viewmodel.subsystem.SubsystemProjectPersistence
+import com.ares.analytics.viewmodel.subsystem.SubsystemRemovalStateTransitions
 import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemDocument
@@ -763,7 +763,7 @@ class SubsystemGeneratorViewModel(
                 _state.update { it.copy(status = error.message ?: "The subsystem location is invalid.") }
                 return
             }
-        val plan: ProjectDocumentRemovalPlan? = if (canonicalFile.isFile) {
+        val plan = if (canonicalFile.isFile) {
             runCatching { persistence.removalPlan(current.projectPath, current.projectRevision, draft.documentId) }
                 .getOrElse { error ->
                     _state.update {
@@ -772,21 +772,7 @@ class SubsystemGeneratorViewModel(
                     return
                 }
         } else null
-        _state.update { state ->
-            state.copy(
-                pendingRemoval = SubsystemRemovalRequest(
-                    documentId = draft.documentId,
-                    displayName = draft.displayName,
-                    persisted = plan != null,
-                    contentHash = plan?.contentHash,
-                    canonicalPath = plan?.currentFile?.projectRelativeTo(root),
-                    recoveryPath = plan?.recoveryFile?.projectRelativeTo(root),
-                    sourceFilesPreserved = draft.implementation.sourceFiles.sorted(),
-                    discardsUnsavedChanges = current.dirty,
-                ),
-                status = null,
-            )
-        }
+        _state.update { state -> SubsystemRemovalStateTransitions.prepareRemoval(state, draft, plan, root) }
     }
 
     fun cancelRemoveSubsystem() = _state.update { it.copy(pendingRemoval = null) }
@@ -854,26 +840,11 @@ class SubsystemGeneratorViewModel(
             )
         }.onSuccess { restored ->
             aiProposalGeneration++
-            val restoredDocuments = (current.documents + restored)
-                .distinctBy(SubsystemDocument::documentId)
-                .sortedWith(compareBy<SubsystemDocument> { it.displayName.lowercase() }.thenBy { it.documentId })
             _state.update {
-                it.copy(
-                    documents = restoredDocuments,
-                    selectedDocumentId = restored.documentId,
-                    draft = SubsystemEditorDraft(restored),
-                    selectedHardwareUid = restored.hardware.firstOrNull()?.uid,
-                    selectedFieldUid = restored.stateFields.firstOrNull()?.uid,
-                    selectedLoopUid = restored.controlLoops.firstOrNull()?.uid,
-                    selectedInterlockId = restored.interlocks.firstOrNull()?.interlockId,
-                    selectedTuningParameterUid = restored.tuningParameters.firstOrNull()?.uid,
-                    activeStage = SubsystemBuilderStage.PURPOSE,
-                    visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
-                    selectedTemplate = restored.template,
-                    dirty = false,
-                    projectRevision = persistence.currentRevision(it.projectRevision),
-                    recentRecovery = null,
-                    status = "Restored ${restored.displayName} from the reviewed recovery copy. Kotlin source was unchanged.",
+                SubsystemRemovalStateTransitions.restoreDocument(
+                    current = it,
+                    restored = restored,
+                    revision = persistence.currentRevision(it.projectRevision),
                 ).revalidated()
             }
             projectGenerator?.generateAresProject(current.projectPath, current.league)
@@ -911,34 +882,14 @@ class SubsystemGeneratorViewModel(
     ) {
         aiProposalGeneration++
         _state.update { current ->
-            val remaining = current.documents.filterNot { it.documentId == documentId }
-            val next = remaining.firstOrNull()
-            current.copy(
-                documents = remaining,
-                selectedDocumentId = next?.documentId,
-                draft = next?.let(::SubsystemEditorDraft),
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-                selectedInterlockId = null,
-                selectedTuningParameterUid = null,
-                activeStage = SubsystemBuilderStage.PURPOSE,
-                visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
-                selectedTemplate = next?.template ?: current.selectedTemplate,
-                dirty = false,
-                projectRevision = persistence.currentRevision(current.projectRevision),
-                pendingRemoval = null,
-                recentRecovery = recovery,
-                status = message,
-                aiProposalInProgress = false,
-                aiProposal = null,
-                aiProposalError = null,
+            SubsystemRemovalStateTransitions.removeDocument(
+                current = current,
+                documentId = documentId,
+                message = message,
+                revision = persistence.currentRevision(current.projectRevision),
+                recovery = recovery,
             ).revalidated()
         }
-    }
-
-    private fun File.projectRelativeTo(root: File?): String? = root?.let { projectRoot ->
-        runCatching { relativeTo(projectRoot).invariantSeparatorsPath }.getOrNull()
     }
 
     fun generate() {
