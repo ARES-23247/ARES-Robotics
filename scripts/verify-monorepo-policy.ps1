@@ -153,6 +153,31 @@ $productionSources = Get-ChildItem -LiteralPath $root -Recurse -File |
             $_.Extension -in @('.kt', '.java') -and
             $_.FullName -notmatch '[\\/]build[\\/]'
     }
+
+# Large files are not automatically bad, but crossing four figures makes review ownership and
+# regression isolation materially harder. ARES-owned production files must be decomposed before
+# they exceed this boundary. Upstream FTC controller sources and generated bindings are excluded.
+$maxAresOwnedSourceLines = 1000
+$oversizedAresSources = $productionSources |
+    Where-Object {
+        $_.FullName -notmatch '[\\/]FtcRobotController[\\/]' -and
+            $_.FullName -notmatch '[\\/]generated[\\/]'
+    } |
+    ForEach-Object {
+        $lineCount = (Get-Content -LiteralPath $_.FullName | Measure-Object -Line).Lines
+        if ($lineCount -gt $maxAresOwnedSourceLines) {
+            [PSCustomObject]@{
+                Path = $_.FullName.Substring($root.Length + 1)
+                Lines = $lineCount
+            }
+        }
+    }
+if ($oversizedAresSources) {
+    $summary = $oversizedAresSources |
+        Sort-Object Lines -Descending |
+        ForEach-Object { "$($_.Path) ($($_.Lines) lines)" }
+    throw "ARES-owned production files exceed $maxAresOwnedSourceLines lines: $($summary -join ', ')"
+}
 foreach ($retiredType in $retiredProductionTypes) {
     $matches = $productionSources | Where-Object { $_.BaseName -eq $retiredType }
     if ($matches) {
