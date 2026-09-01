@@ -41,9 +41,8 @@ secret when calling Google and returns the token response to the app without per
 broker does not receive Drive folder IDs, file content, telemetry, or the DuckDB database. Drive
 operations go directly from the signed-in desktop to Google.
 
-OAuth access and refresh tokens are sensitive. Windows installations protect them with DPAPI for
-the current Windows user. Existing plaintext token files are migrated after a successful secure
-write. macOS/Linux currently use an atomically replaced owner-only file. Workspace configuration
+OAuth access and refresh tokens are sensitive. Studio protects them with the current user's
+DPAPI vault on Windows, Keychain on macOS, or Secret Service on Linux. Workspace configuration
 may contain public OAuth client IDs, an HTTPS broker URL, and stable Drive folder/account
 identifiers, but never contains a Google client secret. An organization using its own OAuth client
 must protect the matching secret in its own broker rather than on student computers.

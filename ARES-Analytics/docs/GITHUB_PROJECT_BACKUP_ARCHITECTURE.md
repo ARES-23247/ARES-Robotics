@@ -94,8 +94,8 @@ paths; it rejects links, oversized content, destinations inside the project, and
 
 ## Credential storage and recovery
 
-On Windows, the credential record is encrypted with DPAPI for the current Windows user. Other
-platforms currently use the existing owner-only local credential-file policy. The robot project
+The credential record is stored in the current user's DPAPI vault on Windows, Keychain on macOS,
+or Secret Service on Linux. Vault failures never fall back to plaintext. The robot project
 contains only non-secret repository identity and its credential-free HTTPS remote.
 
 **Sign out** removes the saved GitHub credential. **Change destination** removes the ARES-managed

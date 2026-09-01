@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
+import com.ares.analytics.service.security.PlatformSecretStore
 import java.nio.file.Files
-import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertFalse
@@ -25,21 +25,23 @@ class OAuthTokenStoreTest {
     }
 
     @Test
-    fun `windows DPAPI token store round trips encrypted bytes`() {
-        if (!System.getProperty("os.name").lowercase(Locale.ROOT).contains("win")) return
-        val directory = Files.createTempDirectory("ares-token-dpapi").toFile()
-        val encrypted = directory.resolve("auth.dpapi")
+    fun `platform token store delegates without changing bytes`() {
+        val platform = MemoryPlatformSecretStore()
         val bytes = "sensitive refresh token".toByteArray()
-        val store = WindowsDpapiOAuthTokenStore(encrypted)
-        try {
-            store.write(bytes)
-            assertContentEquals(bytes, store.read())
-            assertTrue(encrypted.isFile)
-            assertFalse(encrypted.readBytes().contentEquals(bytes))
-            assertContentEquals(bytes, store.read())
-        } finally {
-            store.delete()
-            directory.deleteRecursively()
-        }
+        val store = PlatformOAuthTokenStore(platform)
+
+        store.write(bytes)
+
+        assertContentEquals(bytes, store.read())
+        assertTrue(store.delete())
+        assertContentEquals(null, store.read())
+    }
+
+    private class MemoryPlatformSecretStore : PlatformSecretStore {
+        private val values = mutableMapOf<String, ByteArray>()
+        override fun read(key: String): ByteArray? = values[key]?.copyOf()
+        override fun write(key: String, bytes: ByteArray) { values[key] = bytes.copyOf() }
+        override fun delete(key: String): Boolean { values.remove(key); return true }
+        override val protectionDescription: String = "test vault"
     }
 }

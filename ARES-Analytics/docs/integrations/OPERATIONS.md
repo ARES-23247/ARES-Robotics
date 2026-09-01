@@ -13,7 +13,7 @@ Studio writes an immutable domain event and one durable delivery row per configu
 
 ## Configuration and credentials
 
-Non-secret configuration is stored in `~/.ares-analytics/integrations.json`. Credentials are stored separately in `integrations.dpapi` on Windows using current-user DPAPI. Other supported desktop platforms use an owner-only secret file. Credentials must be provisioned through `IntegrationSettingsService.saveCredential`; do not put them in `integrations.json`.
+Non-secret configuration is stored in `~/.ares-analytics/integrations.json`. Credentials are stored separately in the current user's DPAPI vault on Windows, Keychain on macOS, or Secret Service on Linux. Vault failures do not fall back to plaintext. Credentials must be provisioned through `IntegrationSettingsService.saveCredential`; do not put them in `integrations.json`.
 
 A representative configuration is:
 

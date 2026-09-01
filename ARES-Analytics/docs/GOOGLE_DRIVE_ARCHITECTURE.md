@@ -91,10 +91,10 @@ away from the deleted legacy client safely.
 
 ## Token storage and revocation
 
-On Windows, new releases protect the serialized OAuth token record with current-user DPAPI and
-migrate `~/.ares-analytics/auth.json` to `auth.dpapi` after the first successful read. macOS and
-Linux currently retain the owner-only atomic token file; native Keychain/Secret Service storage is
-a documented follow-up rather than an unverified shell integration. Client IDs are public, but ARES
+Studio stores the serialized OAuth token record in the operating system's current-user credential
+vault: DPAPI on Windows, Keychain on macOS, and Secret Service on Linux. Linux requires
+`secret-tool` and an unlocked user keyring. Vault failures are reported; Studio never silently
+falls back to a plaintext credential file. Client IDs are public, but ARES
 does not print them in OAuth errors. Tokens and authorization response bodies are never logged.
 
 Saved tokens record the OAuth client ID that issued them. A client mismatch, `deleted_client`,

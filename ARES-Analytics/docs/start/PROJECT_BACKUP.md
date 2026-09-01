@@ -50,8 +50,8 @@ students then see it in the destination picker when their GitHub account has acc
 - GitHub App device authorization uses a public application client ID and never a client secret.
 - ARES requests an expiring GitHub App user token and rotates its refresh token. It does not request
   the broad legacy `repo` OAuth scope.
-- On Windows the GitHub credentials are protected with DPAPI for the current user. Other platforms use
-  the existing owner-only ARES credential-file policy until a native keychain backend is added.
+- GitHub credentials use the current user's DPAPI vault on Windows, Keychain on macOS, or Secret
+  Service on Linux. Studio does not silently fall back to plaintext when a vault is unavailable.
 - Tokens are never embedded in remote URLs, robot project files, terminal arguments, or logs.
 - Known secret-bearing paths such as `credentials.json`, keystores, `.env`, and `.ares/secrets/`
   block a save if they are not already ignored.
