@@ -43,6 +43,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.ares.analytics.ui.components.core.AresDoubleField
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -301,19 +302,12 @@ private fun Metric(label: String, value: String, color: androidx.compose.ui.grap
 
 @Composable
 private fun DecimalEditor(label: String, value: Double, modifier: Modifier = Modifier, onValidValue: (Double) -> Unit) {
-    var raw by remember(value) { mutableStateOf(value.toString()) }
-    val parsed = raw.toDoubleOrNull()?.takeIf(Double::isFinite)
-    OutlinedTextField(
-        value = raw,
-        onValueChange = {
-            raw = it
-            it.toDoubleOrNull()?.takeIf(Double::isFinite)?.let(onValidValue)
-        },
-        label = { Text(label) },
-        isError = parsed == null,
-        supportingText = { if (parsed == null) Text("Enter a finite number") },
-        singleLine = true,
+    AresDoubleField(
+        label = label,
+        value = value,
         modifier = modifier,
+        supportingText = { _, isError -> "Enter a finite number".takeIf { isError } },
+        onValueChange = onValidValue,
     )
 }
 

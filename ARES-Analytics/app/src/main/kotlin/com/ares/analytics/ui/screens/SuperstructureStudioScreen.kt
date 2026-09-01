@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -151,8 +150,8 @@ fun SuperstructureStudioScreen(
                 },
             )
 
-            state.error?.let { StatusBanner(it, AresError) }
-            if (state.status.isNotBlank()) StatusBanner(state.status, AresGreen)
+            state.error?.let { AresStatusBanner(it, AresError) }
+            if (state.status.isNotBlank()) AresStatusBanner(state.status, AresGreen)
 
             val draft = state.draft
             if (draft == null) {
@@ -230,18 +229,6 @@ fun SuperstructureStudioScreen(
 
 internal fun shouldRefreshSuperstructureCatalogsOnEntry(state: SuperstructureStudioState): Boolean =
     !state.loading && !state.dirty
-
-@Composable
-private fun StatusBanner(message: String, color: Color) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = color.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, color),
-        shape = RoundedCornerShape(6.dp),
-    ) {
-        Text(message, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(8.dp))
-    }
-}
 
 private fun generateSuperstructureSpecSections(
     state: SuperstructureStudioState,

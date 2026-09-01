@@ -27,7 +27,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -229,7 +228,7 @@ fun SubsystemGeneratorScreen(
                 },
             )
 
-            state.status?.let { StatusBanner(it, AresGreen) }
+            state.status?.let { AresStatusBanner(it, AresGreen) }
             state.recentRecovery?.let { recovery ->
                 Surface(
                     color = AresGreen.copy(alpha = 0.08f),
@@ -277,9 +276,9 @@ fun SubsystemGeneratorScreen(
                     AresGenerationPhase.SUCCEEDED -> AresGreen
                     AresGenerationPhase.IDLE -> AresTextSecondary
                 }
-                StatusBanner(message, color)
+                AresStatusBanner(message, color)
             }
-            state.loadError?.let { StatusBanner(it, AresError) }
+            state.loadError?.let { AresStatusBanner(it, AresError) }
 
             val document = state.draft?.document
             if (document == null) {
@@ -576,18 +575,6 @@ fun SubsystemGeneratorScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun StatusBanner(message: String, color: Color) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = color.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, color),
-        shape = RoundedCornerShape(6.dp),
-    ) {
-        Text(message, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(8.dp))
     }
 }
 

@@ -22,11 +22,12 @@ import com.ares.analytics.ui.theme.AresCyan
  */
 @Composable
 fun AresDoubleField(
-    label: String,
+    label: String?,
     value: Double,
     modifier: Modifier = Modifier,
     labelFontSize: TextUnit = TextUnit.Unspecified,
     unit: String? = null,
+    supportingText: ((raw: String, isError: Boolean) -> String?)? = null,
     onValueChange: (Double) -> Unit,
 ) {
     AresNumberField(
@@ -35,6 +36,7 @@ fun AresDoubleField(
         modifier = modifier,
         labelFontSize = labelFontSize,
         unit = unit,
+        supportingText = supportingText,
         blankIsValid = false,
         onValueChange = { parsed -> parsed?.let(onValueChange) },
     )
@@ -43,11 +45,12 @@ fun AresDoubleField(
 /** Decimal editor whose canonical value may be absent when the field is blank. */
 @Composable
 fun AresNullableDoubleField(
-    label: String,
+    label: String?,
     value: Double?,
     modifier: Modifier = Modifier,
     labelFontSize: TextUnit = TextUnit.Unspecified,
     unit: String? = null,
+    supportingText: ((raw: String, isError: Boolean) -> String?)? = null,
     onValueChange: (Double?) -> Unit,
 ) {
     AresNumberField(
@@ -56,6 +59,7 @@ fun AresNullableDoubleField(
         modifier = modifier,
         labelFontSize = labelFontSize,
         unit = unit,
+        supportingText = supportingText,
         blankIsValid = true,
         onValueChange = onValueChange,
     )
@@ -63,11 +67,12 @@ fun AresNullableDoubleField(
 
 @Composable
 private fun AresNumberField(
-    label: String,
+    label: String?,
     value: Double?,
     modifier: Modifier,
     labelFontSize: TextUnit,
     unit: String?,
+    supportingText: ((raw: String, isError: Boolean) -> String?)?,
     blankIsValid: Boolean,
     onValueChange: (Double?) -> Unit,
 ) {
@@ -85,9 +90,12 @@ private fun AresNumberField(
             }
         },
         modifier = modifier,
-        label = { Text(label, fontSize = labelFontSize) },
+        label = label?.let { labelText -> { Text(labelText, fontSize = labelFontSize) } },
         trailingIcon = unit?.let { suffix ->
             { Text(suffix, color = AresCyan, modifier = Modifier.padding(end = 8.dp)) }
+        },
+        supportingText = supportingText?.let { messageFor ->
+            { messageFor(raw, invalid)?.let { Text(it) } }
         },
         isError = invalid,
         singleLine = true,
