@@ -82,6 +82,9 @@ Protected pull requests run:
 - dashboard performance validation and CodeQL
 - real Windows MSI and native macOS DMG packaging, including packaged-project loading
 
+The same required checks run for merge-queue commits. They do not rerun after the reviewed tree is
+merged to `main`; scheduled and manual workflows remain available for independent health checks.
+
 The packaging run seals those exact outputs into an attested release candidate. After merge, the
 protected promotion workflow accepts only a candidate whose complete Git tree equals `main`, whose
 originating run and workflow are trusted, and whose file hashes and canonical versions still match.

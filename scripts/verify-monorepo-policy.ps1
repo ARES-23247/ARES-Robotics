@@ -97,6 +97,25 @@ foreach ($entrypoint in $validationEntrypoints) {
     }
 }
 
+# Required checks run on the reviewed pull-request or merge-queue tree. Re-running the same suites
+# after that tree lands on main wastes runner time and cannot strengthen the already sealed candidate.
+$reviewGateWorkflows = @(
+    '.github/workflows/analytics-validation.yml',
+    '.github/workflows/build-distributions.yml',
+    '.github/workflows/codeql.yml',
+    '.github/workflows/monorepo-ci.yml',
+    '.github/workflows/verify-autos.yml'
+)
+foreach ($relativePath in $reviewGateWorkflows) {
+    $content = Get-Content -Raw -LiteralPath (Join-Path $root $relativePath)
+    if ($content -notmatch '(?m)^\s{2}pull_request:\s*$' -or $content -notmatch '(?m)^\s{2}merge_group:\s*$') {
+        throw "$relativePath must validate both pull-request and merge-queue trees."
+    }
+    if ($content -match '(?ms)^\s{2}push:\s*\r?\n\s{4}branches:\s*\[main\]') {
+        throw "$relativePath must not rerun reviewed checks after merge to main."
+    }
+}
+
 foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Starter', 'ARES-FRC-Starter', 'ARES-Analytics')) {
     if (Test-Path -LiteralPath (Join-Path $root "$component/.git")) {
         throw "$component is still a nested Git repository; source must be owned by the monorepo."
