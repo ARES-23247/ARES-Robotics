@@ -21,7 +21,6 @@ ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumRobot.kt=504
 ftc-hardware/src/main/kotlin/com/areslib/ftc/runtime/FtcGeneratedAutonomousOpMode.kt=601
 project-schema/src/main/kotlin/com/areslib/routine/RoutineValidation.kt=621
 project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt=609
-project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt=1039
 project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDocument.kt=757
 simulator/src/main/kotlin/com/areslib/sim/DesktopSimLauncher.kt=664
 simulator/src/main/kotlin/com/areslib/sim/infra/SimGamepadManager.kt=582
