@@ -34,7 +34,7 @@ enum class OnboardingStep(val number: Int) {
 
 enum class ProjectSetupMode(val createsProject: Boolean) {
     CREATE_NEW(true),
-    EXPLORE_DEMO(true),
+    EXPLORE_LIGHTBOT(true),
     OPEN_EXISTING(false),
 }
 
@@ -175,24 +175,24 @@ class OnboardingViewModel(
                         )
                         when (intent.mode) {
                             ProjectSetupMode.CREATE_NEW -> selected.copy(projectPath = plannedProjectPath(selected))
-                            ProjectSetupMode.EXPLORE_DEMO -> {
+                            ProjectSetupMode.EXPLORE_LIGHTBOT -> {
                                 val template = projectTemplateService.templateFor(
                                     League.FTC,
                                     RobotProjectTemplateKind.EXAMPLE,
                                 )
-                                val demo = selected.copy(
-                                    projectFolderName = DEMO_PROJECT_FOLDER,
-                                    teamId = DEMO_TEAM_ID,
-                                    seasonId = DEMO_SEASON_ID,
-                                    robotId = DEMO_ROBOT_ID,
-                                    robotName = DEMO_ROBOT_NAME,
+                                val lightbot = selected.copy(
+                                    projectFolderName = LIGHTBOT_PROJECT_FOLDER,
+                                    teamId = LIGHTBOT_TEAM_ID,
+                                    seasonId = LIGHTBOT_SEASON_ID,
+                                    robotId = LIGHTBOT_ROBOT_ID,
+                                    robotName = LIGHTBOT_ROBOT_NAME,
                                     league = League.FTC,
                                     nt4Host = "127.0.0.1",
                                     simulatorCommand = "",
                                     projectTemplateName = template.displayName,
                                     projectTemplateVersion = template.aresVersion,
                                 )
-                                demo.copy(projectPath = plannedProjectPath(demo))
+                                lightbot.copy(projectPath = plannedProjectPath(lightbot))
                             }
                             ProjectSetupMode.OPEN_EXISTING -> selected.copy(projectPath = "")
                         }
@@ -259,7 +259,7 @@ class OnboardingViewModel(
                 OnboardingIntent.NextStep -> moveNext()
                 OnboardingIntent.PreviousStep -> _state.update {
                     val previous = if (
-                        it.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO &&
+                        it.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT &&
                         it.currentStep == OnboardingStep.REVIEW
                     ) {
                         OnboardingStep.PROJECT
@@ -348,7 +348,7 @@ class OnboardingViewModel(
             return
         }
         val next = if (
-            current.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO &&
+            current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT &&
             current.currentStep == OnboardingStep.PROJECT
         ) {
             OnboardingStep.REVIEW
@@ -416,7 +416,7 @@ class OnboardingViewModel(
                         seasonId = current.seasonId,
                         robotId = current.robotId,
                         robotName = current.robotName,
-                        templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
+                        templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
                             RobotProjectTemplateKind.EXAMPLE
                         } else {
                             RobotProjectTemplateKind.GENERIC_STARTER

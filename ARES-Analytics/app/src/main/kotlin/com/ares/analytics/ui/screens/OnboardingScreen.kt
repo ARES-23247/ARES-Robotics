@@ -277,8 +277,8 @@ fun OnboardingScreen(
                 NavigationButtons(
                     step = state.currentStep,
                     isSaving = state.isSaving,
-                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
-                        "Create demo copy"
+                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
+                        "Create Lightbot copy"
                     } else {
                         "Create standalone project"
                     },

@@ -617,7 +617,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                             },
                             onExploreDemo = {
-                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_DEMO
+                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_LIGHTBOT
                                 mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                             },
                         )
