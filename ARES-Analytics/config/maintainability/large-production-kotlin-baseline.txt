@@ -68,7 +68,7 @@ app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlsEditorViewMode
 app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt=758
 app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt=1025
 app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt=615
-app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt=1164
+app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt=1020
 app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModel.kt=561
 app/src/main/kotlin/com/ares/analytics/viewmodel/robotstudio/RobotStudioModel.kt=585
 app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt=1064
