@@ -152,7 +152,6 @@ class CloudViewModel(
     init {
         checkAuth()
         onIntent(CloudIntent.RefreshCloudLogs)
-        onIntent(CloudIntent.RefreshRobotLogs)
     }
 
     private fun checkAuth() {
@@ -467,7 +466,7 @@ class CloudViewModel(
 
             _state.update { it.copy(robotRuns = runs, isFetchingRobotLogs = false) }
         } catch (e: CancellationException) { throw e } catch (e: Exception) {
-            e.printStackTrace()
+            println(robotLogRefreshFailureMessage(getRobotIp(), e))
             _state.update { it.copy(robotRuns = emptyList(), isFetchingRobotLogs = false, errorMessage = "Failed to fetch logs: ${e.message}") }
         }
     }
@@ -520,6 +519,18 @@ class CloudViewModel(
 
     private companion object {
         const val MIN_ROBOT_DELETE_TOKEN_LENGTH = 16
+    }
+}
+
+internal fun robotLogRefreshFailureMessage(robotIp: String, error: Throwable): String {
+    val root = generateSequence(error) { it.cause }.last()
+    val detail = root.message?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+    return buildString {
+        append("[CloudViewModel] Robot log refresh failed for ")
+        append(robotIp)
+        append(": ")
+        append(root::class.simpleName ?: "Error")
+        if (detail.isNotEmpty()) append(" — ").append(detail)
     }
 }
 
