@@ -1261,86 +1261,7 @@ private fun chooseAcademyReportFile(studentName: String, pathId: String): File? 
 }
 
 @Composable
-private fun LearningLabsPane(initialLab: LearningLab, onBack: () -> Unit) {
-    var selectedLab by remember(initialLab) { mutableStateOf(initialLab) }
-    val guide = LearningCatalog.labGuide(selectedLab)
-    Column(
-        modifier = Modifier.fillMaxSize().background(AresBackground).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("Back to lessons")
-            }
-            Column(Modifier.weight(1f)) {
-                Text("Guided learning labs", color = AresTextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    "Simplified models do not command hardware, change project files, or prove a robot design is safe.",
-                    color = AresTextSecondary,
-                    fontSize = 12.sp,
-                )
-            }
-        }
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            LearningLab.entries.forEach { lab ->
-                FilterChip(
-                    selected = selectedLab == lab,
-                    onClick = { selectedLab = lab },
-                    label = { Text(lab.label) },
-                    modifier = Modifier.semantics {
-                        stateDescription = if (selectedLab == lab) "Selected lab" else "Available lab"
-                    },
-                )
-            }
-        }
-        LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { LabGuideCard(guide) }
-            item {
-                when (selectedLab) {
-                    LearningLab.CONTROL -> ControlTheorySandboxLab()
-                    LearningLab.TUNING_MISSIONS -> AcademyTuningMissions()
-                    LearningLab.SENSOR_FUSION -> EkfSensorFusionLabCard()
-                    LearningLab.KINEMATICS_VECTORS -> KinematicsVectorLabCard()
-                    LearningLab.MOTION_PROFILE -> MotionProfileLabCard()
-                    LearningLab.MECHANISM_SIZING -> MechanismKinematicsLabCard()
-                    LearningLab.HOMING_SAFETY -> HomingSafetyLabCard()
-                    LearningLab.STATE_FLOW -> RobotSignalFlowLabCard()
-                    LearningLab.AUTONOMOUS_SAFETY -> AutonomousSafetyLabCard()
-                }
-            }
-            item {
-                TeachingNotice(
-                    title = "Return to the lesson",
-                    body = "Use Back to lessons to record your reflection. Running a model does not automatically mark understanding or safety.",
-                    accent = AresCyan,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LabGuideCard(guide: LearningLabGuide) {
-    Surface(color = AresSurface, border = BorderStroke(1.dp, AresBorder), shape = RoundedCornerShape(12.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(guide.title, color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(guide.outcome, color = AresTextSecondary, lineHeight = 20.sp)
-            LessonSection("Before you start", guide.beforeYouStart)
-            LessonSection("Try this", guide.tryThis, numbered = true)
-            LessonSection("Reflect", guide.reflectionQuestions)
-            Text("Success: ${guide.successLooksLike}", color = AresGreen, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-private fun TeachingNotice(title: String, body: String, accent: androidx.compose.ui.graphics.Color) {
+internal fun TeachingNotice(title: String, body: String, accent: androidx.compose.ui.graphics.Color) {
     Surface(
         color = accent.copy(alpha = 0.12f),
         border = BorderStroke(1.dp, accent.copy(alpha = 0.7f)),
@@ -1363,7 +1284,7 @@ private fun AresResourceButton(destination: AresBrandDestination) {
 }
 
 @Composable
-private fun LessonSection(title: String, lines: List<String>, numbered: Boolean = false) {
+internal fun LessonSection(title: String, lines: List<String>, numbered: Boolean = false) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         lines.forEachIndexed { index, line ->
@@ -1387,97 +1308,4 @@ private fun statusColor(status: LearningLessonStatus) = when (status) {
     LearningLessonStatus.RECOMMENDED_LATER -> AresAmber
     LearningLessonStatus.IN_PROGRESS -> AresCyan
     LearningLessonStatus.NOT_STARTED -> AresTextTertiary
-}
-
-@Composable
-private fun GlossaryPane(
-    initialTerm: String?,
-    onBack: () -> Unit,
-    onOpenLesson: (String) -> Unit,
-    onOpenDeveloperReference: () -> Unit,
-) {
-    var query by remember { mutableStateOf(initialTerm.orEmpty()) }
-    val matches = remember(query) { GlossaryCatalog.search(query) }
-
-    Column(
-        modifier = Modifier.fillMaxSize().background(AresBackground).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("Back to Academy")
-            }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Glossary", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-            Text(
-                "Short definitions for first-year team members. Cross-links open the lesson or developer reference that owns the concept.",
-                color = AresTextSecondary,
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-            )
-        }
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text("Search terms and definitions") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        )
-        if (matches.isEmpty()) {
-            Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
-                Text("No terms match that search.", color = AresTextSecondary)
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(matches.size) { index ->
-                    GlossaryTermCard(
-                        entry = matches[index],
-                        onOpenLesson = onOpenLesson,
-                        onOpenDeveloperReference = onOpenDeveloperReference,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GlossaryTermCard(
-    entry: GlossaryTerm,
-    onOpenLesson: (String) -> Unit,
-    onOpenDeveloperReference: () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AresSurface),
-        border = BorderStroke(1.dp, AresBorder),
-        shape = RoundedCornerShape(10.dp),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(entry.term, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-            Text(entry.definition, color = AresTextSecondary, fontSize = 12.sp, lineHeight = 17.sp)
-            entry.mentorNote?.let { note ->
-                Text("Mentor note: $note", color = AresTextTertiary, fontSize = 11.sp, lineHeight = 15.sp)
-            }
-            if (entry.relatedLessonIds.isNotEmpty() || entry.relatedDeveloperReferenceIds.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    entry.relatedLessonIds.forEach { lessonId ->
-                        val lessonTitle = LearningCatalog.lesson(lessonId)?.title ?: lessonId
-                        TextButton(onClick = { onOpenLesson(lessonId) }) {
-                            Text("Lesson: $lessonTitle", fontSize = 11.sp)
-                        }
-                    }
-                    entry.relatedDeveloperReferenceIds.forEach { referenceId ->
-                        val referenceTitle = DeveloperReferenceCatalog.entries.firstOrNull { it.id == referenceId }?.title ?: referenceId
-                        TextButton(onClick = onOpenDeveloperReference) {
-                            Text("Reference: $referenceTitle", fontSize = 11.sp)
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
