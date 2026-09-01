@@ -94,7 +94,7 @@ internal fun RoutineStepCard(
             }
             when (step.kind) {
                 RoutineStepKind.ACTION -> {
-                    ActionPicker(actions, step.actionKey) { onUpdate(step.copy(actionKey = it.key, arguments = defaultsFor(it.parameters))) }
+                    ActionPicker(actions, step.actionKey) { onUpdate(step.copy(actionKey = it.key, arguments = initialCapabilityArguments(it.parameters))) }
                     actions.firstOrNull { it.key == step.actionKey }?.let { descriptor ->
                         Text(descriptor.description, style = MaterialTheme.typography.bodySmall, color = AresTextSecondary)
                         ParameterEditors(descriptor.parameters, step.arguments, issues) { onUpdate(step.copy(arguments = it)) }
@@ -112,7 +112,7 @@ internal fun RoutineStepCard(
                 }
                 RoutineStepKind.WAIT_UNTIL -> {
                     ConditionPicker(conditions, step.conditionKey) {
-                        onUpdate(step.copy(conditionKey = it.key, arguments = defaultsFor(it.parameters)))
+                        onUpdate(step.copy(conditionKey = it.key, arguments = initialCapabilityArguments(it.parameters)))
                     }
                     RoutineDecimalEditor(step.timeoutSeconds ?: 0.0, "Safety timeout", "s") {
                         onUpdate(step.copy(timeoutSeconds = it.coerceAtLeast(.01)))
@@ -130,7 +130,7 @@ internal fun RoutineStepCard(
                 }
                 RoutineStepKind.BRANCH -> {
                     ConditionPicker(conditions, step.conditionKey) {
-                        onUpdate(step.copy(conditionKey = it.key, arguments = defaultsFor(it.parameters)))
+                        onUpdate(step.copy(conditionKey = it.key, arguments = initialCapabilityArguments(it.parameters)))
                     }
                     conditions.firstOrNull { it.key == step.conditionKey }?.let { descriptor ->
                         ParameterEditors(descriptor.parameters, step.arguments, issues) { onUpdate(step.copy(arguments = it)) }
@@ -218,13 +218,12 @@ internal fun SimpleChildEditor(
             IconButton(onRemove, Modifier.size(28.dp)) { Icon(Icons.Default.Delete, "Remove child", tint = AresError, modifier = Modifier.size(16.dp)) }
         }
         when (step.kind) {
-            RoutineStepKind.ACTION -> ActionPicker(actions, step.actionKey) { onUpdate(step.copy(actionKey = it.key, arguments = defaultsFor(it.parameters))) }
+            RoutineStepKind.ACTION -> ActionPicker(actions, step.actionKey) { onUpdate(step.copy(actionKey = it.key, arguments = initialCapabilityArguments(it.parameters))) }
             RoutineStepKind.WAIT -> RoutineDecimalEditor(step.durationSeconds ?: 0.0, "Duration", "s") { onUpdate(step.copy(durationSeconds = it.coerceAtLeast(0.0))) }
             RoutineStepKind.DRIVE_TO -> step.drive?.let { drive -> RoutinePoseEditors(drive.target) { onUpdate(step.copy(drive = drive.copy(target = it))) } }
-            RoutineStepKind.WAIT_UNTIL -> ConditionPicker(conditions, step.conditionKey) { onUpdate(step.copy(conditionKey = it.key, arguments = defaultsFor(it.parameters))) }
+            RoutineStepKind.WAIT_UNTIL -> ConditionPicker(conditions, step.conditionKey) { onUpdate(step.copy(conditionKey = it.key, arguments = initialCapabilityArguments(it.parameters))) }
             RoutineStepKind.CALL -> RoutinePicker(routines, step.routineId) { onUpdate(step.copy(routineId = it.documentId)) }
             else -> Text("Nested ${routineStepTitle(step.kind).lowercase()} group", style = MaterialTheme.typography.bodySmall, color = AresTextSecondary)
         }
     }
 }
-

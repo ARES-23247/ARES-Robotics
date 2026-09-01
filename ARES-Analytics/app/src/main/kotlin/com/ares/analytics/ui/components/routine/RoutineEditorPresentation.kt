@@ -8,22 +8,9 @@ import com.ares.analytics.ui.theme.AresCyan
 import com.ares.analytics.ui.theme.AresError
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
-import com.areslib.catalog.CapabilityParameterDescriptor
-import com.areslib.catalog.CapabilityParameterType
 import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
 import java.util.Locale
-
-internal fun defaultsFor(parameters: List<CapabilityParameterDescriptor>): Map<String, String> = buildMap {
-    parameters.forEach { parameter -> defaultValue(parameter).takeIf(String::isNotEmpty)?.let { put(parameter.key, it) } }
-}
-
-internal fun defaultValue(parameter: CapabilityParameterDescriptor): String = when (parameter.type) {
-    CapabilityParameterType.NUMBER -> parameter.defaultNumber?.toString().orEmpty()
-    CapabilityParameterType.BOOLEAN -> parameter.defaultBoolean?.toString().orEmpty()
-    CapabilityParameterType.TEXT,
-    CapabilityParameterType.ENUM -> parameter.defaultText ?: parameter.options.firstOrNull().orEmpty()
-}
 
 internal fun routineStepTitle(kind: RoutineStepKind): String = when (kind) {
     RoutineStepKind.ACTION -> "Run robot action"

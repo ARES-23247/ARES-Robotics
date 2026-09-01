@@ -86,7 +86,7 @@ internal fun ParameterEditors(
     onChanged: (Map<String, String>) -> Unit
 ) {
     descriptors.forEach { descriptor ->
-        val value = arguments[descriptor.key] ?: defaultValue(descriptor)
+        val value = arguments[descriptor.key] ?: descriptor.initialArgumentValue().orEmpty()
         val fieldError = issues.firstOrNull {
             it.severity == RoutineValidationSeverity.ERROR && it.path.endsWith(".arguments.${descriptor.key}")
         }
@@ -310,4 +310,3 @@ internal fun MotionPresetPicker(selected: String, onSelected: (String) -> Unit) 
         }
     }
 }
-

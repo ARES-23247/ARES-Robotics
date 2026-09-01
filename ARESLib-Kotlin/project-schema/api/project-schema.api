@@ -36,6 +36,27 @@ public final class com/areslib/catalog/ActionKey {
 	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
+public final class com/areslib/catalog/CapabilityArgumentIssue {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/catalog/CapabilityArgumentIssue;
+	public static synthetic fun copy$default (Lcom/areslib/catalog/CapabilityArgumentIssue;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/catalog/CapabilityArgumentIssue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCode ()Ljava/lang/String;
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/catalog/CapabilityArgumentsKt {
+	public static final fun initialArgumentValue (Lcom/areslib/catalog/CapabilityParameterDescriptor;)Ljava/lang/String;
+	public static final fun initialCapabilityArguments (Ljava/util/List;)Ljava/util/Map;
+	public static final fun validateCapabilityArguments (Ljava/util/List;Ljava/util/Map;)Ljava/util/List;
+}
+
 public final class com/areslib/catalog/CapabilityCatalogCodec {
 	public static final field INSTANCE Lcom/areslib/catalog/CapabilityCatalogCodec;
 	public final fun contentHash (Lcom/areslib/catalog/CapabilityCatalogDocument;)Ljava/lang/String;

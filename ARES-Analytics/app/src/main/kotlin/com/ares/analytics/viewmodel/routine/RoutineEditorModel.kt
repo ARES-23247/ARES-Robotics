@@ -7,8 +7,8 @@ import com.ares.analytics.viewmodel.pathing.legalCenterBounds
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CapabilityParameterDescriptor
-import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.ConditionDescriptor
+import com.areslib.catalog.validateCapabilityArguments
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineAlliance
@@ -418,35 +418,13 @@ private fun validateArguments(
     parameters: List<CapabilityParameterDescriptor>,
     issues: MutableList<RoutineValidationIssue>
 ) {
-    val declared = parameters.associateBy(CapabilityParameterDescriptor::key)
-    arguments.keys.filter { it !in declared }.forEach { key ->
-        issues += routineIssue(routine, "$path.arguments.$key", "unknown_argument", "'$key' is not a declared parameter")
-    }
-    parameters.forEach { parameter ->
-        val value = arguments[parameter.key]
-        val hasDefault = parameter.defaultNumber != null || parameter.defaultBoolean != null || parameter.defaultText != null
-        if (value == null) {
-            if (parameter.required && !hasDefault) {
-                issues += routineIssue(routine, "$path.arguments.${parameter.key}", "missing_argument", "${parameter.displayName} is required")
-            }
-            return@forEach
-        }
-        val valid = when (parameter.type) {
-            CapabilityParameterType.NUMBER -> {
-                val minimum = parameter.minimum
-                val maximum = parameter.maximum
-                value.toDoubleOrNull()?.takeIf(Double::isFinite)?.let { number ->
-                    (minimum == null || number >= minimum) &&
-                        (maximum == null || number <= maximum)
-                } == true
-            }
-            CapabilityParameterType.BOOLEAN -> value == "true" || value == "false"
-            CapabilityParameterType.TEXT -> true
-            CapabilityParameterType.ENUM -> value in parameter.options
-        }
-        if (!valid) {
-            issues += routineIssue(routine, "$path.arguments.${parameter.key}", "invalid_argument", "${parameter.displayName} has an invalid value")
-        }
+    validateCapabilityArguments(parameters, arguments).forEach { issue ->
+        issues += routineIssue(
+            routine,
+            "$path.arguments.${issue.key}",
+            issue.code,
+            issue.message,
+        )
     }
 }
 

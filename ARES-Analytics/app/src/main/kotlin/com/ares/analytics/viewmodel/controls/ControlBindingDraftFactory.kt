@@ -1,8 +1,7 @@
 package com.ares.analytics.viewmodel.controls
 
 import com.areslib.catalog.ActionDescriptor
-import com.areslib.catalog.CapabilityParameterDescriptor
-import com.areslib.catalog.CapabilityParameterType
+import com.areslib.catalog.initialCapabilityArguments
 import com.areslib.controls.ControlBindingDocument
 import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlSchemeDocument
@@ -24,7 +23,7 @@ internal fun createChordBindingDraft(current: ControlsEditorState): ControlsEdit
     val scheme = current.selectedScheme ?: return current
     val slot = current.selectedControllerSlot ?: return current
     val target = current.actions.firstOrNull()?.let { descriptor ->
-        ControlTargetDocument(ControlTargetKind.ACTION, descriptor.key, defaultArguments(descriptor))
+        ControlTargetDocument(ControlTargetKind.ACTION, descriptor.key, initialCapabilityArguments(descriptor.parameters))
     } ?: current.routineIds.firstOrNull()?.let { routine ->
         ControlTargetDocument(ControlTargetKind.ROUTINE, routine)
     } ?: ControlTargetDocument(ControlTargetKind.ACTION, "choose.action")
@@ -82,15 +81,4 @@ internal fun uniqueBindingId(scheme: ControlSchemeDocument, raw: String): String
     val used = scheme.bindings.mapTo(hashSetOf()) { it.bindingId }
     while (candidate in used) candidate = "$base-${suffix++}"
     return candidate
-}
-
-internal fun defaultArguments(action: ActionDescriptor): Map<String, String> = action.parameters.mapNotNull { parameter ->
-    parameter.defaultValue()?.let { parameter.key to it }
-        ?: if (parameter.required) parameter.key to "" else null
-}.toMap()
-
-private fun CapabilityParameterDescriptor.defaultValue(): String? = when (type) {
-    CapabilityParameterType.NUMBER -> defaultNumber?.toString()
-    CapabilityParameterType.BOOLEAN -> defaultBoolean?.toString()
-    CapabilityParameterType.TEXT, CapabilityParameterType.ENUM -> defaultText
 }
