@@ -8,7 +8,10 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.viewmodel.FieldEditorIntent
 import com.ares.analytics.viewmodel.FieldEditorViewModel
+import com.ares.analytics.viewmodel.AprilTagExportFormat
 import com.areslib.state.FieldType
+import com.areslib.state.RobotFieldAprilTag
+import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +23,40 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class FieldEditorInteractionTest {
+    @Test
+    fun AprilTagTransferRoundTripsTheSupportedExportFormats() {
+        val field = RobotFieldConfig(
+            id = "practice-field",
+            name = "Practice field",
+            fieldType = FieldType.FTC,
+            widthMeters = 3.6576,
+            heightMeters = 3.6576,
+            apriltags = listOf(
+                RobotFieldAprilTag(
+                    id = 7,
+                    name = "Practice target",
+                    family = "36h11",
+                    sizeMeters = 0.1651,
+                    x = 1.2,
+                    y = 2.1,
+                    z = 0.4,
+                    yaw = 90.0,
+                    editorId = "practice-7",
+                ),
+            ),
+        )
+
+        val wpilib = FieldAprilTagTransfer.encode(field, AprilTagExportFormat.WPILIB_JSON)
+        val limelight = FieldAprilTagTransfer.encode(field, AprilTagExportFormat.LIMELIGHT_FMAP)
+        val wpilibPreview = FieldAprilTagTransfer.decode(wpilib, "practice.json", field, emptyList(), League.FTC)
+        val limelightPreview = FieldAprilTagTransfer.decode(limelight, "practice.fmap", field, emptyList(), League.FTC)
+
+        assertEquals(7, wpilibPreview.tags.single().tagId)
+        assertEquals(90.0, wpilibPreview.tags.single().yawDegrees, 1e-12)
+        assertEquals("36h11", limelightPreview.tags.single().family)
+        assertEquals(0.1651, limelightPreview.tags.single().sizeMeters!!, 1e-12)
+    }
+
     @Test
     fun undoRedoAndDuplicateOperateOnWholeEditorTransactions() {
         val viewModel = FieldEditorViewModel(CoroutineScope(SupervisorJob() + Dispatchers.Unconfined))
@@ -189,7 +226,7 @@ class FieldEditorInteractionTest {
             {"fiducials":[{"id":3,"family":"36h11","size":165.1,"transform":[1,0,0,2,0,1,0,3,0,0,1,0.5,0,0,0,1],"unique":1}]}
         """.trimIndent()
 
-        viewModel.onIntent(FieldEditorIntent.ImportFmap(fmap, null, League.FTC))
+        viewModel.onIntent(FieldEditorIntent.PreviewAprilTagMap(fmap, "field.fmap", null, League.FTC))
         val preview = assertNotNull(viewModel.state.value.aprilTagImportPreview)
         assertEquals(0.1651, preview.tags.single().sizeMeters!!, 1e-12)
         assertTrue(preview.warnings.any { it.contains("already exist") })

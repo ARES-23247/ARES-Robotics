@@ -1,6 +1,5 @@
 package com.ares.analytics.ui.components.routine
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.help.RoutineValidationLearningLinks
 import com.ares.analytics.viewmodel.PathPlannerIntent
@@ -47,8 +47,7 @@ internal fun RoutineSetupCard(
     val modeLabel = if (state.availableInAutonomousSelector) "Match autonomous" else "Reusable routine"
     val footprintLabel = "${formatRoutineNumber(dimensions.lengthMeters)} × ${formatRoutineNumber(dimensions.widthMeters)} m"
 
-    Card(colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated), border = BorderStroke(1.dp, AresBorder)) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    AresCard(contentPadding = 12.dp, contentSpacing = 8.dp) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Routine setup", fontWeight = FontWeight.Bold, color = AresTextPrimary)
@@ -164,7 +163,6 @@ internal fun RoutineSetupCard(
 
                 Text(state.capabilityStatus, style = MaterialTheme.typography.labelSmall, color = AresTextSecondary)
             }
-        }
     }
 }
 
@@ -191,8 +189,12 @@ internal fun RoutineValidationCard(
 ) {
     val hasErrors = issues.any { it.severity == RoutineValidationSeverity.ERROR }
     val accent = if (hasErrors) AresError else AresGold
-    Card(colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = .1f)), border = BorderStroke(1.dp, accent)) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    AresCard(
+        backgroundColor = accent.copy(alpha = .1f),
+        borderColor = accent,
+        contentPadding = 12.dp,
+        contentSpacing = 4.dp,
+    ) {
             Text(if (hasErrors) "Needs attention" else "Review before deployment", color = accent, fontWeight = FontWeight.Bold)
             issues.take(5).forEach { issue ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -205,16 +207,18 @@ internal fun RoutineValidationCard(
                 }
             }
             if (issues.size > 5) Text("+ ${issues.size - 5} more", style = MaterialTheme.typography.labelSmall, color = AresTextSecondary)
-        }
     }
 }
 
 @Composable
 internal fun EmptyRoutineCard() {
-    Card(colors = CardDefaults.cardColors(containerColor = AresCyan.copy(alpha = .08f)), border = BorderStroke(1.dp, AresCyan.copy(alpha = .5f))) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    AresCard(
+        backgroundColor = AresCyan.copy(alpha = .08f),
+        borderColor = AresCyan.copy(alpha = .5f),
+        contentPadding = 14.dp,
+        contentSpacing = 6.dp,
+    ) {
             Text("Add what the robot should do", color = AresCyan, fontWeight = FontWeight.Bold)
             Text("A routine can become an autonomous choice, a controller macro, or a reusable building block later.", style = MaterialTheme.typography.bodySmall)
-        }
     }
 }

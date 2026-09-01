@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.components.catalog.AresActionCatalogPicker
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
@@ -134,14 +135,11 @@ internal fun EnumParameterPicker(descriptor: CapabilityParameterDescriptor, valu
 
 @Composable
 internal fun DriveActionList(label: String, keys: List<String>, actions: List<ActionDescriptor>, onChanged: (List<String>) -> Unit) {
-    DescriptorPicker(
-        selected = null,
-        emptyLabel = "No project actions declared",
+    AresActionCatalogPicker(
+        actions = actions,
+        selectedKey = null,
+        pickerLabel = label,
         placeholder = label,
-        items = actions,
-        category = ActionDescriptor::category,
-        title = ActionDescriptor::displayName,
-        description = ActionDescriptor::description
     ) { selected -> if (selected.key !in keys) onChanged(keys + selected.key) }
     keys.forEach { key ->
         val descriptor = actions.firstOrNull { it.key == key }
@@ -245,14 +243,11 @@ internal fun DriveMarkerEditor(
             style = MaterialTheme.typography.labelSmall,
             color = AresTextSecondary,
         )
-        DescriptorPicker(
-            selected = null,
-            emptyLabel = "No project actions declared",
+        AresActionCatalogPicker(
+            actions = actions,
+            selectedKey = null,
+            pickerLabel = "Progress action",
             placeholder = "Add progress action",
-            items = actions,
-            category = ActionDescriptor::category,
-            title = ActionDescriptor::displayName,
-            description = ActionDescriptor::description,
         ) { action ->
             onChanged(markers + RoutineDriveMarker(progress = 0.5, actionKey = action.key))
         }
@@ -265,7 +260,7 @@ internal fun DriveMarkerEditor(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ActionPicker(actions, marker.actionKey) { action ->
+                    AresActionCatalogPicker(actions, marker.actionKey) { action ->
                         onChanged(markers.mapIndexed { markerIndex, existing ->
                             if (markerIndex == index) existing.copy(actionKey = action.key) else existing
                         })

@@ -16,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +24,7 @@ import com.ares.analytics.ui.components.core.AresInspectorDrawer
 import com.ares.analytics.ui.components.core.AresSpecRow
 import com.ares.analytics.ui.components.core.AresSpecSection
 import com.ares.analytics.ui.components.core.AresSpecSummaryModal
+import com.ares.analytics.ui.components.core.AresStatusBanner
 import com.ares.analytics.ui.components.core.ResponsiveBuilderHeader
 import com.ares.analytics.ui.components.drivebase.*
 import com.ares.analytics.ui.theme.*
@@ -156,8 +156,8 @@ fun DrivebaseBuilderScreen(
                 },
             )
 
-            state.error?.let { StatusBanner(it, AresError) }
-            if (state.status.isNotBlank()) StatusBanner(state.status, AresGreen)
+            state.error?.let { AresStatusBanner(it, AresError) }
+            if (state.status.isNotBlank()) AresStatusBanner(state.status, AresGreen)
             val blockingIssues = state.issues.filter { it.severity == DrivebaseIssueSeverity.ERROR }
             if (blockingIssues.isNotEmpty()) {
                 Surface(
@@ -454,18 +454,6 @@ private fun DrivebaseAiProposalDialog(
             }
         },
     )
-}
-
-@Composable
-private fun StatusBanner(message: String, color: Color) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = color.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, color),
-        shape = RoundedCornerShape(6.dp),
-    ) {
-        Text(message, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(8.dp))
-    }
 }
 
 private fun generateDrivebaseSpecSections(state: DrivebaseBuilderState): List<AresSpecSection> {

@@ -68,7 +68,7 @@ fun EKFTelemetryCard(
             }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier
             .fillMaxWidth()
             .height(300.dp),

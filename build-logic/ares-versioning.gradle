@@ -29,10 +29,18 @@ rootProject.ext.aresReleaseProperties = releaseProperties
 rootProject.ext.aresReleaseVersion = providers.gradleProperty('aresVersion')
     .getOrElse(requiredReleaseProperty('aresVersion'))
 rootProject.ext.aresPinnedReleaseVersion = requiredReleaseProperty('aresVersion')
-rootProject.ext.aresStudioVersion = requiredReleaseProperty('studioVersion')
-rootProject.ext.aresFtcStarterVersion = requiredReleaseProperty('ftcStarterVersion')
-rootProject.ext.aresFrcStarterVersion = requiredReleaseProperty('frcStarterVersion')
 rootProject.ext.aresGitHubMavenRepository = requiredReleaseProperty('githubMavenRepository')
+[
+    aresStudioVersion: 'studioVersion',
+    aresFtcStarterVersion: 'ftcStarterVersion',
+    aresFrcStarterVersion: 'frcStarterVersion',
+    aresLightbotExampleVersion: 'lightbotExampleVersion',
+].each { extensionName, propertyName ->
+    def value = releaseProperties.getProperty(propertyName)?.trim()
+    if (value != null && !value.isEmpty()) {
+        rootProject.ext[extensionName] = value
+    }
+}
 
 tasks.register('verifyAresReleaseManifest') {
     group = 'verification'

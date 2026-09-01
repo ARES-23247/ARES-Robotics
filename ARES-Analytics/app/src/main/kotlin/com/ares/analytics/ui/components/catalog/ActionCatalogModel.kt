@@ -1,4 +1,4 @@
-package com.ares.analytics.ui.components.controls
+package com.ares.analytics.ui.components.catalog
 
 import com.areslib.catalog.ActionDescriptor
 
@@ -8,7 +8,7 @@ internal data class ActionBrowserGroup(
 )
 
 /**
- * Builds the presentation model for the controller action browser. Keeping this logic outside
+ * Builds the presentation model for the shared project-action browser. Keeping this logic outside
  * Compose makes catalog discovery deterministic and lets the UI show every action before a
  * student starts searching.
  */

@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.drivebase.*
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.components.core.AresDoubleField
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.drivebase.*
 import com.areslib.drivetrain.DisabledDrivePolicy
@@ -360,22 +362,18 @@ fun FieldHeading(title: String, description: String) {
 
 @Composable
 fun GeometryField(label: String, value: Double, unit: String, explanation: String, onValueChange: (Double) -> Unit) {
-    var raw by remember(value) { mutableStateOf(value.toString()) }
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = AresTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(4.dp))
             HelpButton(explanation)
         }
-        OutlinedTextField(
-            value = raw,
-            onValueChange = {
-                raw = it
-                it.toDoubleOrNull()?.let(onValueChange)
-            },
-            trailingIcon = { Text(unit, color = AresCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 8.dp)) },
+        AresDoubleField(
+            label = null,
+            value = value,
+            unit = unit,
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
+            onValueChange = onValueChange,
         )
     }
 }
@@ -421,23 +419,20 @@ private fun NullableNumberField(
     explanation: String,
     onValueChange: (Double?) -> Unit,
 ) {
-    var raw by remember(value) { mutableStateOf(value?.toString().orEmpty()) }
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = AresTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(4.dp)); HelpButton(explanation)
         }
-        OutlinedTextField(
-            value = raw,
-            onValueChange = { next ->
-                raw = next
-                if (next.isBlank()) onValueChange(null) else next.toDoubleOrNull()?.let(onValueChange)
+        AresNullableDoubleField(
+            label = null,
+            value = value,
+            unit = unit,
+            supportingText = { raw, _ ->
+                if (raw.isBlank()) "Not claimed as controller-enforced" else "Must be a positive finite value"
             },
-            isError = raw.isNotBlank() && raw.toDoubleOrNull() == null,
-            supportingText = { Text(if (raw.isBlank()) "Not claimed as controller-enforced" else "Must be a positive finite value") },
-            trailingIcon = { Text(unit, color = AresCyan, fontSize = 11.sp, modifier = Modifier.padding(end = 8.dp)) },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
+            onValueChange = onValueChange,
         )
     }
 }

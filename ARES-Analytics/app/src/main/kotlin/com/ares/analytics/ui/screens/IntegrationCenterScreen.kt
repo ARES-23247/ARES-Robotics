@@ -59,6 +59,7 @@ import com.ares.analytics.shared.models.NotificationProviderConfig
 import com.ares.analytics.shared.models.NotificationProviderKind
 import com.ares.analytics.shared.models.WebhookNotificationTarget
 import com.ares.analytics.shared.models.ZulipNotificationTarget
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
 import com.ares.analytics.ui.theme.AresError
@@ -554,11 +555,9 @@ private fun ProviderEditorDialog(
 
 @Composable
 private fun EmptyCard(title: String, detail: String) {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated), border = BorderStroke(1.dp, AresBorder)) {
-        Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold)
-            Text(detail, color = AresTextSecondary, fontSize = 12.sp)
-        }
+    AresCard(Modifier.fillMaxWidth(), contentPadding = 24.dp, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, color = AresTextPrimary, fontWeight = FontWeight.Bold)
+        Text(detail, color = AresTextSecondary, fontSize = 12.sp)
     }
 }
 

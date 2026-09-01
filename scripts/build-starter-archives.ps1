@@ -17,9 +17,10 @@ Get-Content -LiteralPath $releasePropertiesPath | ForEach-Object {
 $versions = @{
     'ARES-FTC-Starter' = $releaseProperties['ftcStarterVersion']
     'ARES-FRC-Starter' = $releaseProperties['frcStarterVersion']
+    'ARES-Lightbot-Example' = $releaseProperties['lightbotExampleVersion']
 }
 if ($versions.Values | Where-Object { -not $_ -or $_ -notmatch '^\d+\.\d+\.\d+$' }) {
-    throw 'Starter archive versions must be explicit MAJOR.MINOR.PATCH values.'
+    throw 'Project-template archive versions must be explicit MAJOR.MINOR.PATCH values.'
 }
 
 $outputPath = [System.IO.Path]::GetFullPath($OutputDirectory)
@@ -73,7 +74,7 @@ try {
         $source = Join-Path $mirrorRoot $templateName
         $archive = Join-Path $outputPath "$templateName-$version.zip"
         if (Test-Path -LiteralPath $archive) {
-            throw "Refusing to replace existing starter archive: $archive"
+            throw "Refusing to replace existing project-template archive: $archive"
         }
 
         $fileStream = [System.IO.File]::Open(

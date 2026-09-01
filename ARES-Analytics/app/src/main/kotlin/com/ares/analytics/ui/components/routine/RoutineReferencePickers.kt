@@ -25,66 +25,41 @@ import com.ares.analytics.ui.theme.AresCyan
 import com.ares.analytics.ui.theme.AresError
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
-import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.ConditionDescriptor
 import com.areslib.routine.RoutineDocument
-
-@Composable
-internal fun ActionPicker(actions: List<ActionDescriptor>, selectedKey: String?, onSelected: (ActionDescriptor) -> Unit) =
-    DescriptorPicker(
-        selected = actions.firstOrNull { it.key == selectedKey }?.displayName,
-        missingSelectedKey = selectedKey,
-        emptyLabel = "No project actions declared",
-        placeholder = "Choose robot action",
-        items = actions,
-        category = ActionDescriptor::category,
-        title = ActionDescriptor::displayName,
-        description = ActionDescriptor::description,
-        onSelected = onSelected,
-    )
 
 @Composable
 internal fun ConditionPicker(
     conditions: List<ConditionDescriptor>,
     selectedKey: String?,
     onSelected: (ConditionDescriptor) -> Unit,
-) = DescriptorPicker(
+) = ConditionDescriptorPicker(
     selected = conditions.firstOrNull { it.key == selectedKey }?.displayName,
     missingSelectedKey = selectedKey,
-    emptyLabel = "No project conditions declared",
-    placeholder = "Choose robot state condition",
-    items = conditions,
-    category = ConditionDescriptor::category,
-    title = ConditionDescriptor::displayName,
-    description = ConditionDescriptor::description,
+    conditions = conditions,
     onSelected = onSelected,
 )
 
 @Composable
-internal fun <T> DescriptorPicker(
+private fun ConditionDescriptorPicker(
     selected: String?,
-    missingSelectedKey: String? = null,
-    emptyLabel: String,
-    placeholder: String,
-    items: List<T>,
-    category: (T) -> String,
-    title: (T) -> String,
-    description: (T) -> String,
-    onSelected: (T) -> Unit,
+    missingSelectedKey: String?,
+    conditions: List<ConditionDescriptor>,
+    onSelected: (ConditionDescriptor) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val missing = routineReferenceIsMissing(missingSelectedKey, selected)
     val label = routineReferenceLabel(
         selectedKey = missingSelectedKey,
         selectedDisplayName = selected,
-        itemsAvailable = items.isNotEmpty(),
-        emptyLabel = emptyLabel,
-        placeholder = placeholder,
+        itemsAvailable = conditions.isNotEmpty(),
+        emptyLabel = "No project conditions declared",
+        placeholder = "Choose robot state condition",
     )
     Box {
         OutlinedButton(
             onClick = { expanded = true },
-            enabled = items.isNotEmpty(),
+            enabled = conditions.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = if (missing) AresError else AresTextPrimary,
@@ -101,7 +76,7 @@ internal fun <T> DescriptorPicker(
             Icon(Icons.Default.ArrowDropDown, null)
         }
         DropdownMenu(expanded, { expanded = false }) {
-            items.groupBy(category).forEach { (group, descriptors) ->
+            conditions.groupBy(ConditionDescriptor::category).forEach { (group, descriptors) ->
                 DropdownMenuItem(
                     text = { Text(group, color = AresCyan, fontWeight = FontWeight.Bold) },
                     onClick = {},
@@ -111,8 +86,8 @@ internal fun <T> DescriptorPicker(
                     DropdownMenuItem(
                         text = {
                             Column {
-                                Text(title(item))
-                                Text(description(item), style = MaterialTheme.typography.labelSmall)
+                                Text(item.displayName)
+                                Text(item.description, style = MaterialTheme.typography.labelSmall)
                             }
                         },
                         onClick = { onSelected(item); expanded = false },

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.QueryResult
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -565,22 +566,13 @@ fun DatabaseViewerScreen(databaseService: DatabaseService) {
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Terminal,
-                                    contentDescription = null,
-                                    tint = AresTextTertiary,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                                Text(
-                                    text = "Ready to receive SQL commands",
-                                    color = AresTextTertiary,
-                                    fontSize = 13.sp
-                                )
-                            }
+                            AresEmptyState(
+                                title = "Ready to receive SQL commands",
+                                icon = Icons.Default.Terminal,
+                                iconSize = 36.dp,
+                                titleColor = AresTextTertiary,
+                                titleFontSize = 13.sp,
+                            )
                         }
                     }
                 }

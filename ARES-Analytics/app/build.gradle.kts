@@ -29,8 +29,10 @@ fun requiredStarterArtifact(name: String): String = starterArtifactProperties.ge
 val bundledAresVersion = requiredReleaseProperty("aresVersion")
 val ftcStarterVersion = requiredReleaseProperty("ftcStarterVersion")
 val frcStarterVersion = requiredReleaseProperty("frcStarterVersion")
+val lightbotExampleVersion = requiredReleaseProperty("lightbotExampleVersion")
 val ftcStarterSha256 = requiredStarterArtifact("ftcStarterSha256")
 val frcStarterSha256 = requiredStarterArtifact("frcStarterSha256")
+val lightbotExampleSha256 = requiredStarterArtifact("lightbotExampleSha256")
 val aresProductName = "ARES Robotics Studio"
 val aresProductTagline = "Design • Simulate • Operate • Analyze"
 val aresLegacyProductName = "ARES Analytics"
@@ -178,8 +180,10 @@ tasks.register("generateBuildConfig") {
     val aresVersion = bundledAresVersion
     val ftcVersion = ftcStarterVersion
     val frcVersion = frcStarterVersion
+    val lightbotVersion = lightbotExampleVersion
     val ftcHash = ftcStarterSha256
     val frcHash = frcStarterSha256
+    val lightbotHash = lightbotExampleSha256
     inputs.property("aresAnalyticsVersion", version)
     inputs.property("aresProductName", productName)
     inputs.property("aresProductTagline", productTagline)
@@ -191,6 +195,8 @@ tasks.register("generateBuildConfig") {
     inputs.property("windowsUpdateSignerThumbprints", updateSignerThumbprints)
     inputs.file(aresReleaseManifestFile)
     inputs.file(starterArtifactPropertiesFile)
+    inputs.property("lightbotExampleVersion", lightbotVersion)
+    inputs.property("lightbotExampleSha256", lightbotHash)
     outputs.dir(generatedBuildConfigDir)
     doLast {
         val pkgDir = generatedBuildConfigDir.get().asFile.resolve("com/ares/analytics")
@@ -230,8 +236,10 @@ tasks.register("generateBuildConfig") {
             |    const val ARES_VERSION = "$aresVersion"
             |    const val FTC_STARTER_VERSION = "$ftcVersion"
             |    const val FRC_STARTER_VERSION = "$frcVersion"
+            |    const val LIGHTBOT_EXAMPLE_VERSION = "$lightbotVersion"
             |    const val FTC_STARTER_SHA256 = "$ftcHash"
             |    const val FRC_STARTER_SHA256 = "$frcHash"
+            |    const val LIGHTBOT_EXAMPLE_SHA256 = "$lightbotHash"
             |}
             """.trimMargin()
         )

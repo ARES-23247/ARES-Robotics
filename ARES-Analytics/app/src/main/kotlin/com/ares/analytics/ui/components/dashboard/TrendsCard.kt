@@ -50,7 +50,7 @@ fun TrendsCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier
     ) {
         CardHeader(

@@ -52,7 +52,7 @@ fun VisionQualityCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier
     ) {
         CardHeader(

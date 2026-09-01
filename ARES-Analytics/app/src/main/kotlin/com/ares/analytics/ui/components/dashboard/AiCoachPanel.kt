@@ -29,6 +29,7 @@ import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.ForensicsResponse
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -81,21 +82,23 @@ fun AiCoachPanel(
         HorizontalDivider(color = AresBorder, thickness = 1.dp)
 
         if (sessionId == null) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("Select a session to trigger AI Forensics.", color = AresTextTertiary)
-            }
+            AresEmptyState(
+                title = "Select a session to trigger AI Forensics.",
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                titleColor = AresTextTertiary,
+                verticalArrangement = Arrangement.Center,
+            )
             return
         }
 
         when (val state = forensicsState) {
             is ForensicsState.Idle -> {
-                Column(
+                AresEmptyState(
+                    title = "Trigger Vertex AI model to diagnose potential hardware faults and telemetry anomalies.",
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    titleFontSize = 12.sp,
+                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                 ) {
-                    Text("Trigger Vertex AI model to diagnose potential hardware faults and telemetry anomalies.", color = AresTextSecondary, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
-                    Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = {
                             scope.launch {

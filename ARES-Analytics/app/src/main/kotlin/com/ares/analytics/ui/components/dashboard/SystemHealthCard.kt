@@ -78,7 +78,7 @@ fun SystemHealthCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {

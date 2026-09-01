@@ -8,7 +8,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
 $manifest = Join-Path $root 'release/ares-versions.properties'
 if (-not (Test-Path -LiteralPath $manifest)) { throw 'Canonical release manifest is missing.' }
 $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)
-foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'githubMavenRepository')) {
+foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'lightbotExampleVersion', 'githubMavenRepository')) {
     if ([string]::IsNullOrWhiteSpace($release[$required])) { throw "Release manifest is missing $required." }
 }
 $aresSourceTreePath = Join-Path $root 'release/ares-source-tree.txt'
@@ -24,7 +24,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the current ARESLib source t
 if ($actualAresTree -ne $expectedAresTree) {
     throw "ARESLib source tree is $actualAresTree, but release/ares-source-tree.txt records $expectedAresTree. Bump aresVersion and update the source-tree identity together."
 }
-foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256')) {
+foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'lightbotExampleSha256')) {
     if ($release.ContainsKey($retiredHash)) {
         throw "$retiredHash must remain outside the standalone dependency manifest."
     }
@@ -47,6 +47,16 @@ foreach ($league in @('ftc', 'frc')) {
     if ($actualHash -ne $expectedHash) {
         throw "Bundled $displayLeague starter archive hash is $actualHash, expected $expectedHash."
     }
+}
+$lightbotHash = $starterArtifacts['lightbotExampleSha256']
+if ($lightbotHash -notmatch '^[0-9a-fA-F]{64}$') {
+    throw 'Starter artifact manifest has no valid lightbotExampleSha256.'
+}
+$lightbotArchive = Join-Path $root "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-$($release['lightbotExampleVersion']).zip"
+if (-not (Test-Path -LiteralPath $lightbotArchive)) { throw "Bundled Lightbot example archive is missing: $lightbotArchive" }
+$actualLightbotHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $lightbotArchive).Hash
+if ($actualLightbotHash -ne $lightbotHash) {
+    throw "Bundled Lightbot example archive hash is $actualLightbotHash, expected $lightbotHash."
 }
 
 $componentProperties = @(
@@ -143,6 +153,31 @@ $productionSources = Get-ChildItem -LiteralPath $root -Recurse -File |
             $_.Extension -in @('.kt', '.java') -and
             $_.FullName -notmatch '[\\/]build[\\/]'
     }
+
+# Large files are not automatically bad, but crossing four figures makes review ownership and
+# regression isolation materially harder. ARES-owned production files must be decomposed before
+# they exceed this boundary. Upstream FTC controller sources and generated bindings are excluded.
+$maxAresOwnedSourceLines = 1000
+$oversizedAresSources = $productionSources |
+    Where-Object {
+        $_.FullName -notmatch '[\\/]FtcRobotController[\\/]' -and
+            $_.FullName -notmatch '[\\/]generated[\\/]'
+    } |
+    ForEach-Object {
+        $lineCount = (Get-Content -LiteralPath $_.FullName | Measure-Object -Line).Lines
+        if ($lineCount -gt $maxAresOwnedSourceLines) {
+            [PSCustomObject]@{
+                Path = $_.FullName.Substring($root.Length + 1)
+                Lines = $lineCount
+            }
+        }
+    }
+if ($oversizedAresSources) {
+    $summary = $oversizedAresSources |
+        Sort-Object Lines -Descending |
+        ForEach-Object { "$($_.Path) ($($_.Lines) lines)" }
+    throw "ARES-owned production files exceed $maxAresOwnedSourceLines lines: $($summary -join ', ')"
+}
 foreach ($retiredType in $retiredProductionTypes) {
     $matches = $productionSources | Where-Object { $_.BaseName -eq $retiredType }
     if ($matches) {

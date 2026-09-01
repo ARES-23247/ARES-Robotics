@@ -82,7 +82,7 @@ fun PowerDistributionCard(
         .sum()
         .takeIf { currentDraws.isNotEmpty() }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {

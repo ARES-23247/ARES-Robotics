@@ -16,7 +16,6 @@ import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.initialCapabilityArguments
-import com.areslib.catalog.validateCapabilityArguments
 import com.areslib.controls.AnalogControlPolicyDocument
 import com.areslib.controls.AxisTransformDocument
 import com.areslib.controls.ControlBindingDocument
@@ -29,8 +28,6 @@ import com.areslib.controls.ControlTargetDocument
 import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControlThresholdDirection
 import com.areslib.controls.ControlTimingDocument
-import com.areslib.controls.ControlValidationContext
-import com.areslib.controls.ControlValidationSeverity
 import com.areslib.controls.ControllerAnchorDocument
 import com.areslib.controls.ControllerAssignment
 import com.areslib.controls.ControllerControlDocument
@@ -41,8 +38,6 @@ import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.ControllerProfileDocument
 import com.areslib.controls.ControllerSurfaceDocument
 import com.areslib.controls.RoutineInvocationPolicy
-import com.areslib.controls.validateControlScheme
-import com.areslib.controls.validateControllerProfile
 import com.areslib.project.AresProjectMetadataDocument
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,89 +49,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-
-enum class ControlsProblemSeverity { INFO, WARNING, ERROR }
-
-data class ControlsProblem(
-    val severity: ControlsProblemSeverity,
-    val message: String,
-    val bindingId: String? = null
-)
-
-data class ControlLearningSession(
-    val controlId: String,
-    val baselineButtons: List<Boolean>,
-    val baselineAxes: List<Float>
-)
-
-data class ControlsAiProposalReview(
-    val proposal: ControlsDesignProposal,
-    val changes: List<String>,
-    val problems: List<ControlsProblem>,
-    val baseContentHash: String,
-) {
-    val canApply: Boolean get() = problems.none { it.severity == ControlsProblemSeverity.ERROR }
-}
-
-data class ControlsEditorState(
-    val projectPath: String,
-    val league: League,
-    val targetPlatform: ControllerInputPlatform,
-    val profiles: List<ControllerProfileDocument> = emptyList(),
-    val schemes: List<ControlSchemeDocument> = emptyList(),
-    val routineIds: List<String> = emptyList(),
-    val actions: List<ActionDescriptor> = emptyList(),
-    val selectedSchemeId: String? = null,
-    val selectedControllerSlot: String? = null,
-    val selectedControlId: String? = null,
-    val selectedBindingId: String? = null,
-    val surface: ControllerSurfaceDocument = ControllerSurfaceDocument.FRONT,
-    val search: String = "",
-    val draftBinding: ControlBindingDocument? = null,
-    val learning: ControlLearningSession? = null,
-    val problems: List<ControlsProblem> = emptyList(),
-    val projectProblems: List<ControlsProblem> = emptyList(),
-    val dirty: Boolean = false,
-    val dirtySchemeIds: Set<String> = emptySet(),
-    val dirtyProfileIds: Set<String> = emptySet(),
-    val draftHasUnappliedChanges: Boolean = false,
-    val generationPhase: AresGenerationPhase = AresGenerationPhase.IDLE,
-    val generationMessage: String? = null,
-    val generatedContentHash: String? = null,
-    val projectMetadata: AresProjectMetadataDocument? = null,
-    val projectRevision: ProjectSessionRevision? = null,
-    val status: String? = null,
-    val loadError: String? = null,
-    val aiProposalInProgress: Boolean = false,
-    val aiProposal: ControlsAiProposalReview? = null,
-    val aiProposalError: String? = null,
-) {
-    val selectedScheme: ControlSchemeDocument?
-        get() = schemes.firstOrNull { it.documentId == selectedSchemeId }
-
-    val selectedController: ControllerAssignment?
-        get() = selectedScheme?.controllers?.firstOrNull { it.slot == selectedControllerSlot }
-
-    val selectedProfile: ControllerProfileDocument?
-        get() = profiles.firstOrNull { it.documentId == selectedController?.profileId }
-
-    val selectedControl: ControllerControlDocument?
-        get() = selectedProfile?.controls?.firstOrNull { it.controlId == selectedControlId }
-
-    val selectedAction: ActionDescriptor?
-        get() = draftBinding?.target?.takeIf { it.kind == ControlTargetKind.ACTION }
-            ?.let { target -> actions.firstOrNull { it.key == target.key } }
-
-    val coverage: ControlsCoverage
-        get() = controlsCoverage(actions, selectedScheme)
-
-    val canSave: Boolean
-        get() = dirty && !draftHasUnappliedChanges && canGenerate
-
-    val canGenerate: Boolean
-        get() = loadError == null && generationPhase != AresGenerationPhase.RUNNING &&
-            problems.none { it.severity == ControlsProblemSeverity.ERROR }
-}
 
 /**
  * Offline-first controller editor. It only reads and writes the selected repository's `.ares`
@@ -188,14 +100,14 @@ class ControlsEditorViewModel(
             .onSuccess { sessionSnapshot ->
                 val snapshot = sessionSnapshot.documents
                 val project = snapshot.query
-                val profiles = mergeProfiles(project.controllerProfiles)
+                val profiles = mergeControllerProfiles(project.controllerProfiles)
                 val migratedProfileIds = project.controllerProfiles.mapNotNull { stored ->
                     profiles.firstOrNull { it.documentId == stored.documentId }
                         ?.takeIf { it != stored }
                         ?.documentId
                 }.toSet()
                 val schemes = project.controlSchemes.ifEmpty {
-                    listOf(newScheme(profiles.first().documentId))
+                    listOf(newControlScheme(profiles.first().documentId))
                 }
                 val selectedScheme = schemes.first()
                 val isNewScheme = project.controlSchemes.isEmpty()
@@ -456,7 +368,7 @@ class ControlsEditorViewModel(
         }
         draft.copy(
             source = source,
-            event = defaultEvent(kind),
+            event = defaultControlEvent(kind),
             suppressConstituentBindings = kind == ControlSourceKind.CHORD,
             analogPolicy = if (kind == ControlSourceKind.AXIS_VALUE || kind == ControlSourceKind.AXIS_ZONE) {
                 AnalogControlPolicyDocument()
@@ -809,232 +721,6 @@ class ControlsEditorViewModel(
     private fun ControlsEditorState.replaceScheme(scheme: ControlSchemeDocument): ControlsEditorState = copy(
         schemes = schemes.map { if (it.documentId == scheme.documentId) scheme else it }
     )
-
-    private fun ControlsEditorState.withProblems(external: List<ControlsProblem>): ControlsEditorState {
-        if (schemes.isEmpty()) return copy(problems = external)
-        val profileControls = profiles.associate { profile ->
-            profile.documentId to profile.controls.mapTo(linkedSetOf()) { it.controlId }
-        }
-        val context = ControlValidationContext(
-            actionKeys = actions.mapTo(linkedSetOf()) { it.key },
-            routineIds = routineIds.toSet(),
-            profileControls = profileControls
-        )
-        val shared = schemes.flatMap { scheme ->
-            validateControlScheme(scheme, context).map { issue ->
-                ControlsProblem(
-                    severity = if (issue.severity == ControlValidationSeverity.ERROR) ControlsProblemSeverity.ERROR else ControlsProblemSeverity.WARNING,
-                    message = "${scheme.name}: ${issue.message}",
-                    bindingId = bindingIdFromPath(issue.path, scheme)
-                )
-            }
-        }
-        val profileProblems = profiles.flatMap { profile ->
-            validateControllerProfile(profile).map { issue ->
-                ControlsProblem(
-                    if (issue.severity == ControlValidationSeverity.ERROR) ControlsProblemSeverity.ERROR else ControlsProblemSeverity.WARNING,
-                    "${profile.displayName}: ${issue.message}"
-                )
-            }
-        }
-        val mappingProblems = schemes.flatMap { scheme ->
-            val profileBySlot = scheme.controllers.associate { assignment ->
-                assignment.slot to profiles.firstOrNull { profile -> profile.documentId == assignment.profileId }
-            }
-            scheme.bindings.filter { it.enabled }.flatMap { binding ->
-                val profile = profileBySlot[binding.source.controllerSlot]
-                binding.source.controlIds.mapNotNull { controlId ->
-                    val mapped = profile?.controls?.firstOrNull { it.controlId == controlId }
-                        ?.mappings?.any { it.platform == targetPlatform } == true
-                    if (mapped) null else ControlsProblem(
-                        ControlsProblemSeverity.ERROR,
-                        "${scheme.name} / ${binding.displayName}: '$controlId' has no ${targetPlatform.name} mapping. Desktop indexes are intentionally not reused.",
-                        binding.bindingId
-                    )
-                }
-            }
-        }
-        val draftProblems = draftBinding?.let { binding -> validateDraft(binding) }.orEmpty()
-        return copy(problems = (external + shared + profileProblems + mappingProblems + draftProblems).distinct())
-    }
-
-    private fun ControlsEditorState.revalidated(): ControlsEditorState = withProblems(projectProblems)
-
-    private fun ControlsEditorState.validateDraft(binding: ControlBindingDocument): List<ControlsProblem> {
-        val scheme = selectedScheme ?: return emptyList()
-        val temporary = scheme.copy(
-            bindings = scheme.bindings.filterNot { it.bindingId == selectedBindingId } + binding
-        )
-        val profileControls = profiles.associate { it.documentId to it.controls.mapTo(linkedSetOf()) { control -> control.controlId } }
-        val issues = validateControlScheme(
-            temporary,
-            ControlValidationContext(actions.mapTo(linkedSetOf()) { it.key }, routineIds.toSet(), profileControls)
-        ).filter { it.path.contains("bindings") }
-            .map { ControlsProblem(
-                if (it.severity == ControlValidationSeverity.ERROR) ControlsProblemSeverity.ERROR else ControlsProblemSeverity.WARNING,
-                it.message,
-                binding.bindingId
-            ) }.toMutableList()
-        if (binding.target.kind == ControlTargetKind.ACTION) {
-            val descriptor = actions.firstOrNull { it.key == binding.target.key }
-            if (descriptor == null) {
-                issues += ControlsProblem(ControlsProblemSeverity.ERROR, "Choose an action from the project catalog.", binding.bindingId)
-            } else {
-                issues += validateArguments(descriptor, binding.target.arguments).map {
-                    ControlsProblem(ControlsProblemSeverity.ERROR, it, binding.bindingId)
-                }
-            }
-        }
-        val profileId = selectedScheme?.controllers?.firstOrNull { it.slot == binding.source.controllerSlot }?.profileId
-        val profile = profiles.firstOrNull { it.documentId == profileId }
-        val referenced = binding.source.controlIds.mapNotNull { id -> profile?.controls?.firstOrNull { it.controlId == id } }
-        binding.source.controlIds.filter { controlId ->
-            profile?.controls?.firstOrNull { it.controlId == controlId }
-                ?.mappings?.none { it.platform == targetPlatform } != false
-        }.forEach { controlId ->
-            issues += ControlsProblem(
-                ControlsProblemSeverity.ERROR,
-                "'$controlId' needs a ${targetPlatform.name} mapping before this binding can be applied.",
-                binding.bindingId
-            )
-        }
-        val needsAxis = binding.source.kind == ControlSourceKind.AXIS_THRESHOLD ||
-            binding.source.kind == ControlSourceKind.AXIS_VALUE || binding.source.kind == ControlSourceKind.AXIS_ZONE
-        if (needsAxis && referenced.any { it.type != ControllerControlTypeDocument.AXIS }) {
-            issues += ControlsProblem(ControlsProblemSeverity.ERROR, "Analog bindings require axis controls.", binding.bindingId)
-        }
-        if (!needsAxis && referenced.any { it.type != ControllerControlTypeDocument.BUTTON }) {
-            issues += ControlsProblem(ControlsProblemSeverity.ERROR, "Button and chord bindings require button controls.", binding.bindingId)
-        }
-        return issues
-    }
-
-    private fun validateArguments(
-        action: ActionDescriptor,
-        values: Map<String, String>,
-    ): List<String> = validateCapabilityArguments(action.parameters, values).map { "${it.message}." }
-
-    companion object {
-        private fun newScheme(profileId: String) = ControlSchemeDocument(
-            documentId = "competition-controls",
-            name = "Competition controls",
-            controllers = listOf(
-                ControllerAssignment("driver", "Driver", profileId, devicePort = 0),
-                ControllerAssignment("operator", "Operator", profileId, devicePort = 1)
-            ),
-            bindings = emptyList()
-        )
-
-        private fun defaultEvent(kind: ControlSourceKind) = when (kind) {
-            ControlSourceKind.AXIS_VALUE -> ControlEvent.VALUE
-            ControlSourceKind.AXIS_ZONE -> ControlEvent.ZONE_ENTER
-            else -> ControlEvent.PRESS
-        }
-
-        private fun bindingIdFromPath(path: String, scheme: ControlSchemeDocument): String? {
-            val index = Regex("bindings\\[(\\d+)]").find(path)?.groupValues?.get(1)?.toIntOrNull()
-            return index?.let { scheme.bindings.getOrNull(it)?.bindingId }
-        }
-
-        private fun mergeProfiles(projectProfiles: List<ControllerProfileDocument>): List<ControllerProfileDocument> {
-            val builtIns = builtInProfiles()
-            val projectIds = projectProfiles.mapTo(hashSetOf()) { it.documentId }
-            return (projectProfiles + builtIns.filterNot { it.documentId in projectIds })
-                .sortedBy { it.displayName.lowercase() }
-        }
-
-        private fun builtInProfiles() = listOf(vader5ProProfile(), xboxProfile(), genericProfile())
-
-        private fun genericProfile() = ControllerProfileDocument(
-            documentId = "generic-gamepad",
-            displayName = "Generic gamepad",
-            controls = standardControls()
-        )
-
-        private fun xboxProfile() = ControllerProfileDocument(
-            documentId = "xbox-standard",
-            displayName = "Xbox standard controller",
-            deviceMatchers = listOf(
-                ControllerDeviceMatcherDocument(nameContains = "Xbox"),
-                ControllerDeviceMatcherDocument(nameContains = "XInput"),
-            ),
-            controls = standardControls(),
-        )
-
-        private fun vader5ProProfile() = ControllerProfileDocument(
-            documentId = "flydigi-vader-5-pro",
-            displayName = "Flydigi Vader 5 Pro",
-            deviceMatchers = listOf(ControllerDeviceMatcherDocument(nameContains = "Vader 5 Pro")),
-            controls = standardControls() + listOf(
-                button("c", "C", .73, .54, ftcIndex = 18), button("z", "Z", .87, .54, ftcIndex = 19),
-                button("lm", "LM", .23, .08), button("rm", "RM", .77, .08),
-                button("m1", "M1", .32, .34, ControllerSurfaceDocument.REAR, ftcIndex = 20),
-                button("m2", "M2", .68, .34, ControllerSurfaceDocument.REAR, ftcIndex = 21),
-                button("m3", "M3", .36, .66, ControllerSurfaceDocument.REAR, ftcIndex = 22),
-                button("m4", "M4", .64, .66, ControllerSurfaceDocument.REAR, ftcIndex = 23)
-            )
-        )
-
-        private fun standardControls() = listOf(
-            button("a", "A", .81, .44, ftcIndex = 0, frcIndex = 0, desktopIndex = 0),
-            button("b", "B", .88, .35, ftcIndex = 1, frcIndex = 1, desktopIndex = 1),
-            button("x", "X", .74, .35, ftcIndex = 2, frcIndex = 2, desktopIndex = 2),
-            button("y", "Y", .81, .26, ftcIndex = 3, frcIndex = 3, desktopIndex = 3),
-            button("left_bumper", "LB", .23, .10, ftcIndex = 4, frcIndex = 4, desktopIndex = 4),
-            button("right_bumper", "RB", .77, .10, ftcIndex = 5, frcIndex = 5, desktopIndex = 5),
-            button("back", "Back", .43, .40, ftcIndex = 6, frcIndex = 6, desktopIndex = 6),
-            button("start", "Start", .57, .40, ftcIndex = 7, frcIndex = 7, desktopIndex = 7),
-            button("left_stick_button", "L3", .35, .66, ftcIndex = 9, frcIndex = 8, desktopIndex = 9),
-            button("right_stick_button", "R3", .65, .66, ftcIndex = 10, frcIndex = 9, desktopIndex = 10),
-            button("dpad_up", "D-pad up", .23, .43, ftcIndex = 11, frcIndex = 120, desktopIndex = 11),
-            button("dpad_down", "D-pad down", .23, .57, ftcIndex = 13, frcIndex = 122, desktopIndex = 13),
-            button("dpad_left", "D-pad left", .16, .50, ftcIndex = 14, frcIndex = 123, desktopIndex = 14),
-            button("dpad_right", "D-pad right", .30, .50, ftcIndex = 12, frcIndex = 121, desktopIndex = 12),
-            axis("left_stick_x", "Left stick X", .35, .62, ftcIndex = 0, frcIndex = 0, desktopIndex = 0),
-            axis("left_stick_y", "Left stick Y", .35, .72, ftcIndex = 1, frcIndex = 1, desktopIndex = 1),
-            axis("right_stick_x", "Right stick X", .65, .62, ftcIndex = 2, frcIndex = 4, desktopIndex = 2),
-            axis("right_stick_y", "Right stick Y", .65, .72, ftcIndex = 3, frcIndex = 5, desktopIndex = 3),
-            axis("left_trigger", "LT", .17, .02, ftcIndex = 4, frcIndex = 2, desktopIndex = 4),
-            axis("right_trigger", "RT", .83, .02, ftcIndex = 5, frcIndex = 3, desktopIndex = 5)
-        )
-
-        private fun button(
-            id: String,
-            name: String,
-            x: Double,
-            y: Double,
-            surface: ControllerSurfaceDocument = ControllerSurfaceDocument.FRONT,
-            ftcIndex: Int? = null,
-            frcIndex: Int? = null,
-            desktopIndex: Int? = null
-        ) = ControllerControlDocument(
-            id, name, ControllerControlTypeDocument.BUTTON, surface, ControllerAnchorDocument(x, y),
-            listOfNotNull(
-                ftcIndex?.let { ControllerInputMappingDocument(ControllerInputPlatform.FTC, buttonIndex = it) },
-                frcIndex?.let { ControllerInputMappingDocument(ControllerInputPlatform.FRC, buttonIndex = it) },
-                desktopIndex?.let { ControllerInputMappingDocument(ControllerInputPlatform.DESKTOP_GLFW, buttonIndex = it) }
-            )
-        )
-
-        private fun axis(
-            id: String,
-            name: String,
-            x: Double,
-            y: Double,
-            ftcIndex: Int? = null,
-            frcIndex: Int? = null,
-            desktopIndex: Int? = null
-        ) =
-            ControllerControlDocument(
-                id, name, ControllerControlTypeDocument.AXIS, ControllerSurfaceDocument.FRONT,
-                ControllerAnchorDocument(x, y),
-                listOfNotNull(
-                    ftcIndex?.let { ControllerInputMappingDocument(ControllerInputPlatform.FTC, axisIndex = it) },
-                    frcIndex?.let { ControllerInputMappingDocument(ControllerInputPlatform.FRC, axisIndex = it) },
-                    desktopIndex?.let { ControllerInputMappingDocument(ControllerInputPlatform.DESKTOP_GLFW, axisIndex = it) }
-                )
-            )
-    }
 
     override fun close() {
         scope.cancel()

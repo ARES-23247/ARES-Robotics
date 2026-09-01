@@ -18,6 +18,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.ui.components.core.AresEditorCard
+import com.ares.analytics.ui.components.core.AresSelectionField
+import com.ares.analytics.ui.components.core.AresSelectionFieldLayout
+import com.ares.analytics.ui.components.core.AresDoubleField
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
 import com.areslib.subsystem.SubsystemControlStrategy
@@ -62,19 +67,14 @@ fun EditorCard(
     icon: ImageVector? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-        border = BorderStroke(1.dp, AresBorder),
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth(),
+    AresEditorCard(
+        contentPadding = 14.dp,
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (icon != null) Icon(icon, contentDescription = null, tint = AresCyan, modifier = Modifier.size(16.dp))
-                Text(title, color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
-            content()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (icon != null) Icon(icon, contentDescription = null, tint = AresCyan, modifier = Modifier.size(16.dp))
+            Text(title, color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
+        content()
     }
 }
 
@@ -141,16 +141,12 @@ fun DoubleInput(
     value: Double,
     onValueChange: (Double) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            it.toDoubleOrNull()?.let(onValueChange)
-        },
-        label = { Text(label, fontSize = 11.sp) },
+    AresDoubleField(
+        label = label,
+        value = value,
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
+        labelFontSize = 11.sp,
+        onValueChange = onValueChange,
     )
 }
 
@@ -160,16 +156,12 @@ fun NullableDoubleInput(
     value: Double?,
     onValueChange: (Double?) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value?.toString().orEmpty()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            if (it.isBlank()) onValueChange(null) else it.toDoubleOrNull()?.let(onValueChange)
-        },
-        label = { Text(label, fontSize = 11.sp) },
+    AresNullableDoubleField(
+        label = label,
+        value = value,
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
+        labelFontSize = 11.sp,
+        onValueChange = onValueChange,
     )
 }
 
@@ -279,34 +271,14 @@ fun DropdownSelector(
     options: List<String>,
     onSelect: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(6.dp),
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("$label: $selected", fontSize = 11.sp, color = AresTextPrimary)
-                Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(16.dp), tint = AresTextSecondary)
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt, fontSize = 11.sp) },
-                    onClick = {
-                        expanded = false
-                        onSelect(opt)
-                    }
-                )
-            }
-        }
-    }
+    AresSelectionField(
+        label = label,
+        selected = selected,
+        choices = options.map { it to it },
+        layout = AresSelectionFieldLayout.INLINE,
+        shape = RoundedCornerShape(6.dp),
+        onSelect = onSelect,
+    )
 }
 
 @Composable

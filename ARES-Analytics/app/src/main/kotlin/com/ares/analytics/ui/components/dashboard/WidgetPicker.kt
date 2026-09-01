@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -116,10 +117,12 @@ fun WidgetPicker(onDismiss: () -> Unit, onSelectWidget: (DashboardWidgetType) ->
                 }
                 Text("${results.size} ${if (results.size == 1) "widget" else "widgets"}", color = AresTextTertiary, fontSize = 11.sp)
                 if (results.isEmpty()) {
-                    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(Icons.Default.SearchOff, null, tint = AresTextTertiary, modifier = Modifier.size(40.dp))
-                        Text("No widgets match that search", color = AresTextSecondary)
-                    }
+                    AresEmptyState(
+                        title = "No widgets match that search",
+                        modifier = Modifier.fillMaxSize(),
+                        icon = Icons.Default.SearchOff,
+                        verticalArrangement = Arrangement.Center,
+                    )
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = if (touch) 290.dp else 250.dp),

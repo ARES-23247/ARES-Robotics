@@ -47,7 +47,7 @@ fun SessionSummaryCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier
     ) {
         CardHeader(

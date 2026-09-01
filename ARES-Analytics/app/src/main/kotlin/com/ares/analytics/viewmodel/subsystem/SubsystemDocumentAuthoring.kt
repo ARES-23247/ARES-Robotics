@@ -26,6 +26,33 @@ import com.areslib.subsystem.supportsPlatform
 
 /** Pure form edits for subsystem hardware, homing, control, and interlock authoring. */
 internal object SubsystemDocumentAuthoring {
+    fun addHardware(
+        document: SubsystemDocument,
+        kind: SubsystemHardwareKind,
+        hardwareId: String,
+        platform: SubsystemPlatform,
+    ): SubsystemDocument {
+        require(kind.supportsPlatform(platform)) {
+            "Generated ${kind.name.lowercase().replace('_', ' ')} hardware is not supported for $platform projects"
+        }
+        require(document.hardware.none { it.hardwareId == hardwareId }) {
+            "Hardware ID '$hardwareId' is already in use"
+        }
+        val scaffold = SubsystemHardwareScaffolding.create(
+            kind = kind,
+            hardwareId = hardwareId,
+            displayName = kind.name.replace('_', ' ').lowercase().replaceFirstChar(Char::uppercase),
+            platform = platform,
+            canId = nextCanId(document),
+            channel = nextChannel(document),
+        )
+        return document.copy(
+            hardware = document.hardware + scaffold.hardware,
+            stateFields = document.stateFields + scaffold.stateFields,
+            controlLoops = document.controlLoops + scaffold.controlLoops,
+        )
+    }
+
     fun setHomingMethod(
         document: SubsystemDocument,
         method: SubsystemHomingMethod,

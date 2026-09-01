@@ -19,6 +19,7 @@ import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRe
 import com.ares.analytics.service.project.persistence.RoutineProjectRepository
 import com.ares.analytics.viewmodel.routine.clampRoutinePose
 import com.ares.analytics.viewmodel.routine.clampDriveTargets
+import com.ares.analytics.viewmodel.routine.analyzeRoutinePreview
 import com.ares.analytics.viewmodel.routine.defaultRoutineStep
 import com.ares.analytics.viewmodel.routine.guidedFirstRoutineDocument
 import com.ares.analytics.viewmodel.routine.guidedFirstRoutineEntry
@@ -26,17 +27,10 @@ import com.ares.analytics.viewmodel.routine.lastRoutineDriveTarget
 import com.ares.analytics.viewmodel.routine.moveStepById
 import com.ares.analytics.viewmodel.routine.removeStepById
 import com.ares.analytics.viewmodel.routine.routineEditorValidation
+import com.ares.analytics.viewmodel.routine.RoutineTrajectoryPreviewCompiler
 import com.ares.analytics.viewmodel.routine.updateStepById
 import com.ares.analytics.viewmodel.routine.validateGuidedFirstRoutinePlan
 import com.ares.analytics.viewmodel.routine.withRoutineRouteWaypoints
-import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Rotation2d
-import com.areslib.pathing.DriveModel
-import com.areslib.pathing.JerkLimitedTrajectoryProvider
-import com.areslib.pathing.TrajectoryLimits
-import com.areslib.pathing.TrajectoryPlanner
-import com.areslib.pathing.TrajectoryPreset
-import com.areslib.pathing.TrajectoryRequest
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CapabilityContext
 import com.areslib.routine.AutonomousCatalogDocument
@@ -60,17 +54,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
-
-private val ROUTINE_PREVIEW_LIMITS = TrajectoryLimits(
-    maxVelocityMps = 3.0,
-    maxAccelerationMps2 = 3.0,
-    maxJerkMps3 = 12.0,
-    maxCentripetalAccelerationMps2 = 3.0,
-    maxAngularVelocityRps = Math.toRadians(540.0),
-    maxAngularAccelerationRps2 = Math.toRadians(720.0)
-)
-private const val MAX_ROUTINE_PREVIEW_STEPS = 4_096
-private const val MAX_ROUTINE_PREVIEW_DEPTH = 64
 
 /**
  * State owner for canonical routine editing and deterministic drive previews.
@@ -101,7 +84,7 @@ class PathPlannerViewModel(
         metadata = metadataRepository,
         autonomous = autonomousRepository,
     )
-    private val trajectoryPlanner = TrajectoryPlanner(listOf(JerkLimitedTrajectoryProvider))
+    private val routinePreviewCompiler = RoutineTrajectoryPreviewCompiler()
     init {
         projectGenerator?.let { generator ->
             scope.launch {
@@ -857,40 +840,12 @@ class PathPlannerViewModel(
                 }
                 return@launch
             }
-            val driveModel = if (snapshot.activeLeague == League.FRC) DriveModel.SWERVE else DriveModel.MECANUM
-            var current = previewStart.toPose2d()
-            var timeOffset = 0.0
-            val previewStates = mutableListOf<TrajectoryState>()
-            drives.forEachIndexed { driveIndex, drive ->
-                // A neutral routine has no start pose. Treat its first drive target as the preview
-                // anchor, rather than inventing match metadata that would change runtime behavior.
-                if (snapshot.autonomousEntry == null && driveIndex == 0) return@forEachIndexed
-                val target = drive.target.toPose2d()
-                val preset = runCatching {
-                    TrajectoryPreset.valueOf(drive.motionPresetKey.uppercase())
-                }.getOrDefault(TrajectoryPreset.BALANCED)
-                val generated = trajectoryPlanner.generate(
-                    TrajectoryRequest(
-                        waypoints = listOf(current, target),
-                        driveModel = driveModel,
-                        preset = preset,
-                        limits = ROUTINE_PREVIEW_LIMITS,
-                        preferredEngine = null
-                    )
-                ).trajectory ?: return@forEachIndexed
-                generated.states.forEachIndexed { index, sample ->
-                    if (previewStates.isNotEmpty() && index == 0) return@forEachIndexed
-                    previewStates += TrajectoryState(
-                        timeSeconds = sample.timeSeconds + timeOffset,
-                        x = sample.pose.x,
-                        y = sample.pose.y,
-                        headingRad = sample.pose.heading.radians,
-                        velocity = kotlin.math.hypot(sample.velocityXMps, sample.velocityYMps)
-                    )
-                }
-                timeOffset += generated.durationSeconds
-                current = target
-            }
+            val preview = routinePreviewCompiler.compile(
+                drives = drives,
+                previewStart = previewStart,
+                hasAutonomousStart = snapshot.autonomousEntry != null,
+                league = snapshot.activeLeague,
+            )
             val latest = _state.value
             if (latest.routine == draft &&
                 latest.activeLeague == snapshot.activeLeague &&
@@ -899,9 +854,8 @@ class PathPlannerViewModel(
             ) {
                 _state.update {
                     it.copy(
-                        trajectory = previewStates.takeIf { states -> states.isNotEmpty() }
-                            ?.let { states -> Trajectory(timeOffset, states) },
-                        estimatedDuration = timeOffset,
+                        trajectory = preview.trajectory,
+                        estimatedDuration = preview.estimatedDurationSeconds,
                         playbackTime = 0.0,
                         isPlaying = false,
                         routinePreviewWarning = null
@@ -911,87 +865,11 @@ class PathPlannerViewModel(
         }
     }
 
-    /**
-     * Expands only deterministic control flow. Runtime-selected/parallel timelines are never
-     * converted into an invented serial route; callers suppress both geometry and duration.
-     */
-    private fun analyzeRoutinePreview(
-        root: RoutineDocument,
-        availableRoutines: List<RoutineDocument>
-    ): RoutinePreviewAnalysis {
-        val routinesById = (availableRoutines + root).associateBy(RoutineDocument::documentId)
-        val drives = mutableListOf<RoutineDriveStep>()
-        val activeCalls = linkedSetOf(root.documentId)
-        var expandedSteps = 0
-
-        fun visit(steps: List<RoutineStep>, depth: Int): String? {
-            if (depth > MAX_ROUTINE_PREVIEW_DEPTH) {
-                return "Preview unavailable: routine nesting exceeds $MAX_ROUTINE_PREVIEW_DEPTH levels."
-            }
-            for (step in steps) {
-                expandedSteps++
-                if (expandedSteps > MAX_ROUTINE_PREVIEW_STEPS) {
-                    return "Preview unavailable: expanded routine exceeds $MAX_ROUTINE_PREVIEW_STEPS steps."
-                }
-                when (step.kind) {
-                    RoutineStepKind.DRIVE_TO -> step.drive?.let(drives::add)
-                    RoutineStepKind.REPEAT -> {
-                        val count = step.repeatCount
-                            ?: return "Preview unavailable: repeat count is missing."
-                        if (count < 0) return "Preview unavailable: repeat count must be non-negative."
-                        if (count > MAX_ROUTINE_PREVIEW_STEPS) {
-                            return "Preview unavailable: repeat count exceeds $MAX_ROUTINE_PREVIEW_STEPS."
-                        }
-                        repeat(count) {
-                            visit(step.children, depth + 1)?.let { return it }
-                        }
-                    }
-                    RoutineStepKind.CALL -> {
-                        val routineId = step.routineId
-                            ?: return "Preview unavailable: called routine ID is missing."
-                        val called = routinesById[routineId]
-                            ?: return "Preview unavailable: called routine '$routineId' is not loaded."
-                        if (!activeCalls.add(routineId)) {
-                            return "Preview unavailable: routine call cycle includes '$routineId'."
-                        }
-                        val warning = visit(called.steps, depth + 1)
-                        activeCalls.remove(routineId)
-                        if (warning != null) return warning
-                    }
-                    RoutineStepKind.BRANCH,
-                    RoutineStepKind.TOGETHER,
-                    RoutineStepKind.FIRST_TO_FINISH,
-                    RoutineStepKind.DEADLINE -> return compositePreviewWarning(step.kind)
-                    RoutineStepKind.ACTION,
-                    RoutineStepKind.WAIT,
-                    RoutineStepKind.WAIT_UNTIL -> Unit
-                }
-            }
-            return null
-        }
-
-        return RoutinePreviewAnalysis(drives = drives, warning = visit(root.steps, depth = 0))
-    }
-
-    private fun compositePreviewWarning(kind: RoutineStepKind): String {
-        val label = when (kind) {
-            RoutineStepKind.BRANCH -> "Branch"
-            RoutineStepKind.TOGETHER -> "Parallel group"
-            RoutineStepKind.FIRST_TO_FINISH -> "First-to-finish group"
-            RoutineStepKind.DEADLINE -> "Deadline group"
-            else -> kind.name
-        }
-        return "Preview unavailable: $label has multiple possible timelines. " +
-            "Select a runtime scenario before showing its route or duration."
-    }
-
     private fun Waypoint.toRoutinePose(): RoutinePose = RoutinePose(
         xMeters = x,
         yMeters = y,
         headingRadians = rotationDeg?.let(Math::toRadians) ?: headingRad ?: 0.0
     )
-
-    private fun RoutinePose.toPose2d(): Pose2d = Pose2d(xMeters, yMeters, Rotation2d(headingRadians))
 
     private data class RoutineRefresh(
         val routines: List<RoutineDocument>,
@@ -1013,8 +891,4 @@ class PathPlannerViewModel(
         val autonomous: AutonomousCatalogDocument
     )
 
-    private data class RoutinePreviewAnalysis(
-        val drives: List<RoutineDriveStep>,
-        val warning: String?
-    )
 }

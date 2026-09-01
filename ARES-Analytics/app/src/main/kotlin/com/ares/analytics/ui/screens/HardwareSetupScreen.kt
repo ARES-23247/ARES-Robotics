@@ -53,6 +53,7 @@ import com.ares.analytics.service.hardware.HardwareReviewStatus
 import com.ares.analytics.service.hardware.HardwareSetupSnapshot
 import com.ares.analytics.service.hardware.commissioningPlan
 import com.ares.analytics.service.commissioning.CommissioningSimulationStatus
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -604,7 +605,6 @@ private fun ReviewChecklist(
         }
     }
 }
-
 @Composable
 private fun ReviewCheck(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.Top) {
@@ -620,8 +620,8 @@ private fun MessageCard(title: String, message: String, severity: HardwareIssueS
         HardwareIssueSeverity.WARNING -> AresAmber
         HardwareIssueSeverity.ERROR -> AresRed
     }
-    Surface(color = tint.copy(alpha = 0.08f), border = BorderStroke(1.dp, tint), shape = RoundedCornerShape(10.dp)) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.Top) {
+    AresCard(backgroundColor = tint.copy(alpha = 0.08f), borderColor = tint, cornerRadius = 10.dp, contentPadding = 12.dp) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Icon(if (severity == HardwareIssueSeverity.ERROR) Icons.Default.Error else Icons.Default.Warning, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Column {

@@ -54,7 +54,7 @@ import com.ares.analytics.service.PathHeatmapCell
 import com.ares.analytics.service.RegressionSignal
 import com.ares.analytics.service.SignalCorrelation
 import com.ares.analytics.service.TuningSuggestion
-import com.ares.analytics.ui.components.core.AnalyticsCard
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.components.core.CardHeader
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
@@ -109,7 +109,7 @@ fun AdvancedAnalyticsCard(
     }
 
     val report = (result as? OperationResult.Success)?.value
-    AnalyticsCard(modifier = modifier.fillMaxSize(), backgroundColor = AresSurfaceElevated) {
+    AresCard(modifier = modifier.fillMaxSize(), backgroundColor = AresSurfaceElevated) {
         CardHeader(
             title = "Advanced Analytics",
             icon = Icons.Default.Insights,

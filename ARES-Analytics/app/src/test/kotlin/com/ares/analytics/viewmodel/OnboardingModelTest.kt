@@ -200,18 +200,18 @@ class OnboardingModelTest {
     }
 
     @Test
-    fun `demo mode creates one simulation-first editable copy with novice defaults`() {
+    fun `Lightbot mode creates one simulation-first editable copy with novice defaults`() {
         val parent = Files.createTempDirectory("ares-onboarding-demo-test").toFile()
         try {
             val state = OnboardingState(
-                projectSetupMode = ProjectSetupMode.EXPLORE_DEMO,
+                projectSetupMode = ProjectSetupMode.EXPLORE_LIGHTBOT,
                 projectParentPath = parent.path,
-                projectFolderName = DEMO_PROJECT_FOLDER,
-                projectPath = File(parent, DEMO_PROJECT_FOLDER).path,
-                teamId = DEMO_TEAM_ID,
-                seasonId = DEMO_SEASON_ID,
-                robotId = DEMO_ROBOT_ID,
-                robotName = DEMO_ROBOT_NAME,
+                projectFolderName = LIGHTBOT_PROJECT_FOLDER,
+                projectPath = File(parent, LIGHTBOT_PROJECT_FOLDER).path,
+                teamId = LIGHTBOT_TEAM_ID,
+                seasonId = LIGHTBOT_SEASON_ID,
+                robotId = LIGHTBOT_ROBOT_ID,
+                robotName = LIGHTBOT_ROBOT_NAME,
             )
 
             assertTrue(state.projectSetupMode.createsProject)

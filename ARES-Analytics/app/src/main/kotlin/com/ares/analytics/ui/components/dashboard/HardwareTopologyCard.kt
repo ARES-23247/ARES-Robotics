@@ -29,7 +29,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.areslib.telemetry.schema.HardwareTopology
 import com.areslib.telemetry.schema.TopologyNode
 import com.areslib.telemetry.schema.TopologyNodeType
-import com.ares.analytics.ui.components.core.AnalyticsCard
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.components.core.CardHeader
 import com.ares.analytics.ui.theme.*
 import kotlinx.serialization.encodeToString
@@ -79,7 +79,7 @@ fun HardwareTopologyCard(
         liveTopology ?: historicalTopology
     }
 
-    AnalyticsCard(modifier = modifier) {
+    AresCard(modifier = modifier) {
         CardHeader(
             title = "Hardware Topology",
             icon = Icons.Default.Hub,

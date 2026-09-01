@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.components.core
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -36,6 +38,29 @@ fun StatusBadge(
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+/** Full-width builder feedback with one consistent severity treatment. */
+@Composable
+fun AresStatusBanner(
+    message: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = color.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, color),
+        shape = RoundedCornerShape(6.dp),
+    ) {
+        Text(
+            text = message,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(8.dp),
         )
     }
 }
