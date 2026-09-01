@@ -200,8 +200,8 @@ private fun ProjectSelection(
             )
         }
         ProjectModeCard(
-            title = "Explore the demo robot",
-            description = "Create your own editable copy of one simulation-first FTC mecanum example, then inspect every choice in Robot Studio.",
+            title = "Explore Lightbot",
+            description = "Create your own editable copy of the official simulation-first FTC mecanum and lighting example.",
             selected = mode == ProjectSetupMode.EXPLORE_DEMO,
             onClick = { onModeChange(ProjectSetupMode.EXPLORE_DEMO) },
             modifier = Modifier.fillMaxWidth(),
@@ -238,13 +238,17 @@ private fun ProjectSelection(
             ) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        if (mode == ProjectSetupMode.EXPLORE_DEMO) "ARES Demo Robot" else "Verified starter: $templateName $templateVersion",
+                        if (mode == ProjectSetupMode.EXPLORE_DEMO) {
+                            "Verified example: $templateName · built with ARES $templateVersion"
+                        } else {
+                            "Verified starter: $templateName $templateVersion"
+                        },
                         color = AresTextPrimary,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         if (mode == ProjectSetupMode.EXPLORE_DEMO) {
-                            "The installer keeps the reviewed example unchanged and creates a separate editable copy for you. It uses the same declarative drivetrain, controls, safety, and simulation documents that Robot Studio edits."
+                            "The installer keeps the reviewed Lightbot example unchanged and creates a separate editable copy in the folder you choose. Studio never edits its packaged example or the ARES source checkout."
                         } else {
                             "The official installer includes this exact, SHA-256-verified starter. ARES can create it offline; the network is only a recovery fallback for source builds."
                         },

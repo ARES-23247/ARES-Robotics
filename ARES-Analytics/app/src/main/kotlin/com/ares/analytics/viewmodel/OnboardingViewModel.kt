@@ -8,6 +8,7 @@ import com.ares.analytics.service.ManagedToolchainService
 import com.ares.analytics.service.SyncEngineService
 import com.ares.analytics.service.project.RobotProjectCreationRequest
 import com.ares.analytics.service.project.RobotProjectTemplateService
+import com.ares.analytics.service.project.RobotProjectTemplateKind
 import com.ares.analytics.shared.models.DriveDestinationConfig
 import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.shared.models.League
@@ -175,7 +176,10 @@ class OnboardingViewModel(
                         when (intent.mode) {
                             ProjectSetupMode.CREATE_NEW -> selected.copy(projectPath = plannedProjectPath(selected))
                             ProjectSetupMode.EXPLORE_DEMO -> {
-                                val template = projectTemplateService.templateFor(League.FTC)
+                                val template = projectTemplateService.templateFor(
+                                    League.FTC,
+                                    RobotProjectTemplateKind.EXAMPLE,
+                                )
                                 val demo = selected.copy(
                                     projectFolderName = DEMO_PROJECT_FOLDER,
                                     teamId = DEMO_TEAM_ID,
@@ -412,12 +416,13 @@ class OnboardingViewModel(
                         seasonId = current.seasonId,
                         robotId = current.robotId,
                         robotName = current.robotName,
-                        authoringModel = current.authoringModel,
-                        initialFieldPresetResourcePath = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
-                            DEMO_FIELD_PRESET_RESOURCE
+                        templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_DEMO) {
+                            RobotProjectTemplateKind.EXAMPLE
                         } else {
-                            null
+                            RobotProjectTemplateKind.GENERIC_STARTER
                         },
+                        authoringModel = current.authoringModel,
+                        initialFieldPresetResourcePath = null,
                     ),
                     onProgress = { message -> _state.update { it.copy(projectCreationMessage = message) } },
                     prepareStagedProject = { staged ->

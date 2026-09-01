@@ -81,6 +81,8 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         val ftcHash = requiredArtifact("ftcStarterSha256").lowercase()
         val frcVersion = requiredProperty("frcStarterVersion")
         val frcHash = requiredArtifact("frcStarterSha256").lowercase()
+        val lightbotVersion = requiredProperty("lightbotExampleVersion")
+        val lightbotHash = requiredArtifact("lightbotExampleSha256").lowercase()
 
         if (resolvedAresVersion != aresVersion) {
             val validationRepository = providers.gradleProperty("aresRepository").orNull?.trim().orEmpty()
@@ -115,18 +117,26 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
             "workflow FRC template URL",
         )
         requireContains(workflowFile, "FRC_STARTER_SHA256: $frcHash", "workflow FRC template hash")
+        requireContains(
+            workflowFile,
+            "ARES-Robotics/releases/download/v$appVersion/ARES-Lightbot-Example-$lightbotVersion.zip",
+            "workflow Lightbot example URL",
+        )
+        requireContains(workflowFile, "LIGHTBOT_EXAMPLE_SHA256: $lightbotHash", "workflow Lightbot example hash")
 
-        listOf("FTC" to ftcVersion to ftcHash, "FRC" to frcVersion to frcHash).forEach { entry ->
-            val (leagueAndVersion, expectedHash) = entry
-            val (league, version) = leagueAndVersion
-            val archive = File(templateDirectory, "ARES-$league-Starter-$version.zip")
+        listOf(
+            Triple("ARES-FTC-Starter-$ftcVersion.zip", ftcHash, "FTC starter"),
+            Triple("ARES-FRC-Starter-$frcVersion.zip", frcHash, "FRC starter"),
+            Triple("ARES-Lightbot-Example-$lightbotVersion.zip", lightbotHash, "Lightbot example"),
+        ).forEach { (fileName, expectedHash, label) ->
+            val archive = File(templateDirectory, fileName)
             if (!archive.isFile) {
                 throw GradleException("Release preflight: missing bundled template ${archive.relativeTo(rootDir)}.")
             }
             val actualHash = sha256(archive)
             if (actualHash != expectedHash) {
                 throw GradleException(
-                    "Release preflight: ${archive.name} SHA-256 is $actualHash, expected $expectedHash.",
+                    "Release preflight: $label archive ${archive.name} SHA-256 is $actualHash, expected $expectedHash.",
                 )
             }
         }
@@ -134,7 +144,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         logger.lifecycle(
             "Release preflight passed: Studio $appVersion, ARES dependency $resolvedAresVersion " +
                 "(release pin $aresVersion), " +
-                "FTC starter $ftcVersion, FRC starter $frcVersion.",
+                "FTC starter $ftcVersion, FRC starter $frcVersion, Lightbot example $lightbotVersion.",
         )
     }
 }

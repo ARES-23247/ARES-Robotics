@@ -33,12 +33,11 @@ The first-run **ARES Robotics Studio setup** has four short stages.
 
 For a new student:
 
-1. Choose **Create a new robot**.
-2. Choose the path that matches what you are trying to do:
-   - **Create a new robot** starts a simulation-first FTC or FRC project from a verified starter.
-   - **Explore the demo robot** creates one editable FTC mecanum example and skips advanced identity questions.
-   - **Open an existing robot** adds a robot repository that is already on this computer.
-3. For a new robot, select **FTC** or **FRC** and read the exact verified starter version.
+1. Choose the path that matches what you are trying to do:
+   - **Create standalone robot project** starts a simulation-first FTC or FRC project from a verified generic starter.
+   - **Explore Lightbot** creates a separate editable copy of the packaged FTC mecanum and lighting example. It does not edit the packaged example or the ARES source checkout.
+   - **Open an existing project** adds a robot repository that is already on this computer.
+2. For a new robot, select **FTC** or **FRC** and read the exact verified starter version.
 3. Choose a parent folder, enter a new project folder name, then select **Continue**.
 
 For an existing project:
@@ -104,7 +103,7 @@ Setup is complete when:
 
 - the main **Dashboard** opens;
 - the workspace selector shows the robot you chose under **My robots**;
-- **Explore the demo robot** remains available under **Examples** and always creates a new editable copy;
+- **Explore Lightbot** remains available under **Examples** and always creates a new editable copy with its own local Git history;
 - the execution toolbar offers **Live Robot** and **Local Sim** targets; and
 - no required project or robot-identity error remains.
 

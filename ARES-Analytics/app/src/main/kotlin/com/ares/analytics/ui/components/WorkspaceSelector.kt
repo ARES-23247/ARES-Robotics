@@ -171,9 +171,9 @@ internal fun WorkspaceSelector(
             DropdownMenuItem(
                 text = {
                     Column {
-                        Text("Explore the demo robot", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+                        Text("Explore Lightbot", color = AresTextPrimary, fontWeight = FontWeight.Bold)
                         Text(
-                            "Create one editable, simulation-first FTC example",
+                            "Create a separate editable copy of the official FTC example",
                             color = AresTextSecondary,
                             fontSize = 11.sp,
                         )

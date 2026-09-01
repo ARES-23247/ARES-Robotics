@@ -64,6 +64,18 @@ class RobotProjectTemplateServiceTest {
     }
 
     @Test
+    fun `official Lightbot example is a separate simulation-only template`() {
+        val service = RobotProjectTemplateService()
+        val template = service.templateFor(League.FTC, RobotProjectTemplateKind.EXAMPLE)
+
+        assertEquals("Lightbot", template.displayName)
+        assertEquals(BuildConfig.ARES_VERSION, template.aresVersion)
+        assertEquals(BuildConfig.LIGHTBOT_EXAMPLE_VERSION, template.id.substringAfterLast('-'))
+        assertEquals(RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE, template.deploymentPolicy)
+        assertTrue(template.bundledResourcePath!!.contains("ARES-Lightbot-Example"))
+    }
+
+    @Test
     fun `long robot identities produce bounded collision-resistant runtime document ids`() = runBlocking {
         val root = Files.createTempDirectory("ares-project-template-bounded-ids").toFile()
         try {
@@ -324,7 +336,7 @@ class RobotProjectTemplateServiceTest {
         try {
             RobotProjectTemplateService.OFFICIAL_PROJECT_TEMPLATES.forEach { template ->
                 val service = RobotProjectTemplateService(
-                    cacheDirectory = File(root, "cache-${template.league.name.lowercase()}"),
+                    cacheDirectory = File(root, "cache-${template.id}"),
                     templates = listOf(template),
                     archiveDownloader = { _, _ -> error("Bundled starter unexpectedly attempted a download") },
                     bundledResourceLoader = { resourcePath ->
@@ -332,14 +344,33 @@ class RobotProjectTemplateServiceTest {
                     },
                     androidSdkLocator = { File(root, "fixture-android-sdk").apply { mkdirs() } },
                 )
-                val parent = File(root, "projects-${template.league.name.lowercase()}").apply { mkdirs() }
+                val parent = File(root, "projects-${template.id}").apply { mkdirs() }
                 val project = service.create(
-                    request(parent, "student-${template.league.name.lowercase()}").copy(league = template.league),
+                    request(parent, "student-${template.id}").copy(
+                        league = template.league,
+                        templateKind = template.kind,
+                    ),
                 )
 
                 val tuning = TuningProfileRepository().load(project.destination.path)
                 assertTrue(tuning.isSuccess, "${template.displayName}: ${tuning.exceptionOrNull()?.message}")
                 assertTrue(tuning.getOrThrow().profiles.isNotEmpty(), "${template.displayName} has no tuning profile")
+                if (template.kind == RobotProjectTemplateKind.EXAMPLE) {
+                    assertTrue(File(project.destination, ".ares/subsystems/indicator-lights.aressubsystem").isFile)
+                    assertTrue(File(project.destination, ".ares/subsystems/prism.aressubsystem").isFile)
+                    val packagedHashBeforeEdit = sha256(
+                        assertNotNull(
+                            RobotProjectTemplateService::class.java.getResourceAsStream(template.bundledResourcePath!!),
+                        ).use { it.readBytes() },
+                    )
+                    File(project.destination, ".ares/project.json").appendText("\n")
+                    val packagedHashAfterEdit = sha256(
+                        assertNotNull(
+                            RobotProjectTemplateService::class.java.getResourceAsStream(template.bundledResourcePath),
+                        ).use { it.readBytes() },
+                    )
+                    assertEquals(packagedHashBeforeEdit, packagedHashAfterEdit)
+                }
             }
         } finally {
             root.deleteRecursively()

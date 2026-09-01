@@ -54,11 +54,17 @@ data class RobotProjectTemplate(
     val revision: String,
     val archiveUrl: String,
     val archiveSha256: String,
+    val kind: RobotProjectTemplateKind = RobotProjectTemplateKind.GENERIC_STARTER,
     /** Classpath resource shipped in official installers for first-use offline creation. */
     val bundledResourcePath: String? = null,
     /** Physical deployment policy carried into the newly created workspace. */
     val deploymentPolicy: RobotProjectDeploymentPolicy = RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE,
 )
+
+enum class RobotProjectTemplateKind {
+    GENERIC_STARTER,
+    EXAMPLE,
+}
 
 data class RobotProjectCreationRequest(
     val parentDirectory: File,
@@ -68,6 +74,7 @@ data class RobotProjectCreationRequest(
     val seasonId: String,
     val robotId: String,
     val robotName: String,
+    val templateKind: RobotProjectTemplateKind = RobotProjectTemplateKind.GENERIC_STARTER,
     val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     /** Optional reviewed field preset installed into the staged project before first publication. */
     val initialFieldPresetResourcePath: String? = null,
@@ -126,13 +133,19 @@ class RobotProjectTemplateService(
         publishProjectDirectory(staging, destination)
     },
 ) {
-    private val templatesByLeague = templates.associateBy(RobotProjectTemplate::league)
+    private val templatesByLeagueAndKind = templates.associateBy { it.league to it.kind }.also { indexed ->
+        require(indexed.size == templates.size) { "Each league/template-kind pair must be unique." }
+    }
 
-    fun templateFor(league: League): RobotProjectTemplate =
-        requireNotNull(templatesByLeague[league]) { "No reviewed ${league.name} starter is bundled with this app." }
+    fun templateFor(
+        league: League,
+        kind: RobotProjectTemplateKind = RobotProjectTemplateKind.GENERIC_STARTER,
+    ): RobotProjectTemplate = requireNotNull(templatesByLeagueAndKind[league to kind]) {
+        "No reviewed ${kind.name.lowercase().replace('_', ' ')} for ${league.name} is bundled with this app."
+    }
 
     fun plan(request: RobotProjectCreationRequest): RobotProjectCreationPlan {
-        val template = templateFor(request.league)
+        val template = templateFor(request.league, request.templateKind)
         val folderName = request.folderName.trim()
         val parent = runCatching { request.parentDirectory.canonicalFile }.getOrElse { request.parentDirectory.absoluteFile }
         val destination = File(parent, folderName)
@@ -473,6 +486,7 @@ class RobotProjectTemplateService(
                 archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
                     "ARES-FTC-Starter-${BuildConfig.FTC_STARTER_VERSION}.zip",
                 archiveSha256 = BuildConfig.FTC_STARTER_SHA256,
+                kind = RobotProjectTemplateKind.GENERIC_STARTER,
                 bundledResourcePath = "/project-templates/ARES-FTC-Starter-${BuildConfig.FTC_STARTER_VERSION}.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
@@ -485,8 +499,22 @@ class RobotProjectTemplateService(
                 archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
                     "ARES-FRC-Starter-${BuildConfig.FRC_STARTER_VERSION}.zip",
                 archiveSha256 = BuildConfig.FRC_STARTER_SHA256,
+                kind = RobotProjectTemplateKind.GENERIC_STARTER,
                 bundledResourcePath = "/project-templates/ARES-FRC-Starter-${BuildConfig.FRC_STARTER_VERSION}.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
+            ),
+            RobotProjectTemplate(
+                id = "ares-lightbot-example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}",
+                displayName = "Lightbot",
+                league = League.FTC,
+                aresVersion = BuildConfig.ARES_VERSION,
+                revision = "schema4-lightbot-v1",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
+                    "ARES-Lightbot-Example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}.zip",
+                archiveSha256 = BuildConfig.LIGHTBOT_EXAMPLE_SHA256,
+                kind = RobotProjectTemplateKind.EXAMPLE,
+                bundledResourcePath = "/project-templates/ARES-Lightbot-Example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}.zip",
+                deploymentPolicy = RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE,
             ),
         )
 

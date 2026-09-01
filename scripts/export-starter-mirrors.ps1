@@ -7,6 +7,20 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
+$releaseProperties = ConvertFrom-StringData (
+    Get-Content -Raw -LiteralPath (Join-Path $workspaceRoot 'release/ares-versions.properties')
+)
+$standaloneReleaseManifest = @"
+# Standalone robot dependency identity. Desktop and template versions intentionally stay outside
+# this file so an unchanged robot archive remains byte-identical across Studio-only releases.
+aresVersion=$($releaseProperties['aresVersion'])
+githubMavenRepository=$($releaseProperties['githubMavenRepository'])
+"@.Replace("`r`n", "`n")
+if (-not $standaloneReleaseManifest.EndsWith("`n")) { $standaloneReleaseManifest += "`n" }
+$standaloneReleaseManifestBytes = [System.Text.UTF8Encoding]::new($false).GetBytes($standaloneReleaseManifest)
+$standaloneReleaseManifestHash = [System.BitConverter]::ToString(
+    [System.Security.Cryptography.SHA256]::HashData($standaloneReleaseManifestBytes)
+).Replace('-', '').ToLowerInvariant()
 $outputRootPath = [System.IO.Path]::GetFullPath($OutputRoot)
 $workspacePath = [System.IO.Path]::GetFullPath($workspaceRoot)
 if ($outputRootPath.StartsWith($workspacePath, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -17,7 +31,8 @@ $excludedDirectories = @('.git', '.gradle', 'build')
 $excludedFiles = @('local.properties', '.ares-starter-mirror.json')
 $templates = @(
     @{ Name = 'ARES-FTC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter' },
-    @{ Name = 'ARES-FRC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FRC-Starter' }
+    @{ Name = 'ARES-FRC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FRC-Starter' },
+    @{ Name = 'ARES-Lightbot-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC' }
 )
 $ftcRuntimeRelativePath = 'TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
 $ftcRuntimeSource = Join-Path $workspaceRoot 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
@@ -62,9 +77,9 @@ foreach ($template in $templates) {
     # simulator logs, IDE state, caches, and other local files must never leak
     # into an installer or public starter archive.
     $sourceHashes = Get-TrackedRelativeFileHashes $template.Source
-    $sourceHashes['release/ares-versions.properties'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'release/ares-versions.properties')).Hash.ToLowerInvariant()
+    $sourceHashes['release/ares-versions.properties'] = $standaloneReleaseManifestHash
     $sourceHashes['build-logic/ares-versioning.gradle'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'build-logic/ares-versioning.gradle')).Hash.ToLowerInvariant()
-    if ($template.Name -eq 'ARES-FTC-Starter') {
+    if ($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') {
         $sourceHashes[$ftcRuntimeRelativePath] = (Get-FileHash -Algorithm SHA256 -LiteralPath $ftcRuntimeSource).Hash.ToLowerInvariant()
     }
 
@@ -82,18 +97,20 @@ foreach ($template in $templates) {
     }
     New-Item -ItemType Directory -Path $destination | Out-Null
     foreach ($entry in $sourceHashes.Keys) {
-        $source = if ($entry -eq 'release/ares-versions.properties') {
+        $source = if ($entry -eq 'build-logic/ares-versioning.gradle') {
             Join-Path $workspaceRoot $entry
-        } elseif ($entry -eq 'build-logic/ares-versioning.gradle') {
-            Join-Path $workspaceRoot $entry
-        } elseif ($template.Name -eq 'ARES-FTC-Starter' -and $entry -eq $ftcRuntimeRelativePath) {
+        } elseif (($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') -and $entry -eq $ftcRuntimeRelativePath) {
             $ftcRuntimeSource
         } else {
             Join-Path $template.Source $entry
         }
         $target = Join-Path $destination $entry
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
-        Copy-Item -LiteralPath $source -Destination $target
+        if ($entry -eq 'release/ares-versions.properties') {
+            [System.IO.File]::WriteAllBytes($target, $standaloneReleaseManifestBytes)
+        } else {
+            Copy-Item -LiteralPath $source -Destination $target
+        }
     }
     $manifest = [ordered]@{
         schemaVersion = 1
