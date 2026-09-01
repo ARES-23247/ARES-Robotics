@@ -31,7 +31,6 @@ app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/JoystickVisualize
 app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/LocalSimulatorControlBar.kt=889
 app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/StatisticsPanel.kt=596
 app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartPanel.kt=698
-app/src/main/kotlin/com/ares/analytics/ui/components/drivebase/DrivebaseStepSections.kt=1137
 app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvas.kt=819
 app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldElementsRenderer.kt=570
 app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/PathRenderer.kt=622
@@ -43,7 +42,7 @@ app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStatefl
 app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureTransitionsSection.kt=682
 app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GuidedTuningExperimentPanel.kt=679
 app/src/main/kotlin/com/ares/analytics/ui/help/LearningJourney.kt=544
-app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt=758
+app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt=755
 app/src/main/kotlin/com/ares/analytics/ui/screens/CloudScreen.kt=790
 app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt=826
 app/src/main/kotlin/com/ares/analytics/ui/screens/DatabaseViewerScreen.kt=590
@@ -54,7 +53,7 @@ app/src/main/kotlin/com/ares/analytics/ui/screens/GuidedRunAnalysisScreen.kt=549
 app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSetupScreen.kt=633
 app/src/main/kotlin/com/ares/analytics/ui/screens/ImportCenterScreen.kt=521
 app/src/main/kotlin/com/ares/analytics/ui/screens/IntegrationCenterScreen.kt=586
-app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt=932
+app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt=928
 app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt=656
 app/src/main/kotlin/com/ares/analytics/ui/screens/ProfileScreen.kt=1114
 app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectBackupScreen.kt=700
