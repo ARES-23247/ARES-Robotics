@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.shared.models.SIMULATION_SESSION_TAG
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.TelemetryFrame
@@ -84,6 +85,34 @@ class GuidedRunAnalysisServiceTest {
             assertEquals(listOf("mine"), service.listWorkspaceSessions(selected).map(Session::sessionId))
             val failure = assertFailsWith<IllegalArgumentException> { service.analyze(selected, "other-team") }
             assertTrue(failure.message.orEmpty().contains("another team, season, or robot"))
+        }
+    }
+
+    @Test
+    fun `studio simulator recording retains its direct capture identity`() = runTest {
+        withService { root, database, service ->
+            val workspace = workspace(root)
+            database.insertSession(
+                Session(
+                    sessionId = "simulated",
+                    teamId = "23247",
+                    seasonId = "decode",
+                    robotId = "practice",
+                    createdAt = 1_000L,
+                    durationMs = 500L,
+                    tags = listOf(SIMULATION_SESSION_TAG, "studio-experiment"),
+                )
+            )
+            database.insertTelemetryFrames(
+                listOf(TelemetryFrame(1_000L, "simulated", "Drive/Pose_X", 0.25))
+            )
+
+            val review = service.analyze(workspace, "simulated")
+
+            assertEquals(RunEvidenceSourceKind.STUDIO_SIMULATION, review.source.kind)
+            assertEquals("Studio NT4 simulator capture", review.source.decoder)
+            assertTrue(review.source.explanation.contains("loopback simulator"))
+            assertTrue(review.nextActions.none { it.title == "Preserve source provenance" })
         }
     }
 

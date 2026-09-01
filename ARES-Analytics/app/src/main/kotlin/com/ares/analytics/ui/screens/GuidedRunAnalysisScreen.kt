@@ -48,6 +48,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -104,6 +105,9 @@ fun GuidedRunAnalysisScreen(
     onOpenRunHistory: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    LaunchedEffect(viewModel) {
+        viewModel.refreshSessions()
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(AresBackground)) {
         val horizontalPadding = if (maxWidth < 760.dp) 12.dp else 20.dp
@@ -317,7 +321,9 @@ private fun EmptyEvidenceState(onOpenImports: () -> Unit, onOpenAcademy: () -> U
 private fun SourceEvidenceStep(report: GuidedRunAnalysisReport) {
     GuideStep(2, "Identify the data source", "The source record tells you what was captured and which claims remain limited.") {
         val source = report.source
-        val complete = source.kind == RunEvidenceSourceKind.IMPORTED_FILE || source.kind == RunEvidenceSourceKind.WORKSPACE_DRIVE_OBJECT
+        val complete = source.kind == RunEvidenceSourceKind.IMPORTED_FILE ||
+            source.kind == RunEvidenceSourceKind.WORKSPACE_DRIVE_OBJECT ||
+            source.kind == RunEvidenceSourceKind.STUDIO_SIMULATION
         StatusLine(if (complete) "Source identity preserved" else "Source identity incomplete", complete)
         Text(source.kind.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold)
         Text(source.explanation, color = AresTextSecondary, lineHeight = 19.sp)

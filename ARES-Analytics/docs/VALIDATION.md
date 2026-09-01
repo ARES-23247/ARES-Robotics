@@ -81,6 +81,18 @@ normal developer and installed launches always open the native chooser. Drive th
 play the exact timeline, restart, and capture the persisted run. Use a second isolated launch with
 a corrupt fixture to verify Quarantine and actionable recovery text.
 
+The repository helper sends only explicit loopback actions and Base64-encodes text and paths:
+
+```powershell
+& "$PWD/../.agents/skills/compose-desktop-tester/scripts/send_test_control.ps1" `
+  -Port 49321 -Capture
+```
+
+When the journey must exercise the real native file or folder chooser instead of the test fixture
+override, open the modal chooser in one PowerShell job and send `-ChoosePath` from a second
+connection. The path must be absolute and already exist. This keeps the product dialog real while
+avoiding unrestricted filesystem commands or brittle cross-process keystrokes.
+
 The visible run-comparison acceptance journey uses an isolated desktop home and a fresh robot
 workspace. Import the two Academy practice runs, select both, exercise recording-start,
 autonomous-start, and shared-event alignment, inspect trajectory/telemetry and missing-evidence

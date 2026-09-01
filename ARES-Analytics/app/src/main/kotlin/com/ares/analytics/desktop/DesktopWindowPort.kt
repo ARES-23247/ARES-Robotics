@@ -18,6 +18,7 @@ import java.awt.event.WindowEvent
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import javax.swing.JFileChooser
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.jetbrains.skiko.SkiaLayer
@@ -239,6 +240,7 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
                 }
                 "typed ${command.value.length} character(s)"
             }
+            is DesktopTestCommand.ChoosePath -> chooseTestPath(command.value)
             DesktopTestCommand.Capture -> onEventThread { captureTestFramebuffer() }
             DesktopTestCommand.Close -> {
                 onEventThread { window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING)) }
@@ -246,6 +248,24 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
             }
             DesktopTestCommand.Ping -> "pong"
         }
+    }
+
+    private fun chooseTestPath(path: String): String {
+        val requestedPath = File(path)
+        require(requestedPath.isAbsolute) { "chooser path must be absolute" }
+        val selectedPath = requestedPath.absoluteFile
+        require(selectedPath.exists()) { "chooser path does not exist: ${selectedPath.absolutePath}" }
+        onEventThread {
+            val chooser = Window.getWindows()
+                .asSequence()
+                .filter { it.isShowing }
+                .mapNotNull(::findFileChooser)
+                .firstOrNull()
+                ?: error("no visible file chooser is open")
+            chooser.selectedFile = selectedPath
+            chooser.approveSelection()
+        }
+        return "selected ${selectedPath.absolutePath}"
     }
 
     private fun executeTestClick(command: DesktopTestCommand.Click): String {
@@ -368,6 +388,15 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
         if (component !is Container) return null
         component.components.forEach { child ->
             findCanvas(child)?.let { return it }
+        }
+        return null
+    }
+
+    private fun findFileChooser(component: Component): JFileChooser? {
+        if (component is JFileChooser) return component
+        if (component !is Container) return null
+        component.components.forEach { child ->
+            findFileChooser(child)?.let { return it }
         }
         return null
     }

@@ -6,6 +6,7 @@ import java.net.ServerSocket
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 internal sealed interface DesktopTestCommand {
@@ -15,6 +16,7 @@ internal sealed interface DesktopTestCommand {
     data class KeyDown(val keyCode: Int, val modifiers: Int) : DesktopTestCommand
     data class KeyUp(val keyCode: Int, val modifiers: Int) : DesktopTestCommand
     data class Text(val value: String) : DesktopTestCommand
+    data class ChoosePath(val value: String) : DesktopTestCommand
     data object Capture : DesktopTestCommand
     data object Close : DesktopTestCommand
     data object Ping : DesktopTestCommand
@@ -54,6 +56,11 @@ internal object DesktopTestCommandParser {
                 val decoded = Base64.getDecoder().decode(parts[1])
                 DesktopTestCommand.Text(String(decoded, StandardCharsets.UTF_8))
             }
+            "CHOOSE_PATH" -> {
+                require(parts.size == 2) { "CHOOSE_PATH requires one Base64-encoded UTF-8 path" }
+                val decoded = Base64.getDecoder().decode(parts[1])
+                DesktopTestCommand.ChoosePath(String(decoded, StandardCharsets.UTF_8))
+            }
             "CAPTURE" -> DesktopTestCommand.Capture
             "CLOSE" -> DesktopTestCommand.Close
             "PING" -> DesktopTestCommand.Ping
@@ -75,6 +82,7 @@ internal class DesktopTestControlServer(
     private val execute: (DesktopTestCommand) -> String,
 ) : Closeable {
     private val running = AtomicBoolean(false)
+    private val clientSequence = AtomicInteger(0)
     private var serverSocket: ServerSocket? = null
     private var serverThread: Thread? = null
 
@@ -92,25 +100,31 @@ internal class DesktopTestControlServer(
         ) {
             while (running.get()) {
                 val client = runCatching { socket.accept() }.getOrNull() ?: break
-                runCatching {
-                    client.use { connection ->
-                        val request = connection.getInputStream().bufferedReader().readLine().orEmpty()
-                        val response = runCatching {
-                            execute(DesktopTestCommandParser.parse(request))
-                        }.fold(
-                            onSuccess = { "OK $it" },
-                            onFailure = { "ERROR ${it.message ?: it::class.simpleName}" },
-                        )
-                        connection.getOutputStream().bufferedWriter().use { writer ->
-                            writer.appendLine(response)
+                thread(
+                    start = true,
+                    isDaemon = true,
+                    name = "desktop-test-control-client-${clientSequence.incrementAndGet()}",
+                ) {
+                    runCatching {
+                        client.use { connection ->
+                            val request = connection.getInputStream().bufferedReader().readLine().orEmpty()
+                            val response = runCatching {
+                                execute(DesktopTestCommandParser.parse(request))
+                            }.fold(
+                                onSuccess = { "OK $it" },
+                                onFailure = { "ERROR ${it.message ?: it::class.simpleName}" },
+                            )
+                            connection.getOutputStream().bufferedWriter().use { writer ->
+                                writer.appendLine(response)
+                            }
                         }
-                    }
-                }.onFailure { failure ->
-                    if (running.get()) {
-                        System.err.println(
-                            "[ARES-Analytics] Desktop test control client disconnected: " +
-                                (failure.message ?: failure::class.simpleName)
-                        )
+                    }.onFailure { failure ->
+                        if (running.get()) {
+                            System.err.println(
+                                "[ARES-Analytics] Desktop test control client disconnected: " +
+                                    (failure.message ?: failure::class.simpleName)
+                            )
+                        }
                     }
                 }
             }

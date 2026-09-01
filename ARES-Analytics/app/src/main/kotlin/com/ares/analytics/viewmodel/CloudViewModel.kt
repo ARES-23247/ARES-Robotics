@@ -66,6 +66,11 @@ data class SessionSyncInfo(
     val isRemote: Boolean
 )
 
+internal fun shouldLoadRemoteCloudIndex(
+    isAuthenticated: Boolean,
+    driveDestination: DriveDestinationConfig?,
+): Boolean = isAuthenticated && driveDestination != null
+
 data class CloudState(
     val sessions: List<SessionSyncInfo> = emptyList(),
     val cloudLogs: List<SessionSummary> = emptyList(),
@@ -180,8 +185,13 @@ class CloudViewModel(
                         val localSummariesMap = databaseService.getAllSessionSummaries()
                             .filter { it.matches(workspaceConfig) }
                             .associateBy { it.sessionId }
-                        val remoteSummaries = syncEngineService.getRemoteSummaries()
-                            .filter { it.matches(workspaceConfig) }
+                        val remoteSummaries = if (
+                            shouldLoadRemoteCloudIndex(_state.value.isAuthenticated, workspaceConfig.driveDestination)
+                        ) {
+                            syncEngineService.getRemoteSummaries().filter { it.matches(workspaceConfig) }
+                        } else {
+                            emptyList()
+                        }
                         val allSessionIds = (localSessions.map { it.sessionId } + remoteSummaries.map { it.sessionId }).toSet()
                         val sessionsList = allSessionIds.map { id ->
                             val localSession = localSessions.find { it.sessionId == id }
@@ -211,7 +221,7 @@ class CloudViewModel(
 
                         _state.update { it.copy(sessions = sessionsList, cloudLogs = remoteSummaries, isSyncing = false) }
                     } catch (e: CancellationException) { throw e } catch (e: Exception) {
-                        e.printStackTrace()
+                        System.err.println("[CloudViewModel] Cloud index refresh failed: ${e.message}")
                         _state.update { it.copy(isSyncing = false, errorMessage = e.message ?: "Failed to load database state") }
                     }
                 }
