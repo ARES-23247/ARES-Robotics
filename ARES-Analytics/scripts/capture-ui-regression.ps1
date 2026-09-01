@@ -1,5 +1,5 @@
 param(
-    [string]$WindowTitle = "ARES Analytics",
+    [string]$WindowTitle = "ARES Robotics Studio",
     [string]$OutputDirectory = ""
 )
 
@@ -87,10 +87,17 @@ Start-Sleep -Milliseconds 500
 & $inspect -WindowTitle $WindowTitle
 & $capture -WindowTitle $WindowTitle -OutputFile (Join-Path $OutputDirectory "desktop-1440x900.png")
 
-# The Dashboard's Gamepad Monitor is intentionally a narrow card. Scrolling from the top-level
-# dashboard exercises the exact header/control layout that previously clipped and overlapped.
+if (-not [AresVisualRegressionWindow]::MoveWindow($hWnd, 360, 144, 1100, 700, $true)) {
+    throw "Failed to resize the ARES window to 1100 x 700."
+}
+Start-Sleep -Milliseconds 500
+& $inspect -WindowTitle $WindowTitle
+& $capture -WindowTitle $WindowTitle -OutputFile (Join-Path $OutputDirectory "desktop-1100x700.png")
+
+# Scroll the active minimum-size Dashboard so the capture also covers its lower responsive cards.
+# For controller acceptance, open the live Dashboard with the Gamepad Monitor before running this.
 Send-RelativeWheel 800 700 -7200
-& $capture -WindowTitle $WindowTitle -OutputFile (Join-Path $OutputDirectory "dashboard-narrow-gamepad.png")
+& $capture -WindowTitle $WindowTitle -OutputFile (Join-Path $OutputDirectory "dashboard-narrow.png")
 
 Write-Output "Captured UI regression set to $OutputDirectory"
 Write-Output "Review every PNG for real rendered content; dimensions and a live HWND alone are not a visual pass."

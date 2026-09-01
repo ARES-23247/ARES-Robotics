@@ -2,6 +2,8 @@
 param(
     [string]$DataDirectory,
     [string]$CaptureFile,
+    [string]$AresRepository,
+    [string]$AresVersion,
     [switch]$Fresh
 )
 
@@ -38,7 +40,14 @@ try {
     }
     # The isolated app-data root owns a different instance lock. Skip the normal replacement task
     # so an acceptance journey cannot close a student's installed Studio session.
-    & (Join-Path $repositoryRoot 'gradlew.bat') ':app:run' '-PskipKill=true'
+    $gradleArguments = @(':app:run', '-PskipKill=true')
+    if (-not [string]::IsNullOrWhiteSpace($AresRepository)) {
+        $gradleArguments += "-ParesRepository=$AresRepository"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($AresVersion)) {
+        $gradleArguments += "-ParesVersion=$AresVersion"
+    }
+    & (Join-Path $repositoryRoot 'gradlew.bat') @gradleArguments
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 } finally {
     $env:ARES_ANALYTICS_DATA_DIR = $priorDataDirectory
