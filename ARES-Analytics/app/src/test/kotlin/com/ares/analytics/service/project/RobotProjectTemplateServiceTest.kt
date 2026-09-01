@@ -19,6 +19,10 @@ import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.schema.ProjectDocumentId
 import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
+import com.areslib.state.RobotFieldAprilTag
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldDocument
+import com.areslib.state.RobotFieldElementType
 import com.areslib.tuning.TuningProfileAuthority
 import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningProfileDocumentCodec
@@ -283,7 +287,7 @@ class RobotProjectTemplateServiceTest {
                 cacheDirectory = File(root, "cache"),
                 templates = listOf(template),
                 archiveDownloader = { _, _ -> downloads++ },
-                bundledArchiveLoader = { path ->
+                bundledResourceLoader = { path ->
                     assertEquals("/fixture-starter.zip", path)
                     bundledReads++
                     ByteArrayInputStream(archive)
@@ -322,7 +326,7 @@ class RobotProjectTemplateServiceTest {
                     cacheDirectory = File(root, "cache-${template.league.name.lowercase()}"),
                     templates = listOf(template),
                     archiveDownloader = { _, _ -> error("Bundled starter unexpectedly attempted a download") },
-                    bundledArchiveLoader = { resourcePath ->
+                    bundledResourceLoader = { resourcePath ->
                         RobotProjectTemplateService::class.java.getResourceAsStream(resourcePath)
                     },
                     androidSdkLocator = { File(root, "fixture-android-sdk").apply { mkdirs() } },
@@ -336,6 +340,57 @@ class RobotProjectTemplateServiceTest {
                 assertTrue(tuning.isSuccess, "${template.displayName}: ${tuning.exceptionOrNull()?.message}")
                 assertTrue(tuning.getOrThrow().profiles.isNotEmpty(), "${template.displayName} has no tuning profile")
             }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `reviewed initial field preset keeps starter simulation content and installs tags`() = runBlocking {
+        val root = Files.createTempDirectory("ares-project-field-preset-test").toFile()
+        try {
+            val archive = validFtcArchive()
+            val preset = RobotFieldConfig(
+                revision = 7,
+                id = "fixture-season",
+                name = "Fixture Season",
+                gameYear = "2026",
+                widthMeters = 3.6576,
+                heightMeters = 3.6576,
+                apriltags = listOf(
+                    RobotFieldAprilTag(
+                        id = 20,
+                        name = "Blue target 20",
+                        family = "36h11",
+                        sizeMeters = 0.1651,
+                        x = -1.48,
+                        y = -1.41,
+                    ),
+                ),
+            )
+            val service = RobotProjectTemplateService(
+                cacheDirectory = File(root, "cache"),
+                templates = listOf(template(archive)),
+                archiveDownloader = { _, destination -> destination.writeBytes(archive) },
+                bundledResourceLoader = { path ->
+                    assertEquals("/fixture-field.json", path)
+                    ByteArrayInputStream(RobotFieldDocument.encode(preset).toByteArray())
+                },
+                androidSdkLocator = { File(root, "fixture-android-sdk").apply { mkdirs() } },
+            )
+            val parent = File(root, "robots").apply { mkdirs() }
+
+            val project = service.create(
+                request(parent, "demo").copy(initialFieldPresetResourcePath = "/fixture-field.json"),
+            )
+            val field = RobotFieldDocument.decode(
+                File(project.destination, "TeamCode/src/main/assets/paths/field.json").readText(),
+            )
+
+            assertEquals("Student Robot Field", field.name)
+            assertEquals("2026", field.gameYear)
+            assertEquals(listOf(20), field.apriltags.map { it.id })
+            assertEquals(listOf("fixture-piece"), field.elementTypes.map { it.id })
         } finally {
             root.deleteRecursively()
         }
@@ -522,6 +577,14 @@ class RobotProjectTemplateServiceTest {
             authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
             values = emptyList(),
         )
+        val field = RobotFieldConfig(
+            revision = 1,
+            id = "fixture-field",
+            name = "Fixture Field",
+            widthMeters = 3.6576,
+            heightMeters = 3.6576,
+            elementTypes = listOf(RobotFieldElementType(id = "fixture-piece", name = "Fixture Piece")),
+        )
         return zipOf(
             "fixture-root/settings.gradle" to "include ':TeamCode'\n",
             "fixture-root/release/ares-versions.properties" to """
@@ -542,6 +605,7 @@ class RobotProjectTemplateServiceTest {
             "fixture-root/.ares/drivetrains/template.aresdrivetrain" to DrivetrainDocumentCodec.encode(drivebase),
             "fixture-root/.ares/tuning/competition.arestuning" to
                 TuningProfileDocumentCodec.encode(profile, drivebase.parameters),
+            "fixture-root/TeamCode/src/main/assets/paths/field.json" to RobotFieldDocument.encode(field),
         )
     }
 
