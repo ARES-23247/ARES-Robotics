@@ -1,5 +1,6 @@
 package com.ares.analytics.service.project
 
+import com.ares.analytics.BuildConfig
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.drivebase.DrivebaseKind
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
@@ -53,7 +54,7 @@ class RobotProjectTemplateServiceTest {
 
         League.entries.forEach { league ->
             val template = service.templateFor(league)
-            assertEquals("14.0.0", template.aresVersion)
+            assertEquals(BuildConfig.ARES_VERSION, template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
             assertEquals(
                 RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
