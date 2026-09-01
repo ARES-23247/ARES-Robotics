@@ -1,0 +1,246 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "ares-bom",
+    "version": "15.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "platform",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencyConstraints": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "telemetry-schema",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-compiler",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "codegen",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-mocks",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-hardware",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "frc-runtime",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "frc-hardware",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator-runtime-windows",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator-runtime-linux",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator-runtime-macos",
+          "version": {
+            "requires": "15.0.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "platform",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencyConstraints": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "telemetry-schema",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-compiler",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "codegen",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-mocks",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-hardware",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "frc-runtime",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "frc-hardware",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator-runtime-windows",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator-runtime-linux",
+          "version": {
+            "requires": "15.0.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulator-runtime-macos",
+          "version": {
+            "requires": "15.0.0"
+          }
+        }
+      ]
+    }
+  ]
+}
