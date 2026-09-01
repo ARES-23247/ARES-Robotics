@@ -21,10 +21,8 @@ import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemFollowerTransform
-import com.areslib.subsystem.SubsystemHardwareConnection
 import com.areslib.subsystem.SubsystemHardwareDocument
 import com.areslib.subsystem.SubsystemHardwareKind
-import com.areslib.subsystem.SubsystemHardwareScaffolding
 import com.areslib.subsystem.SubsystemHomingMethod
 import com.areslib.subsystem.SubsystemImplementationDocument
 import com.areslib.subsystem.SubsystemImplementationKind
@@ -523,24 +521,9 @@ class SubsystemGeneratorViewModel(
     }
 
     fun addHardware(kind: SubsystemHardwareKind = SubsystemHardwareKind.MOTOR) {
-        require(kind.supportsPlatform(platform)) {
-            "Generated ${kind.name.lowercase().replace('_', ' ')} hardware is not supported for $platform projects"
-        }
         val id = uniqueId("device", _state.value.draft?.document?.hardware.orEmpty().map { it.hardwareId })
         edit { document ->
-            val scaffold = SubsystemHardwareScaffolding.create(
-                kind = kind,
-                hardwareId = id,
-                displayName = kind.name.replace('_', ' ').lowercase().replaceFirstChar(Char::uppercase),
-                platform = platform,
-                canId = nextCanId(document),
-                channel = nextChannel(document),
-            )
-            document.copy(
-                hardware = document.hardware + scaffold.hardware,
-                stateFields = document.stateFields + scaffold.stateFields,
-                controlLoops = document.controlLoops + scaffold.controlLoops,
-            )
+            SubsystemDocumentAuthoring.addHardware(document, kind, id, platform)
         }
         selectHardware(id)
     }
@@ -937,14 +920,5 @@ class SubsystemGeneratorViewModel(
             return "$base$suffix"
         }
 
-        fun nextChannel(document: SubsystemDocument): Int {
-            val used = document.hardware.mapNotNullTo(hashSetOf()) { it.connection.channel }
-            return (0..31).firstOrNull { it !in used } ?: 0
-        }
-
-        fun nextCanId(document: SubsystemDocument): Int {
-            val used = document.hardware.mapNotNullTo(hashSetOf()) { it.connection.canId }
-            return (1..62).firstOrNull { it !in used } ?: 1
-        }
     }
 }
