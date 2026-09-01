@@ -176,7 +176,7 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
 
                 if (command.isAckable || command.isResponseExpected) {
                     @Suppress("UNCHECKED_CAST")
-                    unfinishedCommands[command.messageNumber.toInt()] = command as LynxRespondable<LynxMessage>
+                    unfinishedCommands[command.messageNumber] = command as LynxRespondable<LynxMessage>
                 }
 
                 val bytes = datagram.toByteArray()
@@ -190,19 +190,19 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
                 }
 
             } catch (e: InterruptedException) {
-                unfinishedCommands.remove(command.messageNumber.toInt())
+                unfinishedCommands.remove(command.messageNumber)
                 Thread.currentThread().interrupt()
                 throw e
             } catch (e: LynxUnsupportedCommandException) {
-                unfinishedCommands.remove(command.messageNumber.toInt())
+                unfinishedCommands.remove(command.messageNumber)
                 RobotLog.ww("AresPhotonCore", "Direct write unsupported; using SDK path: ${e.message}")
                 return false
             } catch (e: RobotUsbException) {
-                unfinishedCommands.remove(command.messageNumber.toInt())
+                unfinishedCommands.remove(command.messageNumber)
                 RobotLog.ww("AresPhotonCore", "Direct USB write failed; using SDK path: ${e.message}")
                 return false
             } catch (e: Exception) {
-                unfinishedCommands.remove(command.messageNumber.toInt())
+                unfinishedCommands.remove(command.messageNumber)
                 RobotLog.ww("AresPhotonCore", "Direct write failed; using SDK path: ${e.message}")
                 return false
             }
