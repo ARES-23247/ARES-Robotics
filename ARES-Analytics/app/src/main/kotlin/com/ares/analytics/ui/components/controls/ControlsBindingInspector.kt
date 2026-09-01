@@ -3,46 +3,32 @@ package com.ares.analytics.ui.components.controls
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.ui.components.catalog.AresActionCatalogPicker
 import com.ares.analytics.ui.components.core.AresDoubleField
 import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.ui.theme.AresBorder
@@ -255,7 +241,13 @@ private fun TargetFields(state: ControlsEditorState, binding: ControlBindingDocu
     }
     when (binding.target.kind) {
         ControlTargetKind.ACTION -> {
-            ActionPicker(state, binding.target.key) { viewModel.setTarget(ControlTargetKind.ACTION, it) }
+            AresActionCatalogPicker(
+                actions = state.actions,
+                selectedKey = binding.target.key,
+                showCatalogSummary = true,
+            ) { action ->
+                viewModel.setTarget(ControlTargetKind.ACTION, action.key)
+            }
             state.selectedAction?.parameters.orEmpty().forEach { parameter ->
                 TargetArgumentField(parameter, binding.target.arguments[parameter.key].orEmpty()) { value ->
                     viewModel.setTargetArgument(parameter.key, value)
@@ -285,172 +277,6 @@ private fun TargetFields(state: ControlsEditorState, binding: ControlBindingDocu
             ) { selected ->
                 viewModel.updateDraft { it.copy(target = it.target.copy(routinePolicy = RoutineInvocationPolicy.valueOf(selected))) }
             }
-        }
-    }
-}
-
-@Composable
-private fun ActionPicker(state: ControlsEditorState, selectedKey: String, onSelect: (String) -> Unit) {
-    val selected = state.actions.firstOrNull { it.key == selectedKey }
-    var query by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
-    val searchFocus = remember { FocusRequester() }
-    val groups = actionBrowserGroups(state.actions, query)
-    val matchCount = groups.sumOf { it.actions.size }
-
-    fun openBrowser() {
-        query = ""
-        expanded = true
-    }
-
-    LaunchedEffect(expanded) {
-        if (expanded) searchFocus.requestFocus()
-    }
-
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            "${actionCatalogSummary(state.actions)} • .ares/action-catalog.json",
-            color = if (state.actions.isEmpty()) AresGold else AresTextSecondary,
-            fontSize = 10.sp,
-            modifier = Modifier.semantics {
-                contentDescription = if (state.actions.isEmpty()) {
-                    "No project actions loaded from the action catalog"
-                } else {
-                    "${actionCatalogSummary(state.actions)} loaded from the project action catalog"
-                }
-            }
-        )
-        Box(Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = ::openBrowser,
-                modifier = Modifier.fillMaxWidth().semantics {
-                    contentDescription = if (selected == null) {
-                        "Choose a project action"
-                    } else {
-                        "Selected action. ${actionAccessibleLabel(selected)}. Open action browser"
-                    }
-                }
-            ) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("Catalog action", color = AresTextSecondary, fontSize = 9.sp)
-                    Text(
-                        selected?.displayName ?: selectedKey.ifBlank { "Choose an action" },
-                        color = AresTextPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 11.sp,
-                        maxLines = 1
-                    )
-                    selected?.let {
-                        Text(
-                            "${it.category.ifBlank { "General" }} • ${it.key}",
-                            color = AresTextSecondary,
-                            fontSize = 9.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
-                Icon(Icons.Default.ArrowDropDown, "Browse all project actions")
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.widthIn(min = 380.dp, max = 520.dp)
-            ) {
-                Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-                    Text("Choose an action", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text(
-                        "All ${state.actions.size} project actions are shown until you search.",
-                        color = AresTextSecondary,
-                        fontSize = 10.sp
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier.fillMaxWidth().focusRequester(searchFocus),
-                        label = { Text("Search actions") },
-                        placeholder = { Text("Try LED, light, color, or Prism") },
-                        leadingIcon = { Icon(Icons.Default.Search, null) },
-                        supportingText = {
-                            Text(
-                                if (query.isBlank()) "$matchCount actions available" else "$matchCount matching actions",
-                                fontSize = 9.sp
-                            )
-                        },
-                        singleLine = true
-                    )
-                }
-                if (groups.isEmpty()) {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Text(
-                            if (state.actions.isEmpty()) "No project actions were loaded." else "No actions match “$query”.",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp
-                        )
-                        Text(
-                            if (state.actions.isEmpty()) {
-                                "Check .ares/action-catalog.json, then use Reload at the top of the editor."
-                            } else {
-                                "Clear the search or try a device, behavior, LED, light, color, or Prism."
-                            },
-                            color = AresTextSecondary,
-                            fontSize = 10.sp
-                        )
-                        if (query.isNotBlank()) {
-                            OutlinedButton(onClick = { query = "" }) { Text("Clear search", fontSize = 10.sp) }
-                        }
-                    }
-                }
-                groups.forEachIndexed { index, group ->
-                    if (index > 0) HorizontalDivider(color = AresBorder)
-                    Text(
-                        "${group.category} (${group.actions.size})",
-                        color = AresCyan,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
-                    )
-                    group.actions.forEach { action ->
-                        DropdownMenuItem(
-                            text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text(action.displayName, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
-                                    if (!action.description.isNullOrBlank()) {
-                                        Text(action.description, color = AresTextSecondary, fontSize = 9.sp)
-                                    }
-                                    Text(
-                                        "Project catalog • ${action.key}",
-                                        color = AresTextSecondary,
-                                        fontSize = 9.sp,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                }
-                            },
-                            onClick = {
-                                query = ""
-                                expanded = false
-                                onSelect(action.key)
-                            },
-                            modifier = Modifier.semantics {
-                                contentDescription = actionAccessibleLabel(action)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-        if (state.actions.isEmpty()) {
-            Text(
-                "No actions are available. Check .ares/action-catalog.json, then select Reload.",
-                color = AresGold,
-                fontSize = 10.sp
-            )
-        } else if (selected == null && selectedKey.isNotBlank()) {
-            Text(
-                "This binding references an action that is not in the current catalog: $selectedKey",
-                color = AresGold,
-                fontSize = 10.sp
-            )
         }
     }
 }

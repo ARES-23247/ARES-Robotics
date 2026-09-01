@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.components.catalog.AresActionCatalogPicker
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
@@ -94,7 +95,9 @@ internal fun RoutineStepCard(
             }
             when (step.kind) {
                 RoutineStepKind.ACTION -> {
-                    ActionPicker(actions, step.actionKey) { onUpdate(step.copy(actionKey = it.key, arguments = initialCapabilityArguments(it.parameters))) }
+                    AresActionCatalogPicker(actions, step.actionKey) {
+                        onUpdate(step.copy(actionKey = it.key, arguments = initialCapabilityArguments(it.parameters)))
+                    }
                     actions.firstOrNull { it.key == step.actionKey }?.let { descriptor ->
                         Text(descriptor.description, style = MaterialTheme.typography.bodySmall, color = AresTextSecondary)
                         ParameterEditors(descriptor.parameters, step.arguments, issues) { onUpdate(step.copy(arguments = it)) }
@@ -218,7 +221,9 @@ internal fun SimpleChildEditor(
             IconButton(onRemove, Modifier.size(28.dp)) { Icon(Icons.Default.Delete, "Remove child", tint = AresError, modifier = Modifier.size(16.dp)) }
         }
         when (step.kind) {
-            RoutineStepKind.ACTION -> ActionPicker(actions, step.actionKey) { onUpdate(step.copy(actionKey = it.key, arguments = initialCapabilityArguments(it.parameters))) }
+            RoutineStepKind.ACTION -> AresActionCatalogPicker(actions, step.actionKey) {
+                onUpdate(step.copy(actionKey = it.key, arguments = initialCapabilityArguments(it.parameters)))
+            }
             RoutineStepKind.WAIT -> RoutineDecimalEditor(step.durationSeconds ?: 0.0, "Duration", "s") { onUpdate(step.copy(durationSeconds = it.coerceAtLeast(0.0))) }
             RoutineStepKind.DRIVE_TO -> step.drive?.let { drive -> RoutinePoseEditors(drive.target) { onUpdate(step.copy(drive = drive.copy(target = it))) } }
             RoutineStepKind.WAIT_UNTIL -> ConditionPicker(conditions, step.conditionKey) { onUpdate(step.copy(conditionKey = it.key, arguments = initialCapabilityArguments(it.parameters))) }

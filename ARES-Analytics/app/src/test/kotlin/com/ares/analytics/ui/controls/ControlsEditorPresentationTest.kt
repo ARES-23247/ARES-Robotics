@@ -1,9 +1,9 @@
 package com.ares.analytics.ui.controls
 
 import com.ares.analytics.ui.components.controls.advancedBindingSummary
-import com.ares.analytics.ui.components.controls.actionAccessibleLabel
-import com.ares.analytics.ui.components.controls.actionBrowserGroups
-import com.ares.analytics.ui.components.controls.actionCatalogSummary
+import com.ares.analytics.ui.components.catalog.actionAccessibleLabel
+import com.ares.analytics.ui.components.catalog.actionBrowserGroups
+import com.ares.analytics.ui.components.catalog.actionCatalogSummary
 import com.ares.analytics.ui.components.controls.bindingLearningTrace
 import com.ares.analytics.ui.components.controls.canvasCollisionOffsetX
 import com.ares.analytics.ui.components.controls.canvasCollisionOffsetY
