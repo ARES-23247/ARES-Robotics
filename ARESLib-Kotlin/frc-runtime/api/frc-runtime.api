@@ -27,17 +27,6 @@ public final class com/areslib/frc/input/FrcInputFrameAdapter {
 	public static synthetic fun sampleInto$default (Lcom/areslib/frc/input/FrcInputFrameAdapter;Lcom/areslib/input/InputFrame;JILjava/lang/Object;)V
 }
 
-public final class com/areslib/frc/input/WpilibGenericHidSource : com/areslib/frc/input/FrcHidSource {
-	public fun <init> (Ledu/wpi/first/wpilibj/GenericHID;)V
-	public fun axisCount ()I
-	public fun buttonCount ()I
-	public fun isConnected ()Z
-	public fun pov (I)I
-	public fun povCount ()I
-	public fun rawAxis (I)D
-	public fun rawButton (I)Z
-}
-
 public abstract interface class com/areslib/frc/runtime/FrcControllerPortSampler {
 	public abstract fun prepare (I)V
 	public abstract fun sampleInto (ILcom/areslib/input/InputFrame;J)V
