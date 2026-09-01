@@ -1,8 +1,8 @@
 package com.ares.analytics.viewmodel.field
 
 import com.ares.analytics.shared.AppJson
+import com.ares.analytics.util.Sha256
 import kotlinx.serialization.Serializable
-import java.security.MessageDigest
 
 internal const val SIMULATOR_FIELD_APPLIED_RECEIPT_TOPIC = "ARES/Field/AppliedReceipt"
 internal const val SIMULATOR_FIELD_APPLY_ERROR_TOPIC = "ARES/Field/ApplyError"
@@ -51,6 +51,4 @@ internal fun parseSimulatorFieldApplyReceipt(payload: String?): SimulatorFieldAp
         runCatching { AppJson.decodeFromString<SimulatorFieldApplyReceipt>(encoded) }.getOrNull()
     }
 
-internal fun sha256Hex(payload: String): String = MessageDigest.getInstance("SHA-256")
-    .digest(payload.toByteArray(Charsets.UTF_8))
-    .joinToString(separator = "") { byte -> "%02x".format(byte) }
+internal fun simulatorFieldPayloadHash(payload: String): String = Sha256.hex(payload)

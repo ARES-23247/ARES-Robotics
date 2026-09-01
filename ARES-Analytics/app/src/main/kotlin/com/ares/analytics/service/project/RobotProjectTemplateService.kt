@@ -7,6 +7,7 @@ import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.util.Sha256
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresLeague
@@ -36,7 +37,6 @@ import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
-import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 private val PROJECT_TEMPLATE_JSON = Json {
@@ -196,7 +196,7 @@ class RobotProjectTemplateService(
         cacheDirectory.mkdirs()
         check(cacheDirectory.isDirectory) { "ARES could not create its project-template cache." }
         val cacheFile = File(cacheDirectory, "${template.id}-${template.revision}.zip")
-        if (cacheFile.isFile && sha256(cacheFile) == template.archiveSha256) {
+        if (cacheFile.isFile && Sha256.fileHex(cacheFile) == template.archiveSha256) {
             return cacheFile to RobotProjectTemplateSource.VERIFIED_CACHE
         }
         if (cacheFile.exists() && !cacheFile.delete()) {
@@ -221,7 +221,7 @@ class RobotProjectTemplateService(
                             }
                         }
                     }
-                    val actualHash = sha256(temporary)
+                    val actualHash = Sha256.fileHex(temporary)
                     check(actualHash == template.archiveSha256) {
                         "The installer-bundled starter did not match its reviewed SHA-256. Reinstall ARES Robotics Studio before creating a project."
                     }
@@ -233,7 +233,7 @@ class RobotProjectTemplateService(
         onProgress("Downloading the pinned ${template.displayName} starter once for offline reuse…")
         writeFileAtomically(cacheFile) { temporary ->
             archiveDownloader(template, temporary)
-            val actualHash = sha256(temporary)
+            val actualHash = Sha256.fileHex(temporary)
             check(actualHash == template.archiveSha256) {
                 "The downloaded starter did not match its reviewed SHA-256. Expected ${template.archiveSha256}; got $actualHash."
             }
@@ -412,10 +412,7 @@ class RobotProjectTemplateService(
     private fun boundedStableId(value: String, maxLength: Int): String {
         require(maxLength >= 10) { "Stable ID limits must leave room for a fingerprint." }
         if (value.length <= maxLength) return value
-        val fingerprint = MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray(Charsets.UTF_8))
-            .take(4)
-            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+        val fingerprint = Sha256.prefixHex(value, byteCount = 4)
         val prefix = value.take(maxLength - fingerprint.length - 1).trimEnd('.', '-', '_')
         return "$prefix-$fingerprint"
     }
@@ -536,19 +533,6 @@ class RobotProjectTemplateService(
                 add(File(home, "Library/Android/sdk"))
             }
             return candidates.firstOrNull(File::isDirectory)
-        }
-
-        private fun sha256(file: File): String {
-            val digest = MessageDigest.getInstance("SHA-256")
-            file.inputStream().buffered().use { input ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read < 0) break
-                    digest.update(buffer, 0, read)
-                }
-            }
-            return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
         }
 
         private fun extractArchive(archive: File, destination: File) {

@@ -7,6 +7,7 @@ import com.ares.analytics.service.commissioning.CommissioningVerificationService
 import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.project.persistence.SubsystemProjectRepository
+import com.ares.analytics.util.Sha256
 import com.areslib.drivetrain.DrivetrainComponentRole
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
@@ -18,7 +19,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
-import java.security.MessageDigest
 import java.time.Clock
 
 enum class HardwareInventoryOwner { DRIVEBASE, SUBSYSTEM }
@@ -577,7 +577,7 @@ class HardwareSetupService(
                 append(item.configurationDetails.joinToString(";")).append('\n')
             }
         }
-        return sha256(canonical.toByteArray())
+        return Sha256.hex(canonical)
     }
 
     private fun configurationReviewDirectory(root: File): File = File(root, ".ares/evidence/hardware/configuration")
@@ -586,7 +586,7 @@ class HardwareSetupService(
 
     private inline fun <reified T> appendEvidence(directory: File, recordedAtEpochMillis: Long, document: T) {
         val encoded = HARDWARE_REVIEW_JSON.encodeToString(document).trimEnd() + System.lineSeparator()
-        val hash = sha256(encoded.toByteArray(Charsets.UTF_8)).take(12)
+        val hash = Sha256.hex(encoded).take(12)
         val target = File(directory, "$recordedAtEpochMillis-$hash.json")
         require(!target.exists()) { "This exact evidence record already exists; append-only evidence is never replaced." }
         writeFileAtomically(target) { temporary ->
@@ -610,9 +610,6 @@ class HardwareSetupService(
         return HardwareSourceFingerprint(path, hash)
     }
 
-    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
-        .digest(bytes)
-        .joinToString("") { "%02x".format(it.toInt() and 0xff) }
 }
 
 private fun DriveHardwareRole.readableName(): String = name.lowercase().replace('_', ' ')

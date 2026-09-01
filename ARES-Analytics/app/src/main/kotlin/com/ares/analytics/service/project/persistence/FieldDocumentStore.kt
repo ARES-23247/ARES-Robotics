@@ -8,11 +8,11 @@ import com.ares.analytics.shared.GamePieceType
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.util.Sha256
 import com.ares.analytics.viewmodel.field.FieldDocumentMapper
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import java.io.File
-import java.security.MessageDigest
 
 internal data class LoadedFieldDocument(
     val document: RobotFieldConfig,
@@ -66,9 +66,7 @@ internal object FieldDocumentStore {
 
     private fun checkpoint(projectPath: String, document: RobotFieldConfig) {
         val encoded = RobotFieldDocument.encode(document)
-        val hash = MessageDigest.getInstance("SHA-256")
-            .digest(encoded.toByteArray(Charsets.UTF_8))
-            .joinToString("") { byte -> "%02x".format(byte) }
+        val hash = Sha256.hex(encoded)
         val historyFile = File(
             resolveProjectPath(projectPath, ".ares/history/fields"),
             "${document.revision.toString().padStart(8, '0')}-${hash.take(12)}.json",

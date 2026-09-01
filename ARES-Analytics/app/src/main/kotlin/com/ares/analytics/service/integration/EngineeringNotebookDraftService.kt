@@ -13,6 +13,7 @@ import com.ares.analytics.shared.models.NotebookEntryType
 import com.ares.analytics.shared.models.NotebookEvidenceReference
 import com.ares.analytics.shared.models.NotebookReviewState
 import com.ares.analytics.shared.models.NotebookVisibility
+import com.ares.analytics.util.Sha256
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -154,7 +155,7 @@ class EngineeringNotebookDraftService(
         ))
         val safeRange = evidence.commitRange.filterNot(Char::isISOControl).take(256)
         return createAndPersist(
-            entryId = "software-${sha256Prefix(safeRange)}",
+            entryId = "software-${Sha256.prefixHex(safeRange, byteCount = 12)}",
             entryType = NotebookEntryType.SOFTWARE_CHANGE,
             workspace = evidence.workspace,
             deterministicMarkdown = deterministic,
@@ -327,9 +328,5 @@ private fun safeMarkdown(value: String): String = value
     .replace('>', ']')
     .take(1_024)
 
-private fun sha256Prefix(value: String): String = java.security.MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray(Charsets.UTF_8))
-    .take(12)
-    .joinToString("") { "%02x".format(it) }
 
 const val MAX_DRAFT_MARKDOWN_CHARACTERS: Int = 100_000

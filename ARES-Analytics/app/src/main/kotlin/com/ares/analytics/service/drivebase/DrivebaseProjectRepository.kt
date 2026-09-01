@@ -2,12 +2,12 @@ package com.ares.analytics.service.drivebase
 
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.ares.analytics.service.tuning.TuningProfileRepository
+import com.ares.analytics.util.Sha256
 import com.areslib.tuning.*
 import com.google.gson.JsonParser
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 
 class DrivebaseProjectRepository {
     fun load(projectPath: String): Result<DrivebaseDocument?> = runCatching {
@@ -179,8 +179,7 @@ class DrivebaseProjectRepository {
         }.getOrElse { failure -> listOf("Tuning profiles need reviewed repair: ${failure.message}") }
     }
 
-    private fun contentSha256(text: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(text.toByteArray()).joinToString("") { "%02x".format(it.toInt() and 0xff) }
+    private fun contentSha256(text: String): String = Sha256.hex(text)
 
     private fun atomicWrite(target: File, content: String) {
         target.parentFile.mkdirs()
@@ -292,7 +291,7 @@ object CtreTunerConstantsReader {
         require(criticalErrors.isEmpty()) { "CTRE import is incomplete:\n- ${criticalErrors.joinToString("\n- ")}" }
         return CtreTunerImport(
             sourcePath = file.canonicalPath,
-            sourceHash = sha256(text),
+            sourceHash = Sha256.canonicalTextHex(text),
             hardware = hardware,
             geometry = DriveGeometry(requireNotNull(wheelRadius), requireNotNull(trackWidth), requireNotNull(wheelBase)),
             values = values,
@@ -313,9 +312,6 @@ object CtreTunerConstantsReader {
             else -> null
         }
     }
-    /** Hashes source text canonically so a reviewed vendor file has one identity on Windows and Linux. */
-    private fun sha256(text: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(text.replace("\r\n", "\n").toByteArray()).joinToString("") { "%02x".format(it) }
 }
 
 fun defaultDrivebase(projectId: String, kind: DrivebaseKind): DrivebaseDocument = canonicalTemplate(projectId, kind).toUiDrivebase()

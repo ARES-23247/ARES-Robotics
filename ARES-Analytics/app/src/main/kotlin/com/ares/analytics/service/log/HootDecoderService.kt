@@ -3,13 +3,13 @@ package com.ares.analytics.service.log
 import com.ares.analytics.service.*
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
-import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
@@ -142,7 +142,7 @@ class HootDecoderService(
         robotId: String,
         sourceName: String = hootFile.name,
     ): LogImportResult = withContext(Dispatchers.IO) {
-        val sourceSha256 = sha256(hootFile)
+        val sourceSha256 = Sha256.fileHex(hootFile)
         databaseService.findCompletedSessionBySourceHashes(
             teamId,
             seasonId,
@@ -265,19 +265,6 @@ class HootDecoderService(
             minTimestampMs = range?.first,
             maxTimestampMs = range?.second,
         )
-    }
-
-    private fun sha256(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().buffered().use { input ->
-            val bytes = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val read = input.read(bytes)
-                if (read < 0) break
-                digest.update(bytes, 0, read)
-            }
-        }
-        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
 
     internal suspend fun parseAndInsertTelemetry(

@@ -3,10 +3,10 @@ package com.ares.analytics.service.tuning
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.tuning.*
+import com.ares.analytics.util.Sha256
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 
 data class TuningWorkspaceDocuments(
     val catalog: List<TuningParameterDeclaration>,
@@ -151,7 +151,7 @@ class TuningProfileRepository {
         val canonical = "$hash|$reviewedBy|$reviewSummary|" + changes.joinToString("|") {
             "${it.parameterUid}:${it.before?.displayValue()}->${it.after.displayValue()}:${it.provenance.source}:${it.provenance.note}:${it.provenance.evidencePath}:${it.provenance.evidenceSha256}"
         }
-        return sha256(canonical).take(16)
+        return Sha256.hex(canonical).take(16)
     }
 
     private fun profileFile(
@@ -185,7 +185,7 @@ class TuningProfileRepository {
             val evidence = projectRoot.resolve(relative).normalize()
             require(evidence.startsWith(projectRoot)) { "${change.displayName}: evidence must stay inside the project." }
             require(Files.isRegularFile(evidence)) { "${change.displayName}: evidence file is missing: $relative" }
-            val actual = sha256(Files.readAllBytes(evidence))
+            val actual = Sha256.fileHex(evidence.toFile())
             require(actual.equals(expectedHash, ignoreCase = true)) { "${change.displayName}: evidence changed after this proposal was created." }
         }
     }
@@ -210,6 +210,4 @@ class TuningProfileRepository {
             .getOrElse { Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING) }
     }
 
-    private fun sha256(value: String) = sha256(value.toByteArray())
-    private fun sha256(value: ByteArray) = MessageDigest.getInstance("SHA-256").digest(value).joinToString("") { "%02x".format(it) }
 }

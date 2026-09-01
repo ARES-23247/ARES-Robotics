@@ -9,13 +9,13 @@ import com.ares.analytics.shared.models.SessionAnnotation
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import java.io.File
 import java.io.FileOutputStream
-import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -118,7 +118,7 @@ internal class SessionBundleService(
                 analysisDiagnostics = databaseService.getAnalysisDiagnostics(sessionId),
                 importReports = importReports,
                 telemetrySizeBytes = telemetryFile.length(),
-                telemetrySha256 = sha256(telemetryFile),
+                telemetrySha256 = Sha256.fileHex(telemetryFile),
             )
             val manifestBytes = AppJson.encodeToString(manifest).toByteArray(Charsets.UTF_8)
             require(manifestBytes.size <= MAX_BUNDLE_MANIFEST_BYTES) {
@@ -219,7 +219,7 @@ internal class SessionBundleService(
                 require(telemetryFile.length() == decoded.telemetrySizeBytes) {
                     "Cloud session telemetry ended before its declared size"
                 }
-                require(sha256(telemetryFile) == decoded.telemetrySha256) {
+                require(Sha256.fileHex(telemetryFile) == decoded.telemetrySha256) {
                     "Cloud session telemetry SHA-256 mismatch"
                 }
                 decoded
@@ -245,19 +245,6 @@ internal fun WorkspaceConfig.cloudWorkspaceKey(): String {
         "Workspace identity contains unsupported characters"
     }
     return components.joinToString(":")
-}
-
-internal fun sha256(file: File): String {
-    val digest = MessageDigest.getInstance("SHA-256")
-    file.inputStream().buffered().use { input ->
-        val buffer = ByteArray(64 * 1024)
-        while (true) {
-            val count = input.read(buffer)
-            if (count < 0) break
-            digest.update(buffer, 0, count)
-        }
-    }
-    return digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 }
 
 internal const val CURRENT_SESSION_BUNDLE_VERSION = 1

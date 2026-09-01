@@ -5,11 +5,11 @@ import com.ares.analytics.service.log.WpiLogDecoder
 import com.ares.analytics.service.log.CsvLogDecoder
 import com.ares.analytics.service.log.ParquetLogDecoder
 import com.ares.analytics.shared.models.Session
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
-import java.security.MessageDigest
 import java.util.UUID
 
 /**
@@ -68,7 +68,7 @@ class LogParserService(
     ): LogImportResult = withContext(Dispatchers.IO) {
         val primaryFile = canonicalLogImportFiles(listOf(file)).single()
         val sourceSize = primaryFile.length()
-        val sourceSha256 = sha256(primaryFile)
+        val sourceSha256 = Sha256.fileHex(primaryFile)
         databaseService.findCompletedSessionBySourceHashes(
             teamId = teamId,
             seasonId = seasonId,
@@ -223,7 +223,7 @@ class LogParserService(
         file: File,
         sessionId: String,
         sourceSizeBytes: Long = file.length(),
-        sourceSha256: String = sha256(file),
+        sourceSha256: String = Sha256.fileHex(file),
         decoderOverride: String? = null
     ): ImportReport {
         val telemetryRecords = databaseService.countTelemetryFrames(sessionId)
@@ -257,7 +257,7 @@ class LogParserService(
         decoderOverride: String? = null
     ): ImportReport = ImportReport(
         sourceName = file.name,
-        sourceSha256 = sha256(file),
+        sourceSha256 = Sha256.fileHex(file),
         sourceSizeBytes = file.length(),
         decoder = decoderOverride ?: decoderName(file),
         status = ImportStatus.REJECTED,
@@ -278,7 +278,7 @@ class LogParserService(
             return@withContext parseLogFile(primaryFiles.first(), teamId, seasonId, robotId, matchNumber, allianceColor, tags)
         }
         val sourceEvidence = primaryFiles.map { source ->
-            SourceEvidence(source, source.length(), sha256(source))
+            SourceEvidence(source, source.length(), Sha256.fileHex(source))
         }
         databaseService.findCompletedSessionBySourceHashes(
             teamId = teamId,
@@ -453,19 +453,6 @@ class LogParserService(
                 }
             }
         }
-    }
-
-    internal fun sha256(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().buffered().use { input ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val read = input.read(buffer)
-                if (read < 0) break
-                digest.update(buffer, 0, read)
-            }
-        }
-        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
 
     internal suspend fun persistExternalImportReports(sessionId: String, reports: List<ImportReport>) {

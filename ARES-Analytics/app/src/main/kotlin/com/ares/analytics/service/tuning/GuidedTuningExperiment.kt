@@ -10,6 +10,7 @@ import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.AppJsonPretty
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.util.Sha256
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
@@ -24,7 +25,6 @@ import kotlinx.serialization.encodeToString
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.max
@@ -406,7 +406,7 @@ class GuidedTuningExperimentRepository(
         ".ares/local/tuning/experiments/${safeUid(experiment.uid)}.arestuningexperiment.json"
 
     fun sha256(projectPath: String, experiment: GuidedTuningExperiment): String =
-        sha256(File(projectPath, relativePath(experiment)).readBytes())
+        Sha256.fileHex(File(projectPath, relativePath(experiment)))
 
     private fun snapshot(
         projectPath: String,
@@ -430,7 +430,7 @@ class GuidedTuningExperimentRepository(
             ExperimentConfigurationDigest(
                 projectRelativePath = File(projectPath).canonicalFile.toPath().relativize(file.canonicalFile.toPath())
                     .toString().replace(File.separatorChar, '/'),
-                sha256 = sha256(file.readBytes()),
+                sha256 = Sha256.fileHex(file),
             )
         }.sortedBy(ExperimentConfigurationDigest::projectRelativePath)
         val profileHash = TuningProfileDocumentCodec.contentHash(profile, declarations)
@@ -440,7 +440,7 @@ class GuidedTuningExperimentRepository(
             values.forEach { appendLine("${it.parameterUid}|${it.key}|${AppJson.encodeToString(it.value)}") }
             digests.forEach { appendLine("${it.projectRelativePath}|${it.sha256}") }
         }
-        return ExperimentSnapshot(profile.uid, profileHash, values, digests, sha256(canonical.toByteArray()))
+        return ExperimentSnapshot(profile.uid, profileHash, values, digests, Sha256.hex(canonical))
     }
 
     private fun configurationFiles(projectPath: String): List<File> {
@@ -496,9 +496,6 @@ class GuidedTuningExperimentRepository(
             Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
     }
-
-    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
-        .digest(bytes).joinToString("") { "%02x".format(it) }
 
     private companion object {
         val SHA256 = Regex("[a-f0-9]{64}")

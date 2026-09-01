@@ -8,6 +8,7 @@ import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.util.Sha256
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.CoroutineScope
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.security.MessageDigest
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -744,5 +744,5 @@ fun evaluateLocalizationFailure(scenario: LocalizationFailureScenario): Localiza
 
 private fun reviewToken(contentHash: String?, changes: List<DrivebaseChange>): String {
     val content = "$contentHash|" + changes.joinToString("|") { "${it.path}:${it.before}->${it.after}" }
-    return MessageDigest.getInstance("SHA-256").digest(content.toByteArray()).take(8).joinToString("") { "%02x".format(it) }
+    return Sha256.prefixHex(content, byteCount = 8)
 }

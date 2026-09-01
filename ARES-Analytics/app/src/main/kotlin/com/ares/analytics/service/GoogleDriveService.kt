@@ -3,6 +3,7 @@ package com.ares.analytics.service
 import com.ares.analytics.shared.models.DriveDestinationConfig
 import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.shared.models.WorkspaceCollaborationMode
+import com.ares.analytics.util.Sha256
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -19,7 +20,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.io.File
 import java.io.ByteArrayOutputStream
-import java.security.MessageDigest
 import io.ktor.utils.io.*
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 
@@ -533,7 +533,7 @@ class GoogleDriveService(
                 response.contentLength()?.let { length ->
                     require(length == expectedBytes) { "Drive response length does not match manifest" }
                 }
-                val digest = MessageDigest.getInstance("SHA-256")
+                val digest = Sha256.newDigest()
                 val buffer = ByteArray(DRIVE_STREAM_BUFFER_BYTES)
                 var totalBytes = 0L
                 destination.parentFile?.mkdirs()
@@ -550,9 +550,7 @@ class GoogleDriveService(
                     }
                 }
                 require(totalBytes == expectedBytes) { "Drive download is truncated" }
-                val actualSha256 = digest.digest().joinToString("") { byte ->
-                    (byte.toInt() and 0xff).toString(16).padStart(2, '0')
-                }
+                val actualSha256 = Sha256.finishHex(digest)
                 require(actualSha256 == expectedSha256) { "Drive download SHA-256 mismatch" }
             }
         } catch (error: Exception) {

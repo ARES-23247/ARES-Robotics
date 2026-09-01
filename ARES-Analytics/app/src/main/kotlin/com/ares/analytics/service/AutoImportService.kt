@@ -4,6 +4,7 @@ import com.ares.analytics.service.log.*
 import com.ares.analytics.shared.AppJsonPretty
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,6 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 /**
@@ -603,43 +603,32 @@ class AutoImportService(
     }
 
     private fun stagingKey(sourceId: String, snapshot: SourceSnapshot): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val bytes = "$sourceId\u0000${snapshot.size}\u0000${snapshot.modified}".toByteArray(Charsets.UTF_8)
-        return digest.digest(bytes).toHexString()
+        return Sha256.hex("$sourceId\u0000${snapshot.size}\u0000${snapshot.modified}")
     }
 
     /** Hashes verified local copies, never mutable source metadata, for durable deduplication. */
     internal fun contentFingerprint(stableFile: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val buffer = ByteArray(CONTENT_HASH_BUFFER_BYTES)
-        stableFile.inputStream().buffered().use { input ->
-            while (true) {
-                val read = input.read(buffer)
-                if (read < 0) break
-                digest.update(buffer, 0, read)
-            }
-        }
-        return digest.digest().toHexString()
+        return Sha256.fileHex(stableFile)
     }
 
     internal fun contentFingerprint(stableFiles: List<File>): String {
         require(stableFiles.isNotEmpty()) { "At least one stable file is required" }
         if (stableFiles.size == 1) return contentFingerprint(stableFiles.single())
 
-        val digest = MessageDigest.getInstance("SHA-256")
-        val buffer = ByteArray(CONTENT_HASH_BUFFER_BYTES)
-        for (stableFile in stableFiles) {
-            digest.update(stableFile.length().toString().toByteArray(Charsets.US_ASCII))
-            digest.update(0.toByte())
-            stableFile.inputStream().use { input ->
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    digest.update(buffer, 0, count)
+        return Sha256.compositeHex {
+            val buffer = ByteArray(CONTENT_HASH_BUFFER_BYTES)
+            for (stableFile in stableFiles) {
+                update(stableFile.length().toString().toByteArray(Charsets.US_ASCII))
+                update(0.toByte())
+                stableFile.inputStream().use { input ->
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        update(buffer, 0, count)
+                    }
                 }
             }
         }
-        return digest.digest().toHexString()
     }
 
     private fun matchingDsEvents(dslog: File): File? {
@@ -654,8 +643,6 @@ class AutoImportService(
 
     private fun archivedDsEvents(dslog: File): File =
         File(dslog.parentFile, dslog.name.substringBeforeLast('.') + ".dsevents")
-
-    private fun ByteArray.toHexString(): String = joinToString("") { "%02x".format(it.toInt() and 0xff) }
 
     internal fun safeArchiveFile(directory: File, fingerprint: String, sourceName: String): File {
         val basename = sourceName.substringAfterLast('/').substringAfterLast('\\').trim()
