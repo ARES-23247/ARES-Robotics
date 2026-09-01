@@ -304,7 +304,6 @@ fun LocalSimulatorControlBar(
     val scope = rememberCoroutineScope()
     val connectedNow by rememberUpdatedState(isConnected)
     val recordingSession by nt4Client.currentSession.collectAsState()
-
     suspend fun stopAndSaveRecording() {
         if (recordingSession == null) return
         recordingBusy = true
@@ -319,7 +318,6 @@ fun LocalSimulatorControlBar(
             recordingBusy = false
         }
     }
-
     LaunchedEffect(nt4Client) {
         nt4Client.uiTelemetryFlow.collect { frame ->
             when (frame.key.trimStart('/')) {

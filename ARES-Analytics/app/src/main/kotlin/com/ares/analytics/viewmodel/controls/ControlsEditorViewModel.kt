@@ -353,71 +353,10 @@ class ControlsEditorViewModel(
     }
 
     /** Starts a reviewed two-or-more-button chord without saving or generating code. */
-    fun createChordBinding() = mutateSelection { current ->
-        if (current.draftHasUnappliedChanges) {
-            return@mutateSelection current.copy(status = "Apply or discard the current binding draft first.")
-        }
-        val control = current.selectedControl
-            ?: return@mutateSelection current.copy(status = "Select the first button in the chord.")
-        if (control.type != ControllerControlTypeDocument.BUTTON) {
-            return@mutateSelection current.copy(status = "A chord starts with a button, not an analog axis.")
-        }
-        val scheme = current.selectedScheme ?: return@mutateSelection current
-        val slot = current.selectedControllerSlot ?: return@mutateSelection current
-        val target = current.actions.firstOrNull()?.let { descriptor ->
-            ControlTargetDocument(ControlTargetKind.ACTION, descriptor.key, defaultArguments(descriptor))
-        } ?: current.routineIds.firstOrNull()?.let { routine ->
-            ControlTargetDocument(ControlTargetKind.ROUTINE, routine)
-        } ?: ControlTargetDocument(ControlTargetKind.ACTION, "choose.action")
-        current.copy(
-            selectedBindingId = null,
-            draftBinding = ControlBindingDocument(
-                bindingId = uniqueBindingId(scheme, "${control.controlId}-chord"),
-                displayName = "${control.displayName} chord",
-                source = ControlSourceDocument(
-                    kind = ControlSourceKind.CHORD,
-                    controllerSlot = slot,
-                    controlIds = listOf(control.controlId),
-                    chordWindowSeconds = .075,
-                ),
-                event = ControlEvent.PRESS,
-                target = target,
-                suppressConstituentBindings = true,
-            ),
-            draftHasUnappliedChanges = true,
-            status = "Click at least one more button on the controller, then choose the action or routine.",
-        ).revalidated()
-    }
+    fun createChordBinding() = mutateSelection { createChordBindingDraft(it).revalidated() }
 
     /** Assigns an existing trigger-neutral routine as a controller macro. */
-    fun createRoutineMacroBinding() = mutateSelection { current ->
-        if (current.draftHasUnappliedChanges) {
-            return@mutateSelection current.copy(status = "Apply or discard the current binding draft first.")
-        }
-        val routineId = current.routineIds.firstOrNull()
-            ?: return@mutateSelection current.copy(
-                status = "Create a reusable routine in Routines & Auto before binding a macro.",
-            )
-        val control = current.selectedControl
-            ?: return@mutateSelection current.copy(status = "Select the button that should run the macro.")
-        if (control.type != ControllerControlTypeDocument.BUTTON) {
-            return@mutateSelection current.copy(status = "A routine macro requires a button or button chord.")
-        }
-        val scheme = current.selectedScheme ?: return@mutateSelection current
-        val slot = current.selectedControllerSlot ?: return@mutateSelection current
-        current.copy(
-            selectedBindingId = null,
-            draftBinding = ControlBindingDocument(
-                bindingId = uniqueBindingId(scheme, "${control.controlId}-macro-$routineId"),
-                displayName = "Run $routineId",
-                source = ControlSourceDocument(ControlSourceKind.BUTTON, slot, listOf(control.controlId)),
-                event = ControlEvent.PRESS,
-                target = ControlTargetDocument(ControlTargetKind.ROUTINE, routineId),
-            ),
-            draftHasUnappliedChanges = true,
-            status = "Review the macro routine and invocation policy, then add the binding.",
-        ).revalidated()
-    }
+    fun createRoutineMacroBinding() = mutateSelection { createRoutineMacroBindingDraft(it).revalidated() }
 
     /**
      * Starts a normal reviewed binding draft for a missing catalog action on the selected control.
@@ -994,30 +933,10 @@ class ControlsEditorViewModel(
             bindings = emptyList()
         )
 
-        private fun uniqueBindingId(scheme: ControlSchemeDocument, raw: String): String {
-            val base = raw.lowercase().replace(Regex("[^a-z0-9._-]+"), "-").trim('-').ifBlank { "binding" }
-            var candidate = base
-            var suffix = 2
-            val used = scheme.bindings.mapTo(hashSetOf()) { it.bindingId }
-            while (candidate in used) candidate = "$base-${suffix++}"
-            return candidate
-        }
-
         private fun defaultEvent(kind: ControlSourceKind) = when (kind) {
             ControlSourceKind.AXIS_VALUE -> ControlEvent.VALUE
             ControlSourceKind.AXIS_ZONE -> ControlEvent.ZONE_ENTER
             else -> ControlEvent.PRESS
-        }
-
-        private fun defaultArguments(action: ActionDescriptor): Map<String, String> = action.parameters.mapNotNull { parameter ->
-            parameter.defaultValue()?.let { parameter.key to it }
-                ?: if (parameter.required) parameter.key to "" else null
-        }.toMap()
-
-        private fun CapabilityParameterDescriptor.defaultValue(): String? = when (type) {
-            CapabilityParameterType.NUMBER -> defaultNumber?.toString()
-            CapabilityParameterType.BOOLEAN -> defaultBoolean?.toString()
-            CapabilityParameterType.TEXT, CapabilityParameterType.ENUM -> defaultText
         }
 
         private fun bindingIdFromPath(path: String, scheme: ControlSchemeDocument): String? {

@@ -96,7 +96,6 @@ internal fun DashboardScreen(
     var loopOverruns by remember { mutableStateOf<Int?>(null) }
     var lastUpdateTimestampMs by remember { mutableStateOf(-1L) }
     var lastUpdateAgeMs by remember { mutableStateOf(-1L) }
-
     val simulatorState by services.simulator.state.collectAsState()
     val isSimRunning = simulatorState.running
     val isLocalSimulator = isLocalSimulatorSelected
@@ -110,7 +109,6 @@ internal fun DashboardScreen(
     val isReplayMode = state.primarySessionId != null || isReplayActive
     val displayedReplayFrame = replayFrame.takeIf { isReplayMode }
     val latestReplayMode by rememberUpdatedState(isReplayMode)
-
     val tuningDeclarations by produceState<List<TuningParameterDeclaration>>(emptyList(), currentConfig.projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             services.tuningProfiles.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()

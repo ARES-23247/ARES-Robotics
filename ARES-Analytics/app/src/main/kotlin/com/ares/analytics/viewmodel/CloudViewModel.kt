@@ -59,17 +59,11 @@ internal fun robotLogRunKey(fileName: String): String {
     ROBOT_LOG_RUN_UUID.find(fileName)?.value?.let { return it.lowercase() }
     return fileName
 }
-
 data class SessionSyncInfo(
     val summary: SessionSummary,
     val isLocal: Boolean,
     val isRemote: Boolean
 )
-
-internal fun shouldLoadRemoteCloudIndex(
-    isAuthenticated: Boolean,
-    driveDestination: DriveDestinationConfig?,
-): Boolean = isAuthenticated && driveDestination != null
 
 data class CloudState(
     val sessions: List<SessionSyncInfo> = emptyList(),
@@ -519,18 +513,6 @@ class CloudViewModel(
 
     private companion object {
         const val MIN_ROBOT_DELETE_TOKEN_LENGTH = 16
-    }
-}
-
-internal fun robotLogRefreshFailureMessage(robotIp: String, error: Throwable): String {
-    val root = generateSequence(error) { it.cause }.last()
-    val detail = root.message?.lineSequence()?.firstOrNull()?.trim().orEmpty()
-    return buildString {
-        append("[CloudViewModel] Robot log refresh failed for ")
-        append(robotIp)
-        append(": ")
-        append(root::class.simpleName ?: "Error")
-        if (detail.isNotEmpty()) append(" — ").append(detail)
     }
 }
 
