@@ -758,18 +758,8 @@ public final class com/areslib/ftc/hardware/FtcEncoder : com/areslib/hardware/ac
 }
 
 public final class com/areslib/ftc/hardware/FtcFloodgateCurrentSensor {
-	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;)V
-	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;D)V
-	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;DD)V
-	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;DDD)V
-	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;DDDD)V
-	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;DDDDD)V
 	public fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;DDDDDD)V
 	public synthetic fun <init> (Lcom/areslib/ftc/hardware/AnalogVoltageInput;DDDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/AnalogInput;)V
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/AnalogInput;D)V
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/AnalogInput;DD)V
-	public fun <init> (Lcom/qualcomm/robotcore/hardware/AnalogInput;DDD)V
 	public final fun getCurrent ()D
 	public final fun getEstimatedEnergyWattHours ()D
 	public final fun getFuseThermalLoadPercent ()D

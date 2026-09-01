@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.control.safety.CurrentBudgetManager
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
+import com.areslib.ftc.hardware.AnalogVoltageInput
 import com.areslib.hardware.actuator.MotorIO
 import com.areslib.subsystem.PowerManager
 
@@ -38,7 +39,9 @@ class FtcPowerManager(
     /** Floodgate V2 current sensor — null if no Floodgate is connected */
     val floodgate: FtcFloodgateCurrentSensor? = try {
         val analogInput = hardwareMap.get(AnalogInput::class.java, "floodgate")
-        FtcFloodgateCurrentSensor(analogInput)
+        FtcFloodgateCurrentSensor(object : AnalogVoltageInput {
+            override val voltage: Double get() = analogInput.voltage
+        })
     } catch (_: Throwable) {
         null
     }
