@@ -6,13 +6,13 @@ import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import java.io.File
-import java.security.MessageDigest
 import java.util.TimeZone
 
 /**
@@ -154,21 +154,6 @@ class SyncEngineService(
         }
         val extension = ".ares-session.zip"
         return "ARES_Telemetry_${date}_${safeFileComponent(summary.robotId)}$match${alliance}_${mode}_${safeFileComponent(summary.sessionId)}$extension"
-    }
-
-    private fun sha256(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().buffered().use { input ->
-            val buffer = ByteArray(64 * 1024)
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                digest.update(buffer, 0, count)
-            }
-        }
-        return digest.digest().joinToString("") { byte ->
-            (byte.toInt() and 0xff).toString(16).padStart(2, '0')
-        }
     }
 
     private suspend fun createImmutableSessionObject(
@@ -409,7 +394,7 @@ class SyncEngineService(
             val uploadSummary = bundleSummary.copy(
                 fileSizeBytes = tempFile.length(),
                 cloudFileName = descriptiveName,
-                cloudSha256 = sha256(tempFile)
+                cloudSha256 = Sha256.fileHex(tempFile)
             )
 
             // 3. Always create immutable bundle bytes. The currently indexed object is never

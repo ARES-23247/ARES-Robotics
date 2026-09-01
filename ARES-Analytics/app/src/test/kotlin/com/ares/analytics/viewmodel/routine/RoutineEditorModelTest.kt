@@ -168,7 +168,7 @@ class RoutineEditorModelTest {
             RobotDimensions.defaultFor(League.FTC),
             null
         )
-        assertTrue(issues.any { it.code == "invalid_argument" && it.severity == RoutineValidationSeverity.ERROR })
+        assertTrue(issues.any { it.code == "invalid_number" && it.severity == RoutineValidationSeverity.ERROR })
 
         val valid = invalid.copy(steps = listOf(RoutineStep.action("Shooter.Set", mapOf("rpm" to "4500"))))
         val validIssues = routineEditorValidation(
@@ -179,7 +179,7 @@ class RoutineEditorModelTest {
             RobotDimensions.defaultFor(League.FTC),
             null
         )
-        assertTrue(validIssues.none { it.code == "invalid_argument" || it.code == "missing_argument" })
+        assertTrue(validIssues.none { it.path.endsWith(".arguments.rpm") })
     }
 
     @Test

@@ -52,7 +52,7 @@ This goal follows the workspace truthfulness rules (AGENTS.md §9): no completen
 
 **Delivered.** `LearningCatalog.search` now matches lesson `steps` and `beforeYouStart` text in addition to title/outcome/track/level/keywords. The "sysid" STARTER emptiness test stayed green (the only lessons mentioning SysId are BUILDER level). Searching a step-only term such as "hysteresis" now returns `map-one-control`.
 
-### G4 · Error-to-lesson deep links — priority 2
+### G4 · Error-to-lesson deep links — priority 2 — **delivered 2026-09-01**
 
 **Problem.** When validation rejects a routine, subsystem, or binding, the message says what is wrong but not where to learn the concept behind it. The blog-post feedback loop ("mistake found → fix it here, with a concrete error") has no in-app learning equivalent.
 
@@ -60,7 +60,9 @@ This goal follows the workspace truthfulness rules (AGENTS.md §9): no completen
 
 **Acceptance.** PathPlanner validation errors link to a lesson that names the violated concept; link targets are test-enumerated, not free-text.
 
-### G5 · Post-onboarding nudge and authoring empty states — priority 3
+**Delivered.** Every stable routine validation code maps through `RoutineValidationLearningLinks` to an enumerated `first-routine` checkpoint. Error rows expose **Learn why**; Academy opens the lesson and highlights the linked checkpoint. A unit test fixes the complete code set and verifies every lesson/checkpoint target exists.
+
+### G5 · Post-onboarding nudge and authoring empty states — priority 3 — **delivered 2026-09-01**
 
 **Problem.** After setup completes, nothing suggests the first-mission path. Authoring screens with no project loaded show empty states that do not explain what the screen is for.
 
@@ -68,13 +70,17 @@ This goal follows the workspace truthfulness rules (AGENTS.md §9): no completen
 
 **Acceptance.** A fresh workspace reaches the first mission within two actions of finishing onboarding; empty states state purpose without claiming capability the screen lacks.
 
-### G6 · Terminology and two-layer sync — priority 3
+**Delivered.** A fresh workspace shows one remembered, dismissible first-simulator-mission suggestion with a direct Academy action. Every robot-authoring route has a purpose-specific project-empty state and a project-creation action.
 
-**Problem.** User-visible "student" strings were replaced with "team member" in the app, but older written evidence (for example CYCLE_LOG cycle 1 naming the "New student" path) still uses the old term, and the app/help layer and `docs/` layer can drift apart silently.
+### G6 · Terminology and two-layer sync — priority 3 — **delivered 2026-09-01**
 
-**Change.** Sweep user-facing written docs for the terminology change where they describe *current* behavior (leave dated cycle-history entries as history). Add a lightweight convention note in this file's review step: when a lesson or dev-ref entry changes, check the matching `docs/` page the same PR.
+**Problem.** The written Academy guide still described six retired role paths while the bundled catalog exposes five engineering tracks. Current-behavior documentation and the in-app catalog could drift silently.
 
-**Acceptance.** No current-behavior doc names the retired term; each G1–G5 change that has a docs counterpart updates it in the same change.
+**Change.** Align the current Academy guide to the five bundled tracks. Student, learner, mentor, and team-member language remains valid when it accurately identifies the audience; dated cycle-history entries remain history. When a lesson, path, glossary, or Developer Reference entry changes, review the matching `docs/` page in the same PR.
+
+**Acceptance.** The current Academy guide names the shipped tracks; each G1–G5 change that has a docs counterpart updates it in the same change.
+
+**Delivered.** `docs/learn/ROBOT_ACADEMY.md` now names the five source-backed tracks and the direct first simulator lesson. This review rule is part of the goal and release checklist rather than an assumption that every educational use of “student” should be erased.
 
 ## Non-goals
 

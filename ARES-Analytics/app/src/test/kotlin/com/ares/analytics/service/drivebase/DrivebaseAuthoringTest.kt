@@ -527,7 +527,7 @@ class DrivebaseAuthoringTest {
         assertTrue(generated.content.contains("TRACK_WIDTH_METERS"))
         assertFalse(generated.content.contains("DRIVE_TRACKWIDTHMETERS"))
 
-        val hash = com.areslib.drivetrain.DrivetrainDocumentCodec.contentHash(saved.canonical!!)
+        val hash = com.areslib.drivetrain.DrivetrainDocumentCodec.contentHash(saved.canonical)
         val updated = repository.saveReviewed(root.path, hash, saved.copy(displayName = "Competition drive"))
         assertEquals("Competition drive", updated.displayName)
         assertTrue(File(root, ".ares/history/drivetrains/drive.primary/${hash.take(16)}.aresdrivetrain").isFile)

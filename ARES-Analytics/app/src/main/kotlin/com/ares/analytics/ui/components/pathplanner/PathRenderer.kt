@@ -16,7 +16,6 @@ import com.ares.analytics.util.IndicatorLightColorMapper
 import com.ares.analytics.util.PrismColorMapper
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.pow
@@ -323,27 +322,6 @@ fun DrawScope.drawRobotRepresentations(
 ) {
     val activeRobotWp = actualPath.lastOrNull()
     val leagueHeadingOffset = if (league == League.FTC) 90f else 0f
-    if (activeRobotWp != null && estimatedPose != null) {
-        val ekfErrorM = hypot(estimatedPose.x - activeRobotWp.x, estimatedPose.y - activeRobotWp.y)
-        val odomErrorM = odomPose?.let { hypot(it.x - activeRobotWp.x, it.y - activeRobotWp.y) }
-        if (ekfErrorM > FIELD_POSE_DIVERGENCE_LOG_THRESHOLD_M ||
-            (odomErrorM != null && odomErrorM > FIELD_POSE_DIVERGENCE_LOG_THRESHOLD_M)
-        ) {
-            val nowNs = System.nanoTime()
-            if (pathCache.lastPoseDivergenceLogNs == Long.MIN_VALUE ||
-                nowNs - pathCache.lastPoseDivergenceLogNs >= FIELD_POSE_DIVERGENCE_LOG_INTERVAL_NS
-            ) {
-                pathCache.lastPoseDivergenceLogNs = nowNs
-                val odomDescription = odomPose?.let { "(${it.x}, ${it.y}, ${it.headingRad})" }
-                println(
-                    "[FieldRenderer] divergence ekfErrorM=$ekfErrorM, odomErrorM=$odomErrorM, " +
-                        "truth=(${activeRobotWp.x}, ${activeRobotWp.y}, ${activeRobotWp.headingRad}), " +
-                        "ekf=(${estimatedPose.x}, ${estimatedPose.y}, ${estimatedPose.headingRad}), " +
-                        "odom=$odomDescription"
-                )
-            }
-        }
-    }
     if (activeRobotWp != null && showTruePose) {
         val robotOffset = getCanvasOffsetBase(activeRobotWp, w, h, fieldWidthM, fieldHeightM, league)
         val robotSizePx = ((0.45 / fieldWidthM) * w).toFloat()
@@ -516,8 +494,6 @@ fun DrawScope.drawRobotRepresentations(
     }
 }
 
-private const val FIELD_POSE_DIVERGENCE_LOG_THRESHOLD_M = 0.05
-private const val FIELD_POSE_DIVERGENCE_LOG_INTERVAL_NS = 500_000_000L
 
 fun DrawScope.drawWaypoints(
     pathCache: PathCacheHolder,

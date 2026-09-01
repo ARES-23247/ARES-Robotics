@@ -5,11 +5,32 @@ import org.gradle.api.tasks.testing.Test
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.Properties
 import javax.imageio.ImageIO
 
 // Single source of truth for the application version. Consumed both by the native
 // distribution packaging below and by the generated BuildConfig (see generateBuildConfig).
 val aresAnalyticsVersion = rootProject.extra["aresStudioVersion"] as String
+val aresReleaseManifestFile = rootProject.extra["aresReleaseManifestFile"] as File
+val aresReleaseProperties = Properties().apply {
+    aresReleaseManifestFile.inputStream().use(::load)
+}
+val starterArtifactPropertiesFile = rootProject.file("../release/starter-artifacts.properties")
+val starterArtifactProperties = Properties().apply {
+    starterArtifactPropertiesFile.inputStream().use(::load)
+}
+fun requiredReleaseProperty(name: String): String = aresReleaseProperties.getProperty(name)?.trim()
+    ?.takeIf(String::isNotEmpty)
+    ?: error("Canonical release manifest is missing '$name'.")
+fun requiredStarterArtifact(name: String): String = starterArtifactProperties.getProperty(name)?.trim()
+    ?.takeIf { it.matches(Regex("[0-9a-fA-F]{64}")) }
+    ?.lowercase()
+    ?: error("Canonical starter artifact manifest is missing a valid '$name'.")
+val bundledAresVersion = requiredReleaseProperty("aresVersion")
+val ftcStarterVersion = requiredReleaseProperty("ftcStarterVersion")
+val frcStarterVersion = requiredReleaseProperty("frcStarterVersion")
+val ftcStarterSha256 = requiredStarterArtifact("ftcStarterSha256")
+val frcStarterSha256 = requiredStarterArtifact("frcStarterSha256")
 val aresProductName = "ARES Robotics Studio"
 val aresProductTagline = "Design • Simulate • Operate • Analyze"
 val aresLegacyProductName = "ARES Analytics"
@@ -100,7 +121,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
 
-    // Windows Credential Protection (DPAPI) for OAuth refresh-token persistence.
+    // Native current-user credential protection: Windows DPAPI and macOS Keychain via JNA.
     implementation("net.java.dev.jna:jna-platform:5.19.1")
 
     // Pure-Java project version history; students do not need a separate Git installation.
@@ -154,6 +175,11 @@ tasks.register("generateBuildConfig") {
     val githubClientId = githubAppClientId
     val githubSlug = githubAppSlug
     val updateSignerThumbprints = windowsUpdateSignerThumbprints.joinToString(",")
+    val aresVersion = bundledAresVersion
+    val ftcVersion = ftcStarterVersion
+    val frcVersion = frcStarterVersion
+    val ftcHash = ftcStarterSha256
+    val frcHash = frcStarterSha256
     inputs.property("aresAnalyticsVersion", version)
     inputs.property("aresProductName", productName)
     inputs.property("aresProductTagline", productTagline)
@@ -163,6 +189,8 @@ tasks.register("generateBuildConfig") {
     inputs.property("githubAppClientId", githubClientId)
     inputs.property("githubAppSlug", githubSlug)
     inputs.property("windowsUpdateSignerThumbprints", updateSignerThumbprints)
+    inputs.file(aresReleaseManifestFile)
+    inputs.file(starterArtifactPropertiesFile)
     outputs.dir(generatedBuildConfigDir)
     doLast {
         val pkgDir = generatedBuildConfigDir.get().asFile.resolve("com/ares/analytics")
@@ -199,6 +227,11 @@ tasks.register("generateBuildConfig") {
             |    const val GITHUB_APP_CLIENT_ID = "$escapedGitHubClientId"
             |    const val GITHUB_APP_SLUG = "$escapedGitHubAppSlug"
             |    const val WINDOWS_UPDATE_SIGNER_THUMBPRINTS = "$updateSignerThumbprints"
+            |    const val ARES_VERSION = "$aresVersion"
+            |    const val FTC_STARTER_VERSION = "$ftcVersion"
+            |    const val FRC_STARTER_VERSION = "$frcVersion"
+            |    const val FTC_STARTER_SHA256 = "$ftcHash"
+            |    const val FRC_STARTER_SHA256 = "$frcHash"
             |}
             """.trimMargin()
         )

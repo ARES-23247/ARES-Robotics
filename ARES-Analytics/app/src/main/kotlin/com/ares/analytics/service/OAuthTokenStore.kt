@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
-import com.sun.jna.platform.win32.Crypt32Util
+import com.ares.analytics.service.security.PlatformSecretStore
+import com.ares.analytics.service.security.createPlatformSecretStore
 import java.io.File
-import java.util.Locale
 
 internal interface OAuthTokenStore {
     fun read(): ByteArray?
@@ -24,24 +24,14 @@ internal class FileOAuthTokenStore(
     override val protectionDescription: String = "owner-only local token file"
 }
 
-/** Windows DPAPI binds encrypted OAuth tokens to the current Windows user account. */
-internal class WindowsDpapiOAuthTokenStore(
-    private val encryptedFile: File,
-    private val secretsWriter: (File, ByteArray) -> Unit = ::writeSecrets,
+/** The default application store delegates to the operating system's current-user vault. */
+internal class PlatformOAuthTokenStore(
+    private val secretStore: PlatformSecretStore,
 ) : OAuthTokenStore {
-    override fun read(): ByteArray? = encryptedFile
-        .takeIf(File::isFile)
-        ?.readBytes()
-        ?.let(Crypt32Util::cryptUnprotectData)
-
-    override fun write(bytes: ByteArray) {
-        val encrypted = Crypt32Util.cryptProtectData(bytes)
-        secretsWriter(encryptedFile, encrypted)
-    }
-
-    override fun delete(): Boolean = !encryptedFile.exists() || encryptedFile.delete()
-
-    override val protectionDescription: String = "Windows DPAPI (current user)"
+    override fun read(): ByteArray? = secretStore.read(OAUTH_TOKEN_KEY)
+    override fun write(bytes: ByteArray) = secretStore.write(OAUTH_TOKEN_KEY, bytes)
+    override fun delete(): Boolean = secretStore.delete(OAUTH_TOKEN_KEY)
+    override val protectionDescription: String = secretStore.protectionDescription
 }
 
 internal fun createOAuthTokenStore(
@@ -51,13 +41,11 @@ internal fun createOAuthTokenStore(
     val authFile = File(authFilePath)
     val defaultPath = AppDataPaths.file("auth.json")
     val isDefaultStore = runCatching { authFile.canonicalFile == defaultPath.canonicalFile }.getOrDefault(false)
-    val isWindows = System.getProperty("os.name").lowercase(Locale.ROOT).contains("win")
-    return if (isWindows && isDefaultStore) {
-        WindowsDpapiOAuthTokenStore(
-            encryptedFile = File(authFile.parentFile, "auth.dpapi"),
-            secretsWriter = secretsWriter,
-        )
+    return if (isDefaultStore) {
+        PlatformOAuthTokenStore(createPlatformSecretStore())
     } else {
         FileOAuthTokenStore(authFile, secretsWriter)
     }
 }
+
+private const val OAUTH_TOKEN_KEY = "google-oauth"

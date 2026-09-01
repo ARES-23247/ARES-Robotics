@@ -2,8 +2,8 @@ package com.ares.analytics.service.verification
 
 import com.ares.analytics.BuildConfig
 import com.ares.analytics.shared.AppJson
+import com.ares.analytics.util.Sha256
 import java.io.File
-import java.security.MessageDigest
 import java.time.Instant
 import java.util.UUID
 import kotlinx.serialization.Serializable
@@ -85,24 +85,24 @@ object VerificationRunStore {
     fun canonicalContentHash(projectRoot: File): String {
         val root = File(projectRoot, ".ares").canonicalFile
         require(root.isDirectory) { "Canonical .ares project documents are missing." }
-        val digest = MessageDigest.getInstance("SHA-256")
-        root.walkTopDown()
-            .filter(File::isFile)
-            .map { file -> root.toPath().relativize(file.toPath()).toString().replace('\\', '/') to file }
-            .filterNot { (path, _) ->
-                path.startsWith("history/") ||
-                    path.startsWith("recovery/") ||
-                    path.startsWith("local/") ||
-                    path.startsWith("evidence/")
+        return Sha256.compositeHex {
+            root.walkTopDown()
+                .filter(File::isFile)
+                .map { file -> root.toPath().relativize(file.toPath()).toString().replace('\\', '/') to file }
+                .filterNot { (path, _) ->
+                    path.startsWith("history/") ||
+                        path.startsWith("recovery/") ||
+                        path.startsWith("local/") ||
+                        path.startsWith("evidence/")
+                }
+                .sortedBy { it.first }
+                .forEach { (path, file) ->
+                    update(path.toByteArray(Charsets.UTF_8))
+                    update(0.toByte())
+                    update(file.readBytes())
+                    update(0.toByte())
+                }
             }
-            .sortedBy { it.first }
-            .forEach { (path, file) ->
-                digest.update(path.toByteArray(Charsets.UTF_8))
-                digest.update(0.toByte())
-                digest.update(file.readBytes())
-                digest.update(0.toByte())
-            }
-        return digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
     }
 
     private fun resolveGitRevision(projectRoot: File): String? {

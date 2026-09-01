@@ -99,7 +99,7 @@ Before publishing an installer:
 8. If the account supports Shared Drives, select a folder inside one and repeat the round trip.
 9. Revoke access, remove folder permission, switch accounts, and verify ARES fails visibly while
    local authoring and analysis remain available.
-10. Sign out and verify the local DPAPI credential record is removed.
+10. Sign out and verify the current-user vault credential is removed (DPAPI, Keychain, or Secret Service).
 
 Do not publish merely because unit tests, broker tests, and packaging pass. Production OAuth consent
 and Drive round-trip verification with the active client are release gates. Until that manual

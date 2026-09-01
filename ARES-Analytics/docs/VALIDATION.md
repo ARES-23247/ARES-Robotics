@@ -81,6 +81,18 @@ normal developer and installed launches always open the native chooser. Drive th
 play the exact timeline, restart, and capture the persisted run. Use a second isolated launch with
 a corrupt fixture to verify Quarantine and actionable recovery text.
 
+The repository helper sends only explicit loopback actions and Base64-encodes text and paths:
+
+```powershell
+& "$PWD/../.agents/skills/compose-desktop-tester/scripts/send_test_control.ps1" `
+  -Port 49321 -Capture
+```
+
+When the journey must exercise the real native file or folder chooser instead of the test fixture
+override, open the modal chooser in one PowerShell job and send `-ChoosePath` from a second
+connection. The path must be absolute and already exist. This keeps the product dialog real while
+avoiding unrestricted filesystem commands or brittle cross-process keystrokes.
+
 The visible run-comparison acceptance journey uses an isolated desktop home and a fresh robot
 workspace. Import the two Academy practice runs, select both, exercise recording-start,
 autonomous-start, and shared-event alignment, inspect trajectory/telemetry and missing-evidence
@@ -165,7 +177,7 @@ source substitution is opt-in and is not release evidence.
 
 `.github/workflows/build-distributions.yml` first publishes one unique ARES release candidate to an
 isolated repository. Before any installer build, `studioReleaseVerification` runs all `app`,
-`shared`, and `gateway` tests; Kover line-coverage floors (38%, 52%, and 52%); the 500-line production
+`shared`, and `gateway` tests; Kover line-coverage floors (38%, 54%, and 54%); the 500-line production
 source ratchet; release-version alignment; and dashboard performance budgets against that exact
 candidate. The workflow also configures representative products with an isolated Gradle user home
 and rejects any build that writes user-global `gradle.properties`.

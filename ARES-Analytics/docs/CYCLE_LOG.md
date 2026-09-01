@@ -560,3 +560,29 @@ remain for this cycle.
 - ARES still requires an existing FTC or FRC robot repository. No authoritative team-owned starter
   template exists today, so project scaffolding remains a product decision rather than an unsafe
   clone of season-specific hardware code.
+
+## Cycle 11 — Learning guidance at the point of need
+
+### Objective
+
+Close the remaining documentation-goal gaps without turning validation into certification or
+requiring a mentor to approve a learner's work.
+
+### User-visible outcome
+
+- Routine validation errors expose **Learn why** and open the source-backed autonomous lesson with
+  the relevant checkpoint highlighted.
+- A fresh workspace offers one dismissible first-simulator-mission suggestion; dismissal is stored
+  in the local learner record.
+- Every robot-authoring route explains its purpose when no project is selected and offers the normal
+  project-creation action.
+- The written Academy guide now names the five engineering tracks in the bundled catalog rather
+  than six retired role paths.
+
+### Verification evidence and limits
+
+- `RoutineValidationLearningLinksTest` enumerates every linked validator code and verifies its lesson
+  and checkpoint exist.
+- `LearningProgressServiceTest` verifies nudge dismissal survives service recreation.
+- Focused Academy and progress tests pass. These links and reminders teach concepts; they do not
+  prove generated code, simulation behavior, wiring, or physical safety.

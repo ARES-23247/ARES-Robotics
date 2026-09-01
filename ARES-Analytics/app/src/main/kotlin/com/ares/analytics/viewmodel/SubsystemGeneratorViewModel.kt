@@ -14,29 +14,20 @@ import com.ares.analytics.shared.models.League
 import com.areslib.project.schema.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
-import com.areslib.subsystem.FaultRecoveryActionKind
-import com.areslib.subsystem.InterlockComparison
+import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentAuthoring
 import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
-import com.areslib.subsystem.SubsystemContinuousInputDocument
 import com.areslib.subsystem.SubsystemDocument
-import com.areslib.subsystem.SubsystemFaultRecoveryDocument
-import com.areslib.subsystem.SubsystemFeedforwardDocument
 import com.areslib.subsystem.SubsystemFieldRole
 import com.areslib.subsystem.SubsystemFollowerTransform
 import com.areslib.subsystem.SubsystemHardwareConnection
 import com.areslib.subsystem.SubsystemHardwareDocument
 import com.areslib.subsystem.SubsystemHardwareKind
 import com.areslib.subsystem.SubsystemHardwareScaffolding
-import com.areslib.subsystem.SubsystemHomingComparison
-import com.areslib.subsystem.SubsystemHomingDocument
-import com.areslib.subsystem.SubsystemHomingEvidenceDocument
 import com.areslib.subsystem.SubsystemHomingMethod
 import com.areslib.subsystem.SubsystemImplementationDocument
 import com.areslib.subsystem.SubsystemImplementationKind
-import com.areslib.subsystem.isAresGenerated
 import com.areslib.subsystem.SubsystemInterlockDocument
-import com.areslib.subsystem.SubsystemMeasurementSource
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemSimulationDocument
 import com.areslib.subsystem.SubsystemSimulationSupport
@@ -49,7 +40,6 @@ import com.areslib.subsystem.SubsystemTemplates
 import com.areslib.subsystem.SubsystemValueType
 import com.areslib.subsystem.SubsystemSchema
 import com.areslib.subsystem.supportsPlatform
-import com.areslib.subsystem.SubsystemUnits
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.google.gson.GsonBuilder
@@ -490,44 +480,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun setHomingMethod(method: SubsystemHomingMethod) = edit { document ->
-        if (method == SubsystemHomingMethod.NONE) {
-            return@edit document.copy(safety = document.safety.copy(homing = SubsystemHomingDocument()))
-        }
-        val motor = document.hardware.firstOrNull { it.kind == SubsystemHardwareKind.MOTOR }
-        val measurements = document.hardware.flatMap { it.measurements }
-        val digital = measurements.firstOrNull { it.source == SubsystemMeasurementSource.DIGITAL_STATE }
-        val current = measurements.firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
-        val velocity = measurements.firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND }
-        val evidence = when (method) {
-            SubsystemHomingMethod.DIGITAL_SENSOR -> listOfNotNull(
-                digital?.let { SubsystemHomingEvidenceDocument(it.fieldId, SubsystemHomingComparison.TRUE) }
-            )
-            SubsystemHomingMethod.CURRENT_STALL -> listOfNotNull(
-                current?.let { SubsystemHomingEvidenceDocument(it.fieldId, SubsystemHomingComparison.AT_OR_ABOVE, 5.0) }
-            )
-            SubsystemHomingMethod.VELOCITY_STALL -> listOfNotNull(
-                velocity?.let { SubsystemHomingEvidenceDocument(it.fieldId, SubsystemHomingComparison.ABS_AT_OR_BELOW, 0.5) }
-            )
-            SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL -> listOfNotNull(
-                current?.let { SubsystemHomingEvidenceDocument(it.fieldId, SubsystemHomingComparison.AT_OR_ABOVE, 5.0) },
-                velocity?.let { SubsystemHomingEvidenceDocument(it.fieldId, SubsystemHomingComparison.ABS_AT_OR_BELOW, 0.5) },
-            )
-            SubsystemHomingMethod.CUSTOM_MEASUREMENT -> emptyList()
-            SubsystemHomingMethod.NONE -> emptyList()
-        }
-        document.copy(
-            safety = document.safety.copy(
-                homing = SubsystemHomingDocument(
-                    method = method,
-                    actuatorId = motor?.hardwareId,
-                    searchOutput = -2.0,
-                    evidence = evidence,
-                ),
-                requiresCurrentMonitoring = document.safety.requiresCurrentMonitoring ||
-                    method == SubsystemHomingMethod.CURRENT_STALL ||
-                    method == SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL,
-            )
-        )
+        SubsystemDocumentAuthoring.setHomingMethod(document, method)
     }
 
     fun selectHardware(id: String?) = _state.update { it.copy(selectedHardwareUid = id, selectedFieldUid = null, selectedLoopUid = null, selectedTuningParameterUid = null) }
@@ -607,38 +560,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun changeHardwareKind(id: String, kind: SubsystemHardwareKind) = edit { document ->
-        require(kind.supportsPlatform(platform)) {
-            "Generated ${kind.name.lowercase().replace('_', ' ')} hardware is not supported for $platform projects"
-        }
-        val existing = document.hardware.firstOrNull { it.hardwareId == id } ?: return@edit document
-        if (existing.kind == kind) return@edit document
-        val ownedLoops = document.controlLoops.filter { it.actuatorId == id }
-        val providedFieldIds = existing.measurements.mapTo(linkedSetOf()) { it.fieldId }.apply {
-            addAll(ownedLoops.map { it.targetFieldId })
-        }
-        val scaffold = SubsystemHardwareScaffolding.create(
-            kind,
-            id,
-            existing.displayName,
-            platform,
-            hardwareMapName = existing.connection.hardwareMapName ?: id,
-            canId = existing.connection.canId ?: nextCanId(document),
-            channel = existing.connection.channel ?: nextChannel(document),
-        )
-        document.copy(
-            hardware = document.hardware.map {
-                when {
-                    it.hardwareId == id -> scaffold.hardware.copy(uid = existing.uid)
-                    it.following?.leaderId == id -> it.copy(following = null)
-                    else -> it
-                }
-            },
-            stateFields = document.stateFields.filterNot { it.fieldId in providedFieldIds } + scaffold.stateFields,
-            controlLoops = document.controlLoops.filterNot { it.actuatorId == id } + scaffold.controlLoops,
-            safety = if (document.safety.homing.actuatorId == id) {
-                document.safety.copy(homing = SubsystemHomingDocument())
-            } else document.safety,
-        )
+        SubsystemDocumentAuthoring.changeHardwareKind(document, id, kind, platform)
     }
 
     fun renameHardwareId(id: String, newId: String) {
@@ -677,17 +599,8 @@ class SubsystemGeneratorViewModel(
         document.copy(stateFields = document.stateFields.map { if (it.fieldId == id) transform(it) else it })
     }
 
-    fun changeStateFieldType(id: String, type: SubsystemValueType) = updateStateField(id) { field ->
-        field.copy(
-            type = type,
-            defaultNumber = if (type == SubsystemValueType.DOUBLE) field.defaultNumber ?: 0.0 else null,
-            defaultBoolean = if (type == SubsystemValueType.BOOLEAN) field.defaultBoolean ?: false else null,
-            defaultInt = if (type == SubsystemValueType.INT) field.defaultInt ?: 0 else null,
-            defaultText = if (type == SubsystemValueType.STRING) field.defaultText.orEmpty() else null,
-            unit = field.unit.takeIf { type == SubsystemValueType.DOUBLE || type == SubsystemValueType.INT },
-            minimum = field.minimum.takeIf { type == SubsystemValueType.DOUBLE || type == SubsystemValueType.INT },
-            maximum = field.maximum.takeIf { type == SubsystemValueType.DOUBLE || type == SubsystemValueType.INT },
-        )
+    fun changeStateFieldType(id: String, type: SubsystemValueType) = edit { document ->
+        SubsystemDocumentAuthoring.changeStateFieldType(document, id, type)
     }
 
     fun renameStateFieldId(id: String, newId: String) {
@@ -699,46 +612,20 @@ class SubsystemGeneratorViewModel(
     fun addControlLoop() {
         val current = _state.value.draft?.document ?: return
         val controlledActuators = current.controlLoops.mapTo(mutableSetOf()) { it.actuatorId }
-        val actuator = current.hardware.firstOrNull {
-            it.kind.isActuator() && it.following == null && it.hardwareId !in controlledActuators
-        }
-        if (actuator == null) {
-            _state.update { it.copy(status = "Every independent actuator already has a controller. Edit the existing rule instead of adding a conflicting output.") }
+        if (current.hardware.none { it.kind.isActuator() && it.following == null && it.hardwareId !in controlledActuators }) {
+            _state.update {
+                it.copy(status = "Every independent actuator already has a controller. Edit the existing rule instead of adding a conflicting output.")
+            }
             return
         }
-        val target = current.stateFields.firstOrNull { it.role == SubsystemFieldRole.TARGET && it.type.isNumeric() }
-        if (target == null) {
+        if (current.stateFields.none { it.role == SubsystemFieldRole.TARGET && it.type.isNumeric() }) {
             _state.update { it.copy(status = "Add a numeric target state value before creating a controller.") }
             return
         }
         val id = uniqueId("control", current.controlLoops.map { it.loopId })
         edit { document ->
-        val owned = document.controlLoops.mapTo(mutableSetOf()) { it.actuatorId }
-        val actuator = document.hardware.firstOrNull {
-            it.kind.isActuator() && it.following == null && it.hardwareId !in owned
-        } ?: return@edit document
-        val target = document.stateFields.firstOrNull { it.role == SubsystemFieldRole.TARGET && it.type.isNumeric() }
-            ?: return@edit document
-        val measurement = document.stateFields.firstOrNull {
-            it.role == SubsystemFieldRole.MEASUREMENT && it.type.isNumeric() &&
-                SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
-        }
-        val strategy = when {
-            actuator.kind == SubsystemHardwareKind.POSITIONAL_SERVO -> SubsystemControlStrategy.SERVO_POSITION
-            measurement != null -> SubsystemControlStrategy.POSITION_PID
-            else -> SubsystemControlStrategy.DIRECT
-        }
-        val loop = SubsystemControlLoopDocument(
-            loopId = id,
-            displayName = "New control",
-            strategy = strategy,
-            actuatorId = actuator.hardwareId,
-            targetFieldId = target.fieldId,
-            measurementFieldId = if (strategy.requiresMeasurement()) measurement?.fieldId else null,
-            minimumOutput = if (actuator.kind == SubsystemHardwareKind.MOTOR) -12.0 else -1.0,
-            maximumOutput = if (actuator.kind == SubsystemHardwareKind.MOTOR) 12.0 else 1.0,
-        )
-        document.copy(controlLoops = document.controlLoops + loop)
+            val loop = SubsystemDocumentAuthoring.createControlLoop(document, id) ?: return@edit document
+            document.copy(controlLoops = document.controlLoops + loop)
         }
         selectLoop(id)
     }
@@ -752,45 +639,11 @@ class SubsystemGeneratorViewModel(
     }
 
     fun changeControlLoopActuator(id: String, actuatorId: String) = edit { document ->
-        val currentLoop = document.controlLoops.firstOrNull { it.loopId == id } ?: return@edit document
-        val currentActuator = document.hardware.firstOrNull { it.hardwareId == currentLoop.actuatorId } ?: return@edit document
-        val claimedByAnother = document.controlLoops.any { it.loopId != id && it.actuatorId == actuatorId }
-        val actuator = document.hardware.firstOrNull {
-            it.hardwareId == actuatorId && it.kind == currentActuator.kind && it.kind.isActuator() && it.following == null
-        }
-        if (claimedByAnother || actuator == null) return@edit document
-        document.copy(controlLoops = document.controlLoops.map { loop ->
-            if (loop.loopId != id) loop else loop.copy(actuatorId = actuatorId)
-        })
+        SubsystemDocumentAuthoring.changeControlLoopActuator(document, id, actuatorId)
     }
 
     fun changeControlLoopTarget(id: String, targetFieldId: String) = edit { document ->
-        val target = document.stateFields.firstOrNull {
-            it.fieldId == targetFieldId &&
-                it.role in setOf(SubsystemFieldRole.TARGET, SubsystemFieldRole.CONFIGURATION) &&
-                it.type.isNumeric()
-        } ?: return@edit document
-        document.copy(controlLoops = document.controlLoops.map { loop ->
-            if (loop.loopId != id) loop else {
-                val currentMeasurement = loop.measurementFieldId?.let { measurementId ->
-                    document.stateFields.firstOrNull { it.fieldId == measurementId }
-                }
-                val compatibleMeasurement = currentMeasurement?.takeIf {
-                    SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
-                } ?: document.stateFields.firstOrNull {
-                    it.role == SubsystemFieldRole.MEASUREMENT && it.type.isNumeric() &&
-                        SubsystemUnits.controlUnitsCompatible(target.unit, it.unit)
-                }
-                loop.copy(
-                    targetFieldId = targetFieldId,
-                    measurementFieldId = if (loop.strategy.requiresMeasurement()) compatibleMeasurement?.fieldId else null,
-                    continuousInput = loop.continuousInput.copy(
-                        enabled = loop.continuousInput.enabled && SubsystemUnits.isCanonicalAngle(target.unit) &&
-                            SubsystemUnits.isCanonicalAngle(compatibleMeasurement?.unit),
-                    ),
-                )
-            }
-        })
+        SubsystemDocumentAuthoring.changeControlLoopTarget(document, id, targetFieldId)
     }
 
     fun renameControlLoopId(id: String, newId: String) {
@@ -805,44 +658,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun changeControlLoopStrategy(id: String, strategy: SubsystemControlStrategy) = edit { document ->
-        val loop = document.controlLoops.firstOrNull { it.loopId == id } ?: return@edit document
-        val actuator = document.hardware.firstOrNull { it.hardwareId == loop.actuatorId }
-        val preferredSource = when (strategy) {
-            SubsystemControlStrategy.VELOCITY_PID -> SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND
-            SubsystemControlStrategy.POSITION_PID,
-            SubsystemControlStrategy.PROFILED_POSITION_PID,
-            SubsystemControlStrategy.BANG_BANG -> SubsystemMeasurementSource.MOTOR_POSITION_NATIVE
-            else -> null
-        }
-        val target = document.stateFields.firstOrNull { it.fieldId == loop.targetFieldId }
-        val preferredMeasurement = preferredSource?.let { source ->
-            actuator?.measurements?.firstOrNull { it.source == source }?.fieldId
-        }?.let { fieldId -> document.stateFields.firstOrNull { it.fieldId == fieldId } }
-            ?.takeIf { target == null || SubsystemUnits.controlUnitsCompatible(target.unit, it.unit) }
-            ?.fieldId
-            ?: document.stateFields.firstOrNull {
-            it.role == SubsystemFieldRole.MEASUREMENT && it.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT) &&
-                (target == null || SubsystemUnits.controlUnitsCompatible(target.unit, it.unit))
-        }?.fieldId
-        val supportsFeedforward = strategy in setOf(
-            SubsystemControlStrategy.POSITION_PID,
-            SubsystemControlStrategy.PROFILED_POSITION_PID,
-            SubsystemControlStrategy.VELOCITY_PID,
-        )
-        val supportsContinuousInput = strategy in setOf(
-            SubsystemControlStrategy.POSITION_PID,
-            SubsystemControlStrategy.PROFILED_POSITION_PID,
-        )
-        document.copy(controlLoops = document.controlLoops.map { candidate ->
-            if (candidate.loopId != id) candidate else candidate.copy(
-                strategy = strategy,
-                measurementFieldId = preferredMeasurement.takeIf { strategy.requiresMeasurement() },
-                feedforward = candidate.feedforward.takeIf { supportsFeedforward } ?: SubsystemFeedforwardDocument(),
-                continuousInput = candidate.continuousInput.takeIf { supportsContinuousInput }
-                    ?: SubsystemContinuousInputDocument(),
-                hysteresis = candidate.hysteresis.takeIf { strategy == SubsystemControlStrategy.BANG_BANG } ?: 0.0,
-            )
-        })
+        SubsystemDocumentAuthoring.changeControlLoopStrategy(document, id, strategy)
     }
 
     fun selectInterlock(id: String?) = _state.update { it.copy(selectedInterlockId = id) }
@@ -850,38 +666,14 @@ class SubsystemGeneratorViewModel(
     fun addInterlock() {
         val snapshot = _state.value
         val current = snapshot.draft?.document ?: return
-        val target = snapshot.documents
-            .asSequence()
-            .filter { it.uid != current.uid }
-            .filter { it.implementation.kind.isAresGenerated() }
-            .filter { it.stateFields.isNotEmpty() }
-            .sortedBy { it.displayName.lowercase() }
-            .firstOrNull()
-        if (target == null) {
+        val id = uniqueId("interlock", current.interlocks.map { it.interlockId })
+        val interlock = SubsystemDocumentAuthoring.createInterlock(current, snapshot.documents, id)
+        if (interlock == null) {
             _state.update {
                 it.copy(status = "Add another generated subsystem with state values before creating a cross-mechanism interlock.")
             }
             return
         }
-        val field = target.stateFields.first()
-        val id = uniqueId("interlock", current.interlocks.map { it.interlockId })
-        val interlock = SubsystemInterlockDocument(
-            interlockId = id,
-            targetSubsystemUid = target.uid,
-            targetFieldId = field.fieldId,
-            comparison = if (field.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)) {
-                InterlockComparison.LESS_THAN
-            } else {
-                InterlockComparison.EQUALS_STATE
-            },
-            thresholdValue = 0.0,
-            targetStateName = when (field.type) {
-                SubsystemValueType.BOOLEAN -> "false"
-                SubsystemValueType.STRING -> ""
-                else -> null
-            },
-            forbiddenZoneDescription = "Prevent mechanism collision",
-        )
         edit { it.copy(interlocks = it.interlocks + interlock) }
         selectInterlock(id)
     }

@@ -868,8 +868,8 @@ open class Nt4ClientService(
         private const val SHUTDOWN_FLUSH_ATTEMPTS = 5
         private const val SHUTDOWN_FLUSH_RETRY_MS = 100L
         private const val PERSISTENCE_BATCH_SIZE = 5_000
-        private const val SIMULATOR_POSE_DIVERGENCE_LOG_THRESHOLD_M = 0.05
-        private const val SIMULATOR_POSE_DIVERGENCE_LOG_INTERVAL_NS = 500_000_000L
+        private const val SIMULATOR_POSE_DIVERGENCE_LOG_THRESHOLD_M = 0.25
+        private const val SIMULATOR_POSE_DIVERGENCE_LOG_INTERVAL_NS = 30_000_000_000L
         private val ALLOWED_INPUT_STRING_TOPICS = setOf(
             "ARES/Input/obstacles",
             "ARES/Input/fieldConfig"

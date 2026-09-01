@@ -59,7 +59,6 @@ internal fun robotLogRunKey(fileName: String): String {
     ROBOT_LOG_RUN_UUID.find(fileName)?.value?.let { return it.lowercase() }
     return fileName
 }
-
 data class SessionSyncInfo(
     val summary: SessionSummary,
     val isLocal: Boolean,
@@ -147,7 +146,6 @@ class CloudViewModel(
     init {
         checkAuth()
         onIntent(CloudIntent.RefreshCloudLogs)
-        onIntent(CloudIntent.RefreshRobotLogs)
     }
 
     private fun checkAuth() {
@@ -180,8 +178,13 @@ class CloudViewModel(
                         val localSummariesMap = databaseService.getAllSessionSummaries()
                             .filter { it.matches(workspaceConfig) }
                             .associateBy { it.sessionId }
-                        val remoteSummaries = syncEngineService.getRemoteSummaries()
-                            .filter { it.matches(workspaceConfig) }
+                        val remoteSummaries = if (
+                            shouldLoadRemoteCloudIndex(_state.value.isAuthenticated, workspaceConfig.driveDestination)
+                        ) {
+                            syncEngineService.getRemoteSummaries().filter { it.matches(workspaceConfig) }
+                        } else {
+                            emptyList()
+                        }
                         val allSessionIds = (localSessions.map { it.sessionId } + remoteSummaries.map { it.sessionId }).toSet()
                         val sessionsList = allSessionIds.map { id ->
                             val localSession = localSessions.find { it.sessionId == id }
@@ -211,7 +214,7 @@ class CloudViewModel(
 
                         _state.update { it.copy(sessions = sessionsList, cloudLogs = remoteSummaries, isSyncing = false) }
                     } catch (e: CancellationException) { throw e } catch (e: Exception) {
-                        e.printStackTrace()
+                        System.err.println("[CloudViewModel] Cloud index refresh failed: ${e.message}")
                         _state.update { it.copy(isSyncing = false, errorMessage = e.message ?: "Failed to load database state") }
                     }
                 }
@@ -457,7 +460,7 @@ class CloudViewModel(
 
             _state.update { it.copy(robotRuns = runs, isFetchingRobotLogs = false) }
         } catch (e: CancellationException) { throw e } catch (e: Exception) {
-            e.printStackTrace()
+            println(robotLogRefreshFailureMessage(getRobotIp(), e))
             _state.update { it.copy(robotRuns = emptyList(), isFetchingRobotLogs = false, errorMessage = "Failed to fetch logs: ${e.message}") }
         }
     }

@@ -43,6 +43,20 @@ internal fun Double.kotlinDoubleLiteral(): String {
     return if (rendered.contains('.') || rendered.contains('e', ignoreCase = true)) rendered else "$rendered.0"
 }
 
+internal fun String.isKotlinIdentifier(): Boolean =
+    matches(Regex("[A-Za-z_][A-Za-z0-9_]*")) && this !in KOTLIN_KEYWORDS
+
+internal val KOTLIN_KEYWORDS = setOf(
+    "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
+    "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true",
+    "try", "typealias", "typeof", "val", "var", "when", "while", "by", "catch", "constructor",
+    "delegate", "dynamic", "field", "file", "finally", "get", "import", "init", "param", "property",
+    "receiver", "set", "setparam", "where", "actual", "abstract", "annotation", "companion", "const",
+    "crossinline", "data", "enum", "expect", "external", "final", "infix", "inline", "inner", "internal",
+    "lateinit", "noinline", "open", "operator", "out", "override", "private", "protected", "public",
+    "reified", "sealed", "suspend", "tailrec", "vararg",
+)
+
 // Transitional domain names used throughout the subsystem renderer. They deliberately delegate to
 // the canonical implementation so the large renderer can be split without a noisy all-at-once
 // textual rewrite.

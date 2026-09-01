@@ -28,7 +28,6 @@ class PathCacheHolder {
     var splinePath: Path? = null
     var actualPath: Path? = null
     var actualLastDrawnIndex: Int = -1
-    var lastPoseDivergenceLogNs: Long = Long.MIN_VALUE
     val reusableArrowPath = Path()
     val reusableXAxisPath = Path()
     val reusableYAxisPath = Path()

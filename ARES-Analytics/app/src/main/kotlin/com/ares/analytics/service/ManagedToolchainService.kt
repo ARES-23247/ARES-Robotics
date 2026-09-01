@@ -1,6 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.util.Sha256
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,6 @@ import java.net.URI
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 import java.util.Locale
 import java.util.UUID
 import java.util.zip.ZipInputStream
@@ -38,7 +38,6 @@ data class RobotToolchainSnapshot(
 ) {
     val buildReady: Boolean get() = components.all { it.readiness == ToolchainReadiness.READY }
 }
-
 sealed class ManagedToolchainInstallState {
     object Idle : ManagedToolchainInstallState()
     data class Working(val message: String, val fraction: Float? = null) : ManagedToolchainInstallState()
@@ -167,7 +166,7 @@ class ManagedToolchainService internal constructor(
                         fraction = total?.takeIf { it > 0 }?.let { (received.toDouble() / it).coerceIn(0.0, 1.0).toFloat() },
                     )
                 }
-                val actualHash = toolchainSha256(archive)
+                val actualHash = Sha256.fileHex(archive)
                 check(actualHash.equals(pkg.checksum, ignoreCase = true)) {
                     "The JDK download did not match Eclipse Adoptium's SHA-256 metadata. Nothing was installed."
                 }
@@ -544,17 +543,4 @@ internal fun extractZipSafely(archive: File, destination: File) {
             zip.closeEntry()
         }
     }
-}
-
-private fun toolchainSha256(file: File): String {
-    val digest = MessageDigest.getInstance("SHA-256")
-    file.inputStream().buffered().use { input ->
-        val buffer = ByteArray(64 * 1024)
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            digest.update(buffer, 0, read)
-        }
-    }
-    return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
 }

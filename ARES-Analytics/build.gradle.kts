@@ -22,9 +22,9 @@ val resolvedAresVersion = rootProject.extra["aresReleaseVersion"] as String
 
 extra["aresVersion"] = resolvedAresVersion
 
-// Release metadata is intentionally duplicated in runtime Kotlin and the GitHub workflow, where
-// neither can safely import the other. This fast preflight makes gradle.properties authoritative
-// and names every stale copy before tests, simulator builds, or native packaging consume minutes.
+// Runtime Kotlin receives release metadata through generated BuildConfig. The workflow still
+// carries immutable release inputs explicitly, so this fast preflight catches any stale CI copy
+// before tests, simulator builds, or native packaging consume minutes.
 val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignment") {
     group = "verification"
     description = "Fails fast when ARES, app, or bundled starter release pins disagree."
@@ -32,16 +32,13 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
     val releasePropertiesFile = rootProject.extra["aresReleaseManifestFile"] as File
     val starterArtifactsFile = rootProject.file("../release/starter-artifacts.properties")
     val appBuildFile = file("app/build.gradle.kts")
-    val templateServiceFile = file(
-        "app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt",
-    )
     val workflowFile = listOf(
         rootProject.file("../.github/workflows/build-distributions.yml"),
         file(".github/workflows/build-distributions.yml"),
     ).firstOrNull(File::isFile)
         ?: error("The protected desktop packaging workflow is missing.")
     val templateDirectory = file("app/src/main/resources/project-templates")
-    inputs.files(releasePropertiesFile, starterArtifactsFile, appBuildFile, templateServiceFile, workflowFile)
+    inputs.files(releasePropertiesFile, starterArtifactsFile, appBuildFile, workflowFile)
     inputs.dir(templateDirectory)
     inputs.property("resolvedAresVersion", resolvedAresVersion)
 
@@ -105,33 +102,6 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
             "rootProject.extra[\"aresStudioVersion\"] as String",
             "application-version source",
         )
-        requireContains(templateServiceFile, "id = \"ares-ftc-starter-$ftcVersion\"", "FTC template ID")
-        requireContains(templateServiceFile, "aresVersion = \"$aresVersion\"", "FTC ARES dependency version")
-        requireContains(
-            templateServiceFile,
-            "ARES-Robotics/releases/download/v$appVersion/ARES-FTC-Starter-$ftcVersion.zip",
-            "FTC template URL",
-        )
-        requireContains(templateServiceFile, "archiveSha256 = \"$ftcHash\"", "FTC template hash")
-        requireContains(
-            templateServiceFile,
-            "bundledResourcePath = \"/project-templates/ARES-FTC-Starter-$ftcVersion.zip\"",
-            "FTC bundled-template path",
-        )
-        requireContains(templateServiceFile, "id = \"ares-frc-starter-$frcVersion\"", "FRC template ID")
-        requireContains(templateServiceFile, "aresVersion = \"$aresVersion\"", "FRC ARES dependency version")
-        requireContains(
-            templateServiceFile,
-            "ARES-Robotics/releases/download/v$appVersion/ARES-FRC-Starter-$frcVersion.zip",
-            "FRC template URL",
-        )
-        requireContains(templateServiceFile, "archiveSha256 = \"$frcHash\"", "FRC template hash")
-        requireContains(
-            templateServiceFile,
-            "bundledResourcePath = \"/project-templates/ARES-FRC-Starter-$frcVersion.zip\"",
-            "FRC bundled-template path",
-        )
-
         requireContains(workflowFile, "ARES_VERSION: $aresVersion", "workflow ARES version")
         requireContains(
             workflowFile,
@@ -210,7 +180,7 @@ subprojects {
 
     val lineCoverageFloor = when (name) {
         "app" -> 38
-        "gateway", "shared" -> 52
+        "gateway", "shared" -> 54
         else -> null
     }
     if (lineCoverageFloor != null) {

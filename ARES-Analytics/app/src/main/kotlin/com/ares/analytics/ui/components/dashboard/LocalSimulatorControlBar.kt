@@ -234,6 +234,7 @@ fun LocalSimulatorControlBar(
     canLaunchSimulator: Boolean,
     simulatorLaunchDisabledReason: String?,
     onLaunchSimulator: () -> Unit,
+    onRecordingSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var teleOps by remember(nt4Client) {
@@ -303,21 +304,20 @@ fun LocalSimulatorControlBar(
     val scope = rememberCoroutineScope()
     val connectedNow by rememberUpdatedState(isConnected)
     val recordingSession by nt4Client.currentSession.collectAsState()
-
     suspend fun stopAndSaveRecording() {
         if (recordingSession == null) return
         recordingBusy = true
         recordingFailure = null
         try {
             nt4Client.stopRecordingSession()
-            recordingMessage = "Simulation run saved. Refresh the guided experiment to compare it."
+            onRecordingSaved()
+            recordingMessage = "Simulation run saved and available in Recorded Sessions."
         } catch (failure: Exception) {
             recordingFailure = failure.message ?: "The simulation run could not be saved."
         } finally {
             recordingBusy = false
         }
     }
-
     LaunchedEffect(nt4Client) {
         nt4Client.uiTelemetryFlow.collect { frame ->
             when (frame.key.trimStart('/')) {

@@ -1,5 +1,6 @@
 package com.ares.analytics.service.project
 
+import com.ares.analytics.BuildConfig
 import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.service.AppDataPaths
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
@@ -7,6 +8,7 @@ import com.ares.analytics.service.hardware.HardwareSetupService
 import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.util.Sha256
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresLeague
@@ -36,7 +38,6 @@ import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
-import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 private val PROJECT_TEMPLATE_JSON = Json {
@@ -68,6 +69,8 @@ data class RobotProjectCreationRequest(
     val robotId: String,
     val robotName: String,
     val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
+    /** Optional reviewed field preset installed into the staged project before first publication. */
+    val initialFieldPresetResourcePath: String? = null,
 )
 
 data class RobotProjectCreationPlan(
@@ -115,7 +118,7 @@ class RobotProjectTemplateService(
     private val cacheDirectory: File = AppDataPaths.file("project-templates"),
     templates: List<RobotProjectTemplate> = OFFICIAL_PROJECT_TEMPLATES,
     private val archiveDownloader: (RobotProjectTemplate, File) -> Unit = ::downloadArchive,
-    private val bundledArchiveLoader: (String) -> InputStream? = { resourcePath ->
+    private val bundledResourceLoader: (String) -> InputStream? = { resourcePath ->
         RobotProjectTemplateService::class.java.getResourceAsStream(resourcePath)
     },
     private val androidSdkLocator: () -> File? = ::locateAndroidSdk,
@@ -172,6 +175,15 @@ class RobotProjectTemplateService(
             extractArchive(archive, staging)
             validateTemplateAresVersion(staging, initialPlan.template)
             personalizeProject(staging, request, initialPlan.template)
+            request.initialFieldPresetResourcePath?.let { resourcePath ->
+                InitialFieldPresetInstaller.install(
+                    root = staging,
+                    league = request.league,
+                    robotName = request.robotName,
+                    resourcePath = resourcePath,
+                    resourceLoader = bundledResourceLoader,
+                )
+            }
 
             ProjectLayout.validationError(staging.path, request.league)?.let { validationError -> error(validationError) }
             prepareStagedProject(staging)
@@ -196,7 +208,7 @@ class RobotProjectTemplateService(
         cacheDirectory.mkdirs()
         check(cacheDirectory.isDirectory) { "ARES could not create its project-template cache." }
         val cacheFile = File(cacheDirectory, "${template.id}-${template.revision}.zip")
-        if (cacheFile.isFile && sha256(cacheFile) == template.archiveSha256) {
+        if (cacheFile.isFile && Sha256.fileHex(cacheFile) == template.archiveSha256) {
             return cacheFile to RobotProjectTemplateSource.VERIFIED_CACHE
         }
         if (cacheFile.exists() && !cacheFile.delete()) {
@@ -204,7 +216,7 @@ class RobotProjectTemplateService(
         }
 
         template.bundledResourcePath?.let { resourcePath ->
-            val bundled = bundledArchiveLoader(resourcePath)
+            val bundled = bundledResourceLoader(resourcePath)
             if (bundled != null) {
                 onProgress("Preparing the installer-bundled ${template.displayName} starter…")
                 writeFileAtomically(cacheFile) { temporary ->
@@ -221,7 +233,7 @@ class RobotProjectTemplateService(
                             }
                         }
                     }
-                    val actualHash = sha256(temporary)
+                    val actualHash = Sha256.fileHex(temporary)
                     check(actualHash == template.archiveSha256) {
                         "The installer-bundled starter did not match its reviewed SHA-256. Reinstall ARES Robotics Studio before creating a project."
                     }
@@ -233,7 +245,7 @@ class RobotProjectTemplateService(
         onProgress("Downloading the pinned ${template.displayName} starter once for offline reuse…")
         writeFileAtomically(cacheFile) { temporary ->
             archiveDownloader(template, temporary)
-            val actualHash = sha256(temporary)
+            val actualHash = Sha256.fileHex(temporary)
             check(actualHash == template.archiveSha256) {
                 "The downloaded starter did not match its reviewed SHA-256. Expected ${template.archiveSha256}; got $actualHash."
             }
@@ -412,10 +424,7 @@ class RobotProjectTemplateService(
     private fun boundedStableId(value: String, maxLength: Int): String {
         require(maxLength >= 10) { "Stable ID limits must leave room for a fingerprint." }
         if (value.length <= maxLength) return value
-        val fingerprint = MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray(Charsets.UTF_8))
-            .take(4)
-            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+        val fingerprint = Sha256.prefixHex(value, byteCount = 4)
         val prefix = value.take(maxLength - fingerprint.length - 1).trimEnd('.', '-', '_')
         return "$prefix-$fingerprint"
     }
@@ -456,25 +465,27 @@ class RobotProjectTemplateService(
 
         val OFFICIAL_PROJECT_TEMPLATES: List<RobotProjectTemplate> = listOf(
             RobotProjectTemplate(
-                id = "ares-ftc-starter-14.0.1",
+                id = "ares-ftc-starter-${BuildConfig.FTC_STARTER_VERSION}",
                 displayName = "ARES FTC Starter",
                 league = League.FTC,
-                aresVersion = "14.0.0",
+                aresVersion = BuildConfig.ARES_VERSION,
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.1/ARES-FTC-Starter-14.0.1.zip",
-                archiveSha256 = "edd6712a23aeeabbea7b99e85ed34edb5c8646caed411dfba91050226151c822",
-                bundledResourcePath = "/project-templates/ARES-FTC-Starter-14.0.1.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
+                    "ARES-FTC-Starter-${BuildConfig.FTC_STARTER_VERSION}.zip",
+                archiveSha256 = BuildConfig.FTC_STARTER_SHA256,
+                bundledResourcePath = "/project-templates/ARES-FTC-Starter-${BuildConfig.FTC_STARTER_VERSION}.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
             RobotProjectTemplate(
-                id = "ares-frc-starter-14.0.1",
+                id = "ares-frc-starter-${BuildConfig.FRC_STARTER_VERSION}",
                 displayName = "ARES FRC Starter",
                 league = League.FRC,
-                aresVersion = "14.0.0",
+                aresVersion = BuildConfig.ARES_VERSION,
                 revision = "schema4-standalone-v1",
-                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v4.0.1/ARES-FRC-Starter-14.0.1.zip",
-                archiveSha256 = "d4c5724e07c275ce0c896d3fe37a890352720f507290053576704bafbd70128e",
-                bundledResourcePath = "/project-templates/ARES-FRC-Starter-14.0.1.zip",
+                archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
+                    "ARES-FRC-Starter-${BuildConfig.FRC_STARTER_VERSION}.zip",
+                archiveSha256 = BuildConfig.FRC_STARTER_SHA256,
+                bundledResourcePath = "/project-templates/ARES-FRC-Starter-${BuildConfig.FRC_STARTER_VERSION}.zip",
                 deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
             ),
         )
@@ -536,19 +547,6 @@ class RobotProjectTemplateService(
                 add(File(home, "Library/Android/sdk"))
             }
             return candidates.firstOrNull(File::isDirectory)
-        }
-
-        private fun sha256(file: File): String {
-            val digest = MessageDigest.getInstance("SHA-256")
-            file.inputStream().buffered().use { input ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read < 0) break
-                    digest.update(buffer, 0, read)
-                }
-            }
-            return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
         }
 
         private fun extractArchive(archive: File, destination: File) {

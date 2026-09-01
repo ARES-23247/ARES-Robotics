@@ -47,21 +47,21 @@ public interface FrcHidSource {
     public fun pov(povIndex: Int): Int
 }
 
-/** Production [FrcHidSource] backed by a WPILib [GenericHID] and Driver Station metadata. */
-public class WpilibGenericHidSource(private val hid: GenericHID) : FrcHidSource {
-    public override fun isConnected(): Boolean = DriverStation.isJoystickConnected(hid.port)
+/** Internal production [FrcHidSource] backed by WPILib and Driver Station metadata. */
+internal class WpilibGenericHidSource(private val hid: GenericHID) : FrcHidSource {
+    override fun isConnected(): Boolean = DriverStation.isJoystickConnected(hid.port)
 
-    public override fun axisCount(): Int = DriverStation.getStickAxisCount(hid.port)
+    override fun axisCount(): Int = DriverStation.getStickAxisCount(hid.port)
 
-    public override fun buttonCount(): Int = DriverStation.getStickButtonCount(hid.port)
+    override fun buttonCount(): Int = DriverStation.getStickButtonCount(hid.port)
 
-    public override fun povCount(): Int = DriverStation.getStickPOVCount(hid.port)
+    override fun povCount(): Int = DriverStation.getStickPOVCount(hid.port)
 
-    public override fun rawAxis(axisIndex: Int): Double = hid.getRawAxis(axisIndex)
+    override fun rawAxis(axisIndex: Int): Double = hid.getRawAxis(axisIndex)
 
-    public override fun rawButton(buttonNumber: Int): Boolean = hid.getRawButton(buttonNumber)
+    override fun rawButton(buttonNumber: Int): Boolean = hid.getRawButton(buttonNumber)
 
-    public override fun pov(povIndex: Int): Int = hid.getPOV(povIndex)
+    override fun pov(povIndex: Int): Int = hid.getPOV(povIndex)
 }
 
 /**

@@ -9,6 +9,7 @@ import com.ares.analytics.shared.models.NotificationProviderKind
 import com.ares.analytics.shared.models.SessionImported
 import com.ares.analytics.shared.models.WebhookNotificationTarget
 import com.ares.analytics.shared.models.ZulipNotificationTarget
+import com.ares.analytics.service.security.PlatformSecretStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -147,26 +148,15 @@ class NotificationProvidersTest {
 
     @Test
     fun `protected credential store never writes plaintext secret`() {
-        val tempDirectory = Files.createTempDirectory("ares-integration-credentials").toFile()
-        val file = tempDirectory.resolve("credentials.bin")
-        try {
-            val transform: (ByteArray) -> ByteArray = { bytes -> bytes.map { (it.toInt() xor 0x5A).toByte() }.toByteArray() }
-            val store = ProtectedIntegrationCredentialStore(
-                file = file,
-                protect = transform,
-                unprotect = transform,
-                protectionDescription = "test transform",
-            )
+        val vault = MemoryPlatformSecretStore()
+        val store = PlatformIntegrationCredentialStore(vault)
 
-            store.write("zulip.primary", IntegrationCredential("bot@example.com", "secret-api-key"))
+        store.write("zulip.primary", IntegrationCredential("bot@example.com", "secret-api-key"))
 
-            assertFalse(file.readText(Charsets.ISO_8859_1).contains("secret-api-key"))
-            assertEquals("secret-api-key", store.read("zulip.primary")?.secret)
-            assertTrue(store.delete("zulip.primary"))
-            assertEquals(null, store.read("zulip.primary"))
-        } finally {
-            tempDirectory.deleteRecursively()
-        }
+        assertEquals("secret-api-key", store.read("zulip.primary")?.secret)
+        assertTrue(vault.lastWritten?.toString(Charsets.UTF_8)?.contains("secret-api-key") == true)
+        assertTrue(store.delete("zulip.primary"))
+        assertEquals(null, store.read("zulip.primary"))
     }
 
     private fun zulipConfig() = NotificationProviderConfig(
@@ -195,5 +185,18 @@ class NotificationProvidersTest {
         }
         override fun delete(providerId: String): Boolean = values.remove(providerId) != null
         override val protectionDescription: String = "test"
+    }
+
+    private class MemoryPlatformSecretStore : PlatformSecretStore {
+        private var value: ByteArray? = null
+        var lastWritten: ByteArray? = null
+            private set
+        override fun read(key: String): ByteArray? = value?.copyOf()
+        override fun write(key: String, bytes: ByteArray) {
+            lastWritten = bytes.copyOf()
+            value = bytes.copyOf()
+        }
+        override fun delete(key: String): Boolean { value = null; return true }
+        override val protectionDescription: String = "test vault"
     }
 }

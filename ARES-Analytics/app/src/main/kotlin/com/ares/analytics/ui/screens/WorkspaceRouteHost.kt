@@ -60,6 +60,7 @@ internal data class WorkspaceRouteState(
     val simulatorLaunchDisabledReason: String,
     val hardwareStudioInitialTab: HardwareStudioTab,
     val requestedLessonId: String?,
+    val requestedCheckpointId: String?,
     val requestedGlossaryTerm: String?,
 )
 
@@ -76,6 +77,7 @@ internal data class WorkspaceRouteActions(
     val openCoach: () -> Unit,
     val createProject: () -> Unit,
     val openAcademyLesson: (String) -> Unit,
+    val openAcademyCheckpoint: (String, String) -> Unit,
     val executeProjectCommand: (ProjectExecutionCommand) -> Boolean,
     val openInIde: () -> String,
 )
@@ -106,6 +108,7 @@ internal fun WorkspaceRouteHost(
             },
             reloadTrigger = state.runsReloadTrigger,
             onImportSuccess = actions.reloadRuns,
+            onRunRecorded = actions.reloadRuns,
             onNavigate = actions.navigate,
             onOpenKeybindings = { actions.navigate(NavigationTarget.CONTROLS) },
             onOpenRunHistory = { actions.navigate(NavigationTarget.RUN_HISTORY) },
@@ -127,6 +130,7 @@ internal fun WorkspaceRouteHost(
                     workspace.copy(robotLengthMeters = it.lengthMeters, robotWidthMeters = it.widthMeters),
                 )
             },
+            onLearnWhy = actions.openAcademyCheckpoint,
         )
 
         NavigationTarget.CLOUD,
@@ -199,6 +203,7 @@ internal fun WorkspaceRouteHost(
                     .filter(String::isNotBlank)
                     .joinToString(" · "),
                 initialLessonId = state.requestedLessonId,
+                initialCheckpointId = state.requestedCheckpointId,
                 initialGlossaryTerm = state.requestedGlossaryTerm,
                 runtime = runtime,
             )
@@ -211,7 +216,6 @@ internal fun WorkspaceRouteHost(
             viewModel = scope.tuning,
             sysIdViewModel = scope.sysId,
             experimentViewModel = scope.tuningExperiment,
-            projectPath = workspace.projectPath,
             canLaunchSimulator = state.canLaunchSimulator,
             canApplyCandidateToSimulator =
                 state.targetSelection == TargetSelection.LOCAL_SIM &&

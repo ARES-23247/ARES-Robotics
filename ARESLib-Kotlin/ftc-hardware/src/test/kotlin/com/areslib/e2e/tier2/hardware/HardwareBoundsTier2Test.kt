@@ -3,13 +3,13 @@ package com.areslib.e2e.tier2.hardware
 import com.areslib.control.safety.BrownoutGuard
 import com.areslib.control.safety.CurrentBudgetManager
 import com.areslib.ftc.MockDcMotorEx
+import com.areslib.ftc.hardware.AnalogVoltageInput
 import com.areslib.ftc.hardware.FtcFloodgateCurrentSensor
 import com.areslib.util.RobotClock
-import com.qualcomm.robotcore.hardware.AnalogInput
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-class MockAnalogInput : AnalogInput() {
+class MockAnalogInput : AnalogVoltageInput {
     var mockVoltage: Double = 0.0
     override val voltage: Double
         get() = mockVoltage

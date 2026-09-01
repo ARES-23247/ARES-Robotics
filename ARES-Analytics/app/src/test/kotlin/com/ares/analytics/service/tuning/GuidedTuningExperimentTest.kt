@@ -153,12 +153,13 @@ class GuidedTuningExperimentTest {
         val (evaluated, returnedReport) = evaluator.evaluate(workspace(Files.createTempDirectory("guided-eval").toFile()), experiment, "candidate")
 
         assertEquals(report, returnedReport)
-        assertEquals(10.0, evaluated.evaluation?.baselineValue)
-        assertEquals(7.0, evaluated.evaluation?.candidateValue)
-        assertEquals(-3.0, evaluated.evaluation?.absoluteDelta)
-        assertEquals(true, evaluated.evaluation?.improvedIntendedMetric)
-        assertTrue(evaluated.evaluation!!.summary.contains("does not prove"))
-        assertTrue(evaluated.evaluation!!.limitations.any { it.contains("Simulation evidence") })
+        val evaluation = requireNotNull(evaluated.evaluation)
+        assertEquals(10.0, evaluation.baselineValue)
+        assertEquals(7.0, evaluation.candidateValue)
+        assertEquals(-3.0, evaluation.absoluteDelta)
+        assertEquals(true, evaluation.improvedIntendedMetric)
+        assertTrue(evaluation.summary.contains("does not prove"))
+        assertTrue(evaluation.limitations.any { it.contains("Simulation evidence") })
         assertEquals(ExperimentPhase.EVALUATED, evaluated.phase)
     }
 

@@ -17,9 +17,9 @@ open class I2cAddr {
  */
 interface I2cDeviceSynch : I2cDeviceSynchSimple {
     var i2cAddress: I2cAddr
-    override fun read8(register: Int): Byte
-    fun read(register: Int, length: Int): ByteArray
-    fun write(register: Int, data: ByteArray)
+    override fun read8(ireg: Int): Byte
+    fun read(ireg: Int, length: Int): ByteArray
+    fun write(ireg: Int, data: ByteArray)
     
     var readWindow: ReadWindow
     

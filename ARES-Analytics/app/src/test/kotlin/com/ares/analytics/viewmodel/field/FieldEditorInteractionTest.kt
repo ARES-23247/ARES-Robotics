@@ -331,7 +331,7 @@ class FieldEditorInteractionTest {
             sequence = 12,
             configId = requireNotNull(viewModel.state.value.document).id,
             revision = requireNotNull(viewModel.state.value.document).revision,
-            sha256 = sha256Hex(payload),
+            sha256 = simulatorFieldPayloadHash(payload),
             obstacleCount = 1,
             elementCount = 0,
             aprilTagCount = 2,

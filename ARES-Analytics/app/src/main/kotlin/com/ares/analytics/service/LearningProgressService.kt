@@ -4,7 +4,6 @@ import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
 import com.ares.analytics.ui.help.LearningCatalog
 import com.ares.analytics.ui.help.LearningCheckpointEvidence
 import com.ares.analytics.ui.help.LearningJourneyEvaluator
-import com.ares.analytics.ui.help.LearningProgressView
 import com.ares.analytics.ui.help.LearningRubricRating
 import com.ares.analytics.ui.help.AcademyClassroomToolkit
 import kotlinx.coroutines.Dispatchers
@@ -14,60 +13,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.UUID
-
-/** Durable, local-only progress for the in-app Help & Learn lessons. */
-@Serializable
-data class LearningProgress(
-    val contentVersion: Int = CURRENT_LEARNING_CONTENT_VERSION,
-    override val practicedLessonIds: Set<String> = emptySet(),
-    override val startedLessonIds: Set<String> = emptySet(),
-    override val completedCheckpointIds: Set<String> = emptySet(),
-    override val activeLessonId: String? = null,
-    val selectedPathId: String? = null,
-    val studentDisplayName: String = "",
-    val checkpointReflections: Map<String, String> = emptyMap(),
-    val mentorNotes: Map<String, String> = emptyMap(),
-    val rubricRatings: Map<String, LearningRubricRating> = emptyMap(),
-) : LearningProgressView
-
-/** A mentor-authored, local assignment. It is guidance, not proof that a checkpoint was completed. */
-@Serializable
-data class AcademyLearningAssignment(
-    val assignmentId: String,
-    val title: String,
-    val pathId: String,
-    val lessonIds: List<String>,
-    val instructions: String = "",
-    val dueLabel: String = "",
-    val completed: Boolean = false,
-    val createdAtEpochMs: Long,
-)
-
-/** One isolated learner record. Records are switched explicitly and never merged automatically. */
-@Serializable
-data class AcademyLearnerRecord(
-    val learnerId: String,
-    val progress: LearningProgress = LearningProgress(),
-    val assignments: List<AcademyLearningAssignment> = emptyList(),
-)
-
-@Serializable
-data class AcademyClassroomStore(
-    val schemaVersion: Int = ACADEMY_CLASSROOM_SCHEMA_VERSION,
-    val activeLearnerId: String,
-    val learners: List<AcademyLearnerRecord>,
-)
-
-data class AcademyProgressSnapshot(
-    val file: File,
-    val learnerId: String,
-    val pathId: String,
-)
 
 /**
  * Stores self-reported lesson practice without claiming certification or hardware verification.
@@ -117,6 +66,10 @@ class LearningProgressService(
         updateProgress { current ->
             current.copy(contentVersion = CURRENT_LEARNING_CONTENT_VERSION, selectedPathId = pathId)
         }
+    }
+
+    suspend fun dismissFirstMissionNudge() = withContext(Dispatchers.IO) {
+        updateProgress { current -> current.copy(firstMissionNudgeDismissed = true) }
     }
 
     suspend fun updateStudentDisplayName(name: String) = withContext(Dispatchers.IO) {

@@ -2,6 +2,10 @@
 
 Cycle evidence: [product improvement cycle log](CYCLE_LOG.md).
 
+The current exact-candidate automated, simulator, and packaged-desktop evidence is recorded in the
+[pre-rollout refinement acceptance report](PRE_ROLLOUT_REFINEMENT_ACCEPTANCE.md). Physical robot
+commissioning remains explicitly outside that report.
+
 Community copy and verified feature-tour media for the current clean-slate milestone are in the
 [Studio 4.0.0 preview and launch draft](announcements/ARES_ROBOTICS_STUDIO_4_0_0_PREVIEW.md). The
 [Studio 3.1.1 launch draft](announcements/ARES_ROBOTICS_STUDIO_3_1_1.md) remains as the prior release record.

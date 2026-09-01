@@ -3,51 +3,29 @@ package com.areslib.codegen
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogCodec
 import com.areslib.catalog.CapabilityCatalogDocument
-import com.areslib.catalog.CapabilityContext
-import com.areslib.catalog.ResourceAccess
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
-import com.areslib.catalog.CatalogValidationSeverity
 import com.areslib.catalog.ConditionDescriptor
-import com.areslib.catalog.validateCapabilityCatalog
 import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlBindingDocument
-import com.areslib.controls.ControlSchemeCodec
 import com.areslib.controls.ControlSchemeDocument
 import com.areslib.controls.ControlSourceKind
 import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControlThresholdDirection
-import com.areslib.controls.ControlValidationContext
-import com.areslib.controls.ControlValidationSeverity
 import com.areslib.controls.ControllerControlDocument
 import com.areslib.controls.ControllerControlTypeDocument
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.DriveAxisKeys
-import com.areslib.controls.ControllerProfileCodec
 import com.areslib.controls.ControllerProfileDocument
 import com.areslib.controls.RoutineInvocationPolicy
-import com.areslib.controls.learnedControlIds
-import com.areslib.controls.validateControlScheme
-import com.areslib.controls.validateControllerProfile
-import com.areslib.routine.AresRoutineCodec
-import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.AutonomousCatalogEntry
-import com.areslib.routine.CapabilityArgumentReader
 import com.areslib.routine.RoutineDocument
-import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
-import com.areslib.routine.RoutineStep
-import com.areslib.routine.RoutineStepKind
-import com.areslib.routine.RoutineValidationContext
-import com.areslib.routine.RoutineValidationSeverity
-import com.areslib.routine.validateRoutineSet
-import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.AresLeague
 import com.areslib.project.compiler.RobotProjectIr
 import com.areslib.project.requireFtcRuntimeOptions
-import com.areslib.project.validateAresProjectMetadata
 import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.subsystemTargetCapabilities
 import java.security.MessageDigest
@@ -127,7 +105,7 @@ object AresKotlinProjectGenerator {
     }
 
     internal fun generate(request: KotlinProjectCodegenRequest): GeneratedKotlinSource {
-        validateRequest(request)
+        validateKotlinProjectCodegenRequest(request)
         val canonicalRoutines = request.routines.sortedBy { it.documentId }
         val canonicalActions = request.catalog.actions.sortedBy { it.key }
         val canonicalConditions = request.catalog.conditions.sortedBy { it.key }
@@ -145,7 +123,7 @@ object AresKotlinProjectGenerator {
             .sorted()
             .toList()
         val continuousActionMethods = assignMethodNames("controlAction", continuousActionKeys)
-        val contentHash = contentHash(request, canonicalRoutines)
+        val contentHash = kotlinProjectContentHash(request, canonicalRoutines)
 
         val template = buildString {
             append("@file:Suppress(\"MagicNumber\", \"LongMethod\")\n\n")
@@ -289,237 +267,6 @@ object AresKotlinProjectGenerator {
         return embedded.matches(SHA_256_REGEX) && runCatching {
             calculateEmbeddedSourceHash(source) == embedded
         }.getOrDefault(false)
-    }
-
-    private fun validateRequest(request: KotlinProjectCodegenRequest) {
-        require(request.packageName.split('.').all { it.isKotlinIdentifier() }) {
-            "Generated package '${request.packageName}' is not a valid Kotlin package"
-        }
-        require(request.objectName.isKotlinIdentifier()) { "Generated object name is not a valid Kotlin identifier" }
-        require(request.registryInterfaceName.isKotlinIdentifier()) {
-            "Generated registry interface name is not a valid Kotlin identifier"
-        }
-        require(request.objectName != request.registryInterfaceName) {
-            "Generated object and registry interface names must differ"
-        }
-        request.projectMetadata?.let { metadata ->
-            val metadataIssues = validateAresProjectMetadata(metadata)
-            require(metadataIssues.isEmpty()) { metadataIssues.joinToString("; ") }
-            require(metadata.projectId == request.catalog.projectId) {
-                "Project metadata ID '${metadata.projectId}' does not match catalog '${request.catalog.projectId}'"
-            }
-        }
-
-        val catalogErrors = validateCapabilityCatalog(request.catalog)
-            .filter { it.severity == CatalogValidationSeverity.ERROR }
-        require(catalogErrors.isEmpty()) {
-            catalogErrors.joinToString(separator = "; ") { "${it.path}: ${it.message}" }
-        }
-        val subsystemActionKeys = request.subsystemActions.map { it.descriptor.key }
-        require(subsystemActionKeys.distinct().size == subsystemActionKeys.size) {
-            "Generated subsystem action keys must be unique"
-        }
-        require(request.subsystemActions.isEmpty() || !request.subsystemRegistryFqn.isNullOrBlank()) {
-            "Generated subsystem actions require a subsystem registry FQN"
-        }
-        request.subsystemActions.forEach { capability ->
-            require(request.catalog.actions.singleOrNull { it == capability.descriptor } != null) {
-                "Subsystem action '${capability.descriptor.key}' is missing or differs in the merged catalog"
-            }
-        }
-        require(request.generatedActionRegistryBindings.keys.intersect(subsystemActionKeys.toSet()).isEmpty()) {
-            "An action cannot be implemented by both subsystem and orchestration registries"
-        }
-        request.generatedActionRegistryBindings.forEach { (actionKey, registryFqn) ->
-            require(registryFqn.matches(Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+"))) {
-                "Generated action '$actionKey' has invalid registry FQN '$registryFqn'"
-            }
-            val descriptor = request.catalog.actions.singleOrNull { it.key == actionKey }
-            require(descriptor != null) { "Generated action '$actionKey' is absent from the capability catalog" }
-            require(descriptor.parameters.isEmpty()) {
-                "Generated orchestration action '$actionKey' must be parameterless"
-            }
-        }
-
-        val actions = request.catalog.actions.associateBy { it.key }
-        val conditions = request.catalog.conditions.associateBy { it.key }
-        // Only EXCLUSIVE claims participate in concurrent-resource arbitration. Flattening READ
-        // claims in too made document validation reject routines that parallelize, say, a shot
-        // feed (READ on flywheel/cowl) with flywheel spin-up — a conflict the runtime bitmask
-        // model correctly allows.
-        val resources = actions.mapValues { (_, descriptor) -> exclusiveResourceKeys(descriptor).toSet() }
-        val routineContext = RoutineValidationContext(
-            hasAction = actions::containsKey,
-            hasCondition = conditions::containsKey,
-            resourcesForAction = { resources[it].orEmpty() }
-        )
-        val routineErrors = validateRoutineSet(request.routines, routineContext)
-            .filter { it.severity == RoutineValidationSeverity.ERROR }
-            .toMutableList()
-        request.routines.forEach { routine ->
-            validateStepArguments(routine.steps, actions, conditions, "${routine.documentId}.steps", routineErrors)
-        }
-        require(routineErrors.isEmpty()) {
-            routineErrors.joinToString(separator = "; ") { "${it.documentId}:${it.path}: ${it.message}" }
-        }
-
-        val routineIds = request.routines.mapTo(mutableSetOf()) { it.documentId }
-        request.autonomousCatalog?.let { autonomousCatalog ->
-            val errors = com.areslib.routine.validateAutonomousCatalog(autonomousCatalog, routineIds)
-                .filter { it.severity == RoutineValidationSeverity.ERROR }
-            require(errors.isEmpty()) {
-                errors.joinToString(separator = "; ") { "${it.path}: ${it.message}" }
-            }
-            autonomousCatalog.entries.filter { it.enabled }.forEach { entry ->
-                require(
-                    routineSupportsContext(
-                        entry.routineId,
-                        request.routines.associateBy { it.documentId },
-                        actions,
-                        mutableSetOf()
-                    )
-                ) {
-                    "Autonomous entry '${entry.entryId}' reaches an action that is not allowed in autonomous"
-                }
-            }
-        }
-        validateGeneratedControls(request, actions, routineIds)
-        val subsystemActionKeySet = subsystemActionKeys.toSet()
-        val unsafeAnalogSubsystemBindings = request.controlSchemes.asSequence()
-            .flatMap { it.bindings.asSequence() }
-            .filter { it.enabled && it.source.kind in ANALOG_SOURCE_KINDS }
-            .filter { it.target.kind == ControlTargetKind.ACTION && it.target.key in subsystemActionKeySet }
-            .filter { binding ->
-                val policy = binding.analogPolicy
-                policy == null || !policy.emitOnlyOnChange || policy.changeEpsilon <= 0.0
-            }
-            .map { it.bindingId }
-            .toList()
-        require(unsafeAnalogSubsystemBindings.isEmpty()) {
-            "Generated subsystem analog bindings must emit only on meaningful changes so Redux tasks cannot flood the robot loop: " +
-                unsafeAnalogSubsystemBindings.joinToString()
-        }
-    }
-
-    private fun validateStepArguments(
-        steps: List<RoutineStep>,
-        actions: Map<String, ActionDescriptor>,
-        conditions: Map<String, ConditionDescriptor>,
-        path: String,
-        issues: MutableList<com.areslib.routine.RoutineValidationIssue>
-    ) {
-        steps.forEachIndexed { index, step ->
-            val stepPath = "$path[$index]"
-            when (step.kind) {
-                RoutineStepKind.ACTION -> validateArguments(
-                    descriptorKey = requireNotNull(step.actionKey),
-                    parameters = actions[step.actionKey]?.parameters.orEmpty(),
-                    arguments = step.arguments,
-                    path = stepPath,
-                    issues = issues
-                )
-                RoutineStepKind.WAIT_UNTIL,
-                RoutineStepKind.BRANCH -> validateArguments(
-                    descriptorKey = requireNotNull(step.conditionKey),
-                    parameters = conditions[step.conditionKey]?.parameters.orEmpty(),
-                    arguments = step.arguments,
-                    path = stepPath,
-                    issues = issues
-                )
-                RoutineStepKind.DRIVE_TO -> step.drive?.let { drive ->
-                    val actionKeys = drive.markers.map { it.actionKey } +
-                        drive.duringActionKeys + drive.arrivalActionKeys
-                    actionKeys.forEach { actionKey ->
-                        validateArguments(
-                            descriptorKey = actionKey,
-                            parameters = actions[actionKey]?.parameters.orEmpty(),
-                            arguments = emptyMap(),
-                            path = "$stepPath.drive[$actionKey]",
-                            issues = issues
-                        )
-                    }
-                }
-                else -> Unit
-            }
-            step.deadline?.let {
-                validateStepArguments(listOf(it), actions, conditions, "$stepPath.deadline", issues)
-            }
-            validateStepArguments(step.children, actions, conditions, "$stepPath.children", issues)
-            validateStepArguments(step.elseChildren, actions, conditions, "$stepPath.elseChildren", issues)
-        }
-    }
-
-    private fun validateArguments(
-        descriptorKey: String,
-        parameters: List<CapabilityParameterDescriptor>,
-        arguments: Map<String, String>,
-        path: String,
-        issues: MutableList<com.areslib.routine.RoutineValidationIssue>
-    ) {
-        try {
-            val reader = CapabilityArgumentReader(descriptorKey, arguments, parameters.mapTo(mutableSetOf()) { it.key })
-            parameters.forEach { parameter -> reader.read(parameter) }
-        } catch (error: IllegalArgumentException) {
-            issues += com.areslib.routine.RoutineValidationIssue(
-                RoutineValidationSeverity.ERROR,
-                path.substringBefore('.'),
-                path,
-                "invalid_capability_arguments",
-                error.message ?: "Capability arguments are invalid"
-            )
-        }
-    }
-
-    private fun CapabilityArgumentReader.read(parameter: CapabilityParameterDescriptor): Any? = when (parameter.type) {
-        CapabilityParameterType.NUMBER -> if (parameter.isEffectivelyRequired()) {
-            requiredNumber(parameter.key, parameter.defaultNumber, parameter.minimum, parameter.maximum)
-        } else {
-            optionalNumber(parameter.key, parameter.defaultNumber, parameter.minimum, parameter.maximum)
-        }
-        CapabilityParameterType.BOOLEAN -> if (parameter.isEffectivelyRequired()) {
-            requiredBoolean(parameter.key, parameter.defaultBoolean)
-        } else {
-            optionalBoolean(parameter.key, parameter.defaultBoolean)
-        }
-        CapabilityParameterType.TEXT -> if (parameter.isEffectivelyRequired()) {
-            requiredText(parameter.key, parameter.defaultText)
-        } else {
-            optionalText(parameter.key, parameter.defaultText)
-        }
-        CapabilityParameterType.ENUM -> if (parameter.isEffectivelyRequired()) {
-            requiredEnum(parameter.key, parameter.options.toSet(), parameter.defaultText)
-        } else {
-            optionalEnum(parameter.key, parameter.options.toSet(), parameter.defaultText)
-        }
-    }
-
-    private fun contentHash(request: KotlinProjectCodegenRequest, routines: List<RoutineDocument>): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        fun record(label: String, value: String) {
-            val bytes = value.toByteArray(Charsets.UTF_8)
-            digest.update(label.toByteArray(Charsets.UTF_8))
-            digest.update(0.toByte())
-            digest.update(bytes.size.toString().toByteArray(Charsets.US_ASCII))
-            digest.update(0.toByte())
-            digest.update(bytes)
-        }
-        record("generator", ARES_KOTLIN_CODEGEN_VERSION.toString())
-        record("subsystem-registry", request.subsystemRegistryFqn.orEmpty())
-        request.generatedActionRegistryBindings.toSortedMap().forEach { (key, registry) ->
-            record("generated-action:$key", registry)
-        }
-        request.projectMetadata?.let { record("project-metadata", AresProjectMetadataCodec.encode(it)) }
-        record("catalog", CapabilityCatalogCodec.encode(request.catalog))
-        routines.forEach { record("routine:${it.documentId}", AresRoutineCodec.encode(it)) }
-        request.autonomousCatalog?.let { record("autonomous-catalog", AutonomousCatalogCodec.encode(it)) }
-        request.controllerProfiles.sortedBy { it.documentId }.forEach {
-            record("controller-profile:${it.documentId}", ControllerProfileCodec.encode(it))
-        }
-        record("controller-input-platform", request.targetInputPlatform?.name ?: "none")
-        request.controlSchemes.sortedBy { it.documentId }.forEach {
-            record("control-scheme:${it.documentId}", ControlSchemeCodec.encode(it))
-        }
-        return digest.digest().toHex()
     }
 
     private fun renderRegistryInterface(
@@ -1176,14 +923,6 @@ object AresKotlinProjectGenerator {
             postfix = ")"
         ) { stringLiteral(it) }
 
-    /**
-     * Resource keys an action exclusively owns while active. READ claims are omitted: they
-     * describe state observation, not arbitration, and must not produce parallel-resource
-     * conflicts — the runtime bitmask model treats them the same way.
-     */
-    private fun exclusiveResourceKeys(descriptor: ActionDescriptor): List<String> =
-        descriptor.resources.filter { it.access == ResourceAccess.EXCLUSIVE }.map { it.resourceKey }
-
     private fun assignMethodNames(prefix: String, keys: List<String>): Map<String, String> {
         val candidates = keys.associateWith { key -> prefix + key.toIdentifierSuffix() }
         val duplicateCandidates = candidates.values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
@@ -1234,13 +973,6 @@ object AresKotlinProjectGenerator {
         return if (isEffectivelyRequired()) base else "$base?"
     }
 
-    private fun CapabilityParameterDescriptor.isEffectivelyRequired(): Boolean = required || when (type) {
-        CapabilityParameterType.NUMBER -> defaultNumber != null
-        CapabilityParameterType.BOOLEAN -> defaultBoolean != null
-        CapabilityParameterType.TEXT,
-        CapabilityParameterType.ENUM -> defaultText != null
-    }
-
     private fun ControllerProfileDocument.control(controlId: String): ControllerControlDocument =
         controls.first { it.controlId == controlId }
 
@@ -1265,42 +997,6 @@ object AresKotlinProjectGenerator {
 
     private fun optionalSecondsToNanos(seconds: Double?): Long = seconds?.let(::secondsToNanos) ?: -1L
 
-    private fun routineSupportsContext(
-        routineId: String,
-        routines: Map<String, RoutineDocument>,
-        actions: Map<String, ActionDescriptor>,
-        visited: MutableSet<String>
-    ): Boolean {
-        if (!visited.add(routineId)) return true
-        val supported = routines[routineId]?.steps.orEmpty().all { step ->
-            stepSupportsContext(step, routines, actions, visited)
-        }
-        visited.remove(routineId)
-        return supported
-    }
-
-    private fun stepSupportsContext(
-        step: RoutineStep,
-        routines: Map<String, RoutineDocument>,
-        actions: Map<String, ActionDescriptor>,
-        visited: MutableSet<String>
-    ): Boolean {
-        val directKeys = buildList {
-            step.actionKey?.let(::add)
-            step.drive?.let { drive ->
-                drive.markers.forEach { add(it.actionKey) }
-                addAll(drive.duringActionKeys)
-                addAll(drive.arrivalActionKeys)
-            }
-        }
-        if (directKeys.any { CapabilityContext.AUTONOMOUS !in actions.getValue(it).allowedContexts }) return false
-        val routineId = step.routineId
-        if (routineId != null && !routineSupportsContext(routineId, routines, actions, visited)) return false
-        return step.deadline?.let { stepSupportsContext(it, routines, actions, visited) } != false &&
-            step.children.all { stepSupportsContext(it, routines, actions, visited) } &&
-            step.elseChildren.all { stepSupportsContext(it, routines, actions, visited) }
-    }
-
     private fun StringBuilder.appendIndent(level: Int, value: String) {
         append("    ".repeat(level))
         append(value)
@@ -1314,19 +1010,12 @@ object AresKotlinProjectGenerator {
 
     private fun stringLiteral(value: String): String = value.kotlinStringLiteral()
 
-    private fun String.isKotlinIdentifier(): Boolean =
-        matches(Regex("[A-Za-z_][A-Za-z0-9_]*")) && this !in KOTLIN_KEYWORDS
-
     private fun RoutinePose.isFinite(): Boolean =
         xMeters.isFinite() && yMeters.isFinite() && headingRadians.isFinite()
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(Charsets.UTF_8))
         .toHex()
-
-    private fun ByteArray.toHex(): String = joinToString(separator = "") { byte ->
-        "%02x".format(byte.toInt() and 0xff)
-    }
 
     private val SOURCE_HASH_DECLARATION =
         Regex("const val SOURCE_SHA256: String = \\\"([a-f0-9]{64})\\\"")
@@ -1338,16 +1027,5 @@ object AresKotlinProjectGenerator {
         ControlSourceKind.BUTTON,
         ControlSourceKind.CHORD,
         ControlSourceKind.AXIS_THRESHOLD
-    )
-    private val ANALOG_SOURCE_KINDS = setOf(ControlSourceKind.AXIS_VALUE, ControlSourceKind.AXIS_ZONE)
-    private val KOTLIN_KEYWORDS = setOf(
-        "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
-        "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true",
-        "try", "typealias", "typeof", "val", "var", "when", "while", "by", "catch", "constructor",
-        "delegate", "dynamic", "field", "file", "finally", "get", "import", "init", "param", "property",
-        "receiver", "set", "setparam", "where", "actual", "abstract", "annotation", "companion", "const",
-        "crossinline", "data", "enum", "expect", "external", "final", "infix", "inline", "inner", "internal",
-        "lateinit", "noinline", "open", "operator", "out", "override", "private", "protected", "public",
-        "reified", "sealed", "suspend", "tailrec", "vararg"
     )
 }

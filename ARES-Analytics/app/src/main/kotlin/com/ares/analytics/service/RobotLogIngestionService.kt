@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.util.Sha256
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -24,7 +25,6 @@ import java.io.OutputStream
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 import java.util.UUID
 
 data class RobotLogSource(
@@ -64,7 +64,7 @@ internal class RobotLogDownloader(
         while (attempt < MAX_DOWNLOAD_ATTEMPTS) {
             try {
                 destination.delete()
-                val digest = MessageDigest.getInstance("SHA-256")
+                val digest = Sha256.newDigest()
                 httpClient.prepareGet("${robotBaseUrl.trimEnd('/')}/api/download") {
                     parameter("file", source.name)
                 }.execute { response ->
@@ -89,7 +89,7 @@ internal class RobotLogDownloader(
                     "Downloaded ${destination.length()} bytes for ${source.name}; expected ${source.sizeBytes}"
                 }
                 if (source.lastModifiedMs > 0L) destination.setLastModified(source.lastModifiedMs)
-                return digest.digest().toHexString()
+                return Sha256.finishHex(digest)
             } catch (failure: CancellationException) {
                 destination.delete()
                 throw failure
@@ -336,16 +336,16 @@ class RobotLogIngestionService internal constructor(
     }
 
     private fun runFingerprint(downloaded: List<DownloadedRobotLog>): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        downloaded.sortedBy { it.source.name.lowercase() }.forEach { log ->
-            digest.update(log.source.name.lowercase().toByteArray(Charsets.UTF_8))
-            digest.update(0.toByte())
-            digest.update(log.source.sizeBytes.toString().toByteArray(Charsets.US_ASCII))
-            digest.update(0.toByte())
-            digest.update(log.sha256.toByteArray(Charsets.US_ASCII))
-            digest.update('\n'.code.toByte())
+        return Sha256.compositeHex {
+            downloaded.sortedBy { it.source.name.lowercase() }.forEach { log ->
+                update(log.source.name.lowercase().toByteArray(Charsets.UTF_8))
+                update(0.toByte())
+                update(log.source.sizeBytes.toString().toByteArray(Charsets.US_ASCII))
+                update(0.toByte())
+                update(log.sha256.toByteArray(Charsets.US_ASCII))
+                update('\n'.code.toByte())
+            }
         }
-        return digest.digest().toHexString()
     }
 
     private data class DownloadedRobotLog(
@@ -398,8 +398,6 @@ private fun createRobotLogHttpClient(): HttpClient = HttpClient(CIO) {
         socketTimeoutMillis = 30 * 60 * 1_000L
     }
 }
-
-private fun ByteArray.toHexString(): String = joinToString("") { "%02x".format(it) }
 
 private val ROBOT_LOG_SUFFIXES = listOf(".csv.gz", ".jsonl", ".csv")
 private const val MAX_ROBOT_LOG_NAME_LENGTH = 180

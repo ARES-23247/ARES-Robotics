@@ -94,4 +94,41 @@ class CapabilityCatalogTest {
         assertThrows<IllegalArgumentException> { ConditionKey("has piece") }
         assertThrows<IllegalArgumentException> { ResourceKey("/shooter") }
     }
+
+    @Test
+    fun `capability arguments share deterministic editor defaults and validation`() {
+        val parameters = listOf(
+            CapabilityParameterDescriptor(
+                key = "speed",
+                displayName = "Speed",
+                description = "Requested speed",
+                type = CapabilityParameterType.NUMBER,
+                minimum = 0.0,
+                maximum = 1.0,
+                defaultNumber = 0.5,
+            ),
+            CapabilityParameterDescriptor(
+                key = "mode",
+                displayName = "Mode",
+                description = "Operating mode",
+                type = CapabilityParameterType.ENUM,
+                options = listOf("safe", "fast"),
+            ),
+            CapabilityParameterDescriptor(
+                key = "note",
+                displayName = "Note",
+                description = "Required operator note",
+                type = CapabilityParameterType.TEXT,
+            ),
+        )
+
+        assertEquals(mapOf("speed" to "0.5", "mode" to "safe"), initialCapabilityArguments(parameters))
+        assertEquals(
+            listOf("above_maximum", "missing_argument", "unknown_argument"),
+            validateCapabilityArguments(
+                parameters,
+                mapOf("speed" to "2.0", "mode" to "fast", "extra" to "value"),
+            ).map(CapabilityArgumentIssue::code).sorted(),
+        )
+    }
 }

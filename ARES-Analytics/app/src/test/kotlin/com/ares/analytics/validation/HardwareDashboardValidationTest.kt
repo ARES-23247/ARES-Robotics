@@ -77,7 +77,7 @@ class HardwareDashboardValidationTest {
             val observedSeconds = (System.nanoTime() - observationStarted) / 1_000_000_000.0
             val connectedAfterObservation = client.isConnected.value
             client.stop()
-            collector?.cancelAndJoin()
+            collector.cancelAndJoin()
 
             val frameCount = receivedFrames.get()
             val persistedCount = database.countTelemetryFrames("live-telemetry")

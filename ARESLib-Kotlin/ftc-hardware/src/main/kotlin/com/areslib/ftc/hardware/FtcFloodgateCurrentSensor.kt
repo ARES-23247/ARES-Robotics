@@ -1,6 +1,5 @@
 package com.areslib.ftc.hardware
 
-import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.util.RobotClock
 
 /**
@@ -35,7 +34,8 @@ interface AnalogVoltageInput {
  * - Energy Consumption: Watt-Hours ($Wh$, assuming nominal 12.0V bus).
  * - Fuse Thermal Strain: Percentage $[0.0\%, 100.0\%]$.
  *
- * @param analogInput Analog voltage supplier interface ([AnalogVoltageInput] or FTC SDK [AnalogInput]).
+ * @param analogInput Platform-neutral analog voltage supplier. FTC SDK adaptation belongs in the
+ * platform host that owns the hardware map.
  * @param maxCurrentAmps Maximum current rating corresponding to 3.3V analog output ($A$, default 80A for Floodgate V2).
  * @param filterAlpha Low-pass smoothing alpha coefficient $[0.0, 1.0]$.
  * @param fuseRatingAmps Rating of the main battery fuse ($A$, default 20A FTC ATM fuse).
@@ -45,7 +45,7 @@ interface AnalogVoltageInput {
  * @param fuseCalibrationTripSeconds Conservative trip time at [fuseCalibrationMultiple].
  * @param fuseCoolingTimeConstantSeconds Thermal recovery time constant below the fuse rating.
  */
-class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
+class FtcFloodgateCurrentSensor(
     private val analogInput: AnalogVoltageInput,
     private val maxCurrentAmps: Double = 80.0, // Scale: 3.3V corresponds to max current (default 80A for V2)
     private val filterAlpha: Double = 0.15,    // Low-pass filter smoothing coefficient (0.0 to 1.0)
@@ -54,37 +54,6 @@ class FtcFloodgateCurrentSensor @kotlin.jvm.JvmOverloads constructor(
     private val fuseCalibrationTripSeconds: Double = 2.0,
     private val fuseCoolingTimeConstantSeconds: Double = 15.0
 ) {
-
-    // Secondary constructors for backward compatibility with Qualcomm's concrete AnalogInput class
-    constructor(analogInput: AnalogInput) : this(
-        object : AnalogVoltageInput {
-            override val voltage: Double get() = analogInput.voltage
-        }
-    )
-
-    constructor(analogInput: AnalogInput, maxCurrentAmps: Double) : this(
-        object : AnalogVoltageInput {
-            override val voltage: Double get() = analogInput.voltage
-        },
-        maxCurrentAmps
-    )
-
-    constructor(analogInput: AnalogInput, maxCurrentAmps: Double, filterAlpha: Double) : this(
-        object : AnalogVoltageInput {
-            override val voltage: Double get() = analogInput.voltage
-        },
-        maxCurrentAmps,
-        filterAlpha
-    )
-
-    constructor(analogInput: AnalogInput, maxCurrentAmps: Double, filterAlpha: Double, fuseRatingAmps: Double) : this(
-        object : AnalogVoltageInput {
-            override val voltage: Double get() = analogInput.voltage
-        },
-        maxCurrentAmps,
-        filterAlpha,
-        fuseRatingAmps
-    )
 
     private var lastUpdateTime = RobotClock.currentTimeMillis()
     private var filteredCurrentAmps = 0.0

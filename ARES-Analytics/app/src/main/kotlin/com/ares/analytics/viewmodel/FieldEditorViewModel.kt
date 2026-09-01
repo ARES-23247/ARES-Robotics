@@ -7,6 +7,7 @@ import com.ares.analytics.shared.models.*
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.util.Sha256
 import com.ares.analytics.viewmodel.field.FieldDocumentMapper
 import com.ares.analytics.service.project.persistence.FieldDocumentStore
 import com.ares.analytics.service.project.ProjectSession
@@ -26,7 +27,6 @@ import com.ares.analytics.viewmodel.field.SIMULATOR_FIELD_APPLY_ERROR_TOPIC
 import com.ares.analytics.viewmodel.field.SimulatorFieldApplyReceipt
 import com.ares.analytics.viewmodel.field.SimulatorFieldApplyFailure
 import com.ares.analytics.viewmodel.field.parseSimulatorFieldApplyReceipt
-import com.ares.analytics.viewmodel.field.sha256Hex
 import com.areslib.state.FieldType
 import com.areslib.state.AprilTagMapCodec
 import com.areslib.state.AprilTagMapFormat
@@ -628,7 +628,7 @@ class FieldEditorViewModel(
                 val expected = ExpectedSimulatorField(
                     configId = document.id,
                     revision = document.revision,
-                    sha256 = sha256Hex(payload),
+                    sha256 = Sha256.hex(payload),
                 )
                 val previousReceipt = currentSimulatorReceipt()
                 val previousFailure = currentSimulatorFailure()

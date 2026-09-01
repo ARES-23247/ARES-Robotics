@@ -290,7 +290,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         when {
             isPinpointFaulted && (timestamp - lastPinpointWarningTime > 2000L) -> {
                 System.err.println(
-                    "FtcBaseRobot: Pinpoint ${pinpoint?.healthStatus}; using drivetrain + Control Hub IMU odometry"
+                    "FtcBaseRobot: Pinpoint ${pinpoint.healthStatus}; using drivetrain + Control Hub IMU odometry"
                 )
                 lastPinpointWarningTime = timestamp
             }

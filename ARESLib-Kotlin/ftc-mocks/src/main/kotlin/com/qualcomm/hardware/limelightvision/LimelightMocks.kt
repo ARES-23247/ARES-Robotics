@@ -90,9 +90,9 @@ open class Limelight3A {
                 Position(DistanceUnit.METER, xMeters, yMeters, 0.0, 0L),
                 YawPitchRollAngles(AngleUnit.DEGREES, yawDegrees, 0.0, 0.0, 0L)
             )
-            override fun getBotpose_MT2(): Pose3D = getBotpose()!!
+            override fun getBotpose_MT2(): Pose3D = getBotpose()
             override fun getFiducialResults(): List<LLResultTypes.FiducialResult> = listOf(
-                LLResultTypes.FiducialResult(tagId, 0.0, 0.0, getBotpose()!!)
+                LLResultTypes.FiducialResult(tagId, 0.0, 0.0, getBotpose())
             )
         }
     }

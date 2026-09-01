@@ -519,8 +519,7 @@ internal fun renderGuidedTuningExperimentReport(experiment: GuidedTuningExperime
         appendLine("- Apply policy: ${experiment.change.applyPolicy}")
         appendLine("- Success threshold: ${experiment.successThresholdPercent.reportNumber()}% improvement")
         appendLine("- Held constant:")
-        experiment.heldConstants.ifEmpty { listOf("Not recorded in this legacy experiment") }
-            .forEach { appendLine("  - $it") }
+        experiment.heldConstants.forEach { appendLine("  - $it") }
         appendLine("- Safety boundary: ${experiment.safetyNotes.ifBlank { "Local Sim only; physical validation requires a separate documented safety procedure." }}")
         appendLine("- Optional peer review: ${experiment.peerReviewState.name.replace('_', ' ')}")
         appendLine()

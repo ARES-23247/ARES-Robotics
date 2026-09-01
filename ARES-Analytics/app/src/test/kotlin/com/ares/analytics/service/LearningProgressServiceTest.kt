@@ -28,6 +28,17 @@ import kotlin.test.assertTrue
 
 class LearningProgressServiceTest {
     @Test
+    fun `first mission nudge dismissal survives service recreation`() = runTest {
+        val tempDir = Files.createTempDirectory("learning-nudge-test").toFile()
+        val file = File(tempDir, "learning-progress.json")
+        val service = LearningProgressService(file)
+
+        service.dismissFirstMissionNudge()
+
+        assertTrue(LearningProgressService(file).progress.value.firstMissionNudgeDismissed)
+    }
+
+    @Test
     fun `practice progress survives service recreation`() = runTest {
         val tempDir = Files.createTempDirectory("learning-progress-test").toFile()
         val file = File(tempDir, "learning-progress.json")

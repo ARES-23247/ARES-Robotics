@@ -399,13 +399,14 @@ class OAuthServiceTest {
             }
 
             assertEquals("/api/oauth/google/token", observedPath)
-            val json = Json.parseToJsonElement(assertNotNull(observedBody)).jsonObject
+            val body = assertNotNull(observedBody)
+            val json = Json.parseToJsonElement(body).jsonObject
             assertEquals(setOf("code", "codeVerifier", "redirectUri"), json.keys)
             assertEquals("authorization-code", json.getValue("code").jsonPrimitive.content)
             assertEquals(GOOGLE_DESKTOP_REDIRECT_URI, json.getValue("redirectUri").jsonPrimitive.content)
             assertTrue(json.getValue("codeVerifier").jsonPrimitive.content.length >= 43)
-            assertTrue(observedBody?.contains(managedClientId) == false)
-            assertTrue(observedBody?.contains("client_secret", ignoreCase = true) == false)
+            assertFalse(body.contains(managedClientId))
+            assertFalse(body.contains("client_secret", ignoreCase = true))
         } finally {
             service.dispose()
         }
@@ -438,11 +439,12 @@ class OAuthServiceTest {
             assertEquals("new-access", service.refreshGoogleAccessTokenForTest(managedClientId))
 
             assertEquals("/api/oauth/google/refresh", observedPath)
-            val json = Json.parseToJsonElement(assertNotNull(observedBody)).jsonObject
+            val body = assertNotNull(observedBody)
+            val json = Json.parseToJsonElement(body).jsonObject
             assertEquals(setOf("refreshToken"), json.keys)
             assertEquals("sensitive-refresh", json.getValue("refreshToken").jsonPrimitive.content)
-            assertTrue(observedBody?.contains(managedClientId) == false)
-            assertTrue(observedBody?.contains("client_secret", ignoreCase = true) == false)
+            assertFalse(body.contains(managedClientId))
+            assertFalse(body.contains("client_secret", ignoreCase = true))
         } finally {
             service.dispose()
         }

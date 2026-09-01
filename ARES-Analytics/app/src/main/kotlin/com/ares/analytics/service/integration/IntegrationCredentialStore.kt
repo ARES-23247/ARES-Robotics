@@ -1,14 +1,11 @@
 package com.ares.analytics.service.integration
 
-import com.ares.analytics.service.AppDataPaths
-import com.ares.analytics.service.writeSecrets
+import com.ares.analytics.service.security.PlatformSecretStore
+import com.ares.analytics.service.security.createPlatformSecretStore
 import com.ares.analytics.shared.AppJson
-import com.sun.jna.platform.win32.Crypt32Util
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import java.io.File
-import java.util.Locale
 
 @Serializable
 data class IntegrationCredential(
@@ -28,12 +25,8 @@ private data class StoredIntegrationCredentials(
     val schemaVersion: Int = 1,
 )
 
-internal class ProtectedIntegrationCredentialStore(
-    private val file: File = defaultIntegrationCredentialFile(),
-    private val protect: (ByteArray) -> ByteArray = defaultProtector(),
-    private val unprotect: (ByteArray) -> ByteArray = defaultUnprotector(),
-    private val secretsWriter: (File, ByteArray) -> Unit = ::writeSecrets,
-    override val protectionDescription: String = defaultProtectionDescription(),
+internal class PlatformIntegrationCredentialStore(
+    private val secretStore: PlatformSecretStore,
 ) : IntegrationCredentialStore {
     private val lock = Any()
 
@@ -59,16 +52,19 @@ internal class ProtectedIntegrationCredentialStore(
     }
 
     private fun load(): StoredIntegrationCredentials {
-        if (!file.isFile) return StoredIntegrationCredentials()
-        val protectedBytes = file.readBytes()
-        require(protectedBytes.size <= MAX_CREDENTIAL_FILE_BYTES) { "Integration credential store is too large" }
-        return AppJson.decodeFromString(unprotect(protectedBytes).toString(Charsets.UTF_8))
+        val bytes = secretStore.read(INTEGRATION_CREDENTIAL_KEY) ?: return StoredIntegrationCredentials()
+        require(bytes.size <= MAX_CREDENTIAL_BYTES) { "Integration credential store is too large" }
+        return AppJson.decodeFromString(bytes.toString(Charsets.UTF_8))
     }
 
     private fun persist(credentials: StoredIntegrationCredentials) {
         val plainBytes = AppJson.encodeToString(credentials).toByteArray(Charsets.UTF_8)
-        require(plainBytes.size <= MAX_CREDENTIAL_FILE_BYTES) { "Integration credential store is too large" }
-        secretsWriter(file, protect(plainBytes))
+        require(plainBytes.size <= MAX_CREDENTIAL_BYTES) { "Integration credential store is too large" }
+        if (credentials.credentials.isEmpty()) {
+            secretStore.delete(INTEGRATION_CREDENTIAL_KEY)
+        } else {
+            secretStore.write(INTEGRATION_CREDENTIAL_KEY, plainBytes)
+        }
     }
 
     private fun validateProviderId(providerId: String) {
@@ -78,32 +74,13 @@ internal class ProtectedIntegrationCredentialStore(
     }
 
     private companion object {
-        const val MAX_CREDENTIAL_FILE_BYTES = 256 * 1_024
+        const val MAX_CREDENTIAL_BYTES = 256 * 1_024
     }
+
+    override val protectionDescription: String = secretStore.protectionDescription
 }
 
-internal fun createIntegrationCredentialStore(): IntegrationCredentialStore = ProtectedIntegrationCredentialStore()
+internal fun createIntegrationCredentialStore(): IntegrationCredentialStore =
+    PlatformIntegrationCredentialStore(createPlatformSecretStore())
 
-private fun isWindows(): Boolean = System.getProperty("os.name").lowercase(Locale.ROOT).contains("win")
-
-private fun defaultIntegrationCredentialFile(): File = AppDataPaths.file(
-    if (isWindows()) "integrations.dpapi" else "integrations.secrets.json"
-)
-
-private fun defaultProtector(): (ByteArray) -> ByteArray = if (isWindows()) {
-    Crypt32Util::cryptProtectData
-} else {
-    { bytes -> bytes }
-}
-
-private fun defaultUnprotector(): (ByteArray) -> ByteArray = if (isWindows()) {
-    Crypt32Util::cryptUnprotectData
-} else {
-    { bytes -> bytes }
-}
-
-private fun defaultProtectionDescription(): String = if (isWindows()) {
-    "Windows DPAPI (current user)"
-} else {
-    "owner-only local secret file"
-}
+private const val INTEGRATION_CREDENTIAL_KEY = "notification-integrations"

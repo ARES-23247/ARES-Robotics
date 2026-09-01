@@ -10,6 +10,7 @@ import com.ares.analytics.service.tuning.TuningProfileRepository
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.util.Sha256
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.service.project.persistence.ProjectMutationTransaction
 import com.ares.analytics.service.project.persistence.RemovedProjectDocument
@@ -34,7 +35,6 @@ import com.areslib.state.RobotFieldConfig
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningProfileDocument
 import java.io.File
-import java.security.MessageDigest
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -518,21 +518,21 @@ class ProjectSession(
             ProjectLayout.fieldDefinitionFile(root.path, league).takeIf(File::isFile)?.let(::add)
         }.distinctBy { it.canonicalPath }.sortedBy { it.relativeTo(root).invariantSeparatorsPath }
 
-        val digest = MessageDigest.getInstance("SHA-256")
-        canonicalFiles.forEach { file ->
-            digest.update(file.relativeTo(root).invariantSeparatorsPath.toByteArray(Charsets.UTF_8))
-            digest.update(0)
-            file.inputStream().use { input ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    digest.update(buffer, 0, count)
+        return Sha256.compositeHex {
+            canonicalFiles.forEach { file ->
+                update(file.relativeTo(root).invariantSeparatorsPath.toByteArray(Charsets.UTF_8))
+                update(0)
+                file.inputStream().use { input ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        update(buffer, 0, count)
+                    }
                 }
+                update(0)
             }
-            digest.update(0)
         }
-        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
     }
 
     private fun removableStore(kind: RemovableProjectDocumentKind): VersionedProjectDocumentStore<*> = when (kind) {

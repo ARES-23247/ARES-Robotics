@@ -75,6 +75,7 @@ fun AresInspectorDrawer(
     stableId: String? = null,
     icon: ImageVector? = null,
     width: Dp = 480.dp,
+    allowBackgroundInteraction: Boolean = false,
     doneButtonText: String = "Done",
     isDoneEnabled: Boolean = true,
     onDone: (() -> Unit)? = onDismiss,
@@ -89,17 +90,20 @@ fun AresInspectorDrawer(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.CenterEnd,
     ) {
-        // Semi-transparent backdrop to dismiss drawer on outside click
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.45f))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismiss,
-                ),
-        )
+        if (!allowBackgroundInteraction) {
+            // Modal inspectors dim and protect the underlying editor. A binding inspector may opt out
+            // because chord authoring deliberately selects additional controls on the controller canvas.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+            )
+        }
 
         // Slide-in drawer container
         AnimatedVisibility(

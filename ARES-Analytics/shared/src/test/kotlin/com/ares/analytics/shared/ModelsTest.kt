@@ -84,7 +84,7 @@ class ModelsTest {
 
     @Test
     fun `older workspace json defaults larger text off`() {
-        val decoded = Json { ignoreUnknownKeys = true }.decodeFromString<WorkspaceConfig>(
+        val decoded = Json.decodeFromString<WorkspaceConfig>(
             """{"teamId":"23247","seasonId":"2026","robotId":"ares-bot","projectPath":"C:/ares","league":"FTC"}"""
         )
 

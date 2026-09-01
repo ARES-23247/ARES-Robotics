@@ -194,7 +194,7 @@ class DesignAssistantsTest {
         }.exceptionOrNull()
 
         assertTrue(failure is IllegalStateException)
-        assertTrue(failure?.message.orEmpty().contains("one repair attempt"))
+        assertTrue(failure.message.orEmpty().contains("one repair attempt"))
     }
 
     private fun envelope(summary: String, documentJson: String): String =

@@ -261,15 +261,16 @@ class SubsystemGeneratorViewModelTest {
         )
 
         viewModel.requestRemoveSubsystem()
-        val request = viewModel.state.value.pendingRemoval
-        assertTrue(request?.persisted == true)
-        assertEquals(saved.contentHash, request?.contentHash)
-        assertTrue(request?.recoveryPath?.startsWith(".ares/recovery/subsystems/indexer/") == true)
+        val request = requireNotNull(viewModel.state.value.pendingRemoval)
+        assertTrue(request.persisted)
+        assertEquals(saved.contentHash, request.contentHash)
+        assertTrue(request.recoveryPath?.startsWith(".ares/recovery/subsystems/indexer/") == true)
 
         viewModel.confirmRemoveSubsystem()
 
         assertFalse(root.resolve(".ares/subsystems/indexer.aressubsystem").exists())
-        assertTrue(root.resolve(request!!.recoveryPath!!).isFile)
+        val recoveryPath = requireNotNull(request.recoveryPath)
+        assertTrue(root.resolve(recoveryPath).isFile)
         assertTrue(source.isFile, "Removing metadata must never remove user-owned or starter source")
         assertTrue(viewModel.state.value.documents.isEmpty())
         assertNull(viewModel.state.value.draft)
@@ -279,7 +280,7 @@ class SubsystemGeneratorViewModelTest {
         viewModel.restoreRemovedSubsystem()
 
         assertTrue(root.resolve(".ares/subsystems/indexer.aressubsystem").isFile)
-        assertFalse(root.resolve(request.recoveryPath!!).exists())
+        assertFalse(root.resolve(recoveryPath).exists())
         assertTrue(source.isFile, "Restoring metadata must never replace user-owned or starter source")
         assertEquals("indexer", viewModel.state.value.draft?.document?.documentId)
         assertNull(viewModel.state.value.recentRecovery)
@@ -378,10 +379,11 @@ class SubsystemGeneratorViewModelTest {
         viewModel.newSubsystem()
 
         val state = viewModel.state.value
-        assertEquals(SubsystemTemplate.HOMED_MECHANISM, state.draft?.document?.template)
-        assertEquals(SubsystemHomingMethod.DIGITAL_SENSOR, state.draft?.document?.safety?.homing?.method)
-        assertTrue(state.draft?.document?.generateMockIo == true)
-        assertTrue(state.draft?.document?.generateTest == true)
+        val draft = requireNotNull(state.draft)
+        assertEquals(SubsystemTemplate.HOMED_MECHANISM, draft.document.template)
+        assertEquals(SubsystemHomingMethod.DIGITAL_SENSOR, draft.document.safety.homing.method)
+        assertTrue(draft.document.generateMockIo)
+        assertTrue(draft.document.generateTest)
         assertFalse(state.generatedPlumbingExpanded)
         assertTrue(state.previewFiles.all { it.description.isNotBlank() })
         assertTrue(state.previewFiles.all { it.moduleName.isNotBlank() && it.projectRelativePath.isNotBlank() })
@@ -804,9 +806,8 @@ class SubsystemGeneratorViewModelTest {
         viewModel.requestAiProposal("Add a safe reversed follower motor")
         waitFor { !viewModel.state.value.aiProposalInProgress }
 
-        val review = viewModel.state.value.aiProposal
-        assertTrue(review != null)
-        assertTrue(review!!.canApply)
+        val review = requireNotNull(viewModel.state.value.aiProposal)
+        assertTrue(review.canApply)
         assertEquals(before.uid, review.proposal.candidate.uid)
         assertEquals(before.implementation, review.proposal.candidate.implementation)
         assertEquals(

@@ -9,6 +9,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.readAvailable
 import com.ares.analytics.BuildConfig
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,6 @@ import java.io.FileOutputStream
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempFile
 
@@ -416,16 +416,7 @@ internal fun parseChecksum(body: String, expectedFilename: String): String {
 }
 
 internal fun updateSha256(file: File): String {
-    val digest = MessageDigest.getInstance("SHA-256")
-    file.inputStream().buffered().use { input ->
-        val buffer = ByteArray(64 * 1024)
-        while (true) {
-            val count = input.read(buffer)
-            if (count < 0) break
-            if (count > 0) digest.update(buffer, 0, count)
-        }
-    }
-    return digest.digest().joinToString("") { "%02x".format(it) }
+    return Sha256.fileHex(file)
 }
 
 private fun String.normalizeThumbprint(): String = filter(Char::isLetterOrDigit).uppercase()

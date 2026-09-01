@@ -66,7 +66,7 @@ class MockIMU : IMU {
         return YawPitchRollAngles(AngleUnit.RADIANS, mockYaw, mockPitch, mockRoll, 0L)
     }
 
-    override fun getRobotAngularVelocity(angleUnit: AngleUnit): AngularVelocity {
+    override fun getRobotAngularVelocity(unit: AngleUnit): AngularVelocity {
         if (shouldThrow) throw RuntimeException("I2C Disconnect / Timeout!")
         return AngularVelocity(AngleUnit.RADIANS, 0.0f, 0.0f, 0.0f, 0L)
     }

@@ -19,7 +19,7 @@ class DashboardTelemetryParsingTest {
     fun `total current is distinct and unrelated current settings are rejected`() {
         val total = parsePowerCurrentTopic("Robot/TotalCurrentAmps")
         assertTrue(total?.isTotal == true)
-        assertNull(total?.channelName)
+        assertNull(total.channelName)
         assertNull(parsePowerCurrentTopic("Tuning/Drive/CurrentLimit"))
         assertNull(parsePowerCurrentTopic("Intake/TargetCurrentAmps"))
     }

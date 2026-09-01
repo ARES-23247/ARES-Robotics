@@ -1,10 +1,10 @@
 package com.ares.analytics.service.project.persistence
 
 import com.ares.analytics.shared.AppJson
+import com.ares.analytics.util.Sha256
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import java.io.File
-import java.security.MessageDigest
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -29,7 +29,7 @@ class ProjectMetadataRepository {
         return runCatching { decodeProjectMetadata(file.readText()) }
     }
 
-    fun rawContentHash(projectPath: String): String = sha256(file(projectPath).readBytes())
+    fun rawContentHash(projectPath: String): String = Sha256.fileHex(file(projectPath))
 
     fun save(projectPath: String, document: AresProjectMetadataDocument): String {
         val encoded = AresProjectMetadataCodec.encode(document)
@@ -97,7 +97,7 @@ class ProjectMetadataRepository {
                 "The invalid project identity was removed after preview. Reload before creating a replacement."
             }
             val rawBytes = target.readBytes()
-            val actualRawHash = sha256(rawBytes)
+            val actualRawHash = Sha256.hex(rawBytes)
             require(actualRawHash == expectedRawContentHash) {
                 "The invalid project identity changed after preview. Reload it, review the new repair, and try again."
             }
@@ -128,7 +128,6 @@ class ProjectMetadataRepository {
     }.isFailure
 
 }
-
 /** Adds a stable, student-facing shape check before the library codec touches non-null Kotlin fields. */
 internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
     val root = runCatching { AppJson.parseToJsonElement(json) }.getOrElse { error ->
@@ -177,7 +176,3 @@ internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
     }
     return AresProjectMetadataCodec.decode(json)
 }
-
-private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
-    .digest(bytes)
-    .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }

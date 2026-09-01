@@ -15,6 +15,8 @@ import com.ares.analytics.shared.models.League
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
+import com.areslib.catalog.initialCapabilityArguments
+import com.areslib.catalog.validateCapabilityArguments
 import com.areslib.controls.AnalogControlPolicyDocument
 import com.areslib.controls.AxisTransformDocument
 import com.areslib.controls.ControlBindingDocument
@@ -335,7 +337,11 @@ class ControlsEditorViewModel(
             ControlSourceDocument(ControlSourceKind.BUTTON, slot, listOf(control.controlId))
         }
         val target = current.actions.firstOrNull()?.let { descriptor ->
-            ControlTargetDocument(ControlTargetKind.ACTION, descriptor.key, defaultArguments(descriptor))
+            ControlTargetDocument(
+                ControlTargetKind.ACTION,
+                descriptor.key,
+                initialCapabilityArguments(descriptor.parameters),
+            )
         } ?: current.routineIds.firstOrNull()?.let { routine ->
             ControlTargetDocument(ControlTargetKind.ROUTINE, routine)
         } ?: ControlTargetDocument(ControlTargetKind.ACTION, "choose.action")
@@ -351,6 +357,12 @@ class ControlsEditorViewModel(
             draftHasUnappliedChanges = true
         ).revalidated()
     }
+
+    /** Starts a reviewed two-or-more-button chord without saving or generating code. */
+    fun createChordBinding() = mutateSelection { createChordBindingDraft(it).revalidated() }
+
+    /** Assigns an existing trigger-neutral routine as a controller macro. */
+    fun createRoutineMacroBinding() = mutateSelection { createRoutineMacroBindingDraft(it).revalidated() }
 
     /**
      * Starts a normal reviewed binding draft for a missing catalog action on the selected control.
@@ -376,7 +388,11 @@ class ControlsEditorViewModel(
             displayName = action.displayName,
             source = ControlSourceDocument(ControlSourceKind.BUTTON, slot, listOf(control.controlId)),
             event = ControlEvent.PRESS,
-            target = ControlTargetDocument(ControlTargetKind.ACTION, action.key, defaultArguments(action)),
+            target = ControlTargetDocument(
+                ControlTargetKind.ACTION,
+                action.key,
+                initialCapabilityArguments(action.parameters),
+            ),
         )
         current.copy(
             selectedBindingId = null,
@@ -441,6 +457,7 @@ class ControlsEditorViewModel(
         draft.copy(
             source = source,
             event = defaultEvent(kind),
+            suppressConstituentBindings = kind == ControlSourceKind.CHORD,
             analogPolicy = if (kind == ControlSourceKind.AXIS_VALUE || kind == ControlSourceKind.AXIS_ZONE) {
                 AnalogControlPolicyDocument()
             } else null
@@ -463,7 +480,11 @@ class ControlsEditorViewModel(
             target = ControlTargetDocument(
                 kind = kind,
                 key = key,
-                arguments = if (kind == ControlTargetKind.ACTION && action != null) defaultArguments(action) else emptyMap(),
+                arguments = if (kind == ControlTargetKind.ACTION && action != null) {
+                    initialCapabilityArguments(action.parameters)
+                } else {
+                    emptyMap()
+                },
                 routinePolicy = draft.target.routinePolicy
             )
         )
@@ -528,11 +549,11 @@ class ControlsEditorViewModel(
         }
         current.replaceScheme(updated).copy(
             selectedBindingId = draft.bindingId,
-            draftBinding = draft,
+            draftBinding = null,
             dirty = true,
             dirtySchemeIds = current.dirtySchemeIds + updated.documentId,
             draftHasUnappliedChanges = false,
-            status = "Binding applied locally. Save to create a project revision."
+            status = "Binding applied locally. Save to create a project revision.",
         ).revalidated()
     }
 
@@ -890,30 +911,8 @@ class ControlsEditorViewModel(
 
     private fun validateArguments(
         action: ActionDescriptor,
-        values: Map<String, String>
-    ): List<String> = action.parameters.mapNotNull { parameter ->
-        val raw = values[parameter.key].orEmpty()
-        when {
-            raw.isBlank() && parameter.required -> "${parameter.displayName} is required."
-            raw.isBlank() -> null
-            parameter.type == CapabilityParameterType.NUMBER -> {
-                val number = raw.toDoubleOrNull()
-                val minimum = parameter.minimum
-                val maximum = parameter.maximum
-                when {
-                    number == null || !number.isFinite() -> "${parameter.displayName} must be a finite number."
-                    minimum != null && number < minimum -> "${parameter.displayName} must be at least $minimum."
-                    maximum != null && number > maximum -> "${parameter.displayName} must be at most $maximum."
-                    else -> null
-                }
-            }
-            parameter.type == CapabilityParameterType.BOOLEAN && raw != "true" && raw != "false" ->
-                "${parameter.displayName} must be true or false."
-            parameter.type == CapabilityParameterType.ENUM && raw !in parameter.options ->
-                "${parameter.displayName} must be one of ${parameter.options.joinToString()}."
-            else -> null
-        }
-    }
+        values: Map<String, String>,
+    ): List<String> = validateCapabilityArguments(action.parameters, values).map { "${it.message}." }
 
     companion object {
         private fun newScheme(profileId: String) = ControlSchemeDocument(
@@ -926,30 +925,10 @@ class ControlsEditorViewModel(
             bindings = emptyList()
         )
 
-        private fun uniqueBindingId(scheme: ControlSchemeDocument, raw: String): String {
-            val base = raw.lowercase().replace(Regex("[^a-z0-9._-]+"), "-").trim('-').ifBlank { "binding" }
-            var candidate = base
-            var suffix = 2
-            val used = scheme.bindings.mapTo(hashSetOf()) { it.bindingId }
-            while (candidate in used) candidate = "$base-${suffix++}"
-            return candidate
-        }
-
         private fun defaultEvent(kind: ControlSourceKind) = when (kind) {
             ControlSourceKind.AXIS_VALUE -> ControlEvent.VALUE
             ControlSourceKind.AXIS_ZONE -> ControlEvent.ZONE_ENTER
             else -> ControlEvent.PRESS
-        }
-
-        private fun defaultArguments(action: ActionDescriptor): Map<String, String> = action.parameters.mapNotNull { parameter ->
-            parameter.defaultValue()?.let { parameter.key to it }
-                ?: if (parameter.required) parameter.key to "" else null
-        }.toMap()
-
-        private fun CapabilityParameterDescriptor.defaultValue(): String? = when (type) {
-            CapabilityParameterType.NUMBER -> defaultNumber?.toString()
-            CapabilityParameterType.BOOLEAN -> defaultBoolean?.toString()
-            CapabilityParameterType.TEXT, CapabilityParameterType.ENUM -> defaultText
         }
 
         private fun bindingIdFromPath(path: String, scheme: ControlSchemeDocument): String? {

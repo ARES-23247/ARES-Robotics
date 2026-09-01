@@ -69,8 +69,8 @@ token storage are desktop-owned.
 `studioReleaseVerification` is the deterministic Studio release contract. It runs every `app`,
 `shared`, and `gateway` test suite, Kover line-coverage ratchets, dashboard performance budgets,
 release-version alignment, and the production Kotlin source-size ratchet. The initial measured line
-coverage is 38.61% for `app`, 54.56% for `shared`, and 52.55% for `gateway`; enforced floors are 38%,
-52%, and 52% respectively. Floors may increase as coverage improves and may not be lowered to bypass
+coverage is 38.64% for `app`, 54.56% for `shared`, and 54.01% for `gateway`; enforced floors are 38%,
+54%, and 54% respectively. Floors may increase as coverage improves and may not be lowered to bypass
 a release failure.
 
 Production Kotlin files are limited to 500 lines. Larger files inherited from the 3.0.0 baseline are

@@ -7,6 +7,7 @@ import java.util.Base64
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -27,6 +28,12 @@ class DesktopTestControlServerTest {
 
         val encoded = Base64.getEncoder().encodeToString("Robot π".toByteArray(StandardCharsets.UTF_8))
         assertEquals(DesktopTestCommand.Text("Robot π"), DesktopTestCommandParser.parse("TEXT $encoded"))
+
+        val encodedPath = Base64.getEncoder().encodeToString("C:\\robots\\Lightbot".toByteArray(StandardCharsets.UTF_8))
+        assertEquals(
+            DesktopTestCommand.ChoosePath("C:\\robots\\Lightbot"),
+            DesktopTestCommandParser.parse("CHOOSE_PATH $encodedPath"),
+        )
     }
 
     @Test
@@ -34,7 +41,35 @@ class DesktopTestControlServerTest {
         assertFailsWith<IllegalArgumentException> { DesktopTestCommandParser.parse("CLICK 12") }
         assertFailsWith<IllegalArgumentException> { DesktopTestCommandParser.parse("WHEEL 12 34") }
         assertFailsWith<IllegalArgumentException> { DesktopTestCommandParser.parse("KEY") }
+        assertFailsWith<IllegalArgumentException> { DesktopTestCommandParser.parse("CHOOSE_PATH") }
         assertFailsWith<IllegalStateException> { DesktopTestCommandParser.parse("DELETE EVERYTHING") }
+    }
+
+    @Test
+    fun `accepts another command while a modal UI command is still running`() {
+        val modalCommandStarted = CountDownLatch(1)
+        val releaseModalCommand = CountDownLatch(1)
+        DesktopTestControlServer(port = 0) { command ->
+            if (command is DesktopTestCommand.Click) {
+                modalCommandStarted.countDown()
+                assertTrue(releaseModalCommand.await(2, TimeUnit.SECONDS))
+                "clicked"
+            } else {
+                "pong"
+            }
+        }.use { server ->
+            server.start()
+            val port = assertNotNull(server.localPort)
+            val modalClient = thread(isDaemon = true) {
+                sendCommand(port, "CLICK 12 34")
+            }
+
+            assertTrue(modalCommandStarted.await(1, TimeUnit.SECONDS))
+            assertEquals("OK pong", sendCommand(port, "PING"))
+            releaseModalCommand.countDown()
+            modalClient.join(1_000)
+            assertTrue(!modalClient.isAlive)
+        }
     }
 
     @Test
@@ -71,4 +106,14 @@ class DesktopTestControlServerTest {
             }
         }
     }
+
+    private fun sendCommand(port: Int, command: String): String =
+        Socket(InetAddress.getLoopbackAddress(), port).use { socket ->
+            socket.soTimeout = 1_000
+            socket.getOutputStream().bufferedWriter().apply {
+                appendLine(command)
+                flush()
+            }
+            socket.getInputStream().bufferedReader().readLine()
+        }
 }

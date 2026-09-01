@@ -1,6 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.isSimulationSessionTags
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.WorkspaceConfig
@@ -11,6 +12,7 @@ import java.io.File
 enum class RunEvidenceSourceKind(val label: String) {
     IMPORTED_FILE("Imported file with preserved report"),
     WORKSPACE_DRIVE_OBJECT("Workspace Google Drive object"),
+    STUDIO_SIMULATION("Studio-recorded simulator run"),
     LOCAL_SESSION_WITHOUT_REPORT("Local session with incomplete source record"),
     AMBIGUOUS_IMPORT_REPORT("Conflicting import reports"),
 }
@@ -129,7 +131,7 @@ class GuidedRunAnalysisService(
             val topicCount = databaseService.getDistinctTelemetryKeys(sessionId).size
             val frameCount = databaseService.countTelemetryFrames(sessionId)
             val alerts = databaseService.getAlerts(sessionId).sortedBy(AlertRecord::triggerTimestampMs)
-            val source = sourceEvidence(workspace, sessionId, summary)
+            val source = sourceEvidence(workspace, session, summary)
             val diagnosticResult = runCatching { diagnosticCoachService.analyze(sessionId) }
             val advancedResult = if (summaryIdentityMatches) {
                 advancedAnalyticsService.analyzeAgainstRecent(sessionId)
@@ -287,13 +289,13 @@ class GuidedRunAnalysisService(
 
     private fun sourceEvidence(
         workspace: WorkspaceConfig,
-        sessionId: String,
+        session: Session,
         summary: SessionSummary?,
     ): RunSourceEvidence {
         val archiveResult = runCatching { importArchiveService.load(workspace.projectPath) }
         val reports = archiveResult.getOrNull()?.imported.orEmpty()
             .mapNotNull(ImportArchiveEntry::report)
-            .filter { it.sessionId == sessionId }
+            .filter { it.sessionId == session.sessionId }
         if (reports.size > 1) {
             return RunSourceEvidence(
                 kind = RunEvidenceSourceKind.AMBIGUOUS_IMPORT_REPORT,
@@ -320,6 +322,13 @@ class GuidedRunAnalysisService(
                 sourceName = summary.cloudFileName,
                 decoder = "Parquet workspace object",
                 sha256 = summary.cloudSha256,
+            )
+        }
+        if (session.tags.isSimulationSessionTags()) {
+            return RunSourceEvidence(
+                kind = RunEvidenceSourceKind.STUDIO_SIMULATION,
+                explanation = "Studio recorded this run directly from the loopback simulator into the local workspace database.",
+                decoder = "Studio NT4 simulator capture",
             )
         }
         return RunSourceEvidence(

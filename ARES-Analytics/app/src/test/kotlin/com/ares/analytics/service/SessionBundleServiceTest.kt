@@ -10,6 +10,7 @@ import com.ares.analytics.shared.models.SessionAnnotation
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import java.nio.file.Files
@@ -75,7 +76,7 @@ class SessionBundleServiceTest {
                 fileSizeBytes = bundle.length(),
                 cloudFileId = "drive-object-1",
                 cloudFileName = "session.ares-session.zip",
-                cloudSha256 = sha256(bundle),
+                cloudSha256 = Sha256.fileHex(bundle),
             )
 
             SessionBundleService(targetDatabase, environment)

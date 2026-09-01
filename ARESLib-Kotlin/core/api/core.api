@@ -1898,26 +1898,6 @@ public final class com/areslib/input/AnalogZoneListener$DefaultImpls {
 	public static fun onExit (Lcom/areslib/input/AnalogZoneListener;D)V
 }
 
-public final class com/areslib/input/AxisControlDescriptor : com/areslib/input/ControlDescriptor {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/AxisTransform;Lcom/areslib/input/ControlVisualAnchor;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/AxisTransform;Lcom/areslib/input/ControlVisualAnchor;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()I
-	public final fun component4 ()Lcom/areslib/input/AxisTransform;
-	public final fun component5 ()Lcom/areslib/input/ControlVisualAnchor;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/AxisTransform;Lcom/areslib/input/ControlVisualAnchor;)Lcom/areslib/input/AxisControlDescriptor;
-	public static synthetic fun copy$default (Lcom/areslib/input/AxisControlDescriptor;Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/AxisTransform;Lcom/areslib/input/ControlVisualAnchor;ILjava/lang/Object;)Lcom/areslib/input/AxisControlDescriptor;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getAnchor ()Lcom/areslib/input/ControlVisualAnchor;
-	public final fun getAxisIndex ()I
-	public final fun getDefaultTransform ()Lcom/areslib/input/AxisTransform;
-	public fun getId ()Ljava/lang/String;
-	public fun getLabel ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/areslib/input/AxisThresholdSource : com/areslib/input/DigitalSource {
 	public fun <init> (IDDLcom/areslib/input/ThresholdDirection;Lcom/areslib/input/AxisTransform;)V
 	public synthetic fun <init> (IDDLcom/areslib/input/ThresholdDirection;Lcom/areslib/input/AxisTransform;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1975,24 +1955,6 @@ public final class com/areslib/input/BindingReleaseReason : java/lang/Enum {
 	public static fun values ()[Lcom/areslib/input/BindingReleaseReason;
 }
 
-public final class com/areslib/input/ButtonControlDescriptor : com/areslib/input/ControlDescriptor {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/ControlVisualAnchor;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/ControlVisualAnchor;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()I
-	public final fun component4 ()Lcom/areslib/input/ControlVisualAnchor;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/ControlVisualAnchor;)Lcom/areslib/input/ButtonControlDescriptor;
-	public static synthetic fun copy$default (Lcom/areslib/input/ButtonControlDescriptor;Ljava/lang/String;Ljava/lang/String;ILcom/areslib/input/ControlVisualAnchor;ILjava/lang/Object;)Lcom/areslib/input/ButtonControlDescriptor;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getAnchor ()Lcom/areslib/input/ControlVisualAnchor;
-	public final fun getButtonIndex ()I
-	public fun getId ()Ljava/lang/String;
-	public fun getLabel ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/areslib/input/ButtonSuppressionState {
 	public fun <init> ()V
 	public fun <init> (I)V
@@ -2015,27 +1977,6 @@ public final class com/areslib/input/ChordSource$Companion {
 	public static synthetic fun rawButtons$default (Lcom/areslib/input/ChordSource$Companion;II[IJILjava/lang/Object;)Lcom/areslib/input/ChordSource;
 }
 
-public abstract interface class com/areslib/input/ControlDescriptor {
-	public abstract fun getAnchor ()Lcom/areslib/input/ControlVisualAnchor;
-	public abstract fun getId ()Ljava/lang/String;
-	public abstract fun getLabel ()Ljava/lang/String;
-}
-
-public final class com/areslib/input/ControlVisualAnchor {
-	public fun <init> (Lcom/areslib/input/ControllerView;DD)V
-	public final fun component1 ()Lcom/areslib/input/ControllerView;
-	public final fun component2 ()D
-	public final fun component3 ()D
-	public final fun copy (Lcom/areslib/input/ControllerView;DD)Lcom/areslib/input/ControlVisualAnchor;
-	public static synthetic fun copy$default (Lcom/areslib/input/ControlVisualAnchor;Lcom/areslib/input/ControllerView;DDILjava/lang/Object;)Lcom/areslib/input/ControlVisualAnchor;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getView ()Lcom/areslib/input/ControllerView;
-	public final fun getX ()D
-	public final fun getY ()D
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/areslib/input/ControllerBindingRuntime {
 	public fun <init> ()V
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
@@ -2043,63 +1984,6 @@ public final class com/areslib/input/ControllerBindingRuntime {
 	public final fun cancel ()V
 	public final fun update (Lcom/areslib/input/InputFrame;)V
 	public final fun update (Lcom/areslib/input/InputFrame;J)V
-}
-
-public final class com/areslib/input/ControllerIdentity {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;II)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun component4 ()Ljava/lang/Integer;
-	public final fun component5 ()I
-	public final fun component6 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;II)Lcom/areslib/input/ControllerIdentity;
-	public static synthetic fun copy$default (Lcom/areslib/input/ControllerIdentity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;IIILjava/lang/Object;)Lcom/areslib/input/ControllerIdentity;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAxisCount ()I
-	public final fun getButtonCount ()I
-	public final fun getGuid ()Ljava/lang/String;
-	public final fun getName ()Ljava/lang/String;
-	public final fun getProductId ()Ljava/lang/Integer;
-	public final fun getVendorId ()Ljava/lang/Integer;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/areslib/input/ControllerProfile {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lcom/areslib/input/ControllerProfileMatch;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lcom/areslib/input/ControllerProfileMatch;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun controlAt (I)Lcom/areslib/input/ControlDescriptor;
-	public final fun findControl (Ljava/lang/String;)Lcom/areslib/input/ControlDescriptor;
-	public final fun getControlCount ()I
-	public final fun getDisplayName ()Ljava/lang/String;
-	public final fun getId ()Ljava/lang/String;
-	public final fun getMatch ()Lcom/areslib/input/ControllerProfileMatch;
-	public final fun getRequiredAxisCapacity ()I
-	public final fun getRequiredButtonCapacity ()I
-	public final fun requireAxis (Ljava/lang/String;)Lcom/areslib/input/AxisControlDescriptor;
-	public final fun requireButton (Ljava/lang/String;)Lcom/areslib/input/ButtonControlDescriptor;
-}
-
-public final class com/areslib/input/ControllerProfileMatch {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Integer;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;)Lcom/areslib/input/ControllerProfileMatch;
-	public static synthetic fun copy$default (Lcom/areslib/input/ControllerProfileMatch;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/input/ControllerProfileMatch;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getGuid ()Ljava/lang/String;
-	public final fun getNameContains ()Ljava/lang/String;
-	public final fun getProductId ()Ljava/lang/Integer;
-	public final fun getVendorId ()Ljava/lang/Integer;
-	public fun hashCode ()I
-	public final fun matches (Lcom/areslib/input/ControllerIdentity;)Z
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/areslib/input/ControllerState {
@@ -2153,14 +2037,6 @@ public final class com/areslib/input/ControllerState {
 	public final fun getY ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/areslib/input/ControllerView : java/lang/Enum {
-	public static final field FRONT Lcom/areslib/input/ControllerView;
-	public static final field REAR Lcom/areslib/input/ControllerView;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/input/ControllerView;
-	public static fun values ()[Lcom/areslib/input/ControllerView;
 }
 
 public final class com/areslib/input/DigitalBinding {

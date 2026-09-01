@@ -99,6 +99,7 @@ fun MainScreen(services: ServiceRegistry) {
     var commandPaletteOpen by remember { mutableStateOf(false) }
     var workspacePendingDeletion by remember { mutableStateOf<Pair<String, String>?>(null) }
     var requestedLessonId by remember { mutableStateOf<String?>(null) }
+    var requestedCheckpointId by remember { mutableStateOf<String?>(null) }
     var requestedGlossaryTerm by remember { mutableStateOf<String?>(null) }
     var coachDrawerOpen by remember { mutableStateOf(false) }
     var requestedProjectSetupMode by remember { mutableStateOf<ProjectSetupMode?>(null) }
@@ -726,6 +727,21 @@ fun MainScreen(services: ServiceRegistry) {
                         }
                     }
 
+                    if (
+                        !learningProgress.firstMissionNudgeDismissed &&
+                        "start-simulator" !in learningProgress.startedLessonIds &&
+                        activeNav != NavigationTarget.ACADEMY
+                    ) {
+                        FirstMissionNudge(
+                            onStart = {
+                                requestedLessonId = "start-simulator"
+                                requestedCheckpointId = null
+                                mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                            },
+                            onDismiss = { scope.launch { services.learningProgressService.dismissFirstMissionNudge() } },
+                        )
+                    }
+
                     Box(modifier = Modifier.weight(1f)) {
                         WorkspaceRouteHost(
                             state = WorkspaceRouteState(
@@ -744,6 +760,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
                                 hardwareStudioInitialTab = hardwareStudioInitialTab,
                                 requestedLessonId = requestedLessonId,
+                                requestedCheckpointId = requestedCheckpointId,
                                 requestedGlossaryTerm = requestedGlossaryTerm,
                             ),
                             scope = workspaceRouteFeatureScope,
@@ -780,7 +797,13 @@ fun MainScreen(services: ServiceRegistry) {
                                     mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                                 },
                                 openAcademyLesson = {
+                                    requestedCheckpointId = null
                                     requestedLessonId = it
+                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                                },
+                                openAcademyCheckpoint = { lessonId, checkpointId ->
+                                    requestedLessonId = lessonId
+                                    requestedCheckpointId = checkpointId
                                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                                 },
                                 executeProjectCommand = executeProjectCommand,
@@ -860,41 +883,14 @@ fun MainScreen(services: ServiceRegistry) {
             )
         }
 
-        workspacePendingDeletion?.let { (workspaceId, displayName) ->
-            AlertDialog(
-                onDismissRequest = { workspacePendingDeletion = null },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = AresError
-                    )
-                },
-                title = { Text("Remove this workspace?") },
-                text = {
-                    Text(
-                        "ARES will remove the saved workspace settings for $displayName. " +
-                            "Your robot project files and imported run data will not be deleted."
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
-                            workspacePendingDeletion = null
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent)
-                    ) {
-                        Text("Remove workspace")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { workspacePendingDeletion = null }) {
-                        Text("Keep workspace")
-                    }
-                }
-            )
-        }
+        WorkspaceDeletionDialog(
+            pendingWorkspace = workspacePendingDeletion,
+            onConfirm = { workspaceId ->
+                mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
+                workspacePendingDeletion = null
+            },
+            onDismiss = { workspacePendingDeletion = null },
+        )
 
         if (deployDialogOpen) {
             OneClickDeployDialog(

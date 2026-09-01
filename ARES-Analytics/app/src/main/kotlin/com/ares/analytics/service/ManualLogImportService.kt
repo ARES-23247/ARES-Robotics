@@ -3,6 +3,7 @@ package com.ares.analytics.service
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.service.log.HootDecoderService
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -58,7 +59,7 @@ class ManualLogImportService(
             val archived = mutableListOf<ArchivedSelection>()
             try {
                 sources.forEach { source ->
-                    val sha256 = logParserService.sha256(source)
+                    val sha256 = Sha256.fileHex(source)
                     val target = autoImportService.safeArchiveFile(archiveDirectory, sha256, source.name)
                     val created = copyVerifiedIfMissing(source, target, sha256)
                     archived += ArchivedSelection(source, target, sha256, created)
@@ -146,12 +147,12 @@ class ManualLogImportService(
     }
 
     private fun copyVerifiedIfMissing(source: File, target: File, expectedSha256: String): Boolean {
-        if (target.isFile && logParserService.sha256(target) == expectedSha256) return false
+        if (target.isFile && Sha256.fileHex(target) == expectedSha256) return false
         val partial = File(target.parentFile, ".${target.name}.partial")
         partial.delete()
         try {
             Files.copy(source.toPath(), partial.toPath(), StandardCopyOption.REPLACE_EXISTING)
-            require(partial.length() == source.length() && logParserService.sha256(partial) == expectedSha256) {
+            require(partial.length() == source.length() && Sha256.fileHex(partial) == expectedSha256) {
                 "The archived copy of ${source.name} did not match the selected file"
             }
             moveAtomically(partial, target)
@@ -169,7 +170,7 @@ class ManualLogImportService(
         if (!source.name.endsWith(".dslog", ignoreCase = true)) return
         val companion = File(source.parentFile, source.nameWithoutExtension + ".dsevents")
         if (!companion.isFile) return
-        val sha256 = logParserService.sha256(companion)
+        val sha256 = Sha256.fileHex(companion)
         val target = File(archivedPrimary.parentFile, archivedPrimary.nameWithoutExtension + ".dsevents")
         val created = copyVerifiedIfMissing(companion, target, sha256)
         archived += ArchivedSelection(companion, target, sha256, created)
