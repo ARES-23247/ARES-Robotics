@@ -15,6 +15,7 @@ import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.viewmodel.field.FieldImageLoader
 import com.ares.analytics.viewmodel.field.FieldEditorValidator
+import com.ares.analytics.viewmodel.field.FieldAprilTagTransfer
 import com.ares.analytics.viewmodel.field.FieldEditorLayout
 import com.ares.analytics.viewmodel.field.FieldMeasurementUnit
 import com.ares.analytics.viewmodel.field.FieldPrefabCatalog
@@ -28,7 +29,6 @@ import com.ares.analytics.viewmodel.field.SimulatorFieldApplyReceipt
 import com.ares.analytics.viewmodel.field.SimulatorFieldApplyFailure
 import com.ares.analytics.viewmodel.field.parseSimulatorFieldApplyReceipt
 import com.areslib.state.FieldType
-import com.areslib.state.AprilTagMapCodec
 import com.areslib.state.AprilTagMapFormat
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
@@ -131,8 +131,6 @@ sealed class FieldEditorIntent {
     data class ApplyAprilTagImport(val replaceExisting: Boolean) : FieldEditorIntent()
     data object DismissAprilTagImport : FieldEditorIntent()
     data class ExportAprilTagMap(val format: AprilTagExportFormat, val destination: File) : FieldEditorIntent()
-    /** Existing intent alias; imports now require review before changing the canonical field. */
-    data class ImportFmap(val fmapContent: String, val projectPath: String?, val league: League) : FieldEditorIntent()
 }
 
 enum class AprilTagExportFormat { LIMELIGHT_FMAP, WPILIB_JSON }
@@ -188,14 +186,6 @@ class FieldEditorViewModel(
                 )
             }
             is FieldEditorIntent.PreviewAprilTagMap -> previewAprilTagMap(intent)
-            is FieldEditorIntent.ImportFmap -> previewAprilTagMap(
-                FieldEditorIntent.PreviewAprilTagMap(
-                    content = intent.fmapContent,
-                    fileName = "import.fmap",
-                    projectPath = intent.projectPath,
-                    league = intent.league,
-                )
-            )
             is FieldEditorIntent.ApplyAprilTagImport -> applyAprilTagImport(intent.replaceExisting)
             FieldEditorIntent.DismissAprilTagImport -> _state.update { it.copy(aprilTagImportPreview = null) }
             is FieldEditorIntent.ExportAprilTagMap -> exportAprilTagMap(intent)
@@ -858,61 +848,17 @@ class FieldEditorViewModel(
         activeProjectPath = intent.projectPath ?: activeProjectPath
         activeLeague = intent.league
         try {
-            val decoded = when {
-                intent.fileName.endsWith(".fmap", ignoreCase = true) ->
-                    AprilTagMapCodec.decodeLimelightFmapForField(
-                        intent.content,
-                        requireNotNull(_state.value.document) { "Load a field before importing its AprilTags" },
-                    )
-                else -> runCatching { AprilTagMapCodec.decodeWpilib(intent.content) }
-                    .recoverCatching { AprilTagMapCodec.decodeAresField(intent.content) }
-                    .recoverCatching {
-                        AprilTagMapCodec.decodeLimelightFmapForField(
-                            intent.content,
-                            requireNotNull(_state.value.document) { "Load a field before importing its AprilTags" },
-                        )
-                    }
-                    .getOrThrow()
-            }
-            val placements = decoded.tags.map { tag ->
-                AprilTagPlacement(
-                    id = tag.editorId.ifBlank { "apriltag_${tag.id}" },
-                    tagId = tag.id,
-                    name = tag.name,
-                    family = tag.family,
-                    sizeMeters = tag.sizeMeters,
-                    x = tag.x,
-                    y = tag.y,
-                    z = tag.z,
-                    rollDegrees = tag.roll,
-                    pitchDegrees = tag.pitch,
-                    yawDegrees = tag.yaw,
-                )
-            }
-            val existingIds = _state.value.aprilTags.mapTo(hashSetOf()) { it.tagId }
-            val conflicts = placements.count { it.tagId in existingIds }
-            val warnings = buildList {
-                decoded.omittedMetadata.sorted().forEach { omitted ->
-                    add("The source does not contain $omitted; review those values before hardware use.")
-                }
-                if (conflicts > 0) {
-                    add("$conflicts imported tag ID(s) already exist. Merge keeps the current versions; replace uses the import.")
-                }
-                if (intent.league == League.FTC && placements.any { it.family.isBlank() || it.sizeMeters == null }) {
-                    add("FTC VisionPortal requires a family and physical size for every tag before deployment.")
-                }
-            }
+            val preview = FieldAprilTagTransfer.decode(
+                content = intent.content,
+                fileName = intent.fileName,
+                field = requireNotNull(_state.value.document) { "Load a field before importing its AprilTags" },
+                existingTags = _state.value.aprilTags,
+                league = intent.league,
+            )
             _state.update {
                 it.copy(
-                    aprilTagImportPreview = AprilTagImportPreview(
-                        format = decoded.format,
-                        tags = placements,
-                        fieldLengthMeters = decoded.fieldLengthMeters,
-                        fieldWidthMeters = decoded.fieldWidthMeters,
-                        warnings = warnings,
-                        sourceName = intent.fileName,
-                    ),
-                    saveStatus = "Review ${placements.size} imported AprilTag(s) before applying them.",
+                    aprilTagImportPreview = preview,
+                    saveStatus = "Review ${preview.tags.size} imported AprilTag(s) before applying them.",
                 )
             }
         } catch (error: Exception) {
@@ -956,10 +902,7 @@ class FieldEditorViewModel(
         scope.launch {
             try {
                 val content = withContext(Dispatchers.Default) {
-                    when (intent.format) {
-                        AprilTagExportFormat.LIMELIGHT_FMAP -> AprilTagMapCodec.encodeLimelightFmap(document)
-                        AprilTagExportFormat.WPILIB_JSON -> AprilTagMapCodec.encodeWpilib(document)
-                    }
+                    FieldAprilTagTransfer.encode(document, intent.format)
                 }
                 withContext(Dispatchers.IO) {
                     writeFileAtomically(intent.destination) { temporary ->
