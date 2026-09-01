@@ -43,7 +43,7 @@ app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStatefl
 app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureTransitionsSection.kt=682
 app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GuidedTuningExperimentPanel.kt=679
 app/src/main/kotlin/com/ares/analytics/ui/help/LearningJourney.kt=544
-app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt=1311
+app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt=758
 app/src/main/kotlin/com/ares/analytics/ui/screens/CloudScreen.kt=790
 app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt=826
 app/src/main/kotlin/com/ares/analytics/ui/screens/DatabaseViewerScreen.kt=590
