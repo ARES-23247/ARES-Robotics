@@ -220,14 +220,6 @@ private fun CapabilityArgumentReader.readGeneratedParameter(parameter: Capabilit
         }
     }
 
-private fun CapabilityParameterDescriptor.isEffectivelyRequired(): Boolean = required || when (type) {
-    CapabilityParameterType.NUMBER -> defaultNumber != null
-    CapabilityParameterType.BOOLEAN -> defaultBoolean != null
-    CapabilityParameterType.TEXT,
-    CapabilityParameterType.ENUM,
-    -> defaultText != null
-}
-
 private const val NANOS_PER_SECOND = 1_000_000_000.0
 private const val MAX_CONTROL_DURATION_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND
 private val ANALOG_CONTROL_SOURCE_KINDS = setOf(ControlSourceKind.AXIS_VALUE, ControlSourceKind.AXIS_ZONE)

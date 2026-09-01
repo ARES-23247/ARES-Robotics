@@ -1,6 +1,6 @@
 # Grandfathered production files above 500 lines. Values are hard ceilings, not targets.
 # Any touched file should shrink; new production files must remain at or below 500 lines.
-codegen/src/main/kotlin/com/areslib/codegen/AresKotlinProjectGenerator.kt=1353
+codegen/src/main/kotlin/com/areslib/codegen/AresKotlinProjectGenerator.kt=1031
 codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenCli.kt=567
 codegen/src/main/kotlin/com/areslib/codegen/DrivetrainKotlinGenerator.kt=668
 codegen/src/main/kotlin/com/areslib/codegen/SubsystemControllerRenderer.kt=617
