@@ -130,14 +130,7 @@ object SplineMotionProfiler {
         return Path(pathPoints, pathEvents)
     }
 
-    /**
-     * generateHermitePath declaration.
-     * Note: Current implementation provides C1 (tangent) continuity only.
-     * TODO: Upgrade to support C2 (curvature) continuity.
-     *
-     * @param args Standard arguments (if applicable).
-     * @return Corresponding output value or Unit.
-     */
+    /** Generates a natural cubic path with C2-continuous geometry and interpolated robot heading. */
     fun generateHermitePath(
         points: List<Translation2d>,
         startHeading: Rotation2d,
@@ -147,21 +140,7 @@ object SplineMotionProfiler {
     ): Path {
         if (points.size < 2) return Path(emptyList())
 
-        val parsedWaypoints = mutableListOf<PathPlannerJsonParser.WaypointData>()
-        for (i in points.indices) {
-            val anchor = points[i]
-            val prev = if (i > 0) points[i - 1] else anchor
-            val next = if (i < points.size - 1) points[i + 1] else anchor
-
-            val dx = next.x - prev.x
-            val dy = next.y - prev.y
-            val d = 0.25
-
-            val nextControl = if (i < points.size - 1) Translation2d(anchor.x + dx * d, anchor.y + dy * d) else anchor
-            val prevControl = if (i > 0) Translation2d(anchor.x - dx * d, anchor.y - dy * d) else anchor
-
-            parsedWaypoints.add(PathPlannerJsonParser.WaypointData(anchor, prevControl, nextControl))
-        }
+        val parsedWaypoints = naturalCubicWaypointControls(points)
 
         val pathPoints = mutableListOf<PathPoint>()
         var accumulatedDistance = 0.0

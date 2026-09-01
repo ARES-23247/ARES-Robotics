@@ -31,7 +31,7 @@ class RoutineManagerTest {
         RobotClock.useMockTime(1_000L)
         actions = mutableListOf()
         store = Store()
-        store.actionListener = { action -> actions.add(action); Unit }
+        store.actionListener = { action -> actions += action }
         manager = RoutineManager(
             bindings = RoutineRuntimeBindings(
                 createActionTask = { key, _ ->

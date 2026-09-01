@@ -49,8 +49,9 @@ class FieldCentricRotationE2ETest {
             facadeSpy.driveFieldRelativeNormalized(vx = 0.0, vy = 1.0, omega = 0.0)
             assertNotNull(dispatchedIntent, "JoystickDriveIntent must be dispatched for angle $angleDeg°")
 
-            val robotVx = dispatchedIntent!!.targetXVelocity
-            val robotVy = dispatchedIntent!!.targetYVelocity
+            val intent = requireNotNull(dispatchedIntent)
+            val robotVx = intent.targetXVelocity
+            val robotVy = intent.targetYVelocity
 
             // Re-project robot velocities back to field frame:
             // fieldVx = robotVx * cos(heading) - robotVy * sin(heading)
