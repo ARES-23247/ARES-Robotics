@@ -69,8 +69,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.GamepadState
 import com.ares.analytics.ui.components.core.AresInspectorDrawer
-import com.ares.analytics.ui.components.core.AresSpecRow
-import com.ares.analytics.ui.components.core.AresSpecSection
+import com.ares.analytics.ui.components.core.AresSelectionField
 import com.ares.analytics.ui.components.core.AresSpecSummaryModal
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
@@ -870,23 +869,7 @@ private fun SelectionMenu(
     modifier: Modifier = Modifier,
     onSelect: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier) {
-        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth(), enabled = choices.isNotEmpty()) {
-            Column(Modifier.fillMaxWidth()) {
-                Text(label, color = AresTextSecondary, fontSize = 9.sp)
-                Text(selected, maxLines = 1, fontSize = 11.sp)
-            }
-        }
-        DropdownMenu(expanded, { expanded = false }) {
-            choices.forEach { (key, display) ->
-                DropdownMenuItem(
-                    text = { Text(display, fontSize = 11.sp) },
-                    onClick = { expanded = false; onSelect(key) },
-                )
-            }
-        }
-    }
+    AresSelectionField(label, selected, choices, modifier, onSelect = onSelect)
 }
 
 @Composable
@@ -934,86 +917,4 @@ private fun allowedEvents(kind: ControlSourceKind): List<ControlEvent> = when (k
         listOf(ControlEvent.PRESS, ControlEvent.RELEASE, ControlEvent.HELD, ControlEvent.HOLD, ControlEvent.REPEAT)
     ControlSourceKind.AXIS_VALUE -> listOf(ControlEvent.VALUE)
     ControlSourceKind.AXIS_ZONE -> listOf(ControlEvent.ZONE_ENTER, ControlEvent.ZONE_ACTIVE, ControlEvent.ZONE_EXIT)
-}
-
-private fun generateKeymapSpecSections(
-    state: ControlsEditorState,
-    onEditBinding: (String) -> Unit,
-): List<AresSpecSection> {
-    val bindings = state.selectedScheme?.bindings.orEmpty()
-    val driverBindings = bindings.filter { it.source.controllerSlot == "driver" }
-    val operatorBindings = bindings.filter { it.source.controllerSlot == "operator" }
-    val otherBindings = bindings.filter { it.source.controllerSlot != "driver" && it.source.controllerSlot != "operator" }
-
-    val driverRows = driverBindings.map { binding ->
-        AresSpecRow(
-            id = binding.bindingId,
-            primaryLabel = binding.displayName,
-            secondaryLabel = binding.source.controlIds.joinToString(" + "),
-            badge = binding.event.name,
-            columns = listOf(
-                "Event" to binding.event.friendlyName(),
-                "Target" to binding.target.key,
-                "Kind" to binding.target.kind.name,
-                "Enabled" to if (binding.enabled) "YES" else "NO",
-            ),
-            onEditClick = { onEditBinding(binding.bindingId) },
-        )
-    }
-
-    val operatorRows = operatorBindings.map { binding ->
-        AresSpecRow(
-            id = binding.bindingId,
-            primaryLabel = binding.displayName,
-            secondaryLabel = binding.source.controlIds.joinToString(" + "),
-            badge = binding.event.name,
-            columns = listOf(
-                "Event" to binding.event.friendlyName(),
-                "Target" to binding.target.key,
-                "Kind" to binding.target.kind.name,
-                "Enabled" to if (binding.enabled) "YES" else "NO",
-            ),
-            onEditClick = { onEditBinding(binding.bindingId) },
-        )
-    }
-
-    val sections = mutableListOf(
-        AresSpecSection("Driver (Gamepad 1)", null, driverRows, "No bindings configured on Gamepad 1 (Driver)."),
-        AresSpecSection("Operator (Gamepad 2)", null, operatorRows, "No bindings configured on Gamepad 2 (Operator)."),
-    )
-    if (otherBindings.isNotEmpty()) {
-        val otherRows = otherBindings.map { binding ->
-            AresSpecRow(
-                id = binding.bindingId,
-                primaryLabel = binding.displayName,
-                secondaryLabel = "${binding.source.controllerSlot}: ${binding.source.controlIds.joinToString(" + ")}",
-                badge = binding.event.name,
-                columns = listOf(
-                    "Event" to binding.event.friendlyName(),
-                    "Target" to binding.target.key,
-                    "Kind" to binding.target.kind.name,
-                ),
-                onEditClick = { onEditBinding(binding.bindingId) },
-            )
-        }
-        sections.add(AresSpecSection("Other Controllers", null, otherRows))
-    }
-    return sections
-}
-
-private fun generateKeymapMarkdown(state: ControlsEditorState): String = buildString {
-    appendLine("# ARES TeleOp & Controls Keymap Spec")
-    appendLine("Project: ${state.projectPath}")
-    appendLine("League: ${state.league.name}")
-    appendLine("Target Platform: ${state.targetPlatform.name}")
-    appendLine()
-    state.selectedScheme?.bindings.orEmpty().groupBy { it.source.controllerSlot }.forEach { (slot, bindings) ->
-        appendLine("## Controller: ${slot.replaceFirstChar(Char::uppercase)}")
-        appendLine("| Control | Event | Target Action | Kind | Enabled |")
-        appendLine("|---|---|---|---|---|")
-        bindings.forEach { b ->
-            appendLine("| ${b.source.controlIds.joinToString(" + ")} | ${b.event.friendlyName()} | ${b.target.key} | ${b.target.kind.name} | ${if (b.enabled) "Yes" else "No"} |")
-        }
-        appendLine()
-    }
 }

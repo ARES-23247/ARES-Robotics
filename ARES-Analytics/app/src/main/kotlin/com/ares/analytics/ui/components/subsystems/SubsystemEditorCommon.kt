@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.ui.components.core.AresSelectionField
+import com.ares.analytics.ui.components.core.AresSelectionFieldLayout
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
 import com.areslib.subsystem.SubsystemControlStrategy
@@ -279,34 +281,14 @@ fun DropdownSelector(
     options: List<String>,
     onSelect: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(6.dp),
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("$label: $selected", fontSize = 11.sp, color = AresTextPrimary)
-                Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(16.dp), tint = AresTextSecondary)
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt, fontSize = 11.sp) },
-                    onClick = {
-                        expanded = false
-                        onSelect(opt)
-                    }
-                )
-            }
-        }
-    }
+    AresSelectionField(
+        label = label,
+        selected = selected,
+        choices = options.map { it to it },
+        layout = AresSelectionFieldLayout.INLINE,
+        shape = RoundedCornerShape(6.dp),
+        onSelect = onSelect,
+    )
 }
 
 @Composable

@@ -10,6 +10,8 @@ import com.ares.analytics.ui.components.controls.canvasCollisionOffsetY
 import com.ares.analytics.ui.components.controls.controllerCallouts
 import com.ares.analytics.ui.components.controls.controllerMarkerLabel
 import com.ares.analytics.ui.components.controls.controlRecipeAvailability
+import com.ares.analytics.ui.components.controls.generateKeymapMarkdown
+import com.ares.analytics.ui.components.controls.generateKeymapSpecSections
 import com.ares.analytics.ui.components.controls.hasAdvancedBindingSettings
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.controls.ControlsEditorState
@@ -153,12 +155,66 @@ class ControlsEditorPresentationTest {
     }
 
     @Test
+    fun `keymap report separates driver operator and additional controllers`() {
+        val driver = binding()
+        val operator = driver.copy(
+            bindingId = "operator-light",
+            displayName = "Set light",
+            source = driver.source.copy(controllerSlot = "operator", controlIds = listOf("b")),
+        )
+        val coach = driver.copy(
+            bindingId = "coach-reset",
+            displayName = "Reset practice",
+            source = driver.source.copy(controllerSlot = "coach", controlIds = listOf("start")),
+            enabled = false,
+        )
+        val state = keymapState(listOf(driver, operator, coach))
+        var edited: String? = null
+
+        val sections = generateKeymapSpecSections(state) { edited = it }
+
+        assertEquals(listOf("Driver (Gamepad 1)", "Operator (Gamepad 2)", "Other Controllers"), sections.map { it.title })
+        assertEquals(listOf("intake"), sections[0].rows.map { it.id })
+        assertEquals(listOf("operator-light"), sections[1].rows.map { it.id })
+        assertEquals("coach: start", sections[2].rows.single().secondaryLabel)
+        sections[1].rows.single().onEditClick?.invoke()
+        assertEquals("operator-light", edited)
+    }
+
+    @Test
+    fun `keymap markdown preserves controller slots events targets and enabled state`() {
+        val disabled = binding().copy(enabled = false)
+
+        val markdown = generateKeymapMarkdown(keymapState(listOf(disabled)))
+
+        assertTrue(markdown.contains("Project: C:/robot"))
+        assertTrue(markdown.contains("## Controller: Driver"))
+        assertTrue(markdown.contains("| a | Press | intake.start | ACTION | No |"))
+    }
+
+    @Test
     fun `blank action search shows the entire catalog grouped with counts`() {
         val groups = actionBrowserGroups(actions, "")
 
         assertEquals(actions.size, groups.sumOf { it.actions.size })
         assertEquals(listOf("Intake", "Primary indicator", "Prism"), groups.map { it.category })
         assertEquals("3 actions in 3 categories", actionCatalogSummary(actions))
+    }
+
+    private fun keymapState(bindings: List<ControlBindingDocument>): ControlsEditorState {
+        val scheme = ControlSchemeDocument(
+            documentId = "competition",
+            name = "Competition",
+            controllers = emptyList(),
+            bindings = bindings,
+        )
+        return ControlsEditorState(
+            projectPath = "C:/robot",
+            league = League.FTC,
+            targetPlatform = ControllerInputPlatform.FTC,
+            schemes = listOf(scheme),
+            selectedSchemeId = scheme.documentId,
+        )
     }
 
     @Test
