@@ -15,7 +15,6 @@ import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.routine.AutonomousCatalogCodec
-import com.areslib.state.RobotFieldDocument
 import com.areslib.tuning.TuningComponentDocumentCodec
 import com.areslib.tuning.TuningProfileDocumentCodec
 import kotlinx.coroutines.Dispatchers
@@ -175,7 +174,15 @@ class RobotProjectTemplateService(
             extractArchive(archive, staging)
             validateTemplateAresVersion(staging, initialPlan.template)
             personalizeProject(staging, request, initialPlan.template)
-            installInitialFieldPreset(staging, request)
+            request.initialFieldPresetResourcePath?.let { resourcePath ->
+                InitialFieldPresetInstaller.install(
+                    root = staging,
+                    league = request.league,
+                    robotName = request.robotName,
+                    resourcePath = resourcePath,
+                    resourceLoader = bundledResourceLoader,
+                )
+            }
 
             ProjectLayout.validationError(staging.path, request.league)?.let { validationError -> error(validationError) }
             prepareStagedProject(staging)
@@ -296,47 +303,6 @@ class RobotProjectTemplateService(
             deploymentPolicy = template.deploymentPolicy,
         )
         writeTextAtomically(File(root, ".ares/template-provenance.json"), PROJECT_TEMPLATE_JSON.encodeToString(provenance))
-    }
-
-    /**
-     * Merges a reviewed season tag layout into the starter's canonical field without discarding
-     * its simulator element catalog, image calibration, obstacles, or waypoints.
-     */
-    private fun installInitialFieldPreset(root: File, request: RobotProjectCreationRequest) {
-        val resourcePath = request.initialFieldPresetResourcePath ?: return
-        val fieldFile = ProjectLayout.fieldDefinitionFile(root.path, request.league)
-        check(fieldFile.isFile) { "The reviewed starter is missing its canonical field document." }
-        val presetJson = requireNotNull(bundledResourceLoader(resourcePath)) {
-            "The reviewed initial field preset '$resourcePath' is missing from this installation."
-        }.bufferedReader().use { it.readText() }
-        val current = RobotFieldDocument.decode(fieldFile.readText())
-        val preset = RobotFieldDocument.decode(presetJson)
-        check(preset.fieldType == current.fieldType) {
-            "The reviewed initial field preset has the wrong league."
-        }
-        check(preset.apriltags.isNotEmpty()) {
-            "The reviewed initial field preset does not contain an AprilTag layout."
-        }
-        check(
-            preset.resolvedWidthMeters == current.resolvedWidthMeters &&
-                preset.resolvedHeightMeters == current.resolvedHeightMeters &&
-                preset.xAxisDirection == current.xAxisDirection &&
-                preset.yAxisDirection == current.yAxisDirection
-        ) {
-            "The reviewed initial field preset does not match the starter coordinate frame."
-        }
-        writeTextAtomically(
-            fieldFile,
-            RobotFieldDocument.encode(
-                current.copy(
-                    revision = current.revision + 1L,
-                    name = "${request.robotName.trim()} Field",
-                    gameYear = preset.gameYear,
-                    allianceSymmetry = preset.allianceSymmetry,
-                    apriltags = preset.apriltags,
-                ),
-            ),
-        )
     }
 
     private fun validateTemplateAresVersion(root: File, template: RobotProjectTemplate) {
