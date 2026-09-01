@@ -33,7 +33,7 @@ data class GooglePrincipal(
     val subject: String,
     val email: String?,
     val name: String?
-) : Principal
+)
 
 /**
  * Verifies a Google OIDC ID token: signature against Google's published certs plus issuer.

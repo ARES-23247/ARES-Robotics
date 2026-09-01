@@ -157,7 +157,7 @@ class DesktopPresentationPolicyTest {
     fun `startup topmost releases only after the bounded interval`() {
         assertFalse(DesktopPresentationPolicy.shouldReleaseStartupTopmost(0L))
         assertFalse(DesktopPresentationPolicy.shouldReleaseStartupTopmost(WINDOW_STARTUP_TOPMOST_MS - 1L))
-        assertTrue(DesktopPresentationPolicy.shouldReleaseStartupTopmost(WINDOW_STARTUP_TOPMOST_MS.toLong()))
+        assertTrue(DesktopPresentationPolicy.shouldReleaseStartupTopmost(WINDOW_STARTUP_TOPMOST_MS))
     }
 
     @Test

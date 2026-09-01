@@ -162,7 +162,7 @@ class SimulatorControlSoakTest {
             val verifiedReceiverAcknowledgement = requireNotNull(receiverAcknowledgement)
             delay(500L)
             client.publishString("ARES/DriverStation/Command", "STOP")
-            collector?.cancelAndJoin()
+            collector.cancelAndJoin()
             collector = null
 
             val activePoses = poses.filter { it.receivedAtNs in motionStartedNs..motionStoppedNs }

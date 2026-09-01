@@ -22,7 +22,8 @@ class ControlTheorySandboxTest {
         )
 
         assertTrue(metrics.isBounded, "Simulation should remain bounded with tuned PIDF gains")
-        assertTrue(metrics.riseTimeSec!! > 0.0 && metrics.riseTimeSec!! < 1.0, "Flywheel rise time should be under 1 second")
+        val riseTimeSec = requireNotNull(metrics.riseTimeSec)
+        assertTrue(riseTimeSec > 0.0 && riseTimeSec < 1.0, "Flywheel rise time should be under 1 second")
         assertTrue(metrics.steadyStateError < 0.10, "Steady state error should be low under feedforward + integral action")
     }
 
