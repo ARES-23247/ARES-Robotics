@@ -71,6 +71,6 @@ app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt=615
 app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt=1164
 app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModel.kt=561
 app/src/main/kotlin/com/ares/analytics/viewmodel/robotstudio/RobotStudioModel.kt=585
-app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt=1272
+app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt=1064
 app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt=761
 app/src/main/kotlin/com/ares/analytics/viewmodel/tuning/GuidedTuningExperimentViewModel.kt=570
