@@ -15,6 +15,7 @@ import com.areslib.project.schema.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentAuthoring
+import com.ares.analytics.viewmodel.subsystem.SubsystemProjectPersistence
 import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemDocument
@@ -78,6 +79,7 @@ class SubsystemGeneratorViewModel(
         League.FRC -> "com.areslib.frc.subsystems"
     }
     private val previewPlanner = SubsystemBuilderPreviewPlanner(league, platform, basePackage)
+    private val persistence = SubsystemProjectPersistence(documents, projectSession)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var aiProposalGeneration = 0L
     private val _state = MutableStateFlow(SubsystemGeneratorState(projectPath, league))
@@ -719,20 +721,7 @@ class SubsystemGeneratorViewModel(
             _state.update { it.copy(status = "Fix validation errors before saving.") }
             return
         }
-        runCatching {
-            val session = projectSession
-            val revision = current.projectRevision
-            if (session != null && revision != null) {
-                when (val result = session.saveSubsystem(revision, draft)) {
-                    is ProjectSessionMutationResult.Applied -> result.value.revision
-                    is ProjectSessionMutationResult.Stale -> error("The project changed after this subsystem loaded. Reload before saving.")
-                    is ProjectSessionMutationResult.Conflict -> error(result.message)
-                    is ProjectSessionMutationResult.Failed -> error(result.message)
-                }
-            } else {
-                documents.subsystems.save(current.projectPath, draft)
-            }
-        }
+        runCatching { persistence.save(current.projectPath, current.projectRevision, draft) }
             .onSuccess { saved ->
                 _state.update { state ->
                     val persisted = saved.document
@@ -741,7 +730,7 @@ class SubsystemGeneratorViewModel(
                         selectedDocumentId = persisted.documentId,
                         draft = SubsystemEditorDraft(persisted),
                         dirty = false,
-                        projectRevision = projectSession?.state?.value?.revision ?: state.projectRevision,
+                        projectRevision = persistence.currentRevision(state.projectRevision),
                         status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}…).",
                     ).revalidated()
                 }
@@ -775,26 +764,7 @@ class SubsystemGeneratorViewModel(
                 return
             }
         val plan: ProjectDocumentRemovalPlan? = if (canonicalFile.isFile) {
-            runCatching {
-                val session = projectSession
-                val revision = current.projectRevision
-                if (session != null && revision != null) {
-                    when (val result = session.removalPlan(
-                        revision,
-                        com.ares.analytics.service.project.RemovableProjectDocumentKind.SUBSYSTEM,
-                        draft.documentId,
-                    )) {
-                        is ProjectSessionMutationResult.Applied -> result.value
-                        is ProjectSessionMutationResult.Stale -> error(
-                            "The project changed after this subsystem loaded. Reload before reviewing removal.",
-                        )
-                        is ProjectSessionMutationResult.Conflict -> error(result.message)
-                        is ProjectSessionMutationResult.Failed -> error(result.message)
-                    }
-                } else {
-                    documents.subsystems.removalPlan(current.projectPath, draft.documentId)
-                }
-            }
+            runCatching { persistence.removalPlan(current.projectPath, current.projectRevision, draft.documentId) }
                 .getOrElse { error ->
                     _state.update {
                         it.copy(status = error.message ?: "The saved subsystem could not be reviewed for removal.")
@@ -830,23 +800,7 @@ class SubsystemGeneratorViewModel(
         }
         val expectedHash = request.contentHash ?: return
         runCatching {
-            val session = projectSession
-            val revision = current.projectRevision
-            if (session != null && revision != null) {
-                when (val result = session.remove(
-                    revision,
-                    com.ares.analytics.service.project.RemovableProjectDocumentKind.SUBSYSTEM,
-                    request.documentId,
-                    expectedHash,
-                )) {
-                    is ProjectSessionMutationResult.Applied -> result.value
-                    is ProjectSessionMutationResult.Stale -> error("The project changed after removal review. Reload before removing this subsystem.")
-                    is ProjectSessionMutationResult.Conflict -> error(result.message)
-                    is ProjectSessionMutationResult.Failed -> error(result.message)
-                }
-            } else {
-                documents.subsystems.remove(current.projectPath, request.documentId, expectedHash)
-            }
+            persistence.remove(current.projectPath, current.projectRevision, request.documentId, expectedHash)
         }.onSuccess { removed ->
             val root = File(current.projectPath).canonicalFile
             val recoveryPath = removed.recoveryFile.relativeTo(root).invariantSeparatorsPath
@@ -891,28 +845,13 @@ class SubsystemGeneratorViewModel(
         val current = _state.value
         val recovery = current.recentRecovery ?: return
         runCatching {
-            val session = projectSession
-            val revision = current.projectRevision
-            if (session != null && revision != null) {
-                when (val result = session.restoreRemovedSubsystem(
-                    revision,
-                    recovery.documentId,
-                    recovery.contentHash,
-                    recovery.recoveryPath,
-                )) {
-                    is ProjectSessionMutationResult.Applied -> result.value
-                    is ProjectSessionMutationResult.Stale -> error("The project changed after this recovery was offered. Reload before restoring.")
-                    is ProjectSessionMutationResult.Conflict -> error(result.message)
-                    is ProjectSessionMutationResult.Failed -> error(result.message)
-                }
-            } else {
-                documents.subsystems.restoreRemoved(
-                    current.projectPath,
-                    recovery.documentId,
-                    recovery.contentHash,
-                    recovery.recoveryPath,
-                )
-            }
+            persistence.restore(
+                current.projectPath,
+                current.projectRevision,
+                recovery.documentId,
+                recovery.contentHash,
+                recovery.recoveryPath,
+            )
         }.onSuccess { restored ->
             aiProposalGeneration++
             val restoredDocuments = (current.documents + restored)
@@ -932,7 +871,7 @@ class SubsystemGeneratorViewModel(
                     visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
                     selectedTemplate = restored.template,
                     dirty = false,
-                    projectRevision = projectSession?.state?.value?.revision ?: it.projectRevision,
+                    projectRevision = persistence.currentRevision(it.projectRevision),
                     recentRecovery = null,
                     status = "Restored ${restored.displayName} from the reviewed recovery copy. Kotlin source was unchanged.",
                 ).revalidated()
@@ -962,11 +901,7 @@ class SubsystemGeneratorViewModel(
     fun dismissRecoveryNotice() = _state.update { it.copy(recentRecovery = null) }
 
     private fun refreshProjectSession(projectPath: String, league: League) {
-        val target = when (league) {
-            League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
-            League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
-        }
-        projectSession?.snapshot(projectPath, target, forceReload = true)
+        persistence.refresh(projectPath, league)
     }
 
     private fun removeDocumentFromSession(
@@ -991,7 +926,7 @@ class SubsystemGeneratorViewModel(
                 visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
                 selectedTemplate = next?.template ?: current.selectedTemplate,
                 dirty = false,
-                projectRevision = projectSession?.state?.value?.revision ?: current.projectRevision,
+                projectRevision = persistence.currentRevision(current.projectRevision),
                 pendingRemoval = null,
                 recentRecovery = recovery,
                 status = message,
