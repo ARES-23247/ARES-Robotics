@@ -38,6 +38,8 @@ import com.areslib.subsystem.InterlockComparison
 import com.areslib.subsystem.SubsystemValueType
 import com.areslib.superstructure.*
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.components.core.AresDoubleField
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.viewmodel.superstructure.*
 import kotlin.math.*
 
@@ -461,14 +463,12 @@ private fun HealthFallbackEditor(state: SuperstructureStudioState, draft: Supers
 
 @Composable
 private fun CompactDecimalField(label: String, value: Double, onValue: (Double) -> Unit, modifier: Modifier = Modifier) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(text, { next -> text = next; next.toDoubleOrNull()?.let(onValue) }, label = { Text(label) }, isError = text.toDoubleOrNull() == null, modifier = modifier, singleLine = true)
+    AresDoubleField(label, value, modifier, onValueChange = onValue)
 }
 
 @Composable
 private fun NullableDecimalField(label: String, value: Double?, onValue: (Double?) -> Unit, modifier: Modifier = Modifier) {
-    var text by remember(value) { mutableStateOf(value?.toString().orEmpty()) }
-    OutlinedTextField(text, { next -> text = next; if (next.isBlank()) onValue(null) else next.toDoubleOrNull()?.let { onValue(it) } }, label = { Text(label) }, isError = text.isNotBlank() && text.toDoubleOrNull() == null, modifier = modifier, singleLine = true)
+    AresNullableDoubleField(label, value, modifier, onValueChange = onValue)
 }
 
 @Composable

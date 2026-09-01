@@ -70,6 +70,8 @@ import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.GamepadState
 import com.ares.analytics.ui.components.core.AresInspectorDrawer
 import com.ares.analytics.ui.components.core.AresSelectionField
+import com.ares.analytics.ui.components.core.AresDoubleField
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.ui.components.core.AresSpecSummaryModal
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
@@ -874,18 +876,11 @@ private fun SelectionMenu(
 
 @Composable
 private fun NumberEditor(label: String, value: Double, onValue: (Double) -> Unit) =
-    NullableNumberEditor(label, value) { it?.let(onValue) }
+    AresDoubleField(label, value, Modifier.fillMaxWidth(), onValueChange = onValue)
 
 @Composable
 private fun NullableNumberEditor(label: String, value: Double?, onValue: (Double?) -> Unit) {
-    var raw by remember(label, value) { mutableStateOf(value?.toString().orEmpty()) }
-    OutlinedTextField(
-        value = raw,
-        onValueChange = { text -> raw = text; onValue(text.toDoubleOrNull()) },
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        singleLine = true,
-    )
+    AresNullableDoubleField(label, value, Modifier.fillMaxWidth(), onValueChange = onValue)
 }
 
 private fun cardModifier() = Modifier.fillMaxWidth()

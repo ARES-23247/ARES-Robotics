@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.areslib.subsystem.SubsystemValueType
 import com.areslib.superstructure.*
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.viewmodel.superstructure.*
 
 @Composable
@@ -440,15 +441,7 @@ private fun SourceFieldDropdown(
 
 @Composable
 private fun DecimalEditor(label: String, value: Double?, onValue: (Double?) -> Unit, modifier: Modifier = Modifier) {
-    var text by remember(value) { mutableStateOf(value?.toString().orEmpty()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = { next -> text = next; if (next.isBlank()) onValue(null) else next.toDoubleOrNull()?.let(onValue) },
-        label = { Text(label) },
-        isError = text.isNotBlank() && text.toDoubleOrNull() == null,
-        modifier = modifier,
-        singleLine = true,
-    )
+    AresNullableDoubleField(label, value, modifier, onValueChange = onValue)
 }
 
 @Composable

@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.ui.components.core.AresSelectionField
 import com.ares.analytics.ui.components.core.AresSelectionFieldLayout
+import com.ares.analytics.ui.components.core.AresDoubleField
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
 import com.areslib.subsystem.SubsystemControlStrategy
@@ -143,16 +145,12 @@ fun DoubleInput(
     value: Double,
     onValueChange: (Double) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            it.toDoubleOrNull()?.let(onValueChange)
-        },
-        label = { Text(label, fontSize = 11.sp) },
+    AresDoubleField(
+        label = label,
+        value = value,
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
+        labelFontSize = 11.sp,
+        onValueChange = onValueChange,
     )
 }
 
@@ -162,16 +160,12 @@ fun NullableDoubleInput(
     value: Double?,
     onValueChange: (Double?) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value?.toString().orEmpty()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            if (it.isBlank()) onValueChange(null) else it.toDoubleOrNull()?.let(onValueChange)
-        },
-        label = { Text(label, fontSize = 11.sp) },
+    AresNullableDoubleField(
+        label = label,
+        value = value,
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
+        labelFontSize = 11.sp,
+        onValueChange = onValueChange,
     )
 }
 
