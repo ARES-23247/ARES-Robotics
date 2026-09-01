@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.catalog.AresActionCatalogPicker
+import com.ares.analytics.ui.components.core.AresCard
+import com.ares.analytics.ui.components.core.AresStatusBanner
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
@@ -48,8 +50,7 @@ internal fun RoutineStepCard(
     onUpdateChild: (String, Boolean, RoutineStep) -> Unit,
     onRemoveChild: (String, Boolean) -> Unit
 ) {
-    Card(colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated), border = BorderStroke(1.dp, AresBorder)) {
-        Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    AresCard(contentPadding = 10.dp, contentSpacing = 8.dp) {
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                 Surface(
                     modifier = Modifier.size(28.dp),
@@ -80,18 +81,10 @@ internal fun RoutineStepCard(
             }
             val stepErrors = issues.filter { it.severity == RoutineValidationSeverity.ERROR }
             if (stepErrors.isNotEmpty()) {
-                Surface(
-                    color = AresError.copy(alpha = .08f),
-                    border = BorderStroke(1.dp, AresError.copy(alpha = .45f)),
-                    shape = RoundedCornerShape(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        stepErrors.take(3).forEach { issue ->
-                            Text(issue.message, color = AresError, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
+                AresStatusBanner(
+                    message = stepErrors.take(3).joinToString("\n", transform = RoutineValidationIssue::message),
+                    color = AresError,
+                )
             }
             when (step.kind) {
                 RoutineStepKind.ACTION -> {
@@ -162,7 +155,6 @@ internal fun RoutineStepCard(
                     onRemoveChild
                 )
             }
-        }
     }
 }
 

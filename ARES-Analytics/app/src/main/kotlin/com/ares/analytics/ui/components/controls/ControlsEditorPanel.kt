@@ -62,6 +62,7 @@ import com.ares.analytics.ui.components.core.AresEditorCard
 import com.ares.analytics.ui.components.core.AresInspectorDrawer
 import com.ares.analytics.ui.components.core.AresSelectionField
 import com.ares.analytics.ui.components.core.AresSpecSummaryModal
+import com.ares.analytics.ui.components.core.AresStatusBanner
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -405,12 +406,7 @@ private fun ProblemBanner(message: String, severity: ControlsProblemSeverity) {
         ControlsProblemSeverity.WARNING -> AresGold
         ControlsProblemSeverity.INFO -> AresCyan
     }
-    Row(
-        Modifier.fillMaxWidth().background(color.copy(alpha = .12f), RoundedCornerShape(6.dp))
-            .border(1.dp, color, RoundedCornerShape(6.dp)).padding(8.dp),
-    ) {
-        Text(message, color = color, fontSize = 11.sp)
-    }
+    AresStatusBanner(message, color)
 }
 
 internal fun hasAdvancedBindingSettings(binding: ControlBindingDocument): Boolean =
