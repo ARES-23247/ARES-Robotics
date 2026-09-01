@@ -16,7 +16,6 @@ import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.initialCapabilityArguments
-import com.areslib.catalog.validateCapabilityArguments
 import com.areslib.controls.AnalogControlPolicyDocument
 import com.areslib.controls.AxisTransformDocument
 import com.areslib.controls.ControlBindingDocument
@@ -29,8 +28,6 @@ import com.areslib.controls.ControlTargetDocument
 import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControlThresholdDirection
 import com.areslib.controls.ControlTimingDocument
-import com.areslib.controls.ControlValidationContext
-import com.areslib.controls.ControlValidationSeverity
 import com.areslib.controls.ControllerAnchorDocument
 import com.areslib.controls.ControllerAssignment
 import com.areslib.controls.ControllerControlDocument
@@ -41,8 +38,6 @@ import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.ControllerProfileDocument
 import com.areslib.controls.ControllerSurfaceDocument
 import com.areslib.controls.RoutineInvocationPolicy
-import com.areslib.controls.validateControlScheme
-import com.areslib.controls.validateControllerProfile
 import com.areslib.project.AresProjectMetadataDocument
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -726,110 +721,6 @@ class ControlsEditorViewModel(
     private fun ControlsEditorState.replaceScheme(scheme: ControlSchemeDocument): ControlsEditorState = copy(
         schemes = schemes.map { if (it.documentId == scheme.documentId) scheme else it }
     )
-
-    private fun ControlsEditorState.withProblems(external: List<ControlsProblem>): ControlsEditorState {
-        if (schemes.isEmpty()) return copy(problems = external)
-        val profileControls = profiles.associate { profile ->
-            profile.documentId to profile.controls.mapTo(linkedSetOf()) { it.controlId }
-        }
-        val context = ControlValidationContext(
-            actionKeys = actions.mapTo(linkedSetOf()) { it.key },
-            routineIds = routineIds.toSet(),
-            profileControls = profileControls
-        )
-        val shared = schemes.flatMap { scheme ->
-            validateControlScheme(scheme, context).map { issue ->
-                ControlsProblem(
-                    severity = if (issue.severity == ControlValidationSeverity.ERROR) ControlsProblemSeverity.ERROR else ControlsProblemSeverity.WARNING,
-                    message = "${scheme.name}: ${issue.message}",
-                    bindingId = controlBindingIdFromPath(issue.path, scheme)
-                )
-            }
-        }
-        val profileProblems = profiles.flatMap { profile ->
-            validateControllerProfile(profile).map { issue ->
-                ControlsProblem(
-                    if (issue.severity == ControlValidationSeverity.ERROR) ControlsProblemSeverity.ERROR else ControlsProblemSeverity.WARNING,
-                    "${profile.displayName}: ${issue.message}"
-                )
-            }
-        }
-        val mappingProblems = schemes.flatMap { scheme ->
-            val profileBySlot = scheme.controllers.associate { assignment ->
-                assignment.slot to profiles.firstOrNull { profile -> profile.documentId == assignment.profileId }
-            }
-            scheme.bindings.filter { it.enabled }.flatMap { binding ->
-                val profile = profileBySlot[binding.source.controllerSlot]
-                binding.source.controlIds.mapNotNull { controlId ->
-                    val mapped = profile?.controls?.firstOrNull { it.controlId == controlId }
-                        ?.mappings?.any { it.platform == targetPlatform } == true
-                    if (mapped) null else ControlsProblem(
-                        ControlsProblemSeverity.ERROR,
-                        "${scheme.name} / ${binding.displayName}: '$controlId' has no ${targetPlatform.name} mapping. Desktop indexes are intentionally not reused.",
-                        binding.bindingId
-                    )
-                }
-            }
-        }
-        val draftProblems = draftBinding?.let { binding -> validateDraft(binding) }.orEmpty()
-        return copy(problems = (external + shared + profileProblems + mappingProblems + draftProblems).distinct())
-    }
-
-    private fun ControlsEditorState.revalidated(): ControlsEditorState = withProblems(projectProblems)
-
-    private fun ControlsEditorState.validateDraft(binding: ControlBindingDocument): List<ControlsProblem> {
-        val scheme = selectedScheme ?: return emptyList()
-        val temporary = scheme.copy(
-            bindings = scheme.bindings.filterNot { it.bindingId == selectedBindingId } + binding
-        )
-        val profileControls = profiles.associate { it.documentId to it.controls.mapTo(linkedSetOf()) { control -> control.controlId } }
-        val issues = validateControlScheme(
-            temporary,
-            ControlValidationContext(actions.mapTo(linkedSetOf()) { it.key }, routineIds.toSet(), profileControls)
-        ).filter { it.path.contains("bindings") }
-            .map { ControlsProblem(
-                if (it.severity == ControlValidationSeverity.ERROR) ControlsProblemSeverity.ERROR else ControlsProblemSeverity.WARNING,
-                it.message,
-                binding.bindingId
-            ) }.toMutableList()
-        if (binding.target.kind == ControlTargetKind.ACTION) {
-            val descriptor = actions.firstOrNull { it.key == binding.target.key }
-            if (descriptor == null) {
-                issues += ControlsProblem(ControlsProblemSeverity.ERROR, "Choose an action from the project catalog.", binding.bindingId)
-            } else {
-                issues += validateArguments(descriptor, binding.target.arguments).map {
-                    ControlsProblem(ControlsProblemSeverity.ERROR, it, binding.bindingId)
-                }
-            }
-        }
-        val profileId = selectedScheme?.controllers?.firstOrNull { it.slot == binding.source.controllerSlot }?.profileId
-        val profile = profiles.firstOrNull { it.documentId == profileId }
-        val referenced = binding.source.controlIds.mapNotNull { id -> profile?.controls?.firstOrNull { it.controlId == id } }
-        binding.source.controlIds.filter { controlId ->
-            profile?.controls?.firstOrNull { it.controlId == controlId }
-                ?.mappings?.none { it.platform == targetPlatform } != false
-        }.forEach { controlId ->
-            issues += ControlsProblem(
-                ControlsProblemSeverity.ERROR,
-                "'$controlId' needs a ${targetPlatform.name} mapping before this binding can be applied.",
-                binding.bindingId
-            )
-        }
-        val needsAxis = binding.source.kind == ControlSourceKind.AXIS_THRESHOLD ||
-            binding.source.kind == ControlSourceKind.AXIS_VALUE || binding.source.kind == ControlSourceKind.AXIS_ZONE
-        if (needsAxis && referenced.any { it.type != ControllerControlTypeDocument.AXIS }) {
-            issues += ControlsProblem(ControlsProblemSeverity.ERROR, "Analog bindings require axis controls.", binding.bindingId)
-        }
-        if (!needsAxis && referenced.any { it.type != ControllerControlTypeDocument.BUTTON }) {
-            issues += ControlsProblem(ControlsProblemSeverity.ERROR, "Button and chord bindings require button controls.", binding.bindingId)
-        }
-        return issues
-    }
-
-    private fun validateArguments(
-        action: ActionDescriptor,
-        values: Map<String, String>,
-    ): List<String> = validateCapabilityArguments(action.parameters, values).map { "${it.message}." }
 
     override fun close() {
         scope.cancel()
