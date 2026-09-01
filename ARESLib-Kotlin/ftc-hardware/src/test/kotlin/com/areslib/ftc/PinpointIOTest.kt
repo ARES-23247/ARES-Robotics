@@ -186,11 +186,8 @@ class PinpointIOTest {
         rawDriver.posY = 1.0
         
         val update1 = pinpointIO.getPoseUpdate()
-        val valOk = when {
-            update1 != null -> true
-            else -> false
-        }
-        assertTrue(valOk)
+        assertEquals(1.0, update1.xMeters, 1e-6)
+        assertEquals(1.0, update1.yMeters, 1e-6)
     }
 
     @Test

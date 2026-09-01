@@ -16,29 +16,29 @@ class MockI2cDeviceSynch : I2cDeviceSynch {
     var onWrite: ((register: Int, data: ByteArray) -> Unit)? = null
     var onRead: ((register: Int, length: Int) -> Unit)? = null
 
-    override fun read8(register: Int): Byte {
-        onRead?.invoke(register, 1)
-        return registers.getOrElse(register) { 0 }
+    override fun read8(ireg: Int): Byte {
+        onRead?.invoke(ireg, 1)
+        return registers.getOrElse(ireg) { 0 }
     }
 
-    override fun read(register: Int, length: Int): ByteArray {
-        onRead?.invoke(register, length)
+    override fun read(ireg: Int, length: Int): ByteArray {
+        onRead?.invoke(ireg, length)
         val data = ByteArray(length)
         for (i in 0 until length) {
-            val regIndex = register + i
+            val regIndex = ireg + i
             data[i] = registers.getOrElse(regIndex) { 0 }
         }
         return data
     }
 
-    override fun write(register: Int, data: ByteArray) {
+    override fun write(ireg: Int, data: ByteArray) {
         for (i in data.indices) {
-            val regIndex = register + i
+            val regIndex = ireg + i
             if (regIndex in 0..255) {
                 registers[regIndex] = data[i]
             }
         }
-        onWrite?.invoke(register, data)
+        onWrite?.invoke(ireg, data)
     }
 
     override var readWindow: I2cDeviceSynch.ReadWindow = 
