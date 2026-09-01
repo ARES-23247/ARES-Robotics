@@ -96,9 +96,10 @@ semantics and ownership match:
 - No universal hardware or simulator abstraction was introduced merely to reduce line count.
 - No backwards-compatibility wrapper was added for unreleased APIs.
 
-The branch contains 23 focused commits and changes 121 files, with roughly balanced additions and
-removals. Remaining large-file debt is guarded by the production-size ratchet and can be reduced
-incrementally when the owning workflow changes.
+The branch uses a focused commit series with roughly balanced additions and removals. Exact commit
+and file counts intentionally are not embedded here because preserving this report and later review
+fixes change those counts. Remaining large-file debt is guarded by the production-size ratchet and
+can be reduced incrementally when the owning workflow changes.
 
 ## Evidence boundaries
 
@@ -110,4 +111,3 @@ incrementally when the owning workflow changes.
 | Native Windows package verified | Complete locally |
 | Ready for physical validation | Yes, subject to team safety procedures |
 | Physically validated | No—intentionally deferred |
-

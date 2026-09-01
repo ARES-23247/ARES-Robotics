@@ -56,8 +56,6 @@ import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentIntent
  *
  * @param viewModel [TuningViewModel] handling live gain updates.
  * @param sysIdViewModel [SysIdViewModel] managing automated SysId voltage routines and OLS matrix regression solvers.
- * @param projectPath Kept for compatibility but unused.
- *
  * @see TuningViewModel
  * @see SysIdViewModel
  * @see com.ares.analytics.service.SysIdService
@@ -68,7 +66,6 @@ fun TuningScreen(
     viewModel: TuningViewModel,
     sysIdViewModel: SysIdViewModel,
     experimentViewModel: GuidedTuningExperimentViewModel,
-    projectPath: String,
     canLaunchSimulator: Boolean,
     canApplyCandidateToSimulator: Boolean,
     simulatorStatus: String,

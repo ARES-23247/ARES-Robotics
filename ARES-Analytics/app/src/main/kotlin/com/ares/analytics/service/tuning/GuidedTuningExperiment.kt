@@ -465,7 +465,12 @@ class GuidedTuningExperimentRepository(
             "The tuning experiment is missing workspace identity."
         }
         require(experiment.hypothesis.isNotBlank()) { "The tuning experiment is missing a hypothesis." }
-        require(experiment.successThresholdPercent.isFinite() && experiment.successThresholdPercent in 0.0..100.0) {
+        require(experiment.question.isNotBlank()) { "The tuning experiment is missing its controlled question." }
+        require(experiment.heldConstants.isNotEmpty() && experiment.heldConstants.all(String::isNotBlank)) {
+            "The tuning experiment must record at least one held constant."
+        }
+        require(experiment.safetyNotes.isNotBlank()) { "The tuning experiment is missing its safety boundary." }
+        require(experiment.successThresholdPercent.isFinite() && experiment.successThresholdPercent in 0.1..100.0) {
             "The tuning experiment success threshold is invalid."
         }
         require(experiment.change.before != experiment.change.proposed) { "A controlled experiment must change exactly one value." }

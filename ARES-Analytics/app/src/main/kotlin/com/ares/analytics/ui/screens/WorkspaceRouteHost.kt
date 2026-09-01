@@ -212,7 +212,6 @@ internal fun WorkspaceRouteHost(
             viewModel = scope.tuning,
             sysIdViewModel = scope.sysId,
             experimentViewModel = scope.tuningExperiment,
-            projectPath = workspace.projectPath,
             canLaunchSimulator = state.canLaunchSimulator,
             canApplyCandidateToSimulator =
                 state.targetSelection == TargetSelection.LOCAL_SIM &&
