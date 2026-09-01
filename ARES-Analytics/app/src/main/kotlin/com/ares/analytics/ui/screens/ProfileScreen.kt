@@ -134,7 +134,6 @@ fun ProfileScreen(
     var aiMode by remember(state.aiMode) { mutableStateOf(state.aiMode) }
     var geminiApiKey by remember(state.geminiApiKey) { mutableStateOf(state.geminiApiKey) }
     var geminiModel by remember(state.geminiModel) { mutableStateOf(state.geminiModel) }
-    var modelMenuExpanded by remember { mutableStateOf(false) }
     var vertexServiceAccountPath by remember(state.vertexServiceAccountPath) { mutableStateOf(state.vertexServiceAccountPath) }
     var vertexProjectId by remember(state.vertexProjectId) { mutableStateOf(state.vertexProjectId) }
     var vertexLocation by remember(state.vertexLocation) { mutableStateOf(state.vertexLocation) }
@@ -709,309 +708,45 @@ fun ProfileScreen(
             }
         }
 
-        // 3. Third-Party Integrations
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.IntegrationInstructions, contentDescription = null, tint = AresCyan, modifier = Modifier.size(20.dp))
-                    Text("Third-Party API Integrations", fontWeight = FontWeight.Bold, color = AresTextPrimary, fontSize = 15.sp)
-                }
-                Text("Match metadata and schedules can be synced from FRC or FTC event aggregators.", color = AresTextSecondary, fontSize = 11.sp)
+        ThirdPartyIntegrationsSection(
+            league = league,
+            eventCode = eventCode,
+            onEventCodeChange = { eventCode = it },
+            toaApiKey = toaApiKey,
+            onToaApiKeyChange = { toaApiKey = it },
+            tbaApiKey = tbaApiKey,
+            onTbaApiKeyChange = { tbaApiKey = it },
+        )
 
-                OutlinedTextField(
-                    value = eventCode,
-                    onValueChange = { eventCode = it },
-                    label = { Text("Event Code / ID (e.g. USNYTUT)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                )
+        GeminiAssistanceSection(
+            aiMode = aiMode,
+            onAiModeChange = { aiMode = it },
+            geminiModel = geminiModel,
+            onGeminiModelChange = { geminiModel = it },
+            geminiApiKey = geminiApiKey,
+            onGeminiApiKeyChange = { geminiApiKey = it },
+            vertexServiceAccountPath = vertexServiceAccountPath,
+            onVertexServiceAccountPathChange = { vertexServiceAccountPath = it },
+            vertexProjectId = vertexProjectId,
+            onVertexProjectIdChange = { vertexProjectId = it },
+            vertexLocation = vertexLocation,
+            onVertexLocationChange = { vertexLocation = it },
+        )
 
-                if (league == League.FTC) {
-                    OutlinedTextField(
-                        value = toaApiKey,
-                        onValueChange = { toaApiKey = it },
-                        label = { Text("The Orange Alliance (TOA) API Key") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                } else {
-                    OutlinedTextField(
-                        value = tbaApiKey,
-                        onValueChange = { tbaApiKey = it },
-                        label = { Text("The Blue Alliance (TBA) API Key") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                }
-            }
-        }
+        AccessibilityOptionsSection(
+            colorblindMode = colorblindMode,
+            onColorblindModeChange = { colorblindMode = it },
+            highContrastMode = highContrastMode,
+            onHighContrastModeChange = { highContrastMode = it },
+            touchOptimizedMode = touchOptimizedMode,
+            onTouchOptimizedModeChange = { touchOptimizedMode = it },
+            largeTextMode = largeTextMode,
+            onLargeTextModeChange = { largeTextMode = it },
+            developerMode = developerMode,
+            onDeveloperModeChange = { developerMode = it },
+        )
 
-        // 4. AI Diagnostics
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Psychology, contentDescription = null, tint = AresCyan, modifier = Modifier.size(20.dp))
-                    Text("Gemini assistance", fontWeight = FontWeight.Bold, color = AresTextPrimary, fontSize = 15.sp)
-                }
-                Text(
-                    "Choose the provider used by telemetry diagnostics and the review-only assistants in Subsystem Builder, Drivebase Builder, and Controller Bindings.",
-                    color = AresTextSecondary,
-                    fontSize = 11.sp,
-                )
-                if (aiMode == "STUDIO" && geminiApiKey.isBlank()) {
-                    Text("Add a Google AI Studio API key, then save this profile before using an editor assistant.", color = AresGold, fontSize = 11.sp)
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { aiMode = "STUDIO" }) {
-                        RadioButton(selected = aiMode == "STUDIO", onClick = { aiMode = "STUDIO" }, colors = RadioButtonDefaults.colors(selectedColor = AresCyan))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Google AI Studio (API Key)", color = AresTextPrimary, fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { aiMode = "VERTEX" }) {
-                        RadioButton(selected = aiMode == "VERTEX", onClick = { aiMode = "VERTEX" }, colors = RadioButtonDefaults.colors(selectedColor = AresCyan))
-                        Spacer(Modifier.width(4.dp))
-                        Text("GCP Vertex AI (Service Account)", color = AresTextPrimary, fontSize = 13.sp)
-                    }
-                }
-
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = geminiModel,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("AI Model Selection") },
-                        modifier = Modifier.fillMaxWidth().clickable { modelMenuExpanded = !modelMenuExpanded },
-                        trailingIcon = {
-                            IconButton(onClick = { modelMenuExpanded = !modelMenuExpanded }) {
-                                Icon(imageVector = if (modelMenuExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null, tint = AresTextSecondary)
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                    DropdownMenu(
-                        expanded = modelMenuExpanded,
-                        onDismissRequest = { modelMenuExpanded = false }
-                    ) {
-                        listOf("gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite").forEach { model ->
-                            DropdownMenuItem(
-                                text = { Text(model, color = AresTextPrimary) },
-                                onClick = {
-                                    geminiModel = model
-                                    modelMenuExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                if (aiMode == "STUDIO") {
-                    OutlinedTextField(
-                        value = geminiApiKey,
-                        onValueChange = { geminiApiKey = it },
-                        label = { Text("Gemini API Key") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                } else {
-                    OutlinedTextField(
-                        value = vertexServiceAccountPath,
-                        onValueChange = { vertexServiceAccountPath = it },
-                        label = { Text("GCP Service Account JSON Key File Path") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                    OutlinedTextField(
-                        value = vertexProjectId,
-                        onValueChange = { vertexProjectId = it },
-                        label = { Text("GCP Project ID") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                    OutlinedTextField(
-                        value = vertexLocation,
-                        onValueChange = { vertexLocation = it },
-                        label = { Text("GCP Location Region") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-                }
-            }
-        }
-
-        // 4b. Accessibility & Usability Options
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Settings, contentDescription = null, tint = AresCyan, modifier = Modifier.size(20.dp))
-                    Text("Accessibility & Usability Options", fontWeight = FontWeight.Bold, color = AresTextPrimary, fontSize = 15.sp)
-                }
-                Text("Optimize the mission control interface for different environments and readability requirements.", color = AresTextSecondary, fontSize = 11.sp)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Colorblind-Friendly Palette", color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Uses blue/orange status accents while retaining words, icons, and borders so color is never the only signal.", color = AresTextSecondary, fontSize = 11.sp)
-                    }
-                    Switch(
-                        checked = colorblindMode,
-                        onCheckedChange = { colorblindMode = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = AresCyan, checkedTrackColor = AresCyanGlow)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Enhanced High Contrast", color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Boosts contrast of secondary text, tertiary text, and borders to pass strict WCAG AAA guidelines.", color = AresTextSecondary, fontSize = 11.sp)
-                    }
-                    Switch(
-                        checked = highContrastMode,
-                        onCheckedChange = { highContrastMode = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = AresCyan, checkedTrackColor = AresCyanGlow)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Touch Target Optimization", color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Increases minimum touch target sizes of interactive elements for field operations under high-pressure scenarios.", color = AresTextSecondary, fontSize = 11.sp)
-                    }
-                    Switch(
-                        checked = touchOptimizedMode,
-                        onCheckedChange = { touchOptimizedMode = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = AresCyan, checkedTrackColor = AresCyanGlow)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Larger Interface Text", color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            "Increases text throughout the app while preserving the operating system's existing text scale.",
-                            color = AresTextSecondary,
-                            fontSize = 11.sp
-                        )
-                    }
-                    Switch(
-                        checked = largeTextMode,
-                        onCheckedChange = { largeTextMode = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = AresCyan, checkedTrackColor = AresCyanGlow)
-                    )
-                }
-
-                HorizontalDivider(color = AresBorder.copy(alpha = 0.6f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Developer Tools", color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Shows Database, Developer Reference, and advanced authoring tools in the command palette.", color = AresTextSecondary, fontSize = 11.sp)
-                    }
-                    Switch(
-                        checked = developerMode,
-                        onCheckedChange = { developerMode = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = AresCyan, checkedTrackColor = AresCyanGlow)
-                    )
-                }
-            }
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder),
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    "${BuildConfig.PRODUCT_NAME} ${BuildConfig.VERSION}",
-                    fontWeight = FontWeight.Bold,
-                    color = AresTextPrimary,
-                    fontSize = 16.sp,
-                )
-                Text(BuildConfig.PRODUCT_TAGLINE, color = AresCyan, fontSize = 12.sp)
-                Text(
-                    "Previously ${BuildConfig.LEGACY_PRODUCT_NAME}; existing projects, settings, and credentials remain compatible.",
-                    color = AresTextSecondary,
-                    fontSize = 11.sp,
-                )
-                HorizontalDivider(color = AresBorder.copy(alpha = 0.6f))
-                Text(
-                    "License and source",
-                    fontWeight = FontWeight.Bold,
-                    color = AresTextPrimary,
-                    fontSize = 15.sp,
-                )
-                Text(
-                    "ARES Robotics Studio is licensed under GNU AGPL v3 or later and is provided without warranty. Separate commercial licensing is available from the ARES project.",
-                    color = AresTextSecondary,
-                    fontSize = 11.sp,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = {
-                        runCatching {
-                            openExternalLink("https://github.com/ARES-23247/ARES-Analytics")
-                        }
-                    }) {
-                        Text("View source")
-                    }
-                    OutlinedButton(onClick = {
-                        runCatching {
-                            openExternalLink("https://github.com/ARES-23247/ARES-Analytics/blob/master/LICENSE")
-                        }
-                    }) {
-                        Text("Read license")
-                    }
-                }
-            }
-        }
+        ProductInformationSection()
 
         // Save Button Footer
         Button(
