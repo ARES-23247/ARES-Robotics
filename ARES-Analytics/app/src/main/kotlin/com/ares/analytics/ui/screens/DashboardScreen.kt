@@ -77,6 +77,7 @@ internal fun DashboardScreen(
     onSelectMatch: (MatchInfo, String) -> Unit,
     reloadTrigger: Int,
     onImportSuccess: () -> Unit,
+    onRunRecorded: () -> Unit,
     onNavigate: (NavigationTarget) -> Unit = {},
     onOpenKeybindings: () -> Unit = {},
     onOpenRunHistory: () -> Unit = {},
@@ -275,6 +276,7 @@ internal fun DashboardScreen(
                 canLaunchSimulator = canLaunchSimulator,
                 simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
                 onLaunchSimulator = onLaunchSimulator,
+                onRecordingSaved = onRunRecorded,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

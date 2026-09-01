@@ -106,6 +106,7 @@ internal fun WorkspaceRouteHost(
             },
             reloadTrigger = state.runsReloadTrigger,
             onImportSuccess = actions.reloadRuns,
+            onRunRecorded = actions.reloadRuns,
             onNavigate = actions.navigate,
             onOpenKeybindings = { actions.navigate(NavigationTarget.CONTROLS) },
             onOpenRunHistory = { actions.navigate(NavigationTarget.RUN_HISTORY) },

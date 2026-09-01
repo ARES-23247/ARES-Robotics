@@ -234,6 +234,7 @@ fun LocalSimulatorControlBar(
     canLaunchSimulator: Boolean,
     simulatorLaunchDisabledReason: String?,
     onLaunchSimulator: () -> Unit,
+    onRecordingSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var teleOps by remember(nt4Client) {
@@ -310,7 +311,8 @@ fun LocalSimulatorControlBar(
         recordingFailure = null
         try {
             nt4Client.stopRecordingSession()
-            recordingMessage = "Simulation run saved. Refresh the guided experiment to compare it."
+            onRecordingSaved()
+            recordingMessage = "Simulation run saved and available in Recorded Sessions."
         } catch (failure: Exception) {
             recordingFailure = failure.message ?: "The simulation run could not be saved."
         } finally {
