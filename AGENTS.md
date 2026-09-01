@@ -66,6 +66,8 @@ publishing. A mismatch requires a fresh candidate; never relax the check. Checks
 publishes the byte-identical candidate MSI. Authenticode may sign that tested MSI as a bounded trust
 overlay but must not rebuild it. `Build Desktop Packages` only creates candidates; public release
 creation exists exclusively in the promotion workflow so no path can rebuild after approval.
+Required CI runs on pull-request and merge-queue trees, not again on the resulting `main` push.
+Scheduled and manual validation are the explicit paths for independent post-merge health checks.
 
 > **Ownership boundary:** reusable FRC classes (`FrcSwerveRobot`, `FrcBaseRobot`,
 > `FRCSwerveHardwareIO`, `FrcTelemetryManager`, `FrcPowerManager`, `FrcLimelightIO`) live in
