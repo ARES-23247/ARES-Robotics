@@ -55,7 +55,7 @@ fun IMUVisualizerCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {

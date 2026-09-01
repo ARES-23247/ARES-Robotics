@@ -55,7 +55,7 @@ fun MotorHealthCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier
     ) {
         CardHeader(

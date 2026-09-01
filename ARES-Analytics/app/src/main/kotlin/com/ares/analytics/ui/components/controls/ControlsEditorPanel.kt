@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.GamepadState
+import com.ares.analytics.ui.components.core.AresEditorCard
 import com.ares.analytics.ui.components.core.AresInspectorDrawer
 import com.ares.analytics.ui.components.core.AresSelectionField
 import com.ares.analytics.ui.components.core.AresDoubleField
@@ -82,7 +83,6 @@ import com.ares.analytics.ui.theme.AresGreen
 import com.ares.analytics.ui.theme.AresOnAccent
 import com.ares.analytics.ui.theme.AresRed
 import com.ares.analytics.ui.theme.AresSurface
-import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
@@ -334,7 +334,7 @@ private fun ProjectHeader(
 
 @Composable
 private fun SchemeToolbar(state: ControlsEditorState, viewModel: ControlsEditorViewModel) {
-    Column(cardModifier(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    AresEditorCard(contentSpacing = 8.dp) {
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
             SelectionMenu(
                 label = "Scheme",
@@ -376,7 +376,7 @@ private fun SurfaceTabs(surface: ControllerSurfaceDocument, onSurface: (Controll
 
 @Composable
 private fun BindingList(state: ControlsEditorState, viewModel: ControlsEditorViewModel) {
-    Column(cardModifier(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+    AresEditorCard(contentSpacing = 7.dp) {
         Text("Bindings", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         val bindings = state.selectedScheme?.bindings.orEmpty()
         if (bindings.isEmpty()) {
@@ -827,7 +827,7 @@ private fun TargetArgumentField(parameter: CapabilityParameterDescriptor, value:
 @Composable
 private fun ProblemsCard(state: ControlsEditorState) {
     if (state.problems.isEmpty()) return
-    Column(cardModifier(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    AresEditorCard(contentSpacing = 6.dp) {
         Text("Validation problems", color = AresTextPrimary, fontWeight = FontWeight.Bold)
         state.problems.forEach { ProblemBanner(it.message, it.severity) }
     }
@@ -882,11 +882,6 @@ private fun NumberEditor(label: String, value: Double, onValue: (Double) -> Unit
 private fun NullableNumberEditor(label: String, value: Double?, onValue: (Double?) -> Unit) {
     AresNullableDoubleField(label, value, Modifier.fillMaxWidth(), onValueChange = onValue)
 }
-
-private fun cardModifier() = Modifier.fillMaxWidth()
-    .background(AresSurfaceElevated, RoundedCornerShape(10.dp))
-    .border(1.dp, AresBorder, RoundedCornerShape(10.dp))
-    .padding(12.dp)
 
 private fun ControlSourceKind.friendlyName() = when (this) {
     ControlSourceKind.BUTTON -> "Button"

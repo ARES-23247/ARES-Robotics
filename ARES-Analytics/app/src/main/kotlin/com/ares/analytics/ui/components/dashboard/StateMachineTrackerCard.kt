@@ -46,7 +46,7 @@ fun StateMachineTrackerCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {

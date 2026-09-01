@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.ui.components.core.AresEditorCard
 import com.ares.analytics.ui.components.core.AresSelectionField
 import com.ares.analytics.ui.components.core.AresSelectionFieldLayout
 import com.ares.analytics.ui.components.core.AresDoubleField
@@ -66,19 +67,14 @@ fun EditorCard(
     icon: ImageVector? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-        border = BorderStroke(1.dp, AresBorder),
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth(),
+    AresEditorCard(
+        contentPadding = 14.dp,
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (icon != null) Icon(icon, contentDescription = null, tint = AresCyan, modifier = Modifier.size(16.dp))
-                Text(title, color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
-            content()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (icon != null) Icon(icon, contentDescription = null, tint = AresCyan, modifier = Modifier.size(16.dp))
+            Text(title, color = AresTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
+        content()
     }
 }
 

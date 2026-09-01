@@ -19,7 +19,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.tuning.TuningTransport
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
-import com.ares.analytics.ui.components.core.AnalyticsCard
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.components.core.CardHeader
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.flow.filter
@@ -36,7 +36,7 @@ fun TuningCard(
     modifier: Modifier = Modifier,
     declarations: List<TuningParameterDeclaration>
 ) {
-    AnalyticsCard(modifier.fillMaxSize(), backgroundColor = AresSurface, contentPadding = 12.dp) {
+    AresCard(modifier.fillMaxSize(), backgroundColor = AresSurface, contentPadding = 12.dp) {
         CardHeader(title = "Live Tuning Observations", showDivider = false)
         Text("Read-only telemetry. Open Tuning to propose, validate, live-test, or promote a robot profile.", color = AresTextSecondary, fontSize = 10.sp)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {

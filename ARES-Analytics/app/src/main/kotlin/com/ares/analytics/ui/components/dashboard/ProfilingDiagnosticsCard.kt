@@ -76,7 +76,7 @@ fun ProfilingDiagnosticsCard(
         }
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {

@@ -86,7 +86,7 @@ fun BrownoutProtectionCard(
         else -> AresBorder
     }
 
-    AnalyticsCard(
+    AresCard(
         modifier = modifier.fillMaxWidth(),
         backgroundColor = AresSurfaceElevated
     ) {
