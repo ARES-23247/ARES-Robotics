@@ -21,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
@@ -33,12 +35,13 @@ enum class AresSelectionFieldLayout {
 /** Common builder selection field with consistent popup ownership and dismissal behavior. */
 @Composable
 fun AresSelectionField(
-    label: String,
+    label: String?,
     selected: String,
     choices: List<Pair<String, String>>,
     modifier: Modifier = Modifier,
     layout: AresSelectionFieldLayout = AresSelectionFieldLayout.STACKED,
     shape: Shape = ButtonDefaults.outlinedShape,
+    menuOffset: DpOffset = DpOffset(0.dp, 0.dp),
     onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -51,7 +54,7 @@ fun AresSelectionField(
         ) {
             when (layout) {
                 AresSelectionFieldLayout.STACKED -> Column(Modifier.fillMaxWidth()) {
-                    Text(label, color = AresTextSecondary, fontSize = 9.sp)
+                    label?.let { Text(it, color = AresTextSecondary, fontSize = 9.sp) }
                     Text(selected, maxLines = 1, fontSize = 11.sp)
                 }
                 AresSelectionFieldLayout.INLINE -> Row(
@@ -59,12 +62,17 @@ fun AresSelectionField(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("$label: $selected", color = AresTextPrimary, fontSize = 11.sp, maxLines = 1)
+                    Text(
+                        if (label.isNullOrBlank()) selected else "$label: $selected",
+                        color = AresTextPrimary,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                    )
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 }
             }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, offset = menuOffset) {
             choices.forEach { (key, display) ->
                 DropdownMenuItem(
                     text = { Text(display, fontSize = 11.sp) },
