@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.ReplayState
 import com.ares.analytics.service.VideoSyncService
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -113,12 +114,12 @@ fun VideoPlayerPanel(
             contentAlignment = Alignment.Center
         ) {
             if (videoFile == null) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.CloudUpload, null, tint = AresTextTertiary, modifier = Modifier.size(48.dp))
-                    Spacer(Modifier.height(8.dp))
-                    Text("No video loaded", color = AresTextSecondary, fontSize = 14.sp)
-                    Text("Click 'Load Video' to synchronize local mp4/mov match footage", color = AresTextTertiary, fontSize = 11.sp)
-                }
+                AresEmptyState(
+                    title = "No video loaded",
+                    description = "Click 'Load Video' to synchronize local mp4/mov match footage",
+                    icon = Icons.Default.CloudUpload,
+                    iconSize = 48.dp,
+                )
             } else {
                 // Premium simulated video frame drawing telemetry overlay
                 Canvas(modifier = Modifier.fillMaxSize()) {

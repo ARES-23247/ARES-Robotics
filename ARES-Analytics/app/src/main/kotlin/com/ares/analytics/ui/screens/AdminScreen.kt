@@ -26,6 +26,7 @@ import com.ares.analytics.service.SyncEngineService
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.RobotProfile
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -132,25 +133,16 @@ fun AdminScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                AresEmptyState(
+                    title = "Google Drive Roster Required",
+                    description = "Please sign in with Google on the Profile screen to access the team's shared robot registry in Google Drive.",
+                    modifier = Modifier.padding(24.dp),
+                    titleFontSize = 16.sp,
+                    titleFontWeight = FontWeight.Bold,
+                    descriptionFontSize = 12.sp,
+                    descriptionModifier = Modifier.width(360.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(24.dp)
-                ) {
-                    Text(
-                        "Google Drive Roster Required",
-                        fontWeight = FontWeight.Bold,
-                        color = AresTextSecondary,
-                        fontSize = 16.sp
-                    )
-                    Text(
-                        "Please sign in with Google on the Profile screen to access the team's shared robot registry in Google Drive.",
-                        color = AresTextTertiary,
-                        fontSize = 12.sp,
-                        modifier = Modifier.width(360.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                )
             }
             return
         }

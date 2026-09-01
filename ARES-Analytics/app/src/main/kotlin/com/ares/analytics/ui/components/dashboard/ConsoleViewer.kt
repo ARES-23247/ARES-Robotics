@@ -27,6 +27,7 @@ import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.ReplayState
 import com.ares.analytics.service.WidgetConfig
 import com.ares.analytics.shared.models.ConsoleMessage
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -354,16 +355,13 @@ fun ConsoleViewer(
                 .padding(6.dp)
         ) {
             if (filteredMessages.isEmpty()) {
-                Box(
+                AresEmptyState(
+                    title = "No log messages found.",
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No log messages found.",
-                        color = AresTextTertiary,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                    titleColor = AresTextTertiary,
+                    titleFontSize = 12.sp,
+                    verticalArrangement = Arrangement.Center,
+                )
             } else {
                 LazyColumn(
                     state = listState,

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.SessionSummary
+import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.CloudIntent
 import com.ares.analytics.viewmodel.CloudViewModel
@@ -274,7 +275,10 @@ fun CloudScreen(
                             CircularProgressIndicator(color = AresCyan, modifier = Modifier.align(Alignment.Center))
                         }
                         state.robotRuns.isEmpty() -> {
-                            Text("No logs found on connected robot.", color = AresTextSecondary, modifier = Modifier.align(Alignment.Center))
+                            AresEmptyState(
+                                title = "No logs found on connected robot.",
+                                modifier = Modifier.align(Alignment.Center),
+                            )
                         }
                         else -> {
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -397,7 +401,10 @@ fun CloudScreen(
                         .padding(8.dp)
                 ) {
                     if (state.sessions.isEmpty()) {
-                        Text("No sessions found in local DuckDB or Google Drive.", color = AresTextSecondary, modifier = Modifier.align(Alignment.Center))
+                        AresEmptyState(
+                            title = "No sessions found in local DuckDB or Google Drive.",
+                            modifier = Modifier.align(Alignment.Center),
+                        )
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(state.sessions, key = { it.summary.sessionId }) { sessionInfo ->
