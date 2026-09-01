@@ -177,13 +177,24 @@ class TelemetryUpdateE2ETest {
         assertTrue("RR motor power magnitude should be > 0.05", kotlin.math.abs(rrPower) > 0.05)
 
         // 5. Verify Motor Velocities (ticks/sec)
-        val flVel = NT4Server.getDouble("Hardware/Motors/fl/Velocity", Double.NaN)
-        val frVel = NT4Server.getDouble("Hardware/Motors/fr/Velocity", Double.NaN)
-        val rlVel = NT4Server.getDouble("Hardware/Motors/rl/Velocity", Double.NaN)
-        val rrVel = NT4Server.getDouble("Hardware/Motors/rr/Velocity", Double.NaN)
+        fun velocities() = listOf(
+            "fl" to NT4Server.getDouble("Hardware/Motors/fl/Velocity", Double.NaN),
+            "fr" to NT4Server.getDouble("Hardware/Motors/fr/Velocity", Double.NaN),
+            "rl" to NT4Server.getDouble("Hardware/Motors/rl/Velocity", Double.NaN),
+            "rr" to NT4Server.getDouble("Hardware/Motors/rr/Velocity", Double.NaN),
+        )
+        var velocityTopics = velocities()
+        var velocityPollsRemaining = 150
+        while (
+            velocityTopics.sumOf { kotlin.math.abs(it.second) } <= 100.0 &&
+            velocityPollsRemaining > 0
+        ) {
+            Thread.sleep(20L)
+            velocityTopics = velocities()
+            velocityPollsRemaining--
+        }
 
-        println("[Telemetry E2E Test] Motor Velocities -> FL: $flVel, FR: $frVel, RL: $rlVel, RR: $rrVel")
-        val velocityTopics = listOf("fl" to flVel, "fr" to frVel, "rl" to rlVel, "rr" to rrVel)
+        println("[Telemetry E2E Test] Motor Velocities -> ${velocityTopics.joinToString { (name, value) -> "$name: $value" }}")
         velocityTopics.forEach { (name, velocity) ->
             assertTrue("$name motor velocity topic should contain a finite value", velocity.isFinite())
         }
