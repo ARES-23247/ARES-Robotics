@@ -883,41 +883,14 @@ fun MainScreen(services: ServiceRegistry) {
             )
         }
 
-        workspacePendingDeletion?.let { (workspaceId, displayName) ->
-            AlertDialog(
-                onDismissRequest = { workspacePendingDeletion = null },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = AresError
-                    )
-                },
-                title = { Text("Remove this workspace?") },
-                text = {
-                    Text(
-                        "ARES will remove the saved workspace settings for $displayName. " +
-                            "Your robot project files and imported run data will not be deleted."
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
-                            workspacePendingDeletion = null
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent)
-                    ) {
-                        Text("Remove workspace")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { workspacePendingDeletion = null }) {
-                        Text("Keep workspace")
-                    }
-                }
-            )
-        }
+        WorkspaceDeletionDialog(
+            pendingWorkspace = workspacePendingDeletion,
+            onConfirm = { workspaceId ->
+                mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
+                workspacePendingDeletion = null
+            },
+            onDismiss = { workspacePendingDeletion = null },
+        )
 
         if (deployDialogOpen) {
             OneClickDeployDialog(
@@ -950,30 +923,6 @@ fun MainScreen(services: ServiceRegistry) {
                 updateState = currentUpdateState,
                 onDismiss = { mainViewModel.onIntent(MainIntent.SetShowUpdateBanner(false)) }
             )
-        }
-    }
-}
-
-@Composable
-private fun FirstMissionNudge(onStart: () -> Unit, onDismiss: () -> Unit) {
-    Surface(
-        color = AresCyan.copy(alpha = .10f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AresCyan.copy(alpha = .65f)),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Icon(Icons.Default.School, contentDescription = null, tint = AresCyan)
-            Column(Modifier.weight(1f)) {
-                Text("Try your first simulator mission", color = AresTextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                Text("Open the guided mission to launch Local Sim, identify live telemetry, and stop it safely.", color = AresTextSecondary, fontSize = 12.sp)
-            }
-            Button(onClick = onStart) { Text("Start mission") }
-            IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Dismiss first mission suggestion") }
         }
     }
 }

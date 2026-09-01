@@ -719,20 +719,6 @@ private fun CheckpointSection(
 }
 
 @Composable
-internal fun TeachingNotice(title: String, body: String, accent: androidx.compose.ui.graphics.Color) {
-    Surface(
-        color = accent.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.7f)),
-        shape = RoundedCornerShape(10.dp),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, color = accent, fontWeight = FontWeight.Bold)
-            Text(body, color = AresTextPrimary, lineHeight = 20.sp)
-        }
-    }
-}
-
-@Composable
 private fun AresResourceButton(destination: AresBrandDestination) {
     OutlinedButton(onClick = { openAresBrandDestination(destination) }) {
         Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(15.dp))

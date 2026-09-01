@@ -637,11 +637,10 @@ fun RunComparisonReport.toExperimentMetricOptions(): List<ExperimentMetricOption
 fun GuidedComparisonFinding.toExperimentSeed(report: RunComparisonReport): GuidedTuningExperimentSeed =
     GuidedTuningExperimentSeed(this, report.primarySessionId, report.toExperimentMetricOptions())
 
-fun GuidedTuningExperiment.belongsTo(workspace: WorkspaceConfig): Boolean =
-    teamId == workspace.teamId && seasonId == workspace.seasonId && robotId == workspace.robotId
+fun GuidedTuningExperiment.belongsTo(workspace: WorkspaceConfig): Boolean = teamId == workspace.teamId &&
+    seasonId == workspace.seasonId && robotId == workspace.robotId
 
-fun GuidedTuningExperiment.canAcceptSimulationResult(): Boolean =
-    evaluation?.improvedIntendedMetric == true &&
+fun GuidedTuningExperiment.canAcceptSimulationResult(): Boolean = evaluation?.improvedIntendedMetric == true &&
         evaluation.baselineValue?.isFinite() == true &&
         evaluation.candidateValue?.isFinite() == true
 
@@ -657,7 +656,6 @@ fun GuidedTuningExperiment.candidateRuns(sessions: List<Session>): List<Session>
     .sortedByDescending(Session::createdAt)
 
 const val SIMULATION_EVIDENCE_TAG = "simulation"
-
 private fun com.ares.analytics.service.RunMetricSummary.statistic(statistic: ExperimentMetricStatistic): Double = when (statistic) {
     ExperimentMetricStatistic.MINIMUM -> minimum
     ExperimentMetricStatistic.AVERAGE -> average
