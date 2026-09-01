@@ -131,6 +131,7 @@ fun AcademyScreen(
     projectPath: String,
     projectLabel: String,
     initialLessonId: String? = null,
+    initialCheckpointId: String? = null,
     initialGlossaryTerm: String? = null,
     runtime: AcademyRuntimeSnapshot = AcademyRuntimeSnapshot.Unavailable,
 ) {
@@ -271,6 +272,7 @@ fun AcademyScreen(
                 } else {
                     LessonDetail(
                         journey = LearningJourneyEvaluator.lessonState(selectedLesson, progress),
+                        highlightedCheckpointId = initialCheckpointId,
                         onLaunch = {
                             scope.launch { progressService.startLesson(selectedLesson.id) }
                             when (selectedLesson.action) {
@@ -504,6 +506,7 @@ private fun LessonListCard(journey: LearningLessonJourneyState, selected: Boolea
 @Composable
 private fun LessonDetail(
     journey: LearningLessonJourneyState,
+    highlightedCheckpointId: String?,
     onLaunch: () -> Unit,
     onCheckpointChange: (LearningCheckpoint, Boolean) -> Unit,
     checkpointReflections: Map<String, String>,
@@ -559,6 +562,7 @@ private fun LessonDetail(
                     checkpointReflections,
                     onCheckpointChange,
                     onReflectionRecorded,
+                    highlightedCheckpointId,
                 )
             }
         }
@@ -632,6 +636,7 @@ private fun CheckpointSection(
     checkpointReflections: Map<String, String>,
     onCheckpointChange: (LearningCheckpoint, Boolean) -> Unit,
     onReflectionRecorded: (LearningCheckpoint, String) -> Unit,
+    highlightedCheckpointId: String?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
         Text("Learning checkpoints", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
@@ -643,12 +648,17 @@ private fun CheckpointSection(
         checkpoints.forEachIndexed { index, checkpoint ->
             val completed = checkpoint.id in completedIds
             val automatic = checkpoint.evidence != LearningCheckpointEvidence.SELF_REPORTED
+            val highlighted = checkpoint.id == highlightedCheckpointId
             var reflectionDraft by remember(checkpoint.id, checkpointReflections[checkpoint.id]) {
                 mutableStateOf(checkpointReflections[checkpoint.id].orEmpty())
             }
             Surface(
-                color = AresSurfaceElevated,
-                border = BorderStroke(1.dp, if (completed) AresGreen else AresBorder),
+                color = if (highlighted) AresCyan.copy(alpha = .12f) else AresSurfaceElevated,
+                border = BorderStroke(2.dp.takeIf { highlighted } ?: 1.dp, when {
+                    highlighted -> AresCyan
+                    completed -> AresGreen
+                    else -> AresBorder
+                }),
                 shape = RoundedCornerShape(9.dp),
                 modifier = Modifier.fillMaxWidth().semantics {
                     stateDescription = if (completed) "Recorded" else if (automatic) "Waiting for observable app evidence" else "Waiting for your reflection"
@@ -665,6 +675,7 @@ private fun CheckpointSection(
                             tint = if (completed) AresGreen else AresTextTertiary,
                         )
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            if (highlighted) Text("Linked from the validation error", color = AresCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             Text("${index + 1}. ${checkpoint.title}", color = AresTextPrimary, fontWeight = FontWeight.Bold)
                             Text(checkpoint.instruction, color = AresTextSecondary, fontSize = 12.sp, lineHeight = 18.sp)
                             Text(

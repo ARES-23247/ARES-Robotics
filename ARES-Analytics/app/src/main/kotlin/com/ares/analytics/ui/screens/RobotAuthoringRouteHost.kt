@@ -1,10 +1,16 @@
 package com.ares.analytics.ui.screens
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.service.GamepadService
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.components.NavigationTarget
@@ -50,7 +56,18 @@ internal fun RobotAuthoringRouteHost(
     config: WorkspaceConfig,
     hardwareStudioInitialTab: HardwareStudioTab,
     actions: RobotAuthoringRouteActions,
-): Boolean = when (route) {
+): Boolean {
+    val authoringRoutes = setOf(
+        NavigationTarget.ROBOT_STUDIO, NavigationTarget.CONTROLS, NavigationTarget.SUPERSTRUCTURE_STUDIO,
+        NavigationTarget.HARDWARE_STUDIO, NavigationTarget.HARDWARE_SETUP, NavigationTarget.DRIVEBASE_BUILDER,
+        NavigationTarget.SUBSYSTEM_GEN, NavigationTarget.PROJECT_IDENTITY,
+    )
+    if (route !in authoringRoutes) return false
+    if (config.projectPath.isBlank()) {
+        AuthoringProjectEmptyState(route, actions.createStandaloneProject)
+        return true
+    }
+    return when (route) {
     NavigationTarget.ROBOT_STUDIO -> {
         val controlsState by scope.controls.state.collectAsState()
         val gamepad1State by scope.gamepads.gamepad1State.collectAsState()
@@ -126,5 +143,31 @@ internal fun RobotAuthoringRouteHost(
         true
     }
 
-    else -> false
+        else -> false
+    }
+}
+
+@Composable
+private fun AuthoringProjectEmptyState(route: NavigationTarget, onCreateProject: () -> Unit) {
+    val purpose = when (route) {
+        NavigationTarget.ROBOT_STUDIO -> "Robot Studio organizes the canonical robot definition and its verification readiness."
+        NavigationTarget.CONTROLS -> "TeleOp Controls maps gamepad inputs to actions declared by this robot project."
+        NavigationTarget.SUPERSTRUCTURE_STUDIO -> "Superstructure Studio coordinates safe named states across several mechanisms."
+        NavigationTarget.HARDWARE_SETUP -> "Port Map & Review records controller addresses and a separate physical review."
+        NavigationTarget.DRIVEBASE_BUILDER -> "Drivebase Builder defines drivetrain geometry, localization, controls, and safety limits."
+        NavigationTarget.SUBSYSTEM_GEN -> "Mechanism Builder defines one subsystem's hardware, states, actions, and safety behavior."
+        NavigationTarget.PROJECT_IDENTITY -> "Project Identity defines the stable robot identity and physical footprint shared by every editor."
+        else -> "Hardware Studio builds the canonical drivetrain, mechanisms, and port review for one robot project."
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier.widthIn(max = 620.dp).padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Create or select a robot project", color = AresTextPrimary)
+            Text(purpose, color = AresTextSecondary)
+            Button(onClick = onCreateProject) { Text("Create robot project") }
+        }
+    }
 }

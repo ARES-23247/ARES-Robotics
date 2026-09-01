@@ -64,7 +64,8 @@ fun PathPlannerScreen(
     projectPath: String? = null,
     robotDimensions: RobotDimensions = RobotDimensions.defaultFor(league),
     onProjectPathChanged: (String) -> Unit = {},
-    onRobotDimensionsChanged: (RobotDimensions) -> Unit = {}
+    onRobotDimensionsChanged: (RobotDimensions) -> Unit = {},
+    onLearnWhy: (lessonId: String, checkpointId: String) -> Unit = { _, _ -> },
 ) {
     val state by viewModel.state.collectAsState()
     var pendingProjectPath by remember { mutableStateOf<String?>(null) }
@@ -195,6 +196,7 @@ fun PathPlannerScreen(
                                 onRobotDimensionsChanged(dimensions)
                             },
                             onIntent = viewModel::onIntent,
+                            onLearnWhy = onLearnWhy,
                         )
                     }
                 },

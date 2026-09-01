@@ -2,9 +2,9 @@
 
 Robot Academy is the in-app route from “I have never used ARES” to creating and reviewing robot behavior with evidence. It combines real application tasks with simplified interactive models. It works offline, and its first mission requires no physical robot.
 
-## Start with First mission
+## Start with the first simulator mission
 
-Open **Help & Learn → First mission**. The lesson coach keeps the current checkpoint visible while you move between Academy, Dashboard, and the execution toolbar.
+Open **Robot Academy → Track 1: Drivetrains & Odometry → Launch Simulator & Drivetrain Telemetry**. A fresh workspace also shows a dismissible **Try your first simulator mission** suggestion that opens this lesson directly.
 
 The first mission asks you to:
 
@@ -20,16 +20,15 @@ ARES can record process and connection facts such as “Local Sim selected” or
 
 | Path | Use it to | Physical robot needed? |
 | --- | --- | --- |
-| **New student · First mission** | Start Local Sim, identify the data source, preserve a run, and compare evidence | No |
-| **Driver & operator** | Identify the active data source, review a safe mechanism action, map a control, and compare practice evidence | No for the simulator-first lessons |
-| **Robot builder** | Describe a drivebase and subsystem, explore mechanism sizing and control, and review tuning evidence | No for authoring and simulation; hardware verification comes later |
-| **Autonomous developer** | Study localization and motion limits, then preview a bounded routine | No for authoring and simulation |
-| **Data analyst** | Import and compare runs, distinguish measurement from inference, and prepare reversible proposals | No for imported or simulated evidence |
-| **Mentor** | Lead simulator-first activities and keep physical-validation boundaries explicit | No for the Academy material |
+| **Track 1: Drivetrains & Odometry** | Start Local Sim, define a drivebase, and study kinematics and sensor fusion | No for the simulator-first material |
+| **Track 2: Subsystems & Architecture** | Generate a bounded mechanism, trace state flow, and review hardware addresses | No for authoring and modeled faults; physical review comes later |
+| **Track 3: Superstructure & Stateflow** | Coordinate mechanisms, design transitions, and reason about sizing | No for authoring and the deterministic teaching models |
+| **Track 4: Control Theory & Guided Tuning** | Study controller response and run reversible, evidence-based simulation experiments | No for the included experiments; physical tuning comes later |
+| **Track 5: Autonomous & Telemetry Forensics** | Author routines, validate field constraints, compare evidence, and graduate generated code | No for authoring, replay, and kinematic preview |
 
 Prerequisites are recommendations, not hidden locks. You may preview a later lesson with a mentor. The status text says **Not started**, **In progress**, **Practiced**, or **Recommended later** so progress never depends on color alone.
 
-If the first lesson in a role path depends on an earlier foundation, Academy recommends that prerequisite even when it belongs to another path. After you practice it, return to the role path and continue.
+If the first lesson in a track depends on an earlier foundation, Academy recommends that prerequisite even when it belongs to another track. After you practice it, return to the selected track and continue.
 
 ## Use learning checkpoints
 

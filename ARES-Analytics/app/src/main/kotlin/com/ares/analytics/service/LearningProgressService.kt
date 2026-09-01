@@ -29,6 +29,7 @@ data class LearningProgress(
     override val completedCheckpointIds: Set<String> = emptySet(),
     override val activeLessonId: String? = null,
     val selectedPathId: String? = null,
+    val firstMissionNudgeDismissed: Boolean = false,
     val studentDisplayName: String = "",
     val checkpointReflections: Map<String, String> = emptyMap(),
     val mentorNotes: Map<String, String> = emptyMap(),
@@ -117,6 +118,10 @@ class LearningProgressService(
         updateProgress { current ->
             current.copy(contentVersion = CURRENT_LEARNING_CONTENT_VERSION, selectedPathId = pathId)
         }
+    }
+
+    suspend fun dismissFirstMissionNudge() = withContext(Dispatchers.IO) {
+        updateProgress { current -> current.copy(firstMissionNudgeDismissed = true) }
     }
 
     suspend fun updateStudentDisplayName(name: String) = withContext(Dispatchers.IO) {

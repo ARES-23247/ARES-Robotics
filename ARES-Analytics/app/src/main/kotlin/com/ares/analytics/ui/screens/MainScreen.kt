@@ -99,6 +99,7 @@ fun MainScreen(services: ServiceRegistry) {
     var commandPaletteOpen by remember { mutableStateOf(false) }
     var workspacePendingDeletion by remember { mutableStateOf<Pair<String, String>?>(null) }
     var requestedLessonId by remember { mutableStateOf<String?>(null) }
+    var requestedCheckpointId by remember { mutableStateOf<String?>(null) }
     var requestedGlossaryTerm by remember { mutableStateOf<String?>(null) }
     var coachDrawerOpen by remember { mutableStateOf(false) }
     var requestedProjectSetupMode by remember { mutableStateOf<ProjectSetupMode?>(null) }
@@ -726,6 +727,21 @@ fun MainScreen(services: ServiceRegistry) {
                         }
                     }
 
+                    if (
+                        !learningProgress.firstMissionNudgeDismissed &&
+                        "start-simulator" !in learningProgress.startedLessonIds &&
+                        activeNav != NavigationTarget.ACADEMY
+                    ) {
+                        FirstMissionNudge(
+                            onStart = {
+                                requestedLessonId = "start-simulator"
+                                requestedCheckpointId = null
+                                mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                            },
+                            onDismiss = { scope.launch { services.learningProgressService.dismissFirstMissionNudge() } },
+                        )
+                    }
+
                     Box(modifier = Modifier.weight(1f)) {
                         WorkspaceRouteHost(
                             state = WorkspaceRouteState(
@@ -744,6 +760,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
                                 hardwareStudioInitialTab = hardwareStudioInitialTab,
                                 requestedLessonId = requestedLessonId,
+                                requestedCheckpointId = requestedCheckpointId,
                                 requestedGlossaryTerm = requestedGlossaryTerm,
                             ),
                             scope = workspaceRouteFeatureScope,
@@ -780,7 +797,13 @@ fun MainScreen(services: ServiceRegistry) {
                                     mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                                 },
                                 openAcademyLesson = {
+                                    requestedCheckpointId = null
                                     requestedLessonId = it
+                                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                                },
+                                openAcademyCheckpoint = { lessonId, checkpointId ->
+                                    requestedLessonId = lessonId
+                                    requestedCheckpointId = checkpointId
                                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                                 },
                                 executeProjectCommand = executeProjectCommand,
@@ -927,6 +950,30 @@ fun MainScreen(services: ServiceRegistry) {
                 updateState = currentUpdateState,
                 onDismiss = { mainViewModel.onIntent(MainIntent.SetShowUpdateBanner(false)) }
             )
+        }
+    }
+}
+
+@Composable
+private fun FirstMissionNudge(onStart: () -> Unit, onDismiss: () -> Unit) {
+    Surface(
+        color = AresCyan.copy(alpha = .10f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, AresCyan.copy(alpha = .65f)),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.Default.School, contentDescription = null, tint = AresCyan)
+            Column(Modifier.weight(1f)) {
+                Text("Try your first simulator mission", color = AresTextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                Text("Open the guided mission to launch Local Sim, identify live telemetry, and stop it safely.", color = AresTextSecondary, fontSize = 12.sp)
+            }
+            Button(onClick = onStart) { Text("Start mission") }
+            IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Dismiss first mission suggestion") }
         }
     }
 }

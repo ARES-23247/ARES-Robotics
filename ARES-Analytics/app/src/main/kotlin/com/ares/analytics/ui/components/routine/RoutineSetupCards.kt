@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.help.RoutineValidationLearningLinks
 import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerState
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
@@ -184,13 +185,25 @@ internal fun RoutineAlliancePicker(value: RoutineAlliance, onChange: (RoutineAll
 }
 
 @Composable
-internal fun RoutineValidationCard(issues: List<RoutineValidationIssue>) {
+internal fun RoutineValidationCard(
+    issues: List<RoutineValidationIssue>,
+    onLearnWhy: (lessonId: String, checkpointId: String) -> Unit,
+) {
     val hasErrors = issues.any { it.severity == RoutineValidationSeverity.ERROR }
     val accent = if (hasErrors) AresError else AresGold
     Card(colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = .1f)), border = BorderStroke(1.dp, accent)) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(if (hasErrors) "Needs attention" else "Review before deployment", color = accent, fontWeight = FontWeight.Bold)
-            issues.take(5).forEach { Text("• ${it.message}", style = MaterialTheme.typography.bodySmall, color = AresTextPrimary) }
+            issues.take(5).forEach { issue ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("• ${issue.message}", style = MaterialTheme.typography.bodySmall, color = AresTextPrimary, modifier = Modifier.weight(1f))
+                    RoutineValidationLearningLinks.forIssue(issue)?.let { link ->
+                        TextButton(onClick = { onLearnWhy(link.lessonId, link.checkpointId) }) {
+                            Text("Learn why")
+                        }
+                    }
+                }
+            }
             if (issues.size > 5) Text("+ ${issues.size - 5} more", style = MaterialTheme.typography.labelSmall, color = AresTextSecondary)
         }
     }
@@ -205,4 +218,3 @@ internal fun EmptyRoutineCard() {
         }
     }
 }
-

@@ -72,6 +72,7 @@ fun RoutineEditorPanel(
     league: League,
     onRobotDimensionsChanged: (RobotDimensions) -> Unit,
     onIntent: (PathPlannerIntent) -> Unit,
+    onLearnWhy: (lessonId: String, checkpointId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var openExpanded by remember { mutableStateOf(false) }
@@ -291,7 +292,7 @@ fun RoutineEditorPanel(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             if (state.routineValidation.isNotEmpty()) {
-                item { RoutineValidationCard(state.routineValidation) }
+                item { RoutineValidationCard(state.routineValidation, onLearnWhy) }
             }
             if (state.routine.steps.isEmpty()) {
                 item {

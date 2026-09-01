@@ -60,6 +60,7 @@ internal data class WorkspaceRouteState(
     val simulatorLaunchDisabledReason: String,
     val hardwareStudioInitialTab: HardwareStudioTab,
     val requestedLessonId: String?,
+    val requestedCheckpointId: String?,
     val requestedGlossaryTerm: String?,
 )
 
@@ -76,6 +77,7 @@ internal data class WorkspaceRouteActions(
     val openCoach: () -> Unit,
     val createProject: () -> Unit,
     val openAcademyLesson: (String) -> Unit,
+    val openAcademyCheckpoint: (String, String) -> Unit,
     val executeProjectCommand: (ProjectExecutionCommand) -> Boolean,
     val openInIde: () -> String,
 )
@@ -128,6 +130,7 @@ internal fun WorkspaceRouteHost(
                     workspace.copy(robotLengthMeters = it.lengthMeters, robotWidthMeters = it.widthMeters),
                 )
             },
+            onLearnWhy = actions.openAcademyCheckpoint,
         )
 
         NavigationTarget.CLOUD,
@@ -200,6 +203,7 @@ internal fun WorkspaceRouteHost(
                     .filter(String::isNotBlank)
                     .joinToString(" · "),
                 initialLessonId = state.requestedLessonId,
+                initialCheckpointId = state.requestedCheckpointId,
                 initialGlossaryTerm = state.requestedGlossaryTerm,
                 runtime = runtime,
             )
