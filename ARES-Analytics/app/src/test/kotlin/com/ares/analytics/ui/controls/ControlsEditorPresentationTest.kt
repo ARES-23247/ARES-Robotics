@@ -9,6 +9,7 @@ import com.ares.analytics.ui.components.controls.canvasCollisionOffsetX
 import com.ares.analytics.ui.components.controls.canvasCollisionOffsetY
 import com.ares.analytics.ui.components.controls.controllerCallouts
 import com.ares.analytics.ui.components.controls.controllerMarkerLabel
+import com.ares.analytics.ui.components.controls.controlRecipeAvailability
 import com.ares.analytics.ui.components.controls.hasAdvancedBindingSettings
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.viewmodel.controls.ControlsEditorState
@@ -239,5 +240,19 @@ class ControlsEditorPresentationTest {
         assertTrue(trace.runtimePath.contains("Redux"))
         assertTrue(trace.runtimePath.contains("cached IO"))
         assertFalse(trace.hasBlockingProblem)
+    }
+
+    @Test
+    fun `macro recipe explains when a reusable routine is still needed`() {
+        val unavailable = controlRecipeAvailability(
+            ControlsEditorState(
+                projectPath = "C:/robot",
+                league = League.FTC,
+                targetPlatform = ControllerInputPlatform.FTC,
+            ),
+        )
+        assertFalse(unavailable.canCreateChord)
+        assertFalse(unavailable.canCreateMacro)
+        assertTrue(unavailable.guidance.contains("Select a controller button"))
     }
 }

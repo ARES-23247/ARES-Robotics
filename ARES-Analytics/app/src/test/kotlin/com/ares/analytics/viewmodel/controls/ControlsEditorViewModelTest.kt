@@ -65,6 +65,7 @@ class ControlsEditorViewModelTest {
         viewModel.applyDraft()
         assertEquals(1, viewModel.state.value.coverage.boundCount)
         assertTrue(viewModel.state.value.dirty)
+        assertNull(viewModel.state.value.draftBinding)
     }
 
     @Test
@@ -307,6 +308,35 @@ class ControlsEditorViewModelTest {
         assertEquals(listOf("a", "b"), viewModel.state.value.draftBinding?.source?.controlIds)
         assertEquals(.3, viewModel.state.value.draftBinding?.timing?.repeatAfterSeconds)
         assertEquals(.1, viewModel.state.value.draftBinding?.timing?.repeatEverySeconds)
+    }
+
+    @Test
+    fun `guided chord and macro recipes create reviewed drafts`() = withProject { project ->
+        val documents = seededDocuments(project)
+        documents.routines.save(
+            project.path,
+            com.areslib.routine.RoutineDocument(
+                documentId = "score-and-stow",
+                name = "Score and stow",
+                steps = listOf(com.areslib.routine.RoutineStep.wait(.1)),
+            ),
+        )
+        val viewModel = ControlsEditorViewModel(project.path, League.FTC, documents)
+
+        viewModel.selectControl("a")
+        viewModel.createChordBinding()
+        assertEquals(ControlSourceKind.CHORD, viewModel.state.value.draftBinding?.source?.kind)
+        assertEquals(listOf("a"), viewModel.state.value.draftBinding?.source?.controlIds)
+        assertTrue(viewModel.state.value.draftBinding?.suppressConstituentBindings == true)
+        viewModel.selectControl("b", appendToChord = true)
+        assertEquals(listOf("a", "b"), viewModel.state.value.draftBinding?.source?.controlIds)
+
+        viewModel.discardDraft()
+        viewModel.createRoutineMacroBinding()
+        assertEquals(ControlTargetKind.ROUTINE, viewModel.state.value.draftBinding?.target?.kind)
+        assertEquals("score-and-stow", viewModel.state.value.draftBinding?.target?.key)
+        assertEquals(ControlEvent.PRESS, viewModel.state.value.draftBinding?.event)
+        assertTrue(viewModel.state.value.draftHasUnappliedChanges)
     }
 
     @Test

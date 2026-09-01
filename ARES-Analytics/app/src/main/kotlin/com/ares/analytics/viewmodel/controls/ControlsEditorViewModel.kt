@@ -352,6 +352,73 @@ class ControlsEditorViewModel(
         ).revalidated()
     }
 
+    /** Starts a reviewed two-or-more-button chord without saving or generating code. */
+    fun createChordBinding() = mutateSelection { current ->
+        if (current.draftHasUnappliedChanges) {
+            return@mutateSelection current.copy(status = "Apply or discard the current binding draft first.")
+        }
+        val control = current.selectedControl
+            ?: return@mutateSelection current.copy(status = "Select the first button in the chord.")
+        if (control.type != ControllerControlTypeDocument.BUTTON) {
+            return@mutateSelection current.copy(status = "A chord starts with a button, not an analog axis.")
+        }
+        val scheme = current.selectedScheme ?: return@mutateSelection current
+        val slot = current.selectedControllerSlot ?: return@mutateSelection current
+        val target = current.actions.firstOrNull()?.let { descriptor ->
+            ControlTargetDocument(ControlTargetKind.ACTION, descriptor.key, defaultArguments(descriptor))
+        } ?: current.routineIds.firstOrNull()?.let { routine ->
+            ControlTargetDocument(ControlTargetKind.ROUTINE, routine)
+        } ?: ControlTargetDocument(ControlTargetKind.ACTION, "choose.action")
+        current.copy(
+            selectedBindingId = null,
+            draftBinding = ControlBindingDocument(
+                bindingId = uniqueBindingId(scheme, "${control.controlId}-chord"),
+                displayName = "${control.displayName} chord",
+                source = ControlSourceDocument(
+                    kind = ControlSourceKind.CHORD,
+                    controllerSlot = slot,
+                    controlIds = listOf(control.controlId),
+                    chordWindowSeconds = .075,
+                ),
+                event = ControlEvent.PRESS,
+                target = target,
+                suppressConstituentBindings = true,
+            ),
+            draftHasUnappliedChanges = true,
+            status = "Click at least one more button on the controller, then choose the action or routine.",
+        ).revalidated()
+    }
+
+    /** Assigns an existing trigger-neutral routine as a controller macro. */
+    fun createRoutineMacroBinding() = mutateSelection { current ->
+        if (current.draftHasUnappliedChanges) {
+            return@mutateSelection current.copy(status = "Apply or discard the current binding draft first.")
+        }
+        val routineId = current.routineIds.firstOrNull()
+            ?: return@mutateSelection current.copy(
+                status = "Create a reusable routine in Routines & Auto before binding a macro.",
+            )
+        val control = current.selectedControl
+            ?: return@mutateSelection current.copy(status = "Select the button that should run the macro.")
+        if (control.type != ControllerControlTypeDocument.BUTTON) {
+            return@mutateSelection current.copy(status = "A routine macro requires a button or button chord.")
+        }
+        val scheme = current.selectedScheme ?: return@mutateSelection current
+        val slot = current.selectedControllerSlot ?: return@mutateSelection current
+        current.copy(
+            selectedBindingId = null,
+            draftBinding = ControlBindingDocument(
+                bindingId = uniqueBindingId(scheme, "${control.controlId}-macro-$routineId"),
+                displayName = "Run $routineId",
+                source = ControlSourceDocument(ControlSourceKind.BUTTON, slot, listOf(control.controlId)),
+                event = ControlEvent.PRESS,
+                target = ControlTargetDocument(ControlTargetKind.ROUTINE, routineId),
+            ),
+            draftHasUnappliedChanges = true,
+            status = "Review the macro routine and invocation policy, then add the binding.",
+        ).revalidated()
+    }
+
     /**
      * Starts a normal reviewed binding draft for a missing catalog action on the selected control.
      * It never chooses a physical control, applies the draft, saves a file, or runs generation.
@@ -441,6 +508,7 @@ class ControlsEditorViewModel(
         draft.copy(
             source = source,
             event = defaultEvent(kind),
+            suppressConstituentBindings = kind == ControlSourceKind.CHORD,
             analogPolicy = if (kind == ControlSourceKind.AXIS_VALUE || kind == ControlSourceKind.AXIS_ZONE) {
                 AnalogControlPolicyDocument()
             } else null
@@ -528,11 +596,11 @@ class ControlsEditorViewModel(
         }
         current.replaceScheme(updated).copy(
             selectedBindingId = draft.bindingId,
-            draftBinding = draft,
+            draftBinding = null,
             dirty = true,
             dirtySchemeIds = current.dirtySchemeIds + updated.documentId,
             draftHasUnappliedChanges = false,
-            status = "Binding applied locally. Save to create a project revision."
+            status = "Binding applied locally. Save to create a project revision.",
         ).revalidated()
     }
 

@@ -147,6 +147,20 @@ limits; analog values, thresholds, or zones with hysteresis; and button chords. 
 the single-button bindings it contains. A macro is simply a reusable routine assigned to a binding,
 so there is no second macro file format to learn.
 
+The **Chords & macros** card provides the shortest reviewed workflow:
+
+1. Select the first button on the controller drawing.
+2. Choose **New chord**, then click every additional button while the binding inspector remains
+   open. Constituent-button suppression starts enabled so the individual bindings do not also fire.
+3. Choose the typed action or reusable routine, review the timing and safety settings, then choose
+   **Add Binding**.
+4. To create a macro, first save a trigger-neutral routine in **Routines & Auto**. Select its
+   controller button, choose **Bind routine macro**, review its invocation policy, and add it.
+
+Applying a binding closes the inspector but does not write the project. **Save** creates the
+canonical `.arescontrols` revision; **Save & Generate** also refreshes the deterministic Kotlin.
+Neither action commands a robot or claims physical controller validation.
+
 ### Learn the flow in Robot Academy
 
 After creating a generated subsystem, open **Help & Learn -> Driver & operator -> Control the

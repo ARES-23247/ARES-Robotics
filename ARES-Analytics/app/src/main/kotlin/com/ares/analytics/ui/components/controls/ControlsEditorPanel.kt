@@ -193,6 +193,7 @@ fun ControlsEditorPanel(
                     Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    ControlRecipesCard(state, viewModel)
                     CapabilityCoverageCard(state, viewModel)
                     BindingList(state, viewModel)
                     BindingLearningTraceCard(state)
@@ -210,6 +211,7 @@ fun ControlsEditorPanel(
                 stableId = binding.bindingId,
                 icon = Icons.Default.Tune,
                 onDismiss = viewModel::discardDraft,
+                allowBackgroundInteraction = true,
                 doneButtonText = if (state.selectedBindingId == null) "Add Binding" else "Apply Changes",
                 onDone = viewModel::applyDraft,
                 onDelete = state.selectedBindingId?.let { idToDelete ->
