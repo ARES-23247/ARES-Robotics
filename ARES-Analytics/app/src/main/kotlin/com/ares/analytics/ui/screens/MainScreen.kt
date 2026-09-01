@@ -1,6 +1,5 @@
 package com.ares.analytics.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -18,13 +17,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.di.ServiceRegistry
 import com.ares.analytics.service.BuildExecutionPhase
-import com.ares.analytics.service.UpdateCheckerService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
-import com.ares.analytics.ui.components.CommandPalette
-import com.ares.analytics.ui.components.LearningCoachDrawer
 import com.ares.analytics.ui.components.NavigationTarget
 import com.ares.analytics.ui.components.QuickNavigationMenu
 import com.ares.analytics.ui.components.SectionNavigationBar
@@ -34,7 +30,6 @@ import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
 import com.ares.analytics.ui.input.DesktopDriveKeyDispatcher
 import com.ares.analytics.ui.components.core.ExecutionToolbar
-import com.ares.analytics.ui.components.core.OneClickDeployDialog
 import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
@@ -839,90 +834,63 @@ fun MainScreen(services: ServiceRegistry) {
             }
         }
 
-        AnimatedVisibility(
-            visible = coachDrawerOpen && activeNav != NavigationTarget.ACADEMY && activeCoachLessonId != null,
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = 8.dp),
-            enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
-            exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
-        ) {
-            LearningCoachDrawer(
-                progressService = services.learningProgressService,
-                onOpenAcademy = { lessonId ->
+        // ── Update Notification Banner ──────────────────────────────────────────
+        MainScreenOverlays(
+            state = MainScreenOverlayState(
+                activeNavigation = activeNav,
+                coachDrawerOpen = coachDrawerOpen,
+                activeCoachLessonId = activeCoachLessonId,
+                commandPaletteOpen = commandPaletteOpen,
+                developerMode = currentConfig.developerMode,
+                workspacePendingDeletion = workspacePendingDeletion,
+                deployDialogOpen = deployDialogOpen,
+                deployAwaitingConfirmation = deployAwaitingConfirmation,
+                deployExecutionState = deployExecutionState,
+                projectPath = currentConfig.projectPath,
+                league = currentConfig.league,
+                updateState = updateState,
+                showUpdateBanner = showUpdateBanner,
+            ),
+            actions = MainScreenOverlayActions(
+                navigate = { destination ->
+                    if (destination == NavigationTarget.ACADEMY) {
+                        requestedLessonId = null
+                        requestedGlossaryTerm = null
+                    }
+                    mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
+                },
+                dismissCoach = { coachDrawerOpen = false },
+                openAcademyLesson = { lessonId ->
                     coachDrawerOpen = false
                     requestedLessonId = lessonId
                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                 },
-                onOpenScreen = { destination ->
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
-                },
-                onSelectLocalSimulator = { targetSelection = TargetSelection.LOCAL_SIM },
-                onStartSimulator = {
-                    startSimulatorProcess()
-                },
-                onOpenDashboard = {
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.DASHBOARD))
-                },
-                onStopSimulator = services.simulatorProcessService::stop,
-                onDismiss = { coachDrawerOpen = false },
-            )
-        }
-
-        if (commandPaletteOpen) {
-            CommandPalette(
-                developerMode = currentConfig.developerMode,
-                onDismiss = { commandPaletteOpen = false },
-                onNavigate = {
-                    if (it == NavigationTarget.ACADEMY) { requestedLessonId = null; requestedGlossaryTerm = null }
-                    mainViewModel.onIntent(MainIntent.SetActiveNav(it))
-                },
-                onOpenGlossaryTerm = { termName ->
+                selectTarget = { targetSelection = it },
+                startSimulator = startSimulatorProcess,
+                stopSimulator = services.simulatorProcessService::stop,
+                dismissCommandPalette = { commandPaletteOpen = false },
+                openGlossaryTerm = { termName ->
                     requestedGlossaryTerm = termName
                     requestedLessonId = null
                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                }
-            )
-        }
-
-        WorkspaceDeletionDialog(
-            pendingWorkspace = workspacePendingDeletion,
-            onConfirm = { workspaceId ->
-                mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
-                workspacePendingDeletion = null
-            },
-            onDismiss = { workspacePendingDeletion = null },
-        )
-
-        if (deployDialogOpen) {
-            OneClickDeployDialog(
-                state = if (deployAwaitingConfirmation) {
-                    com.ares.analytics.service.DeployExecutionState(
-                        projectPath = currentConfig.projectPath,
-                        league = currentConfig.league,
-                    )
-                } else {
-                    deployExecutionState
                 },
-                projectPath = currentConfig.projectPath,
-                league = currentConfig.league,
-                onConfirm = {
+                confirmWorkspaceDeletion = { workspaceId ->
+                    mainViewModel.onIntent(MainIntent.DeleteWorkspace(workspaceId))
+                    workspacePendingDeletion = null
+                },
+                dismissWorkspaceDeletion = { workspacePendingDeletion = null },
+                confirmDeploy = {
                     deployAwaitingConfirmation = false
                     executeProjectCommand(ProjectExecutionCommand.DEPLOY)
                 },
-                onDismiss = {
+                dismissDeploy = {
                     deployDialogOpen = false
                     deployAwaitingConfirmation = false
                 },
-                onCancel = { services.robotDeploymentService.cancel() },
-            )
-        }
-
-        // ── Update Notification Banner ──────────────────────────────────────────
-        val currentUpdateState = updateState
-        if (currentUpdateState is UpdateCheckerService.UpdateState.UpdateAvailable && showUpdateBanner) {
-            com.ares.analytics.ui.components.layout.UpdateNotificationBanner(
-                updateState = currentUpdateState,
-                onDismiss = { mainViewModel.onIntent(MainIntent.SetShowUpdateBanner(false)) }
-            )
-        }
+                cancelDeploy = services.robotDeploymentService::cancel,
+                dismissUpdate = { mainViewModel.onIntent(MainIntent.SetShowUpdateBanner(false)) },
+            ),
+            learningProgressService = services.learningProgressService,
+        )
     }
 }
