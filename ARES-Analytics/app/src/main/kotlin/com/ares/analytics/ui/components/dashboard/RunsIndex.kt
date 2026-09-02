@@ -25,11 +25,11 @@ import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionAnnotation
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.ui.components.core.AresDialog
+import com.ares.analytics.ui.components.forms.AresTextField
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.util.AresFormatters
 import kotlinx.coroutines.launch
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,97 +223,82 @@ fun RunsIndex(
 
     // Annotation & Tag Edit Dialog
     editingSession?.let { session ->
-        AlertDialog(
-            onDismissRequest = { editingSession = null },
-            title = { Text("Edit Run Metadata", color = AresTextPrimary, fontWeight = FontWeight.Bold) },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+        AresDialog(
+            title = "Edit Run Metadata",
+            onDismiss = { editingSession = null },
+            confirmText = "Save",
+            onConfirm = {
+                val cleanTags = tagsText.split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .toMutableList()
+                if (batteryLabel.isNotEmpty()) {
+                    cleanTags.add("battery-$batteryLabel")
+                }
+
+                scope.launch {
+                    val annotation = SessionAnnotation(
+                        annotationId = java.util.UUID.randomUUID().toString(),
+                        sessionId = session.sessionId,
+                        text = annotationText,
+                        createdAt = System.currentTimeMillis(),
+                        authorId = "Pit Leader"
+                    )
+                    databaseService.insertAnnotation(annotation)
+                    databaseService.updateSessionTags(session.sessionId, cleanTags)
+
+                    editingSession = null
+                    reloadSessions()
+                }
+            }
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Session ID: ${session.sessionId.take(8)}...", fontSize = 11.sp, color = AresTextTertiary)
+
+                AresTextField(
+                    value = annotationText,
+                    onValueChange = { annotationText = it },
+                    label = "Session Notes",
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    singleLine = false,
+                )
+
+                AresTextField(
+                    value = tagsText,
+                    onValueChange = { tagsText = it },
+                    label = "Custom Tags (comma separated)",
+                    placeholder = "quals, autonomous, intake-jam",
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+
+                // Battery Label selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Session ID: ${session.sessionId.take(8)}...", fontSize = 11.sp, color = AresTextTertiary)
-
-                    OutlinedTextField(
-                        value = annotationText,
-                        onValueChange = { annotationText = it },
-                        label = { Text("Session Notes") },
-                        modifier = Modifier.fillMaxWidth().height(100.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-
-                    OutlinedTextField(
-                        value = tagsText,
-                        onValueChange = { tagsText = it },
-                        label = { Text("Custom Tags (comma separated)") },
-                        placeholder = { Text("quals, autonomous, intake-jam") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
-                    )
-
-                    // Battery Label selector
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Battery Label:", fontSize = 13.sp, color = AresTextSecondary)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            listOf("A", "B", "C", "D").forEach { label ->
-                                FilterChip(
-                                    selected = batteryLabel == label,
-                                    onClick = { batteryLabel = label },
-                                    label = { Text("Battery $label") },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = AresCyan,
-                                        selectedLabelColor = AresOnAccent,
-                                        containerColor = AresSurfaceElevated,
-                                        labelColor = AresTextSecondary
-                                    )
+                    Text("Battery Label:", fontSize = 13.sp, color = AresTextSecondary)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        listOf("A", "B", "C", "D").forEach { label ->
+                            FilterChip(
+                                selected = batteryLabel == label,
+                                onClick = { batteryLabel = label },
+                                label = { Text("Battery $label") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AresCyan,
+                                    selectedLabelColor = AresOnAccent,
+                                    containerColor = AresSurfaceElevated,
+                                    labelColor = AresTextSecondary
                                 )
-                            }
+                            )
                         }
                     }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val cleanTags = tagsText.split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                            .toMutableList()
-                        if (batteryLabel.isNotEmpty()) {
-                            cleanTags.add("battery-$batteryLabel")
-                        }
-
-                        scope.launch {
-                            val annotation = SessionAnnotation(
-                                annotationId = java.util.UUID.randomUUID().toString(),
-                                sessionId = session.sessionId,
-                                text = annotationText,
-                                createdAt = System.currentTimeMillis(),
-                                authorId = "Pit Leader"
-                            )
-                            databaseService.insertAnnotation(annotation)
-                            databaseService.updateSessionTags(session.sessionId, cleanTags)
-
-                            editingSession = null
-                            reloadSessions()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent)
-                ) {
-                    Text("Save", color = AresOnAccent, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { editingSession = null }) {
-                    Text("Cancel", color = AresTextSecondary)
-                }
-            },
-            containerColor = AresSurfaceElevated,
-            shape = RoundedCornerShape(12.dp)
-        )
+            }
+        }
     }
 }

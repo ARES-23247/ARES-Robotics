@@ -57,7 +57,7 @@ import com.ares.analytics.viewmodel.OnboardingIntent
 import com.ares.analytics.viewmodel.ProjectSetupMode
 import com.ares.analytics.viewmodel.OnboardingStep
 import com.ares.analytics.viewmodel.OnboardingViewModel
-import javax.swing.JFileChooser
+import com.ares.analytics.ui.util.DesktopFileChoosers
 
 /** Novice-first, four-stage workspace setup. */
 @Composable
@@ -184,13 +184,10 @@ fun OnboardingScreen(
                         viewModel.handleIntent(OnboardingIntent.UpdateProjectPath(it))
                     },
                     onBrowseProject = {
-                        val chooser = JFileChooser().apply {
-                            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-                            dialogTitle = "Choose your robot project folder"
-                        }
-                        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                            // Updating a real directory automatically runs project detection.
-                            viewModel.handleIntent(OnboardingIntent.UpdateProjectPath(chooser.selectedFile.absolutePath))
+                        DesktopFileChoosers.chooseDirectory(
+                            title = "Choose your robot project folder"
+                        )?.let { file ->
+                            viewModel.handleIntent(OnboardingIntent.UpdateProjectPath(file.absolutePath))
                         }
                     },
                     onProjectParentPathChange = {
@@ -200,13 +197,11 @@ fun OnboardingScreen(
                         viewModel.handleIntent(OnboardingIntent.UpdateProjectFolderName(it))
                     },
                     onBrowseProjectParent = {
-                        val chooser = JFileChooser().apply {
-                            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-                            dialogTitle = "Choose where to create the robot project"
-                        }
-                        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                        DesktopFileChoosers.chooseDirectory(
+                            title = "Choose where to create the robot project"
+                        )?.let { file ->
                             viewModel.handleIntent(
-                                OnboardingIntent.UpdateProjectParentPath(chooser.selectedFile.absolutePath),
+                                OnboardingIntent.UpdateProjectParentPath(file.absolutePath),
                             )
                         }
                     },

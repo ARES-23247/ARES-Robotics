@@ -39,6 +39,7 @@ fun AresDialog(
     isConfirmEnabled: Boolean = true,
     dismissText: String? = "Cancel",
     scrollable: Boolean = false,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val (accentColor, confirmBtnContainer, confirmBtnContent) = when (variant) {
@@ -75,7 +76,13 @@ fun AresDialog(
             )
         },
         confirmButton = {
-            if (confirmText != null && onConfirm != null) {
+            if (actions != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions
+                )
+            } else if (confirmText != null && onConfirm != null) {
                 Button(
                     onClick = onConfirm,
                     enabled = isConfirmEnabled,
@@ -86,7 +93,7 @@ fun AresDialog(
             }
         },
         dismissButton = {
-            if (dismissText != null) {
+            if (actions == null && dismissText != null) {
                 OutlinedButton(
                     onClick = onDismiss,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AresTextSecondary)

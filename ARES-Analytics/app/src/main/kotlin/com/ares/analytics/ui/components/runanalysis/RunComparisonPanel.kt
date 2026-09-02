@@ -76,8 +76,7 @@ import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import kotlin.math.max
 import kotlin.math.min
 
@@ -461,16 +460,14 @@ private fun RunLegend(labels: List<String>) {
 
 private fun Session.comparisonLabel(): String = shortRunLabel()
 
-private fun chooseComparisonReportFile(primarySessionId: String, defaultDirectory: File?): File? {
-    val chooser = JFileChooser(defaultDirectory?.takeIf(File::isDirectory)).apply {
-        dialogTitle = "Export mentor/student run comparison"
-        fileFilter = FileNameExtensionFilter("Markdown report", "md")
-        selectedFile = File("ares-run-comparison-${primarySessionId.take(12)}.md")
-    }
-    return if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
-        chooser.selectedFile.let { if (it.extension.equals("md", ignoreCase = true)) it else File(it.parentFile, "${it.name}.md") }
-    } else null
-}
+private fun chooseComparisonReportFile(primarySessionId: String, defaultDirectory: File?): File? =
+    DesktopFileChoosers.chooseSaveFile(
+        initialDirectory = defaultDirectory?.takeIf(File::isDirectory),
+        title = "Export mentor/student run comparison",
+        defaultFileName = "ares-run-comparison-${primarySessionId.take(12)}.md",
+        filterDescription = "Markdown report",
+        extensions = listOf("md")
+    )
 
 private fun Double.formatComparisonUi(): String = "%.3f".format(this)
 

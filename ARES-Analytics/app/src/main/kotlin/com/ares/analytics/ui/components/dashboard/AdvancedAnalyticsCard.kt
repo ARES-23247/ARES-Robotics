@@ -70,8 +70,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -397,13 +396,10 @@ private fun severityColor(severity: InsightSeverity): Color = when (severity) {
 
 private fun shortTopic(topic: String): String = topic.split('/').takeLast(3).joinToString("/")
 
-private fun chooseAnalyticsExportFile(sessionId: String): File? {
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Export analytics report"
-        selectedFile = File("ares-analytics-${sessionId.take(24)}.md")
-        fileFilter = FileNameExtensionFilter("Markdown report", "md")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
-    val selected = chooser.selectedFile
-    return if (selected.extension.equals("md", ignoreCase = true)) selected else File(selected.parentFile, "${selected.name}.md")
-}
+private fun chooseAnalyticsExportFile(sessionId: String): File? =
+    DesktopFileChoosers.chooseSaveFile(
+        title = "Export analytics report",
+        defaultFileName = "ares-analytics-${sessionId.take(24)}.md",
+        filterDescription = "Markdown report",
+        extensions = listOf("md")
+    )

@@ -84,8 +84,7 @@ import com.ares.analytics.viewmodel.tuning.guidedExperimentLabel
 import java.io.File
 import java.math.BigDecimal
 import java.math.RoundingMode
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import com.ares.analytics.ui.util.DesktopFileChoosers
 
 @Composable
 fun GuidedTuningExperimentPanel(
@@ -657,16 +656,13 @@ private fun MessageBanner(text: String, color: androidx.compose.ui.graphics.Colo
     }
 }
 
-private fun chooseExperimentReportFile(uid: String): File? {
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Export mentor/student tuning experiment"
-        fileFilter = FileNameExtensionFilter("Markdown report (*.md)", "md")
-        selectedFile = File("ares-tuning-${uid.takeLast(8)}.md")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
-    val selected = chooser.selectedFile
-    return if (selected.extension.equals("md", true)) selected else File(selected.parentFile, "${selected.name}.md")
-}
+private fun chooseExperimentReportFile(uid: String): File? =
+    DesktopFileChoosers.chooseSaveFile(
+        title = "Export mentor/student tuning experiment",
+        defaultFileName = "ares-tuning-${uid.takeLast(8)}.md",
+        filterDescription = "Markdown report (*.md)",
+        extensions = listOf("md")
+    )
 
 private fun ExperimentValue.displayValue(): String = toTuningValue().displayValue()
 

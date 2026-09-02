@@ -88,8 +88,7 @@ import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import com.ares.analytics.ui.util.DesktopFileChoosers
 
 /** One novice-first evidence path; the existing dashboard and history table remain advanced tools. */
 @Composable
@@ -537,13 +536,10 @@ private fun Session.displayLabel(): String {
     return "$match · $time"
 }
 
-private fun chooseGuidedReviewFile(sessionId: String): File? {
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Export guided run evidence"
-        selectedFile = File("ares-guided-review-${sessionId.take(24)}.md")
-        fileFilter = FileNameExtensionFilter("Markdown evidence report", "md")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
-    val selected = chooser.selectedFile
-    return if (selected.extension.equals("md", ignoreCase = true)) selected else File(selected.parentFile, "${selected.name}.md")
-}
+private fun chooseGuidedReviewFile(sessionId: String): File? =
+    DesktopFileChoosers.chooseSaveFile(
+        title = "Export guided run evidence",
+        defaultFileName = "ares-guided-review-${sessionId.take(24)}.md",
+        filterDescription = "Markdown evidence report",
+        extensions = listOf("md")
+    )
