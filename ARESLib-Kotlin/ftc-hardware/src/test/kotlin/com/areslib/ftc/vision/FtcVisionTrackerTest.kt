@@ -50,6 +50,19 @@ class MockVisionIO(var mockMeasurements: List<VisionMeasurement> = emptyList()) 
  */
 class FtcVisionTrackerTest {
     @Test
+    fun `equal ambiguity measurements select the pose nearest the current estimate`() {
+        val store = Store(RobotState(), ::rootReducer)
+        val far = measurement(0.8, 0.0, 0.0, 100L)
+        val near = measurement(0.2, 0.0, 0.0, 101L)
+        val tracker = FtcVisionTracker(store, MockVisionIO(listOf(far, near)), pinpointIO = null)
+
+        tracker.update(101L)
+
+        assertEquals(0.2, store.state.drive.poseEstimator.estimatedPose.x, 1e-9)
+        assertEquals("INIT_ALIGN_SNAP", tracker.lastVisionStatus)
+    }
+
+    @Test
     fun `tracker covariance is passed to the actual EKF update`() {
         fun fusedX(stdDev: Double): Double {
             val store = Store(RobotState(), ::rootReducer)

@@ -36,14 +36,15 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.shared.models.WorkspaceCollaborationMode
-import com.ares.analytics.shared.AppJson
+import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.components.core.chooseProjectDirectory
 import com.ares.analytics.ui.components.core.openExternalLink
+import com.ares.analytics.ui.components.forms.AresTextField
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.viewmodel.ProfileIntent
 import com.ares.analytics.viewmodel.ProfileViewModel
-import javax.swing.JFileChooser
 import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.launch
 
@@ -154,13 +155,10 @@ fun ProfileScreen(
         HorizontalDivider(color = AresBorder)
 
         // 1. Workspace Identity & Active Robot Selection
-        Card(
+        AresCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Settings, contentDescription = null, tint = AresCyan, modifier = Modifier.size(20.dp))
                     Text("Workspace Active Robot Profile", fontWeight = FontWeight.Bold, color = AresTextPrimary, fontSize = 15.sp)
@@ -183,20 +181,16 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    AresTextField(
                         value = projectPath,
                         onValueChange = { projectPath = it },
-                        label = { Text("Robot project directory") },
+                        label = "Robot project directory",
                         supportingText = {
                             Text(projectPathError ?: "Robot source, autos, field data, and build files use this folder.")
                         },
                         isError = projectPathError != null,
                         singleLine = true,
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AresCyan,
-                            unfocusedBorderColor = AresBorder
-                        )
                     )
                     OutlinedButton(
                         onClick = {
@@ -208,44 +202,40 @@ fun ProfileScreen(
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
+                    AresTextField(
                         value = teamId,
                         onValueChange = { teamId = it.filter { c -> c.isDigit() } },
-                        label = { Text("Team ID Number") },
+                        label = "Team ID Number",
                         readOnly = true,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
                     )
-                    OutlinedTextField(
+                    AresTextField(
                         value = robotId,
                         onValueChange = { robotId = it.filter { c -> c.isLetterOrDigit() || c == '-' } },
-                        label = { Text("Robot ID") },
+                        label = "Robot ID",
                         readOnly = true,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
                     )
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
+                    AresTextField(
                         value = robotName,
                         onValueChange = { robotName = it },
-                        label = { Text("Robot Friendly Name") },
+                        label = "Robot Friendly Name",
                         readOnly = true,
                         modifier = Modifier.weight(1.5f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
                     )
-                    OutlinedTextField(
+                    AresTextField(
                         value = seasonId,
                         onValueChange = { seasonId = it },
-                        label = { Text("Season ID") },
+                        label = "Season ID",
                         readOnly = true,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder)
                     )
                 }
 
@@ -276,13 +266,10 @@ fun ProfileScreen(
         }
 
         // 2. Robot build tools
-        Card(
+        AresCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder),
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.IntegrationInstructions, contentDescription = null, tint = AresCyan, modifier = Modifier.size(20.dp))
                     Text("Robot build tools", fontWeight = FontWeight.Bold, color = AresTextPrimary, fontSize = 15.sp)
@@ -357,13 +344,10 @@ fun ProfileScreen(
         }
 
         // 3. Google Drive Cloud Sync
-        Card(
+        AresCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, AresBorder)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Cloud, contentDescription = null, tint = AresCyan, modifier = Modifier.size(20.dp))
                     Text("Google Drive Roster & Cloud Sync", fontWeight = FontWeight.Bold, color = AresTextPrimary, fontSize = 15.sp)
@@ -585,10 +569,10 @@ fun ProfileScreen(
                                 }
                             }
                         }
-                        OutlinedTextField(
+                        AresTextField(
                             value = destinationName,
                             onValueChange = { destinationName = it },
-                            label = { Text("Destination name") },
+                            label = "Destination name",
                             supportingText = {
                                 Text(
                                     if (destinationType == DriveDestinationType.TEAM_FOLDER) {
@@ -677,20 +661,19 @@ fun ProfileScreen(
                         Switch(checked = useCustomGoogleClient, onCheckedChange = { useCustomGoogleClient = it })
                     }
                     if (useCustomGoogleClient) {
-                        OutlinedTextField(
+                        AresTextField(
                             value = googleClientId,
                             onValueChange = { googleClientId = it },
-                            label = { Text("Desktop OAuth client ID") },
+                            label = "Desktop OAuth client ID",
                             supportingText = { Text("Ends in .apps.googleusercontent.com. Never enter a client secret.") },
                             isError = googleClientId.isNotBlank() && !isValidGoogleDesktopClientId(googleClientId),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AresCyan, unfocusedBorderColor = AresBorder),
                         )
-                        OutlinedTextField(
+                        AresTextField(
                             value = googleOAuthBrokerUrl,
                             onValueChange = { googleOAuthBrokerUrl = it },
-                            label = { Text("Organization token-service URL") },
+                            label = "Organization token-service URL",
                             supportingText = {
                                 Text("HTTPS URL supplied by your administrator. Do not enter a client secret here.")
                             },
@@ -698,10 +681,6 @@ fun ProfileScreen(
                                 !isValidGoogleOAuthBrokerUrl(googleOAuthBrokerUrl),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AresCyan,
-                                unfocusedBorderColor = AresBorder,
-                            ),
                         )
                     }
                 }
@@ -792,17 +771,16 @@ fun ProfileScreen(
 }
 
 private fun exportDriveDestinationRecord(destination: com.ares.analytics.shared.models.DriveDestinationConfig): String {
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Export ARES Drive destination record"
-        selectedFile = java.io.File("ares-drive-destination.json")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return "Export cancelled."
+    val selected = DesktopFileChoosers.chooseSaveFile(
+        dialogTitle = "Export ARES Drive destination record",
+        defaultFileName = "ares-drive-destination.json",
+        filterDescription = "JSON Files (*.json)",
+        extensions = listOf("json"),
+    ) ?: return "Export cancelled."
+
     return runCatching {
-        val selected = chooser.selectedFile.let { file ->
-            if (file.extension.equals("json", ignoreCase = true)) file else java.io.File(file.parentFile, "${file.name}.json")
-        }
         writeFileAtomically(selected) { temporary ->
-            temporary.writeText(AppJson.encodeToString(destination))
+            temporary.writeText(com.ares.analytics.shared.AppJson.encodeToString(destination))
         }
         "Destination record exported to ${selected.name}. It contains folder/account identifiers, never OAuth tokens."
     }.getOrElse { failure ->

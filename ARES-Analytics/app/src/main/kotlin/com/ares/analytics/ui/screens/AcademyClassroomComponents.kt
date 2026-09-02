@@ -18,8 +18,7 @@ import com.ares.analytics.service.AcademyLearningAssignment
 import com.ares.analytics.ui.help.LearningCatalog
 import com.ares.analytics.ui.theme.*
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import com.ares.analytics.ui.util.DesktopFileChoosers
 
 @Composable
 internal fun ClassroomPracticeSetupCard(
@@ -121,25 +120,21 @@ internal fun ClassroomSection(title: String, content: @Composable ColumnScope.()
 internal fun chooseAssignmentWorksheetFile(studentName: String, assignmentTitle: String): File? {
     fun slug(value: String, fallback: String): String = value.trim().lowercase()
         .replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { fallback }
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Export ARES Academy assignment worksheet"
-        selectedFile = File("ares-academy-${slug(studentName, "student")}-${slug(assignmentTitle, "assignment")}.md")
-        fileFilter = FileNameExtensionFilter("Markdown document (*.md)", "md")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
-    val selected = chooser.selectedFile
-    return if (selected.extension.equals("md", ignoreCase = true)) selected else File(selected.parentFile, "${selected.name}.md")
+    return DesktopFileChoosers.chooseSaveFile(
+        dialogTitle = "Export ARES Academy assignment worksheet",
+        defaultFileName = "ares-academy-${slug(studentName, "student")}-${slug(assignmentTitle, "assignment")}.md",
+        filterDescription = "Markdown document (*.md)",
+        extensions = listOf("md")
+    )
 }
 
 internal fun chooseAcademyReportFile(studentName: String, pathId: String): File? {
     val studentSlug = studentName.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "student" }
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Export ARES Academy learning record"
-        selectedFile = File("ares-academy-$studentSlug-$pathId.md")
-        fileFilter = FileNameExtensionFilter("Markdown document (*.md)", "md")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
-    val selected = chooser.selectedFile
-    return if (selected.extension.equals("md", ignoreCase = true)) selected else File(selected.parentFile, "${selected.name}.md")
+    return DesktopFileChoosers.chooseSaveFile(
+        dialogTitle = "Export ARES Academy learning record",
+        defaultFileName = "ares-academy-$studentSlug-$pathId.md",
+        filterDescription = "Markdown document (*.md)",
+        extensions = listOf("md")
+    )
 }
 

@@ -167,9 +167,14 @@ class AlertEngineServiceTest {
             delay(100)
             nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_000L, "session-a", "Robot/BatteryVoltage", 10.0))
             nt4Service.mockTelemetryFlow.emit(TelemetryFrame(2_000L, "session-b", "/Robot/BatteryVoltage", 9.8))
-            delay(200)
-
-            val alerts = alertService.alerts.value.filter { it.ruleKey == "Robot/BatteryVoltage" }
+            val alerts = kotlinx.coroutines.withTimeout(2_000) {
+                alertService.alerts.first { records ->
+                    records
+                        .filter { it.ruleKey == "Robot/BatteryVoltage" }
+                        .map { it.sessionId }
+                        .toSet() == setOf("session-a", "session-b")
+                }
+            }.filter { it.ruleKey == "Robot/BatteryVoltage" }
             assertEquals(setOf("session-a", "session-b"), alerts.map { it.sessionId }.toSet())
         } finally {
             alertService.dispose()

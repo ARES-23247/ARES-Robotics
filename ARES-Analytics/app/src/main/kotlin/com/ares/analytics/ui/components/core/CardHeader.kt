@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextTertiary
 
 /**
  * Standardized header layout for dashboard cards in ARES-Analytics.
@@ -25,6 +26,7 @@ import com.ares.analytics.ui.theme.AresTextPrimary
  * @param statusText Optional status text string for status badge.
  * @param statusColor Optional color for status badge.
  * @param showDivider Whether to render a horizontal divider below the header (defaults to true).
+ * @param modifier Custom modifier for header container.
  * @param trailingContent Optional trailing custom composable content.
  */
 @Composable
@@ -35,9 +37,10 @@ fun CardHeader(
     statusText: String? = null,
     statusColor: Color? = null,
     showDivider: Boolean = true,
+    modifier: Modifier = Modifier,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
-    Column {
+    Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -67,8 +70,11 @@ fun CardHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (statusText != null && statusColor != null) {
-                    StatusBadge(text = statusText, color = statusColor)
+                if (statusText != null) {
+                    StatusBadge(
+                        text = statusText,
+                        color = statusColor ?: AresTextTertiary
+                    )
                 }
                 trailingContent?.invoke()
             }

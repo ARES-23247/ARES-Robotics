@@ -50,15 +50,11 @@ import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
+import com.ares.analytics.ui.util.AresFormatters
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.viewmodel.ImportCenterIntent
 import com.ares.analytics.viewmodel.ImportCenterViewModel
 import java.io.File
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
 @Composable
 fun ImportCenterScreen(
@@ -305,20 +301,15 @@ private fun chooseCompletedRobotLogs(projectPath: String): List<File> {
     if (controlledSelection.isNotEmpty()) return controlledSelection
 
     val initialDirectory = File(projectPath).takeIf(File::isDirectory)
-    val chooser = JFileChooser(initialDirectory).apply {
-        dialogTitle = "Choose completed robot or simulator logs"
-        isMultiSelectionEnabled = true
-        fileSelectionMode = JFileChooser.FILES_ONLY
-        fileFilter = FileNameExtensionFilter(
-            "ARES-supported logs",
+    return DesktopFileChoosers.chooseOpenFiles(
+        dialogTitle = "Choose completed robot or simulator logs",
+        initialDirectory = initialDirectory,
+        filterDescription = "ARES-supported logs",
+        extensions = listOf(
             "csv", "gz", "jsonl", "parquet", "wpilog", "wpilogxz", "dslog", "dsevents",
             "rlog", "revlog", "hoot", "log",
-        )
-    }
-    if (chooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return emptyList()
-    return chooser.selectedFiles?.toList().orEmpty().ifEmpty {
-        listOfNotNull(chooser.selectedFile)
-    }
+        ),
+    )
 }
 
 /** Test-only selection is impossible unless the opt-in loopback UI control is also active. */
@@ -505,12 +496,8 @@ private fun ImportEvidenceRow(
 }
 
 private fun formatReportTime(timestampMs: Long): String = runCatching {
-    ReportDateFormatter.format(Instant.ofEpochMilli(timestampMs))
+    AresFormatters.formatDateTimeShort(timestampMs)
 }.getOrDefault("Unknown time")
-
-private val ReportDateFormatter = DateTimeFormatter
-    .ofPattern("MMM d, HH:mm", Locale.US)
-    .withZone(ZoneId.systemDefault())
 
 private val FileSeparator: Char = java.io.File.separatorChar
 

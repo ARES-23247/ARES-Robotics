@@ -125,15 +125,15 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val robotPoseForSelection = store.state.drive.poseEstimator.estimatedPose
         var bestMeasurement = freshMeasurements[0]
         var bestAmbiguity = bestMeasurement.ambiguity
-        var bestDistance = kotlin.math.sqrt((bestMeasurement.targetPose.x - robotPoseForSelection.x) * (bestMeasurement.targetPose.x - robotPoseForSelection.x) + (bestMeasurement.targetPose.y - robotPoseForSelection.y) * (bestMeasurement.targetPose.y - robotPoseForSelection.y))
+        var bestDistanceSq = distanceSq(bestMeasurement.targetPose, robotPoseForSelection)
         
         for (i in 1 until freshMeasurements.size) {
             val m = freshMeasurements[i]
-            val mDist = kotlin.math.sqrt((m.targetPose.x - robotPoseForSelection.x) * (m.targetPose.x - robotPoseForSelection.x) + (m.targetPose.y - robotPoseForSelection.y) * (m.targetPose.y - robotPoseForSelection.y))
-            if (m.ambiguity < bestAmbiguity || (m.ambiguity == bestAmbiguity && mDist < bestDistance)) {
+            val mDistSq = distanceSq(m.targetPose, robotPoseForSelection)
+            if (m.ambiguity < bestAmbiguity || (m.ambiguity == bestAmbiguity && mDistSq < bestDistanceSq)) {
                 bestMeasurement = m
                 bestAmbiguity = m.ambiguity
-                bestDistance = mDist
+                bestDistanceSq = mDistSq
             }
         }
         val measurement = bestMeasurement
@@ -152,7 +152,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
         val dx = fieldPose2d.x - robotPose.x
         val dy = fieldPose2d.y - robotPose.y
-        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+        val distance = kotlin.math.hypot(dx, dy)
         val fieldYaw = fieldPose3d.rotation.z
         val headingDiff = wrapAngle(fieldYaw - robotHeading)
         val recoveryHeadingDiff = wrapAngle(recoveryPose2d.heading.radians - robotHeading)
@@ -377,6 +377,12 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         recentFrameIds[slot] = measurement.frameId
         recentTimestampsMs[slot] = measurement.timestampMs
         return true
+    }
+
+    private fun distanceSq(pose3d: com.areslib.math.geometry.Pose3d, pose2d: com.areslib.math.geometry.Pose2d): Double {
+        val dx = pose3d.x - pose2d.x
+        val dy = pose3d.y - pose2d.y
+        return dx * dx + dy * dy
     }
 }
 

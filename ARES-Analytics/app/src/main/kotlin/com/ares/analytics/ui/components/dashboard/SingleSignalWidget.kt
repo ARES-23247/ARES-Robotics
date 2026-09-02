@@ -16,7 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MonitorHeart
-import androidx.compose.material3.AlertDialog
+import com.ares.analytics.ui.components.core.AresDialog
+import com.ares.analytics.ui.components.forms.AresTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -24,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -265,60 +265,48 @@ private fun SingleSignalConfigurationDialog(
     val valid = topic.isNotBlank() && label.isNotBlank() && candidate.minimum.isFinite() &&
         candidate.maximum.isFinite() && candidate.maximum > candidate.minimum
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Configure signal", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Close") }
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(topic, { topic = it }, label = { Text("Telemetry topic") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (suggestions.isNotEmpty()) {
-                    Text("Available now", color = AresTextTertiary, fontSize = 10.sp)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        suggestions.take(3).forEach { suggestion ->
-                            OutlinedButton(onClick = { topic = suggestion }, modifier = Modifier.weight(1f)) {
-                                Text(suggestion.substringAfterLast('/'), maxLines = 1, fontSize = 10.sp)
-                            }
+    AresDialog(
+        title = "Configure signal",
+        onDismiss = onDismiss,
+        confirmText = "Save",
+        onConfirm = if (valid) { { onSave(candidate) } } else null,
+        scrollable = true,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AresTextField(topic, { topic = it }, label = "Telemetry topic", singleLine = true, modifier = Modifier.fillMaxWidth())
+            if (suggestions.isNotEmpty()) {
+                Text("Available now", color = AresTextTertiary, fontSize = 10.sp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    suggestions.take(3).forEach { suggestion ->
+                        OutlinedButton(onClick = { topic = suggestion }, modifier = Modifier.weight(1f)) {
+                            Text(suggestion.substringAfterLast('/'), maxLines = 1, fontSize = 10.sp)
                         }
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(label, { label = it }, label = { Text("Label") }, singleLine = true, modifier = Modifier.weight(2f))
-                    OutlinedTextField(unit, { unit = it }, label = { Text("Display unit") }, singleLine = true, modifier = Modifier.weight(1f))
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { displayMode = "value" }, modifier = Modifier.weight(1f)) { Text("Value") }
-                    OutlinedButton(onClick = { displayMode = "bar" }, modifier = Modifier.weight(1f)) { Text("Value + bar") }
-                }
-                if (displayMode == "bar") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(minimum, { minimum = it }, label = { Text("Bar minimum") }, singleLine = true, modifier = Modifier.weight(1f))
-                        OutlinedTextField(maximum, { maximum = it }, label = { Text("Bar maximum") }, singleLine = true, modifier = Modifier.weight(1f))
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(warningLow, { warningLow = it }, label = { Text("Warn below") }, singleLine = true, modifier = Modifier.weight(1f))
-                    OutlinedTextField(warningHigh, { warningHigh = it }, label = { Text("Warn above") }, singleLine = true, modifier = Modifier.weight(1f))
-                }
-                Text(
-                    "The unit is a display label; Studio does not silently convert the source value.",
-                    color = AresTextTertiary,
-                    fontSize = 10.sp,
-                )
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSave(candidate) },
-                enabled = valid,
-                colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-            ) { Text("Save") }
-        },
-        dismissButton = { OutlinedButton(onClick = onDismiss) { Text("Cancel") } },
-        containerColor = AresSurface,
-    )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AresTextField(label, { label = it }, label = "Label", singleLine = true, modifier = Modifier.weight(2f))
+                AresTextField(unit, { unit = it }, label = "Display unit", singleLine = true, modifier = Modifier.weight(1f))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { displayMode = "value" }, modifier = Modifier.weight(1f)) { Text("Value") }
+                OutlinedButton(onClick = { displayMode = "bar" }, modifier = Modifier.weight(1f)) { Text("Value + bar") }
+            }
+            if (displayMode == "bar") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AresTextField(minimum, { minimum = it }, label = "Bar minimum", singleLine = true, modifier = Modifier.weight(1f))
+                    AresTextField(maximum, { maximum = it }, label = "Bar maximum", singleLine = true, modifier = Modifier.weight(1f))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AresTextField(warningLow, { warningLow = it }, label = "Warn below", singleLine = true, modifier = Modifier.weight(1f))
+                AresTextField(warningHigh, { warningHigh = it }, label = "Warn above", singleLine = true, modifier = Modifier.weight(1f))
+            }
+            Text(
+                "The unit is a display label; Studio does not silently convert the source value.",
+                color = AresTextTertiary,
+                fontSize = 10.sp,
+            )
+        }
+    }
 }

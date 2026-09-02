@@ -27,9 +27,7 @@ import com.ares.analytics.service.VideoSyncService
 import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.launch
-import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import kotlin.math.sin
 
 @Composable
@@ -81,16 +79,12 @@ fun VideoPlayerPanel(
             // Load Video Button
             Button(
                 onClick = {
-                    val chooser = JFileChooser().apply {
-                        dialogTitle = "Select Match Video"
-                        fileFilter = FileNameExtensionFilter("Video Files", "mp4", "mkv", "avi", "mov")
-                    }
-                    val result = chooser.showOpenDialog(null)
-                    if (result == JFileChooser.APPROVE_OPTION) {
-                        val file = chooser.selectedFile
-                        if (file != null && file.exists()) {
-                            videoSyncService.loadVideo(file)
-                        }
+                    DesktopFileChoosers.chooseOpenFile(
+                        dialogTitle = "Select Match Video",
+                        filterDescription = "Video Files",
+                        extensions = listOf("mp4", "mkv", "avi", "mov")
+                    )?.let { file ->
+                        videoSyncService.loadVideo(file)
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = AresBorder),

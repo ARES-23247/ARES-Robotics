@@ -29,10 +29,10 @@ import com.ares.analytics.service.WidgetConfig
 import com.ares.analytics.shared.models.ConsoleMessage
 import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.util.AresFormatters
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -122,7 +122,6 @@ fun ConsoleViewer(
             listState.animateScrollToItem(filteredMessages.size - 1)
         }
     }
-    val timeFormatter = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()) }
 
     Column(
         modifier = modifier
@@ -203,7 +202,7 @@ fun ConsoleViewer(
                                 if (directory != null && file != null) {
                                     val targetFile = java.io.File(directory, file)
                                     targetFile.writeText(filteredMessages.joinToString("\n") { msg ->
-                                        val time = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(msg.timestampMs))
+                                        val time = AresFormatters.formatTimeMillis(msg.timestampMs)
                                         "[$time] [${msg.severity}] ${msg.text}"
                                     })
                                 }
@@ -227,7 +226,7 @@ fun ConsoleViewer(
                 IconButton(
                     onClick = {
                         val textToCopy = filteredMessages.joinToString("\n") { msg ->
-                            val time = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(msg.timestampMs))
+                            val time = AresFormatters.formatTimeMillis(msg.timestampMs)
                             "[$time] [${msg.severity}] ${msg.text}"
                         }
                         try {
@@ -378,11 +377,7 @@ fun ConsoleViewer(
                                 verticalAlignment = Alignment.Top
                             ) {
                                 // Timestamp
-                                val dateStr = try {
-                                    timeFormatter.format(Date(msg.timestampMs))
-                                } catch (e: Exception) {
-                                    msg.timestampMs.toString()
-                                }
+                                val dateStr = AresFormatters.formatTimeMillis(msg.timestampMs)
                                 Text(
                                     text = dateStr,
                                     color = AresTextTertiary,

@@ -51,6 +51,8 @@ import com.ares.analytics.service.versioncontrol.ProjectChange
 import com.ares.analytics.service.versioncontrol.ProjectRecoveryPlan
 import com.ares.analytics.service.versioncontrol.ProjectRestoreDisposition
 import com.ares.analytics.service.versioncontrol.ProjectRestorePlan
+import com.ares.analytics.ui.components.core.AresCard
+import com.ares.analytics.ui.components.forms.AresTextField
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
 import com.ares.analytics.ui.theme.AresError
@@ -58,14 +60,11 @@ import com.ares.analytics.ui.theme.AresGreen
 import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
+import com.ares.analytics.ui.util.AresFormatters
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.viewmodel.ProjectBackupIntent
 import com.ares.analytics.viewmodel.ProjectBackupViewModel
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
 /** Plain-language, review-first local history and permission-scoped GitHub App backup workflow. */
 @Composable
@@ -275,13 +274,13 @@ private fun IdentityFields(
     email: String,
     onEmailChanged: (String) -> Unit,
 ) {
-    Card(colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated), border = BorderStroke(1.dp, AresBorder)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    AresCard {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Who is saving this version?", fontWeight = FontWeight.Bold)
             Text("This name appears in project history so teammates know who made a change.", color = AresTextSecondary)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(name, onNameChanged, label = { Text("Your name") }, singleLine = true, modifier = Modifier.weight(1f))
-                OutlinedTextField(email, onEmailChanged, label = { Text("Email") }, singleLine = true, modifier = Modifier.weight(1f))
+                AresTextField(name, onNameChanged, label = "Your name", singleLine = true, modifier = Modifier.weight(1f))
+                AresTextField(email, onEmailChanged, label = "Email", singleLine = true, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -313,10 +312,10 @@ private fun LocalVersionStep(
             Text("${change.kind.name.lowercase().replaceFirstChar(Char::uppercase)}  •  ${change.path}")
         }
         if (plan.changes.size > 30) Text("…and ${plan.changes.size - 30} more files", color = AresTextSecondary)
-        OutlinedTextField(
+        AresTextField(
             value = message,
             onValueChange = onMessageChanged,
-            label = { Text("What changed?") },
+            label = "What changed?",
             supportingText = { Text("Example: Add intake motor and safe current limit") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -549,22 +548,18 @@ private fun projectArea(path: String): String = when {
 private fun chooseProjectArchive(projectPath: String): File? {
     val root = File(projectPath).canonicalFile
     val safeName = root.name.replace(Regex("[^A-Za-z0-9._-]+"), "-").trim('-').ifBlank { "ares-robot" }
-    val chooser = JFileChooser(root.parentFile).apply {
-        dialogTitle = "Export portable ARES robot project"
-        fileFilter = FileNameExtensionFilter("ARES project archive (*.aresproject.zip)", "zip")
-        selectedFile = File(root.parentFile, "$safeName.aresproject.zip")
-    }
-    if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
-    val selected = chooser.selectedFile
-    return if (selected.name.endsWith(".aresproject.zip", ignoreCase = true)) selected
-    else File(selected.parentFile, "${selected.name}.aresproject.zip")
+    return DesktopFileChoosers.chooseSaveFile(
+        dialogTitle = "Export portable ARES robot project",
+        defaultFileName = "$safeName.aresproject.zip",
+        initialDirectory = root.parentFile,
+        filterDescription = "ARES project archive (*.aresproject.zip)",
+        extensions = listOf("zip"),
+    )
 }
 
-private fun formatVersionTime(epochSeconds: Long): String = VERSION_TIME_FORMATTER.format(
-    Instant.ofEpochSecond(epochSeconds).atZone(ZoneId.systemDefault()),
-)
+private fun formatVersionTime(epochSeconds: Long): String =
+    AresFormatters.formatDateTimeShort(epochSeconds * 1000L)
 
-private val VERSION_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a")
 
 @Composable
 private fun RepositoryDestinationPicker(

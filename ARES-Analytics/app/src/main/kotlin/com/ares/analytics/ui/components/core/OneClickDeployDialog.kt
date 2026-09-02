@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -57,57 +56,65 @@ fun OneClickDeployDialog(
     onDismiss: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = {
-            if (state.phase != DeployExecutionPhase.CONNECTING &&
-                state.phase != DeployExecutionPhase.BUILDING &&
-                state.phase != DeployExecutionPhase.INSTALLING
-            ) {
+    val isBusy = state.phase == DeployExecutionPhase.CONNECTING ||
+        state.phase == DeployExecutionPhase.BUILDING ||
+        state.phase == DeployExecutionPhase.INSTALLING
+
+    val titleText = when (state.phase) {
+        DeployExecutionPhase.CONNECTING -> "Connecting to Robot..."
+        DeployExecutionPhase.BUILDING -> "Verifying and Building Robot Code..."
+        DeployExecutionPhase.INSTALLING -> "Installing Robot Code..."
+        DeployExecutionPhase.SUCCEEDED -> "Deployment Complete!"
+        DeployExecutionPhase.FAILED -> "Deployment Failed"
+        DeployExecutionPhase.CANCELED -> "Deployment Canceled"
+        DeployExecutionPhase.IDLE -> "Confirm physical robot deployment"
+    }
+
+    val dialogVariant = when (state.phase) {
+        DeployExecutionPhase.FAILED, DeployExecutionPhase.CANCELED -> AresDialogVariant.DESTRUCTIVE
+        DeployExecutionPhase.IDLE -> AresDialogVariant.WARNING
+        DeployExecutionPhase.SUCCEEDED -> AresDialogVariant.INFO
+        else -> AresDialogVariant.DEFAULT
+    }
+
+    AresDialog(
+        title = titleText,
+        onDismiss = {
+            if (!isBusy) {
                 onDismiss()
             }
         },
-        title = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+        variant = dialogVariant,
+        actions = {
+            if (state.phase == DeployExecutionPhase.IDLE) {
+                TextButton(onClick = onDismiss) { Text("Not now", color = AresTextSecondary) }
+                Button(
+                    onClick = onConfirm,
+                    colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent),
+                ) {
+                    Text("Deploy now")
+                }
+            } else if (state.phase == DeployExecutionPhase.SUCCEEDED ||
+                state.phase == DeployExecutionPhase.FAILED ||
+                state.phase == DeployExecutionPhase.CANCELED
             ) {
-                Icon(
-                    when (state.phase) {
-                        DeployExecutionPhase.CONNECTING -> Icons.Default.Wifi
-                        DeployExecutionPhase.BUILDING, DeployExecutionPhase.INSTALLING -> Icons.Default.CloudUpload
-                        DeployExecutionPhase.SUCCEEDED -> Icons.Default.CheckCircle
-                        DeployExecutionPhase.FAILED, DeployExecutionPhase.CANCELED -> Icons.Default.Error
-                        DeployExecutionPhase.IDLE -> Icons.Default.HourglassTop
-                    },
-                    contentDescription = null,
-                    tint = when (state.phase) {
-                        DeployExecutionPhase.SUCCEEDED -> AresGreen
-                        DeployExecutionPhase.FAILED -> AresError
-                        else -> AresCyan
-                    },
-                    modifier = Modifier.size(24.dp),
-                )
-                Text(
-                    text = when (state.phase) {
-                        DeployExecutionPhase.CONNECTING -> "Connecting to Robot..."
-                        DeployExecutionPhase.BUILDING -> "Verifying and Building Robot Code..."
-                        DeployExecutionPhase.INSTALLING -> "Installing Robot Code..."
-                        DeployExecutionPhase.SUCCEEDED -> "Deployment Complete!"
-                        DeployExecutionPhase.FAILED -> "Deployment Failed"
-                        DeployExecutionPhase.CANCELED -> "Deployment Canceled"
-                        DeployExecutionPhase.IDLE -> "Confirm physical robot deployment"
-                    },
-                    color = AresTextPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
+                ) {
+                    Text("Close")
+                }
+            } else {
+                OutlinedButton(onClick = onCancel) {
+                    Text("Cancel Deploy")
+                }
             }
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+        }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
                 if (state.phase == DeployExecutionPhase.IDLE) {
                     Text(
                         text = if (league == League.FTC) {
@@ -182,39 +189,8 @@ fun OneClickDeployDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
-            if (state.phase == DeployExecutionPhase.IDLE) {
-                Button(
-                    onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent),
-                ) {
-                    Text("Deploy now")
-                }
-            } else if (state.phase == DeployExecutionPhase.SUCCEEDED ||
-                state.phase == DeployExecutionPhase.FAILED ||
-                state.phase == DeployExecutionPhase.CANCELED
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-                ) {
-                    Text("Close")
-                }
-            } else {
-                OutlinedButton(onClick = onCancel) {
-                    Text("Cancel Deploy")
-                }
-            }
-        },
-        dismissButton = {
-            if (state.phase == DeployExecutionPhase.IDLE) {
-                TextButton(onClick = onDismiss) { Text("Not now") }
-            }
-        },
-        containerColor = AresSurface,
-    )
-}
+        }
+    }
 
 @Composable
 private fun DeployStepItem(stepName: String, isDone: Boolean, isRunning: Boolean) {

@@ -2,8 +2,8 @@ package org.firstinspires.ftc.teamcode.opmodes.robot
 
 import com.areslib.ftc.FtcMecanumRobot
 import com.areslib.ftc.FtcTeleopDriveFrame
+import com.areslib.math.InputMath
 import com.areslib.state.Alliance
-import kotlin.math.pow
 
 /**
  * Converts driver intent into season drivetrain commands without touching hardware directly.
@@ -17,15 +17,10 @@ import kotlin.math.pow
 class AresDriveController(private val base: FtcMecanumRobot) {
     private fun processAxis(input: Double): Double {
         val boundedInput = if (input.isFinite()) input.coerceIn(-1.0, 1.0) else 0.0
-        val magnitude = kotlin.math.abs(boundedInput)
-        val deadzoned = if (magnitude < DEFAULT_DEADZONE) {
-            0.0
-        } else {
-            (magnitude - DEFAULT_DEADZONE) / (1.0 - DEFAULT_DEADZONE) * kotlin.math.sign(boundedInput)
-        }
+        val deadzoned = InputMath.applyDeadband(boundedInput, DEFAULT_DEADZONE)
         val exponent = base.store.state.tuning.driver.deadbandExponent
             .let { if (it > 0.0) it else DEFAULT_CURVE_EXPONENT }
-        return kotlin.math.sign(deadzoned) * kotlin.math.abs(deadzoned).pow(exponent)
+        return InputMath.applyCurve(deadzoned, exponent)
     }
 
     private var smoothX = 0.0
@@ -34,10 +29,9 @@ class AresDriveController(private val base: FtcMecanumRobot) {
 
     private fun smoothTransition(x: Double, y: Double, rot: Double) {
         // Fixed EMA coefficient is loop-frequency dependent and intentionally allocation-free.
-        val alpha = 0.4
-        smoothX = smoothX * 0.6 + x * alpha
-        smoothY = smoothY * 0.6 + y * alpha
-        smoothRot = smoothRot * 0.6 + rot * alpha
+        smoothX = smoothX * EMA_RETENTION + x * EMA_ALPHA
+        smoothY = smoothY * EMA_RETENTION + y * EMA_ALPHA
+        smoothRot = smoothRot * EMA_RETENTION + rot * EMA_ALPHA
     }
 
     /** Drives from normalized field-relative axes after shaping and alliance transformation. */
@@ -111,5 +105,9 @@ class AresDriveController(private val base: FtcMecanumRobot) {
         const val DEFAULT_DEADZONE = 0.05
         /** Fallback response-curve exponent when live tuning provides no valid value. */
         const val DEFAULT_CURVE_EXPONENT = 3.0
+        /** Fixed EMA smoothing weight (alpha) for new input samples. */
+        const val EMA_ALPHA = 0.4
+        /** EMA retention factor (1 - alpha) for previous smoothed state. */
+        const val EMA_RETENTION = 0.6
     }
 }

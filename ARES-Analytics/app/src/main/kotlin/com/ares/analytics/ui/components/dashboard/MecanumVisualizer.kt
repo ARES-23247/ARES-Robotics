@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.ui.canvas.drawVectorArrow
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.ui.theme.*
 import kotlinx.coroutines.delay
@@ -247,27 +248,13 @@ fun MecanumVisualizer(
                                 center.x + forceLen * cos(forceAngle).toFloat(),
                                 center.y + forceLen * sin(forceAngle).toFloat()
                             )
-
-                            drawLine(
-                                color = AresCyan,
+                            drawVectorArrow(
                                 start = center,
                                 end = forceEnd,
+                                color = AresCyan,
                                 strokeWidth = 3.5f,
-                                cap = StrokeCap.Round
+                                arrowHeadLength = 8f
                             )
-
-                            // Draw force arrowhead
-                            val headSize = 8f
-                            val leftWing = Offset(
-                                forceEnd.x - headSize * cos(forceAngle - Math.PI / 6).toFloat(),
-                                forceEnd.y - headSize * sin(forceAngle - Math.PI / 6).toFloat()
-                            )
-                            val rightWing = Offset(
-                                forceEnd.x - headSize * cos(forceAngle + Math.PI / 6).toFloat(),
-                                forceEnd.y - headSize * sin(forceAngle + Math.PI / 6).toFloat()
-                            )
-                            drawLine(color = AresCyan, start = forceEnd, end = leftWing, strokeWidth = 2.5f)
-                            drawLine(color = AresCyan, start = forceEnd, end = rightWing, strokeWidth = 2.5f)
                         }
                     }
 
@@ -291,27 +278,13 @@ fun MecanumVisualizer(
                             cx + arrowLen * cos(netAngle).toFloat(),
                             cy + arrowLen * sin(netAngle).toFloat()
                         )
-
-                        drawLine(
-                            color = AresAmber, // use Amber to stand out from Cyan wheel vectors
+                        drawVectorArrow(
                             start = netStart,
                             end = netEnd,
-                            strokeWidth = 6f, // thicker line for net vector
-                            cap = StrokeCap.Round
+                            color = AresAmber,
+                            strokeWidth = 6f,
+                            arrowHeadLength = 14f
                         )
-
-                        // Draw net force arrowhead
-                        val headSize = 14f
-                        val leftWing = Offset(
-                            netEnd.x - headSize * cos(netAngle - Math.PI / 6).toFloat(),
-                            netEnd.y - headSize * sin(netAngle - Math.PI / 6).toFloat()
-                        )
-                        val rightWing = Offset(
-                            netEnd.x - headSize * cos(netAngle + Math.PI / 6).toFloat(),
-                            netEnd.y - headSize * sin(netAngle + Math.PI / 6).toFloat()
-                        )
-                        drawLine(color = AresAmber, start = netEnd, end = leftWing, strokeWidth = 4f, cap = StrokeCap.Round)
-                        drawLine(color = AresAmber, start = netEnd, end = rightWing, strokeWidth = 4f, cap = StrokeCap.Round)
                     }
                 }
 
