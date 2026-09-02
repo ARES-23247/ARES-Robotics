@@ -538,7 +538,7 @@ private fun Session.displayLabel(): String {
 
 private fun chooseGuidedReviewFile(sessionId: String): File? =
     DesktopFileChoosers.chooseSaveFile(
-        title = "Export guided run evidence",
+        dialogTitle = "Export guided run evidence",
         defaultFileName = "ares-guided-review-${sessionId.take(24)}.md",
         filterDescription = "Markdown evidence report",
         extensions = listOf("md")

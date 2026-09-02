@@ -2,6 +2,13 @@ package org.firstinspires.ftc.teamcode.opmodes.robot
 
 import com.areslib.ftc.FtcMecanumRobot
 
+internal fun formatLowBatteryVoltage(voltage: Double): String {
+    val tenths = kotlin.math.round(voltage * 10.0).toLong()
+    val intPart = tenths / 10
+    val fracPart = kotlin.math.abs(tenths % 10)
+    return "<font color='red'><b>$intPart.${fracPart}V (LOW)</b></font>"
+}
+
 /**
  * Bridges season convenience calls to low-rate Redux-backed telemetry.
  * Driver Station text is capped and rate-limited to avoid dominating the control loop.
@@ -27,23 +34,16 @@ class AresTelemetryHelper(private val base: FtcMecanumRobot) {
         addTelemetry("EKF Pose X", estPose.x)
         addTelemetry("EKF Pose Y", estPose.y)
         addTelemetry("EKF Pose Deg", Math.toDegrees(estPose.heading.radians))
-        
+
         val voltage = base.powerManager.batteryVoltage
         val batteryText = when {
             !voltage.isFinite() || voltage <= 0.0 -> "<font color='red'><b>INVALID</b></font>"
-            voltage < 11.5 -> formatLowVoltage(voltage)
+            voltage < 11.5 -> formatLowBatteryVoltage(voltage)
             else -> voltage
         }
         addTelemetry("Battery V", batteryText)
-        
-        addTelemetry("Power Scale", base.powerManager.powerScale)
-    }
 
-    private fun formatLowVoltage(voltage: Double): String {
-        val tenths = kotlin.math.round(voltage * 10.0).toLong()
-        val intPart = tenths / 10
-        val fracPart = kotlin.math.abs(tenths % 10)
-        return "<font color='red'><b>$intPart.${fracPart}V (LOW)</b></font>"
+        addTelemetry("Power Scale", base.powerManager.powerScale)
     }
 
     companion object {

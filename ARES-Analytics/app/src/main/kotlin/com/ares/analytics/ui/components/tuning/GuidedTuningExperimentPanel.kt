@@ -658,7 +658,7 @@ private fun MessageBanner(text: String, color: androidx.compose.ui.graphics.Colo
 
 private fun chooseExperimentReportFile(uid: String): File? =
     DesktopFileChoosers.chooseSaveFile(
-        title = "Export mentor/student tuning experiment",
+        dialogTitle = "Export mentor/student tuning experiment",
         defaultFileName = "ares-tuning-${uid.takeLast(8)}.md",
         filterDescription = "Markdown report (*.md)",
         extensions = listOf("md")

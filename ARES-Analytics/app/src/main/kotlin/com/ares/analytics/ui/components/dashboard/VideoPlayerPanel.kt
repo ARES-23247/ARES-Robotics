@@ -80,7 +80,7 @@ fun VideoPlayerPanel(
             Button(
                 onClick = {
                     DesktopFileChoosers.chooseOpenFile(
-                        title = "Select Match Video",
+                        dialogTitle = "Select Match Video",
                         filterDescription = "Video Files",
                         extensions = listOf("mp4", "mkv", "avi", "mov")
                     )?.let { file ->

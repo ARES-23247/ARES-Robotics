@@ -7,7 +7,7 @@ import com.ares.analytics.shared.models.League
 /**
  * Geometric transformations and mirror operations for field obstacles and coordinates.
  */
-object FieldEditorTransforms {
+internal object FieldEditorTransforms {
 
     fun mirrorObstacleX(obs: Obstacle, fieldWidth: Double, league: League): Obstacle = when (obs) {
         is Obstacle.Circle -> {

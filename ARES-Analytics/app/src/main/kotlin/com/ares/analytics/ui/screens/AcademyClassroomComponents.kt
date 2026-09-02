@@ -121,7 +121,7 @@ internal fun chooseAssignmentWorksheetFile(studentName: String, assignmentTitle:
     fun slug(value: String, fallback: String): String = value.trim().lowercase()
         .replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { fallback }
     return DesktopFileChoosers.chooseSaveFile(
-        title = "Export ARES Academy assignment worksheet",
+        dialogTitle = "Export ARES Academy assignment worksheet",
         defaultFileName = "ares-academy-${slug(studentName, "student")}-${slug(assignmentTitle, "assignment")}.md",
         filterDescription = "Markdown document (*.md)",
         extensions = listOf("md")
@@ -131,7 +131,7 @@ internal fun chooseAssignmentWorksheetFile(studentName: String, assignmentTitle:
 internal fun chooseAcademyReportFile(studentName: String, pathId: String): File? {
     val studentSlug = studentName.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "student" }
     return DesktopFileChoosers.chooseSaveFile(
-        title = "Export ARES Academy learning record",
+        dialogTitle = "Export ARES Academy learning record",
         defaultFileName = "ares-academy-$studentSlug-$pathId.md",
         filterDescription = "Markdown document (*.md)",
         extensions = listOf("md")

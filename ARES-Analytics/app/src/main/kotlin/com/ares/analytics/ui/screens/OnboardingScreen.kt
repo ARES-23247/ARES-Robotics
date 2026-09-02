@@ -185,7 +185,7 @@ fun OnboardingScreen(
                     },
                     onBrowseProject = {
                         DesktopFileChoosers.chooseDirectory(
-                            title = "Choose your robot project folder"
+                            dialogTitle = "Choose your robot project folder"
                         )?.let { file ->
                             viewModel.handleIntent(OnboardingIntent.UpdateProjectPath(file.absolutePath))
                         }
@@ -198,7 +198,7 @@ fun OnboardingScreen(
                     },
                     onBrowseProjectParent = {
                         DesktopFileChoosers.chooseDirectory(
-                            title = "Choose where to create the robot project"
+                            dialogTitle = "Choose where to create the robot project"
                         )?.let { file ->
                             viewModel.handleIntent(
                                 OnboardingIntent.UpdateProjectParentPath(file.absolutePath),

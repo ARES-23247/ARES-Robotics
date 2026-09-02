@@ -463,7 +463,7 @@ private fun Session.comparisonLabel(): String = shortRunLabel()
 private fun chooseComparisonReportFile(primarySessionId: String, defaultDirectory: File?): File? =
     DesktopFileChoosers.chooseSaveFile(
         initialDirectory = defaultDirectory?.takeIf(File::isDirectory),
-        title = "Export mentor/student run comparison",
+        dialogTitle = "Export mentor/student run comparison",
         defaultFileName = "ares-run-comparison-${primarySessionId.take(12)}.md",
         filterDescription = "Markdown report",
         extensions = listOf("md")

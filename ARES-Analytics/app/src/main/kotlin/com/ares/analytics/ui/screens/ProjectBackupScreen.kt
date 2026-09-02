@@ -553,7 +553,7 @@ private fun chooseProjectArchive(projectPath: String): File? {
         defaultFileName = "$safeName.aresproject.zip",
         initialDirectory = root.parentFile,
         filterDescription = "ARES project archive (*.aresproject.zip)",
-        extensions = arrayOf("zip"),
+        extensions = listOf("zip"),
     )
 }
 

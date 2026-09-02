@@ -398,7 +398,7 @@ private fun shortTopic(topic: String): String = topic.split('/').takeLast(3).joi
 
 private fun chooseAnalyticsExportFile(sessionId: String): File? =
     DesktopFileChoosers.chooseSaveFile(
-        title = "Export analytics report",
+        dialogTitle = "Export analytics report",
         defaultFileName = "ares-analytics-${sessionId.take(24)}.md",
         filterDescription = "Markdown report",
         extensions = listOf("md")

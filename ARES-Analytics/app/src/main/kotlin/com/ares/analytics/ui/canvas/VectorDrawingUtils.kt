@@ -20,7 +20,7 @@ import kotlin.math.sin
  * @param arrowHeadAngleRad Half-angle of the arrowhead opening in radians (default ~30 degrees).
  * @param filledHead Whether to render a solid filled triangular arrowhead or an open stroked arrowhead.
  */
-fun DrawScope.drawVectorArrow(
+internal fun DrawScope.drawVectorArrow(
     start: Offset,
     end: Offset,
     color: Color,

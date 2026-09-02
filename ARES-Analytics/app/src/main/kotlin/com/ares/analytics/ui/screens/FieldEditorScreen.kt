@@ -434,7 +434,7 @@ fun FieldEditorScreen(
                                     DesktopFileChoosers.chooseOpenFile(
                                         dialogTitle = "Import an AprilTag map for review",
                                         filterDescription = "AprilTag maps (.fmap, WPILib .json, ARES field .json)",
-                                        extensions = arrayOf("fmap", "json"),
+                                        extensions = listOf("fmap", "json"),
                                     )?.let { selectedFile ->
                                         viewModel.onIntent(
                                             FieldEditorIntent.PreviewAprilTagMap(
@@ -641,7 +641,7 @@ private fun chooseAprilTagExport(defaultName: String, extension: String, onSelec
             dialogTitle = "Export reviewed AprilTag map",
             defaultFileName = defaultName,
             filterDescription = "AprilTag map (.$extension)",
-            extensions = arrayOf(extension)
+            extensions = listOf(extension)
         )?.let(onSelected)
     }
 }

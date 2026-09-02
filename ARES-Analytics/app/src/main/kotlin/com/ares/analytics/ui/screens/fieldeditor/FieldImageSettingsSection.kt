@@ -47,7 +47,7 @@ fun FieldImageSettingsSection(
                     DesktopFileChoosers.chooseOpenFile(
                         dialogTitle = "Select Field Image (PNG/JPG)",
                         filterDescription = "Images (*.png, *.jpg, *.jpeg)",
-                        extensions = arrayOf("png", "jpg", "jpeg"),
+                        extensions = listOf("png", "jpg", "jpeg"),
                     )?.let { selected ->
                         if (selected.exists()) {
                             onUploadImage(selected)

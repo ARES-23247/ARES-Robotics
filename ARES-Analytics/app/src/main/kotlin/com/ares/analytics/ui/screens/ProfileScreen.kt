@@ -775,7 +775,7 @@ private fun exportDriveDestinationRecord(destination: com.ares.analytics.shared.
         dialogTitle = "Export ARES Drive destination record",
         defaultFileName = "ares-drive-destination.json",
         filterDescription = "JSON Files (*.json)",
-        extensions = arrayOf("json"),
+        extensions = listOf("json"),
     ) ?: return "Export cancelled."
 
     return runCatching {

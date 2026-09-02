@@ -305,8 +305,10 @@ private fun chooseCompletedRobotLogs(projectPath: String): List<File> {
         dialogTitle = "Choose completed robot or simulator logs",
         initialDirectory = initialDirectory,
         filterDescription = "ARES-supported logs",
-        "csv", "gz", "jsonl", "parquet", "wpilog", "wpilogxz", "dslog", "dsevents",
-        "rlog", "revlog", "hoot", "log",
+        extensions = listOf(
+            "csv", "gz", "jsonl", "parquet", "wpilog", "wpilogxz", "dslog", "dsevents",
+            "rlog", "revlog", "hoot", "log",
+        ),
     )
 }
 
