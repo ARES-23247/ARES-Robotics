@@ -252,7 +252,6 @@ internal fun DashboardScreen(
     LaunchedEffect(missionSnapshot) {
         onMissionSnapshotChanged(missionSnapshot)
     }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),

@@ -453,49 +453,15 @@ fun LocalSimulatorControlBar(
                 }
 
                 if (isFtcAutonomousSelection) {
-                    Box(Modifier.width(180.dp)) {
-                        Surface(
-                            onClick = {
-                                if (isConnected && !starting && availableAutos.isNotEmpty()) {
-                                    ftcRoutineSelectorExpanded = true
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().height(32.dp),
-                            color = AresSurfaceElevated,
-                            shape = RoundedCornerShape(6.dp),
-                            border = BorderStroke(1.dp, AresBorder),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 9.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    requestedAuto?.let { autonomousLabels[it] ?: it }
-                                        ?: "Choose routine",
-                                    color = if (requestedAuto == null) AresTextSecondary else AresTextPrimary,
-                                    fontSize = 10.sp,
-                                    maxLines = 1,
-                                )
-                                Icon(Icons.Default.ArrowDropDown, null, tint = AresTextSecondary, modifier = Modifier.size(17.dp))
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = ftcRoutineSelectorExpanded,
-                            onDismissRequest = { ftcRoutineSelectorExpanded = false },
-                            modifier = Modifier.background(AresSurfaceElevated),
-                        ) {
-                            availableAutos.forEach { autoId ->
-                                DropdownMenuItem(
-                                    text = { Text(autonomousLabels[autoId] ?: autoId, color = AresTextPrimary) },
-                                    onClick = {
-                                        requestedAuto = autoId
-                                        ftcRoutineSelectorExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
+                    FtcAutonomousRoutineSelector(
+                        expanded = ftcRoutineSelectorExpanded,
+                        enabled = isConnected && !starting,
+                        availableAutos = availableAutos,
+                        labels = autonomousLabels,
+                        selectedAuto = requestedAuto,
+                        onExpandedChange = { ftcRoutineSelectorExpanded = it },
+                        onSelected = { requestedAuto = it },
+                    )
                 }
 
                 Button(

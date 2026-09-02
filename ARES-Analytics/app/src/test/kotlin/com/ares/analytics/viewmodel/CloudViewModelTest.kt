@@ -62,7 +62,7 @@ class CloudViewModelTest {
                 ),
             )
 
-            viewModel.onScreenEntered()
+            viewModel.onIntent(CloudIntent.RefreshCloudLogs)
 
             val refreshed = withContext(Dispatchers.Default.limitedParallelism(1)) {
                 withTimeout(5_000) {
