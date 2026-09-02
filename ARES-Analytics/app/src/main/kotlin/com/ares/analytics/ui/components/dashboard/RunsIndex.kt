@@ -26,8 +26,8 @@ import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionAnnotation
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.util.AresFormatters
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -74,7 +74,6 @@ fun RunsIndex(
         tagsText = session.tags.filter { !it.startsWith("battery-") }.joinToString(", ")
         batteryLabel = session.tags.firstOrNull { it.startsWith("battery-") }?.removePrefix("battery-") ?: "A"
     }
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
     Column(
         modifier = modifier
@@ -154,7 +153,7 @@ fun RunsIndex(
                             }
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                dateFormat.format(Date(session.createdAt)),
+                                AresFormatters.formatDateTimeMinutes(session.createdAt),
                                 fontSize = 11.sp,
                                 color = AresTextSecondary
                             )

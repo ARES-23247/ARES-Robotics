@@ -1,8 +1,6 @@
 package com.ares.analytics.ui.screens
 
-import javax.swing.JFileChooser
 import javax.swing.SwingUtilities
-import javax.swing.filechooser.FileNameExtensionFilter
 import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,7 +43,10 @@ import com.ares.analytics.ui.screens.fieldeditor.FieldValidationPanel
 import com.ares.analytics.ui.screens.fieldeditor.GamePieceRow
 import com.ares.analytics.ui.screens.fieldeditor.ObstacleRow
 import com.ares.analytics.ui.screens.fieldeditor.FieldWaypointRow
+import com.ares.analytics.ui.screens.fieldeditor.FieldEditorTransforms
+import com.ares.analytics.ui.screens.fieldeditor.FieldImageSettingsSection
 import com.ares.analytics.ui.components.pathplanner.GamePieceCatalogDialog
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.FieldEditorIntent
 import com.ares.analytics.viewmodel.FieldEditorViewModel
@@ -79,7 +80,6 @@ fun FieldEditorScreen(
     }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    var showCropBoundaries by remember { mutableStateOf(false) }
     var obstaclesCollapsed by remember { mutableStateOf(false) }
     var gamePiecesCollapsed by remember { mutableStateOf(false) }
     var showGamePieceCatalog by remember { mutableStateOf(false) }
@@ -96,44 +96,6 @@ fun FieldEditorScreen(
     }
     val fieldWidthM = if (state.fieldImageConfig.widthMeters > 0.0) state.fieldImageConfig.widthMeters else (if (league == League.FTC) 3.65 else 16.5)
     val fieldHeightM = if (state.fieldImageConfig.heightMeters > 0.0) state.fieldImageConfig.heightMeters else (if (league == League.FTC) 3.65 else 8.2)
-
-    fun mirrorObstacleX(obs: Obstacle, fieldWidth: Double, league: League): Obstacle {
-        return when (obs) {
-            is Obstacle.Circle -> {
-                val newX = if (league == League.FTC) -obs.centerX else fieldWidth - obs.centerX
-                obs.copy(centerX = newX)
-            }
-            is Obstacle.Rectangle -> {
-                val newX = if (league == League.FTC) -obs.centerX else fieldWidth - obs.centerX
-                obs.copy(centerX = newX, rotation = -obs.rotation)
-            }
-            is Obstacle.Polygon -> {
-                obs.copy(vertices = obs.vertices.map { v ->
-                    val newX = if (league == League.FTC) -v.x else fieldWidth - v.x
-                    PathPoint(newX, v.y)
-                })
-            }
-        }
-    }
-
-    fun mirrorObstacleY(obs: Obstacle, fieldHeight: Double, league: League): Obstacle {
-        return when (obs) {
-            is Obstacle.Circle -> {
-                val newY = if (league == League.FTC) -obs.centerY else fieldHeight - obs.centerY
-                obs.copy(centerY = newY)
-            }
-            is Obstacle.Rectangle -> {
-                val newY = if (league == League.FTC) -obs.centerY else fieldHeight - obs.centerY
-                obs.copy(centerY = newY, rotation = -obs.rotation)
-            }
-            is Obstacle.Polygon -> {
-                obs.copy(vertices = obs.vertices.map { v ->
-                    val newY = if (league == League.FTC) -v.y else fieldHeight - v.y
-                    PathPoint(v.x, newY)
-                })
-            }
-        }
-    }
 
     Row(
         modifier = Modifier
@@ -174,173 +136,14 @@ fun FieldEditorScreen(
                 modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text("Field Background Editor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AresTextPrimary)
-                HorizontalDivider(color = AresBorder)
-
-                Button(
-                    onClick = {
-                        if (!projectPath.isNullOrEmpty()) {
-                            SwingUtilities.invokeLater {
-                                val chooser = JFileChooser().apply {
-                                    dialogTitle = "Select Field Image (PNG/JPG)"
-                                    fileFilter = FileNameExtensionFilter("Images", "png", "jpg", "jpeg")
-                                }
-                                val result = chooser.showOpenDialog(null)
-                                if (result == JFileChooser.APPROVE_OPTION) {
-                                    val selectedFile = chooser.selectedFile
-                                    if (selectedFile != null && selectedFile.exists()) {
-                                        viewModel.onIntent(FieldEditorIntent.ImportFieldImage(selectedFile, projectPath, league))
-                                    }
-                                }
-                            }
-                        } else {
-                            viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig, projectPath, league))
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Upload, contentDescription = null, tint = AresBackground)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Upload Field Image", color = AresBackground, fontWeight = FontWeight.Bold)
-                }
-                if (state.fieldImageConfig.imagePath.isNotBlank()) {
-                    OutlinedButton(
-                        onClick = { viewModel.onIntent(FieldEditorIntent.ClearFieldImage) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Default.HideImage, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Remove background reference")
-                    }
-                    Text(
-                        "Keeps the image file on disk so it can be restored later.",
-                        color = AresTextSecondary,
-                        fontSize = 10.sp,
-                    )
-                }
-
-                HorizontalDivider(color = AresBorder)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable { showCropBoundaries = !showCropBoundaries }.padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Image Adjustments", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AresTextPrimary)
-                    Icon(
-                        imageVector = if (showCropBoundaries) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Expand/Collapse",
-                        tint = AresTextSecondary
-                    )
-                }
-
-                AnimatedVisibility(visible = showCropBoundaries) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Orientation", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = AresTextPrimary)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                listOf(0.0, 90.0, 180.0, 270.0).forEach { angle ->
-                                    val isSelected = state.fieldImageConfig.rotationDegrees == angle
-                                    Button(
-                                        onClick = {
-                                            viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig.copy(rotationDegrees = angle), projectPath, league))
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (isSelected) AresCyan else AresSurfaceElevated,
-                                            contentColor = if (isSelected) AresOnAccent else AresTextPrimary
-                                        ),
-                                        modifier = Modifier.weight(1f),
-                                        contentPadding = PaddingValues(horizontal = 2.dp)
-                                    ) {
-                                        Text("${angle.toInt()}°", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Crop Boundaries", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = AresTextPrimary)
-                            Text("Left Crop: ${String.format("%.2f", state.fieldImageConfig.cropLeft)}", fontSize = 11.sp, color = AresTextSecondary)
-                            Slider(
-                                value = state.fieldImageConfig.cropLeft.toFloat(),
-                                onValueChange = {
-                                    viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig.copy(cropLeft = it.toDouble().coerceIn(0.0, state.fieldImageConfig.cropRight)), projectPath, league))
-                                },
-                                valueRange = 0f..1f,
-                                colors = SliderDefaults.colors(thumbColor = AresCyan, activeTrackColor = AresCyan)
-                            )
-
-                            Text("Right Crop: ${String.format("%.2f", state.fieldImageConfig.cropRight)}", fontSize = 11.sp, color = AresTextSecondary)
-                            Slider(
-                                value = state.fieldImageConfig.cropRight.toFloat(),
-                                onValueChange = {
-                                    viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig.copy(cropRight = it.toDouble().coerceIn(state.fieldImageConfig.cropLeft, 1.0)), projectPath, league))
-                                },
-                                valueRange = 0f..1f,
-                                colors = SliderDefaults.colors(thumbColor = AresCyan, activeTrackColor = AresCyan)
-                            )
-
-                            Text("Top Crop: ${String.format("%.2f", state.fieldImageConfig.cropTop)}", fontSize = 11.sp, color = AresTextSecondary)
-                            Slider(
-                                value = state.fieldImageConfig.cropTop.toFloat(),
-                                onValueChange = {
-                                    viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig.copy(cropTop = it.toDouble().coerceIn(0.0, state.fieldImageConfig.cropBottom)), projectPath, league))
-                                },
-                                valueRange = 0f..1f,
-                                colors = SliderDefaults.colors(thumbColor = AresCyan, activeTrackColor = AresCyan)
-                            )
-
-                            Text("Bottom Crop: ${String.format("%.2f", state.fieldImageConfig.cropBottom)}", fontSize = 11.sp, color = AresTextSecondary)
-                            Slider(
-                                value = state.fieldImageConfig.cropBottom.toFloat(),
-                                onValueChange = {
-                                    viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig.copy(cropBottom = it.toDouble().coerceIn(state.fieldImageConfig.cropTop, 1.0)), projectPath, league))
-                                },
-                                valueRange = 0f..1f,
-                                colors = SliderDefaults.colors(thumbColor = AresCyan, activeTrackColor = AresCyan)
-                            )
-                        }
-                    }
-                }
-
-                if (league == League.FTC) {
-                    HorizontalDivider(color = AresBorder)
-
-                    Text("FTC Coordinate System", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = AresTextPrimary)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        FTCCoordinateSystem.entries.forEach { coord ->
-                            val isSelected = state.fieldImageConfig.ftcCoordinateSystem == coord
-                            Button(
-                                onClick = {
-                                    viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(state.fieldImageConfig.copy(ftcCoordinateSystem = coord), projectPath, league))
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) AresCyan else AresSurfaceElevated,
-                                    contentColor = if (isSelected) AresOnAccent else AresTextPrimary
-                                )
-                                ,
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 2.dp)
-                            ) {
-                                Text(
-                                    text = when (coord) {
-                                        FTCCoordinateSystem.DIAMOND -> "Diamond"
-                                        FTCCoordinateSystem.SQUARE -> "Square"
-                                    },
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
+                FieldImageSettingsSection(
+                    config = state.fieldImageConfig,
+                    league = league,
+                    projectPath = projectPath,
+                    onUpdateConfig = { viewModel.onIntent(FieldEditorIntent.UpdateFieldImageConfig(it, projectPath, league)) },
+                    onClearImage = { viewModel.onIntent(FieldEditorIntent.ClearFieldImage) },
+                    onUploadImage = { viewModel.onIntent(FieldEditorIntent.ImportFieldImage(it, projectPath, league)) },
+                )
 
                 HorizontalDivider(color = AresBorder)
 
@@ -424,7 +227,7 @@ fun FieldEditorScreen(
                                 TextButton(
                                     onClick = {
                                         val copies = state.obstacles.map { obs ->
-                                            val mirrored = mirrorObstacleX(obs, fieldWidthM, league)
+                                            val mirrored = FieldEditorTransforms.mirrorObstacleX(obs, fieldWidthM, league)
                                             when (mirrored) {
                                                 is Obstacle.Circle -> mirrored.copy(id = "circle_${System.currentTimeMillis()}_${obs.id.hashCode()}", name = "${obs.name} Mirrored X")
                                                 is Obstacle.Rectangle -> mirrored.copy(id = "rect_${System.currentTimeMillis()}_${obs.id.hashCode()}", name = "${obs.name} Mirrored X")
@@ -442,7 +245,7 @@ fun FieldEditorScreen(
                                 TextButton(
                                     onClick = {
                                         val copies = state.obstacles.map { obs ->
-                                            val mirrored = mirrorObstacleY(obs, fieldHeightM, league)
+                                            val mirrored = FieldEditorTransforms.mirrorObstacleY(obs, fieldHeightM, league)
                                             when (mirrored) {
                                                 is Obstacle.Circle -> mirrored.copy(id = "circle_${System.currentTimeMillis()}_${obs.id.hashCode()}", name = "${obs.name} Mirrored Y")
                                                 is Obstacle.Rectangle -> mirrored.copy(id = "rect_${System.currentTimeMillis()}_${obs.id.hashCode()}", name = "${obs.name} Mirrored Y")
@@ -481,8 +284,8 @@ fun FieldEditorScreen(
                                         onAdd = { copy ->
                                             viewModel.onIntent(FieldEditorIntent.AddObstacle(copy))
                                         },
-                                        onMirrorX = ::mirrorObstacleX,
-                                        onMirrorY = ::mirrorObstacleY
+                                        onMirrorX = FieldEditorTransforms::mirrorObstacleX,
+                                        onMirrorY = FieldEditorTransforms::mirrorObstacleY
                                     )
                                 }
                             }
@@ -628,27 +431,19 @@ fun FieldEditorScreen(
                             }
                             Button(
                                 onClick = {
-                                    SwingUtilities.invokeLater {
-                                        val chooser = JFileChooser().apply {
-                                            dialogTitle = "Import an AprilTag map for review"
-                                            fileFilter = FileNameExtensionFilter(
-                                                "AprilTag maps (.fmap, WPILib .json, ARES field .json)",
-                                                "fmap",
-                                                "json",
+                                    DesktopFileChoosers.chooseOpenFile(
+                                        dialogTitle = "Import an AprilTag map for review",
+                                        filterDescription = "AprilTag maps (.fmap, WPILib .json, ARES field .json)",
+                                        extensions = arrayOf("fmap", "json"),
+                                    )?.let { selectedFile ->
+                                        viewModel.onIntent(
+                                            FieldEditorIntent.PreviewAprilTagMap(
+                                                content = selectedFile.readText(),
+                                                fileName = selectedFile.name,
+                                                projectPath = projectPath,
+                                                league = league,
                                             )
-                                        }
-                                        val result = chooser.showOpenDialog(null)
-                                        if (result == JFileChooser.APPROVE_OPTION) {
-                                            val selectedFile = chooser.selectedFile
-                                            viewModel.onIntent(
-                                                FieldEditorIntent.PreviewAprilTagMap(
-                                                    content = selectedFile.readText(),
-                                                    fileName = selectedFile.name,
-                                                    projectPath = projectPath,
-                                                    league = league,
-                                                )
-                                            )
-                                        }
+                                        )
                                     }
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
@@ -842,19 +637,11 @@ fun FieldEditorScreen(
 
 private fun chooseAprilTagExport(defaultName: String, extension: String, onSelected: (File) -> Unit) {
     SwingUtilities.invokeLater {
-        val chooser = JFileChooser().apply {
-            dialogTitle = "Export reviewed AprilTag map"
-            selectedFile = File(defaultName)
-            fileFilter = FileNameExtensionFilter("AprilTag map (.$extension)", extension)
-        }
-        if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
-            val selected = chooser.selectedFile
-            val destination = if (selected.extension.equals(extension, ignoreCase = true)) {
-                selected
-            } else {
-                File(selected.parentFile, "${selected.name}.$extension")
-            }
-            onSelected(destination)
-        }
+        DesktopFileChoosers.chooseSaveFile(
+            dialogTitle = "Export reviewed AprilTag map",
+            defaultFileName = defaultName,
+            filterDescription = "AprilTag map (.$extension)",
+            extensions = arrayOf(extension)
+        )?.let(onSelected)
     }
 }

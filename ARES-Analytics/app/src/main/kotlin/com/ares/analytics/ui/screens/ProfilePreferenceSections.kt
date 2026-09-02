@@ -150,11 +150,11 @@ internal fun GeminiAssistanceSection(
         }
 
         Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
+            com.ares.analytics.ui.components.forms.AresTextField(
                 value = geminiModel,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("AI Model Selection") },
+                label = "AI Model Selection",
                 modifier = Modifier.fillMaxWidth().clickable { modelMenuExpanded = !modelMenuExpanded },
                 trailingIcon = {
                     IconButton(onClick = { modelMenuExpanded = !modelMenuExpanded }) {
@@ -165,7 +165,6 @@ internal fun GeminiAssistanceSection(
                         )
                     }
                 },
-                colors = profileTextFieldColors(),
             )
             DropdownMenu(
                 expanded = modelMenuExpanded,
@@ -384,19 +383,13 @@ private fun ProfileTextField(
     label: String,
     visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
 ) {
-    OutlinedTextField(
+    com.ares.analytics.ui.components.forms.AresTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = label,
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         visualTransformation = visualTransformation,
-        colors = profileTextFieldColors(),
     )
 }
 
-@Composable
-private fun profileTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AresCyan,
-    unfocusedBorderColor = AresBorder,
-)

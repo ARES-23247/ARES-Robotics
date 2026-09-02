@@ -1,7 +1,8 @@
 package com.ares.analytics.ui.screens
 
-import com.ares.analytics.ui.components.tuning.GainTuningPanel
-import com.ares.analytics.ui.components.tuning.GuidedTuningExperimentPanel
+import com.ares.analytics.ui.components.core.AresDialog
+import com.ares.analytics.ui.components.core.AresDialogVariant
+import com.ares.analytics.ui.components.tuning.*
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -93,25 +94,22 @@ fun TuningScreen(
     }
 
     if (showArmConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showArmConfirmation = false },
-            title = { Text("Arm physical calibration?") },
-            text = {
-                Text(
-                    "The selected drivetrain or mechanism can move as soon as a calibration is started. " +
-                        "Confirm the FTC tuning OpMode is started, the robot is clear, and an operator is ready to press Stop."
-                )
+        AresDialog(
+            title = "Arm physical calibration?",
+            onDismiss = { showArmConfirmation = false },
+            variant = AresDialogVariant.WARNING,
+            confirmText = "Arm for 60 seconds",
+            onConfirm = {
+                showArmConfirmation = false
+                sysIdViewModel.onIntent(SysIdIntent.ArmCalibration)
             },
-            confirmButton = {
-                Button(onClick = {
-                    showArmConfirmation = false
-                    sysIdViewModel.onIntent(SysIdIntent.ArmCalibration)
-                }) { Text("Arm for 60 seconds") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showArmConfirmation = false }) { Text("Cancel") }
-            }
-        )
+            dismissText = "Cancel",
+        ) {
+            Text(
+                "The selected drivetrain or mechanism can move as soon as a calibration is started. " +
+                    "Confirm the FTC tuning OpMode is started, the robot is clear, and an operator is ready to press Stop."
+            )
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -564,169 +562,13 @@ fun TuningScreen(
 
                 Spacer(Modifier.weight(1f))
                 Text("Live Telemetry Plot (Velocity vs. Time)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AresTextSecondary)
-                LiveTelemetryPlot(samples = sysIdState.liveSamples)
+                TuningLivePlot(samples = sysIdState.liveSamples)
             }
         }
         }
     }
 }
 
-@Composable
-private fun AbortCard(viewModel: SysIdViewModel) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().border(1.dp, AresError, RoundedCornerShape(8.dp)),
-        color = AresError.copy(alpha = 0.05f),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("CALIBRATION IN PROGRESS", color = AresError, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("Robot is executing routine.", color = AresTextSecondary, fontSize = 11.sp)
-            }
-            Button(
-                onClick = { viewModel.onIntent(SysIdIntent.StopCalibration) },
-                colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text("ABORT TEST (STOP)", color = AresOnAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            }
-        }
-    }
-}
-
-@Composable
-private fun RoutineButton(
-    name: String,
-    desc: String,
-    onClick: () -> Unit,
-    enabled: Boolean
-) {
-    Surface(
-        modifier = Modifier
-            .width(220.dp)
-            .height(80.dp)
-            .border(1.dp, AresBorder, RoundedCornerShape(8.dp))
-            .clickable(enabled = enabled, onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        color = if (enabled) AresSurfaceElevated else AresSurfaceElevated.copy(alpha = 0.5f)
-    ) {
-        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(name, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (enabled) AresCyan else AresTextTertiary)
-            Text(desc, fontSize = 11.sp, color = AresTextTertiary, lineHeight = 14.sp)
-        }
-    }
-}
-
-@Composable
-private fun CalibrationTriggerCard(
-    name: String,
-    desc: String,
-    onClick: () -> Unit,
-    enabled: Boolean
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, AresBorder, RoundedCornerShape(8.dp))
-            .clickable(enabled = enabled, onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        color = if (enabled) AresSurfaceElevated else AresSurfaceElevated.copy(alpha = 0.5f)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(if (enabled) AresCyan else AresBorder, RoundedCornerShape(18.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = if (enabled) AresBackground else AresTextTertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(name, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (enabled) AresCyan else AresTextTertiary)
-                Text(desc, fontSize = 11.sp, color = AresTextTertiary, lineHeight = 14.sp)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ParamRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().background(AresSurfaceElevated).border(1.dp, AresBorder, RoundedCornerShape(6.dp)).padding(10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, fontSize = 12.sp, color = AresTextSecondary)
-        Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = AresTextPrimary)
-    }
-}
-
-@Composable
-private fun ApplyButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-        modifier = Modifier.fillMaxWidth().height(36.dp),
-        shape = RoundedCornerShape(6.dp),
-        contentPadding = PaddingValues(0.dp)
-    ) {
-        Text("Send result to proposal board", color = AresOnAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-    }
-}
-
-@Composable
-private fun LiveTelemetryPlot(samples: List<AlignedDataRow>) {
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .background(AresSurfaceElevated, RoundedCornerShape(8.dp))
-            .border(1.dp, AresBorder, RoundedCornerShape(8.dp))
-    ) {
-        if (samples.size < 2) return@Canvas
-        val maxTime = samples.maxOf { it.timestampMs }
-        val minTime = samples.minOf { it.timestampMs }
-        val dt = (maxTime - minTime).toDouble()
-        val minVelocity = minOf(0.0, samples.minOf { it.velocity })
-        val maxVelocity = maxOf(0.0, samples.maxOf { it.velocity })
-        val velocityRange = (maxVelocity - minVelocity).coerceAtLeast(1.0)
-        val path = Path()
-        val zeroY = (size.height - ((0.0 - minVelocity) / velocityRange) * size.height).toFloat()
-
-        drawLine(AresBorder, Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
-
-        samples.forEachIndexed { index, sample ->
-            val x = if (dt > 0) ((sample.timestampMs - minTime) / dt * size.width).toFloat() else 0f
-            val normalizedVelocity = (sample.velocity - minVelocity) / velocityRange
-            val y = (size.height - normalizedVelocity * size.height).toFloat()
-
-            if (index == 0) {
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
-            }
-        }
-
-        drawPath(
-            path = path,
-            color = AresCyan,
-            style = Stroke(width = 2.dp.toPx())
-        )
-    }
-}
 
 private fun getCustomCategory(key: String): String {
     val cleanKey = key.removePrefix("Tuning/")

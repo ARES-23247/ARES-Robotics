@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.ReplayFrame
+import com.ares.analytics.ui.canvas.drawVectorArrow
 import com.ares.analytics.ui.theme.*
 import kotlin.math.cos
 import kotlin.math.sin
@@ -127,24 +128,14 @@ fun SwerveVisualizer(
                     val endX = center.x + arrowLen * cos(steerAngle).toFloat()
                     val endY = center.y + arrowLen * sin(steerAngle).toFloat()
 
-                    drawLine(
-                        color = AresCyan,
-                        start = center,
-                        end = Offset(endX, endY),
-                        strokeWidth = 4f,
-                        cap = StrokeCap.Round
-                    )
-
-                    // Draw small arrowhead
                     if (Math.abs(arrowLen) > 5f) {
-                        val headSize = 10f
-                        val leftWingX = endX - headSize * cos(steerAngle - Math.PI / 6.0).toFloat()
-                        val leftWingY = endY - headSize * sin(steerAngle - Math.PI / 6.0).toFloat()
-                        val rightWingX = endX - headSize * cos(steerAngle + Math.PI / 6.0).toFloat()
-                        val rightWingY = endY - headSize * sin(steerAngle + Math.PI / 6.0).toFloat()
-
-                        drawLine(color = AresCyan, start = Offset(endX, endY), end = Offset(leftWingX, leftWingY), strokeWidth = 3f)
-                        drawLine(color = AresCyan, start = Offset(endX, endY), end = Offset(rightWingX, rightWingY), strokeWidth = 3f)
+                        drawVectorArrow(
+                            start = center,
+                            end = Offset(endX, endY),
+                            color = AresCyan,
+                            strokeWidth = 3.5f,
+                            arrowHeadLength = 10f
+                        )
                     }
                 }
             }
