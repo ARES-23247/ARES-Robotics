@@ -99,7 +99,6 @@ internal fun ThirdPartyIntegrationsSection(
         }
     }
 }
-
 @Composable
 internal fun GeminiAssistanceSection(
     aiMode: String,
@@ -392,4 +391,3 @@ private fun ProfileTextField(
         visualTransformation = visualTransformation,
     )
 }
-

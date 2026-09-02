@@ -10,4 +10,3 @@ internal fun chooseProjectDirectory(currentPath: String?): File? =
         initialPath = currentPath,
         approveButtonText = "Use this project"
     )
-
