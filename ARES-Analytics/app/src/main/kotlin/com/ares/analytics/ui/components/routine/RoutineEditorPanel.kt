@@ -83,6 +83,9 @@ fun RoutineEditorPanel(
     val hasErrors = state.routineValidation.any { it.severity == RoutineValidationSeverity.ERROR }
     val hasPlayablePreview = state.routinePreviewWarning == null &&
         state.trajectory != null && state.estimatedDuration > 0.0
+    val activePreviewAction = state.previewActions.lastOrNull {
+        it.timeSeconds <= state.playbackTime + 1e-9
+    }
     val generationStatus = when {
         state.generationPhase == AresGenerationPhase.RUNNING -> state.generationMessage ?: "Generating robot code..."
         state.generationPhase == AresGenerationPhase.FAILED -> state.generationMessage ?: "Robot code generation failed"
@@ -235,7 +238,7 @@ fun RoutineEditorPanel(
                 Text(
                     if (state.routinePreviewWarning == null) {
                         "${state.routine.steps.size} ${if (state.routine.steps.size == 1) "step" else "steps"}  •  " +
-                            "drive preview ${formatRoutineNumber(state.estimatedDuration)} s"
+                            "routine preview ${formatRoutineNumber(state.estimatedDuration)} s"
                     } else {
                         "${state.routine.steps.size} ${if (state.routine.steps.size == 1) "step" else "steps"}  •  preview unavailable"
                     },
@@ -267,6 +270,21 @@ fun RoutineEditorPanel(
                     color = AresGold,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (hasPlayablePreview && activePreviewAction != null) {
+                val descriptor = state.routineActions.firstOrNull { it.key == activePreviewAction.actionKey }
+                val arguments = activePreviewAction.arguments.values.joinToString().takeIf(String::isNotBlank)
+                Text(
+                    buildString {
+                        append("Previewing: ")
+                        append(descriptor?.displayName ?: activePreviewAction.actionKey)
+                        if (arguments != null) append(" — $arguments")
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AresCyan,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             generationStatus?.let { status ->

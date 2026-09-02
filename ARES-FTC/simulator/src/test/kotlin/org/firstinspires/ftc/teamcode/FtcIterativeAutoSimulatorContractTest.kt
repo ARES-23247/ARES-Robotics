@@ -11,6 +11,8 @@ import com.areslib.util.RobotClock
 import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import org.firstinspires.ftc.teamcode.opmodes.ARESAuto
 import org.firstinspires.ftc.teamcode.opmodes.TestAutoRed
+import org.firstinspires.ftc.teamcode.subsystems.indicator_lights.IndicatorLightsSubsystem
+import org.firstinspires.ftc.teamcode.subsystems.prism.PrismLightsSubsystem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.After
@@ -74,6 +76,41 @@ class FtcIterativeAutoSimulatorContractTest {
             assertEquals(Alliance.RED, lockedRobot.store.state.drive.alliance)
         } finally {
             locked.stop()
+        }
+    }
+
+    @Test
+    fun `Light Practice action-only auto selects runs and completes in the simulator`() {
+        RobotClock.useMockTime(1_000L)
+        val rawOpMode = ARESAuto()
+        val lifecycle = requireNotNull(SimOpModeRunner.createOpModeInstance(rawOpMode, null))
+        try {
+            lifecycle.initialize(MecanumRobotDouble().hardwareMap)
+            val robot = requireNotNull(FtcBaseRobot.activeInstance)
+
+            rawOpMode.gamepad1.dpad_right = true
+            lifecycle.tick()
+            rawOpMode.gamepad1.dpad_right = false
+            lifecycle.tick()
+
+            assertEquals("test-auto", robot.telemetryManager.nt4.getString("ARES/Auto/Selected", ""))
+            assertEquals("Ready", robot.telemetryManager.nt4.getString("ARES/Auto/Status", ""))
+
+            lifecycle.start()
+            repeat(150) {
+                if (robot.telemetryManager.nt4.getString("ARES/Auto/Status", "") == "Complete") return@repeat
+                RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20L)
+                lifecycle.tick()
+            }
+
+            assertEquals("Complete", robot.telemetryManager.nt4.getString("ARES/Auto/Status", ""))
+            val indicatorState = IndicatorLightsSubsystem.state(robot.store.state)
+            val prismState = PrismLightsSubsystem.state(robot.store.state)
+            assertEquals(0.511, indicatorState.leftColor, 0.0)
+            assertEquals(0.511, indicatorState.rightColor, 0.0)
+            assertEquals(615, prismState.pattern)
+        } finally {
+            lifecycle.stop()
         }
     }
 }

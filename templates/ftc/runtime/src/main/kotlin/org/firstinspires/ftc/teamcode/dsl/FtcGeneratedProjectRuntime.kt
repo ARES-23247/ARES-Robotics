@@ -685,7 +685,8 @@ internal fun validateFtcAutonomousBounds(
             val parsedKey = key?.let { candidate ->
                 runCatching { CommandKey(candidate) }.getOrNull()
             }
-            if (parsedKey == null || !NamedCommands.contains(parsedKey)) {
+            val generatedAction = key != null && key in GeneratedAresProject.knownActionKeys
+            if (!generatedAction && (parsedKey == null || !NamedCommands.contains(parsedKey))) {
                 errors += "$actionPath action '${key ?: "<missing>"}' is unavailable on discovered FTC hardware"
             }
         }

@@ -1,5 +1,6 @@
 package com.ares.analytics.ui.components.dashboard
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -115,8 +116,83 @@ class LocalSimulatorControlBarTest {
 
     @Test
     fun `malformed Driver Station inventory cannot crash the dashboard`() {
-        assertEquals(emptyList(), decodeSimulatorTeleOps("not-json"))
-        assertEquals(listOf("One", "Two"), decodeSimulatorTeleOps("[\"One\",\"Two\"]"))
+        assertEquals(emptyList(), decodeSimulatorOpModes("not-json"))
+        assertEquals(listOf("One", "Two"), decodeSimulatorOpModes("[\"One\",\"Two\"]"))
+    }
+
+    @Test
+    fun `acknowledgement polling observes a later simulator lifecycle state`() = runTest {
+        var reads = 0
+
+        val acknowledged = awaitSimulatorOpModeAcknowledgement(
+            selectedOpMode = "team.LightPracticeAuto",
+            expectedState = AUTONOMOUS_RUNNING_STATE,
+            isConnected = { true },
+            snapshot = {
+                reads += 1
+                SimulatorOpModeSnapshot(
+                    activeOpMode = "team.LightPracticeAuto",
+                    activeState = if (reads < 3) AUTONOMOUS_INIT_STATE else AUTONOMOUS_RUNNING_STATE,
+                )
+            },
+            timeoutMs = 1_000,
+        )
+
+        assertTrue(acknowledged)
+        assertEquals(3, reads)
+    }
+
+    @Test
+    fun `short autonomous completion is accepted as proof that start ran`() = runTest {
+        val acknowledged = awaitSimulatorOpModeAcknowledgement(
+            selectedOpMode = "team.LightPracticeAuto",
+            expectedState = AUTONOMOUS_RUNNING_STATE,
+            isConnected = { true },
+            snapshot = {
+                SimulatorOpModeSnapshot(
+                    activeOpMode = "team.LightPracticeAuto",
+                    activeState = "DISABLED",
+                    autonomousStatus = "Complete",
+                )
+            },
+            acceptedAutonomousStatuses = setOf("RUNNING", "COMPLETE"),
+            timeoutMs = 1_000,
+        )
+
+        assertTrue(acknowledged)
+        assertEquals(FrcAutonomousDisplayState.COMPLETE, ftcAutonomousDisplayState("Complete"))
+        assertEquals(FrcAutonomousDisplayState.BLOCKED, ftcAutonomousDisplayState("Failed"))
+    }
+
+    @Test
+    fun `acknowledgement polling stops when simulator disconnects`() = runTest {
+        var connected = true
+
+        val acknowledged = awaitSimulatorOpModeAcknowledgement(
+            selectedOpMode = "team.LightPracticeAuto",
+            expectedState = AUTONOMOUS_RUNNING_STATE,
+            isConnected = {
+                connected.also { connected = false }
+            },
+            snapshot = { SimulatorOpModeSnapshot(null, null) },
+            timeoutMs = 1_000,
+        )
+
+        assertFalse(acknowledged)
+    }
+
+    @Test
+    fun `FTC autonomous inventory uses autonomous lifecycle acknowledgements`() {
+        val teleOps = listOf("team.AresTeleOp")
+        val autos = listOf("team.LightPracticeAuto")
+
+        assertEquals(FtcSimulatorOpModeKind.TELEOP, ftcSimulatorOpModeKind(teleOps.single(), teleOps, autos))
+        assertEquals(FtcSimulatorOpModeKind.AUTONOMOUS, ftcSimulatorOpModeKind(autos.single(), teleOps, autos))
+        assertNull(ftcSimulatorOpModeKind("team.Stale", teleOps, autos))
+        assertEquals(AUTONOMOUS_INIT_STATE, FtcSimulatorOpModeKind.AUTONOMOUS.initState())
+        assertEquals(AUTONOMOUS_RUNNING_STATE, FtcSimulatorOpModeKind.AUTONOMOUS.runningState())
+        assertEquals(TELEOP_INIT_STATE, FtcSimulatorOpModeKind.TELEOP.initState())
+        assertEquals(TELEOP_RUNNING_STATE, FtcSimulatorOpModeKind.TELEOP.runningState())
     }
 
     @Test

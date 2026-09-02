@@ -252,7 +252,6 @@ internal fun DashboardScreen(
     LaunchedEffect(missionSnapshot) {
         onMissionSnapshotChanged(missionSnapshot)
     }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -267,6 +266,7 @@ internal fun DashboardScreen(
                 teamId = currentConfig.teamId,
                 seasonId = currentConfig.seasonId,
                 robotId = currentConfig.robotId,
+                projectPath = currentConfig.projectPath,
                 isConnected = state.isConnected,
                 isSimulatorProcessRunning = isSimRunning,
                 isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,

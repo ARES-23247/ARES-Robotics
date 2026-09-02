@@ -64,6 +64,7 @@ fun CloudScreen(
     val checkedSessions = remember { mutableStateListOf<String>() }
     var pendingDeletion by remember { mutableStateOf<PendingCloudDeletion?>(null) }
 
+    LaunchedEffect(viewModel) { viewModel.onIntent(CloudIntent.RefreshCloudLogs) }
     pendingDeletion?.let { request ->
         CloudDeletionConfirmationDialog(
             request = request,

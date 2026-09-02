@@ -1,8 +1,11 @@
 package com.ares.analytics.ui.components.dashboard
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 
 internal const val TELEOP_LIST_TOPIC = "ARES/DriverStation/TeleOpList"
+internal const val AUTONOMOUS_LIST_TOPIC = "ARES/DriverStation/AutonomousList"
 internal const val SELECTED_OPMODE_TOPIC = "ARES/DriverStation/SelectedOpMode"
 internal const val DRIVER_STATION_COMMAND_TOPIC = "ARES/DriverStation/Command"
 internal const val ACTIVE_OPMODE_CLASS_TOPIC = "ARES/DriverStation/ActiveOpModeClass"
@@ -18,6 +21,8 @@ internal const val FRC_AUTONOMOUS_ENABLED_STATE = "AUTONOMOUS_ENABLED"
 internal const val FRC_WAITING_FOR_CONTROL_STATE = "WAITING_FOR_CONTROL"
 internal const val TELEOP_INIT_STATE = "TELEOP_INIT"
 internal const val TELEOP_RUNNING_STATE = "TELEOP_RUNNING"
+internal const val AUTONOMOUS_INIT_STATE = "AUTO_INIT"
+internal const val AUTONOMOUS_RUNNING_STATE = "AUTO_RUNNING"
 internal const val OPMODE_ACK_TIMEOUT_MS = 5_000L
 
 internal fun preferredSimulatorTeleOp(teleOps: List<String>): String? =
@@ -42,6 +47,40 @@ internal fun simulatorOpModeAcknowledged(
     activeState: String?,
     expectedState: String,
 ): Boolean = selectedOpMode != null && selectedOpMode == activeOpMode && activeState == expectedState
+
+internal data class SimulatorOpModeSnapshot(
+    val activeOpMode: String?,
+    val activeState: String?,
+    val autonomousStatus: String? = null,
+)
+
+internal suspend fun awaitSimulatorOpModeAcknowledgement(
+    selectedOpMode: String,
+    expectedState: String,
+    isConnected: () -> Boolean,
+    snapshot: () -> SimulatorOpModeSnapshot,
+    acceptedAutonomousStatuses: Set<String> = emptySet(),
+    timeoutMs: Long = OPMODE_ACK_TIMEOUT_MS,
+): Boolean = withTimeoutOrNull(timeoutMs) {
+    while (isConnected()) {
+        val current = snapshot()
+        val lifecycleAcknowledged = simulatorOpModeAcknowledged(
+                selectedOpMode = selectedOpMode,
+                activeOpMode = current.activeOpMode,
+                activeState = current.activeState,
+                expectedState = expectedState,
+            )
+        val statusAcknowledged = current.autonomousStatus
+            ?.trim()
+            ?.uppercase()
+            ?.let(acceptedAutonomousStatuses::contains) == true
+        if (lifecycleAcknowledged || statusAcknowledged) {
+            return@withTimeoutOrNull true
+        }
+        delay(20)
+    }
+    false
+} ?: false
 
 internal fun simulatorDriveReceiverReady(statusCode: Int?, leaseAgeMs: Long?): Boolean =
     (statusCode == 2 || statusCode == 3) && leaseAgeMs != null && leaseAgeMs in 0..500L
@@ -70,6 +109,14 @@ internal enum class FrcAutonomousDisplayState {
     BLOCKED,
 }
 
+internal fun ftcAutonomousDisplayState(autonomousStatus: String?): FrcAutonomousDisplayState =
+    when (autonomousStatus?.trim()?.uppercase()) {
+        "RUNNING" -> FrcAutonomousDisplayState.RUNNING
+        "COMPLETE" -> FrcAutonomousDisplayState.COMPLETE
+        "BLOCKED", "FAILED", "CANCELLED" -> FrcAutonomousDisplayState.BLOCKED
+        else -> FrcAutonomousDisplayState.INACTIVE
+    }
+
 internal fun frcAutonomousDisplayState(
     driverStationState: String?,
     autonomousStatus: String?,
@@ -91,10 +138,32 @@ internal fun preferredSimulatorAutonomous(
     ?: available.firstOrNull { it == "do-nothing" }
     ?: available.firstOrNull()
 
-internal fun decodeSimulatorTeleOps(value: String?): List<String> =
+internal fun decodeSimulatorOpModes(value: String?): List<String> =
     value?.let { encoded ->
         runCatching { Json.decodeFromString<List<String>>(encoded) }.getOrDefault(emptyList())
     }.orEmpty()
+
+internal enum class FtcSimulatorOpModeKind { TELEOP, AUTONOMOUS }
+
+internal fun ftcSimulatorOpModeKind(
+    selected: String?,
+    teleOps: List<String>,
+    autonomousOpModes: List<String>,
+): FtcSimulatorOpModeKind? = when (selected) {
+    in autonomousOpModes -> FtcSimulatorOpModeKind.AUTONOMOUS
+    in teleOps -> FtcSimulatorOpModeKind.TELEOP
+    else -> null
+}
+
+internal fun FtcSimulatorOpModeKind.initState(): String = when (this) {
+    FtcSimulatorOpModeKind.TELEOP -> TELEOP_INIT_STATE
+    FtcSimulatorOpModeKind.AUTONOMOUS -> AUTONOMOUS_INIT_STATE
+}
+
+internal fun FtcSimulatorOpModeKind.runningState(): String = when (this) {
+    FtcSimulatorOpModeKind.TELEOP -> TELEOP_RUNNING_STATE
+    FtcSimulatorOpModeKind.AUTONOMOUS -> AUTONOMOUS_RUNNING_STATE
+}
 
 internal enum class LocalSimulatorPrimaryAction(val label: String) {
     LAUNCH_SIMULATOR("Launch simulator"),

@@ -87,6 +87,7 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
     private var lastDashboardRequest: String? = null
     private var lastPublishedSelection: String? = null
     private var lastPublishedStatus: String? = null
+    private var lastPublishedDetail: String? = null
     private var activeExecutionId: Long? = null
     private var successfulCompletion = false
     private var lastLoopTelemetryMs = 0L
@@ -220,7 +221,7 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
             ).joinToString("; ")
             if (safetyFailure != null) hardwareError = reportedError
             telemetry.addData("AUTO BLOCKED", reportedError)
-            publishNetworkStatus("Blocked")
+            publishNetworkStatus("Blocked", reportedError)
             telemetry.update()
             finished = true
             requestOpModeStop()
@@ -421,13 +422,12 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
         }
         if (!successfulCompletion) PoseStorage.hasValidPose = false
         telemetry.addData("Auto", reportedStatus)
-        publishNetworkStatus(
-            when {
+        val networkStatus = when {
                 successfulCompletion && finishFailure == null -> "Complete"
                 started -> "Failed"
                 else -> "Blocked"
             }
-        )
+        publishNetworkStatus(networkStatus, if (networkStatus == "Complete") reportedStatus else configurationError ?: reportedStatus)
         telemetry.update()
         requestOpModeStop()
     }
@@ -465,7 +465,10 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
             telemetry.addData("Status", "BLOCKED")
             telemetry.addData("Fix", error ?: "Enable at least one autonomous entry in the project")
         }
-        publishNetworkStatus(if (error == null && entry != null) "Ready" else "Blocked")
+        publishNetworkStatus(
+            status = if (error == null && entry != null) "Ready" else "Blocked",
+            detail = error.orEmpty(),
+        )
         telemetry.update()
     }
 
@@ -482,16 +485,21 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
         nt4.update()
     }
 
-    private fun publishNetworkStatus(status: String) {
+    private fun publishNetworkStatus(status: String, detail: String = "") {
         val activeRobot = robot ?: return
         val nt4 = getMecanumRobot(activeRobot).telemetryManager.nt4
         val selectedId = selector.selected?.entryId.orEmpty()
-        if (selectedId == lastPublishedSelection && status == lastPublishedStatus) return
+        if (selectedId == lastPublishedSelection && status == lastPublishedStatus && detail == lastPublishedDetail) return
         nt4.putString("ARES/Auto/Selected", selectedId)
         nt4.putString("ARES/Auto/Status", status)
+        nt4.putString("ARES/Auto/Detail", detail)
         nt4.update()
+        if (status == "Blocked" || status == "Failed") {
+            println("[ARES FTC Auto] $status: ${detail.ifBlank { "No detail reported" }}")
+        }
         lastPublishedSelection = selectedId
         lastPublishedStatus = status
+        lastPublishedDetail = detail
     }
 }
 
