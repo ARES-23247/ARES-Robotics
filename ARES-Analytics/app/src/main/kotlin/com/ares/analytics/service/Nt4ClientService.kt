@@ -872,7 +872,8 @@ open class Nt4ClientService(
         private const val SIMULATOR_POSE_DIVERGENCE_LOG_INTERVAL_NS = 30_000_000_000L
         private val ALLOWED_INPUT_STRING_TOPICS = setOf(
             "ARES/Input/obstacles",
-            "ARES/Input/fieldConfig"
+            "ARES/Input/fieldConfig",
+            "ARES/Input/selectedAuto",
         )
         internal const val LIVE_SESSION_ID = "live-telemetry"
         /** Amount of recent live telemetry intentionally retained in the ephemeral database. */
@@ -898,6 +899,7 @@ private val SIMULATOR_ONLY_DRIVER_STATION_TOPICS = setOf(
     "ARES/DriverStation/SelectedOpMode",
     "ARES/DriverStation/Command",
     "ARES/DriverStation/MatchState",
+    "ARES/Input/selectedAuto",
 )
 
 /** Prevents dashboard OpMode orchestration from reaching a physical robot target. */

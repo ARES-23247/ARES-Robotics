@@ -814,6 +814,7 @@ class PathPlannerViewModel(
                 _state.update {
                     it.copy(
                         trajectory = null,
+                        previewActions = emptyList(),
                         estimatedDuration = 0.0,
                         playbackTime = 0.0,
                         isPlaying = false,
@@ -826,11 +827,12 @@ class PathPlannerViewModel(
         val drives = analysis.drives
         val previewStart = snapshot.autonomousEntry?.startingPose ?: drives.firstOrNull()?.target
         scope.launch(Dispatchers.Default) {
-            if (previewStart == null || drives.isEmpty()) {
+            if (previewStart == null || analysis.steps.isEmpty()) {
                 if (_state.value.routine == draft) {
                     _state.update {
                         it.copy(
                             trajectory = null,
+                            previewActions = emptyList(),
                             estimatedDuration = 0.0,
                             playbackTime = 0.0,
                             isPlaying = false,
@@ -841,7 +843,7 @@ class PathPlannerViewModel(
                 return@launch
             }
             val preview = routinePreviewCompiler.compile(
-                drives = drives,
+                steps = analysis.steps,
                 previewStart = previewStart,
                 hasAutonomousStart = snapshot.autonomousEntry != null,
                 league = snapshot.activeLeague,
@@ -855,6 +857,7 @@ class PathPlannerViewModel(
                 _state.update {
                     it.copy(
                         trajectory = preview.trajectory,
+                        previewActions = preview.actions,
                         estimatedDuration = preview.estimatedDurationSeconds,
                         playbackTime = 0.0,
                         isPlaying = false,

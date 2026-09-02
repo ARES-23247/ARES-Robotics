@@ -64,6 +64,13 @@ fun CloudScreen(
     val checkedSessions = remember { mutableStateListOf<String>() }
     var pendingDeletion by remember { mutableStateOf<PendingCloudDeletion?>(null) }
 
+    // CloudViewModel lives for the whole workspace. Sessions can be recorded or imported after
+    // that graph is constructed, so its initialization snapshot is intentionally not treated as
+    // current when this screen is opened.
+    LaunchedEffect(viewModel) {
+        viewModel.onScreenEntered()
+    }
+
     pendingDeletion?.let { request ->
         CloudDeletionConfirmationDialog(
             request = request,

@@ -12,6 +12,7 @@ import com.areslib.state.Alliance
 import org.firstinspires.ftc.teamcode.dsl.FtcAutoCapabilities
 import org.firstinspires.ftc.teamcode.dsl.FtcFieldEnvelope
 import org.firstinspires.ftc.teamcode.dsl.validateFtcAutonomousBounds
+import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -61,6 +62,33 @@ class FtcAutoCapabilitiesTest {
         val deadline = RoutineDocument(documentId = "deadline", name = "deadline", steps = listOf(RoutineStep.deadline(RoutineStep.wait(0.1), listOf(drive)), following))
         assertTrue(preflight("race", race).any { it.contains("indeterminate pose") })
         assertTrue(preflight("deadline", deadline).any { it.contains("interrupted by its deadline") })
+    }
+
+    @Test
+    fun `preflight accepts generated subsystem actions without NamedCommands registration`() {
+        val generatedAction = GeneratedAresProject.knownActionKeys
+            .first { it.startsWith("subsystem.") }
+        val routine = RoutineDocument(
+            documentId = "generated-action",
+            name = "generated action",
+            steps = listOf(RoutineStep.action(generatedAction)),
+        )
+
+        assertTrue(preflight("generated-action", routine).isEmpty())
+    }
+
+    @Test
+    fun `preflight accepts generated Light Practice routine`() {
+        val entry = GeneratedAresProject.autonomousEntries.first { it.entryId == "test-auto" }
+        val errors = validateFtcAutonomousBounds(
+            entry = entry,
+            routines = GeneratedAresProject.routines,
+            envelope = FtcFieldEnvelope(4.0, 4.0, 0.4, 0.4),
+            selectedAlliance = Alliance.RED,
+            obstacles = emptyList(),
+        )
+
+        assertTrue(errors.joinToString("; "), errors.isEmpty())
     }
 
     private fun preflight(id: String, routine: RoutineDocument): List<String> = validateFtcAutonomousBounds(

@@ -200,6 +200,51 @@ class RoutineBuilderViewModelTest {
     }
 
     @Test
+    fun `action only autonomous routine produces a playable stationary preview`() = runTest {
+        val viewModel = PathPlannerViewModel(this)
+        viewModel.onIntent(PathPlannerIntent.CreateRoutine("Light show"))
+        advanceUntilIdle()
+        viewModel.onIntent(PathPlannerIntent.SetAutonomousAvailability(true, League.FTC))
+        advanceUntilIdle()
+        viewModel.onIntent(PathPlannerIntent.AddRoutineStep(RoutineStepKind.ACTION))
+        viewModel.onIntent(PathPlannerIntent.AddRoutineStep(RoutineStepKind.WAIT))
+        advanceUntilIdle()
+
+        val action = viewModel.state.value.routine.steps.first { it.kind == RoutineStepKind.ACTION }
+        viewModel.onIntent(
+            PathPlannerIntent.UpdateRoutineStep(
+                action.stepId,
+                RoutineStep.action(
+                    key = "subsystem.indicator-lights.set.leftColor",
+                    arguments = mapOf("leftColor" to "GREEN"),
+                    stepId = action.stepId,
+                ),
+            ),
+        )
+        val wait = viewModel.state.value.routine.steps.first { it.kind == RoutineStepKind.WAIT }
+        viewModel.onIntent(
+            PathPlannerIntent.UpdateRoutineStep(
+                wait.stepId,
+                wait.copy(durationSeconds = 0.5),
+            ),
+        )
+        val state = withContext(Dispatchers.Default.limitedParallelism(1)) {
+            withTimeout(5_000) {
+                viewModel.state.first { it.trajectory != null && it.estimatedDuration == 0.5 }
+            }
+        }
+        val trajectory = assertNotNull(state.trajectory)
+        assertEquals(0.5, state.estimatedDuration)
+        assertEquals(1, state.previewActions.size)
+        assertEquals("subsystem.indicator-lights.set.leftColor", state.previewActions.single().actionKey)
+        val first = trajectory.states.first()
+        val last = trajectory.states.last()
+        assertEquals(first.x, last.x)
+        assertEquals(first.y, last.y)
+        assertEquals(first.headingRad, last.headingRad)
+    }
+
+    @Test
     fun `all control flow nodes can be added without text code`() = runTest {
         val viewModel = PathPlannerViewModel(this)
         viewModel.onIntent(PathPlannerIntent.CreateRoutine("Flow demo"))

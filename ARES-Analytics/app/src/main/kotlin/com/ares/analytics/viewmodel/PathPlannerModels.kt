@@ -13,6 +13,7 @@ import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.ConditionDescriptor
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.routine.AutonomousCatalogEntry
+import com.ares.analytics.viewmodel.routine.RoutinePreviewAction
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
@@ -88,6 +89,7 @@ data class PathPlannerState(
     val estimatedDuration: Double = 0.0,
     val viewRotation: Float = 0f,
     val trajectory: Trajectory? = null,
+    val previewActions: List<RoutinePreviewAction> = emptyList(),
     val isPlaying: Boolean = false,
     val playbackTime: Double = 0.0,
     /** Non-null when one routine has multiple possible timelines and preview is suppressed. */

@@ -93,8 +93,10 @@ class Nt4ClientServiceTest {
     fun `dashboard driver station commands are rejected for physical targets`() {
         assertTrue(isDashboardDriverStationCommandAllowed("127.0.0.1", "ARES/DriverStation/Command"))
         assertTrue(isDashboardDriverStationCommandAllowed("localhost", "/ARES/DriverStation/SelectedOpMode"))
+        assertTrue(isDashboardDriverStationCommandAllowed("127.0.0.1", "ARES/Input/selectedAuto"))
         assertFalse(isDashboardDriverStationCommandAllowed("192.168.43.1", "ARES/DriverStation/Command"))
         assertFalse(isDashboardDriverStationCommandAllowed("10.23.247.2", "ARES/DriverStation/MatchState"))
+        assertFalse(isDashboardDriverStationCommandAllowed("192.168.43.1", "ARES/Input/selectedAuto"))
         assertTrue(isDashboardDriverStationCommandAllowed("192.168.43.1", "Camera/SelectedPipeline"))
     }
 
@@ -458,6 +460,7 @@ class Nt4ClientServiceTest {
             }
             nt4ClientService.publishString("ARES/Input/fieldConfig", "{}")
             nt4ClientService.publishString("ARES/Input/obstacles", "[]")
+            nt4ClientService.publishString("ARES/Input/selectedAuto", "light-practice")
             assertFailsWith<IllegalArgumentException> {
                 nt4ClientService.publishDriveFrame(
                     doubleArrayOf(2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0)

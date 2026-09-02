@@ -11,6 +11,7 @@ object RobotTopicContract {
     const val AVAILABLE_AUTONOMOUS_ROUTINES = "ARES/Auto/AvailableDocuments"
     const val SELECTED_AUTONOMOUS_ROUTINE = "ARES/Auto/Selected"
     const val AUTONOMOUS_STATUS = "ARES/Auto/Status"
+    const val AUTONOMOUS_DETAIL = "ARES/Auto/Detail"
     const val FTC_AUTONOMOUS_REQUEST = "ARES/Input/selectedAuto"
     const val FRC_AUTONOMOUS_REQUEST = "ARES/Auto/Requested"
     /** Compatibility publication for standard FRC dashboards and existing robot projects. */

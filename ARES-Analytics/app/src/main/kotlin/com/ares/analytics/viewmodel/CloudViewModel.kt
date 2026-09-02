@@ -163,6 +163,11 @@ class CloudViewModel(
         _state.update { it.copy(uploadLogs = it.uploadLogs + message) }
     }
 
+    /** Reloads local and remote session indexes whenever the long-lived Cloud screen is entered. */
+    fun onScreenEntered() {
+        onIntent(CloudIntent.RefreshCloudLogs)
+    }
+
     fun onIntent(intent: CloudIntent) {
         scope.launch {
             when (intent) {

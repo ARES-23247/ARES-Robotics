@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.pathplanner.FieldCanvas
+import com.ares.analytics.ui.components.pathplanner.IndicatorLightRenderState
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.ui.components.routine.RoutineBuilderPane
 import com.ares.analytics.ui.components.routine.RoutineBuilderResponsiveBody
@@ -49,6 +50,7 @@ import com.ares.analytics.viewmodel.PathPlannerIntent
 import com.ares.analytics.viewmodel.PathPlannerViewModel
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.routine.routineDriveStepsInExecutionOrder
+import com.ares.analytics.viewmodel.routine.RoutineLightingPreviewModel
 
 /**
  * Unified, offline-first routine builder.
@@ -142,6 +144,10 @@ fun PathPlannerScreen(
             Waypoint(sample.x, sample.y, sample.headingRad)
         }
     }
+    val lightingPreviewModel = remember(projectPath) { RoutineLightingPreviewModel.load(projectPath) }
+    val lightingPreview = remember(lightingPreviewModel, state.previewActions, state.playbackTime) {
+        lightingPreviewModel.at(state.previewActions, state.playbackTime)
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val presentation = routineBuilderLayoutPresentation(maxWidth.value, AresThemeSettings.largeTextMode)
@@ -223,6 +229,14 @@ fun PathPlannerScreen(
                             showPathControls = false,
                             showObstacleControls = false,
                             playbackPose = playbackPose,
+                            indicatorLights = lightingPreview.indicators.map { indicator ->
+                                IndicatorLightRenderState(
+                                    position = indicator.position,
+                                    forwardFraction = indicator.forwardFraction,
+                                    leftFraction = indicator.leftFraction,
+                                )
+                            },
+                            prismPulseWidthUs = lightingPreview.prismPulseWidthUs,
                             aprilTags = null,
                             onAprilTagsChanged = null,
                             initialViewRotation = state.viewRotation,

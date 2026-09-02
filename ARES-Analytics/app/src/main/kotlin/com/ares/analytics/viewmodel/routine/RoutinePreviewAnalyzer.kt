@@ -9,6 +9,7 @@ private const val MAX_ROUTINE_PREVIEW_STEPS = 4_096
 private const val MAX_ROUTINE_PREVIEW_DEPTH = 64
 
 internal data class RoutinePreviewAnalysis(
+    val steps: List<RoutineStep>,
     val drives: List<RoutineDriveStep>,
     val warning: String?,
 )
@@ -19,6 +20,7 @@ internal fun analyzeRoutinePreview(
     availableRoutines: List<RoutineDocument>,
 ): RoutinePreviewAnalysis {
     val routinesById = (availableRoutines + root).associateBy(RoutineDocument::documentId)
+    val deterministicSteps = mutableListOf<RoutineStep>()
     val drives = mutableListOf<RoutineDriveStep>()
     val activeCalls = linkedSetOf(root.documentId)
     var expandedSteps = 0
@@ -33,7 +35,10 @@ internal fun analyzeRoutinePreview(
                 return "Preview unavailable: expanded routine exceeds $MAX_ROUTINE_PREVIEW_STEPS steps."
             }
             when (step.kind) {
-                RoutineStepKind.DRIVE_TO -> step.drive?.let(drives::add)
+                RoutineStepKind.DRIVE_TO -> {
+                    deterministicSteps += step
+                    step.drive?.let(drives::add)
+                }
                 RoutineStepKind.REPEAT -> {
                     val count = step.repeatCount
                         ?: return "Preview unavailable: repeat count is missing."
@@ -65,13 +70,18 @@ internal fun analyzeRoutinePreview(
                 RoutineStepKind.ACTION,
                 RoutineStepKind.WAIT,
                 RoutineStepKind.WAIT_UNTIL,
-                -> Unit
+                -> deterministicSteps += step
             }
         }
         return null
     }
 
-    return RoutinePreviewAnalysis(drives = drives, warning = visit(root.steps, depth = 0))
+    val warning = visit(root.steps, depth = 0)
+    return RoutinePreviewAnalysis(
+        steps = deterministicSteps.toList(),
+        drives = drives,
+        warning = warning,
+    )
 }
 
 private fun compositePreviewWarning(kind: RoutineStepKind): String {
