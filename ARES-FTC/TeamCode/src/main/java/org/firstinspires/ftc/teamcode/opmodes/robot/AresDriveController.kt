@@ -29,10 +29,9 @@ class AresDriveController(private val base: FtcMecanumRobot) {
 
     private fun smoothTransition(x: Double, y: Double, rot: Double) {
         // Fixed EMA coefficient is loop-frequency dependent and intentionally allocation-free.
-        val alpha = 0.4
-        smoothX = smoothX * 0.6 + x * alpha
-        smoothY = smoothY * 0.6 + y * alpha
-        smoothRot = smoothRot * 0.6 + rot * alpha
+        smoothX = smoothX * EMA_RETENTION + x * EMA_ALPHA
+        smoothY = smoothY * EMA_RETENTION + y * EMA_ALPHA
+        smoothRot = smoothRot * EMA_RETENTION + rot * EMA_ALPHA
     }
 
     /** Drives from normalized field-relative axes after shaping and alliance transformation. */
@@ -106,5 +105,9 @@ class AresDriveController(private val base: FtcMecanumRobot) {
         const val DEFAULT_DEADZONE = 0.05
         /** Fallback response-curve exponent when live tuning provides no valid value. */
         const val DEFAULT_CURVE_EXPONENT = 3.0
+        /** Fixed EMA smoothing weight (alpha) for new input samples. */
+        const val EMA_ALPHA = 0.4
+        /** EMA retention factor (1 - alpha) for previous smoothed state. */
+        const val EMA_RETENTION = 0.6
     }
 }

@@ -31,12 +31,19 @@ class AresTelemetryHelper(private val base: FtcMecanumRobot) {
         val voltage = base.powerManager.batteryVoltage
         val batteryText = when {
             !voltage.isFinite() || voltage <= 0.0 -> "<font color='red'><b>INVALID</b></font>"
-            voltage < 11.5 -> "<font color='red'><b>%.1fV (LOW)</b></font>".format(voltage)
+            voltage < 11.5 -> formatLowVoltage(voltage)
             else -> voltage
         }
         addTelemetry("Battery V", batteryText)
         
         addTelemetry("Power Scale", base.powerManager.powerScale)
+    }
+
+    private fun formatLowVoltage(voltage: Double): String {
+        val tenths = kotlin.math.round(voltage * 10.0).toLong()
+        val intPart = tenths / 10
+        val fracPart = kotlin.math.abs(tenths % 10)
+        return "<font color='red'><b>$intPart.${fracPart}V (LOW)</b></font>"
     }
 
     companion object {
