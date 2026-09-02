@@ -17,8 +17,8 @@ import org.aresfirst.marvin.marvin.SetIntakeRollers
 import org.aresfirst.marvin.marvin.LatchMechanismSafetyFault
 import org.aresfirst.marvin.marvin.StartSlamtake
 import org.aresfirst.marvin.marvin.StopSlamtake
+import com.areslib.math.InputMath
 import com.areslib.telemetry.GamepadState
-import edu.wpi.first.math.MathUtil
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.GenericHID
 import edu.wpi.first.wpilibj.XboxController
@@ -100,11 +100,12 @@ class FRCTeleOpDriveController(
                 return
             }
             val allianceScale = if (cachedAlliance == DriverStation.Alliance.Red) -1.0 else 1.0
-            val forward = MathUtil.applyDeadband(-controllerState.leftStickY.toDouble(), 0.1) *
-                4.5 * allianceScale
-            val strafe = MathUtil.applyDeadband(-controllerState.leftStickX.toDouble(), 0.1) *
-                4.5 * allianceScale
-            val rotation = MathUtil.applyDeadband(-controllerState.rightStickX.toDouble(), 0.1) * Math.PI
+            val forward = InputMath.applyDeadband(-controllerState.leftStickY.toDouble(), JOYSTICK_DEADBAND) *
+                MAX_TELEOP_SPEED_MPS * allianceScale
+            val strafe = InputMath.applyDeadband(-controllerState.leftStickX.toDouble(), JOYSTICK_DEADBAND) *
+                MAX_TELEOP_SPEED_MPS * allianceScale
+            val rotation = InputMath.applyDeadband(-controllerState.rightStickX.toDouble(), JOYSTICK_DEADBAND) *
+                MAX_TELEOP_ROTATION_RAD_PER_SEC
             robot.drive.joystickDrive(forward, strafe, rotation, isFieldCentric = true)
         } catch (error: Throwable) {
             latchControllerAllStop("drivePeriodic", error)
@@ -120,8 +121,10 @@ class FRCTeleOpDriveController(
         try {
             val marvin = robot.store.state.superstructure.marvin
 
-            val rawForward = MathUtil.applyDeadband(-controllerState.leftStickY.toDouble(), 0.1) * 4.5
-            val rawStrafe = MathUtil.applyDeadband(-controllerState.leftStickX.toDouble(), 0.1) * 4.5
+            val rawForward = InputMath.applyDeadband(-controllerState.leftStickY.toDouble(), JOYSTICK_DEADBAND) *
+                MAX_TELEOP_SPEED_MPS
+            val rawStrafe = InputMath.applyDeadband(-controllerState.leftStickX.toDouble(), JOYSTICK_DEADBAND) *
+                MAX_TELEOP_SPEED_MPS
             
             // Field coordinates are blue-origin. Rotate translation intent 180 degrees
             // on red so pushing away from either alliance wall remains driver-forward.
@@ -129,7 +132,8 @@ class FRCTeleOpDriveController(
             val forward = rawForward * allianceScale
             val strafe = rawStrafe * allianceScale
             
-            var rotation = MathUtil.applyDeadband(-controllerState.rightStickX.toDouble(), 0.1) * Math.PI
+            var rotation = InputMath.applyDeadband(-controllerState.rightStickX.toDouble(), JOYSTICK_DEADBAND) *
+                MAX_TELEOP_ROTATION_RAD_PER_SEC
 
             val currentPose = robot.store.state.drive.poseEstimator.estimatedPose
 
@@ -336,24 +340,28 @@ class FRCTeleOpDriveController(
             // ── Beach / Traction Loss detection ──
             val beached = robot.isBeached
             val nowMs = com.areslib.util.RobotClock.currentTimeMillis()
-            if (beached != lastBeached) {
-                robot.telemetry.putBoolean("Diagnostics/Beached", beached)
-                lastBeached = beached
-                if (beached) {
-                    if (nowMs - lastRumbleDeactivationMs > 2000L) {
-                        controller.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
-                        coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
-                        rumbleStartTimestampMs = nowMs
+            when {
+                beached != lastBeached -> {
+                    robot.telemetry.putBoolean("Diagnostics/Beached", beached)
+                    lastBeached = beached
+                    when {
+                        beached && (nowMs - lastRumbleDeactivationMs > 2000L) -> {
+                            controller.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
+                            coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
+                            rumbleStartTimestampMs = nowMs
+                        }
+                        !beached -> {
+                            controller.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
+                            coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
+                            lastRumbleDeactivationMs = nowMs
+                        }
                     }
-                } else {
+                }
+                beached && (nowMs - rumbleStartTimestampMs > 1000L) -> {
                     controller.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
                     coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
                     lastRumbleDeactivationMs = nowMs
                 }
-            } else if (beached && nowMs - rumbleStartTimestampMs > 1000L) {
-                controller.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
-                coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
-                lastRumbleDeactivationMs = nowMs
             }
         } catch (e: Throwable) {
             latchControllerAllStop("teleopPeriodic", e)
@@ -374,5 +382,11 @@ class FRCTeleOpDriveController(
             false
         )
         robot.safeHardware()
+    }
+
+    companion object {
+        const val JOYSTICK_DEADBAND = 0.1
+        const val MAX_TELEOP_SPEED_MPS = 4.5
+        const val MAX_TELEOP_ROTATION_RAD_PER_SEC = Math.PI
     }
 }

@@ -29,11 +29,11 @@ class AresTelemetryHelper(private val base: FtcMecanumRobot) {
         addTelemetry("EKF Pose Deg", Math.toDegrees(estPose.heading.radians))
         
         val voltage = base.powerManager.batteryVoltage
-        val batteryText = if (!voltage.isFinite() || voltage <= 0.0) {
-            "<font color='red'><b>INVALID</b></font>"
-        } else if (voltage < 11.5) {
-            "<font color='red'><b>%.1fV (LOW)</b></font>".format(voltage)
-        } else voltage
+        val batteryText = when {
+            !voltage.isFinite() || voltage <= 0.0 -> "<font color='red'><b>INVALID</b></font>"
+            voltage < 11.5 -> "<font color='red'><b>%.1fV (LOW)</b></font>".format(voltage)
+            else -> voltage
+        }
         addTelemetry("Battery V", batteryText)
         
         addTelemetry("Power Scale", base.powerManager.powerScale)
@@ -42,6 +42,4 @@ class AresTelemetryHelper(private val base: FtcMecanumRobot) {
     companion object {
         private const val TELEMETRY_PERIOD_MS = 100L
     }
-
 }
-

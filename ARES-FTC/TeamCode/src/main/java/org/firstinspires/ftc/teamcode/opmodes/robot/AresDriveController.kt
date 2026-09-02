@@ -2,8 +2,8 @@ package org.firstinspires.ftc.teamcode.opmodes.robot
 
 import com.areslib.ftc.FtcMecanumRobot
 import com.areslib.ftc.FtcTeleopDriveFrame
+import com.areslib.math.InputMath
 import com.areslib.state.Alliance
-import kotlin.math.pow
 
 /**
  * Converts driver intent into season drivetrain commands without touching hardware directly.
@@ -17,15 +17,10 @@ import kotlin.math.pow
 class AresDriveController(private val base: FtcMecanumRobot) {
     private fun processAxis(input: Double): Double {
         val boundedInput = if (input.isFinite()) input.coerceIn(-1.0, 1.0) else 0.0
-        val magnitude = kotlin.math.abs(boundedInput)
-        val deadzoned = if (magnitude < DEFAULT_DEADZONE) {
-            0.0
-        } else {
-            (magnitude - DEFAULT_DEADZONE) / (1.0 - DEFAULT_DEADZONE) * kotlin.math.sign(boundedInput)
-        }
+        val deadzoned = InputMath.applyDeadband(boundedInput, DEFAULT_DEADZONE)
         val exponent = base.store.state.tuning.driver.deadbandExponent
             .let { if (it > 0.0) it else DEFAULT_CURVE_EXPONENT }
-        return kotlin.math.sign(deadzoned) * kotlin.math.abs(deadzoned).pow(exponent)
+        return InputMath.applyCurve(deadzoned, exponent)
     }
 
     private var smoothX = 0.0
