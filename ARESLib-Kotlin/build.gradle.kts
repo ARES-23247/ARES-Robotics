@@ -36,6 +36,7 @@ val publishedProjectPaths = listOf(
     ":ftc-hardware",
     ":frc-runtime",
     ":frc-hardware",
+    ":xrp-hardware",
     ":simulator",
     ":simulator-runtime-windows",
     ":simulator-runtime-linux",
