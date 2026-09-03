@@ -159,8 +159,6 @@ fun LocalSimulatorControlBar(
     }
     var starting by remember { mutableStateOf(false) }
     var startFailure by remember { mutableStateOf<String?>(null) }
-    var selectorExpanded by remember { mutableStateOf(false) }
-    var autoSelectorExpanded by remember { mutableStateOf(false) }
     var ftcRoutineSelectorExpanded by remember { mutableStateOf(false) }
     var autonomousLabels by remember(projectPath) { mutableStateOf<Map<String, String>>(emptyMap()) }
     var startJob by remember { mutableStateOf<Job?>(null) }
@@ -352,105 +350,20 @@ fun LocalSimulatorControlBar(
                 )
                 Text(statusText, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
-                Box(Modifier.weight(1f)) {
-                    Surface(
-                        onClick = {
-                            if (isConnected && !starting) {
-                                if (isFtc && (teleOps.isNotEmpty() || autonomousOpModes.isNotEmpty())) selectorExpanded = true
-                                if (!isFtc && availableAutos.isNotEmpty()) autoSelectorExpanded = true
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(32.dp),
-                        color = AresSurfaceElevated,
-                        shape = RoundedCornerShape(6.dp),
-                        border = BorderStroke(1.dp, AresBorder),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                if (!isFtc) {
-                                    when {
-                                        !isConnected -> "FRC simulator is not running"
-                                        requestedAuto != null -> "Auto: $requestedAuto"
-                                        availableAutos.isEmpty() -> "Waiting for compiled autonomous catalog…"
-                                        else -> "Choose an autonomous routine"
-                                    }
-                                } else {
-                                    selectedOpMode?.let { selected ->
-                                        val label = if (selected in autonomousOpModes) "Auto" else "TeleOp"
-                                        "$label: ${selected.substringAfterLast('.')}"
-                                    } ?: if (isConnected) "Waiting for OpMode lists…" else "Simulator is not running"
-                                },
-                                color = if (
-                                    (isFtc && selectedOpMode == null) ||
-                                    (!isFtc && requestedAuto == null)
-                                ) AresTextSecondary else AresTextPrimary,
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                            )
-                            if (isFtc || (!isFtc && availableAutos.isNotEmpty())) {
-                                Icon(Icons.Default.ArrowDropDown, null, tint = AresTextSecondary, modifier = Modifier.size(17.dp))
-                            }
-                        }
-                    }
-                    DropdownMenu(
-                        expanded = selectorExpanded,
-                        onDismissRequest = { selectorExpanded = false },
-                        modifier = Modifier.background(AresSurfaceElevated),
-                    ) {
-                        if (teleOps.isNotEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("TeleOp", color = AresTextSecondary, fontWeight = FontWeight.Bold) },
-                                onClick = {},
-                                enabled = false,
-                            )
-                        }
-                        teleOps.forEach { opMode ->
-                            DropdownMenuItem(
-                                text = { Text(opMode.substringAfterLast('.'), color = AresTextPrimary) },
-                                onClick = {
-                                    selectedOpMode = opMode
-                                    selectorExpanded = false
-                                },
-                            )
-                        }
-                        if (autonomousOpModes.isNotEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("Autonomous", color = AresTextSecondary, fontWeight = FontWeight.Bold) },
-                                onClick = {},
-                                enabled = false,
-                            )
-                        }
-                        autonomousOpModes.forEach { opMode ->
-                            DropdownMenuItem(
-                                text = { Text(opMode.substringAfterLast('.'), color = AresTextPrimary) },
-                                onClick = {
-                                    selectedOpMode = opMode
-                                    selectorExpanded = false
-                                    keyboardDriveState.disarm()
-                                },
-                            )
-                        }
-                    }
-                    DropdownMenu(
-                        expanded = autoSelectorExpanded,
-                        onDismissRequest = { autoSelectorExpanded = false },
-                        modifier = Modifier.background(AresSurfaceElevated),
-                    ) {
-                        availableAutos.forEach { autoId ->
-                            DropdownMenuItem(
-                                text = { Text(autoId, color = AresTextPrimary) },
-                                onClick = {
-                                    requestedAuto = autoId
-                                    autoSelectorExpanded = false
-                                },
-                            )
-                        }
-                    }
-                }
+                SimulatorModeDropdown(
+                    isFtc = isFtc,
+                    isConnected = isConnected,
+                    starting = starting,
+                    selectedOpMode = selectedOpMode,
+                    onSelectedOpModeChanged = { selectedOpMode = it },
+                    teleOps = teleOps,
+                    autonomousOpModes = autonomousOpModes,
+                    availableAutos = availableAutos,
+                    requestedAuto = requestedAuto,
+                    onRequestedAutoChanged = { requestedAuto = it },
+                    onDisarmDrive = { keyboardDriveState.disarm() },
+                    modifier = Modifier.weight(1f),
+                )
 
                 if (isFtcAutonomousSelection) {
                     FtcAutonomousRoutineSelector(
@@ -464,169 +377,125 @@ fun LocalSimulatorControlBar(
                     )
                 }
 
-                Button(
-                    onClick = {
-                        if (
-                            primaryAction == LocalSimulatorPrimaryAction.LAUNCH_SIMULATOR ||
-                            primaryAction == LocalSimulatorPrimaryAction.VERIFY_AND_LAUNCH
-                        ) {
-                            onLaunchSimulator()
-                            return@Button
-                        }
-                        if (primaryAction != LocalSimulatorPrimaryAction.START_DRIVING) return@Button
+                val onPrimaryActionClick: () -> Unit = {
+                    if (
+                        primaryAction == LocalSimulatorPrimaryAction.LAUNCH_SIMULATOR ||
+                        primaryAction == LocalSimulatorPrimaryAction.VERIFY_AND_LAUNCH
+                    ) {
+                        onLaunchSimulator()
+                    } else if (primaryAction == LocalSimulatorPrimaryAction.START_DRIVING) {
                         val opMode = selectedOpMode
-                        if (isFtc && opMode == null) return@Button
-                        startJob?.cancel()
-                        startJob = scope.launch {
-                            starting = true
-                            startFailure = null
-                            keyboardDriveState.disarm()
-                            try {
-                                if (!isFtc) {
-                                    nt4Client.publishString(FRC_DRIVER_STATION_COMMAND_TOPIC, FRC_ENABLE_TELEOP_COMMAND)
-                                    val running = withTimeoutOrNull(OPMODE_ACK_TIMEOUT_MS) {
-                                        while (connectedNow && !frcSimulatorTeleOpEnabled(frcDriverStationState)) delay(20)
-                                        connectedNow
-                                    } == true
+                        if (!isFtc || opMode != null) {
+                            startJob?.cancel()
+                            startJob = scope.launch {
+                                starting = true
+                                startFailure = null
+                                keyboardDriveState.disarm()
+                                try {
+                                    if (!isFtc) {
+                                        nt4Client.publishString(FRC_DRIVER_STATION_COMMAND_TOPIC, FRC_ENABLE_TELEOP_COMMAND)
+                                        val running = withTimeoutOrNull(OPMODE_ACK_TIMEOUT_MS) {
+                                            while (connectedNow && !frcSimulatorTeleOpEnabled(frcDriverStationState)) delay(20)
+                                            connectedNow
+                                        } == true
+                                        if (!running) {
+                                            startFailure = when (frcDriverStationState) {
+                                                FRC_WAITING_FOR_CONTROL_STATE ->
+                                                    "The FRC simulator did not receive a fresh neutral control handshake"
+                                                else -> "The FRC simulator did not enable TeleOp"
+                                            }
+                                            return@launch
+                                        }
+                                        keyboardDriveState.enabled = true
+                                        return@launch
+                                    }
+
+                                    checkNotNull(opMode)
+                                    val modeKind = requireNotNull(
+                                        ftcSimulatorOpModeKind(opMode, teleOps, autonomousOpModes)
+                                    ) { "The selected FTC OpMode is no longer available" }
+                                    val autonomousSelection = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
+                                        requireNotNull(requestedAuto) { "Choose an autonomous routine" }
+                                    } else null
+                                    autonomousSelection?.let { selection ->
+                                        nt4Client.publishString(RobotTopicContract.FTC_AUTONOMOUS_REQUEST, selection)
+                                        delay(150)
+                                    }
+                                    nt4Client.publishString(SELECTED_OPMODE_TOPIC, opMode)
+                                    nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "INIT")
+                                    command = "INIT"
+                                    val initialized = awaitSimulatorOpModeAcknowledgement(
+                                        selectedOpMode = opMode,
+                                        expectedState = modeKind.initState(),
+                                        isConnected = { connectedNow },
+                                        snapshot = {
+                                            SimulatorOpModeSnapshot(
+                                                activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
+                                                    ?.stringValue
+                                                    ?.takeIf(String::isNotBlank),
+                                                activeState = nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue,
+                                                autonomousStatus = nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
+                                                    ?.stringValue,
+                                            )
+                                        },
+                                    )
+                                    if (!initialized) {
+                                        startFailure = "The simulator did not initialize ${opMode.substringAfterLast('.')}"
+                                        return@launch
+                                    }
+
+                                    nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "START")
+                                    command = "START"
+                                    val running = awaitSimulatorOpModeAcknowledgement(
+                                        selectedOpMode = opMode,
+                                        expectedState = modeKind.runningState(),
+                                        isConnected = { connectedNow },
+                                        snapshot = {
+                                            SimulatorOpModeSnapshot(
+                                                activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
+                                                    ?.stringValue
+                                                    ?.takeIf(String::isNotBlank),
+                                                activeState = nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue,
+                                                autonomousStatus = nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
+                                                    ?.stringValue,
+                                            )
+                                        },
+                                        acceptedAutonomousStatuses = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
+                                            setOf("RUNNING", "COMPLETE", "BLOCKED", "FAILED", "CANCELLED")
+                                        } else emptySet(),
+                                    )
                                     if (!running) {
-                                        startFailure = when (frcDriverStationState) {
-                                            FRC_WAITING_FOR_CONTROL_STATE ->
-                                                "The FRC simulator did not receive a fresh neutral control handshake"
-                                            else -> "The FRC simulator did not enable TeleOp"
+                                        startFailure = "The simulator did not start ${opMode.substringAfterLast('.')}"
+                                        return@launch
+                                    }
+                                    if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS &&
+                                        ftcAutonomousDisplayState(
+                                            nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]?.stringValue,
+                                        ) == FrcAutonomousDisplayState.BLOCKED
+                                    ) {
+                                        startFailure = autonomousDetail.ifBlank {
+                                            "Autonomous '${autonomousSelection.orEmpty()}' was blocked or failed"
                                         }
                                         return@launch
                                     }
-                                    keyboardDriveState.enabled = true
-                                    return@launch
+                                    keyboardDriveState.enabled = modeKind == FtcSimulatorOpModeKind.TELEOP
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: Exception) {
+                                    startFailure = error.message ?: "Simulator TeleOp start failed"
+                                    keyboardDriveState.disarm()
+                                } finally {
+                                    starting = false
                                 }
-
-                                checkNotNull(opMode)
-                                val modeKind = requireNotNull(
-                                    ftcSimulatorOpModeKind(opMode, teleOps, autonomousOpModes)
-                                ) { "The selected FTC OpMode is no longer available" }
-                                val autonomousSelection = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
-                                    requireNotNull(requestedAuto) { "Choose an autonomous routine" }
-                                } else null
-                                autonomousSelection?.let { selection ->
-                                    nt4Client.publishString(RobotTopicContract.FTC_AUTONOMOUS_REQUEST, selection)
-                                    delay(150)
-                                }
-                                nt4Client.publishString(SELECTED_OPMODE_TOPIC, opMode)
-                                nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "INIT")
-                                command = "INIT"
-                                val initialized = awaitSimulatorOpModeAcknowledgement(
-                                    selectedOpMode = opMode,
-                                    expectedState = modeKind.initState(),
-                                    isConnected = { connectedNow },
-                                    snapshot = {
-                                        SimulatorOpModeSnapshot(
-                                            activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
-                                                ?.stringValue
-                                                ?.takeIf(String::isNotBlank),
-                                            activeState = nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue,
-                                            autonomousStatus = nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
-                                                ?.stringValue,
-                                        )
-                                    },
-                                )
-                                if (!initialized) {
-                                    startFailure = "The simulator did not initialize ${opMode.substringAfterLast('.')}"
-                                    return@launch
-                                }
-
-                                nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "START")
-                                command = "START"
-                                val running = awaitSimulatorOpModeAcknowledgement(
-                                    selectedOpMode = opMode,
-                                    expectedState = modeKind.runningState(),
-                                    isConnected = { connectedNow },
-                                    snapshot = {
-                                        SimulatorOpModeSnapshot(
-                                            activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
-                                                ?.stringValue
-                                                ?.takeIf(String::isNotBlank),
-                                            activeState = nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue,
-                                            autonomousStatus = nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
-                                                ?.stringValue,
-                                        )
-                                    },
-                                    acceptedAutonomousStatuses = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
-                                        setOf("RUNNING", "COMPLETE", "BLOCKED", "FAILED", "CANCELLED")
-                                    } else emptySet(),
-                                )
-                                if (!running) {
-                                    startFailure = "The simulator did not start ${opMode.substringAfterLast('.')}"
-                                    return@launch
-                                }
-                                if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS &&
-                                    ftcAutonomousDisplayState(
-                                        nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]?.stringValue,
-                                    ) == FrcAutonomousDisplayState.BLOCKED
-                                ) {
-                                    startFailure = autonomousDetail.ifBlank {
-                                        "Autonomous '${autonomousSelection.orEmpty()}' was blocked or failed"
-                                    }
-                                    return@launch
-                                }
-                                keyboardDriveState.enabled = modeKind == FtcSimulatorOpModeKind.TELEOP
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (error: Exception) {
-                                startFailure = error.message ?: "Simulator TeleOp start failed"
-                                keyboardDriveState.disarm()
-                            } finally {
-                                starting = false
                             }
                         }
-                    },
-                    enabled = when (primaryAction) {
-                        LocalSimulatorPrimaryAction.LAUNCH_SIMULATOR,
-                        LocalSimulatorPrimaryAction.VERIFY_AND_LAUNCH -> canLaunchSimulator
-                        LocalSimulatorPrimaryAction.START_DRIVING -> !isFtc || selectedOpMode != null
-                        else -> false
-                    },
-                    modifier = Modifier.height(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 11.dp, vertical = 4.dp),
-                ) {
-                    if (
-                        primaryAction == LocalSimulatorPrimaryAction.WAIT_FOR_CONNECTION ||
-                        primaryAction == LocalSimulatorPrimaryAction.VERIFYING_PROJECT ||
-                        primaryAction == LocalSimulatorPrimaryAction.STARTING_TELEOP
-                    ) {
-                        CircularProgressIndicator(Modifier.size(14.dp), color = AresOnAccent, strokeWidth = 2.dp)
-                    } else {
-                        Icon(
-                            if (
-                                primaryAction == LocalSimulatorPrimaryAction.LAUNCH_SIMULATOR ||
-                                primaryAction == LocalSimulatorPrimaryAction.VERIFY_AND_LAUNCH
-                            ) {
-                                Icons.Default.DesktopWindows
-                            } else {
-                                Icons.Default.PlayArrow
-                            },
-                            null,
-                            modifier = Modifier.size(16.dp),
-                        )
                     }
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        if (primaryAction == LocalSimulatorPrimaryAction.START_DRIVING && isFtcAutonomousSelection) {
-                            "Run autonomous"
-                        } else {
-                            primaryAction.label
-                        },
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
                 }
 
-                if (!isFtc) {
-                    OutlinedButton(
-                        onClick = {
-                            if (starting || isAutonomousRunning) return@OutlinedButton
-                            val selection = requestedAuto ?: return@OutlinedButton
+                val onRunFrcAutoClick: () -> Unit = {
+                    if (!starting && !isAutonomousRunning) {
+                        val selection = requestedAuto
+                        if (selection != null) {
                             startJob?.cancel()
                             startJob = scope.launch {
                                 starting = true
@@ -638,8 +507,6 @@ fun LocalSimulatorControlBar(
                                         RobotTopicContract.FRC_SMART_DASHBOARD_AUTONOMOUS_REQUEST,
                                         selection,
                                     )
-                                    // Give the NT4 request one bounded transport interval before autonomousInit
-                                    // locks the generated selection.
                                     delay(150)
                                     nt4Client.publishString(
                                         FRC_DRIVER_STATION_COMMAND_TOPIC,
@@ -670,196 +537,106 @@ fun LocalSimulatorControlBar(
                                     starting = false
                                 }
                             }
-                        },
-                        enabled = isConnected && requestedAuto != null && !starting && !isAutonomousRunning,
-                        modifier = Modifier.height(32.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AresCyan),
-                        border = BorderStroke(1.dp, AresCyan),
-                        shape = RoundedCornerShape(6.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    ) {
-                        Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(15.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            when (autonomousDisplayState) {
-                                FrcAutonomousDisplayState.COMPLETE -> "Auto complete"
-                                FrcAutonomousDisplayState.BLOCKED -> "Auto blocked"
-                                FrcAutonomousDisplayState.RUNNING -> "Auto running"
-                                FrcAutonomousDisplayState.INACTIVE -> "Run auto"
-                            },
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        }
                     }
                 }
 
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            recordingBusy = true
-                            recordingFailure = null
-                            try {
-                                if (recordingSession == null) {
-                                    val session = nt4Client.startRecordingSession(
-                                        teamId = teamId,
-                                        seasonId = seasonId,
-                                        robotId = robotId,
-                                        tags = listOf(SIMULATION_SESSION_TAG, "studio-experiment"),
-                                    )
-                                    recordingMessage = "Recording simulation run ${session.sessionId.take(8)}…"
-                                } else {
-                                    stopAndSaveRecording()
-                                }
-                            } catch (failure: Exception) {
-                                recordingFailure = failure.message ?: "Recording could not be changed."
-                            } finally {
-                                recordingBusy = false
+                val onToggleRecording: () -> Unit = {
+                    scope.launch {
+                        recordingBusy = true
+                        recordingFailure = null
+                        try {
+                            if (recordingSession == null) {
+                                val session = nt4Client.startRecordingSession(
+                                    teamId = teamId,
+                                    seasonId = seasonId,
+                                    robotId = robotId,
+                                    tags = listOf(SIMULATION_SESSION_TAG, "studio-experiment"),
+                                )
+                                recordingMessage = "Recording simulation run ${session.sessionId.take(8)}…"
+                            } else {
+                                stopAndSaveRecording()
                             }
+                        } catch (failure: Exception) {
+                            recordingFailure = failure.message ?: "Recording could not be changed."
+                        } finally {
+                            recordingBusy = false
                         }
-                    },
-                    enabled = isConnected && (isRunning || isAutonomousRunning) && !recordingBusy,
-                    modifier = Modifier.height(32.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (recordingSession != null) AresError else AresCyan,
-                    ),
-                    border = BorderStroke(1.dp, if (recordingSession != null) AresError else AresCyan),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 9.dp, vertical = 4.dp),
-                ) {
-                    if (recordingBusy) {
-                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(
-                            if (recordingSession == null) Icons.Default.FiberManualRecord else Icons.Default.Stop,
-                            contentDescription = if (recordingSession == null) "Record simulation run" else "Stop and save simulation run",
-                            modifier = Modifier.size(14.dp),
+                    }
+                }
+
+                val onStopClick: () -> Unit = {
+                    startJob?.cancel()
+                    startJob = null
+                    starting = false
+                    command = "STOP"
+                    keyboardDriveState.disarm()
+                    scope.launch {
+                        stopAndSaveRecording()
+                        nt4Client.publishString(
+                            if (isFtc) DRIVER_STATION_COMMAND_TOPIC else FRC_DRIVER_STATION_COMMAND_TOPIC,
+                            if (isFtc) "STOP" else FRC_DISABLE_COMMAND,
                         )
                     }
-                    Spacer(Modifier.width(4.dp))
-                    Text(if (recordingSession == null) "Record run" else "Stop & save", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
 
-                OutlinedButton(
-                    onClick = {
-                        startJob?.cancel()
-                        startJob = null
-                        starting = false
-                        command = "STOP"
-                        keyboardDriveState.disarm()
-                        scope.launch {
-                            stopAndSaveRecording()
-                            nt4Client.publishString(
-                                if (isFtc) DRIVER_STATION_COMMAND_TOPIC else FRC_DRIVER_STATION_COMMAND_TOPIC,
-                                if (isFtc) "STOP" else FRC_DISABLE_COMMAND,
-                            )
-                        }
-                    },
-                    enabled = isConnected,
-                    modifier = Modifier.height(32.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AresError),
-                    border = BorderStroke(1.dp, AresError),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Icon(
-                        Icons.Default.Stop,
-                        if (isFtc) "Stop simulated OpMode" else "Disable simulated FRC Driver Station",
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = {
+                SimulatorActionButtons(
+                    primaryAction = primaryAction,
+                    canLaunchSimulator = canLaunchSimulator,
+                    isFtc = isFtc,
+                    selectedOpMode = selectedOpMode,
+                    isFtcAutonomousSelection = isFtcAutonomousSelection,
+                    onPrimaryActionClick = onPrimaryActionClick,
+                    isConnected = isConnected,
+                    requestedAuto = requestedAuto,
+                    starting = starting,
+                    isAutonomousRunning = isAutonomousRunning,
+                    autonomousDisplayState = autonomousDisplayState,
+                    onRunFrcAutoClick = onRunFrcAutoClick,
+                    recordingSession = recordingSession,
+                    recordingBusy = recordingBusy,
+                    isRunning = isRunning,
+                    onToggleRecording = onToggleRecording,
+                    onStopClick = onStopClick,
+                    useGamepad = keyboardDriveState.useGamepad,
+                    onToggleGamepad = {
                         keyboardDriveState.releaseAll()
                         keyboardDriveState.useGamepad = !keyboardDriveState.useGamepad
                     },
-                    enabled = isRunning,
-                    modifier = Modifier.height(32.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AresTextPrimary),
-                    border = BorderStroke(1.dp, AresBorder),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Icon(
-                        if (keyboardDriveState.useGamepad) Icons.Default.Gamepad else Icons.Default.Keyboard,
-                        if (keyboardDriveState.useGamepad) "Use keyboard input" else "Use gamepad input",
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = {
+                    isKeyboardDriveArmed = keyboardDriveState.enabled,
+                    receiverReady = receiverReady,
+                    onToggleArmDrive = {
                         if (keyboardDriveState.enabled) keyboardDriveState.disarm()
                         else keyboardDriveState.enabled = true
                     },
-                    enabled = isRunning,
-                    modifier = Modifier.height(32.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (keyboardDriveState.enabled) AresGreen else AresTextPrimary,
-                    ),
-                    border = BorderStroke(1.dp, if (keyboardDriveState.enabled) AresGreen else AresBorder),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        when {
-                            !keyboardDriveState.enabled -> "Arm control"
-                            receiverReady -> "ARMED"
-                            else -> "RECONNECTING"
-                        },
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                )
             }
 
-            Text(
-                when {
-                    recordingFailure != null -> recordingFailure!!
-                    recordingSession != null -> recordingMessage ?: "Recording this simulation run. Stop and save before comparing."
-                    recordingMessage != null -> recordingMessage!!
-                    !isConnected && isLaunchPreparationRunning ->
-                        "Building and verifying the current robot project. The first launch can take about a minute; the simulator starts automatically when this finishes."
-                    !isConnected && isSimulatorProcessRunning -> "Simulator process started. Waiting for NT4 on 127.0.0.1:5810…"
-                    !isConnected && !canLaunchSimulator -> simulatorLaunchDisabledReason
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "Verify & build the current robot project before launching its simulator."
-                    !isConnected && launchRequiresVerification -> "Verify the current project, then launch its simulator automatically. No code is deployed."
-                    !isConnected -> "Launch the physics server here. When it connects, choose a TeleOp and Start driving."
-                    !isFtc && autonomousDisplayState == FrcAutonomousDisplayState.COMPLETE ->
-                        "${robotSelectedAuto.ifBlank { requestedAuto ?: "Generated autonomous" }} completed; outputs are neutral. Stop exits Autonomous mode."
-                    !isFtc && autonomousDisplayState == FrcAutonomousDisplayState.BLOCKED ->
-                        "${robotSelectedAuto.ifBlank { requestedAuto ?: "Generated autonomous" }} was blocked and outputs were neutralized. Stop, fix the reported cause, then retry."
-                    !isFtc && autonomousDisplayState == FrcAutonomousDisplayState.RUNNING ->
-                        "Running ${robotSelectedAuto.ifBlank { requestedAuto ?: "generated autonomous" }}. Stop returns every output to neutral."
-                    !isFtc && frcDriverStationState == FRC_WAITING_FOR_CONTROL_STATE ->
-                        "ARES is establishing a fresh neutral control lease before it enables the simulation-only Driver Station."
-                    !isFtc && keyboardDriveState.enabled ->
-                        "FRC TeleOp is enabled and field-centric control is armed: W drives toward the opposing station. Loopback only."
-                    !isFtc ->
-                        if (availableAutos.isEmpty()) {
-                            "Waiting for the robot's compiled autonomous catalog. Start driving enables TeleOp; no external WPILib window is required."
-                        } else {
-                            "Choose an autonomous above, then Run auto—or Start driving for TeleOp. No external WPILib window is required."
-                        }
-                    startFailure != null -> "$startFailure. Stop, confirm the selected TeleOp, and try again."
-                    !isRunning -> "Choose a TeleOp or Autonomous OpMode, then start it. The simulator can be online while no OpMode is running."
-                    isFtcAutonomousSelection -> "Running the selected FTC Autonomous OpMode. Stop returns every output to neutral."
-                    keyboardDriveState.enabled && !receiverReady ->
-                        "${simulatorDriveReceiverStatus(driveReceiverStatusCode)}. ARES is sending neutral frames to restore the safe control lease."
-                    keyboardDriveState.useGamepad -> "Move the sticks directly while armed. Dashboard drive frames are blocked for non-loopback targets."
-                    else -> "${activeOpModeDisplayName ?: selectedOpMode?.substringAfterLast('.')}: W drives toward the opposing station, A/D strafe, and ←/→ rotate. Loopback only."
-                },
-                color = when {
-                    recordingFailure != null -> AresError
-                    recordingSession != null -> AresAmber
-                    recordingMessage != null -> AresGreen
-                    isRunning && keyboardDriveState.enabled -> AresGreen
-                    else -> AresTextSecondary
-                },
-                fontSize = 10.sp,
-                lineHeight = 13.sp,
-                maxLines = 1,
+            LocalSimulatorStatusHint(
+                recordingFailure = recordingFailure,
+                recordingSession = recordingSession,
+                recordingMessage = recordingMessage,
+                isConnected = isConnected,
+                isLaunchPreparationRunning = isLaunchPreparationRunning,
+                isSimulatorProcessRunning = isSimulatorProcessRunning,
+                canLaunchSimulator = canLaunchSimulator,
+                simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
+                launchRequiresVerification = launchRequiresVerification,
+                isFtc = isFtc,
+                autonomousDisplayState = autonomousDisplayState,
+                robotSelectedAuto = robotSelectedAuto,
+                requestedAuto = requestedAuto,
+                availableAutos = availableAutos,
+                frcDriverStationState = frcDriverStationState,
+                isKeyboardDriveArmed = keyboardDriveState.enabled,
+                useGamepad = keyboardDriveState.useGamepad,
+                startFailure = startFailure,
+                isRunning = isRunning,
+                isFtcAutonomousSelection = isFtcAutonomousSelection,
+                receiverReady = receiverReady,
+                driveReceiverStatusCode = driveReceiverStatusCode,
+                activeOpModeDisplayName = activeOpModeDisplayName,
+                selectedOpMode = selectedOpMode,
             )
         }
     }
