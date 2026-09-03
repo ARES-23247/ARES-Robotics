@@ -3,13 +3,10 @@ package com.ares.analytics.ui.components.pathplanner
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.PointerButton
-import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
@@ -21,47 +18,6 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
-
-internal data class FieldCanvasGestureSelection(
-    val waypointIndex: Int = -1,
-    val obstacleId: String? = null,
-    val aprilTagId: String? = null,
-    val gamePieceId: String? = null,
-    val fieldWaypointId: String? = null,
-    val isDraggingHeading: Boolean = false,
-    val isDraggingPrevHeading: Boolean = false,
-    val isDraggingFieldWaypoint: Boolean = false,
-    val isDraggingFieldWaypointHeading: Boolean = false,
-)
-
-internal sealed interface FieldCanvasDragTarget {
-    data class Waypoint(val index: Int, val heading: Boolean, val previousHeading: Boolean) : FieldCanvasDragTarget
-    data class Obstacle(val id: String) : FieldCanvasDragTarget
-    data class AprilTag(val id: String) : FieldCanvasDragTarget
-    data class GamePiece(val id: String) : FieldCanvasDragTarget
-    data class FieldWaypoint(val id: String, val heading: Boolean, val position: Boolean) : FieldCanvasDragTarget
-}
-
-internal fun FieldCanvasGestureSelection.dragTarget(
-    waypointCount: Int,
-    obstacleControlsEnabled: Boolean,
-): FieldCanvasDragTarget? = when {
-    waypointIndex in 0 until waypointCount -> FieldCanvasDragTarget.Waypoint(
-        index = waypointIndex,
-        heading = isDraggingHeading,
-        previousHeading = isDraggingPrevHeading,
-    )
-    !obstacleControlsEnabled -> null
-    obstacleId != null -> FieldCanvasDragTarget.Obstacle(obstacleId)
-    aprilTagId != null -> FieldCanvasDragTarget.AprilTag(aprilTagId)
-    gamePieceId != null -> FieldCanvasDragTarget.GamePiece(gamePieceId)
-    fieldWaypointId != null -> FieldCanvasDragTarget.FieldWaypoint(
-        id = fieldWaypointId,
-        heading = isDraggingFieldWaypointHeading,
-        position = isDraggingFieldWaypoint,
-    )
-    else -> null
-}
 
 /**
  * Encapsulates pointer gestures, drag tracking, tool-mode placement, and context menu hit-testing
@@ -513,83 +469,19 @@ internal fun Modifier.fieldCanvasGestures(
             onSelectionChanged(-1, null, null, null, null, false, false, false, false)
         }
     }
-    .pointerInput(Unit) {
-        detectTapGestures(
-            onDoubleTap = { offset ->
-                val w = size.width.toFloat()
-                val h = size.height.toFloat()
-                if (editorMode == EditorMode.SELECT) {
-                    val clickCoord = getRobotCoordFromScreen(offset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
-                    val hitObs = currentActiveObstacles.find { obs ->
-                        when (obs) {
-                            is Obstacle.Circle -> sqrt((clickCoord.x - obs.centerX).pow(2) + (clickCoord.y - obs.centerY).pow(2)) <= obs.radius
-                            is Obstacle.Rectangle -> {
-                                val dx = clickCoord.x - obs.centerX
-                                val dy = clickCoord.y - obs.centerY
-                                val rad = Math.toRadians(-obs.rotation)
-                                kotlin.math.abs(dx * cos(rad) - dy * sin(rad)) <= obs.width / 2.0 && kotlin.math.abs(dx * sin(rad) + dy * cos(rad)) <= obs.height / 2.0
-                            }
-                            is Obstacle.Polygon -> obs.vertices.any { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.3 }
-                        }
-                    }
-                    if (hitObs != null) {
-                        onItemDoubleTapped?.invoke(hitObs.id, "Obstacle")
-                    } else {
-                        val hitAt = currentActiveAprilTags.find { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.3 }
-                        if (hitAt != null) onItemDoubleTapped?.invoke(hitAt.id, "AprilTag")
-                    }
-                }
-            }
-        )
-    }
-    .pointerInput(Unit) {
-        awaitPointerEventScope {
-            while (true) {
-                val event = awaitPointerEvent()
-                if (event.type == PointerEventType.Press && event.button == PointerButton.Secondary) {
-                    val offset = event.changes.first().position
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    val hitWpIdx = currentWaypoints.indexOfFirst {
-                        sqrt((offset.x - getTransformedCanvasOffset(it, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation).x).pow(2) + (offset.y - getTransformedCanvasOffset(it, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation).y).pow(2)) < 20.dp.toPx()
-                    }
-                    if (hitWpIdx != -1) {
-                        onOpenContextMenu(offset, "Waypoint", hitWpIdx, null)
-                        continue
-                    }
-                    val clickCoord = getRobotCoordFromScreen(offset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
-                    val hitObs = currentActiveObstacles.find { obs ->
-                        when (obs) {
-                            is Obstacle.Circle -> sqrt((clickCoord.x - obs.centerX).pow(2) + (clickCoord.y - obs.centerY).pow(2)) <= obs.radius
-                            is Obstacle.Rectangle -> {
-                                val dx = clickCoord.x - obs.centerX
-                                val dy = clickCoord.y - obs.centerY
-                                val rad = Math.toRadians(-obs.rotation)
-                                kotlin.math.abs(dx * cos(rad) - dy * sin(rad)) <= obs.width / 2.0 && kotlin.math.abs(dx * sin(rad) + dy * cos(rad)) <= obs.height / 2.0
-                            }
-                            is Obstacle.Polygon -> obs.vertices.any { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.3 }
-                        }
-                    }
-                    if (hitObs != null) {
-                        onOpenContextMenu(offset, "Obstacle", -1, hitObs.id)
-                        continue
-                    }
-                    val hitAt = currentActiveAprilTags.find { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.3 }
-                    if (hitAt != null) {
-                        onOpenContextMenu(offset, "AprilTag", -1, hitAt.id)
-                        continue
-                    }
-                    val hitGp = currentActiveGamePieces.find { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.2 }
-                    if (hitGp != null) {
-                        onOpenContextMenu(offset, "GamePiece", -1, hitGp.id)
-                        continue
-                    }
-                    val hitFwp = currentActiveFieldWaypoints.find { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.3 }
-                    if (hitFwp != null) {
-                        onOpenContextMenu(offset, "FieldWaypoint", -1, hitFwp.id)
-                        continue
-                    }
-                }
-            }
-        }
-    }
+    .fieldCanvasItemGestures(
+        editorMode = editorMode,
+        zoomScale = zoomScale,
+        panOffset = panOffset,
+        viewRotation = viewRotation,
+        fieldWidthM = fieldWidthM,
+        fieldHeightM = fieldHeightM,
+        league = league,
+        currentWaypoints = currentWaypoints,
+        currentActiveObstacles = currentActiveObstacles,
+        currentActiveGamePieces = currentActiveGamePieces,
+        currentActiveAprilTags = currentActiveAprilTags,
+        currentActiveFieldWaypoints = currentActiveFieldWaypoints,
+        onItemDoubleTapped = onItemDoubleTapped,
+        onOpenContextMenu = onOpenContextMenu,
+    )
