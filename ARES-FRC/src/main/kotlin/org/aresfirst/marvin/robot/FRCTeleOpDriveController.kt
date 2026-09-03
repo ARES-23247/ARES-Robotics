@@ -212,17 +212,18 @@ class FRCTeleOpDriveController(
                 if (currentFlywheelActive != targetFlywheelActive) {
                     robot.store.dispatch(SetFlywheelActive(targetFlywheelActive, com.areslib.util.RobotClock.currentTimeMillis()))
                 }
-                if (targetFlywheelActive) {
-                    if (marvin.flywheel.targetVelocityRpm != targetFlywheelSpeed) {
+                when {
+                    targetFlywheelActive && marvin.flywheel.targetVelocityRpm != targetFlywheelSpeed -> {
                         robot.store.dispatch(SetFlywheelSpeed(targetFlywheelSpeed))
                     }
-                    if (marvin.cowl.targetAngleRotations != targetCowlAngle) {
-                        robot.store.dispatch(SetCowlAngle(targetCowlAngle))
+                    !targetFlywheelActive && marvin.flywheel.targetVelocityRpm != 0.0 -> {
+                        // Releasing the spin-up buttons must zero the target, otherwise the
+                        // flywheel keeps spinning at the last commanded RPM indefinitely.
+                        robot.store.dispatch(SetFlywheelSpeed(0.0))
                     }
-                } else if (marvin.flywheel.targetVelocityRpm != 0.0) {
-                    // Releasing the spin-up buttons must zero the target, otherwise the
-                    // flywheel keeps spinning at the last commanded RPM indefinitely.
-                    robot.store.dispatch(SetFlywheelSpeed(0.0))
+                }
+                if (targetFlywheelActive && marvin.cowl.targetAngleRotations != targetCowlAngle) {
+                    robot.store.dispatch(SetCowlAngle(targetCowlAngle))
                 }
             }
 

@@ -38,6 +38,7 @@ class PIDController(
     
     private var filteredDerivative: Double = 0.0
     private val derivativeAlpha: Double = 0.2
+    private val derivativeRetention: Double = 1.0 - derivativeAlpha
     
     private var isContinuous: Boolean = false
     private var continuousMin: Double = 0.0
@@ -148,7 +149,7 @@ class PIDController(
         var error = setpoint - measurement
 
         if (isContinuous) {
-            val errorBound = (continuousMax - continuousMin) / 2.0
+            val errorBound = (continuousMax - continuousMin) * 0.5
             error = inputModulus(error, -errorBound, errorBound)
         }
 
@@ -164,7 +165,7 @@ class PIDController(
         }
 
         val measurementDerivative = if (isFirstStep) 0.0 else (measurement - prevMeasurement) / dtSeconds
-        filteredDerivative = derivativeAlpha * measurementDerivative + (1.0 - derivativeAlpha) * filteredDerivative
+        filteredDerivative = derivativeAlpha * measurementDerivative + derivativeRetention * filteredDerivative
         
         isFirstStep = false
         prevMeasurement = measurement
@@ -179,11 +180,12 @@ class PIDController(
         val isSaturated = (!maxOutput.isNaN() && preSatOutput > maxOutput && error > 0) || 
                           (!minOutput.isNaN() && preSatOutput < minOutput && error < 0)
                           
-        if (!isSaturated) {
+        var output = if (!isSaturated) {
             totalError = clampedIntegral
+            preSatOutput
+        } else {
+            p * error + i * totalError - d * filteredDerivative
         }
-
-        var output = p * error + i * totalError - d * filteredDerivative
         
         if (!minOutput.isNaN()) { output = kotlin.math.max(output, minOutput) }
         if (!maxOutput.isNaN()) { output = kotlin.math.min(output, maxOutput) }

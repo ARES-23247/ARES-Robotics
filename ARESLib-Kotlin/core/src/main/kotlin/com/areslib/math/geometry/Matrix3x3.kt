@@ -127,24 +127,26 @@ data class Matrix3x3(
      * @return Inverted [Matrix3x3] (returns zero matrix if determinant is non-invertible/near-zero).
      */
     fun inverse(): Matrix3x3 {
-        val det = m00 * (m11 * m22 - m12 * m21) -
-                  m01 * (m10 * m22 - m12 * m20) +
-                  m02 * (m10 * m21 - m11 * m20)
+        val c00 = m11 * m22 - m12 * m21
+        val c01 = m10 * m22 - m12 * m20
+        val c02 = m10 * m21 - m11 * m20
 
-        if (det.isNaN() || det.isInfinite() || kotlin.math.abs(det) < 1e-24) return Matrix3x3() // Return zero matrix if non-invertible
+        val det = m00 * c00 - m01 * c01 + m02 * c02
+
+        if (!det.isFinite() || kotlin.math.abs(det) < 1e-24) return Matrix3x3()
 
         val invDet = 1.0 / det
 
         return Matrix3x3(
-             (m11 * m22 - m12 * m21) * invDet,
+             c00 * invDet,
             -(m01 * m22 - m02 * m21) * invDet,
              (m01 * m12 - m02 * m11) * invDet,
             
-            -(m10 * m22 - m12 * m20) * invDet,
+            -c01 * invDet,
              (m00 * m22 - m02 * m20) * invDet,
             -(m00 * m12 - m02 * m10) * invDet,
             
-             (m10 * m21 - m11 * m20) * invDet,
+             c02 * invDet,
             -(m00 * m21 - m01 * m20) * invDet,
              (m00 * m11 - m01 * m10) * invDet
         )

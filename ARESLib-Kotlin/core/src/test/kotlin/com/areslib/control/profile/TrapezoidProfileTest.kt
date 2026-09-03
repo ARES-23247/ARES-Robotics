@@ -274,4 +274,30 @@ class TrapezoidProfileTest {
         assertEquals(goal.position, outState.position, 1e-4)
         assertEquals(goal.velocity, outState.velocity, 1e-4)
     }
+
+    @Test
+    fun `test trapezoid profile exercises acceleration cruise and deceleration phases`() {
+        val profile = TrapezoidProfile()
+        val constraints = TrapezoidProfile.Constraints(maxVelocity = 2.0, maxAcceleration = 4.0)
+        val start = TrapezoidProfile.State(position = 0.0, velocity = 0.0)
+        val goal = TrapezoidProfile.State(position = 10.0, velocity = 0.0)
+        val outState = TrapezoidProfile.State()
+
+        val dt = 0.01
+        var current = start
+        var reachedCruise = false
+
+        for (step in 0..600) {
+            profile.calculate(dt, current, goal, constraints, outState)
+            if (kotlin.math.abs(outState.velocity - constraints.maxVelocity) < 1e-3) {
+                reachedCruise = true
+            }
+            assertTrue(outState.velocity <= constraints.maxVelocity + 1e-9)
+            current = TrapezoidProfile.State(outState.position, outState.velocity)
+        }
+
+        assertTrue(reachedCruise, "Profile should have reached full cruise velocity")
+        assertEquals(goal.position, outState.position, 1e-4)
+        assertEquals(goal.velocity, outState.velocity, 1e-4)
+    }
 }

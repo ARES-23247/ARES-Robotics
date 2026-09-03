@@ -97,4 +97,19 @@ class LinearADRCTest {
         assertTrue(adrc.xHat2 > 0.0, "xHat2 should estimate positive disturbance: ${adrc.xHat2}")
         assertTrue(kotlin.math.abs(plantState - target) < 0.2, "Plant state $plantState should converge near target $target")
     }
+
+    @Test
+    fun `dynamic gain retuning updates internal cached gains accurately`() {
+        val adrc = LinearADRC(b0 = 1.0, omegaC = 5.0, omegaO = 20.0)
+        adrc.reset(0.0)
+
+        // Retune properties dynamically
+        adrc.b0 = 2.5
+        adrc.omegaC = 12.0
+        adrc.omegaO = 40.0
+
+        val u = adrc.calculate(1.0, 0.0, 0.01)
+        // Expected u0 = 12.0 * 1.0 = 12.0. xHat2 = 0.0. uUnsat = 12.0 / 2.5 = 4.8
+        assertEquals(4.8, u, 1e-6)
+    }
 }

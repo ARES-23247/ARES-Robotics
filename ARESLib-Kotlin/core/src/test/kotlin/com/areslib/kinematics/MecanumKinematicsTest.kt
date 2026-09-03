@@ -70,6 +70,23 @@ class MecanumKinematicsTest {
     }
 
     @Test
+    fun `primitive inverse and optimized forward kinematics round trip mixed motion`() {
+        val wheels = DoubleArray(4)
+        kinematics.toWheelSpeeds(vx = 1.25, vy = -0.4, omega = 0.75, outSpeeds = wheels)
+
+        val chassis = kinematics.toChassisSpeeds(
+            fl = wheels[0],
+            fr = wheels[1],
+            bl = wheels[2],
+            br = wheels[3],
+        )
+
+        assertEquals(1.25, chassis.vxMetersPerSecond, 1e-12)
+        assertEquals(-0.4, chassis.vyMetersPerSecond, 1e-12)
+        assertEquals(0.75, chassis.omegaRadiansPerSecond, 1e-12)
+    }
+
+    @Test
     fun `wheel speeds within limit are not scaled down by normalize`() {
         val wheels = MecanumWheelSpeeds(0.5, -0.4, 0.3, -0.2)
         val normalized = wheels.normalize(1.0)

@@ -111,24 +111,27 @@ class TrapezoidProfile {
             return
         }
 
+        val invMaxA = 1.0 / maxA
+        val invMaxV = 1.0 / maxV
+
         var currentPosition = currentLocal.position * direction
         var currentVelocity = currentLocal.velocity * direction
         var goalPosition = goalLocal.position * direction
         var goalVelocity = goalLocal.velocity * direction
-        var cutoffBegin = currentVelocity / maxA
-        var cutoffDistBegin = cutoffBegin * cutoffBegin * maxA * 0.5
-        var cutoffEnd = goalVelocity / maxA
-        var cutoffDistEnd = cutoffEnd * cutoffEnd * maxA * 0.5
+        var cutoffBegin = currentVelocity * invMaxA
+        var cutoffDistBegin = 0.5 * currentVelocity * cutoffBegin
+        var cutoffEnd = goalVelocity * invMaxA
+        var cutoffDistEnd = 0.5 * goalVelocity * cutoffEnd
         var fullTrapezoidDist = cutoffDistBegin + (goalPosition - currentPosition) + cutoffDistEnd
         if (!fullTrapezoidDist.isFinite() || fullTrapezoidDist < 0.0) {
             outState.setTo(currentLocal)
             return
         }
 
-        var accelerationTime = maxV / maxA
-        var fullSpeedDist = fullTrapezoidDist - accelerationTime * accelerationTime * maxA
+        var accelerationTime = maxV * invMaxA
+        var fullSpeedDist = fullTrapezoidDist - accelerationTime * maxV
         if (fullSpeedDist < 0.0) {
-            accelerationTime = sqrt(fullTrapezoidDist / maxA)
+            accelerationTime = sqrt(fullTrapezoidDist * invMaxA)
             fullSpeedDist = 0.0
         }
 
@@ -141,25 +144,25 @@ class TrapezoidProfile {
             currentVelocity = currentLocal.velocity * direction
             goalPosition = goalLocal.position * direction
             goalVelocity = goalLocal.velocity * direction
-            cutoffBegin = currentVelocity / maxA
-            cutoffDistBegin = cutoffBegin * cutoffBegin * maxA * 0.5
-            cutoffEnd = goalVelocity / maxA
-            cutoffDistEnd = cutoffEnd * cutoffEnd * maxA * 0.5
+            cutoffBegin = currentVelocity * invMaxA
+            cutoffDistBegin = 0.5 * currentVelocity * cutoffBegin
+            cutoffEnd = goalVelocity * invMaxA
+            cutoffDistEnd = 0.5 * goalVelocity * cutoffEnd
             fullTrapezoidDist = cutoffDistBegin + (goalPosition - currentPosition) + cutoffDistEnd
             if (!fullTrapezoidDist.isFinite() || fullTrapezoidDist < 0.0) {
                 outState.setTo(currentLocal)
                 return
             }
-            accelerationTime = maxV / maxA
-            fullSpeedDist = fullTrapezoidDist - accelerationTime * accelerationTime * maxA
+            accelerationTime = maxV * invMaxA
+            fullSpeedDist = fullTrapezoidDist - accelerationTime * maxV
             if (fullSpeedDist < 0.0) {
-                accelerationTime = sqrt(fullTrapezoidDist / maxA)
+                accelerationTime = sqrt(fullTrapezoidDist * invMaxA)
                 fullSpeedDist = 0.0
             }
         }
 
         val endAccel = accelerationTime - cutoffBegin
-        val endFullSpeed = endAccel + fullSpeedDist / maxV
+        val endFullSpeed = endAccel + fullSpeedDist * invMaxV
         val endDecel = endFullSpeed + accelerationTime - cutoffEnd
 
         val newPosition: Double
