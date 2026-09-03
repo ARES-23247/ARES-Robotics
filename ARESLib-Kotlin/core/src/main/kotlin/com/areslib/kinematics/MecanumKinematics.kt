@@ -42,6 +42,8 @@ class MecanumKinematics(
     /** The effective rotational moment arm constant $k = \frac{W}{2} + \frac{L}{2}$ in meters ($m$). */
     val k: Double = (trackWidthMeters / 2.0) + (wheelBaseMeters / 2.0)
 
+    private val invFourK: Double = if (k > 0.0) 1.0 / (4.0 * k) else 0.0
+
     /**
      * Calculates individual wheel surface speeds from robot-centric [ChassisSpeeds].
      *
@@ -72,10 +74,9 @@ class MecanumKinematics(
      * @return Calculated robot-frame [ChassisSpeeds] velocity vector $[v_x, v_y, \omega]^T$ (m/s, rad/s).
      */
     fun toChassisSpeeds(fl: Double, fr: Double, bl: Double, br: Double): ChassisSpeeds {
-        val vx = (fl + fr + bl + br) / 4.0
-        val vy = (-fl + fr + bl - br) / 4.0
-        val denom = 4.0 * k
-        val omega = if (k > 0.0 && denom > 0.0) (-fl + fr - bl + br) / denom else 0.0
+        val vx = (fl + fr + bl + br) * 0.25
+        val vy = (-fl + fr + bl - br) * 0.25
+        val omega = (-fl + fr - bl + br) * invFourK
         return ChassisSpeeds(vx, vy, omega)
     }
 
@@ -114,13 +115,11 @@ class MecanumKinematics(
                 return
             }
 
-            var maxMagnitude = 0.0
-            for (i in 0..3) {
-                val absSpeed = kotlin.math.abs(speeds[i])
-                if (absSpeed > maxMagnitude) {
-                    maxMagnitude = absSpeed
-                }
-            }
+            val m0 = kotlin.math.abs(speeds[0])
+            val m1 = kotlin.math.abs(speeds[1])
+            val m2 = kotlin.math.abs(speeds[2])
+            val m3 = kotlin.math.abs(speeds[3])
+            val maxMagnitude = kotlin.math.max(kotlin.math.max(m0, m1), kotlin.math.max(m2, m3))
 
             if (maxMagnitude > maxSpeedMetersPerSecond) {
                 val scale = maxSpeedMetersPerSecond / maxMagnitude
