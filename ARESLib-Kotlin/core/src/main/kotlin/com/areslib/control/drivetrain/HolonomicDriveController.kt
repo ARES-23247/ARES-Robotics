@@ -58,6 +58,7 @@ class HolonomicDriveController(
     private val yAdrc: LinearADRC? = null,
     private val thetaAdrc: LinearADRC? = null
 ) {
+    private val maxOutputMpsSq: Double = maxOutputMps * maxOutputMps
 
     init {
         thetaController.enableContinuousInput(-Math.PI, Math.PI)
@@ -151,7 +152,10 @@ class HolonomicDriveController(
             }
         }
 
-        val lateralError = xError * kotlin.math.sin(pathTangent) - yError * kotlin.math.cos(pathTangent)
+        val cosTangent = cos(pathTangent)
+        val sinTangent = sin(pathTangent)
+
+        val lateralError = xError * sinTangent - yError * cosTangent
 
         var angularError = targetHeadingRad - currentHeadingRad
         angularError = com.areslib.math.wrapAngle(angularError)
@@ -184,8 +188,8 @@ class HolonomicDriveController(
             targetVelocityMps
         }
 
-        val xFF = limitedVelocity * cos(pathTangent)
-        val yFF = limitedVelocity * sin(pathTangent)
+        val xFF = limitedVelocity * cosTangent
+        val yFF = limitedVelocity * sinTangent
 
         val fieldRelativeX = xFF + xFeedback
         val fieldRelativeY = yFF + yFeedback
@@ -196,9 +200,9 @@ class HolonomicDriveController(
         var vxRobot = fieldRelativeX * cosHeading + fieldRelativeY * sinHeading
         var vyRobot = -fieldRelativeX * sinHeading + fieldRelativeY * cosHeading
 
-        val mag = kotlin.math.hypot(vxRobot, vyRobot)
-        if (mag > maxOutputMps) {
-            val scale = maxOutputMps / mag
+        val magSq = vxRobot * vxRobot + vyRobot * vyRobot
+        if (magSq > maxOutputMpsSq) {
+            val scale = maxOutputMps / kotlin.math.sqrt(magSq)
             vxRobot *= scale
             vyRobot *= scale
         }
