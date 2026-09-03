@@ -30,10 +30,34 @@ import kotlin.math.abs
  * @property omegaO Extended state observer bandwidth in radians per second ($rad/s$).
  */
 class LinearADRC(
-    var b0: Double,
-    var omegaC: Double,
-    var omegaO: Double
+    b0: Double,
+    omegaC: Double,
+    omegaO: Double
 ) {
+    var b0: Double = b0
+        set(value) {
+            field = value
+            invB0 = if (abs(value) > 1e-9) 1.0 / value else 0.0
+        }
+
+    var omegaC: Double = omegaC
+        set(value) {
+            field = value
+            kp = value
+        }
+
+    var omegaO: Double = omegaO
+        set(value) {
+            field = value
+            l1 = 2.0 * value
+            l2 = value * value
+        }
+
+    private var invB0: Double = if (abs(b0) > 1e-9) 1.0 / b0 else 0.0
+    private var kp: Double = omegaC
+    private var l1: Double = 2.0 * omegaO
+    private var l2: Double = omegaO * omegaO
+
     /** Estimated system state $\hat{x}_1$ (position or velocity). */
     var xHat1: Double = 0.0
 
@@ -114,21 +138,12 @@ class LinearADRC(
             }
         }
 
-        val l1 = 2.0 * omegaO
-        val l2 = omegaO * omegaO
-
         val observerError = actualMeasurement - xHat1
 
         xHat1 += (xHat2 + b0 * uPrev + l1 * observerError) * dtSeconds
         
-        val kp = omegaC
         val u0 = kp * (actualTarget - xHat1)
-
-        val uUnsat = if (abs(b0) > 1e-9) {
-            (u0 - xHat2) / b0
-        } else {
-            0.0
-        }
+        val uUnsat = (u0 - xHat2) * invB0
 
         val u = when {
             !minOutput.isNaN() && uUnsat < minOutput -> minOutput
@@ -137,8 +152,7 @@ class LinearADRC(
         }
 
         val isSaturated = u != uUnsat
-        val sameSign = kotlin.math.sign(observerError) == kotlin.math.sign(u - uUnsat)
-        if (!(isSaturated && sameSign)) {
+        if (!isSaturated || kotlin.math.sign(observerError) != kotlin.math.sign(u - uUnsat)) {
             xHat2 += (l2 * observerError) * dtSeconds
         }
 
