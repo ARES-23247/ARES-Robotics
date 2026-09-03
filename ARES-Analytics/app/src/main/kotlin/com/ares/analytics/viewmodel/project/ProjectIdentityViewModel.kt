@@ -31,15 +31,8 @@ import java.io.File
 import java.util.Locale
 
 enum class ProjectIdentityField {
-    PROJECT_ID,
-    TEAM_ID,
-    SEASON_ID,
-    ROBOT_ID,
-    DISPLAY_NAME,
-    ROBOT_LENGTH,
-    ROBOT_WIDTH,
-    FIELD_LENGTH,
-    FIELD_WIDTH,
+    PROJECT_ID, TEAM_ID, SEASON_ID, ROBOT_ID, DISPLAY_NAME,
+    ROBOT_LENGTH, ROBOT_WIDTH, FIELD_LENGTH, FIELD_WIDTH,
 }
 
 data class ProjectIdentityDraft(

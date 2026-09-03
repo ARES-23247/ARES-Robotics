@@ -28,6 +28,7 @@ dependencies {
         api(project(":ftc-hardware"))
         api(project(":frc-runtime"))
         api(project(":frc-hardware"))
+        api(project(":xrp-hardware"))
         api(project(":simulator"))
         api(project(":simulator-runtime-windows"))
         api(project(":simulator-runtime-linux"))

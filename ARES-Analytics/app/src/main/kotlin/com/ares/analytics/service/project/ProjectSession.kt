@@ -43,16 +43,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class ProjectSessionPhase { EMPTY, LOADING, READY, ERROR }
 
-data class ProjectSessionSelection(
-    val projectRoot: String,
-    val targetPlatform: ControllerInputPlatform,
-)
-
-data class ProjectSessionRevision(
-    val sequence: Long,
-    val canonicalContentSha256: String,
-)
-
+data class ProjectSessionSelection(val projectRoot: String, val targetPlatform: ControllerInputPlatform)
+data class ProjectSessionRevision(val sequence: Long, val canonicalContentSha256: String)
 data class ProjectSessionSnapshot(
     val selection: ProjectSessionSelection,
     val revision: ProjectSessionRevision,

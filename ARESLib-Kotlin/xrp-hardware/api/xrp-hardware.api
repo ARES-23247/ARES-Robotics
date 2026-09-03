@@ -1,0 +1,185 @@
+public class com/areslib/xrp/hardware/StandardXrpDifferentialHardwareIO : com/areslib/xrp/hardware/XrpDifferentialHardwareIO {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;DD)V
+	public synthetic fun <init> (Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun drive (Lcom/areslib/math/geometry/ChassisSpeeds;D)V
+	public fun getKinematics ()Lcom/areslib/kinematics/DifferentialDriveKinematics;
+	public fun getLeftMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getRightMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getWheelDistances ()Lkotlin/Pair;
+	public fun getWheelRadiusMeters ()D
+	public fun setPowers (DD)V
+	public fun stop ()V
+	public fun update ()V
+}
+
+public class com/areslib/xrp/hardware/StandardXrpMecanumHardwareIO : com/areslib/xrp/hardware/XrpMecanumHardwareIO {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;DDD)V
+	public synthetic fun <init> (Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;Lcom/areslib/xrp/hardware/XrpMotorIO;DDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun drive (Lcom/areslib/math/geometry/ChassisSpeeds;D)V
+	public fun getBackLeftMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getBackRightMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getFrontLeftMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getFrontRightMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getKinematics ()Lcom/areslib/kinematics/MecanumKinematics;
+	public fun getWheelRadiusMeters ()D
+	public fun setPowers (DDDD)V
+	public fun stop ()V
+	public fun update ()V
+}
+
+public abstract interface class com/areslib/xrp/hardware/XrpDifferentialHardwareIO {
+	public fun drive (Lcom/areslib/math/geometry/ChassisSpeeds;D)V
+	public static synthetic fun drive$default (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;Lcom/areslib/math/geometry/ChassisSpeeds;DILjava/lang/Object;)V
+	public abstract fun getKinematics ()Lcom/areslib/kinematics/DifferentialDriveKinematics;
+	public abstract fun getLeftMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public abstract fun getRightMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public fun getWheelDistances ()Lkotlin/Pair;
+	public abstract fun getWheelRadiusMeters ()D
+	public fun setPowers (DD)V
+	public fun stop ()V
+	public fun update ()V
+}
+
+public final class com/areslib/xrp/hardware/XrpDifferentialHardwareIO$DefaultImpls {
+	public static fun drive (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;Lcom/areslib/math/geometry/ChassisSpeeds;D)V
+	public static synthetic fun drive$default (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;Lcom/areslib/math/geometry/ChassisSpeeds;DILjava/lang/Object;)V
+	public static fun getWheelDistances (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;)Lkotlin/Pair;
+	public static fun setPowers (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;DD)V
+	public static fun stop (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;)V
+	public static fun update (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;)V
+}
+
+public class com/areslib/xrp/hardware/XrpLineSensorDouble : com/areslib/xrp/hardware/XrpLineSensorIO {
+	public fun <init> ()V
+	public fun <init> (DD)V
+	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getLeftReflectance ()D
+	public fun getRightReflectance ()D
+	public fun isLeftOnLine ()Z
+	public fun isRightOnLine ()Z
+	public fun setLeftReflectance (D)V
+	public fun setRightReflectance (D)V
+	public fun update ()V
+}
+
+public abstract interface class com/areslib/xrp/hardware/XrpLineSensorIO {
+	public abstract fun getLeftReflectance ()D
+	public abstract fun getRightReflectance ()D
+	public fun isLeftOnLine ()Z
+	public fun isRightOnLine ()Z
+	public abstract fun update ()V
+}
+
+public final class com/areslib/xrp/hardware/XrpLineSensorIO$DefaultImpls {
+	public static fun isLeftOnLine (Lcom/areslib/xrp/hardware/XrpLineSensorIO;)Z
+	public static fun isRightOnLine (Lcom/areslib/xrp/hardware/XrpLineSensorIO;)Z
+}
+
+public abstract interface class com/areslib/xrp/hardware/XrpMecanumHardwareIO {
+	public fun drive (Lcom/areslib/math/geometry/ChassisSpeeds;D)V
+	public static synthetic fun drive$default (Lcom/areslib/xrp/hardware/XrpMecanumHardwareIO;Lcom/areslib/math/geometry/ChassisSpeeds;DILjava/lang/Object;)V
+	public abstract fun getBackLeftMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public abstract fun getBackRightMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public abstract fun getFrontLeftMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public abstract fun getFrontRightMotor ()Lcom/areslib/xrp/hardware/XrpMotorIO;
+	public abstract fun getKinematics ()Lcom/areslib/kinematics/MecanumKinematics;
+	public abstract fun getWheelRadiusMeters ()D
+	public fun setPowers (DDDD)V
+	public fun stop ()V
+	public fun update ()V
+}
+
+public final class com/areslib/xrp/hardware/XrpMecanumHardwareIO$DefaultImpls {
+	public static fun drive (Lcom/areslib/xrp/hardware/XrpMecanumHardwareIO;Lcom/areslib/math/geometry/ChassisSpeeds;D)V
+	public static synthetic fun drive$default (Lcom/areslib/xrp/hardware/XrpMecanumHardwareIO;Lcom/areslib/math/geometry/ChassisSpeeds;DILjava/lang/Object;)V
+	public static fun setPowers (Lcom/areslib/xrp/hardware/XrpMecanumHardwareIO;DDDD)V
+	public static fun stop (Lcom/areslib/xrp/hardware/XrpMecanumHardwareIO;)V
+	public static fun update (Lcom/areslib/xrp/hardware/XrpMecanumHardwareIO;)V
+}
+
+public class com/areslib/xrp/hardware/XrpMotorDouble : com/areslib/xrp/hardware/XrpMotorIO {
+	public fun <init> (I)V
+	public fun getChannel ()I
+	public fun getEffort ()D
+	public fun getPositionRadians ()D
+	public fun getVelocityRadiansPerSecond ()D
+	public fun setEffort (D)V
+	public fun setPositionRadians (D)V
+	public fun setVelocityRadiansPerSecond (D)V
+	public fun stop ()V
+	public fun update ()V
+}
+
+public abstract interface class com/areslib/xrp/hardware/XrpMotorIO {
+	public abstract fun getChannel ()I
+	public abstract fun getEffort ()D
+	public abstract fun getPositionRadians ()D
+	public abstract fun getVelocityRadiansPerSecond ()D
+	public abstract fun setEffort (D)V
+	public abstract fun stop ()V
+	public abstract fun update ()V
+}
+
+public class com/areslib/xrp/hardware/XrpServoDouble : com/areslib/xrp/hardware/XrpServoIO {
+	public fun <init> (I)V
+	public fun getChannel ()I
+	public fun getPositionNormalized ()D
+	public fun setPositionNormalized (D)V
+	public fun update ()V
+}
+
+public abstract interface class com/areslib/xrp/hardware/XrpServoIO {
+	public abstract fun getChannel ()I
+	public abstract fun getPositionNormalized ()D
+	public abstract fun setPositionNormalized (D)V
+	public abstract fun update ()V
+}
+
+public class com/areslib/xrp/hardware/XrpUltrasonicDouble : com/areslib/xrp/hardware/XrpUltrasonicIO {
+	public fun <init> ()V
+	public fun <init> (D)V
+	public synthetic fun <init> (DILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getDistanceMeters ()D
+	public fun setDistanceMeters (D)V
+	public fun update ()V
+}
+
+public abstract interface class com/areslib/xrp/hardware/XrpUltrasonicIO {
+	public abstract fun getDistanceMeters ()D
+	public abstract fun update ()V
+}
+
+public class com/areslib/xrp/robot/XrpBaseRobot {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;Lcom/areslib/xrp/hardware/XrpUltrasonicIO;Lcom/areslib/xrp/hardware/XrpLineSensorIO;)V
+	public synthetic fun <init> (Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;Lcom/areslib/xrp/hardware/XrpUltrasonicIO;Lcom/areslib/xrp/hardware/XrpLineSensorIO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBatteryVoltage ()D
+	public final fun getCurrentPose ()Lcom/areslib/math/geometry/Pose2d;
+	public final fun getDrivetrain ()Lcom/areslib/xrp/hardware/XrpDifferentialHardwareIO;
+	public final fun getLineSensor ()Lcom/areslib/xrp/hardware/XrpLineSensorIO;
+	public final fun getMode ()Lcom/areslib/xrp/robot/XrpRobotMode;
+	public final fun getUltrasonic ()Lcom/areslib/xrp/hardware/XrpUltrasonicIO;
+	public fun onInit ()V
+	public fun onStartAuto ()V
+	public fun onStartTeleop ()V
+	public fun onStop ()V
+	public fun periodic (D)V
+	public static synthetic fun periodic$default (Lcom/areslib/xrp/robot/XrpBaseRobot;DILjava/lang/Object;)V
+	public final fun resetPose (DDD)V
+	protected final fun setBatteryVoltage (D)V
+	protected final fun setCurrentPose (Lcom/areslib/math/geometry/Pose2d;)V
+	protected final fun setMode (Lcom/areslib/xrp/robot/XrpRobotMode;)V
+}
+
+public final class com/areslib/xrp/robot/XrpRobotMode : java/lang/Enum {
+	public static final field AUTO Lcom/areslib/xrp/robot/XrpRobotMode;
+	public static final field DISABLED Lcom/areslib/xrp/robot/XrpRobotMode;
+	public static final field INIT Lcom/areslib/xrp/robot/XrpRobotMode;
+	public static final field TELEOP Lcom/areslib/xrp/robot/XrpRobotMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/xrp/robot/XrpRobotMode;
+	public static fun values ()[Lcom/areslib/xrp/robot/XrpRobotMode;
+}
+

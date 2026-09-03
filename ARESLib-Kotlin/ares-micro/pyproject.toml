@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ares-micro"
+version = "15.0.4"
+description = "ARES Robotics MicroPython Runtime for Raspberry Pi Pico W & XRP Robots"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "ARES Robotics", email = "ares23247@gmail.com"}
+]
+keywords = ["micropython", "robotics", "xrp", "pico", "differential", "mecanum", "odometry", "sparkfun-otos"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: POSIX"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/ARES-23247/ARES-Robotics"
+Repository = "https://github.com/ARES-23247/ARES-Robotics"

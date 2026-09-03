@@ -22,12 +22,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class VerificationLayer {
-    CONFIGURATION,
-    GENERATED_BEHAVIOR,
-    SIMULATOR,
-    PLATFORM_INTEGRATION,
-    BUILD,
-    PHYSICAL_VALIDATION,
+    CONFIGURATION, GENERATED_BEHAVIOR, SIMULATOR, PLATFORM_INTEGRATION, BUILD, PHYSICAL_VALIDATION
 }
 
 @Serializable

@@ -103,6 +103,7 @@ jobs:
             ares-bom codegen core frc-hardware frc-runtime ftc-hardware ftc-mocks
             project-compiler project-model project-schema simulation-foundation simulator
             simulator-runtime-linux simulator-runtime-macos simulator-runtime-windows telemetry-schema
+            xrp-hardware
           )
           published=0
           for module in "${modules[@]}"; do

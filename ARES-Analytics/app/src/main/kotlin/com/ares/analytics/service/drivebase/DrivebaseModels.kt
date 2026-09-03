@@ -9,21 +9,9 @@ enum class DrivebaseKind { FTC_MECANUM, FRC_CTRE_SWERVE, DIFFERENTIAL, CUSTOM }
 enum class DrivebaseRuntimeSupport { NO_CODE_RUNNABLE, CODE_REQUIRED, UNAVAILABLE_FOR_LEAGUE }
 
 fun DrivebaseKind.runtimeSupport(league: League): DrivebaseRuntimeSupport = when (this) {
-    DrivebaseKind.FTC_MECANUM -> if (league == League.FTC || league == League.XRP) {
-        DrivebaseRuntimeSupport.NO_CODE_RUNNABLE
-    } else {
-        DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
-    }
-    DrivebaseKind.FRC_CTRE_SWERVE -> if (league == League.FRC) {
-        DrivebaseRuntimeSupport.NO_CODE_RUNNABLE
-    } else {
-        DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
-    }
-    DrivebaseKind.DIFFERENTIAL -> if (league == League.XRP) {
-        DrivebaseRuntimeSupport.NO_CODE_RUNNABLE
-    } else {
-        DrivebaseRuntimeSupport.CODE_REQUIRED
-    }
+    DrivebaseKind.FTC_MECANUM -> if (league == League.FTC || league == League.XRP) DrivebaseRuntimeSupport.NO_CODE_RUNNABLE else DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
+    DrivebaseKind.FRC_CTRE_SWERVE -> if (league == League.FRC) DrivebaseRuntimeSupport.NO_CODE_RUNNABLE else DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
+    DrivebaseKind.DIFFERENTIAL -> if (league == League.XRP) DrivebaseRuntimeSupport.NO_CODE_RUNNABLE else DrivebaseRuntimeSupport.CODE_REQUIRED
     DrivebaseKind.CUSTOM -> DrivebaseRuntimeSupport.CODE_REQUIRED
 }
 
