@@ -4,7 +4,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 
 const val ARES_SUBSYSTEM_SCHEMA_VERSION: Int = 11
 
-enum class SubsystemPlatform { FTC, FRC }
+enum class SubsystemPlatform { FTC, FRC, XRP }
 
 /** Whether ARES owns runtime plumbing, creates an editable starter, or integrates project code. */
 enum class SubsystemImplementationKind {
@@ -109,6 +109,7 @@ enum class SubsystemHardwareKind {
 fun SubsystemHardwareKind.supportsPlatform(platform: SubsystemPlatform): Boolean = when (platform) {
     SubsystemPlatform.FTC -> this != SubsystemHardwareKind.SOLENOID
     SubsystemPlatform.FRC -> this != SubsystemHardwareKind.COLOR_SENSOR
+    SubsystemPlatform.XRP -> this != SubsystemHardwareKind.SOLENOID
 }
 
 /** Explicit cached signal read from one hardware device. */

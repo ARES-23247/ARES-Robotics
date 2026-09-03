@@ -349,6 +349,7 @@ class ProjectSession(
         val expectedTarget = when (league) {
             League.FTC -> ControllerInputPlatform.FTC
             League.FRC -> ControllerInputPlatform.FRC
+            League.XRP -> ControllerInputPlatform.XRP
         }
         require(current.selection.targetPlatform == expectedTarget) {
             "The field league does not match the selected robot project."
@@ -513,6 +514,7 @@ class ProjectSession(
             val league = when (selection.targetPlatform) {
                 ControllerInputPlatform.FTC -> League.FTC
                 ControllerInputPlatform.FRC -> League.FRC
+                ControllerInputPlatform.XRP -> League.XRP
                 ControllerInputPlatform.DESKTOP_GLFW -> error("Desktop input is not a robot project target.")
             }
             ProjectLayout.fieldDefinitionFile(root.path, league).takeIf(File::isFile)?.let(::add)
@@ -565,6 +567,7 @@ class ProjectExecutionCoordinator(
         val targetPlatform = when (workspace.league) {
             League.FTC -> ControllerInputPlatform.FTC
             League.FRC -> ControllerInputPlatform.FRC
+            League.XRP -> ControllerInputPlatform.XRP
         }
         val snapshot = runCatching {
             session.snapshot(workspace.projectPath, targetPlatform, forceReload = true)
@@ -574,6 +577,7 @@ class ProjectExecutionCoordinator(
         val expectedLeague = when (workspace.league) {
             League.FTC -> AresLeague.FTC
             League.FRC -> AresLeague.FRC
+            League.XRP -> AresLeague.XRP
         }
         if (project.metadata?.league != expectedLeague) {
             return ProjectExecutionDecision(false, "The selected workspace league does not match .ares/project.json.")

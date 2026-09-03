@@ -8,7 +8,8 @@ import com.areslib.math.coordinate.FieldSymmetry
 
 enum class FieldType {
     @SerializedName("ftc") FTC,
-    @SerializedName("frc") FRC
+    @SerializedName("frc") FRC,
+    @SerializedName("xrp") XRP
 }
 
 enum class AxisDirection {
@@ -182,11 +183,19 @@ data class RobotFieldConfig(
 ) {
     val resolvedWidthMeters: Double
         get() = widthMeters.takeIf { it > 0.0 }
-            ?: if (fieldType == FieldType.FTC) 3.6576 else 16.541
+            ?: when (fieldType) {
+                FieldType.FTC -> 3.6576
+                FieldType.FRC -> 16.541
+                FieldType.XRP -> 2.54
+            }
 
     val resolvedHeightMeters: Double
         get() = heightMeters.takeIf { it > 0.0 }
-            ?: if (fieldType == FieldType.FTC) 3.6576 else 8.211
+            ?: when (fieldType) {
+                FieldType.FTC -> 3.6576
+                FieldType.FRC -> 8.211
+                FieldType.XRP -> 1.4224
+            }
 
     /**
      * Resolves the starting pose based on the alliance's driver station wall.

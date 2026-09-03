@@ -102,11 +102,11 @@ object SubsystemTemplates {
     }
 
     private fun motorConnection(platform: SubsystemPlatform, name: String, canId: Int = 1) =
-        if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = name)
+        if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = name)
         else SubsystemHardwareConnection(canId = canId)
 
     private fun digitalConnection(platform: SubsystemPlatform, name: String, channel: Int = 0) =
-        if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = name)
+        if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = name)
         else SubsystemHardwareConnection(channel = channel)
 
     private fun hardwareTemplate(
@@ -343,7 +343,7 @@ object SubsystemTemplates {
         hardware = listOf(
             SubsystemHardwareDocument(
                 "servo", "Servo", SubsystemHardwareKind.POSITIONAL_SERVO,
-                if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "servo") else SubsystemHardwareConnection(channel = 0),
+                if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = "servo") else SubsystemHardwareConnection(channel = 0),
                 safeOutput = 0.5,
             )
         ),
@@ -367,7 +367,7 @@ object SubsystemTemplates {
         hardware = listOf(
             SubsystemHardwareDocument(
                 "servo", "Continuous servo", SubsystemHardwareKind.CONTINUOUS_SERVO,
-                if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "servo") else SubsystemHardwareConnection(channel = 0),
+                if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = "servo") else SubsystemHardwareConnection(channel = 0),
                 safeOutput = 0.0,
             )
         ),
@@ -569,7 +569,7 @@ object SubsystemTemplates {
         hardware = listOf(
             SubsystemHardwareDocument(
                 "light", "Indicator light", SubsystemHardwareKind.INDICATOR_LIGHT,
-                if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "light")
+                if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = "light")
                 else SubsystemHardwareConnection(channel = 0),
                 safeOutput = 0.0,
                 visualPlacement = SubsystemVisualPlacementDocument(
@@ -607,7 +607,7 @@ object SubsystemTemplates {
         hardware = listOf(
             SubsystemHardwareDocument(
                 "prism", "Prism driver", SubsystemHardwareKind.PRISM_DRIVER,
-                if (platform == SubsystemPlatform.FTC) SubsystemHardwareConnection(hardwareMapName = "prism")
+                if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = "prism")
                 else SubsystemHardwareConnection(channel = 0),
                 safeOutput = 1000.0,
                 visualPlacement = SubsystemVisualPlacementDocument(

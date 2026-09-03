@@ -98,7 +98,7 @@ class RepresentativeZeroCodeStarterIntegrationTest {
             val base = SubsystemTemplates.create(template, id, type, platform)
             return base.copy(hardware = base.hardware.map { device ->
                 val connection = when (league) {
-                    League.FTC -> device.connection.copy(hardwareMapName = "$id-${device.hardwareId}")
+                    League.FTC, League.XRP -> device.connection.copy(hardwareMapName = "$id-${device.hardwareId}")
                     League.FRC -> when (device.kind) {
                         SubsystemHardwareKind.MOTOR -> device.connection.copy(canId = nextCanId++)
                         SubsystemHardwareKind.POSITIONAL_SERVO,
@@ -256,6 +256,7 @@ class RepresentativeZeroCodeStarterIntegrationTest {
         when (league) {
             League.FTC -> command += listOf(":TeamCode:verifyAresProject", ":TeamCode:testDebugUnitTest", ":simulator:test", ":TeamCode:assembleDebug")
             League.FRC -> command += listOf("verifyAresProject", "test", "build")
+            League.XRP -> command += listOf("verifyAresProject", "test")
         }
         command += commonArguments
         val log = File(project, "build/representative-zero-code.log").apply { parentFile.mkdirs() }
@@ -280,6 +281,7 @@ class RepresentativeZeroCodeStarterIntegrationTest {
                 project,
                 "src/main/kotlin/org/aresfirst/starter/frc/generated/subsystems/elevator/ElevatorState.kt",
             )
+            League.XRP -> File(project, "src/subsystems/elevator/elevator_state.py")
         }
         check(expectedStarter.isFile) {
             val generatedKotlin = project.walkTopDown()

@@ -120,6 +120,7 @@ object SubsystemKotlinArtifactRenderer {
         val platform = when (project.inputPlatform) {
             com.areslib.controls.ControllerInputPlatform.FTC -> SubsystemPlatform.FTC
             com.areslib.controls.ControllerInputPlatform.FRC -> SubsystemPlatform.FRC
+            com.areslib.controls.ControllerInputPlatform.XRP -> SubsystemPlatform.XRP
             com.areslib.controls.ControllerInputPlatform.DESKTOP_GLFW -> error("Robot compiler IR cannot target desktop input")
         }
         val target = SubsystemKotlinCodegenTarget(platform, basePackage)

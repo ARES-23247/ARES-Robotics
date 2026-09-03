@@ -56,12 +56,14 @@ enum class ProjectDocumentKind {
 enum class AresControllerTarget {
     FTC_CONTROL_HUB,
     FRC_ROBORIO,
+    XRP_PICO,
 }
 
 /** League-specific simulator selected by the effective project. */
 enum class AresSimulatorTarget {
     FTC,
     FRC,
+    XRP,
 }
 
 /** Current target pair. Future controller families extend this without merging league runtimes. */
@@ -74,4 +76,5 @@ data class AresProjectTarget(
 fun AresLeague.defaultProjectTarget(): AresProjectTarget = when (this) {
     AresLeague.FTC -> AresProjectTarget(AresControllerTarget.FTC_CONTROL_HUB, AresSimulatorTarget.FTC)
     AresLeague.FRC -> AresProjectTarget(AresControllerTarget.FRC_ROBORIO, AresSimulatorTarget.FRC)
+    AresLeague.XRP -> AresProjectTarget(AresControllerTarget.XRP_PICO, AresSimulatorTarget.XRP)
 }

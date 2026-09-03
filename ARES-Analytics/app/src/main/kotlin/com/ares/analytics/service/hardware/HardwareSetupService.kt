@@ -276,7 +276,7 @@ class HardwareSetupService(
                     .distinct()
                 val homing = subsystem.safety.homing.takeIf { it.actuatorId == device.hardwareId }
                 val address = when (league) {
-                    League.FTC -> device.connection.hardwareMapName.orEmpty().trim()
+                    League.FTC, League.XRP -> device.connection.hardwareMapName.orEmpty().trim()
                     League.FRC -> when (device.kind) {
                         SubsystemHardwareKind.QUADRATURE_ENCODER -> listOfNotNull(
                             device.connection.channel,
@@ -293,7 +293,7 @@ class HardwareSetupService(
                     }
                 }
                 val addressKind = when (league) {
-                    League.FTC -> HardwareAddressKind.FTC_HARDWARE_MAP
+                    League.FTC, League.XRP -> HardwareAddressKind.FTC_HARDWARE_MAP
                     League.FRC -> device.addressKind()
                 }
                 val bus = when {

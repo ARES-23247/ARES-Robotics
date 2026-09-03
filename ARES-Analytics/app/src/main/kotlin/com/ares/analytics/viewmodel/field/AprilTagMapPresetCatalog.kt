@@ -41,6 +41,13 @@ internal object AprilTagMapPresetCatalog {
             sourceLabel = "Reviewed WPILib field layout (16 tags)",
             resourcePath = "field-presets/frc/2024-crescendo.json",
         ),
+        AprilTagMapPreset(
+            id = "xrp-2026-orbit-odyssey",
+            league = League.XRP,
+            displayName = "2026 Orbit Odyssey",
+            sourceLabel = "Reviewed XRP Orbit Odyssey layout (IDs 1 and 2)",
+            resourcePath = "field-presets/xrp/orbit_odyssey_2026.json",
+        ),
     )
 
     fun forLeague(league: League): List<AprilTagMapPreset> = presets.filter { it.league == league }

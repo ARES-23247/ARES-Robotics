@@ -415,6 +415,9 @@ object RobotVerificationReportLoader {
         League.FRC -> listOf(
             VerificationLayer.PLATFORM_INTEGRATION to File(root, "build/test-results/test"),
         )
+        League.XRP -> listOf(
+            VerificationLayer.PLATFORM_INTEGRATION to File(root, "build/test-results/test"),
+        )
     }
 
     private fun readTestCases(directory: File, layer: VerificationLayer): List<TestCaseResult> {

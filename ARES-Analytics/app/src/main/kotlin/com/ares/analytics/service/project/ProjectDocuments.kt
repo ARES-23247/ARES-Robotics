@@ -233,6 +233,7 @@ class AresProjectDocuments(
     private fun AresProjectMetadataDocument.toStudioLeague(): League = when (league) {
         AresLeague.FTC -> League.FTC
         AresLeague.FRC -> League.FRC
+        AresLeague.XRP -> League.XRP
     }
 
     private fun <T> loadFiles(

@@ -131,6 +131,14 @@ object SubsystemSchema {
                     SubsystemHardwareKind.COLOR_SENSOR ->
                         issue("$path.kind", "Generated FRC color-sensor wiring is not supported yet")
                 }
+                SubsystemPlatform.XRP -> {
+                    if (device.connection.canId != null) {
+                        issue("$path.connection", "XRP hardware must not use CAN addressing")
+                    }
+                    if (device.kind == SubsystemHardwareKind.SOLENOID) {
+                        issue("$path.kind", "Generated pneumatic solenoids are not available for XRP projects")
+                    }
+                }
             }
             if (device.kind != SubsystemHardwareKind.QUADRATURE_ENCODER && device.connection.secondaryChannel != null) {
                 issue("$path.connection.secondaryChannel", "Only quadrature encoders use a secondary channel")

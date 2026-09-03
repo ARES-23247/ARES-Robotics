@@ -75,7 +75,17 @@ object FieldPrefabCatalog {
         FieldPrefab("speaker-opening", "Speaker opening", "Scoring", FieldPrefabKind.RECTANGLE, widthMeters = 1.05, heightMeters = 0.15)
     )
 
-    fun forLeague(league: League): List<FieldPrefab> = shared + if (league == League.FTC) ftc else frc
+    private val xrp = listOf(
+        FieldPrefab("orbit-ball", "Orbit Odyssey Ball", "Game pieces", FieldPrefabKind.GAME_PIECE, gamePieceType = "Orbit Ball"),
+        FieldPrefab("space-station", "Space Station Obstacle", "Structure", FieldPrefabKind.RECTANGLE, widthMeters = 0.4, heightMeters = 0.4),
+        FieldPrefab("moon-crater", "Moon Crater", "Structure", FieldPrefabKind.CIRCLE, radiusMeters = 0.15)
+    )
+
+    fun forLeague(league: League): List<FieldPrefab> = shared + when (league) {
+        League.FTC -> ftc
+        League.FRC -> frc
+        League.XRP -> xrp
+    }
     fun find(league: League, id: String): FieldPrefab? = forLeague(league).firstOrNull { it.id == id }
 }
 
@@ -187,10 +197,9 @@ private data class FieldBounds(val minX: Double, val maxX: Double, val minY: Dou
 
     companion object {
         fun forLeague(league: League, width: Double, height: Double): FieldBounds =
-            if (league == League.FTC) {
-                FieldBounds(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0)
-            } else {
-                FieldBounds(0.0, width, 0.0, height)
+            when (league) {
+                League.FTC -> FieldBounds(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0)
+                League.FRC, League.XRP -> FieldBounds(0.0, width, 0.0, height)
             }
     }
 }

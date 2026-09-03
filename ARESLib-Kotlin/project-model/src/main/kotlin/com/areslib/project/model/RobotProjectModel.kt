@@ -131,7 +131,11 @@ public object RobotProjectAssembler {
 
         val target = metadata?.league?.defaultProjectTarget()
         if (metadata != null && inputPlatform != null && inputPlatform != ControllerInputPlatform.DESKTOP_GLFW) {
-            val expected = if (metadata.league == AresLeague.FTC) ControllerInputPlatform.FTC else ControllerInputPlatform.FRC
+            val expected = when (metadata.league) {
+                AresLeague.FTC -> ControllerInputPlatform.FTC
+                AresLeague.FRC -> ControllerInputPlatform.FRC
+                AresLeague.XRP -> ControllerInputPlatform.XRP
+            }
             if (inputPlatform != expected) {
                 issues.error(
                     ProjectDocumentKind.PROJECT_METADATA,
@@ -295,7 +299,13 @@ public object RobotProjectAssembler {
             }
         }
         snapshot.field?.let { field ->
-            val requiredType = snapshot.metadata?.league?.let { if (it == AresLeague.FTC) FieldType.FTC else FieldType.FRC }
+            val requiredType = snapshot.metadata?.league?.let {
+                when (it) {
+                    AresLeague.FTC -> FieldType.FTC
+                    AresLeague.FRC -> FieldType.FRC
+                    AresLeague.XRP -> FieldType.XRP
+                }
+            }
             RobotFieldValidator.validate(field, requiredType).forEach { issue ->
                 issues.error(ProjectDocumentKind.FIELD, field.id, "field", issue.code.name.lowercase(), issue.message)
             }

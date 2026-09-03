@@ -635,6 +635,7 @@ public final class com/areslib/controls/ControllerInputPlatform : java/lang/Enum
 	public static final field DESKTOP_GLFW Lcom/areslib/controls/ControllerInputPlatform;
 	public static final field FRC Lcom/areslib/controls/ControllerInputPlatform;
 	public static final field FTC Lcom/areslib/controls/ControllerInputPlatform;
+	public static final field XRP Lcom/areslib/controls/ControllerInputPlatform;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/controls/ControllerInputPlatform;
 	public static fun values ()[Lcom/areslib/controls/ControllerInputPlatform;
@@ -968,19 +969,27 @@ public final class com/areslib/drivetrain/DrivetrainLocalizationDocument {
 }
 
 public final class com/areslib/drivetrain/DrivetrainLocalizationSourceDocument {
-	public fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;DDDD)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;DDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/areslib/drivetrain/LocalizationSourceKind;
 	public final fun component3 ()Ljava/util/List;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
-	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun component8 ()D
+	public final fun copy (Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;DDDD)Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
+	public static synthetic fun copy$default (Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;Ljava/lang/String;Lcom/areslib/drivetrain/LocalizationSourceKind;Ljava/util/List;Ljava/lang/String;DDDDILjava/lang/Object;)Lcom/areslib/drivetrain/DrivetrainLocalizationSourceDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getComponentUids ()Ljava/util/List;
 	public final fun getImplementationClassName ()Ljava/lang/String;
+	public final fun getScalar ()D
 	public final fun getSource ()Lcom/areslib/drivetrain/LocalizationSourceKind;
 	public final fun getUid ()Ljava/lang/String;
+	public final fun getXOffsetMeters ()D
+	public final fun getYOffsetMeters ()D
+	public final fun getYawOffsetDegrees ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1015,6 +1024,7 @@ public final class com/areslib/drivetrain/DrivetrainNeutralMode : java/lang/Enum
 public final class com/areslib/drivetrain/DrivetrainPlatform : java/lang/Enum {
 	public static final field FRC Lcom/areslib/drivetrain/DrivetrainPlatform;
 	public static final field FTC Lcom/areslib/drivetrain/DrivetrainPlatform;
+	public static final field XRP Lcom/areslib/drivetrain/DrivetrainPlatform;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/DrivetrainPlatform;
 	public static fun values ()[Lcom/areslib/drivetrain/DrivetrainPlatform;
@@ -1089,6 +1099,7 @@ public final class com/areslib/drivetrain/LocalizationSourceKind : java/lang/Enu
 	public static final field CUSTOM Lcom/areslib/drivetrain/LocalizationSourceKind;
 	public static final field EXTERNAL Lcom/areslib/drivetrain/LocalizationSourceKind;
 	public static final field PINPOINT Lcom/areslib/drivetrain/LocalizationSourceKind;
+	public static final field SPARKFUN_OTOS Lcom/areslib/drivetrain/LocalizationSourceKind;
 	public static final field WHEEL_ENCODERS_IMU Lcom/areslib/drivetrain/LocalizationSourceKind;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/drivetrain/LocalizationSourceKind;
@@ -1136,6 +1147,7 @@ public final class com/areslib/project/AresFtcRuntimeOptionsDocument {
 public final class com/areslib/project/AresLeague : java/lang/Enum {
 	public static final field FRC Lcom/areslib/project/AresLeague;
 	public static final field FTC Lcom/areslib/project/AresLeague;
+	public static final field XRP Lcom/areslib/project/AresLeague;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/AresLeague;
 	public static fun values ()[Lcom/areslib/project/AresLeague;
@@ -1209,18 +1221,42 @@ public final class com/areslib/project/AresProjectMetadataDocument {
 public final class com/areslib/project/AresProjectMetadataKt {
 	public static final field ARES_PROJECT_METADATA_SCHEMA_VERSION I
 	public static final fun requireFtcRuntimeOptions (Lcom/areslib/project/AresProjectMetadataDocument;)Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public static final fun requireXrpRuntimeOptions (Lcom/areslib/project/AresProjectMetadataDocument;)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
 	public static final fun validateAresProjectMetadata (Lcom/areslib/project/AresProjectMetadataDocument;)Ljava/util/List;
 }
 
 public final class com/areslib/project/AresRuntimeOptionsDocument {
 	public fun <init> ()V
-	public fun <init> (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;)V
-	public synthetic fun <init> (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;Lcom/areslib/project/AresXrpRuntimeOptionsDocument;)V
+	public synthetic fun <init> (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;Lcom/areslib/project/AresXrpRuntimeOptionsDocument;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
-	public final fun copy (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;)Lcom/areslib/project/AresRuntimeOptionsDocument;
-	public static synthetic fun copy$default (Lcom/areslib/project/AresRuntimeOptionsDocument;Lcom/areslib/project/AresFtcRuntimeOptionsDocument;ILjava/lang/Object;)Lcom/areslib/project/AresRuntimeOptionsDocument;
+	public final fun component2 ()Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
+	public final fun copy (Lcom/areslib/project/AresFtcRuntimeOptionsDocument;Lcom/areslib/project/AresXrpRuntimeOptionsDocument;)Lcom/areslib/project/AresRuntimeOptionsDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresRuntimeOptionsDocument;Lcom/areslib/project/AresFtcRuntimeOptionsDocument;Lcom/areslib/project/AresXrpRuntimeOptionsDocument;ILjava/lang/Object;)Lcom/areslib/project/AresRuntimeOptionsDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFtc ()Lcom/areslib/project/AresFtcRuntimeOptionsDocument;
+	public final fun getXrp ()Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/project/AresXrpRuntimeOptionsDocument {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;IID)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;IIDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun component5 ()D
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;IID)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresXrpRuntimeOptionsDocument;Ljava/lang/String;Ljava/lang/String;IIDILjava/lang/Object;)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBrownoutThresholdVolts ()D
+	public final fun getDeadmanTimeoutMs ()I
+	public final fun getPort ()I
+	public final fun getSsid ()Ljava/lang/String;
+	public final fun getWifiMode ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1228,6 +1264,7 @@ public final class com/areslib/project/AresRuntimeOptionsDocument {
 public final class com/areslib/project/schema/AresControllerTarget : java/lang/Enum {
 	public static final field FRC_ROBORIO Lcom/areslib/project/schema/AresControllerTarget;
 	public static final field FTC_CONTROL_HUB Lcom/areslib/project/schema/AresControllerTarget;
+	public static final field XRP_PICO Lcom/areslib/project/schema/AresControllerTarget;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/schema/AresControllerTarget;
 	public static fun values ()[Lcom/areslib/project/schema/AresControllerTarget;
@@ -1249,6 +1286,7 @@ public final class com/areslib/project/schema/AresProjectTarget {
 public final class com/areslib/project/schema/AresSimulatorTarget : java/lang/Enum {
 	public static final field FRC Lcom/areslib/project/schema/AresSimulatorTarget;
 	public static final field FTC Lcom/areslib/project/schema/AresSimulatorTarget;
+	public static final field XRP Lcom/areslib/project/schema/AresSimulatorTarget;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/schema/AresSimulatorTarget;
 	public static fun values ()[Lcom/areslib/project/schema/AresSimulatorTarget;
@@ -2273,6 +2311,7 @@ public final class com/areslib/subsystem/SubsystemMotionProfileDocument {
 public final class com/areslib/subsystem/SubsystemPlatform : java/lang/Enum {
 	public static final field FRC Lcom/areslib/subsystem/SubsystemPlatform;
 	public static final field FTC Lcom/areslib/subsystem/SubsystemPlatform;
+	public static final field XRP Lcom/areslib/subsystem/SubsystemPlatform;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/subsystem/SubsystemPlatform;
 	public static fun values ()[Lcom/areslib/subsystem/SubsystemPlatform;

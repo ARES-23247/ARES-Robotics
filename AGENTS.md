@@ -169,7 +169,7 @@ foundation and platform runtimes, and `ares-bom`. Published coordinates use
 - **`core/src/main/kotlin/com/areslib/`** packages:
   - `math/` — `geometry/` (Pose2d, Rotation2d, ChassisSpeeds, Matrix3x3), `kinematics/`, `filter/`, `coordinate/`, **`estimation/`** (EKF `PoseEstimator`, `KalmanFilter`, `OdometryFusionController`, `VisionMahalanobisFilter` — note: estimation lives under `math/`, not `control/`)
   - `control/` — `feedback/` (PID, feedforward, LinearADRC), `profile/` (TrapezoidProfile), `safety/` (CurrentBudgetManager, BrownoutGuard), `drivetrain/` (HolonomicDriveController), `assist/` (SysId and shot-setup primitives)
-  - `pathing/` — the canonical trajectory/path followers, `SCurveTrajectoryParameterizer`, `BezierSpline`, `PathPlannerParser`/`PathPlannerAutoParser`, `AutoBuilder`, `NamedCommands`, `Costmap`, and `VFHPlanner`; abandoned alternate planners and generators are not retained as compatibility APIs
+  - `pathing/` — the canonical trajectory/path followers, `SCurveTrajectoryParameterizer`, `BezierSpline`, `PathPlannerParser`/`PathPlannerAutoParser`, `AutoBuilder`, `NamedCommands`, and `Costmap`; abandoned alternate planners and generators are not retained as compatibility APIs
   - `state/` (`RobotState`, `DriveState`, `SuperstructureState`, `RobotFieldConfig`, `Alliance`), `reducer/` (`RootReducer` + slice reducers), `action/` (`RobotAction` sealed classes, `ActionLogger`)
   - `sequencer/` — `TaskExecutor`, `Task`, `RobotSequence` (NOT `auto/`)
   - `hardware/` — per-robot `HardwareRegistry` (explicit lifecycle/telemetry/topology ownership), `SubsystemIO`, `drive/`, `vision/`, `actuator/`, `sensor/`; published topology wire DTOs/codecs live in `telemetry-schema`

@@ -13,7 +13,8 @@ enum class ControllerControlTypeDocument { BUTTON, AXIS }
 enum class ControllerInputPlatform {
     DESKTOP_GLFW,
     FTC,
-    FRC
+    FRC,
+    XRP
 }
 
 data class ControllerAnchorDocument(

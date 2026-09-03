@@ -496,6 +496,7 @@ class PathPlannerViewModel(
                 val target = when (league) {
                     League.FTC -> ControllerInputPlatform.FTC
                     League.FRC -> ControllerInputPlatform.FRC
+                    League.XRP -> ControllerInputPlatform.XRP
                 }
                 val sessionSnapshot = projectSession?.snapshot(projectPath, target, forceReload = true)
                 val snapshot = sessionSnapshot?.documents ?: projectDocuments.load(projectPath, target)
@@ -886,6 +887,7 @@ class PathPlannerViewModel(
     private fun AresLeague.toAnalyticsLeague(): League = when (this) {
         AresLeague.FTC -> League.FTC
         AresLeague.FRC -> League.FRC
+        AresLeague.XRP -> League.XRP
     }
 
     private data class RoutineSave(

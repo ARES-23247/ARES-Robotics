@@ -176,6 +176,7 @@ class EnvironmentService(
                     "10.0.0.2"
                 }
             }
+            League.XRP -> "192.168.42.1"
         }
     }
 

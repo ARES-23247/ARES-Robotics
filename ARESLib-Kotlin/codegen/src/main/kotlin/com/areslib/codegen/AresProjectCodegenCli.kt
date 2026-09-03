@@ -558,8 +558,9 @@ internal fun validateDrivebaseCodegenPlatform(
     val targetPlatform = when (requestedPlatform) {
         ControllerInputPlatform.FTC -> DrivetrainPlatform.FTC
         ControllerInputPlatform.FRC -> DrivetrainPlatform.FRC
+        ControllerInputPlatform.XRP -> DrivetrainPlatform.XRP
         ControllerInputPlatform.DESKTOP_GLFW, null ->
-            error("Drivebase generation requires --platform FTC or FRC")
+            error("Drivebase generation requires --platform FTC, FRC, or XRP")
     }
     require(declaredPlatform == targetPlatform) {
         "Drivebase targets $declaredPlatform, not requested codegen platform $targetPlatform"

@@ -394,6 +394,7 @@ class ProjectIdentityViewModel(
     private fun League.targetPlatform(): ControllerInputPlatform = when (this) {
         League.FTC -> ControllerInputPlatform.FTC
         League.FRC -> ControllerInputPlatform.FRC
+        League.XRP -> ControllerInputPlatform.XRP
     }
 }
 
@@ -546,16 +547,18 @@ private val STABLE_IDENTITY_FIELDS = setOf(
 private fun defaultFieldDimensions(league: League): Pair<Double, Double> = when (league) {
     League.FTC -> 3.6576 to 3.6576
     League.FRC -> 16.541 to 8.211
+    League.XRP -> 2.54 to 1.4224
 }
 
 private fun League.toAresLeague(): AresLeague = when (this) {
     League.FTC -> AresLeague.FTC
     League.FRC -> AresLeague.FRC
+    League.XRP -> AresLeague.XRP
 }
 
 private fun League.coordinateConvention(): AresCoordinateConvention = when (this) {
     League.FTC -> AresCoordinateConvention.CENTER_ORIGIN_CCW
-    League.FRC -> AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW
+    League.FRC, League.XRP -> AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW
 }
 
 private fun Double.asInput(): String = String.format(Locale.ROOT, "%.6f", this).trimEnd('0').trimEnd('.')

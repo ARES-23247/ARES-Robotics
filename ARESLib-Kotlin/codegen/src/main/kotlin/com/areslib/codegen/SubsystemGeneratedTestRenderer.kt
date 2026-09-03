@@ -14,7 +14,8 @@ internal object SubsystemGeneratedTestRenderer {
             }
         } ?: "assertNotNull(state)"
         val imports = when (document.platform) {
-            SubsystemPlatform.FTC -> """import org.junit.Assert.assertEquals
+            SubsystemPlatform.FTC,
+            SubsystemPlatform.XRP -> """import org.junit.Assert.assertEquals
             import org.junit.Assert.assertFalse
             import org.junit.Assert.assertNotNull
             import org.junit.Assert.assertTrue

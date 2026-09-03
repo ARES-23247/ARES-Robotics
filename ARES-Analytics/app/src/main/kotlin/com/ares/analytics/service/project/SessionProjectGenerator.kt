@@ -46,6 +46,7 @@ class SessionProjectGenerator(
             when (league) {
                 League.FTC -> ControllerInputPlatform.FTC
                 League.FRC -> ControllerInputPlatform.FRC
+                League.XRP -> ControllerInputPlatform.XRP
             },
             forceReload = true,
         )

@@ -100,6 +100,7 @@ class OfficialProjectTemplateIntegrationTest {
             val generatedRuntime = when (league) {
                 League.FTC -> "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt"
                 League.FRC -> "src/main/kotlin/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt"
+                League.XRP -> "src/generated_ares_project.py"
             }
             val checkpoint = history.checkpoint(
                 result.destination.path,
@@ -139,6 +140,7 @@ class OfficialProjectTemplateIntegrationTest {
                     ),
                 )
                 League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
+                League.XRP -> addAll(listOf("generateAresProject", "test"))
             }
             validationVersion?.let { add("-ParesVersion=$it") }
             repositoryUri?.let { add("-ParesRepository=$it") }

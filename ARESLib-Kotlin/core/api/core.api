@@ -2151,6 +2151,37 @@ public final class com/areslib/input/ThresholdDirection : java/lang/Enum {
 	public static fun values ()[Lcom/areslib/input/ThresholdDirection;
 }
 
+public final class com/areslib/kinematics/DifferentialDriveKinematics {
+	public static final field Companion Lcom/areslib/kinematics/DifferentialDriveKinematics$Companion;
+	public fun <init> (D)V
+	public final fun getTrackWidthMeters ()D
+	public final fun toChassisSpeeds (DD)Lcom/areslib/math/geometry/ChassisSpeeds;
+	public final fun toChassisSpeeds (Lcom/areslib/kinematics/DifferentialWheelSpeeds;)Lcom/areslib/math/geometry/ChassisSpeeds;
+	public final fun toWheelSpeeds (DD[D)V
+	public final fun toWheelSpeeds (Lcom/areslib/math/geometry/ChassisSpeeds;)Lcom/areslib/kinematics/DifferentialWheelSpeeds;
+	public final fun toWheelSpeeds (Lcom/areslib/math/geometry/ChassisSpeeds;[D)V
+}
+
+public final class com/areslib/kinematics/DifferentialDriveKinematics$Companion {
+	public final fun normalize ([DD)V
+}
+
+public final class com/areslib/kinematics/DifferentialWheelSpeeds {
+	public fun <init> ()V
+	public fun <init> (DD)V
+	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun copy (DD)Lcom/areslib/kinematics/DifferentialWheelSpeeds;
+	public static synthetic fun copy$default (Lcom/areslib/kinematics/DifferentialWheelSpeeds;DDILjava/lang/Object;)Lcom/areslib/kinematics/DifferentialWheelSpeeds;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLeftMetersPerSecond ()D
+	public final fun getRightMetersPerSecond ()D
+	public fun hashCode ()I
+	public final fun normalize (D)Lcom/areslib/kinematics/DifferentialWheelSpeeds;
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/kinematics/MecanumKinematics {
 	public static final field Companion Lcom/areslib/kinematics/MecanumKinematics$Companion;
 	public fun <init> (DD)V
@@ -5190,6 +5221,7 @@ public final class com/areslib/state/EkfProcessNoiseTuningState {
 public final class com/areslib/state/FieldType : java/lang/Enum {
 	public static final field FRC Lcom/areslib/state/FieldType;
 	public static final field FTC Lcom/areslib/state/FieldType;
+	public static final field XRP Lcom/areslib/state/FieldType;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/state/FieldType;
 	public static fun values ()[Lcom/areslib/state/FieldType;

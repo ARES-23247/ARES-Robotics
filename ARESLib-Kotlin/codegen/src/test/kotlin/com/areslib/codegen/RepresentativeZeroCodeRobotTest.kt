@@ -113,6 +113,7 @@ class RepresentativeZeroCodeRobotTest {
         val targetPlatform = when (platform) {
             SubsystemPlatform.FTC -> ControllerInputPlatform.FTC
             SubsystemPlatform.FRC -> ControllerInputPlatform.FRC
+            SubsystemPlatform.XRP -> ControllerInputPlatform.XRP
         }
         val generated = AresKotlinProjectGenerator.generate(
             KotlinProjectCodegenRequest(

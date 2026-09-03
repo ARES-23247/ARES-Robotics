@@ -331,6 +331,7 @@ public final class com/areslib/sim/model/MecanumRobotDouble {
 	public final fun getHardwareMap ()Lcom/qualcomm/robotcore/hardware/HardwareMap;
 	public final fun getLimelight ()Lcom/areslib/sim/model/SimLimelight3A;
 	public final fun getMockImu ()Lcom/qualcomm/robotcore/hardware/IMU;
+	public final fun getOtos ()Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;
 	public final fun getPinpoint ()Lcom/qualcomm/hardware/gobilda/GoBildaPinpointDriver;
 	public final fun getRl ()Lcom/areslib/sim/model/SimDcMotorEx;
 	public final fun getRr ()Lcom/areslib/sim/model/SimDcMotorEx;
@@ -505,15 +506,84 @@ public final class com/areslib/sim/opmode/SimOpModeState : java/lang/Enum {
 
 public final class com/areslib/sim/physics/SimPhysicsWorld {
 	public fun <init> ()V
+	public fun <init> (D)V
+	public fun <init> (DD)V
+	public fun <init> (DDD)V
+	public fun <init> (DDDD)V
+	public fun <init> (DDDDD)V
+	public synthetic fun <init> (DDDDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getActiveObstacles ()Ljava/util/List;
+	public final fun getAngularDamping ()D
+	public final fun getChassisHeight ()D
+	public final fun getChassisWidth ()D
 	public final fun getFieldWalls ()Ljava/util/List;
 	public final fun getGamePieces ()Ljava/util/List;
+	public final fun getLinearDamping ()D
 	public final fun getLoadedFieldConfig ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getMassKg ()D
 	public final fun getRobotBody ()Lorg/dyn4j/dynamics/Body;
 	public final fun getWorld ()Lorg/dyn4j/world/World;
 	public final fun loadFieldElements (Lcom/areslib/state/RobotFieldConfig;)V
 	public final fun replaceFieldDocumentJson (Ljava/lang/String;)Z
 	public final fun replaceObstaclesFromAnalyticsJson (Ljava/lang/String;)Z
 	public final fun setupSpawnPose (Z)Lcom/areslib/math/geometry/Pose2d;
+}
+
+public final class com/areslib/sim/xrp/XrpDrivetrainType : java/lang/Enum {
+	public static final field DIFFERENTIAL Lcom/areslib/sim/xrp/XrpDrivetrainType;
+	public static final field MECANUM Lcom/areslib/sim/xrp/XrpDrivetrainType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/sim/xrp/XrpDrivetrainType;
+	public static fun values ()[Lcom/areslib/sim/xrp/XrpDrivetrainType;
+}
+
+public final class com/areslib/sim/xrp/XrpSimLauncher {
+	public static final field INSTANCE Lcom/areslib/sim/xrp/XrpSimLauncher;
+	public final fun isRunning ()Z
+	public static final fun main ([Ljava/lang/String;)V
+	public final fun setRunning (Z)V
+}
+
+public final class com/areslib/sim/xrp/XrpSimulationEngine {
+	public fun <init> ()V
+	public fun <init> (Lcom/areslib/sim/xrp/XrpDrivetrainType;DDDDDLcom/areslib/state/RobotFieldConfig;)V
+	public synthetic fun <init> (Lcom/areslib/sim/xrp/XrpDrivetrainType;DDDDDLcom/areslib/state/RobotFieldConfig;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getActiveConfig ()Lcom/areslib/state/RobotFieldConfig;
+	public final fun getDrivetrainType ()Lcom/areslib/sim/xrp/XrpDrivetrainType;
+	public final fun getFlPower ()D
+	public final fun getFrPower ()D
+	public final fun getLeftPower ()D
+	public final fun getMaxAngularSpeedRadPerSec ()D
+	public final fun getMaxLinearSpeedMetersPerSecond ()D
+	public final fun getOtosHeading ()D
+	public final fun getOtosOmega ()D
+	public final fun getOtosVx ()D
+	public final fun getOtosVy ()D
+	public final fun getOtosX ()D
+	public final fun getOtosY ()D
+	public final fun getPhysicsWorld ()Lcom/areslib/sim/physics/SimPhysicsWorld;
+	public final fun getRightPower ()D
+	public final fun getRlPower ()D
+	public final fun getRrPower ()D
+	public final fun getTrackWidthMeters ()D
+	public final fun getWheelBaseMeters ()D
+	public final fun getWheelRadiusMeters ()D
+	public final fun processDriveFrame ([D)V
+	public final fun publishTelemetry ()V
+	public final fun resetPose (DDD)V
+	public final fun setFlPower (D)V
+	public final fun setFrPower (D)V
+	public final fun setLeftPower (D)V
+	public final fun setOtosHeading (D)V
+	public final fun setOtosOmega (D)V
+	public final fun setOtosVx (D)V
+	public final fun setOtosVy (D)V
+	public final fun setOtosX (D)V
+	public final fun setOtosY (D)V
+	public final fun setRightPower (D)V
+	public final fun setRlPower (D)V
+	public final fun setRrPower (D)V
+	public final fun step (D)V
+	public static synthetic fun step$default (Lcom/areslib/sim/xrp/XrpSimulationEngine;DILjava/lang/Object;)V
 }
 

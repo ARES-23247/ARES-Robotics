@@ -40,7 +40,7 @@ fun SubsystemHardwareKind.isActuator(): Boolean =
     this == SubsystemHardwareKind.SOLENOID
 
 fun SubsystemHardwareDocument.connectionLabel(platform: SubsystemPlatform): String = when (platform) {
-    SubsystemPlatform.FTC -> connection.hardwareMapName?.let { "hwMap: $it" } ?: "unconfigured"
+    SubsystemPlatform.FTC, SubsystemPlatform.XRP -> connection.hardwareMapName?.let { "hwMap: $it" } ?: "unconfigured"
     SubsystemPlatform.FRC -> when (kind) {
         SubsystemHardwareKind.MOTOR -> "CAN ${connection.canId ?: 0} (${connection.canBus})"
         SubsystemHardwareKind.SOLENOID -> "${connection.pneumaticsModuleType?.name ?: "pneumatics"} CAN ${connection.canId ?: 0}, channel ${connection.channel ?: 0}"

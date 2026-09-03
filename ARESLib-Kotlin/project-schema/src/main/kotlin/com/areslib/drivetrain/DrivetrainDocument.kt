@@ -9,11 +9,11 @@ import com.areslib.util.sha256Hex
 const val ARES_DRIVETRAIN_SCHEMA_VERSION: Int = 1
 
 enum class DrivetrainKind { FTC_MECANUM, FRC_CTRE_SWERVE, DIFFERENTIAL, ADVANCED_CUSTOM }
-enum class DrivetrainPlatform { FTC, FRC }
+enum class DrivetrainPlatform { FTC, FRC, XRP }
 enum class DrivetrainComponentRole {
     DRIVE_MOTOR, STEER_MOTOR, ABSOLUTE_ENCODER, GYRO, ODOMETRY_SENSOR, WHEEL_MODULE, OTHER,
 }
-enum class LocalizationSourceKind { PINPOINT, WHEEL_ENCODERS_IMU, CTRE_VENDOR, EXTERNAL, CUSTOM }
+enum class LocalizationSourceKind { PINPOINT, WHEEL_ENCODERS_IMU, CTRE_VENDOR, EXTERNAL, CUSTOM, SPARKFUN_OTOS }
 enum class DrivetrainControlKind { OPEN_LOOP, WHEEL_VELOCITY, CHASSIS_VELOCITY, TRAJECTORY }
 enum class DrivetrainNeutralMode { BRAKE, COAST }
 enum class DisabledDrivePolicy { FORCE_NEUTRAL_BRAKE, FORCE_NEUTRAL_COAST }
@@ -70,6 +70,10 @@ data class DrivetrainLocalizationSourceDocument(
     val source: LocalizationSourceKind,
     val componentUids: List<String>,
     val implementationClassName: String? = null,
+    val xOffsetMeters: Double = 0.0,
+    val yOffsetMeters: Double = 0.0,
+    val yawOffsetDegrees: Double = 0.0,
+    val scalar: Double = 1.0,
 )
 
 data class DrivetrainLocalizationDocument(
@@ -279,11 +283,13 @@ fun validateDrivetrainDocument(document: DrivetrainDocument): List<DrivetrainVal
     }
     when (document.kind) {
         DrivetrainKind.FTC_MECANUM -> {
-            if (document.platform != DrivetrainPlatform.FTC || document.ctreImport != null) issue("kind", "FTC mecanum cannot use FRC/CTRE metadata")
+            if ((document.platform != DrivetrainPlatform.FTC && document.platform != DrivetrainPlatform.XRP) || document.ctreImport != null) {
+                issue("kind", "Mecanum cannot use FRC/CTRE metadata")
+            }
             val driveMotors = document.components.filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR }
-            if (driveMotors.size != 4) issue("components", "FTC mecanum requires exactly four drive motors")
-            if (driveMotors.any { !it.required }) issue("components", "Every FTC mecanum drive motor must be required at startup")
-            if (document.modules.isNotEmpty()) issue("modules", "FTC mecanum wheel positions are defined by geometry, not swerve modules")
+            if (driveMotors.size != 4) issue("components", "Mecanum requires exactly four drive motors")
+            if (driveMotors.any { !it.required }) issue("components", "Every mecanum drive motor must be required at startup")
+            if (document.modules.isNotEmpty()) issue("modules", "Mecanum wheel positions are defined by geometry, not swerve modules")
         }
         DrivetrainKind.FRC_CTRE_SWERVE -> {
             if (document.platform != DrivetrainPlatform.FRC) issue("platform", "CTRE swerve requires FRC")
@@ -297,7 +303,13 @@ fun validateDrivetrainDocument(document: DrivetrainDocument): List<DrivetrainVal
                 }
             }
         }
-        DrivetrainKind.DIFFERENTIAL, DrivetrainKind.ADVANCED_CUSTOM -> if (document.ctreImport != null) issue("ctreImport", "Only CTRE swerve accepts CTRE import metadata")
+        DrivetrainKind.DIFFERENTIAL -> {
+            if (document.ctreImport != null) issue("ctreImport", "Differential drive cannot use CTRE metadata")
+            val driveMotors = document.components.filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR }
+            if (driveMotors.size != 2) issue("components", "Differential drive requires exactly two drive motors (left and right)")
+            if (driveMotors.any { !it.required }) issue("components", "Every differential drive motor must be required at startup")
+        }
+        DrivetrainKind.ADVANCED_CUSTOM -> if (document.ctreImport != null) issue("ctreImport", "Only CTRE swerve accepts CTRE import metadata")
     }
 }
 

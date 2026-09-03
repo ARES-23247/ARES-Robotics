@@ -29,7 +29,13 @@ import java.io.File
  * Dyn4j world mutation is single-thread-owned by the simulation loop. Public body collections are
  * exposed for visualization but callers must not mutate them concurrently with physics stepping.
  */
-class SimPhysicsWorld {
+class SimPhysicsWorld @kotlin.jvm.JvmOverloads constructor(
+    val chassisWidth: Double = 0.45,
+    val chassisHeight: Double = 0.45,
+    val massKg: Double = 15.0,
+    val linearDamping: Double = 1.5,
+    val angularDamping: Double = 3.0
+) {
     val world = World<Body>()
     val robotBody = Body()
     val activeObstacles = mutableListOf<Body>()
@@ -45,11 +51,11 @@ class SimPhysicsWorld {
     init {
         world.setGravity(Vector2(0.0, 0.0))
 
-        val robotFixture = robotBody.addFixture(Geometry.createRectangle(0.45, 0.45))
-        robotFixture.density = 74.0 // ~15 kg
+        val robotFixture = robotBody.addFixture(Geometry.createRectangle(chassisWidth, chassisHeight))
+        robotFixture.density = massKg / (chassisWidth * chassisHeight)
         robotBody.setMass(MassType.NORMAL)
-        robotBody.linearDamping = 1.5
-        robotBody.angularDamping = 3.0
+        robotBody.linearDamping = linearDamping
+        robotBody.angularDamping = angularDamping
 
         world.addBody(robotBody)
         rebuildWalls(fieldWidth, fieldHeight)

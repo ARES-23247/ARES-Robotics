@@ -16,6 +16,7 @@ import com.areslib.subsystem.SubsystemSimulationSupport
 public enum class SimulationProductId(public val stableId: String, public val displayName: String) {
     FTC_DESKTOP_OPMODE("ftc.desktop-opmode", "FTC desktop OpMode simulator"),
     FRC_WPILIB_DESKTOP("frc.wpilib-desktop", "FRC WPILib desktop simulator"),
+    XRP_DESKTOP("xrp.desktop", "XRP desktop simulator"),
 }
 
 /** Proven behavior a simulator product can supply without substituting a generic device model. */
@@ -24,6 +25,7 @@ public enum class SimulationCapability {
     FRC_TIMED_ROBOT_LIFECYCLE,
     MECANUM_DRIVETRAIN_PHYSICS,
     CTRE_SWERVE_DRIVETRAIN_PHYSICS,
+    DIFFERENTIAL_DRIVETRAIN_PHYSICS,
     GENERATED_SUBSYSTEM_ADAPTER,
     HAND_AUTHORED_SUBSYSTEM_ADAPTER,
     FIELD_CONFIGURATION,
@@ -82,9 +84,24 @@ public object SimulationProducts {
         ),
     )
 
+    public val XRP: SimulationProductContract = SimulationProductContract(
+        id = SimulationProductId.XRP_DESKTOP,
+        controller = AresControllerTarget.XRP_PICO,
+        simulator = AresSimulatorTarget.XRP,
+        capabilities = setOf(
+            SimulationCapability.DIFFERENTIAL_DRIVETRAIN_PHYSICS,
+            SimulationCapability.MECANUM_DRIVETRAIN_PHYSICS,
+            SimulationCapability.GENERATED_SUBSYSTEM_ADAPTER,
+            SimulationCapability.HAND_AUTHORED_SUBSYSTEM_ADAPTER,
+            SimulationCapability.FIELD_CONFIGURATION,
+            SimulationCapability.NT4_TELEMETRY,
+        ),
+    )
+
     public fun forTarget(target: AresProjectTarget): SimulationProductContract = when (target.simulator) {
         AresSimulatorTarget.FTC -> FTC
         AresSimulatorTarget.FRC -> FRC
+        AresSimulatorTarget.XRP -> XRP
     }
 }
 
@@ -103,12 +120,12 @@ public object SimulationProjectPlanner {
         val required = linkedSetOf(
             SimulationCapability.FIELD_CONFIGURATION,
             SimulationCapability.NT4_TELEMETRY,
-            if (target.simulator == AresSimulatorTarget.FTC) {
-                SimulationCapability.FTC_OPMODE_LIFECYCLE
-            } else {
-                SimulationCapability.FRC_TIMED_ROBOT_LIFECYCLE
+            when (target.simulator) {
+                AresSimulatorTarget.FTC -> SimulationCapability.FTC_OPMODE_LIFECYCLE
+                AresSimulatorTarget.FRC -> SimulationCapability.FRC_TIMED_ROBOT_LIFECYCLE
+                AresSimulatorTarget.XRP -> null
             },
-        )
+        ).filterNotNullTo(linkedSetOf())
         val issues = mutableListOf<SimulationCompatibilityIssue>()
 
         if (product.controller != target.controller) {
@@ -123,7 +140,7 @@ public object SimulationProjectPlanner {
             val capability = when (document.kind) {
                 DrivetrainKind.FTC_MECANUM -> SimulationCapability.MECANUM_DRIVETRAIN_PHYSICS
                 DrivetrainKind.FRC_CTRE_SWERVE -> SimulationCapability.CTRE_SWERVE_DRIVETRAIN_PHYSICS
-                DrivetrainKind.DIFFERENTIAL,
+                DrivetrainKind.DIFFERENTIAL -> SimulationCapability.DIFFERENTIAL_DRIVETRAIN_PHYSICS
                 DrivetrainKind.ADVANCED_CUSTOM -> null
             }
             if (capability == null) {
@@ -147,6 +164,7 @@ public object SimulationProjectPlanner {
         val expectedSubsystemPlatform = when (target.controller) {
             AresControllerTarget.FTC_CONTROL_HUB -> SubsystemPlatform.FTC
             AresControllerTarget.FRC_ROBORIO -> SubsystemPlatform.FRC
+            AresControllerTarget.XRP_PICO -> SubsystemPlatform.XRP
         }
         subsystems.sortedBy(SubsystemDocument::documentId).forEach { subsystem ->
             if (subsystem.platform != expectedSubsystemPlatform) {

@@ -200,6 +200,13 @@ fun HardwareInspectorBody(
                     viewModel.updateHardware(device.hardwareId) { it.copy(connection = it.connection.copy(channel = value, canId = null)) }
                 }
             }
+            SubsystemPlatform.XRP -> {
+                TextInput("XRP Device Name / Pin", device.connection.hardwareMapName.orEmpty()) { value ->
+                    viewModel.updateHardware(device.hardwareId) {
+                        it.copy(connection = SubsystemHardwareConnection(hardwareMapName = value))
+                    }
+                }
+            }
         }
         Row(verticalAlignment = Alignment.Top) {
             FieldGuidance(

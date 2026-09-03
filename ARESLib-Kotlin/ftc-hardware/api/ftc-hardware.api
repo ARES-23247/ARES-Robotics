@@ -565,6 +565,38 @@ public final class com/areslib/ftc/drivetrain/PinpointIO$HealthStatus : java/lan
 	public static fun values ()[Lcom/areslib/ftc/drivetrain/PinpointIO$HealthStatus;
 }
 
+public final class com/areslib/ftc/drivetrain/SparkFunOtosIO : com/areslib/hardware/drive/OdometryIO, java/lang/AutoCloseable {
+	public static final field Companion Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$Companion;
+	public fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;)V
+	public fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;D)V
+	public fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;DD)V
+	public fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;DDD)V
+	public fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;DDDD)V
+	public fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;DDDDZ)V
+	public synthetic fun <init> (Lcom/qualcomm/hardware/sparkfun/SparkFunOTOS;DDDDZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public final fun getConsecutiveReadFailures ()I
+	public final fun getHealthStatus ()Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public final fun getPoseUpdate ()Lcom/areslib/action/RobotAction$PoseUpdate;
+	public fun initialize (Lcom/areslib/math/geometry/Pose2d;)V
+	public fun updateInputs (Lcom/areslib/hardware/drive/OdometryInputs;)V
+}
+
+public final class com/areslib/ftc/drivetrain/SparkFunOtosIO$Companion {
+}
+
+public final class com/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus : java/lang/Enum {
+	public static final field COMMUNICATION_FAILURE Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static final field HEALTHY Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static final field IMPLAUSIBLE Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static final field NONFINITE Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static final field STALE Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static final field STARTING Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+	public static fun values ()[Lcom/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus;
+}
+
 public final class com/areslib/ftc/drivetrain/SwerveModuleIOFtc : com/areslib/hardware/drive/SwerveModuleIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;)V
 	public fun close ()V

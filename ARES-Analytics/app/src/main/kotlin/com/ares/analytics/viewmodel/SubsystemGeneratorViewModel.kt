@@ -71,10 +71,12 @@ class SubsystemGeneratorViewModel(
     private val platform = when (league) {
         League.FTC -> SubsystemPlatform.FTC
         League.FRC -> SubsystemPlatform.FRC
+        League.XRP -> SubsystemPlatform.XRP
     }
     private val basePackage = when (league) {
         League.FTC -> "org.firstinspires.ftc.teamcode.subsystems"
         League.FRC -> "com.areslib.frc.subsystems"
+        League.XRP -> "xrp.subsystems"
     }
     private val previewPlanner = SubsystemBuilderPreviewPlanner(league, platform, basePackage)
     private val persistence = SubsystemProjectPersistence(documents, projectSession)
@@ -110,6 +112,7 @@ class SubsystemGeneratorViewModel(
         val target = when (league) {
             League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
             League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
+            League.XRP -> com.areslib.controls.ControllerInputPlatform.XRP
         }
         runCatching {
             val sessionSnapshot = projectSession?.snapshot(current.projectPath, target, forceReload = true)
@@ -282,6 +285,7 @@ class SubsystemGeneratorViewModel(
         val sourceRoot = when (league) {
             League.FTC -> "TeamCode/src/main/java"
             League.FRC -> "src/main/kotlin"
+            League.XRP -> "src"
         }
         val document = SubsystemTemplates.create(SubsystemTemplate.ADVANCED_CUSTOM, id, name, platform).copy(
             generateMockIo = false,

@@ -37,7 +37,7 @@ Reducers calculate state only. Device reads, telemetry writes, file access, cloc
 - `math/geometry`, `math/kinematics`, and `kinematics`: geometry and drivetrain transformations.
 - `math/estimation`: `PoseEstimator`, odometry propagation, delayed vision correction, and scalar Kalman filtering.
 - `control`: feedback, profiles, drivetrain control, safety, SysId, and assisted actions.
-- `pathing`: PathPlanner parsing, splines, trajectories, path following, costmaps, Theta*, and VFH.
+- `pathing`: PathPlanner parsing, splines, trajectories, path following, costmaps, and Theta*.
 - `sequencer`: task state machines and execution.
 - `hardware`: SDK-independent IO contracts, cached input containers, registry, and topology models.
 - `subsystem`: reusable subsystem/facade base classes.
