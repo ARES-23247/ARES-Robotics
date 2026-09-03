@@ -3,8 +3,8 @@
   <groupId>org.aresfirst.ares</groupId>
   <artifactId>telemetry-schema</artifactId>
   <versioning>
-    <latest>15.0.2</latest>
-    <release>15.0.2</release>
+    <latest>15.0.3</latest>
+    <release>15.0.3</release>
     <versions>
       <version>13.0.0</version>
       <version>13.0.1</version>
@@ -12,7 +12,8 @@
       <version>15.0.0</version>
       <version>15.0.1</version>
       <version>15.0.2</version>
+      <version>15.0.3</version>
     </versions>
-    <lastUpdated>20260902214648</lastUpdated>
+    <lastUpdated>20260903035426</lastUpdated>
   </versioning>
 </metadata>
