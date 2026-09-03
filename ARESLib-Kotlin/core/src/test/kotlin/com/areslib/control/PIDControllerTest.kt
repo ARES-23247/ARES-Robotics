@@ -156,4 +156,14 @@ class PIDControllerTest {
         val outAtSetpointNeg = pid.calculate(measurement = 0.0, setpoint = 0.0, dtSeconds = 1.0)
         assertEquals(0.0, outAtSetpointNeg, 0.001)
     }
+
+    @Test
+    fun `optimized output reuses candidate integral only when unsaturated`() {
+        val pid = PIDController(1.0, 1.0, 0.0)
+        pid.setOutputLimits(-5.0, 5.0)
+
+        assertEquals(4.0, pid.calculate(measurement = 0.0, setpoint = 2.0, dtSeconds = 1.0), 1e-12)
+        assertEquals(4.0, pid.calculate(measurement = 0.0, setpoint = 2.0, dtSeconds = 1.0), 1e-12)
+        assertEquals(2.0, pid.calculate(measurement = 2.0, setpoint = 2.0, dtSeconds = 1.0), 1e-12)
+    }
 }

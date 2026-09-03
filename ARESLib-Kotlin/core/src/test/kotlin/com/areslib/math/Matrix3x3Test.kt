@@ -38,7 +38,12 @@ class Matrix3x3Test {
         // Should be roughly identity
         assertEquals(1.0, identityResult.m00, 0.001)
         assertEquals(0.0, identityResult.m01, 0.001)
+        assertEquals(0.0, identityResult.m02, 0.001)
+        assertEquals(0.0, identityResult.m10, 0.001)
         assertEquals(1.0, identityResult.m11, 0.001)
+        assertEquals(0.0, identityResult.m12, 0.001)
+        assertEquals(0.0, identityResult.m20, 0.001)
+        assertEquals(0.0, identityResult.m21, 0.001)
         assertEquals(1.0, identityResult.m22, 0.001)
     }
 

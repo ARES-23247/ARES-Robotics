@@ -11,6 +11,7 @@ class MathUtilsTest {
         assertEquals(0.0, wrapAngle(0.0), 1e-6)
         assertEquals(0.0, wrapAngle(Double.NaN), 1e-6)
         assertEquals(0.0, wrapAngle(Double.POSITIVE_INFINITY), 1e-6)
+        assertEquals(0.0, wrapAngle(Double.NEGATIVE_INFINITY), 1e-6)
 
         // Simple wrapping cases
         assertEquals(-Math.PI, wrapAngle(Math.PI), 1e-6)
