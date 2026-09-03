@@ -61,7 +61,7 @@ fun ImportCenterScreen(
     viewModel: ImportCenterViewModel,
     projectPath: String,
     onOpenRunHistory: () -> Unit = {},
-    onOpenGuidedAnalysis: () -> Unit = {},
+    onOpenGuidedAnalysis: (String) -> Unit = {},
     onOpenHelp: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -185,7 +185,7 @@ fun ImportCenterScreen(
                         Text("Run History", color = AresCyan)
                     }
                     Button(
-                        onClick = onOpenGuidedAnalysis,
+                        onClick = { onOpenGuidedAnalysis(outcome.session.sessionId) },
                         colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
                     ) {
                         Icon(Icons.Default.Analytics, contentDescription = null)

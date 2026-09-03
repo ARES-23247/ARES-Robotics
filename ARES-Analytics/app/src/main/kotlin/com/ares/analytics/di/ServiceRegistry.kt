@@ -128,7 +128,12 @@ class ServiceRegistry {
     }
 
     // ── Tier 1: Depend on Tier 0 ─────────────────────────────────────────────
-    val nt4ClientService by lazy { Nt4ClientService(databaseService) }
+    val nt4ClientService by lazy {
+        Nt4ClientService(databaseService) { session ->
+            val summary = summaryEngineService.generateSummary(session)
+            session.copy(tags = summary.tags)
+        }
+    }
     val logParserService by lazy { LogParserService(databaseService, summaryEngineService) }
     val replayEngineService by lazy { ReplayEngineService(databaseService, nt4ClientService) }
     val sysIdService by lazy { SysIdService(databaseService) }

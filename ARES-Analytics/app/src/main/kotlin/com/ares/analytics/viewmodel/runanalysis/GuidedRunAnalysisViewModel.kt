@@ -50,6 +50,7 @@ class GuidedRunAnalysisViewModel(
     private var comparisonJob: Job? = null
     private var generation = 0L
     private var comparisonGeneration = 0L
+    private var requestedSessionId: String? = null
 
     fun load(selectedWorkspace: WorkspaceConfig) {
         workspace = selectedWorkspace
@@ -77,8 +78,10 @@ class GuidedRunAnalysisViewModel(
             runCatching { service.listWorkspaceSessions(selectedWorkspace) }
                 .onSuccess { sessions ->
                     if (request != generation || workspace != selectedWorkspace) return@onSuccess
-                    val selectedId = _state.value.selectedSessionId?.takeIf { id -> sessions.any { it.sessionId == id } }
+                    val selectedId = requestedSessionId?.takeIf { id -> sessions.any { it.sessionId == id } }
+                        ?: _state.value.selectedSessionId?.takeIf { id -> sessions.any { it.sessionId == id } }
                         ?: sessions.firstOrNull()?.sessionId
+                    if (selectedId == requestedSessionId) requestedSessionId = null
                     val comparisons = _state.value.comparisonSessionIds
                         .filter { candidate -> candidate != selectedId && sessions.any { it.sessionId == candidate } }
                         .ifEmpty { sessions.firstOrNull { it.sessionId != selectedId }?.let { listOf(it.sessionId) }.orEmpty() }
@@ -110,6 +113,12 @@ class GuidedRunAnalysisViewModel(
                     )
                 }
         }
+    }
+
+    /** Refreshes the workspace run list and selects [sessionId] as soon as it becomes visible. */
+    fun openSession(sessionId: String) {
+        requestedSessionId = sessionId
+        refreshSessions()
     }
 
     fun selectSession(sessionId: String) {
