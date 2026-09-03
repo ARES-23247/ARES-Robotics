@@ -305,8 +305,9 @@ fun validateDrivetrainDocument(document: DrivetrainDocument): List<DrivetrainVal
         }
         DrivetrainKind.DIFFERENTIAL -> {
             if (document.ctreImport != null) issue("ctreImport", "Differential drive cannot use CTRE metadata")
+            val primaryMotors = document.components.filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR && it.leaderUid == null }
+            if (primaryMotors.size != 2) issue("components", "Differential drive requires exactly two primary drive motors (left and right)")
             val driveMotors = document.components.filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR }
-            if (driveMotors.size != 2) issue("components", "Differential drive requires exactly two drive motors (left and right)")
             if (driveMotors.any { !it.required }) issue("components", "Every differential drive motor must be required at startup")
         }
         DrivetrainKind.ADVANCED_CUSTOM -> if (document.ctreImport != null) issue("ctreImport", "Only CTRE swerve accepts CTRE import metadata")

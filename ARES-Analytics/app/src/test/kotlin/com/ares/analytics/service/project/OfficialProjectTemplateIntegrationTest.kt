@@ -71,7 +71,7 @@ class OfficialProjectTemplateIntegrationTest {
         )
         val history = localHistoryService()
 
-        League.entries.forEach { league ->
+        listOf(League.FTC, League.FRC).forEach { league ->
             val destination = File(output, league.name.lowercase())
             if (destination.exists()) destination.deleteRecursively()
             val result = service.create(

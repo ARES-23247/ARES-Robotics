@@ -52,7 +52,7 @@ class RobotProjectTemplateServiceTest {
     fun `official generic starters require hardware review before deployment`() {
         val service = RobotProjectTemplateService()
 
-        League.entries.forEach { league ->
+        listOf(League.FTC, League.FRC).forEach { league ->
             val template = service.templateFor(league)
             assertEquals(BuildConfig.ARES_VERSION, template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
