@@ -56,7 +56,8 @@ internal fun RunDataRouteHost(
                 actions.reloadRuns()
                 actions.navigate(NavigationTarget.RUN_HISTORY)
             },
-            onOpenGuidedAnalysis = {
+            onOpenGuidedAnalysis = { sessionId ->
+                scope.guidedAnalysis.openSession(sessionId)
                 actions.reloadRuns()
                 actions.navigate(NavigationTarget.GUIDED_RUN_ANALYSIS)
             },

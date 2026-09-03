@@ -264,7 +264,8 @@ internal fun decodeSimulatorPoseFrame(
  * @see DatabaseService
  */
 open class Nt4ClientService(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val finalizeRecording: suspend (Session) -> Session = { it },
 ) {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, e -> e.printStackTrace() })
     private val disposed = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -542,7 +543,10 @@ open class Nt4ClientService(
             }
             val endTime = System.currentTimeMillis()
             val duration = endTime - session.createdAt
-            databaseService.insertSession(session.copy(durationMs = duration))
+            val completed = session.copy(durationMs = duration)
+            databaseService.insertSession(completed)
+            val finalized = finalizeRecording(completed)
+            if (finalized != completed) databaseService.insertSession(finalized)
             _currentSession.value = null
         }
     }

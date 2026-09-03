@@ -1,6 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.SessionSummary
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CoroutineStart
@@ -542,6 +543,37 @@ class Nt4ClientServiceTest {
         val persisted = databaseService.getSessions().single { it.sessionId == recording.sessionId }
         assertTrue(persisted.durationMs > 0L)
         assertTrue("simulation" in persisted.tags)
+    }
+
+    @Test
+    fun `recording stop runs analytics finalization and persists enriched tags`() = runBlocking {
+        var finalizedSessionId: String? = null
+        val client = Nt4ClientService(databaseService) { session ->
+            finalizedSessionId = session.sessionId
+            databaseService.insertSessionSummary(
+                SessionSummary(
+                    sessionId = session.sessionId,
+                    teamId = session.teamId,
+                    seasonId = session.seasonId,
+                    robotId = session.robotId,
+                    createdAt = session.createdAt,
+                    durationMs = session.durationMs,
+                    avgLoopTimeMs = 20.0,
+                    tags = session.tags + "summarized",
+                )
+            )
+            session.copy(tags = session.tags + "summarized")
+        }
+        val recording = client.startRecordingSession("23247", "2026", "sim-robot", tags = listOf("simulation"))
+        client.publishFrame(TelemetryFrame(100L, "ignored", "Diagnostics/LoopTimeMs", 20.0))
+
+        client.stopRecordingSession()
+
+        assertEquals(recording.sessionId, finalizedSessionId)
+        assertTrue("summarized" in databaseService.getSessions().single { it.sessionId == recording.sessionId }.tags)
+        assertEquals(20.0, databaseService.getSessionSummary(recording.sessionId)?.avgLoopTimeMs)
+        client.stop()
+        Unit
     }
 
     @Test

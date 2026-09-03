@@ -90,6 +90,24 @@ class GuidedRunAnalysisViewModelTest {
     }
 
     @Test
+    fun `review import selects the requested run after refresh`() = runTest {
+        val sessions = CompletableDeferred<List<Session>>().apply {
+            complete(listOf(session("older", "practice"), session("just-imported", "practice")))
+        }
+        val repository = FakeRepository(mapOf("workspace" to sessions))
+        val viewModel = GuidedRunAnalysisViewModel(repository, this)
+        viewModel.load(workspace("workspace", "practice"))
+        advanceUntilIdle()
+        assertEquals("older", viewModel.state.value.selectedSessionId)
+
+        viewModel.openSession("just-imported")
+        advanceUntilIdle()
+
+        assertEquals("just-imported", viewModel.state.value.selectedSessionId)
+        assertEquals("just-imported", viewModel.state.value.report?.session?.sessionId)
+    }
+
+    @Test
     fun `student can select several comparison runs and change a shared alignment`() = runTest {
         val sessions = CompletableDeferred<List<Session>>().apply {
             complete(listOf(session("primary", "practice"), session("second", "practice"), session("third", "practice")))
