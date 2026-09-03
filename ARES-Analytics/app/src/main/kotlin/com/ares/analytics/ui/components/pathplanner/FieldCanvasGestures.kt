@@ -22,6 +22,47 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+internal data class FieldCanvasGestureSelection(
+    val waypointIndex: Int = -1,
+    val obstacleId: String? = null,
+    val aprilTagId: String? = null,
+    val gamePieceId: String? = null,
+    val fieldWaypointId: String? = null,
+    val isDraggingHeading: Boolean = false,
+    val isDraggingPrevHeading: Boolean = false,
+    val isDraggingFieldWaypoint: Boolean = false,
+    val isDraggingFieldWaypointHeading: Boolean = false,
+)
+
+internal sealed interface FieldCanvasDragTarget {
+    data class Waypoint(val index: Int, val heading: Boolean, val previousHeading: Boolean) : FieldCanvasDragTarget
+    data class Obstacle(val id: String) : FieldCanvasDragTarget
+    data class AprilTag(val id: String) : FieldCanvasDragTarget
+    data class GamePiece(val id: String) : FieldCanvasDragTarget
+    data class FieldWaypoint(val id: String, val heading: Boolean, val position: Boolean) : FieldCanvasDragTarget
+}
+
+internal fun FieldCanvasGestureSelection.dragTarget(
+    waypointCount: Int,
+    obstacleControlsEnabled: Boolean,
+): FieldCanvasDragTarget? = when {
+    waypointIndex in 0 until waypointCount -> FieldCanvasDragTarget.Waypoint(
+        index = waypointIndex,
+        heading = isDraggingHeading,
+        previousHeading = isDraggingPrevHeading,
+    )
+    !obstacleControlsEnabled -> null
+    obstacleId != null -> FieldCanvasDragTarget.Obstacle(obstacleId)
+    aprilTagId != null -> FieldCanvasDragTarget.AprilTag(aprilTagId)
+    gamePieceId != null -> FieldCanvasDragTarget.GamePiece(gamePieceId)
+    fieldWaypointId != null -> FieldCanvasDragTarget.FieldWaypoint(
+        id = fieldWaypointId,
+        heading = isDraggingFieldWaypointHeading,
+        position = isDraggingFieldWaypoint,
+    )
+    else -> null
+}
+
 /**
  * Encapsulates pointer gestures, drag tracking, tool-mode placement, and context menu hit-testing
  * for the PathPlanner field canvas.
@@ -48,10 +89,6 @@ internal fun Modifier.fieldCanvasGestures(
     showObstacleControls: Boolean,
     isShiftPressed: Boolean,
     selectedWaypointIndex: Int,
-    selectedObstacleId: String?,
-    selectedAprilTagId: String?,
-    selectedGamePieceId: String?,
-    selectedFieldWaypointId: String?,
     onWaypointsChanged: (List<Waypoint>) -> Unit,
     updateObstacles: (List<Obstacle>) -> Unit,
     updateGamePieces: (List<GamePiece>) -> Unit,
@@ -76,16 +113,13 @@ internal fun Modifier.fieldCanvasGestures(
         var accumulatedDragPx = Offset.Zero
         var dragInitialPos = Waypoint(0.0, 0.0)
         var dragInitialVertices: List<PathPoint> = emptyList()
-        var isDraggingHeading = false
-        var isDraggingPrevHeading = false
-        var isDraggingFieldWaypoint = false
-        var isDraggingFieldWaypointHeading = false
 
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             val pressOffset = down.position
             var hasDragged = false
             accumulatedDragPx = Offset.Zero
+            var gestureSelection = FieldCanvasGestureSelection()
 
             val w = size.width.toFloat()
             val h = size.height.toFloat()
@@ -249,27 +283,35 @@ internal fun Modifier.fieldCanvasGestures(
                         }
                     }
 
-                    isDraggingHeading = hitIdx != -1 && hitHeading
-                    isDraggingPrevHeading = hitIdx != -1 && hitPrevHeading
-                    isDraggingFieldWaypoint = hitFieldWpId != null && hitFieldWpCenter
-                    isDraggingFieldWaypointHeading = hitFieldWpId != null && hitFieldWpHeading
+                    gestureSelection = FieldCanvasGestureSelection(
+                        waypointIndex = hitIdx,
+                        obstacleId = newObsId,
+                        aprilTagId = newAtId,
+                        gamePieceId = newGpId,
+                        fieldWaypointId = hitFieldWpId,
+                        isDraggingHeading = hitIdx != -1 && hitHeading,
+                        isDraggingPrevHeading = hitIdx != -1 && hitPrevHeading,
+                        isDraggingFieldWaypoint = hitFieldWpId != null && hitFieldWpCenter,
+                        isDraggingFieldWaypointHeading = hitFieldWpId != null && hitFieldWpHeading,
+                    )
 
                     onSelectionChanged(
-                        hitIdx,
-                        newObsId,
-                        newAtId,
-                        newGpId,
-                        hitFieldWpId,
-                        isDraggingHeading,
-                        isDraggingPrevHeading,
-                        isDraggingFieldWaypoint,
-                        isDraggingFieldWaypointHeading,
+                        gestureSelection.waypointIndex,
+                        gestureSelection.obstacleId,
+                        gestureSelection.aprilTagId,
+                        gestureSelection.gamePieceId,
+                        gestureSelection.fieldWaypointId,
+                        gestureSelection.isDraggingHeading,
+                        gestureSelection.isDraggingPrevHeading,
+                        gestureSelection.isDraggingFieldWaypoint,
+                        gestureSelection.isDraggingFieldWaypointHeading,
                     )
                 }
                 else -> { /* Placement handled on release when !hasDragged */ }
             }
 
             // 3. Wait for touch slop then track drag
+            val dragTarget = gestureSelection.dragTarget(currentWaypoints.size, showObstacleControls)
             val slopChange = awaitTouchSlopOrCancellation(down.id) { change, _ ->
                 change.consume()
             }
@@ -285,51 +327,50 @@ internal fun Modifier.fieldCanvasGestures(
                     fun snap(v: Double) = if (isShiftPressed) kotlin.math.round(v * 10.0) / 10.0 else v
                     val totalDelta = getDragDeltaInFieldCoords(accumulatedDragPx, w, h, fieldWidthM, fieldHeightM, league, zoomScale)
 
-                    when {
-                        selectedWaypointIndex != -1 -> {
-                            val isDraggingHeadingActive = selectedWaypointIndex in currentWaypoints.indices
-                            val wp = currentWaypoints[selectedWaypointIndex]
+                    when (val target = dragTarget) {
+                        is FieldCanvasDragTarget.Waypoint -> {
+                            val wp = currentWaypoints[target.index]
                             val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
                             val dx = posMeters.x - wp.x
                             val dy = posMeters.y - wp.y
 
                             when {
-                                isDraggingHeading && isDraggingHeadingActive -> {
+                                target.heading -> {
                                     val angle = kotlin.math.atan2(dy, dx)
                                     val mag = kotlin.math.sqrt(dx * dx + dy * dy)
                                     onWaypointsChanged(
                                         currentWaypoints.toMutableList().apply {
-                                            set(selectedWaypointIndex, wp.copy(headingRad = angle, rotationDeg = Math.toDegrees(angle), nextControlLength = if (isShiftPressed) snap(mag) else mag, prevControlLength = if (isShiftPressed) snap(mag) else mag))
+                                            set(target.index, wp.copy(headingRad = angle, rotationDeg = Math.toDegrees(angle), nextControlLength = if (isShiftPressed) snap(mag) else mag, prevControlLength = if (isShiftPressed) snap(mag) else mag))
                                         }
                                     )
                                 }
-                                isDraggingPrevHeading && isDraggingHeadingActive -> {
+                                target.previousHeading -> {
                                     val angle = kotlin.math.atan2(dy, dx) - Math.PI
                                     val normalizedAngle = wrapAngle(angle)
                                     val mag = kotlin.math.sqrt(dx * dx + dy * dy)
                                     onWaypointsChanged(
                                         currentWaypoints.toMutableList().apply {
-                                            set(selectedWaypointIndex, wp.copy(headingRad = normalizedAngle, nextControlLength = if (isShiftPressed) snap(mag) else mag, prevControlLength = if (isShiftPressed) snap(mag) else mag))
+                                            set(target.index, wp.copy(headingRad = normalizedAngle, nextControlLength = if (isShiftPressed) snap(mag) else mag, prevControlLength = if (isShiftPressed) snap(mag) else mag))
                                         }
                                     )
                                 }
                                 else -> {
                                     val newPos = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
-                                    val existingWp = currentWaypoints[selectedWaypointIndex]
+                                    val existingWp = currentWaypoints[target.index]
                                     onWaypointsChanged(
                                         currentWaypoints.toMutableList().apply {
-                                            set(selectedWaypointIndex, existingWp.copy(x = snap(newPos.x), y = snap(newPos.y)))
+                                            set(target.index, existingWp.copy(x = snap(newPos.x), y = snap(newPos.y)))
                                         }
                                     )
                                 }
                             }
                         }
-                        selectedObstacleId != null && showObstacleControls -> {
-                            val targetObs = currentActiveObstacles.find { it.id == selectedObstacleId }
+                        is FieldCanvasDragTarget.Obstacle -> {
+                            val targetObs = currentActiveObstacles.find { it.id == target.id }
                             if (targetObs != null && !targetObs.locked) {
                                 updateObstacles(
                                     currentActiveObstacles.map { obs ->
-                                        if (obs.id == selectedObstacleId) {
+                                        if (obs.id == target.id) {
                                             when (obs) {
                                                 is Obstacle.Circle -> obs.copy(centerX = snap(dragInitialPos.x + totalDelta.x), centerY = snap(dragInitialPos.y + totalDelta.y))
                                                 is Obstacle.Rectangle -> obs.copy(centerX = snap(dragInitialPos.x + totalDelta.x), centerY = snap(dragInitialPos.y + totalDelta.y))
@@ -340,48 +381,49 @@ internal fun Modifier.fieldCanvasGestures(
                                 )
                             }
                         }
-                        selectedAprilTagId != null && showObstacleControls -> {
-                            val targetAt = currentActiveAprilTags.find { it.id == selectedAprilTagId }
+                        is FieldCanvasDragTarget.AprilTag -> {
+                            val targetAt = currentActiveAprilTags.find { it.id == target.id }
                             if (targetAt != null && !targetAt.locked) {
                                 updateAprilTags(
                                     currentActiveAprilTags.map { at ->
-                                        if (at.id == selectedAprilTagId) at.copy(x = snap(dragInitialPos.x + totalDelta.x), y = snap(dragInitialPos.y + totalDelta.y)) else at
+                                        if (at.id == target.id) at.copy(x = snap(dragInitialPos.x + totalDelta.x), y = snap(dragInitialPos.y + totalDelta.y)) else at
                                     }
                                 )
                             }
                         }
-                        selectedGamePieceId != null && showObstacleControls -> {
-                            val targetGp = currentActiveGamePieces.find { it.id == selectedGamePieceId }
+                        is FieldCanvasDragTarget.GamePiece -> {
+                            val targetGp = currentActiveGamePieces.find { it.id == target.id }
                             if (targetGp != null && !targetGp.locked) {
                                 updateGamePieces(
                                     currentActiveGamePieces.map { gp ->
-                                        if (gp.id == selectedGamePieceId) gp.copy(x = snap(dragInitialPos.x + totalDelta.x), y = snap(dragInitialPos.y + totalDelta.y)) else gp
+                                        if (gp.id == target.id) gp.copy(x = snap(dragInitialPos.x + totalDelta.x), y = snap(dragInitialPos.y + totalDelta.y)) else gp
                                     }
                                 )
                             }
                         }
-                        selectedFieldWaypointId != null && showObstacleControls -> {
-                            val targetWp = currentActiveFieldWaypoints.find { it.id == selectedFieldWaypointId }
+                        is FieldCanvasDragTarget.FieldWaypoint -> {
+                            val targetWp = currentActiveFieldWaypoints.find { it.id == target.id }
                             if (targetWp != null && !targetWp.locked) {
                                 when {
-                                    isDraggingFieldWaypointHeading -> {
+                                    target.heading -> {
                                         val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
                                         val angle = kotlin.math.atan2(posMeters.y - targetWp.y, posMeters.x - targetWp.x)
                                         val degrees = Math.toDegrees(angle)
                                         val targetHeading = -degrees - 90.0
                                         val normalizedHeading = ((targetHeading + 180.0) % 360.0 + 360.0) % 360.0 - 180.0
                                         updateFieldWaypoints(currentActiveFieldWaypoints.map { wp ->
-                                            if (wp.id == selectedFieldWaypointId) wp.copy(headingDegrees = if (isShiftPressed) snap(normalizedHeading) else normalizedHeading) else wp
+                                            if (wp.id == target.id) wp.copy(headingDegrees = if (isShiftPressed) snap(normalizedHeading) else normalizedHeading) else wp
                                         })
                                     }
-                                    isDraggingFieldWaypoint -> {
+                                    target.position -> {
                                         updateFieldWaypoints(currentActiveFieldWaypoints.map { wp ->
-                                            if (wp.id == selectedFieldWaypointId) wp.copy(x = snap(dragInitialPos.x + totalDelta.x), y = snap(dragInitialPos.y + totalDelta.y)) else wp
+                                            if (wp.id == target.id) wp.copy(x = snap(dragInitialPos.x + totalDelta.x), y = snap(dragInitialPos.y + totalDelta.y)) else wp
                                         })
                                     }
                                 }
                             }
                         }
+                        null -> Unit
                     }
                 }
             }
