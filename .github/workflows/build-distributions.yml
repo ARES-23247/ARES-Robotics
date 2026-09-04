@@ -19,7 +19,7 @@ env:
   XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v6.0.0/ARES-XRP-Starter-1.0.0.zip
   XRP_STARTER_SHA256: f2b2fc5942e859c7e4ad846d4753ccc9049db06778092a325976cf54ef186c3a
   LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v6.0.0/ARES-Lightbot-Example-2.0.0.zip
-  LIGHTBOT_EXAMPLE_SHA256: e345790f13aa6f1a750dbf43aa62872c72f9a7e27e05d201d28eedacfac521fb
+  LIGHTBOT_EXAMPLE_SHA256: 8f9b36884c96155b6e2ed317cfad1ed5a1db10eb937e9983457b52f33823b792
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
