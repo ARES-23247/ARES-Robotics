@@ -65,6 +65,7 @@ class GenericStarterTemplateIntegrationTest {
                 id = "ares-${league.name.lowercase()}-generic-$templateVersion-${hash.take(12)}",
                 displayName = "ARES ${league.name} Generic Starter",
                 league = league,
+                artifactVersion = templateVersion,
                 aresVersion = templateVersion,
                 revision = hash.take(16),
                 archiveUrl = archive.toURI().toASCIIString(),

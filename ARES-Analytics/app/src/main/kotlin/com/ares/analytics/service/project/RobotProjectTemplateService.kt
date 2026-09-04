@@ -49,6 +49,9 @@ data class RobotProjectTemplate(
     val id: String,
     val displayName: String,
     val league: League,
+    /** Version of the immutable starter/example archive itself. */
+    val artifactVersion: String,
+    /** Pinned ARES runtime dependency required by the archive. */
     val aresVersion: String,
     val revision: String,
     val archiveUrl: String,

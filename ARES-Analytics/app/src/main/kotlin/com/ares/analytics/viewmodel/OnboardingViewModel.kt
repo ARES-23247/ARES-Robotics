@@ -54,7 +54,7 @@ data class OnboardingState(
     val projectFolderName: String = "",
     val projectDetectionMessage: String? = null,
     val projectTemplateName: String = "ARES FTC",
-    val projectTemplateVersion: String = "6.1.0",
+    val projectTemplateVersion: String = "",
     val projectCreationMessage: String? = null,
     val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val teamId: String = "",
@@ -145,7 +145,7 @@ class OnboardingViewModel(
     private val _state = MutableStateFlow(
         OnboardingState(
             projectTemplateName = initialTemplate.displayName,
-            projectTemplateVersion = initialTemplate.aresVersion,
+            projectTemplateVersion = initialTemplate.artifactVersion,
         ),
     )
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -185,7 +185,7 @@ class OnboardingViewModel(
                                     nt4Host = "127.0.0.1",
                                     simulatorCommand = "",
                                     projectTemplateName = template.displayName,
-                                    projectTemplateVersion = template.aresVersion,
+                                    projectTemplateVersion = template.artifactVersion,
                                 )
                                 lightbot.copy(projectPath = plannedProjectPath(lightbot))
                             }
@@ -237,7 +237,7 @@ class OnboardingViewModel(
                         league = intent.league,
                         nt4Host = environmentService.getDefaultNt4Host(intent.league, current.teamId),
                         projectTemplateName = template?.displayName.orEmpty(),
-                        projectTemplateVersion = template?.aresVersion.orEmpty(),
+                        projectTemplateVersion = template?.artifactVersion.orEmpty(),
                         errorMessage = if (template == null && current.projectSetupMode.createsProject) {
                             "No reviewed ${intent.league.name} starter is bundled with this Studio build."
                         } else null,
@@ -433,7 +433,7 @@ class OnboardingViewModel(
                         projectSetupMode = ProjectSetupMode.OPEN_EXISTING,
                         projectPath = result.destination.path,
                         projectDetectionMessage =
-                            "Created ${result.template.displayName} ${result.template.aresVersion} from a verified ${result.source.name.lowercase().replace('_', ' ')}.",
+                            "Created ${result.template.displayName} ${result.template.artifactVersion} from a verified ${result.source.name.lowercase().replace('_', ' ')}.",
                         projectCreationMessage = "Project files and local version history are ready.",
                     )
                 }
