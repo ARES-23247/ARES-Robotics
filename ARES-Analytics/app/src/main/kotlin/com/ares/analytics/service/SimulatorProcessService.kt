@@ -179,4 +179,5 @@ internal val SimulationProductId.league: League
     get() = when (this) {
         SimulationProductId.FTC_DESKTOP_OPMODE -> League.FTC
         SimulationProductId.FRC_WPILIB_DESKTOP -> League.FRC
+        SimulationProductId.XRP_DESKTOP -> League.XRP
     }

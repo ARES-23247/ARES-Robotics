@@ -7,7 +7,7 @@ import com.areslib.util.sha256Hex
 
 const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 4
 
-enum class AresLeague { FTC, FRC }
+enum class AresLeague { FTC, FRC, XRP }
 
 /** Which source is authoritative when Studio and project-owned Kotlin coexist. */
 enum class AresProjectAuthoringModel {
@@ -45,9 +45,19 @@ data class AresFtcRuntimeOptionsDocument(
     val limelightProxyEnabled: Boolean = false,
 )
 
+/** XRP-only runtime choices that configure wireless and safety behavior. */
+data class AresXrpRuntimeOptionsDocument(
+    val wifiMode: String = "AP",
+    val ssid: String = "ARES-XRP-AUTO",
+    val port: Int = 5810,
+    val deadmanTimeoutMs: Int = 200,
+    val brownoutThresholdVolts: Double = 4.3,
+)
+
 /** Platform-specific runtime choices. Unsupported platform sections are rejected, not ignored. */
 data class AresRuntimeOptionsDocument(
     val ftc: AresFtcRuntimeOptionsDocument? = null,
+    val xrp: AresXrpRuntimeOptionsDocument? = null,
 )
 
 /** Coordinate frame used by authored routine poses. Headings are CCW-positive in every frame. */
@@ -83,6 +93,12 @@ data class AresProjectMetadataDocument(
 fun AresProjectMetadataDocument.requireFtcRuntimeOptions(): AresFtcRuntimeOptionsDocument {
     require(league == AresLeague.FTC) { "FTC runtime options are only valid for FTC projects" }
     return requireNotNull(runtimeOptions.ftc) { "FTC projects must declare runtimeOptions.ftc" }
+}
+
+/** Returns the required XRP runtime policy from a current XRP project document. */
+fun AresProjectMetadataDocument.requireXrpRuntimeOptions(): AresXrpRuntimeOptionsDocument {
+    require(league == AresLeague.XRP) { "XRP runtime options are only valid for XRP projects" }
+    return runtimeOptions.xrp ?: AresXrpRuntimeOptionsDocument()
 }
 
 fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<String> = buildList {
@@ -125,12 +141,18 @@ fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<Str
         AresLeague.FRC -> if (document.coordinateConvention != AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW) {
             add("FRC projects must use BLUE_CORNER_ORIGIN_CCW")
         }
+        AresLeague.XRP -> if (document.coordinateConvention != AresCoordinateConvention.CENTER_ORIGIN_CCW) {
+            add("XRP projects must use CENTER_ORIGIN_CCW")
+        }
     }
     if (document.league == AresLeague.FRC && document.runtimeOptions.ftc != null) {
         add("FRC projects cannot declare FTC runtime options")
     }
     if (document.league == AresLeague.FTC && document.runtimeOptions.ftc == null) {
         add("FTC projects must declare runtimeOptions.ftc")
+    }
+    if (document.league == AresLeague.XRP && document.runtimeOptions.ftc != null) {
+        add("XRP projects cannot declare FTC runtime options")
     }
 }
 
@@ -187,10 +209,21 @@ object AresProjectMetadataCodec {
                 limelightProxyEnabled = value.requiredBoolean("limelightProxyEnabled"),
             )
         }
+        val xrp = runtime.get("xrp")?.takeUnless { it.isJsonNull }?.let { element ->
+            require(element.isJsonObject) { "Project metadata field 'runtimeOptions.xrp' must be an object or null" }
+            val value = element.asJsonObject
+            AresXrpRuntimeOptionsDocument(
+                wifiMode = value.get("wifiMode")?.asString ?: "AP",
+                ssid = value.get("ssid")?.asString ?: "ARES-XRP-AUTO",
+                port = value.get("port")?.asInt ?: 5810,
+                deadmanTimeoutMs = value.get("deadmanTimeoutMs")?.asInt ?: 200,
+                brownoutThresholdVolts = value.get("brownoutThresholdVolts")?.asDouble ?: 4.3,
+            )
+        }
         require(league != AresLeague.FTC || ftc != null) {
             "FTC project metadata must declare 'runtimeOptions.ftc'"
         }
-        val runtimeOptions = AresRuntimeOptionsDocument(ftc = ftc)
+        val runtimeOptions = AresRuntimeOptionsDocument(ftc = ftc, xrp = xrp)
         return normalize(
             AresProjectMetadataDocument(
                 schemaVersion = ARES_PROJECT_METADATA_SCHEMA_VERSION,

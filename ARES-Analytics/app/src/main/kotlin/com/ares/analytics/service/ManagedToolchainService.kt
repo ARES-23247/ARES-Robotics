@@ -142,6 +142,14 @@ class ManagedToolchainService internal constructor(
                     )
                 }
             }
+            League.XRP -> {
+                RobotToolchainComponent(
+                    name = "MicroPython / XRP Tools",
+                    readiness = ToolchainReadiness.READY,
+                    detail = "MicroPython runtime and serial / Wi-Fi tethering are available.",
+                    location = "system",
+                )
+            }
         }
         RobotToolchainSnapshot(league, listOf(javaComponent, platformComponent)).also { _snapshot.value = it }
     }

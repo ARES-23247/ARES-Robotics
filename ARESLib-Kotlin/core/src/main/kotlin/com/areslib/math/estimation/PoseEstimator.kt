@@ -505,6 +505,7 @@ object PoseEstimator {
     private val threadScratchpad = ThreadLocal.withInitial { ScratchpadContainer() }
 
     // Known AprilTag coordinates for distance calculations (configurable via FieldLayouts)
+    @Volatile
     @JvmField
     var activeTags: Map<Int, Pose3d> = FieldLayouts.SQUARE_STANDARD_TAGS
 

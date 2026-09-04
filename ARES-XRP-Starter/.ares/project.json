@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 4,
+  "projectId": "ares-xrp-starter",
+  "identity": {
+    "teamId": "00000",
+    "seasonId": "starter",
+    "robotId": "AresXrpStarter",
+    "displayName": "ARES XRP Starter"
+  },
+  "league": "XRP",
+  "coordinateConvention": "CORNER_ORIGIN_CCW",
+  "robotLengthMeters": 0.155,
+  "robotWidthMeters": 0.155,
+  "fieldLengthMeters": 2.54,
+  "fieldWidthMeters": 1.4224,
+  "authoringModel": "GUI_OWNED",
+  "runtimeOptions": {}
+}

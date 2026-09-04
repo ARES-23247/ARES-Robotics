@@ -330,7 +330,7 @@ $fieldLines
 
 
     private fun hardwareIoSource(document: SubsystemDocument, pkg: String): String = when (document.platform) {
-        SubsystemPlatform.FTC -> SubsystemFtcIoRenderer.render(document, pkg)
+        SubsystemPlatform.FTC, SubsystemPlatform.XRP -> SubsystemFtcIoRenderer.render(document, pkg)
         SubsystemPlatform.FRC -> SubsystemFrcIoRenderer.render(document, pkg)
     }
 
@@ -658,4 +658,5 @@ private fun registryOneShotSafetyActionCase(
 internal fun platformPrefix(platform: SubsystemPlatform): String = when (platform) {
     SubsystemPlatform.FTC -> "Ftc"
     SubsystemPlatform.FRC -> "Frc"
+    SubsystemPlatform.XRP -> "Xrp"
 }

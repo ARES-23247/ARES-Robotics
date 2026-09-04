@@ -294,6 +294,7 @@ fun LocalizationStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderVi
                         LocalizationKind.CTRE_POSE_ESTIMATOR -> "CTRE swerve module and Pigeon observations."
                         LocalizationKind.VISION_FUSION -> "AprilTag vision corrections with Mahalanobis gating."
                         LocalizationKind.CUSTOM -> "Team-maintained custom estimator adapter."
+                        LocalizationKind.SPARKFUN_OTOS -> "SparkFun Optical Tracking Odometry Sensor (OTOS)."
                     }
                     Surface(
                         modifier = Modifier

@@ -67,7 +67,8 @@ internal fun validateGeneratedControls(
                 "Control scheme '${scheme.documentId}' controller '${assignment.slot}' is missing its Driver Station port"
             }
             val supportedRange = when (platform) {
-                ControllerInputPlatform.FTC -> 0..1
+                ControllerInputPlatform.FTC,
+                ControllerInputPlatform.XRP -> 0..1
                 ControllerInputPlatform.FRC -> 0..5
                 ControllerInputPlatform.DESKTOP_GLFW -> 0..15
                 null -> error("Controller platform is required")

@@ -17,7 +17,11 @@ class AprilTagMapPresetCatalogTest {
             assertTrue(presets.isNotEmpty(), "$league should offer at least one reviewed map")
             presets.forEach { preset ->
                 val document = RobotFieldDocument.decode(preset.readContent())
-                val expectedType = if (league == League.FTC) FieldType.FTC else FieldType.FRC
+                val expectedType = when (league) {
+                    League.FTC -> FieldType.FTC
+                    League.FRC -> FieldType.FRC
+                    League.XRP -> FieldType.XRP
+                }
                 assertEquals(expectedType, document.fieldType)
                 assertTrue(document.apriltags.isNotEmpty())
                 assertTrue(

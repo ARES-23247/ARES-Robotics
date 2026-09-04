@@ -1,5 +1,6 @@
 public final class com/areslib/simulation/SimulationCapability : java/lang/Enum {
 	public static final field CTRE_SWERVE_DRIVETRAIN_PHYSICS Lcom/areslib/simulation/SimulationCapability;
+	public static final field DIFFERENTIAL_DRIVETRAIN_PHYSICS Lcom/areslib/simulation/SimulationCapability;
 	public static final field FIELD_CONFIGURATION Lcom/areslib/simulation/SimulationCapability;
 	public static final field FRC_TIMED_ROBOT_LIFECYCLE Lcom/areslib/simulation/SimulationCapability;
 	public static final field FTC_OPMODE_LIFECYCLE Lcom/areslib/simulation/SimulationCapability;
@@ -90,6 +91,7 @@ public final class com/areslib/simulation/SimulationProductContract {
 public final class com/areslib/simulation/SimulationProductId : java/lang/Enum {
 	public static final field FRC_WPILIB_DESKTOP Lcom/areslib/simulation/SimulationProductId;
 	public static final field FTC_DESKTOP_OPMODE Lcom/areslib/simulation/SimulationProductId;
+	public static final field XRP_DESKTOP Lcom/areslib/simulation/SimulationProductId;
 	public final fun getDisplayName ()Ljava/lang/String;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public final fun getStableId ()Ljava/lang/String;
@@ -102,6 +104,7 @@ public final class com/areslib/simulation/SimulationProducts {
 	public final fun forTarget (Lcom/areslib/project/schema/AresProjectTarget;)Lcom/areslib/simulation/SimulationProductContract;
 	public final fun getFRC ()Lcom/areslib/simulation/SimulationProductContract;
 	public final fun getFTC ()Lcom/areslib/simulation/SimulationProductContract;
+	public final fun getXRP ()Lcom/areslib/simulation/SimulationProductContract;
 }
 
 public final class com/areslib/simulation/SimulationProjectPlan {

@@ -137,6 +137,7 @@ private fun HardwareMappingRow(
 private fun ControllerInputPlatform.studentLabel() = when (this) {
     ControllerInputPlatform.FTC -> "FTC"
     ControllerInputPlatform.FRC -> "FRC"
+    ControllerInputPlatform.XRP -> "XRP"
     ControllerInputPlatform.DESKTOP_GLFW -> "Desktop simulator"
 }
 

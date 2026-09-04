@@ -54,8 +54,9 @@ class GenericStarterTemplateIntegrationTest {
         val archives = mapOf(
             League.FTC to File(archiveRoot, "ftc.zip"),
             League.FRC to File(archiveRoot, "frc.zip"),
+            League.XRP to File(archiveRoot, "xrp.zip"),
         )
-        assertTrue(archives.values.all(File::isFile), "Create ftc.zip and frc.zip before this check.")
+        assertTrue(archives.values.all(File::isFile), "Create ftc.zip, frc.zip, and xrp.zip before this check.")
 
         val templates = League.entries.map { league ->
             val archive = requireNotNull(archives[league])
@@ -132,6 +133,7 @@ class GenericStarterTemplateIntegrationTest {
                     ),
                 )
                 League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
+                League.XRP -> addAll(listOf("generateAresProject", "test"))
             }
             add("-ParesVersion=$validationVersion")
             add("-ParesRepository=$repositoryUri")

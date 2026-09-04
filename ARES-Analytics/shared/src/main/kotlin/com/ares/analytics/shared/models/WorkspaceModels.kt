@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 /** Robotics league whose source layout and runtime conventions apply to a workspace. */
 @Serializable
 enum class League {
-    FTC, FRC
+    FTC, FRC, XRP
 }
 
 /** Whether one workspace is private to a student or intentionally shared by a team. */

@@ -90,6 +90,7 @@ class RobotProjectReadinessService(
         val targetPlatform = when (config.league) {
             League.FTC -> ControllerInputPlatform.FTC
             League.FRC -> ControllerInputPlatform.FRC
+            League.XRP -> ControllerInputPlatform.XRP
         }
         val projectSnapshot = runCatching {
             projectSession.snapshot(config.projectPath, targetPlatform, forceReload = true)
@@ -144,6 +145,7 @@ class RobotProjectReadinessService(
         val expectedLeague = when (config.league) {
             League.FTC -> AresLeague.FTC
             League.FRC -> AresLeague.FRC
+            League.XRP -> AresLeague.XRP
         }
         val subsystemErrors = diagnostics.filter { it.kind == ProjectDocumentKind.SUBSYSTEM }
             .map { "${it.file.name}: ${it.message}" }
@@ -185,6 +187,7 @@ class RobotProjectReadinessService(
             drivebaseNoCodeSupported = when (config.league) {
                 League.FTC -> drivebase?.kind == DrivebaseKind.FTC_MECANUM
                 League.FRC -> drivebase?.kind == DrivebaseKind.FRC_CTRE_SWERVE
+                League.XRP -> drivebase?.kind == DrivebaseKind.DIFFERENTIAL || drivebase?.kind == DrivebaseKind.FTC_MECANUM
             },
             localizationConfigured = drivebase != null && drivebaseErrors.isEmpty() &&
                 drivebase.localization.count { it != LocalizationKind.VISION_FUSION } == 1,
@@ -223,6 +226,7 @@ class RobotProjectReadinessService(
         when (config.league) {
             League.FTC -> "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt"
             League.FRC -> "src/main/kotlin/com/areslib/frc/generated/GeneratedAresProject.kt"
+            League.XRP -> "src/generated_ares_project.py"
         },
     )
 }

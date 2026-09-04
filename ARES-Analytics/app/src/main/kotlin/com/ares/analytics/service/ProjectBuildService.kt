@@ -649,6 +649,7 @@ class ProjectBuildService internal constructor(
         val relative = when (league) {
             League.FTC -> "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt"
             League.FRC -> "src/main/kotlin/com/areslib/frc/generated/GeneratedAresProject.kt"
+            League.XRP -> "src/generated_ares_project.py"
         }
         val generated = File(root, relative).canonicalFile
         if (!generated.isFile || !generated.toPath().startsWith(root.toPath())) return null

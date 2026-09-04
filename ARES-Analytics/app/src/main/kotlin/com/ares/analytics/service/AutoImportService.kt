@@ -155,6 +155,9 @@ class AutoImportService(
                         importFrcRobotLogs(config, host)
                     }
                 }
+                League.XRP -> {
+                    // XRP logs are tethered or imported via local files/Wi-Fi
+                }
             }
         } finally {
             // One scan may discover hundreds of archived robot logs. Refreshing Compose after

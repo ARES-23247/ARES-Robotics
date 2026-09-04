@@ -20,6 +20,7 @@ internal object ProjectLayout {
         }
 
         League.FRC -> File(projectPath, "src/main/deploy")
+        League.XRP -> File(projectPath, "deploy")
     }
 
     /** Directory containing obstacles, game pieces, AprilTags, and field waypoints. */
@@ -48,7 +49,7 @@ internal object ProjectLayout {
         val root = File(projectPath)
         if (!root.isDirectory) return "That folder does not exist."
         if (!containsRobotSource(root, league)) {
-            return "This folder is not a complete ${league.name} robot project: no Kotlin or Java robot source was found. " +
+            return "This folder is not a complete ${league.name} robot project: no robot source was found. " +
                 "Choose an existing robot repository root, or create a new project from the official ${league.name} starter."
         }
         return null
@@ -63,10 +64,11 @@ internal object ProjectLayout {
                 File(root, "src/main/kotlin")
             )
             League.FRC -> listOf(File(root, "src/main/kotlin"), File(root, "src/main/java"))
+            League.XRP -> listOf(File(root, "src"), File(root, "."))
         }
         return sourceRoots.any { sourceRoot ->
             sourceRoot.isDirectory && sourceRoot.walkTopDown().any { file ->
-                file.isFile && (file.extension == "kt" || file.extension == "java")
+                file.isFile && (file.extension == "kt" || file.extension == "java" || file.extension == "py")
             }
         }
     }

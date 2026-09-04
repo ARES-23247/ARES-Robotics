@@ -124,7 +124,7 @@ public object RobotProjectCompiler {
             }
         }
         require(requestedInputPlatform != ControllerInputPlatform.DESKTOP_GLFW) {
-            "Generated robot code requires FTC or FRC input semantics, not DESKTOP_GLFW"
+            "Generated robot code requires on-robot input semantics, not DESKTOP_GLFW"
         }
         val projectId = requireNotNull(project.projectId) { "Effective project is missing its typed project ID" }
         val target = requireNotNull(project.target) { "Effective project is missing its controller/simulator target" }
@@ -137,6 +137,7 @@ public object RobotProjectCompiler {
         val inputPlatform = when (target.controller) {
             AresControllerTarget.FTC_CONTROL_HUB -> ControllerInputPlatform.FTC
             AresControllerTarget.FRC_ROBORIO -> ControllerInputPlatform.FRC
+            AresControllerTarget.XRP_PICO -> ControllerInputPlatform.XRP
         }
         require(requestedInputPlatform == null || requestedInputPlatform == inputPlatform) {
             "Project target ${target.controller} cannot compile for $requestedInputPlatform"

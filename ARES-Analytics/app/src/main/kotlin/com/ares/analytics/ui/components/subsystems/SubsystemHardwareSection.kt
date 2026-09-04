@@ -200,14 +200,14 @@ fun HardwareInspectorBody(
                     viewModel.updateHardware(device.hardwareId) { it.copy(connection = it.connection.copy(channel = value, canId = null)) }
                 }
             }
+            SubsystemPlatform.XRP -> TextInput("XRP Device Name / Pin", device.connection.hardwareMapName.orEmpty()) { value ->
+                viewModel.updateHardware(device.hardwareId) { it.copy(connection = SubsystemHardwareConnection(hardwareMapName = value)) }
+            }
         }
         Row(verticalAlignment = Alignment.Top) {
             FieldGuidance(
-                if (document.platform == SubsystemPlatform.FTC) {
-                    "Use this exact name in the FTC Robot Controller configuration. Names are case-sensitive."
-                } else {
-                    "Use the device ID, bus, or channel configured in the matching vendor hardware tools."
-                }
+                if (document.platform == SubsystemPlatform.FTC) "Use this exact name in the FTC Robot Controller configuration. Names are case-sensitive."
+                else "Use the device ID, bus, or channel configured in the matching vendor hardware tools."
             )
             Spacer(Modifier.weight(1f))
             ConceptHelp(

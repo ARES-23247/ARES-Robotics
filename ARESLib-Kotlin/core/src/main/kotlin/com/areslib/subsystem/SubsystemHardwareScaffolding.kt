@@ -25,7 +25,8 @@ object SubsystemHardwareScaffolding {
         channel: Int = 0,
     ): SubsystemHardwareScaffold {
         val connection = when (platform) {
-            SubsystemPlatform.FTC -> SubsystemHardwareConnection(hardwareMapName = hardwareMapName)
+            SubsystemPlatform.FTC,
+            SubsystemPlatform.XRP -> SubsystemHardwareConnection(hardwareMapName = hardwareMapName)
             SubsystemPlatform.FRC -> when (kind) {
                 SubsystemHardwareKind.MOTOR -> SubsystemHardwareConnection(canId = canId)
                 SubsystemHardwareKind.QUADRATURE_ENCODER ->

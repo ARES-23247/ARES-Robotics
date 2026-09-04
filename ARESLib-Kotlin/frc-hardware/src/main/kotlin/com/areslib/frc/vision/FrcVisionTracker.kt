@@ -182,11 +182,7 @@ class FrcVisionTracker(
                 if (fusionEnabled && !isSimulation && swerveIO != null && distance < MAX_TARGET_RANGE_METERS &&
                     passesCommonFilter && passesNormalResidualGate) {
                     try {
-                        val pose = com.areslib.math.geometry.Pose2d(
-                            measurement.targetPose.translation.x,
-                            measurement.targetPose.translation.y,
-                            com.areslib.math.geometry.Rotation2d(measurement.targetPose.rotation.z)
-                        )
+                        val pose = measurement.targetPose.toPose2d()
                         val stdDevX = validStdDevOrFallback(measurement.stdDevXMeters, 0.7)
                         val stdDevY = validStdDevOrFallback(measurement.stdDevYMeters, 0.7)
                         val headingFallback = if (measurement.solverType == VisionSolverType.MEGATAG2) 1.0e6 else 0.35

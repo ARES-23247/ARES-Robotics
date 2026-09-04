@@ -595,6 +595,7 @@ class DrivebaseBuilderViewModel(
 private fun League.targetPlatform() = when (this) {
     League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
     League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
+    League.XRP -> com.areslib.controls.ControllerInputPlatform.XRP
 }
 
 internal fun canonicalRuntimeProjectId(projectPath: String, fallback: String, league: League): String {

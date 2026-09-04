@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.VoltageSensor
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
+import com.qualcomm.hardware.sparkfun.SparkFunOTOS
 import com.qualcomm.hardware.limelightvision.Limelight3A
 import com.qualcomm.hardware.limelightvision.LLResult
 import com.qualcomm.hardware.limelightvision.LLResultTypes
@@ -164,6 +165,7 @@ class MecanumRobotDouble(
     val rr = SimDcMotorEx(faultTimeline, "ftc.drive.rr")
     
     val pinpoint = GoBildaPinpointDriver()
+    val otos = SparkFunOTOS()
     val limelight = SimLimelight3A()
     private var simulatedAprilTags: List<RobotFieldAprilTag> = DEFAULT_SIM_TAGS
     @Volatile private var simulatedImuHeadingRadians = 0.0
@@ -221,10 +223,14 @@ class MecanumRobotDouble(
                 "rl", "bl", "rear_left", "back_left", "leftRear", "leftBack", "rearLeft", "backLeft" -> rl as T
                 "rr", "br", "rear_right", "back_right", "rightRear", "rightBack", "rearRight", "backRight" -> rr as T
                 "pinpoint" -> pinpoint as T
+                "otos", "sensor_otos" -> otos as T
                 "limelight" -> limelight as T
                 "imu" -> mockImu as T
                 else -> {
                     when {
+                        SparkFunOTOS::class.java.isAssignableFrom(classOrType) -> {
+                            otos as T
+                        }
                         com.qualcomm.robotcore.hardware.IMU::class.java.isAssignableFrom(classOrType) -> {
                             println("[SimHardwareMap] Device '$deviceName' requested as IMU. Returning default mock IMU.")
                             mockImu as T
@@ -328,6 +334,9 @@ class MecanumRobotDouble(
         pinpoint.headingVelocity = if (isPinpointCcwPositive) actualOmega else -actualOmega
         pinpoint.velX = actualVx
         pinpoint.velY = actualVy
+
+        otos.setPosition(SparkFunOTOS.Pose2D(trueX, trueY, trueHeadingRad))
+        otos.setVelocity(SparkFunOTOS.Pose2D(actualVx, actualVy, actualOmega))
 
         var visibleTagId: Int? = null
         var tagIndex = 0

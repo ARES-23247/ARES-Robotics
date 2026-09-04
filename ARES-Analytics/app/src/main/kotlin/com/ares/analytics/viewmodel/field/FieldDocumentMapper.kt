@@ -165,7 +165,11 @@ internal object FieldDocumentMapper {
         if (document.elementTypes.isNotEmpty()) {
             return document.elementTypes.map { it.toGamePieceType() }
         }
-        val league = if (document.fieldType == FieldType.FTC) League.FTC else League.FRC
+        val league = when (document.fieldType) {
+            FieldType.FTC -> League.FTC
+            FieldType.FRC -> League.FRC
+            FieldType.XRP -> League.XRP
+        }
         return defaultGamePieceTypes(league)
     }
 
@@ -181,6 +185,11 @@ internal object FieldDocumentMapper {
             com.ares.analytics.shared.GamePieceType("frc-note", "Note", "circle", 0.3556, 0.3556, 0.05, "#F57C00", 0.235, 0.6, 0.3),
             com.ares.analytics.shared.GamePieceType("frc-coral", "Coral", "cylinder", 0.25, 0.10, 0.10, "#9C27B0", 0.30, 0.6, 0.2),
             com.ares.analytics.shared.GamePieceType("frc-algae", "Algae", "sphere", 0.20, 0.20, 0.20, "#26A69A", 0.18, 0.5, 0.6),
+        )
+        League.XRP -> listOf(
+            com.ares.analytics.shared.GamePieceType("xrp-rubble", "Rubble", "sphere", 0.0508, 0.0508, 0.0508, "#FFFFFF", 0.05, 0.5, 0.4),
+            com.ares.analytics.shared.GamePieceType("xrp-amplifier-red", "Red Amplifier", "sphere", 0.0889, 0.0889, 0.0889, "#E53935", 0.08, 0.5, 0.6),
+            com.ares.analytics.shared.GamePieceType("xrp-amplifier-blue", "Blue Amplifier", "sphere", 0.0889, 0.0889, 0.0889, "#1E88E5", 0.08, 0.5, 0.6),
         )
     }
 
@@ -243,9 +252,14 @@ internal object FieldDocumentMapper {
     fun defaultImageConfig(league: League): FieldImageConfig = when (league) {
         League.FTC -> FieldImageConfig(widthMeters = 3.6576, heightMeters = 3.6576)
         League.FRC -> FieldImageConfig(widthMeters = 16.541, heightMeters = 8.211)
+        League.XRP -> FieldImageConfig(widthMeters = 2.54, heightMeters = 1.4224)
     }
 
-    private fun League.toFieldType(): FieldType = if (this == League.FTC) FieldType.FTC else FieldType.FRC
+    private fun League.toFieldType(): FieldType = when (this) {
+        League.FTC -> FieldType.FTC
+        League.FRC -> FieldType.FRC
+        League.XRP -> FieldType.XRP
+    }
 
     private fun FieldImageConfig.toCanonical(): RobotFieldImageConfig = RobotFieldImageConfig(
         // A blank path is the explicit, portable representation of an image-free field. Only the

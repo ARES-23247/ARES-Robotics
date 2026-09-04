@@ -52,6 +52,7 @@ internal class ProjectProcessCommandFactory(
                 ),
             )
             League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
+            League.XRP -> addAll(listOf("generateAresProject", "test"))
         }
         addDesktopGradleProcessOptions()
         add("--rerun-tasks")
@@ -92,6 +93,7 @@ internal class ProjectProcessCommandFactory(
                 when (product) {
                     SimulationProductId.FTC_DESKTOP_OPMODE -> ":TeamCode:runSim"
                     SimulationProductId.FRC_WPILIB_DESKTOP -> "simulateJava"
+                    SimulationProductId.XRP_DESKTOP -> "runSim"
                 },
             )
             addDesktopGradleProcessOptions()

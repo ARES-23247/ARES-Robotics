@@ -37,8 +37,8 @@ internal fun mapDesktopFieldCentricDrive(
             vyMetersPerSecond = forwardMps,
             omegaRadiansPerSecond = counterClockwise.coerceFiniteUnit() * maximumAngularRps,
         )
-        // Blue-origin FRC: forward is +X and driver-right is -Y.
-        League.FRC -> DesktopFieldDriveCommand(
+        // Blue-origin FRC and XRP: forward is +X and driver-right is -Y.
+        League.FRC, League.XRP -> DesktopFieldDriveCommand(
             vxMetersPerSecond = forwardMps,
             vyMetersPerSecond = -rightMps,
             omegaRadiansPerSecond = counterClockwise.coerceFiniteUnit() * maximumAngularRps,

@@ -114,6 +114,7 @@ internal fun rememberWorkspaceViewModelGraph(
     val platform = when (config.league) {
         League.FTC -> ControllerInputPlatform.FTC
         League.FRC -> ControllerInputPlatform.FRC
+        League.XRP -> ControllerInputPlatform.XRP
     }
     val tuning = remember(config.id) {
         TuningViewModel(

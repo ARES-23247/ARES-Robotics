@@ -37,7 +37,8 @@ internal object SubsystemRegistryRenderer {
         }.distinct().sorted()
         val factories = generatedDocuments.sortedBy { it.documentId }.joinToString("\n") { document ->
             val ioFactory = when (target.platform) {
-                SubsystemPlatform.FTC ->
+                SubsystemPlatform.FTC,
+                SubsystemPlatform.XRP ->
                     "Ftc${document.kotlinTypeName}IO(hardwareMap)"
                 SubsystemPlatform.FRC -> if (document.generateMockIo) {
                     "if (isReal) Frc${document.kotlinTypeName}IO() else Mock${document.kotlinTypeName}IO()"
@@ -104,7 +105,8 @@ $actionCases
             """@Suppress("UNUSED_PARAMETER")
 fun createAll($parameter): List<Subsystem> = emptyList()"""
         } else when (target.platform) {
-            SubsystemPlatform.FTC -> """fun createAll(hardwareMap: HardwareMap, hardwareRegistry: HardwareRegistry): List<Subsystem> = buildList {
+            SubsystemPlatform.FTC,
+            SubsystemPlatform.XRP -> """fun createAll(hardwareMap: HardwareMap, hardwareRegistry: HardwareRegistry): List<Subsystem> = buildList {
 $factories
 }"""
             SubsystemPlatform.FRC -> """fun createAll(isReal: Boolean, hardwareRegistry: HardwareRegistry): List<Subsystem> = buildList {

@@ -100,6 +100,7 @@ internal class SubsystemProjectPersistence(
         val target = when (league) {
             League.FTC -> ControllerInputPlatform.FTC
             League.FRC -> ControllerInputPlatform.FRC
+            League.XRP -> ControllerInputPlatform.XRP
         }
         projectSession?.snapshot(projectPath, target, forceReload = true)
     }

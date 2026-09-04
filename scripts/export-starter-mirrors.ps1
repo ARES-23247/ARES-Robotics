@@ -18,9 +18,14 @@ githubMavenRepository=$($releaseProperties['githubMavenRepository'])
 "@.Replace("`r`n", "`n")
 if (-not $standaloneReleaseManifest.EndsWith("`n")) { $standaloneReleaseManifest += "`n" }
 $standaloneReleaseManifestBytes = [System.Text.UTF8Encoding]::new($false).GetBytes($standaloneReleaseManifest)
-$standaloneReleaseManifestHash = [System.BitConverter]::ToString(
-    [System.Security.Cryptography.SHA256]::HashData($standaloneReleaseManifestBytes)
-).Replace('-', '').ToLowerInvariant()
+$sha256 = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $standaloneReleaseManifestHash = [System.BitConverter]::ToString(
+        $sha256.ComputeHash($standaloneReleaseManifestBytes)
+    ).Replace('-', '').ToLowerInvariant()
+} finally {
+    $sha256.Dispose()
+}
 $outputRootPath = [System.IO.Path]::GetFullPath($OutputRoot)
 $workspacePath = [System.IO.Path]::GetFullPath($workspaceRoot)
 if ($outputRootPath.StartsWith($workspacePath, [System.StringComparison]::OrdinalIgnoreCase)) {

@@ -22,12 +22,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class VerificationLayer {
-    CONFIGURATION,
-    GENERATED_BEHAVIOR,
-    SIMULATOR,
-    PLATFORM_INTEGRATION,
-    BUILD,
-    PHYSICAL_VALIDATION,
+    CONFIGURATION, GENERATED_BEHAVIOR, SIMULATOR, PLATFORM_INTEGRATION, BUILD, PHYSICAL_VALIDATION
 }
 
 @Serializable
@@ -413,6 +408,9 @@ object RobotVerificationReportLoader {
             VerificationLayer.SIMULATOR to File(root, "simulator/build/test-results/test"),
         )
         League.FRC -> listOf(
+            VerificationLayer.PLATFORM_INTEGRATION to File(root, "build/test-results/test"),
+        )
+        League.XRP -> listOf(
             VerificationLayer.PLATFORM_INTEGRATION to File(root, "build/test-results/test"),
         )
     }

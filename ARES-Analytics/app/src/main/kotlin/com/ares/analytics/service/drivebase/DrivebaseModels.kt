@@ -9,22 +9,16 @@ enum class DrivebaseKind { FTC_MECANUM, FRC_CTRE_SWERVE, DIFFERENTIAL, CUSTOM }
 enum class DrivebaseRuntimeSupport { NO_CODE_RUNNABLE, CODE_REQUIRED, UNAVAILABLE_FOR_LEAGUE }
 
 fun DrivebaseKind.runtimeSupport(league: League): DrivebaseRuntimeSupport = when (this) {
-    DrivebaseKind.FTC_MECANUM -> if (league == League.FTC) {
-        DrivebaseRuntimeSupport.NO_CODE_RUNNABLE
-    } else {
-        DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
-    }
-    DrivebaseKind.FRC_CTRE_SWERVE -> if (league == League.FRC) {
-        DrivebaseRuntimeSupport.NO_CODE_RUNNABLE
-    } else {
-        DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
-    }
-    DrivebaseKind.DIFFERENTIAL, DrivebaseKind.CUSTOM -> DrivebaseRuntimeSupport.CODE_REQUIRED
+    DrivebaseKind.FTC_MECANUM -> if (league == League.FTC || league == League.XRP) DrivebaseRuntimeSupport.NO_CODE_RUNNABLE else DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
+    DrivebaseKind.FRC_CTRE_SWERVE -> if (league == League.FRC) DrivebaseRuntimeSupport.NO_CODE_RUNNABLE else DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE
+    DrivebaseKind.DIFFERENTIAL -> if (league == League.XRP) DrivebaseRuntimeSupport.NO_CODE_RUNNABLE else DrivebaseRuntimeSupport.CODE_REQUIRED
+    DrivebaseKind.CUSTOM -> DrivebaseRuntimeSupport.CODE_REQUIRED
 }
 
 fun drivebaseKindsForLeague(league: League): List<DrivebaseKind> = when (league) {
     League.FTC -> listOf(DrivebaseKind.FTC_MECANUM, DrivebaseKind.DIFFERENTIAL, DrivebaseKind.CUSTOM)
     League.FRC -> listOf(DrivebaseKind.FRC_CTRE_SWERVE, DrivebaseKind.DIFFERENTIAL, DrivebaseKind.CUSTOM)
+    League.XRP -> listOf(DrivebaseKind.DIFFERENTIAL, DrivebaseKind.FTC_MECANUM, DrivebaseKind.CUSTOM)
 }
 
 /** Beginner mode shows only executable no-code choices; a selected advanced draft remains visible. */
@@ -39,6 +33,7 @@ fun visibleDrivebaseKinds(
 fun defaultNoCodeDrivebaseKind(league: League): DrivebaseKind = when (league) {
     League.FTC -> DrivebaseKind.FTC_MECANUM
     League.FRC -> DrivebaseKind.FRC_CTRE_SWERVE
+    League.XRP -> DrivebaseKind.DIFFERENTIAL
 }
 
 fun DrivebaseKind.runtimeSupportLabel(league: League): String = when (runtimeSupport(league)) {
@@ -58,7 +53,7 @@ enum class DriveHardwareRole {
 }
 
 enum class LocalizationKind {
-    FTC_PINPOINT, WHEEL_ODOMETRY_GYRO, CTRE_POSE_ESTIMATOR, VISION_FUSION, CUSTOM
+    FTC_PINPOINT, WHEEL_ODOMETRY_GYRO, CTRE_POSE_ESTIMATOR, VISION_FUSION, CUSTOM, SPARKFUN_OTOS
 }
 
 enum class CalibrationSource { MANUAL, SIMULATION, ROBOT_MEASURED, CTRE_TUNER_IMPORT }
@@ -329,6 +324,7 @@ fun DrivetrainDocument.toUiDrivebase(): DrivebaseDocument = DrivebaseDocument(
             LocalizationSourceKind.CTRE_VENDOR -> LocalizationKind.CTRE_POSE_ESTIMATOR
             LocalizationSourceKind.EXTERNAL -> LocalizationKind.VISION_FUSION
             LocalizationSourceKind.CUSTOM -> LocalizationKind.CUSTOM
+            LocalizationSourceKind.SPARKFUN_OTOS -> LocalizationKind.SPARKFUN_OTOS
         }
     },
     safety = DriveSafetyDeclaration(
@@ -415,6 +411,7 @@ fun DrivebaseDocument.toCanonicalDrivebase(): DrivetrainDocument {
         LocalizationKind.CTRE_POSE_ESTIMATOR -> DrivetrainLocalizationSourceDocument("localization.ctre", LocalizationSourceKind.CTRE_VENDOR, components.map { it.uid })
         LocalizationKind.VISION_FUSION -> DrivetrainLocalizationSourceDocument("localization.vision", LocalizationSourceKind.EXTERNAL, emptyList(), "com.areslib.vision.VisionTracker")
         LocalizationKind.CUSTOM -> DrivetrainLocalizationSourceDocument("localization.custom", LocalizationSourceKind.CUSTOM, emptyList(), "com.areslib.localization.CustomLocalization")
+        LocalizationKind.SPARKFUN_OTOS -> DrivetrainLocalizationSourceDocument("localization.otos", LocalizationSourceKind.SPARKFUN_OTOS, components.filter { it.role == DrivetrainComponentRole.ODOMETRY_SENSOR }.map { it.uid })
     }
     val localizationChanged = originalUi == null || localization != originalUi.localization
     val primaryKind = selectedSources.filter { it != LocalizationKind.VISION_FUSION }.single()

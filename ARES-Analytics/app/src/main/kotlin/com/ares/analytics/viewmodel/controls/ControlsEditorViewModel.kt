@@ -66,6 +66,7 @@ class ControlsEditorViewModel(
     private val targetPlatform = when (league) {
         League.FTC -> ControllerInputPlatform.FTC
         League.FRC -> ControllerInputPlatform.FRC
+        League.XRP -> ControllerInputPlatform.XRP
     }
     private val _state = MutableStateFlow(
         ControlsEditorState(projectPath = projectPath, league = league, targetPlatform = targetPlatform)

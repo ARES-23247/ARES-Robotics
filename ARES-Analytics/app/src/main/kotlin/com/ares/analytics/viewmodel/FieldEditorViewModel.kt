@@ -661,8 +661,16 @@ class FieldEditorViewModel(
     }
 
     private fun withValidation(state: FieldEditorState): FieldEditorState {
-        val width = state.fieldImageConfig.widthMeters.takeIf { it > 0.0 } ?: if (activeLeague == League.FTC) 3.6576 else 16.541
-        val height = state.fieldImageConfig.heightMeters.takeIf { it > 0.0 } ?: if (activeLeague == League.FTC) 3.6576 else 8.211
+        val width = state.fieldImageConfig.widthMeters.takeIf { it > 0.0 } ?: when (activeLeague) {
+            League.FTC -> 3.6576
+            League.FRC -> 16.541
+            League.XRP -> 2.54
+        }
+        val height = state.fieldImageConfig.heightMeters.takeIf { it > 0.0 } ?: when (activeLeague) {
+            League.FTC -> 3.6576
+            League.FRC -> 8.211
+            League.XRP -> 1.4224
+        }
         val editorIssues = FieldEditorValidator.validate(
             league = activeLeague,
             widthMeters = width,
@@ -672,7 +680,11 @@ class FieldEditorViewModel(
             aprilTags = state.aprilTags,
             waypoints = state.fieldWaypoints
         )
-        val requiredFieldType = if (activeLeague == League.FTC) FieldType.FTC else FieldType.FRC
+        val requiredFieldType = when (activeLeague) {
+            League.FTC -> FieldType.FTC
+            League.FRC -> FieldType.FRC
+            League.XRP -> FieldType.XRP
+        }
         val canonicalIssues = state.document.orEmptyValidation(requiredFieldType).map { issue ->
             FieldValidationIssue(
                 severity = FieldValidationSeverity.ERROR,
@@ -876,4 +888,5 @@ class FieldEditorViewModel(
 private fun League.targetPlatform() = when (this) {
     League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
     League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
+    League.XRP -> com.areslib.controls.ControllerInputPlatform.XRP
 }
