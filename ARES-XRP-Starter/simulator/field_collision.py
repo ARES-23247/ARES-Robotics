@@ -15,7 +15,7 @@ class FieldCollisionConstraint:
         self.width = 0.0
         self.height = 0.0
         self.obstacles = []
-        self._modified_ns = None
+        self._file_signature = None
         self._load(required=True)
 
     def constrain(self, previous, proposed):
@@ -69,12 +69,13 @@ class FieldCollisionConstraint:
 
     def _load(self, required):
         try:
-            modified_ns = self.field_path.stat().st_mtime_ns
-            if modified_ns == self._modified_ns:
+            stat = self.field_path.stat()
+            signature = (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size, stat.st_ino)
+            if signature == self._file_signature:
                 return
             payload = self.field_path.read_text(encoding="utf-8")
             self.apply_payload(payload)
-            self._modified_ns = modified_ns
+            self._file_signature = signature
         except Exception:
             if required or self.width <= 0.0 or self.height <= 0.0:
                 raise
