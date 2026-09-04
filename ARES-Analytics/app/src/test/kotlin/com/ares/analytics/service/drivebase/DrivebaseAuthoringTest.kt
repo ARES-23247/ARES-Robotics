@@ -140,7 +140,7 @@ class DrivebaseAuthoringTest {
         File(root, ".ares/project.json").apply {
             parentFile.mkdirs()
             writeText(
-                """{"schemaVersion":4,"projectId":"visible-frc-project","identity":{"teamId":"99998","seasonId":"2026","robotId":"VisibleFrcRobot","displayName":"Visible FRC Robot"},"league":"FRC","coordinateConvention":"BLUE_CORNER_ORIGIN_CCW","robotLengthMeters":0.75,"robotWidthMeters":0.65,"fieldLengthMeters":16.54175,"fieldWidthMeters":8.21055,"authoringModel":"GUI_OWNED","runtimeOptions":{}}""",
+                """{"schemaVersion":5,"projectId":"visible-frc-project","identity":{"teamId":"99998","seasonId":"2026","robotId":"VisibleFrcRobot","displayName":"Visible FRC Robot"},"league":"FRC","coordinateConvention":"BLUE_CORNER_ORIGIN_CCW","robotLengthMeters":0.75,"robotWidthMeters":0.65,"fieldLengthMeters":16.54175,"fieldWidthMeters":8.21055,"authoringModel":"GUI_OWNED","runtimeOptions":{}}""",
             )
         }
         val stale = canonicalTemplate("stale-project", DrivebaseKind.FRC_CTRE_SWERVE, League.FRC).toUiDrivebase()

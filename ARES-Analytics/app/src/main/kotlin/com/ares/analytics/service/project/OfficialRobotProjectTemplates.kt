@@ -11,7 +11,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         league = League.FTC,
         artifactVersion = BuildConfig.FTC_STARTER_VERSION,
         aresVersion = BuildConfig.ARES_VERSION,
-        revision = "schema4-standalone-v1",
+        revision = "schema5-standalone-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-FTC-Starter-${BuildConfig.FTC_STARTER_VERSION}.zip",
         archiveSha256 = BuildConfig.FTC_STARTER_SHA256,
@@ -25,7 +25,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         league = League.FRC,
         artifactVersion = BuildConfig.FRC_STARTER_VERSION,
         aresVersion = BuildConfig.ARES_VERSION,
-        revision = "schema4-standalone-v1",
+        revision = "schema5-standalone-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-FRC-Starter-${BuildConfig.FRC_STARTER_VERSION}.zip",
         archiveSha256 = BuildConfig.FRC_STARTER_SHA256,
@@ -39,7 +39,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         league = League.XRP,
         artifactVersion = BuildConfig.XRP_STARTER_VERSION,
         aresVersion = BuildConfig.ARES_VERSION,
-        revision = "schema4-micropython-v1",
+        revision = "schema5-micropython-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-XRP-Starter-${BuildConfig.XRP_STARTER_VERSION}.zip",
         archiveSha256 = BuildConfig.XRP_STARTER_SHA256,
@@ -53,7 +53,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         league = League.FTC,
         artifactVersion = BuildConfig.LIGHTBOT_EXAMPLE_VERSION,
         aresVersion = BuildConfig.ARES_VERSION,
-        revision = "schema4-lightbot-v1",
+        revision = "schema5-lightbot-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-Lightbot-Example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}.zip",
         archiveSha256 = BuildConfig.LIGHTBOT_EXAMPLE_SHA256,

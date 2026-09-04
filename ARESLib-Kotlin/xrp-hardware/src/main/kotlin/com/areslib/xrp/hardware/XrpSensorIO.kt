@@ -32,7 +32,7 @@ open class XrpLineSensorDouble(
 }
 
 /**
- * IO contract for XRP servo outputs (Servos 1-4).
+ * IO contract for XRP servo outputs on ports declared by the canonical controller model.
  */
 interface XrpServoIO {
     val channel: Int

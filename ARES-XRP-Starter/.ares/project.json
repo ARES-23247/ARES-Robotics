@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "projectId": "ares-xrp-starter",
   "identity": {
     "teamId": "00000",
@@ -16,6 +16,7 @@
   "authoringModel": "GUI_OWNED",
   "runtimeOptions": {
     "xrp": {
+      "controllerModel": "SPARKFUN_XRP_RP2350",
       "wifiMode": "AP",
       "ssid": "ARES-XRP-AUTO",
       "port": 5811,

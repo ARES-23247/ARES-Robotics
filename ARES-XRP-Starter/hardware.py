@@ -6,10 +6,7 @@ import math
 def create_otos_i2c(machine_name, i2c_type, pin_type):
     """Create the board's externally exposed Qwiic bus for an OTOS."""
     identity = str(machine_name)
-    if "NanoXRP" in identity:
-        # Cytron NanoXRP exposes I2C1 on GPIO14/15.
-        bus, sda, scl = 1, 14, 15
-    elif "RP2350" in identity:
+    if "RP2350" in identity:
         # SparkFun XRP Controller Qwiic 0.
         bus, sda, scl = 0, 4, 5
     elif "RP2040" in identity:

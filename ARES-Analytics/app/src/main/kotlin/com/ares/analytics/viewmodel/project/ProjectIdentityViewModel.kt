@@ -18,6 +18,7 @@ import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.AresRuntimeOptionsDocument
 import com.areslib.project.AresXrpRuntimeOptionsDocument
+import com.areslib.project.AresXrpControllerModel
 import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.project.requireXrpRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
@@ -51,6 +52,7 @@ data class ProjectIdentityDraft(
     val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val ftcHubCommandTransport: AresFtcHubCommandTransport = AresFtcHubCommandTransport.STANDARD_SDK,
     val ftcLimelightProxyEnabled: Boolean = false,
+    val xrpControllerModel: AresXrpControllerModel = AresXrpControllerModel.SPARKFUN_XRP_RP2350,
     val xrpWifiMode: String = "AP",
     val xrpSsid: String = "ARES-XRP-AUTO",
     val xrpLinkPort: String = "5811",
@@ -185,6 +187,10 @@ class ProjectIdentityViewModel(
 
     fun updateXrpWifiMode(value: String) = updateXrpRuntimeOptions {
         copy(xrpWifiMode = value)
+    }
+
+    fun updateXrpControllerModel(value: AresXrpControllerModel) = updateXrpRuntimeOptions {
+        copy(xrpControllerModel = value)
     }
 
     private fun updateFtcRuntimeOptions(transform: ProjectIdentityDraft.() -> ProjectIdentityDraft) {
@@ -381,7 +387,9 @@ class ProjectIdentityViewModel(
         }
         val corruptError = currentResult.exceptionOrNull()?.takeIf { file.isFile }
         val corruptHash = corruptError?.let { repository.rawContentHash(config.projectPath) }
-        val retiredSchema = corruptError?.message.orEmpty().contains("authoringModel")
+        val retiredSchema = corruptError?.message.orEmpty().let { message ->
+            message.contains("Unsupported project metadata schema") || message.contains("authoringModel")
+        }
         val projectSourceError = ProjectLayout.validationError(config.projectPath, config.league)
         val mismatch = current?.takeIf { it.league != config.league.toAresLeague() }
         val draft = projectIdentityDraft(config, current)
@@ -399,7 +407,7 @@ class ProjectIdentityViewModel(
             projectSourceError = projectSourceError,
             protectedError = when {
                 retiredSchema ->
-                    "The selected .ares/project.json uses the retired schema-3 format because it has no authoringModel. Current Studio supports schema-4 projects only and will not rewrite this project."
+                    "The selected .ares/project.json uses a retired project format. Current Studio supports schema-5 projects only and will not rewrite this project."
                 corruptError != null ->
                     "The existing .ares/project.json cannot be used: ${corruptError.message}. Its exact bytes remain unchanged. Enter the measured robot dimensions, review the repair, and ARES will preserve the original under .ares/recovery/project before replacing it."
                 mismatch != null ->

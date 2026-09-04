@@ -131,6 +131,17 @@ class GeneratedProjectTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "port 1, 2, 3, and 4"):
             tool.validate_drivebase({**base, "components": base["components"][:-1]})
 
+    def test_controller_profiles_reject_ports_the_selected_board_does_not_have(self):
+        tool_path = ROOT / "tools" / "ares_project.py"
+        spec = importlib.util.spec_from_file_location("ares_project_board_profile_tool", tool_path)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+
+        tool.validate_controller_port("POSITIONAL_SERVO", 4, "SPARKFUN_XRP_RP2350")
+        tool.validate_controller_port("POSITIONAL_SERVO", 2, "SPARKFUN_XRP_BETA_RP2040")
+        with self.assertRaisesRegex(ValueError, "SPARKFUN_XRP_BETA_RP2040.*1..2"):
+            tool.validate_controller_port("POSITIONAL_SERVO", 3, "SPARKFUN_XRP_BETA_RP2040")
+
     def test_mecanum_generation_preserves_four_explicit_ports_and_geometry(self):
         tool_path = ROOT / "tools" / "ares_project.py"
         spec = importlib.util.spec_from_file_location("ares_project_mecanum_tool", tool_path)

@@ -6,7 +6,9 @@ Updated: 2026-09-04
 ## Evidence completed without a robot
 
 - The official XRP firmware release `v2.0.5` is pinned by commit, byte length, and SHA-256 for the
-  SparkFun RP2350, SparkFun beta RP2040, and Cytron NanoXRP controllers.
+  SparkFun RP2350 and SparkFun beta RP2040 controllers.
+- Both supported controllers expose motor ports 1–4. The RP2350 profile exposes servo ports 1–4;
+  the beta RP2040 profile exposes servo ports 1–2. Studio and device preflight enforce those limits.
 - MicroPython `1.28.0` and XRPLib `2026.08.2` are immutable requirements. Preflight reads the live
   runtime identities, detects exactly one supported controller, and rejects stale or ambiguous devices.
 - The generated project, ARES MicroPython runtime, simulator, and standard JUnit verification evidence
@@ -14,7 +16,7 @@ Updated: 2026-09-04
   neutral motion and latch faults.
 - SparkFun OTOS register addresses, product identity, scalar encoding, pose/velocity units, offsets,
   pose reset, and IMU calibration follow SparkFun's published driver. Qwiic bus assignments follow
-  the published controller pinouts and the official MicroPython NanoXRP board definition.
+  the published SparkFun controller pinouts.
 - Deployment is content-addressed: it stages an inactive slot, compiles every Python file on-device,
   verifies the exact file count, installs the stable launcher, then switches the active marker.
   `plan-deploy` exercises the same payload compilation without touching a device; `rollback` restores

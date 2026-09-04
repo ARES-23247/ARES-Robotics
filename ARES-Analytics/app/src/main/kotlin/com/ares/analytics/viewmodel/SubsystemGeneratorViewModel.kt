@@ -13,6 +13,8 @@ import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.shared.models.League
 import com.areslib.project.schema.ProjectDocumentKind
+import com.areslib.project.AresLeague
+import com.areslib.project.requireXrpRuntimeOptions
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentAuthoring
 import com.ares.analytics.viewmodel.subsystem.SubsystemProjectPersistence
@@ -126,6 +128,10 @@ class SubsystemGeneratorViewModel(
                     it.kind == ProjectDocumentKind.SUBSYSTEM || it.kind == ProjectDocumentKind.PROJECT_METADATA
                 }.map { SubsystemProblem(SubsystemProblemSeverity.WARNING, "project:${it.file.name}", it.message) }
                 _state.value = current.copy(
+                    xrpControllerModel = snapshot.query.metadata
+                        ?.takeIf { it.league == AresLeague.XRP }
+                        ?.requireXrpRuntimeOptions()
+                        ?.controllerModel,
                     documents = matching,
                     selectedDocumentId = first?.documentId,
                     draft = first?.let(::SubsystemEditorDraft),

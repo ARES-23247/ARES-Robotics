@@ -19,10 +19,32 @@ class XrpDeviceTest(unittest.TestCase):
         manifest = xrp_device.load_manifest()
         self.assertEqual(manifest["firmware"]["micropythonVersion"], "1.28.0")
         self.assertEqual(manifest["xrplib"]["version"], "2026.08.2")
-        self.assertEqual(set(manifest["firmware"]["boards"]), {"xrp-2350", "xrp-beta", "xrp-nano"})
+        self.assertEqual(set(manifest["firmware"]["boards"]), {"xrp-2350", "xrp-beta"})
+        self.assertEqual(manifest["firmware"]["boards"]["xrp-2350"]["servoChannels"], [1, 2, 3, 4])
+        self.assertEqual(manifest["firmware"]["boards"]["xrp-beta"]["servoChannels"], [1, 2])
         for board in manifest["firmware"]["boards"].values():
             self.assertRegex(board["sha256"], r"^[0-9a-f]{64}$")
             self.assertGreater(board["sizeBytes"], 1_000_000)
+
+    def test_canonical_project_selects_the_beta_controller_profile(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / ".ares").mkdir()
+            (root / ".ares" / "project.json").write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 5,
+                        "league": "XRP",
+                        "runtimeOptions": {"xrp": {"controllerModel": "SPARKFUN_XRP_BETA_RP2040"}},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with mock.patch.object(xrp_device, "ROOT", root):
+                board_id, board = xrp_device.selected_board()
+        self.assertEqual(board_id, "xrp-beta")
+        self.assertEqual(board["motorChannels"], [1, 2, 3, 4])
+        self.assertEqual(board["servoChannels"], [1, 2])
 
     def test_verified_download_rejects_wrong_identity_without_replacing_destination(self):
         payload = b"verified fixture"
@@ -67,15 +89,38 @@ class XrpDeviceTest(unittest.TestCase):
             "xrplib": "2026.08.2",
             "apis": {"drive": True, "encoders": True, "battery": True, "rangefinder": True, "imu": True, "motors": True},
             "capabilities": {"reflectance": True, "greenLed": True, "rgbLed": True, "genericIo": True, "buzzer": True},
+            "ports": {"motors": [1, 2, 3, 4], "servos": [1, 2, 3, 4]},
         }
         completed = mock.Mock(stdout=xrp_device.PREFLIGHT_MARKER + json.dumps(report))
         with (
             mock.patch.object(xrp_device, "run_mpremote", return_value=completed),
             mock.patch.object(xrp_device, "required_project_capabilities", return_value=set()),
+            mock.patch.object(xrp_device, "required_project_ports", return_value={"motors": set(), "servos": set()}),
         ):
             checked = xrp_device.preflight()
         self.assertTrue(checked["ready"])
         self.assertEqual(checked["detectedBoard"], "xrp-2350")
+
+    def test_preflight_accepts_the_beta_controller_and_its_two_servo_ports(self):
+        report = {
+            "machine": "XRP Controller Beta with RP2040",
+            "micropython": "1.28.0",
+            "xrplib": "2026.08.2",
+            "apis": {"drive": True, "encoders": True, "battery": True, "rangefinder": True, "imu": True, "motors": True},
+            "capabilities": {"reflectance": True, "greenLed": True, "rgbLed": True, "genericIo": True, "buzzer": True},
+            "ports": {"motors": [1, 2, 3, 4], "servos": [1, 2]},
+        }
+        completed = mock.Mock(stdout=xrp_device.PREFLIGHT_MARKER + json.dumps(report))
+        beta = xrp_device.load_manifest()["firmware"]["boards"]["xrp-beta"]
+        with (
+            mock.patch.object(xrp_device, "selected_board", return_value=("xrp-beta", beta)),
+            mock.patch.object(xrp_device, "run_mpremote", return_value=completed),
+            mock.patch.object(xrp_device, "required_project_capabilities", return_value=set()),
+            mock.patch.object(xrp_device, "required_project_ports", return_value={"motors": {1, 2}, "servos": {1, 2}}),
+        ):
+            checked = xrp_device.preflight()
+        self.assertTrue(checked["ready"])
+        self.assertEqual(checked["detectedBoard"], "xrp-beta")
 
     def test_preflight_fails_closed_on_stale_xrplib(self):
         report = {
@@ -87,7 +132,7 @@ class XrpDeviceTest(unittest.TestCase):
         completed = mock.Mock(stdout=xrp_device.PREFLIGHT_MARKER + json.dumps(report))
         with mock.patch.object(xrp_device, "run_mpremote", return_value=completed):
             with self.assertRaisesRegex(xrp_device.DeviceError, "XRPLib 2025.1.0"):
-                xrp_device.preflight("xrp-2350")
+                xrp_device.preflight()
 
     def test_preflight_fails_when_project_requires_missing_board_capability(self):
         report = {
@@ -96,14 +141,34 @@ class XrpDeviceTest(unittest.TestCase):
             "xrplib": "2026.08.2",
             "apis": {"drive": True, "encoders": True, "battery": True, "rangefinder": True, "imu": True, "motors": True},
             "capabilities": {"buzzer": False},
+            "ports": {"motors": [1, 2, 3, 4], "servos": [1, 2, 3, 4]},
         }
         completed = mock.Mock(stdout=xrp_device.PREFLIGHT_MARKER + json.dumps(report))
         with (
             mock.patch.object(xrp_device, "run_mpremote", return_value=completed),
             mock.patch.object(xrp_device, "required_project_capabilities", return_value={"buzzer"}),
+            mock.patch.object(xrp_device, "required_project_ports", return_value={"motors": set(), "servos": set()}),
         ):
             with self.assertRaisesRegex(xrp_device.DeviceError, "buzzer"):
-                xrp_device.preflight("xrp-2350")
+                xrp_device.preflight()
+
+    def test_preflight_rejects_a_controller_that_does_not_match_canonical_project(self):
+        report = {
+            "machine": "XRP Controller Beta with RP2040",
+            "micropython": "1.28.0",
+            "xrplib": "2026.08.2",
+            "apis": {"drive": True, "encoders": True, "battery": True, "rangefinder": True, "imu": True, "motors": True},
+            "capabilities": {"reflectance": True, "greenLed": True, "rgbLed": True, "genericIo": True, "buzzer": True},
+            "ports": {"motors": [1, 2, 3, 4], "servos": [1, 2]},
+        }
+        completed = mock.Mock(stdout=xrp_device.PREFLIGHT_MARKER + json.dumps(report))
+        with (
+            mock.patch.object(xrp_device, "run_mpremote", return_value=completed),
+            mock.patch.object(xrp_device, "required_project_capabilities", return_value=set()),
+            mock.patch.object(xrp_device, "required_project_ports", return_value={"motors": {1, 2}, "servos": set()}),
+        ):
+            with self.assertRaisesRegex(xrp_device.DeviceError, "does not match selected board xrp-2350"):
+                xrp_device.preflight()
 
     def test_stage_manifest_is_tied_to_generated_content(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -137,7 +202,7 @@ class XrpDeviceTest(unittest.TestCase):
             mock.patch.object(xrp_device, "preflight", return_value={"machine": "XRP RP2350", "detectedBoard": "xrp-2350"}),
             mock.patch.object(xrp_device, "run_mpremote", side_effect=mpremote),
         ):
-            xrp_device.deploy("xrp-2350")
+            xrp_device.deploy()
 
         bootstrap_index = next(index for index, call in enumerate(calls) if call[:2] == ["fs", "cp"] and call[-1] == ":/main.py")
         activation_index = next(index for index, call in enumerate(calls) if call[0] == "exec" and "ares_active_slot.next" in call[1])

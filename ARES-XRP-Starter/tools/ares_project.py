@@ -19,6 +19,10 @@ GENERATED_ROOT = ROOT / "build" / "generated" / "ares"
 GENERATED = GENERATED_ROOT / "python" / "generated_ares_project.py"
 GENERATED_TESTS = GENERATED_ROOT / "tests"
 TEST_RESULTS = ROOT / "build" / "test-results" / "test"
+XRP_CONTROLLER_PROFILES = {
+    "SPARKFUN_XRP_RP2350": {"firmwareBoardId": "xrp-2350", "motorChannels": (1, 2, 3, 4), "servoChannels": (1, 2, 3, 4)},
+    "SPARKFUN_XRP_BETA_RP2040": {"firmwareBoardId": "xrp-beta", "motorChannels": (1, 2, 3, 4), "servoChannels": (1, 2)},
+}
 
 
 def load_json(path: pathlib.Path) -> dict:
@@ -33,6 +37,17 @@ def one_document(directory: pathlib.Path, suffix: str) -> tuple[pathlib.Path, di
     if len(paths) != 1:
         raise ValueError(f"Expected exactly one {suffix} document in {directory.relative_to(ROOT)}")
     return paths[0], load_json(paths[0])
+
+
+def validate_controller_port(kind: str, channel: int | None, controller_model: str) -> None:
+    controller = XRP_CONTROLLER_PROFILES[controller_model]
+    if kind == "MOTOR" and channel not in set(controller["motorChannels"]) & {3, 4}:
+        raise ValueError("Generated XRP mechanism motors must use channel 3 or 4")
+    if kind == "POSITIONAL_SERVO" and channel not in controller["servoChannels"]:
+        raise ValueError(
+            f"{controller_model} servos must use channels "
+            f"{controller['servoChannels'][0]}..{controller['servoChannels'][-1]}"
+        )
 
 
 def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict]]:
@@ -65,7 +80,7 @@ def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict
     return default_id, routines
 
 
-def load_subsystems() -> list[dict]:
+def load_subsystems(controller_model: str) -> list[dict]:
     documents = []
     supported_hardware = {
         "MOTOR", "POSITIONAL_SERVO", "DIGITAL_INPUT", "DIGITAL_OUTPUT", "ANALOG_INPUT",
@@ -94,10 +109,7 @@ def load_subsystems() -> list[dict]:
             channel = device.get("connection", {}).get("channel")
             if kind not in supported_hardware:
                 raise ValueError(f"XRP does not have a generated {kind} hardware adapter")
-            if kind == "MOTOR" and channel not in (3, 4):
-                raise ValueError("Generated XRP mechanism motors must use channel 3 or 4")
-            if kind == "POSITIONAL_SERVO" and channel not in (1, 2, 3, 4):
-                raise ValueError("Generated XRP servos must use channel 1..4")
+            validate_controller_port(kind, channel, controller_model)
             if kind == "DIGITAL_INPUT" and channel is not None and channel not in range(30):
                 raise ValueError("Generated XRP digital inputs use GPIO 0..29")
             if kind in ("DIGITAL_OUTPUT", "PWM_OUTPUT") and channel not in range(30):
@@ -155,13 +167,16 @@ def validate_drivebase(drivebase: dict) -> None:
 
 def validate() -> tuple[dict, dict, str | None, dict[str, dict], list[dict]]:
     project = load_json(ARES / "project.json")
-    if project.get("schemaVersion") != 4 or project.get("league") != "XRP":
-        raise ValueError(".ares/project.json must be schema 4 and league XRP")
+    if project.get("schemaVersion") != 5 or project.get("league") != "XRP":
+        raise ValueError(".ares/project.json must be schema 5 and league XRP")
     if project.get("coordinateConvention") != "CENTER_ORIGIN_CCW":
         raise ValueError("XRP projects use CENTER_ORIGIN_CCW coordinates")
     options = project.get("runtimeOptions", {}).get("xrp")
     if not isinstance(options, dict):
         raise ValueError("XRP runtime options are required")
+    controller_model = options.get("controllerModel")
+    if controller_model not in XRP_CONTROLLER_PROFILES:
+        raise ValueError("XRP controllerModel must select a supported SparkFun XRP controller")
     if options.get("port") == 5810:
         raise ValueError("XRP link must not reuse the NT4 port 5810")
     if options.get("wifiMode") not in ("AP", "STATION"):
@@ -178,7 +193,7 @@ def validate() -> tuple[dict, dict, str | None, dict[str, dict], list[dict]]:
 
     _, drivebase = one_document(ARES / "drivetrains", ".aresdrivetrain")
     validate_drivebase(drivebase)
-    subsystems = load_subsystems()
+    subsystems = load_subsystems(controller_model)
     actions = load_json(ARES / "action-catalog.json")
     if actions.get("projectId") != project.get("projectId"):
         raise ValueError("The action catalog must use the canonical projectId")
@@ -203,6 +218,8 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
     drivetrain_type = "mecanum" if drivebase["kind"] == "FTC_MECANUM" else "differential"
     values = {
         "project_id": project["projectId"],
+        "controller_model": options["controllerModel"],
+        "firmware_board_id": XRP_CONTROLLER_PROFILES[options["controllerModel"]]["firmwareBoardId"],
         "drivetrain_type": drivetrain_type,
         "wifi_mode": options["wifiMode"],
         "wifi_ssid": options["ssid"],

@@ -1,11 +1,14 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "firmware": {
     "release": "v2.0.5",
     "commit": "df1cf9d0c2ab7e0e8fa68c896fba120acdf1fa69",
     "micropythonVersion": "1.28.0",
     "boards": {
       "xrp-2350": {
+        "controllerModel": "SPARKFUN_XRP_RP2350",
+        "motorChannels": [1, 2, 3, 4],
+        "servoChannels": [1, 2, 3, 4],
         "machineContains": "RP2350",
         "bootselVolume": "RP2350",
         "url": "https://raw.githubusercontent.com/Open-STEM/XRP_Firmware/v2.0.5/boards/xrp-2350/micropython-firmware/1.28.0/firmware.uf2",
@@ -13,19 +16,15 @@
         "sha256": "0a36d7e2bc20dfcde2dd1af9a673fd0a63248820a360723c3967751106610ed0"
       },
       "xrp-beta": {
+        "controllerModel": "SPARKFUN_XRP_BETA_RP2040",
+        "motorChannels": [1, 2, 3, 4],
+        "servoChannels": [1, 2],
         "machineContains": "RP2040",
         "machineExcludes": "NanoXRP",
         "bootselVolume": "RPI-RP2",
         "url": "https://raw.githubusercontent.com/Open-STEM/XRP_Firmware/v2.0.5/boards/xrp-beta/micropython-firmware/1.28.0/firmware.uf2",
         "sizeBytes": 1736704,
         "sha256": "78069020bd26082fe0ea7ad67b2e039df9cfecb49e6b99c659581e0df4ba92d3"
-      },
-      "xrp-nano": {
-        "machineContains": "NanoXRP",
-        "bootselVolume": "RPI-RP2",
-        "url": "https://raw.githubusercontent.com/Open-STEM/XRP_Firmware/v2.0.5/boards/xrp-nano/micropython-firmware/1.28.0/CYTRON_NANOXRP_CONTROLLER-20260406-v1.28.0.uf2",
-        "sizeBytes": 1750528,
-        "sha256": "7e863519475c61ae8fbf7a01617b88c1edc624d9448ce379b60fa598b28df963"
       }
     }
   },
@@ -39,6 +38,6 @@
   },
   "aresRuntime": {
     "protocol": "ares-xrp/1",
-    "starterVersion": "1.0.0"
+    "starterVersion": "3.0.0"
   }
 }

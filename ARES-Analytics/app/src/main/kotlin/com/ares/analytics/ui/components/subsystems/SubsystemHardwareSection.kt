@@ -200,7 +200,7 @@ fun HardwareInspectorBody(
                     viewModel.updateHardware(device.hardwareId) { it.copy(connection = it.connection.copy(channel = value, canId = null)) }
                 }
             }
-            SubsystemPlatform.XRP -> XrpHardwareConnectionEditor(device, viewModel)
+            SubsystemPlatform.XRP -> XrpHardwareConnectionEditor(device, state.xrpControllerModel, viewModel)
         }
         Row(verticalAlignment = Alignment.Top) {
             FieldGuidance(

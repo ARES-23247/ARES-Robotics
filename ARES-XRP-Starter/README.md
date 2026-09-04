@@ -33,17 +33,19 @@ ARES-XRP-Starter/
 5. Prepare the verified official device image for the exact controller model. This downloads both
    the UF2 and XRPLib source archive and rejects either unless its byte length and SHA-256 match:
    ```bash
-   ares.bat prepare-image --board xrp-2350
+   ares.bat prepare-image
    ```
-   Supported board IDs are `xrp-2350`, `xrp-beta`, and `xrp-nano`. Flash the resulting UF2 only to
-   the matching BOOTSEL volume, then install the pinned XRPLib `2026.08.2` using the official XRP
-   loader. ARES does not silently flash a board or guess its model.
+   Choose either **SparkFun XRP (RP2350)** or **SparkFun XRP Beta (RP2040)** in Studio's Project
+   Identity screen first. ARES downloads the matching pinned official UF2 and refuses to prepare
+   or deploy the other board. Flash the resulting UF2 to the matching BOOTSEL volume, then install
+   pinned XRPLib `2026.08.2` with the official loader.
 6. Plug in the running controller via USB and perform a read-only preflight:
    ```bash
-   ares.bat device-preflight --board xrp-2350
+   ares.bat device-preflight
    ```
-   Preflight checks the board identity, MicroPython `1.28.0`, XRPLib `2026.08.2`, and every XRPLib
-   API required by the generated robot. A mismatch fails closed before files are changed.
+   Preflight checks the selected board identity, its motor and servo ports, MicroPython `1.28.0`,
+   XRPLib `2026.08.2`, and every API required by the generated robot. A mismatch fails closed before
+   files are changed.
 7. Deploy:
    ```bash
    ares.bat deploy

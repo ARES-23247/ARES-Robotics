@@ -24,9 +24,23 @@ class DeviceError(RuntimeError):
 
 def load_manifest() -> dict:
     document = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    if document.get("schemaVersion") != 1:
+    if document.get("schemaVersion") != 2:
         raise DeviceError("Unsupported XRP runtime manifest")
     return document
+
+
+def selected_board() -> tuple[str, dict]:
+    project = json.loads((ROOT / ".ares" / "project.json").read_text(encoding="utf-8"))
+    if project.get("schemaVersion") != 5 or project.get("league") != "XRP":
+        raise DeviceError("Canonical project metadata must be schema 5 and league XRP")
+    controller_model = project.get("runtimeOptions", {}).get("xrp", {}).get("controllerModel")
+    matches = [
+        (board_id, board) for board_id, board in load_manifest()["firmware"]["boards"].items()
+        if board.get("controllerModel") == controller_model
+    ]
+    if len(matches) != 1:
+        raise DeviceError("Canonical project metadata must select one supported SparkFun XRP controller")
+    return matches[0]
 
 
 def sha256_file(path: pathlib.Path) -> str:
@@ -58,11 +72,9 @@ def verified_download(url: str, destination: pathlib.Path, expected_size: int, e
         partial.unlink(missing_ok=True)
 
 
-def prepare_image(board: str, output: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+def prepare_image(output: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
     manifest = load_manifest()
-    board_manifest = manifest["firmware"]["boards"].get(board)
-    if board_manifest is None:
-        raise DeviceError(f"Unknown XRP board {board!r}")
+    board, board_manifest = selected_board()
     firmware = verified_download(
         board_manifest["url"],
         output / f"ares-xrp-{board}-{manifest['firmware']['release']}.uf2",
@@ -103,7 +115,8 @@ try:
 except Exception:
     pass
 try:
-    from XRPLib.defaults import board, drivetrain, left_motor, right_motor, rangefinder, imu, reflectance
+    import XRPLib.defaults as defaults
+    board, drivetrain, left_motor, right_motor, rangefinder, imu, reflectance = defaults.board, defaults.drivetrain, defaults.left_motor, defaults.right_motor, defaults.rangefinder, defaults.imu, defaults.reflectance
     result['boardType'] = str(board.get_type()) if hasattr(board, 'get_type') else ''
     result['apis']['drive'] = hasattr(drivetrain, 'set_effort')
     result['apis']['encoders'] = hasattr(drivetrain, 'get_left_encoder_position') and hasattr(drivetrain, 'get_right_encoder_position')
@@ -117,6 +130,10 @@ try:
         'rgbLed': hasattr(board, 'set_rgb_led'),
         'genericIo': False,
         'buzzer': False,
+    }
+    result['ports'] = {
+        'motors': [number for number, name in ((1, 'left_motor'), (2, 'right_motor'), (3, 'motor_three'), (4, 'motor_four')) if getattr(defaults, name, None) is not None],
+        'servos': [number for number, name in ((1, 'servo_one'), (2, 'servo_two'), (3, 'servo_three'), (4, 'servo_four')) if getattr(defaults, name, None) is not None],
     }
     try:
         from XRPLib.defaults import buzzer
@@ -160,8 +177,34 @@ def required_project_capabilities() -> set[str]:
     return required
 
 
-def preflight(expected_board: str | None = None) -> dict:
+def required_project_ports() -> dict[str, set[int]]:
+    required = {"motors": set(), "servos": set()}
+    for path in (ROOT / ".ares" / "drivetrains").glob("*.aresdrivetrain"):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        for component in document.get("components", []):
+            if component.get("role") == "DRIVE_MOTOR":
+                hardware_id = str(component["hardwareId"])
+                required["motors"].add(
+                    {"left": 1, "right": 2}[hardware_id]
+                    if hardware_id in ("left", "right")
+                    else int(hardware_id)
+                )
+    for path in (ROOT / ".ares" / "subsystems").glob("*.aressubsystem"):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        for device in document.get("hardware", []):
+            channel = device.get("connection", {}).get("channel")
+            if channel is None:
+                continue
+            if device.get("kind") == "MOTOR":
+                required["motors"].add(int(channel))
+            elif device.get("kind") == "POSITIONAL_SERVO":
+                required["servos"].add(int(channel))
+    return required
+
+
+def preflight() -> dict:
     manifest = load_manifest()
+    expected_board, board = selected_board()
     report = parse_preflight_output(run_mpremote(["exec", _preflight_script()], capture=True).stdout)
     problems = []
     if report.get("micropython") != manifest["firmware"]["micropythonVersion"]:
@@ -179,6 +222,17 @@ def preflight(expected_board: str | None = None) -> dict:
     )
     if missing_capabilities:
         problems.append("The selected project requires unavailable board capabilities: " + ", ".join(missing_capabilities))
+    available_ports = {name: set(values) for name, values in report.get("ports", {}).items()}
+    for kind, expected in (("motors", board["motorChannels"]), ("servos", board["servoChannels"])):
+        actual = available_ports.get(kind, set())
+        if actual != set(expected):
+            problems.append(
+                f"Connected controller exposes {kind} {sorted(actual)}, but {board['controllerModel']} requires {expected}"
+            )
+    for kind, required in required_project_ports().items():
+        missing = sorted(required - available_ports.get(kind, set()))
+        if missing:
+            problems.append(f"The project requires unavailable {kind} ports: {', '.join(map(str, missing))}")
     machine = report.get("machine", "")
     detected = [
         board_id for board_id, board in manifest["firmware"]["boards"].items()
@@ -188,12 +242,8 @@ def preflight(expected_board: str | None = None) -> dict:
         problems.append(f"Connected machine {machine!r} did not match exactly one pinned XRP board")
     else:
         report["detectedBoard"] = detected[0]
-    if expected_board:
-        board = manifest["firmware"]["boards"].get(expected_board)
-        if board is None:
-            raise DeviceError(f"Unknown expected board {expected_board!r}")
-        if detected != [expected_board]:
-            problems.append(f"Connected machine {machine!r} does not match selected board {expected_board}")
+    if detected != [expected_board]:
+        problems.append(f"Connected machine {machine!r} does not match selected board {expected_board}")
     report["ready"] = not problems
     report["problems"] = problems
     if problems:
@@ -242,8 +292,8 @@ def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: st
     )
 
 
-def deploy(expected_board: str | None = None) -> str:
-    report = preflight(expected_board)
+def deploy() -> str:
+    report = preflight()
     content_sha256 = _content_sha()
     slot_name = "slot-" + content_sha256[:16]
     remote_slot = "/ares_slots/" + slot_name
@@ -317,23 +367,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="ARES-managed XRP device tools")
     subparsers = parser.add_subparsers(dest="command", required=True)
     image = subparsers.add_parser("prepare-image", help="download and verify the official firmware/XRPLib image")
-    image.add_argument("--board", required=True, choices=tuple(load_manifest()["firmware"]["boards"]))
     image.add_argument("--output", type=pathlib.Path, default=ROOT / "build" / "device-image")
-    check = subparsers.add_parser("preflight", help="verify a connected controller without changing it")
-    check.add_argument("--board", choices=tuple(load_manifest()["firmware"]["boards"]))
-    install = subparsers.add_parser("deploy", help="verify and deploy into a recoverable A/B slot")
-    install.add_argument("--board", choices=tuple(load_manifest()["firmware"]["boards"]))
+    subparsers.add_parser("preflight", help="verify the connected controller selected by .ares/project.json without changing it")
+    subparsers.add_parser("deploy", help="verify and deploy into a recoverable A/B slot")
     subparsers.add_parser("rollback", help="reactivate the previously deployed ARES slot")
     subparsers.add_parser("plan-deploy", help="stage and compile a deployment without connecting to hardware")
     args = parser.parse_args()
     if args.command == "prepare-image":
-        firmware, xrplib = prepare_image(args.board, args.output)
+        firmware, xrplib = prepare_image(args.output)
         print(f"Verified firmware: {firmware}")
         print(f"Verified XRPLib: {xrplib}")
     elif args.command == "preflight":
-        print(json.dumps(preflight(args.board), indent=2, sort_keys=True))
+        print(json.dumps(preflight(), indent=2, sort_keys=True))
     elif args.command == "deploy":
-        print(deploy(args.board))
+        print(deploy())
     elif args.command == "plan-deploy":
         print(json.dumps(deployment_plan(), indent=2, sort_keys=True))
     else:

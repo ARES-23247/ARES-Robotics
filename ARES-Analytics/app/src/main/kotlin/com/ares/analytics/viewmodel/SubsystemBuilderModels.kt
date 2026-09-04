@@ -10,6 +10,7 @@ import com.areslib.codegen.SubsystemArtifactGroup
 import com.areslib.codegen.SubsystemArtifactOwnership
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemTemplate
+import com.areslib.project.AresXrpControllerModel
 
 enum class SubsystemProblemSeverity { WARNING, ERROR }
 
@@ -258,6 +259,7 @@ data class SubsystemEditorDraft(
 data class SubsystemGeneratorState(
     val projectPath: String,
     val league: League,
+    val xrpControllerModel: AresXrpControllerModel? = null,
     val documents: List<SubsystemDocument> = emptyList(),
     val selectedDocumentId: String? = null,
     val draft: SubsystemEditorDraft? = null,
