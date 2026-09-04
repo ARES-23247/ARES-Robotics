@@ -67,6 +67,21 @@ class DashboardMissionHeaderTest {
     }
 
     @Test
+    fun `source type correctly identifies XRP live hardware`() {
+        val snapshot = DashboardMissionSnapshot(
+            workspace = baseWorkspace.copy(league = League.XRP),
+            isConnected = true,
+            isLocalSimulator = false,
+            isSimulatorRunning = false,
+            isReplayActive = false,
+            primarySessionId = null
+        )
+
+        assertEquals(DashboardDataSourceType.LIVE_ROBOT_XRP, snapshot.sourceType)
+        assertEquals("HARDWARE", snapshot.sourceType.badge)
+    }
+
+    @Test
     fun `source type correctly identifies historical replay`() {
         val snapshot = DashboardMissionSnapshot(
             workspace = baseWorkspace,
@@ -167,6 +182,16 @@ class DashboardMissionHeaderTest {
             lastUpdateAgeMs = 50L
         )
         assertTrue(lowBattery.healthSummary.contains("Low battery voltage"))
+
+        val nominalXrpBattery = nominal.copy(
+            workspace = baseWorkspace.copy(league = League.XRP),
+            batteryVoltage = 6.0,
+            xrpBrownoutThresholdVolts = 4.3,
+        )
+        assertTrue(nominalXrpBattery.healthSummary.contains("All systems nominal"))
+
+        val lowXrpBattery = nominalXrpBattery.copy(batteryVoltage = 4.5)
+        assertTrue(lowXrpBattery.healthSummary.contains("Low battery voltage"))
 
         // Brownout
         val brownout = DashboardMissionSnapshot(

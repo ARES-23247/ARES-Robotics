@@ -20,6 +20,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.DashboardHealthService
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.theme.*
 import com.areslib.telemetry.TelemetryTopicConstants
 import kotlinx.coroutines.flow.collect
@@ -31,6 +32,9 @@ fun SystemHealthCard(
     nt4ClientService: Nt4ClientService,
     dashboardHealthService: DashboardHealthService? = null,
     currentFrame: ReplayFrame? = null,
+    league: League,
+    isRobotLinkConnected: Boolean,
+    xrpBrownoutThresholdVolts: Double? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -40,7 +44,7 @@ fun SystemHealthCard(
     var loopOverruns by remember { mutableStateOf<Int?>(null) }
     var ftcRuntime by remember { mutableStateOf(FtcRuntimeDashboardState()) }
     val runtimeHealth = dashboardHealthService?.health?.collectAsState()?.value
-    val connected by nt4ClientService.isConnected.collectAsState()
+    val connected = isRobotLinkConnected
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -83,7 +87,7 @@ fun SystemHealthCard(
         backgroundColor = AresSurfaceElevated
     ) {
         CardHeader(
-            title = "RoboRIO / Control Hub Health",
+            title = controllerHealthTitle(league),
             icon = Icons.Default.Memory,
             iconTint = if (currentFrame != null || connected) AresGreen else AresTextTertiary,
             statusText = when {
@@ -119,26 +123,28 @@ fun SystemHealthCard(
                         color = loopColor,
                         fontSize = 12.sp
                     )
-                    val runtimePresentation = ftcRuntime.presentation()
-                    Text(
-                        text = runtimePresentation.transportLabel,
-                        color = when (runtimePresentation.transportTone) {
-                            FtcRuntimeTone.HEALTHY -> AresGreen
-                            FtcRuntimeTone.WARNING -> AresGold
-                            FtcRuntimeTone.UNKNOWN -> AresTextTertiary
-                        },
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = runtimePresentation.proxyLabel,
-                        color = when (runtimePresentation.proxyTone) {
-                            FtcRuntimeTone.HEALTHY -> AresGreen
-                            FtcRuntimeTone.WARNING -> AresGold
-                            FtcRuntimeTone.UNKNOWN -> AresTextTertiary
-                        },
-                        fontSize = 9.sp,
-                    )
+                    if (league == League.FTC) {
+                        val runtimePresentation = ftcRuntime.presentation()
+                        Text(
+                            text = runtimePresentation.transportLabel,
+                            color = when (runtimePresentation.transportTone) {
+                                FtcRuntimeTone.HEALTHY -> AresGreen
+                                FtcRuntimeTone.WARNING -> AresGold
+                                FtcRuntimeTone.UNKNOWN -> AresTextTertiary
+                            },
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = runtimePresentation.proxyLabel,
+                            color = when (runtimePresentation.proxyTone) {
+                                FtcRuntimeTone.HEALTHY -> AresGreen
+                                FtcRuntimeTone.WARNING -> AresGold
+                                FtcRuntimeTone.UNKNOWN -> AresTextTertiary
+                            },
+                            fontSize = 9.sp,
+                        )
+                    }
                 }
 
                 // Overruns
@@ -159,11 +165,11 @@ fun SystemHealthCard(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("BATTERY", color = AresTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     val voltage = batteryVoltage
-                    val batteryColor = when {
-                        voltage == null -> AresTextPrimary
-                        voltage < 11.5 -> AresError
-                        voltage < 12.2 -> AresGold
-                        else -> AresGreen
+                    val batteryColor = when (batteryVoltagePolicy(league, xrpBrownoutThresholdVolts).tone(voltage)) {
+                        HealthMetricTone.UNKNOWN -> AresTextPrimary
+                        HealthMetricTone.NORMAL -> AresGreen
+                        HealthMetricTone.CAUTION -> AresGold
+                        HealthMetricTone.CRITICAL -> AresError
                     }
                     Text(
                         text = voltage?.let { String.format("%.2f V", it) } ?: "--",

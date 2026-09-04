@@ -30,6 +30,8 @@ import com.ares.analytics.viewmodel.DashboardIntent
 import com.ares.analytics.viewmodel.DashboardViewModel
 import kotlinx.coroutines.launch
 import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.project.requireXrpRuntimeOptions
+import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 
 /**
  * Primary telemetry analytics dashboard screen displaying real-time robot visualization cards.
@@ -111,6 +113,17 @@ internal fun DashboardScreen(
     val tuningDeclarations by produceState<List<TuningParameterDeclaration>>(emptyList(), currentConfig.projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             services.tuningProfiles.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()
+        }
+    }
+    val xrpBrownoutThresholdVolts by produceState<Double?>(null, currentConfig.league, currentConfig.projectPath) {
+        value = if (currentConfig.league == League.XRP) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                ProjectMetadataRepository().load(currentConfig.projectPath).getOrNull()
+                    ?.requireXrpRuntimeOptions()
+                    ?.brownoutThresholdVolts
+            }
+        } else {
+            null
         }
     }
 
@@ -242,6 +255,7 @@ internal fun DashboardScreen(
         batteryVoltage = batteryVoltage,
         brownoutCount = brownoutCount,
         loopOverruns = loopOverruns,
+        xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
         activeAlerts = state.alerts,
         frameRateHz = frameRateHz,
         lastUpdateAgeMs = lastUpdateAgeMs,
@@ -305,6 +319,7 @@ internal fun DashboardScreen(
                 services = services.widgets,
                 workspace = currentConfig,
                 isRobotLinkConnected = isRobotLinkConnected,
+                xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
                 dashboardState = state,
                 replayFrame = displayedReplayFrame,
                 replaySessionStartMs = replaySessionStart,
@@ -328,14 +343,13 @@ internal fun DashboardScreen(
         }
 
         // Timeline Scrubber Bar
-        val isConnected by liveServices.nt4ClientService.isConnected.collectAsState()
         val isReplayActive by liveServices.nt4ClientService.isReplayActive.collectAsState()
 
-        if (state.primarySessionId != null || isConnected) {
+        if (state.primarySessionId != null || isRobotLinkConnected) {
             ReplayTimelineScrubber(
                 replayEngine = replayEngine,
                 replayState = replayState,
-                isLiveConnection = state.primarySessionId == null,
+                isLiveConnection = state.primarySessionId == null && isRobotLinkConnected,
                 isReplayActive = isReplayActive,
                 sessionMode = state.sessionMode,
                 sessionId = state.primarySessionId,
