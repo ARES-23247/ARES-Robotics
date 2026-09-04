@@ -51,8 +51,8 @@ ARES-XRP-Starter/
    ares.bat deploy
    ```
    This verifies the project, stages the bundled `ares_micro` runtime, generated Python, hardware
-   boundary, extensions, and optional secrets into an inactive content-addressed slot, compiles
-   every staged Python file on the controller, and only then atomically activates it. An interrupted
+   boundary, extensions, and optional secrets into a fresh slot for each attempt. It verifies every
+   file hash and compiles every staged Python file on the controller before replacing the active marker. An interrupted
    or invalid upload leaves the previous slot active. Run `ares.bat rollback` over USB to reactivate
    the prior slot.
    To inspect the exact content-addressed deployment without a controller, run
@@ -81,7 +81,9 @@ repository can be built, tested, simulated, and deployed entirely from an IDE or
   separate from FTC/FRC NT4 on 5810.
 - Every control frame has a session, monotonic sequence, one-shot request revision, explicit arm
   state, and a bounded deadman lease. Invalid, stale, disconnected, or non-finite input commands
-  neutral output.
+  neutral output for both the drivetrain and mechanisms. Resuming requires a new explicit start
+  request. Studio also checks the generated canonical project fingerprint, so stale deployments
+  with the same project ID cannot enable control.
 - AP mode uses the generated SSID and a starter password. STATION mode reads `WIFI_PASSWORD` from
   ignored `xrp_secrets.py`; copy `xrp_secrets.example.py` and never commit the secret.
 - The physical runtime reads battery voltage from the official XRPLib `board` adapter and latches a

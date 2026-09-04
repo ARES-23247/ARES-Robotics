@@ -7,6 +7,17 @@ Integrates with wheel encoders and SparkFun OTOS sensor.
 import math
 from .kinematics import DifferentialDriveKinematics, MecanumKinematics, wrap_angle
 
+def _stop_motors(motors):
+    failure = None
+    for motor in motors:
+        if motor is not None:
+            try:
+                motor.set_effort(0.0)
+            except Exception as error:
+                failure = error
+    if failure is not None:
+        raise failure
+
 class DifferentialDrivetrain:
     """
     Standard XRP 2-wheel Differential Drivetrain.
@@ -15,8 +26,8 @@ class DifferentialDrivetrain:
     def __init__(self, left_motor=None, right_motor=None, drivetrain_io=None,
                  track_width=0.155, wheel_radius=0.030, max_speed=0.85, otos=None,
                  heading_supplier=None):
-        self.left_motor = left_motor
-        self.right_motor = right_motor
+        self.left_motor = left_motor if left_motor is not None else getattr(drivetrain_io, "left_motor", None)
+        self.right_motor = right_motor if right_motor is not None else getattr(drivetrain_io, "right_motor", None)
         self.drivetrain_io = drivetrain_io
         self.track_width = track_width
         self.wheel_radius = wheel_radius
@@ -56,7 +67,12 @@ class DifferentialDrivetrain:
         self.set_powers(lp, rp)
 
     def stop(self):
-        self.set_powers(0.0, 0.0)
+        if self.left_motor is not None and self.right_motor is not None:
+            # XRPLib exposes these motors; its combined set_effort stops at the
+            # first exception. Stop each independently during emergency cleanup.
+            _stop_motors((self.left_motor, self.right_motor))
+        elif self.drivetrain_io:
+            self.drivetrain_io.set_effort(0.0, 0.0)
 
     def has_output(self):
         return self.drivetrain_io is not None or (
@@ -160,7 +176,7 @@ class MecanumDrivetrain:
         self.set_powers(fl_p, fr_p, bl_p, br_p)
 
     def stop(self):
-        self.set_powers(0.0, 0.0, 0.0, 0.0)
+        _stop_motors((self.fl, self.fr, self.bl, self.br))
 
     def has_output(self):
         return all(motor is not None for motor in (self.fl, self.fr, self.bl, self.br))

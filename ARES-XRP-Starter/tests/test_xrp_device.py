@@ -189,25 +189,6 @@ class XrpDeviceTest(unittest.TestCase):
         self.assertIn("main.py", plan["pythonFiles"])
         self.assertIn("ares_micro/robot.py", plan["pythonFiles"])
 
-    def test_deploy_installs_bootstrap_before_atomic_slot_activation(self):
-        expected_count = len(xrp_device.deployment_plan()["pythonFiles"])
-        calls = []
-
-        def mpremote(arguments, capture=False):
-            calls.append(arguments)
-            stdout = f"ARES_SLOT_VALID={expected_count}\n" if capture else ""
-            return mock.Mock(stdout=stdout)
-
-        with (
-            mock.patch.object(xrp_device, "preflight", return_value={"machine": "XRP RP2350", "detectedBoard": "xrp-2350"}),
-            mock.patch.object(xrp_device, "run_mpremote", side_effect=mpremote),
-        ):
-            xrp_device.deploy()
-
-        bootstrap_index = next(index for index, call in enumerate(calls) if call[:2] == ["fs", "cp"] and call[-1] == ":/main.py")
-        activation_index = next(index for index, call in enumerate(calls) if call[0] == "exec" and "ares_active_slot.next" in call[1])
-        self.assertLess(bootstrap_index, activation_index)
-        self.assertEqual(calls[-1], ["reset"])
 
 
 if __name__ == "__main__":

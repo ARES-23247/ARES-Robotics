@@ -10,6 +10,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import uuid
 import tempfile
 import urllib.request
 
@@ -292,43 +293,101 @@ def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: st
     )
 
 
+def _seal_payload(stage: pathlib.Path) -> str:
+    files = {path.relative_to(stage).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+             for path in sorted(stage.rglob("*")) if path.is_file()}
+    payload = (json.dumps(files, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    (stage / "ares-files.json").write_bytes(payload)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _validation_script(remote_slot: str, digest: str) -> str:
+    return f"""import os, json, hashlib, binascii
+root={remote_slot!r}
+def sha(path):
+ h=hashlib.sha256()
+ with open(path,'rb') as f:
+  while True:
+   chunk=f.read(1024)
+   if not chunk: break
+   h.update(chunk)
+ return binascii.hexlify(h.digest()).decode()
+assert sha(root+'/ares-files.json') == {digest!r}, 'payload manifest mismatch'
+with open(root+'/ares-files.json') as f: files=json.load(f)
+def check(path, prefix=''):
+ count=0
+ for item in os.ilistdir(path):
+  name=prefix+item[0]
+  child=path+'/'+item[0]
+  if item[1] & 0x4000: count += check(child,name+'/')
+  elif name != 'ares-files.json':
+   assert name in files and sha(child)==files[name], 'payload mismatch: '+name
+   if child.endswith('.py'):
+    with open(child,'r') as f: compile(f.read(),child,'exec')
+   count += 1
+ return count
+assert check(root)==len(files), 'missing payload file'
+print('ARES_SLOT_VALID='+{digest!r})
+"""
+
+
+def _activation_script(remote_slot: str | None = None) -> str:
+    # Never rename the active marker away. Keep a durable previous marker before
+    # replacing the current one. The launcher falls back only before executing code.
+    target = repr(remote_slot) if remote_slot is not None else "read_slot('/ares_active_slot.prev')"
+    return """import os
+def read_slot(path):
+ with open(path,'r') as f: slot=f.read().strip()
+ assert slot.startswith('/ares_slots/slot-') and '/' not in slot[len('/ares_slots/'): ] and '..' not in slot
+ with open(slot+'/main.py','r') as f: compile(f.read(),slot+'/main.py','exec')
+ return slot
+def sync():
+ if hasattr(os,'sync'): os.sync()
+def replace_marker(path, value):
+ with open(path+'.next','w') as f:
+  f.write(value)
+  f.flush()
+ sync()
+ os.rename(path+'.next',path)
+ sync()
+""" + f"next_slot={target}\n" + """try:
+ current=read_slot('/ares_active_slot.txt')
+except (OSError, AssertionError, SyntaxError):
+ try: current=read_slot('/ares_active_slot.prev')
+ except (OSError, AssertionError, SyntaxError): current=None
+if current and current != next_slot:
+ replace_marker('/ares_active_slot.prev',current)
+replace_marker('/ares_active_slot.txt',next_slot)
+"""
+
+
 def deploy() -> str:
     report = preflight()
     content_sha256 = _content_sha()
-    slot_name = "slot-" + content_sha256[:16]
-    remote_slot = "/ares_slots/" + slot_name
     with tempfile.TemporaryDirectory(prefix="ares-xrp-deploy-") as temporary:
-        stage = pathlib.Path(temporary) / slot_name
+        stage = pathlib.Path(temporary) / "payload"
         stage.mkdir()
         _stage_directory(stage, content_sha256, report.get("detectedBoard"))
+        digest = _seal_payload(stage)
+        # Each attempt owns a fresh directory, even for a same-content retry. A
+        # partial upload can never overwrite the active or rollback payload.
+        slot_name = "slot-" + digest[:16] + "-" + uuid.uuid4().hex[:12]
+        remote_slot = "/ares_slots/" + slot_name
+        destination = stage.with_name(slot_name)
+        stage.rename(destination)
+        stage = destination
         run_mpremote(["exec", "import os\ntry:\n os.mkdir('/ares_slots')\nexcept OSError:\n pass"])
-        run_mpremote(["exec", f"import os\ndef rm(p):\n try:\n  mode=os.stat(p)[0]\n except OSError:\n  return\n if mode & 0x4000:\n  for item in os.ilistdir(p): rm(p+'/'+item[0])\n  os.rmdir(p)\n else: os.remove(p)\nrm('{remote_slot}')"])
-        run_mpremote(["fs", "cp", "-r", str(stage), ":/ares_slots"])
-        validation = (
-            f"import os\nroot='{remote_slot}'\ncount=0\n"
-            "def check(path):\n global count\n for item in os.ilistdir(path):\n  child=path+'/'+item[0]\n  if item[1] & 0x4000: check(child)\n  elif child.endswith('.py'):\n   with open(child,'r') as f: compile(f.read(),child,'exec')\n   count += 1\n"
-            "check(root)\nprint('ARES_SLOT_VALID=' + str(count))\n"
-        )
-        result = run_mpremote(["exec", validation], capture=True)
-        expected_python_files = len(tuple(stage.rglob("*.py")))
-        validation_counts = [
-            int(line.split("ARES_SLOT_VALID=", 1)[1].strip())
-            for line in result.stdout.splitlines()
-            if "ARES_SLOT_VALID=" in line
-        ]
-        if validation_counts != [expected_python_files]:
+        run_mpremote(["exec", f"import os\nos.mkdir({remote_slot!r})"])
+        # Copy contents into the reserved directory (mpremote cp uses cp -r semantics).
+        for child in sorted(stage.iterdir()):
+            run_mpremote(["fs", "cp", "-r", str(child), ":" + remote_slot + "/"])
+        result = run_mpremote(["exec", _validation_script(remote_slot, digest)], capture=True)
+        receipts = [line.strip() for line in result.stdout.splitlines() if line.startswith("ARES_SLOT_VALID=")]
+        if receipts != ["ARES_SLOT_VALID=" + digest]:
             raise DeviceError("The staged ARES slot could not be verified; the previous slot remains active")
-        # The stable launcher is installed before changing the active marker. A
-        # first deployment can therefore never activate an unreachable slot.
-        run_mpremote(["fs", "cp", str(ROOT / "deploy" / "ares_boot.py"), ":/main.py"])
-        activate = (
-            f"import os\nnext_slot='{remote_slot}'\n"
-            "try:\n os.remove('/ares_active_slot.prev')\nexcept OSError:\n pass\n"
-            "try:\n os.rename('/ares_active_slot.txt','/ares_active_slot.prev')\nexcept OSError:\n pass\n"
-            "with open('/ares_active_slot.next','w') as f: f.write(next_slot)\n"
-            "os.rename('/ares_active_slot.next','/ares_active_slot.txt')\n"
-        )
-        run_mpremote(["exec", activate])
+        run_mpremote(["fs", "cp", str(ROOT / "deploy" / "ares_boot.py"), ":/ares_boot.next"])
+        run_mpremote(["exec", "import os\nwith open('/ares_boot.next') as f: compile(f.read(),'/main.py','exec')\nif hasattr(os,'sync'): os.sync()\nos.rename('/ares_boot.next','/main.py')\nif hasattr(os,'sync'): os.sync()"])
+        run_mpremote(["exec", _activation_script(remote_slot)])
         run_mpremote(["reset"])
     return f"Deployed {slot_name} to {report.get('machine', 'XRP')}"
 
@@ -336,15 +395,17 @@ def deploy() -> str:
 def deployment_plan() -> dict:
     content_sha256 = _content_sha()
     with tempfile.TemporaryDirectory(prefix="ares-xrp-plan-") as temporary:
-        stage = pathlib.Path(temporary) / ("slot-" + content_sha256[:16])
+        stage = pathlib.Path(temporary) / "payload"
         stage.mkdir()
         _stage_directory(stage, content_sha256)
-        python_files = sorted(str(path.relative_to(stage)).replace("\\", "/") for path in stage.rglob("*.py"))
+        digest = _seal_payload(stage)
+        python_files = sorted(path.relative_to(stage).as_posix() for path in stage.rglob("*.py"))
         for path in stage.rglob("*.py"):
             compile(path.read_text(encoding="utf-8"), str(path), "exec")
     return {
         "contentSha256": content_sha256,
-        "slot": "slot-" + content_sha256[:16],
+        "payloadSha256": digest,
+        "slot": "slot-" + digest[:16] + "-<unique-attempt>",
         "pythonFiles": python_files,
         "deviceMutation": False,
         "evidence": "Compiled successfully",
@@ -352,14 +413,7 @@ def deployment_plan() -> dict:
 
 
 def rollback() -> None:
-    script = """import os
-with open('/ares_active_slot.prev','r') as f: previous=f.read().strip()
-with open('/ares_active_slot.txt','r') as f: current=f.read().strip()
-with open('/ares_active_slot.next','w') as f: f.write(previous)
-os.rename('/ares_active_slot.next','/ares_active_slot.txt')
-with open('/ares_active_slot.prev','w') as f: f.write(current)
-"""
-    run_mpremote(["exec", script])
+    run_mpremote(["exec", _activation_script()])
     run_mpremote(["reset"])
 
 

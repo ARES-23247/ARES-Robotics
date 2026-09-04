@@ -13,6 +13,23 @@ for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
 
 
 class GeneratedProjectTest(unittest.TestCase):
+    def test_runtime_identity_fingerprints_the_same_files_as_studio(self):
+        import hashlib
+        tool_spec = importlib.util.spec_from_file_location("fingerprint_tool", ROOT / "tools/ares_project.py")
+        tool = importlib.util.module_from_spec(tool_spec)
+        tool_spec.loader.exec_module(tool)
+        ignored = ("history/", "recovery/", "drafts/", "backups/", "evidence/", "local/", "verification/")
+        paths = [p for p in (ROOT / ".ares").rglob("*") if p.is_file()
+                 and not p.relative_to(ROOT / ".ares").as_posix().startswith(ignored)]
+        field = ROOT / "deploy/paths/field.json"
+        if field.is_file(): paths.append(field)
+        content = b"".join(p.relative_to(ROOT).as_posix().encode() + b"\0" + p.read_bytes() + b"\0"
+                           for p in sorted(paths, key=lambda p: p.relative_to(ROOT).as_posix()))
+        self.assertEqual(hashlib.sha256(content).hexdigest(), tool.canonical_content_sha256())
+        generated = {}
+        exec((ROOT / "build/generated/ares/python/generated_ares_project.py").read_text(), generated)
+        self.assertEqual(tool.canonical_content_sha256(), generated["PROJECT"]["runtime_identity"]["canonicalContentSha256"])
+
     def test_stock_xrp_input_and_light_adapters_use_public_xrplib_boundaries(self):
         hardware_path = ROOT / "hardware.py"
         spec = importlib.util.spec_from_file_location("ares_xrp_hardware", hardware_path)

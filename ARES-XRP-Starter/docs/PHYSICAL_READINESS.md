@@ -17,10 +17,12 @@ Updated: 2026-09-04
 - SparkFun OTOS register addresses, product identity, scalar encoding, pose/velocity units, offsets,
   pose reset, and IMU calibration follow SparkFun's published driver. Qwiic bus assignments follow
   the published SparkFun controller pinouts.
-- Deployment is content-addressed: it stages an inactive slot, compiles every Python file on-device,
-  verifies the exact file count, installs the stable launcher, then switches the active marker.
+- Deployment gives each attempt a fresh slot, hashes every payload file, and compiles every Python
+  file on-device before activation. It replaces durable markers without removing the active marker
+  first; the launcher can recover from the previous marker before executing any robot code.
   `plan-deploy` exercises the same payload compilation without touching a device; `rollback` restores
-  the previous slot.
+  the previous slot. Interrupted/older inactive slots are retained for diagnosis; remove only slots
+  referenced by neither `/ares_active_slot.txt` nor `/ares_active_slot.prev` when reclaiming device storage.
 
 ## Physical checks still required
 

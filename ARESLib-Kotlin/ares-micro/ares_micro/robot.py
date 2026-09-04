@@ -108,6 +108,35 @@ class XrpRobot:
 
     def step(self, dt=0.02):
         """Main robot cycle executing at 50Hz (20ms)."""
+        try:
+            self._step(dt)
+        except Exception:
+            self.emergency_stop()
+
+    def emergency_stop(self):
+        """Latch a fault and attempt every owned output, even if one stop fails."""
+        self.faulted = True
+        self.mode = self.STATE_DISABLED
+        self.telemetry.neutralize()
+        try:
+            self.drivetrain.stop()
+        except Exception:
+            pass
+        for subsystem in self.subsystems:
+            try:
+                subsystem.stop()
+            except Exception:
+                pass
+
+    def shutdown(self):
+        """Termination cleanup, including KeyboardInterrupt in the physical loop."""
+        self.emergency_stop()
+        self.telemetry.close_client()
+        if self.telemetry.server_socket:
+            self.telemetry.server_socket.close()
+            self.telemetry.server_socket = None
+
+    def _step(self, dt):
         # 1. Poll incoming network telemetry
         self.telemetry.poll()
         battery_volts = float(self.battery_voltage_supplier())
@@ -135,7 +164,9 @@ class XrpRobot:
             self.telemetry.neutralize()
             try:
                 self.drivetrain.stop()
-                recovered = all(subsystem.recover_neutral() for subsystem in self.subsystems)
+                recovered = True
+                for subsystem in self.subsystems:
+                    recovered = subsystem.recover_neutral() and recovered
                 self.faulted = not recovered
                 self.mode = self.STATE_INIT if recovered else self.STATE_DISABLED
             except Exception:
@@ -175,10 +206,14 @@ class XrpRobot:
                     self.drivetrain.vy = 0.0
                     self.drivetrain.omega = 0.0
                     self.drivetrain.stop()
+            frame = self.telemetry.get_drive_frame()
+            if self.mode in (self.STATE_AUTO, self.STATE_TELEOP) and frame is None:
+                self.mode = self.STATE_DISABLED
+                self.drivetrain.stop()
             if self.mode == self.STATE_AUTO:
                 # Autonomous motion remains leased by Studio. A disconnect or stale heartbeat
                 # stops the robot within the configured deadman interval.
-                if self.telemetry.get_drive_frame() is None:
+                if frame is None:
                     self.mode = self.STATE_DISABLED
                     self.drivetrain.stop()
                 elif self.active_routine:
@@ -198,7 +233,6 @@ class XrpRobot:
 
             elif self.mode == self.STATE_TELEOP:
                 # Check for leased control frame from Studio driver station
-                frame = self.telemetry.get_drive_frame()
                 if frame and len(frame) >= 3:
                     vx = frame[0]
                     vy = frame[1]

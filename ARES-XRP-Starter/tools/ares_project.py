@@ -25,6 +25,21 @@ XRP_CONTROLLER_PROFILES = {
 }
 
 
+def canonical_content_sha256() -> str:
+    """Same byte/path fingerprint as Studio ProjectSession for the XRP target."""
+    ignored = {"history", "recovery", "drafts", "backups", "evidence", "local", "verification"}
+    files = [path for path in ARES.rglob("*") if path.is_file() and path.relative_to(ARES).parts[0] not in ignored]
+    field = ROOT / "deploy" / "paths" / "field.json"
+    if field.is_file(): files.append(field)
+    digest = hashlib.sha256()
+    for path in sorted(files, key=lambda item: item.relative_to(ROOT).as_posix()):
+        digest.update(path.relative_to(ROOT).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def load_json(path: pathlib.Path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -243,6 +258,7 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
         "max_linear_speed_mps": drivebase["geometry"]["maxLinearSpeedMetersPerSecond"],
         "max_angular_speed_radps": drivebase["geometry"]["maxAngularSpeedRadiansPerSecond"],
         "runtime_identity": {
+            "canonicalContentSha256": canonical_content_sha256(),
             "micropythonVersion": device_identity["firmware"]["micropythonVersion"],
             "xrplibVersion": device_identity["xrplib"]["version"],
             "aresRuntimeVersion": device_identity["aresRuntime"]["starterVersion"],

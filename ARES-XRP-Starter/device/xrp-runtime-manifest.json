@@ -38,6 +38,6 @@
   },
   "aresRuntime": {
     "protocol": "ares-xrp/1",
-    "starterVersion": "3.0.0"
+    "starterVersion": "3.0.1"
   }
 }

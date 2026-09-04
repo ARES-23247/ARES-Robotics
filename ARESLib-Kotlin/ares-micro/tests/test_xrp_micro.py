@@ -247,9 +247,10 @@ class TestXrpRobotLifecycle(unittest.TestCase):
         # TeleOp and autonomous starts are distinct so the wrong mode cannot launch.
         robot.telemetry.last_command = "START_TELEOP"
         robot.step(dt=0.02)
-        self.assertEqual(robot.mode, XrpRobot.STATE_TELEOP)
+        self.assertEqual(robot.mode, XrpRobot.STATE_DISABLED)
 
         # Send leased drive frame: forward at 0.5 m/s
+        robot.telemetry.last_command = "START_TELEOP"
         robot.telemetry.last_drive_frame = [0.5, 0.0, 0.0]
         robot.telemetry.last_drive_ms = 1
         robot.telemetry.armed = True
@@ -354,6 +355,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
 
             def send(self, payload):
                 self.sent.append(payload.decode("utf-8"))
+                return len(payload)
 
         payload = json.dumps({
             "id": "tabletop",
@@ -398,6 +400,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
 
             def send(self, payload):
                 self.sent.append(payload.decode("utf-8"))
+                return len(payload)
 
         server = self.server()
         capture = CaptureSocket()

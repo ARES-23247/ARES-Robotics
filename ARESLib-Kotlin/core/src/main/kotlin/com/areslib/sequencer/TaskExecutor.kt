@@ -44,6 +44,7 @@ class TaskExecutor {
         if (!isSuspended) {
             isSuspended = true
             suspendedAtMs = com.areslib.util.RobotClock.currentTimeMillis()
+            activeTask?.setTimeoutSuspended(true)
         }
     }
 
@@ -52,6 +53,7 @@ class TaskExecutor {
     fun resume() {
         if (isSuspended) {
             isSuspended = false
+            activeTask?.setTimeoutSuspended(false)
             activeTaskStartTimeMs += com.areslib.util.RobotClock.currentTimeMillis() - suspendedAtMs
         }
     }
@@ -64,16 +66,9 @@ class TaskExecutor {
     fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> {
         var actions: MutableList<RobotAction>? = null
 
-        if (isSuspended) {
-            // The preemptor starts now; only suspension time after this instant may be
-            // charged to it on resume. Without this reset, resume would over-credit the
-            // new task's elapsed time by the pre-preempt suspension interval.
-            suspendedAtMs = currentTimestampMs
-        }
-
         val currentActive = activeTask
         if (currentActive != null) {
-            val elapsed = currentTimestampMs - activeTaskStartTimeMs
+            val elapsed = (if (isSuspended) suspendedAtMs else currentTimestampMs) - activeTaskStartTimeMs
             preemptedStack.push(Pair(currentActive, elapsed))
             try {
                 actions = addActions(actions, currentActive.pause(state))
@@ -81,10 +76,11 @@ class TaskExecutor {
                 System.err.println("TaskExecutor: Exception while pausing task ${currentActive.name}: ${e.message}")
                 e.printStackTrace()
             } finally {
-                TaskTimeoutManager.pause(currentActive)
+                currentActive.setTimeoutSuspended(true)
             }
         }
         
+        if (isSuspended) suspendedAtMs = currentTimestampMs
         activeTask = task
         activeTaskStartTimeMs = currentTimestampMs
         try {
@@ -93,6 +89,8 @@ class TaskExecutor {
             System.err.println("TaskExecutor: Exception during task.initialize for preempting task ${task.name}: ${e.message}")
             e.printStackTrace()
             actions = addActions(actions, handleTaskFailure(task, state))
+        } finally {
+            if (isSuspended) activeTask?.setTimeoutSuspended(true)
         }
         return actions ?: emptyList()
     }
@@ -120,7 +118,7 @@ class TaskExecutor {
                         activeTask = resumedTask
                         activeTaskStartTimeMs = currentTimestampMs - priorElapsed
                         TaskStateMachine.transitionTo(resumedTask, TaskStatus.RUNNING)
-                        TaskTimeoutManager.resume(resumedTask)
+                        resumedTask.setTimeoutSuspended(false)
                         try {
                             actions = addActions(actions, resumedTask.resume(state))
                         } catch (e: Exception) {

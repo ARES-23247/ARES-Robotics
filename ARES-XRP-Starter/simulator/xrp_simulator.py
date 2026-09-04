@@ -73,6 +73,7 @@ def create_simulated_robot():
     robot = XrpRobot(
         project_id=PROJECT["project_id"],
         content_sha256=CONTENT_SHA256,
+        runtime_identity=PROJECT["runtime_identity"],
         drivetrain_type=PROJECT["drivetrain_type"],
         use_otos=False,
         motors=motors,

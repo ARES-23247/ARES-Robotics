@@ -70,3 +70,13 @@ Then run the affected ARES-FTC, ARES-FRC, and ARES-Analytics suites with `-Pares
 ## Port-owning tests
 
 Network integration tests may bind ports `5810`, `5002`, or `8082`. Do not run multiple suites that own the same port concurrently. Ensure test/server shutdown completes before rerunning after a failure.
+
+## Allocation contract
+
+Control, estimation, sampling, and steering kernels must reuse buffers and avoid per-tick
+allocations. Immutable Redux state orchestration has a separate bounded allocation contract:
+`ZeroGcRegressionTest` measures the Store reduction budget (1.5 MB per 1,000 reductions),
+while kernel-specific tests retain their stricter limits. Subscriber registration may allocate;
+dispatch captures the existing subscriber array and adds no notification snapshot allocation.
+A desktop allocation result does not establish GC pause or full-loop latency on a robot controller;
+record those separately on the target with the real sensor, telemetry, and mechanism workload.

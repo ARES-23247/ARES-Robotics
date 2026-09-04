@@ -64,6 +64,7 @@ class XrpTelemetryServer:
         self.field_session = "%s-%s" % (project_id, _ticks_ms())
         self.field_config_handler = None
         self._recv_buffer = ""
+        self._send_buffer = b""
 
     def set_field_config_handler(self, handler):
         """Installs the desktop-simulator field replacement hook.
@@ -131,6 +132,8 @@ class XrpTelemetryServer:
             except Exception:
                 self.close_client()
 
+        self._flush_output()
+
     def now_ms(self):
         return _ticks_ms()
 
@@ -190,6 +193,7 @@ class XrpTelemetryServer:
         return cmd
 
     def close_client(self):
+        self._send_buffer = b""
         self.neutralize()
         self.active_session_id = None
         self.last_control_sequence = -1
@@ -210,9 +214,29 @@ class XrpTelemetryServer:
         self.last_drive_ms = None
 
     def _send(self, payload):
+        if self.client_socket is None:
+            return
+        encoded = (json.dumps(payload) + "\n").encode("utf-8")
+        # Bound memory and fail closed when the peer cannot keep up. Never drop
+        # the suffix of a frame, which would corrupt every subsequent JSON line.
+        if len(self._send_buffer) + len(encoded) > 16384:
+            self.close_client()
+            return
+        self._send_buffer += encoded
+        self._flush_output()
+
+    def _flush_output(self):
+        if not self._send_buffer or self.client_socket is None:
+            return
         try:
-            line = json.dumps(payload) + "\n"
-            self.client_socket.send(line.encode("utf-8"))
+            sent = self.client_socket.send(self._send_buffer)
+            if sent <= 0:
+                self.close_client()
+            else:
+                self._send_buffer = self._send_buffer[sent:]
+        except OSError as error:
+            if not error.args or error.args[0] not in (11, 35, 10035):
+                self.close_client()
         except Exception:
             self.close_client()
 
