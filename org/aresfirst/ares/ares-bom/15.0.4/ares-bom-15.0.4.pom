@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- This module was also published with a richer model, Gradle metadata,  -->
+  <!-- which should be used instead. Do not delete the following line which  -->
+  <!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->
+  <!-- that they should prefer consuming it instead. -->
+  <!-- do_not_remove: published-with-gradle-metadata -->
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.aresfirst.ares</groupId>
+  <artifactId>ares-bom</artifactId>
+  <version>15.0.4</version>
+  <packaging>pom</packaging>
+  <name>ARES Robotics Library</name>
+  <description>Shared Kotlin robotics, hardware, simulation, and code-generation libraries for ARES FIRST Robotics.</description>
+  <url>https://github.com/ARES-23247/ARES-Robotics/tree/main/ARESLib-Kotlin</url>
+  <inceptionYear>2024</inceptionYear>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>ares-first</id>
+      <name>ARES FIRST Robotics</name>
+      <email>ares23247wv@gmail.com</email>
+      <url>https://aresfirst.org</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/ARES-23247/ARES-Robotics.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ARES-23247/ARES-Robotics.git</developerConnection>
+    <url>https://github.com/ARES-23247/ARES-Robotics</url>
+  </scm>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>telemetry-schema</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>project-schema</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>simulation-foundation</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>project-model</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>project-compiler</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>core</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>codegen</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>ftc-mocks</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>ftc-hardware</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>frc-runtime</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>frc-hardware</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>xrp-hardware</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>simulator</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>simulator-runtime-windows</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>simulator-runtime-linux</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.aresfirst.ares</groupId>
+        <artifactId>simulator-runtime-macos</artifactId>
+        <version>15.0.4</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

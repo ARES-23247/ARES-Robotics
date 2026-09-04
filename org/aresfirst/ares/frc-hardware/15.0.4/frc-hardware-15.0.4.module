@@ -1,0 +1,241 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "frc-hardware",
+    "version": "15.0.4",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "frc-runtime",
+          "version": {
+            "requires": "15.0.4"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "frc-hardware-15.0.4.jar",
+          "url": "frc-hardware-15.0.4.jar",
+          "size": 85034,
+          "sha512": "439ecfb6d21140bbbf4f7cec6d9bb423a03be4ac1da87f2f88e0f404b37767c84f551b1c03f88a3b5120f113b54cc5e2a490551a48bab6cef7d3f77b4652bd8d",
+          "sha256": "3785b2472950dec082b5324ba10fb0bf894c243a4acfd672bef951a880f5dde2",
+          "sha1": "9fdb40dbea28bd36b8f190f414f3db4f16fd1101",
+          "md5": "b3b090f1873ae2d7ed844924dc5ad354"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "edu.wpi.first.wpilibj",
+          "module": "wpilibj-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.cscore",
+          "module": "cscore-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.cameraserver",
+          "module": "cameraserver-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.apriltag",
+          "module": "apriltag-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiunits",
+          "module": "wpiunits-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.epilogue",
+          "module": "epilogue-runtime-java",
+          "version": {
+            "requires": "2026.2.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.thirdparty.frc2025.opencv",
+          "module": "opencv-java",
+          "version": {
+            "requires": "4.10.0-3"
+          }
+        },
+        {
+          "group": "org.ejml",
+          "module": "ejml-simple",
+          "version": {
+            "requires": "0.44.0"
+          }
+        },
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-annotations",
+          "version": {
+            "requires": "2.19.2"
+          }
+        },
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-core",
+          "version": {
+            "requires": "2.19.2"
+          }
+        },
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-databind",
+          "version": {
+            "requires": "2.19.2"
+          }
+        },
+        {
+          "group": "us.hebi.quickbuf",
+          "module": "quickbuf-runtime",
+          "version": {
+            "requires": "1.4"
+          }
+        },
+        {
+          "group": "com.ctre.phoenix6",
+          "module": "wpiapi-java",
+          "version": {
+            "requires": "26.1.1"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "frc-runtime",
+          "version": {
+            "requires": "15.0.4"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "frc-hardware-15.0.4.jar",
+          "url": "frc-hardware-15.0.4.jar",
+          "size": 85034,
+          "sha512": "439ecfb6d21140bbbf4f7cec6d9bb423a03be4ac1da87f2f88e0f404b37767c84f551b1c03f88a3b5120f113b54cc5e2a490551a48bab6cef7d3f77b4652bd8d",
+          "sha256": "3785b2472950dec082b5324ba10fb0bf894c243a4acfd672bef951a880f5dde2",
+          "sha1": "9fdb40dbea28bd36b8f190f414f3db4f16fd1101",
+          "md5": "b3b090f1873ae2d7ed844924dc5ad354"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "frc-hardware-15.0.4-sources.jar",
+          "url": "frc-hardware-15.0.4-sources.jar",
+          "size": 40419,
+          "sha512": "1abb92ed835b5621032a04aa9fdf57d5b02d09323938df7fe199479a0c6995a77de42fa585090cdac42af96501b19ca539a179ae58900bee009d4a3ec1076bf7",
+          "sha256": "0219b88b0e25f2991d1ad390deff9f91310ce0b8c3c273dcefb760bf16690e87",
+          "sha1": "09876c60cda11bbc0ef8d7ed6b5ed5e8f9e1c4c4",
+          "md5": "0639972f860e2c3c0da51faec53a98e6"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- This module was also published with a richer model, Gradle metadata,  -->
+  <!-- which should be used instead. Do not delete the following line which  -->
+  <!-- is to indicate to Gradle or any Gradle module metadata file consumer  -->
+  <!-- that they should prefer consuming it instead. -->
+  <!-- do_not_remove: published-with-gradle-metadata -->
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.aresfirst.ares</groupId>
+  <artifactId>core</artifactId>
+  <version>15.0.4</version>
+  <name>ARES Robotics Library</name>
+  <description>Shared Kotlin robotics, hardware, simulation, and code-generation libraries for ARES FIRST Robotics.</description>
+  <url>https://github.com/ARES-23247/ARES-Robotics/tree/main/ARESLib-Kotlin</url>
+  <inceptionYear>2024</inceptionYear>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>ares-first</id>
+      <name>ARES FIRST Robotics</name>
+      <email>ares23247wv@gmail.com</email>
+      <url>https://aresfirst.org</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/ARES-23247/ARES-Robotics.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ARES-23247/ARES-Robotics.git</developerConnection>
+    <url>https://github.com/ARES-23247/ARES-Robotics</url>
+  </scm>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib</artifactId>
+        <version>2.4.10</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.aresfirst.ares</groupId>
+      <artifactId>telemetry-schema</artifactId>
+      <version>15.0.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.aresfirst.ares</groupId>
+      <artifactId>project-schema</artifactId>
+      <version>15.0.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.java-websocket</groupId>
+      <artifactId>Java-WebSocket</artifactId>
+      <version>1.6.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.nanohttpd</groupId>
+      <artifactId>nanohttpd</artifactId>
+      <version>2.3.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.14.0</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>msgpack-core</artifactId>
+      <version>0.9.12</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-coroutines-core-jvm</artifactId>
+      <version>1.11.0</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>

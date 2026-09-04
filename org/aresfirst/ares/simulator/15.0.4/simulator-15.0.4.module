@@ -1,0 +1,242 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "simulator",
+    "version": "15.0.4",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-hardware",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-mocks",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-15.0.4.jar",
+          "url": "simulator-15.0.4.jar",
+          "size": 209874,
+          "sha512": "c2711bec1f228bb0a761767223672a223bf18dbd6beffe97ae4d2b8abe1be889afef1d15e84cc130729f3836178d28f490667841ff176348d71b973d9611e1c4",
+          "sha256": "2cb8f6b546292dc6f7ec4d08c54c0935cf15ec22f5c89f223ab3912314412e8b",
+          "sha1": "155f90ca42fa10fa444b9647bc24a3698379dd29",
+          "md5": "06f6320420cd5e4be81d9548d5580ee6"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.dyn4j",
+          "module": "dyn4j",
+          "version": {
+            "requires": "4.2.2"
+          }
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.14.0"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpilibj",
+          "module": "wpilibj-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.cameraserver",
+          "module": "cameraserver-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-java",
+          "version": {
+            "requires": "2024.3.2"
+          }
+        },
+        {
+          "group": "org.slf4j",
+          "module": "slf4j-simple",
+          "version": {
+            "requires": "2.0.18"
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl",
+          "version": {
+            "requires": "3.4.3"
+          }
+        },
+        {
+          "group": "org.lwjgl",
+          "module": "lwjgl-glfw",
+          "version": {
+            "requires": "3.4.3"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-hardware",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "ftc-mocks",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "simulator-15.0.4.jar",
+          "url": "simulator-15.0.4.jar",
+          "size": 209874,
+          "sha512": "c2711bec1f228bb0a761767223672a223bf18dbd6beffe97ae4d2b8abe1be889afef1d15e84cc130729f3836178d28f490667841ff176348d71b973d9611e1c4",
+          "sha256": "2cb8f6b546292dc6f7ec4d08c54c0935cf15ec22f5c89f223ab3912314412e8b",
+          "sha1": "155f90ca42fa10fa444b9647bc24a3698379dd29",
+          "md5": "06f6320420cd5e4be81d9548d5580ee6"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "simulator-15.0.4-sources.jar",
+          "url": "simulator-15.0.4-sources.jar",
+          "size": 72081,
+          "sha512": "d056d9b07107b8092e137afc6da1148572f6cc600026fb322f35a7ef298bca2194943b4685d4eede7201c5c107b15f6d94c15cf43713cfe7fe6268da8eab83fe",
+          "sha256": "135a2c6be80c9be17cee983cf41c91cd4ffb88e202d0a22e01aab4b4970dd253",
+          "sha1": "88d5e354cd8db0f01097eebee40f41f15427b7be",
+          "md5": "dfcdf6beb50f0794c88ddbc78d7bc592"
+        }
+      ]
+    }
+  ]
+}

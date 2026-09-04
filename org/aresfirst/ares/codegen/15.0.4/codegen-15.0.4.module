@@ -1,0 +1,144 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "codegen",
+    "version": "15.0.4",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-compiler",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "codegen-15.0.4.jar",
+          "url": "codegen-15.0.4.jar",
+          "size": 457655,
+          "sha512": "fb8f06b20c144040f92795039f8fc9e995e844a863a269590f5d9a849a90195dc3c71a00a0a338f0f3d23a107ee31853a4ee903cb59a9cc7ef3737bcc92a4438",
+          "sha256": "983448d4ff0d6e885c427fdd6844f5cd57e340c6179f74c7da80d6d885905cf2",
+          "sha1": "8d6f1ef193810383e406903e56cc6faf3ea0582f",
+          "md5": "c5fab340f8fb667034eb41847b724de8"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-compiler",
+          "version": {
+            "requires": "15.0.4"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "codegen-15.0.4.jar",
+          "url": "codegen-15.0.4.jar",
+          "size": 457655,
+          "sha512": "fb8f06b20c144040f92795039f8fc9e995e844a863a269590f5d9a849a90195dc3c71a00a0a338f0f3d23a107ee31853a4ee903cb59a9cc7ef3737bcc92a4438",
+          "sha256": "983448d4ff0d6e885c427fdd6844f5cd57e340c6179f74c7da80d6d885905cf2",
+          "sha1": "8d6f1ef193810383e406903e56cc6faf3ea0582f",
+          "md5": "c5fab340f8fb667034eb41847b724de8"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "codegen-15.0.4-sources.jar",
+          "url": "codegen-15.0.4-sources.jar",
+          "size": 92890,
+          "sha512": "cd2c149418ea2a47816e3600f6ba3b539aa0eae9420e0597a2c4ee3a81fff9db9d8b8ad16aa043c0e9bac210c2e3fdfd859d8aeb7482aa866413b25d26d11d5d",
+          "sha256": "8a2b4868350f6c8ea2ca870804f56c0e651af308db249cfe87f15df1813edf06",
+          "sha1": "750546a8d5fdb1803598d6e765053d301b42b58b",
+          "md5": "4587c02528018a618e650bdd664dd897"
+        }
+      ]
+    }
+  ]
+}
