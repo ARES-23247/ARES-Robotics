@@ -232,12 +232,15 @@ class OnboardingViewModel(
                 is OnboardingIntent.UpdateRobotId -> updateRequiredField { it.copy(robotId = intent.robotId) }
                 is OnboardingIntent.UpdateRobotName -> _state.update { it.copy(robotName = intent.robotName) }
                 is OnboardingIntent.UpdateLeague -> _state.update { current ->
-                    val template = projectTemplateService.templateFor(intent.league)
+                    val template = projectTemplateService.templateForOrNull(intent.league)
                     val next = current.copy(
                         league = intent.league,
                         nt4Host = environmentService.getDefaultNt4Host(intent.league, current.teamId),
-                        projectTemplateName = template.displayName,
-                        projectTemplateVersion = template.aresVersion,
+                        projectTemplateName = template?.displayName.orEmpty(),
+                        projectTemplateVersion = template?.aresVersion.orEmpty(),
+                        errorMessage = if (template == null && current.projectSetupMode.createsProject) {
+                            "No reviewed ${intent.league.name} starter is bundled with this Studio build."
+                        } else null,
                     )
                     if (next.projectSetupMode.createsProject) {
                         next.copy(projectPath = plannedProjectPath(next))
@@ -303,7 +306,7 @@ class OnboardingViewModel(
 
         val robotConfig = environmentService.readProjectIdentity(path)
         if (robotConfig != null) {
-            val detectedLeague = if (robotConfig.league.equals("FRC", ignoreCase = true)) League.FRC else League.FTC
+            val detectedLeague = League.valueOf(robotConfig.league.uppercase())
             _state.update {
                 it.copy(
                     teamId = robotConfig.teamId,

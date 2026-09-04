@@ -32,6 +32,19 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
     ),
     RobotProjectTemplate(
+        id = "ares-xrp-starter-${BuildConfig.XRP_STARTER_VERSION}",
+        displayName = "ARES XRP Starter",
+        league = League.XRP,
+        aresVersion = BuildConfig.ARES_VERSION,
+        revision = "schema4-micropython-v1",
+        archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
+            "ARES-XRP-Starter-${BuildConfig.XRP_STARTER_VERSION}.zip",
+        archiveSha256 = BuildConfig.XRP_STARTER_SHA256,
+        kind = RobotProjectTemplateKind.GENERIC_STARTER,
+        bundledResourcePath = "/project-templates/ARES-XRP-Starter-${BuildConfig.XRP_STARTER_VERSION}.zip",
+        deploymentPolicy = RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
+    ),
+    RobotProjectTemplate(
         id = "ares-lightbot-example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}",
         displayName = "Lightbot",
         league = League.FTC,

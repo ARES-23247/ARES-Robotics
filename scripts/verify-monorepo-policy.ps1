@@ -8,7 +8,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
 $manifest = Join-Path $root 'release/ares-versions.properties'
 if (-not (Test-Path -LiteralPath $manifest)) { throw 'Canonical release manifest is missing.' }
 $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)
-foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'lightbotExampleVersion', 'githubMavenRepository')) {
+foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'xrpStarterVersion', 'lightbotExampleVersion', 'githubMavenRepository')) {
     if ([string]::IsNullOrWhiteSpace($release[$required])) { throw "Release manifest is missing $required." }
 }
 $aresSourceTreePath = Join-Path $root 'release/ares-source-tree.txt'
@@ -24,7 +24,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the current ARESLib source t
 if ($actualAresTree -ne $expectedAresTree) {
     throw "ARESLib source tree is $actualAresTree, but release/ares-source-tree.txt records $expectedAresTree. Bump aresVersion and update the source-tree identity together."
 }
-foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'lightbotExampleSha256')) {
+foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'xrpStarterSha256', 'lightbotExampleSha256')) {
     if ($release.ContainsKey($retiredHash)) {
         throw "$retiredHash must remain outside the standalone dependency manifest."
     }
@@ -33,7 +33,7 @@ foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'lightbotExam
 $starterArtifactsPath = Join-Path $root 'release/starter-artifacts.properties'
 if (-not (Test-Path -LiteralPath $starterArtifactsPath)) { throw 'Starter artifact manifest is missing.' }
 $starterArtifacts = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $starterArtifactsPath)
-foreach ($league in @('ftc', 'frc')) {
+foreach ($league in @('ftc', 'frc', 'xrp')) {
     $hashKey = "${league}StarterSha256"
     $expectedHash = $starterArtifacts[$hashKey]
     if ($expectedHash -notmatch '^[0-9a-fA-F]{64}$') {

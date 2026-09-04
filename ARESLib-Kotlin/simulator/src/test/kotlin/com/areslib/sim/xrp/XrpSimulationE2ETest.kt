@@ -87,7 +87,13 @@ class XrpSimulationE2ETest {
 
             // Verify topic mirrors
             val poseX = NT4Server.getDouble("Drive/Pose_X", 0.0)
-            assertEquals(postEstX, poseX, 1e-4)
+            // The simulator remains live between these two independent reads, so the scalar may
+            // belong to the immediately following 50 Hz frame. It must never move backward or
+            // jump farther than one plausible update while the same forward command is active.
+            assertTrue(
+                poseX >= postEstX && poseX - postEstX < 0.05,
+                "Pose mirror must be current with the packed frame (packed=$postEstX, scalar=$poseX)",
+            )
 
             // Inject rotational drive frame (omega = 2.0 rad/s CCW)
             val turnCommand = doubleArrayOf(0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0)

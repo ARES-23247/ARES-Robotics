@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.di.ServiceRegistry
 import com.ares.analytics.service.BuildExecutionPhase
+import com.ares.analytics.service.XrpLinkService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
@@ -29,6 +30,7 @@ import com.ares.analytics.ui.components.WorkspaceSelector
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
 import com.ares.analytics.ui.input.DesktopDriveKeyDispatcher
+import com.ares.analytics.ui.input.XrpDriveInputPublisher
 import com.ares.analytics.ui.components.core.ExecutionToolbar
 import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
@@ -54,7 +56,14 @@ import com.ares.analytics.viewmodel.tuning.GuidedExperimentProposal
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModel
+import com.areslib.project.AresProjectMetadataCodec
+import com.areslib.project.requireXrpRuntimeOptions
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Root UI frame container and screen routing shell for the ARES Robotics Studio desktop application.
@@ -135,6 +144,15 @@ fun MainScreen(services: ServiceRegistry) {
     }
 
     val isNt4Connected by services.nt4ClientService.isConnected.collectAsState()
+    val isXrpConnected by services.xrpLinkService.isConnected.collectAsState()
+    var stableProjectContentHash by remember(currentConfig?.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(currentConfig?.id) {
+        services.projectSession.state
+            .mapNotNull { it.revision?.canonicalContentSha256 }
+            .distinctUntilChanged()
+            .collect { stableProjectContentHash = it }
+    }
+    val isRobotLinkConnected = if (currentConfig?.league == League.XRP) isXrpConnected else isNt4Connected
 
     if (currentConfig == null) {
         val onboardingViewModel = remember {
@@ -207,6 +225,9 @@ fun MainScreen(services: ServiceRegistry) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
     }
     val robotStudioShellState by robotStudioViewModel.shellState.collectAsState()
+    LaunchedEffect(currentConfig.id, stableProjectContentHash) {
+        if (stableProjectContentHash != null) robotStudioViewModel.refresh()
+    }
     val primarySessionId = dashboardShellState.primarySessionId
     val compareSessionId = dashboardShellState.compareSessionId
     val isConnected by services.nt4ClientService.isConnected.collectAsState()
@@ -226,8 +247,8 @@ fun MainScreen(services: ServiceRegistry) {
     var liveRobotIp by remember(currentConfig.nt4Host) {
         mutableStateOf(currentConfig.nt4Host ?: "192.168.43.1")
     }
-    LaunchedEffect(activeNav, targetSelection, isNt4Connected) {
-        if (activeNav != NavigationTarget.DASHBOARD || !isNt4Connected) {
+    LaunchedEffect(activeNav, targetSelection, isRobotLinkConnected) {
+        if (activeNav != NavigationTarget.DASHBOARD || !isRobotLinkConnected) {
             services.keyboardDriveState.disarm()
         } else {
             services.keyboardDriveState.releaseAll()
@@ -235,20 +256,32 @@ fun MainScreen(services: ServiceRegistry) {
     }
     val isLiveRobotOnline by services.targetScannerService.isLiveRobotOnline.collectAsState()
     val isLocalSimOnline by services.targetScannerService.isLocalSimOnline.collectAsState()
+    val compatibleLocalSimOnline = if (currentConfig.league == League.XRP) {
+        targetSelection == TargetSelection.LOCAL_SIM && isXrpConnected
+    } else {
+        isLocalSimOnline
+    }
     val localSimulatorControlAuthorized =
         activeNav == NavigationTarget.DASHBOARD &&
             targetSelection == TargetSelection.LOCAL_SIM &&
-            isNt4Connected &&
-            isLoopbackDriveControlHost(services.nt4ClientService.serverIp)
+            isRobotLinkConnected &&
+            (currentConfig.league == League.XRP || isLoopbackDriveControlHost(services.nt4ClientService.serverIp))
     DesktopDriveInputPublisher(
         nt4ClientService = services.nt4ClientService,
         keyboardState = services.keyboardDriveState,
         gamepadState = services.gamepadService.gamepad1State,
-        connected = localSimulatorControlAuthorized,
+        connected = localSimulatorControlAuthorized && currentConfig.league != League.XRP,
         controlSurfaceActive = localSimulatorControlAuthorized,
         league = currentConfig.league,
     )
-    val unmanagedSimulatorOnline = isLocalSimOnline && !isSimRunning
+    XrpDriveInputPublisher(
+        xrpLinkService = services.xrpLinkService,
+        keyboardState = services.keyboardDriveState,
+        gamepadState = services.gamepadService.gamepad1State,
+        connected = localSimulatorControlAuthorized && currentConfig.league == League.XRP,
+        controlSurfaceActive = localSimulatorControlAuthorized && currentConfig.league == League.XRP,
+    )
+    val unmanagedSimulatorOnline = compatibleLocalSimOnline && !isSimRunning
     val simulationProduct = robotStudioShellState.simulationProduct
     val simulatorLaunchEnabled = robotStudioShellState.canRunSimulation && simulationProduct != null && !unmanagedSimulatorOnline
     var pendingSimulatorLaunch by remember(currentConfig.id) { mutableStateOf(false) }
@@ -257,13 +290,17 @@ fun MainScreen(services: ServiceRegistry) {
         canRunBuild = robotStudioShellState.canRunBuild,
         isBuildRunning = isBuildRunning,
         isSimulatorRunning = isSimRunning,
-        isSimulatorOnline = isLocalSimOnline,
+        isSimulatorOnline = compatibleLocalSimOnline,
         isLaunchPending = pendingSimulatorLaunch,
     )
     val simulatorLaunchRequiresVerification = simulatorLaunchRequest == LocalSimulatorLaunchRequest.VERIFY_THEN_START
     val simulatorLaunchRequestEnabled = simulatorLaunchRequest != LocalSimulatorLaunchRequest.NONE
     val simulatorLaunchDisabledReason = if (unmanagedSimulatorOnline) {
-        "A simulator is already online on port 5810. Use it from Dashboard, or stop it from the process that launched it."
+        if (currentConfig.league == League.XRP) {
+            "A compatible XRP simulator for this project is already online. Use it from Dashboard, or stop it from the process that launched it."
+        } else {
+            "A simulator is already online on port 5810. Use it from Dashboard, or stop it from the process that launched it."
+        }
     } else {
         robotStudioShellState.simulationDisabledReason
     }
@@ -277,7 +314,7 @@ fun MainScreen(services: ServiceRegistry) {
         decision.accepted
     }
     val startSimulatorProcess: () -> Unit = {
-        if (simulatorLaunchEnabled && !isSimRunning && !isLocalSimOnline) {
+        if (simulatorLaunchEnabled && !isSimRunning && !compatibleLocalSimOnline) {
             if (executeProjectCommand(ProjectExecutionCommand.SIMULATE)) {
                 targetSelection = TargetSelection.LOCAL_SIM
             }
@@ -310,7 +347,7 @@ fun MainScreen(services: ServiceRegistry) {
         activeSimulationProjectPath,
         activeSimulationLeague,
         isLocalSimOnline,
-        isNt4Connected,
+        isRobotLinkConnected,
     ) {
         robotStudioViewModel.updateRuntime(
             RobotStudioRuntimeEvidence(
@@ -320,7 +357,7 @@ fun MainScreen(services: ServiceRegistry) {
                 simulatorProjectPath = activeSimulationProjectPath,
                 simulatorLeague = activeSimulationLeague,
                 localSimulatorOnline = isLocalSimOnline,
-                nt4Connected = isNt4Connected,
+                nt4Connected = isRobotLinkConnected,
             )
         )
     }
@@ -336,7 +373,7 @@ fun MainScreen(services: ServiceRegistry) {
             BuildExecutionPhase.FAILED,
             BuildExecutionPhase.CANCELED -> pendingSimulatorLaunch = false
             BuildExecutionPhase.SUCCEEDED -> {
-                if (simulatorLaunchEnabled && !isSimRunning && !isLocalSimOnline) {
+                if (simulatorLaunchEnabled && !isSimRunning && !compatibleLocalSimOnline) {
                     pendingSimulatorLaunch = false
                     startSimulatorProcess()
                 }
@@ -379,6 +416,7 @@ fun MainScreen(services: ServiceRegistry) {
             widgets = DashboardWidgetServices(
                 live = DashboardLiveWidgetServices(
                     nt4ClientService = services.nt4ClientService,
+                    xrpLinkService = services.xrpLinkService,
                     alertEngineService = services.alertEngineService,
                     dashboardHealthService = services.dashboardHealthService,
                     keyboardDriveState = services.keyboardDriveState,
@@ -468,8 +506,8 @@ fun MainScreen(services: ServiceRegistry) {
     val academyEnvironment = AcademyRuntimeEnvironment(
         isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
         isSimulatorRunning = isSimRunning,
-        isLocalSimulatorOnline = isLocalSimOnline,
-        isNt4Connected = isNt4Connected,
+        isLocalSimulatorOnline = compatibleLocalSimOnline,
+        isNt4Connected = isRobotLinkConnected,
     )
 
     // An active lesson continues observing evidence while its drawer is closed, without making
@@ -482,8 +520,22 @@ fun MainScreen(services: ServiceRegistry) {
         }
     }
 
-    LaunchedEffect(liveRobotIp) {
-        services.targetScannerService.startScanning(liveRobotIp)
+    LaunchedEffect(liveRobotIp, currentConfig.league, currentConfig.projectPath, stableProjectContentHash) {
+        val scanPort = if (currentConfig.league == League.XRP) {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    AresProjectMetadataCodec.decode(
+                        File(currentConfig.projectPath, ".ares/project.json").readText(),
+                    ).requireXrpRuntimeOptions().port
+                }.getOrDefault(XrpLinkService.DEFAULT_PORT)
+            }
+        } else {
+            5810
+        }
+        services.targetScannerService.startScanning(
+            liveRobotHost = liveRobotIp,
+            port = scanPort,
+        )
     }
 
     // Auto-switch based on Most Recently Booted / Online status
@@ -496,7 +548,7 @@ fun MainScreen(services: ServiceRegistry) {
     }
 
     // Start NT4 connection once config is resolved or target/simulator status changes
-    LaunchedEffect(currentConfig, targetSelection, liveRobotIp, isSimRunning) {
+    LaunchedEffect(currentConfig, targetSelection, liveRobotIp, isSimRunning, stableProjectContentHash) {
         println(
             "[MainScreen LaunchedEffect] RUNNING: workspace=${currentConfig.id}, " +
                 "targetSelection=$targetSelection, isSimRunning=$isSimRunning",
@@ -508,13 +560,40 @@ fun MainScreen(services: ServiceRegistry) {
             liveRobotIp
         }
         println("[MainScreen LaunchedEffect] Computed host=$host")
-        services.nt4ClientService.start(
-            host = host,
-            teamId = currentConfig.teamId,
-            seasonId = currentConfig.seasonId,
-            robotId = currentConfig.robotId
-        )
-        services.phoenixDiagnosticsService.start(host = host)
+        if (currentConfig.league == League.XRP) {
+            services.nt4ClientService.stop()
+            val metadata = withContext(Dispatchers.IO) {
+                runCatching {
+                    AresProjectMetadataCodec.decode(
+                        File(currentConfig.projectPath, ".ares/project.json").readText(),
+                    )
+                }.getOrNull()
+            }
+            if (metadata == null) {
+                services.xrpLinkService.stop()
+                return@LaunchedEffect
+            }
+            val options = metadata.requireXrpRuntimeOptions()
+            services.alertEngineService.configureRobotContext(
+                league = League.XRP,
+                xrpBrownoutThresholdVolts = options.brownoutThresholdVolts,
+            )
+            services.xrpLinkService.start(
+                host = host,
+                port = options.port,
+                expectedProjectId = metadata.projectId,
+            )
+        } else {
+            services.alertEngineService.configureRobotContext(currentConfig.league)
+            services.xrpLinkService.stop()
+            services.nt4ClientService.start(
+                host = host,
+                teamId = currentConfig.teamId,
+                seasonId = currentConfig.seasonId,
+                robotId = currentConfig.robotId
+            )
+            services.phoenixDiagnosticsService.start(host = host)
+        }
     }
 
     Box(
@@ -748,7 +827,7 @@ fun MainScreen(services: ServiceRegistry) {
                                 targetSelection = targetSelection,
                                 simulatorRunning = isSimRunning,
                                 localSimulatorOnline = isLocalSimOnline,
-                                nt4Connected = isNt4Connected,
+                                nt4Connected = isRobotLinkConnected,
                                 simulatorLaunchPreparationRunning = pendingSimulatorLaunch,
                                 simulatorLaunchRequiresVerification = simulatorLaunchRequiresVerification,
                                 canLaunchSimulator = simulatorLaunchRequestEnabled,

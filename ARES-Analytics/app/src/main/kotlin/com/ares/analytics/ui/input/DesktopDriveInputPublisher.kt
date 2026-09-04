@@ -7,6 +7,8 @@ import androidx.compose.runtime.snapshotFlow
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.service.XrpLinkService
+import com.ares.analytics.service.XrpRequestedMode
 import com.ares.analytics.shared.models.League
 import com.areslib.math.InputMath
 import com.areslib.telemetry.schema.DesktopDriveFrameGate
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
+import java.util.UUID
 
 /**
  * The 50 Hz safety lease must not share workers with DuckDB, cloud sync, log parsing, or image IO.
@@ -347,6 +350,75 @@ internal fun DesktopDriveInputPublisher(
                     error.printStackTrace(System.err)
                     delay(RESTART_DELAY_MS)
                 }
+            }
+        }
+    }
+}
+
+/** Publishes the same canonical drive intent over XRP's dedicated JSON link. */
+@Composable
+internal fun XrpDriveInputPublisher(
+    xrpLinkService: XrpLinkService,
+    keyboardState: KeyboardDriveState,
+    gamepadState: StateFlow<GamepadState>,
+    connected: Boolean,
+    controlSurfaceActive: Boolean,
+) {
+    val keyboardSnapshot = remember(keyboardState) { MutableStateFlow(keyboardState.driveSnapshot()) }
+    LaunchedEffect(keyboardState) {
+        snapshotFlow { keyboardState.driveSnapshot() }.collect { keyboardSnapshot.value = it }
+    }
+    LaunchedEffect(connected, controlSurfaceActive) {
+        if (!connected) return@LaunchedEffect
+        withContext(DRIVE_HEARTBEAT_DISPATCHER) {
+            val sessionId = UUID.randomUUID().toString()
+            var sequence = 0L
+            try {
+                while (currentCoroutineContext().isActive) {
+                    val keyboard = keyboardSnapshot.value
+                    val request = xrpLinkService.controlRequest.value
+                    val teleOpArmed = request.mode == XrpRequestedMode.TELEOP &&
+                        controlSurfaceActive && keyboard.enabled
+                    val autonomousArmed = request.mode == XrpRequestedMode.AUTONOMOUS
+                    val armed = teleOpArmed || autonomousArmed
+                    val intent = if (teleOpArmed) desktopDriveIntent(
+                            keyboard = keyboard,
+                            gamepad = gamepadState.value,
+                            controlSurfaceActive = true,
+                            league = League.XRP,
+                            isRedAlliance = true,
+                        ) else DesktopDriveIntent(DesktopFieldDriveCommand(0.0, 0.0, 0.0), 0L, 0L)
+                    val command = when {
+                        autonomousArmed -> "START_AUTO"
+                        teleOpArmed -> "START_TELEOP"
+                        request.mode == XrpRequestedMode.INITIALIZE -> "INIT"
+                        else -> "STOP"
+                    }
+                    xrpLinkService.publishControl(
+                        sessionId = sessionId,
+                        sequence = sequence++,
+                        requestRevision = request.revision,
+                        armed = armed,
+                        vx = intent.command.vxMetersPerSecond,
+                        vy = intent.command.vyMetersPerSecond,
+                        omega = intent.command.omegaRadiansPerSecond,
+                        command = command,
+                        selectedOpMode = request.autonomousId,
+                    )
+                    delay(PUBLISH_INTERVAL_MS)
+                }
+            } finally {
+                val request = xrpLinkService.controlRequest.value
+                xrpLinkService.publishControl(
+                    sessionId = sessionId,
+                    sequence = sequence,
+                    requestRevision = request.revision + 1L,
+                    armed = false,
+                    vx = 0.0,
+                    vy = 0.0,
+                    omega = 0.0,
+                    command = "STOP",
+                )
             }
         }
     }

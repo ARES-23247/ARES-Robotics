@@ -1,8 +1,9 @@
 # ARES Robotics Workspace — Agent Guide
 
 This repository is the authoritative **ARES Robotics source monorepo**. It contains six isolated
-Gradle products that form one multi-league (FTC + FRC) robotics suite. ARES-owned application code
-is Kotlin-first; upstream FTC controller sources and generated vendor bindings may remain Java.
+Gradle products plus a Python-native XRP starter that form one multi-league (FTC + FRC + XRP)
+robotics suite. ARES-owned JVM application code is Kotlin-first; XRP controller code is MicroPython;
+upstream FTC controller sources and generated vendor bindings may remain Java.
 The isolated Gradle builds are deliberate: Android/FTC, GradleRIO/WPILib, Compose Desktop, and the
 published library have different toolchains and release boundaries.
 
@@ -16,6 +17,7 @@ published library have different toolchains and release boundaries.
 | **ARES-Analytics/** | ARES Robotics Studio desktop app, analytics database, cloud-optional services, and gateway | Kotlin 2.4.10, Compose 1.12.0, Ktor 3.5.2, DuckDB 1.5.5.1, Gradle 8.14.5 | `app/`, `gateway/`, `shared/` |
 | **ARES-FTC-Starter/** | Canonical standalone FTC starter source exported into deterministic release archives | Same FTC toolchain | project root |
 | **ARES-FRC-Starter/** | Canonical standalone FRC starter source exported into deterministic release archives | Same FRC toolchain | project root |
+| **ARES-XRP-Starter/** | Canonical standalone XRP source with deterministic `.ares`→MicroPython generation, simulator, and deploy wrapper | Python 3 host tooling + MicroPython/XRPLib target | `.ares/`, `tools/ares_project.py`, `ares_micro/`, `simulator/` |
 
 ## 2. Dependency Graph (read this before changing anything)
 
@@ -31,8 +33,11 @@ published library have different toolchains and release boundaries.
     ARESLib FTC)      ARESLib FRC)                   org.aresfirst.ares:core)
             │             │                                │
             └────── NT4 (NetworkTables 4) ─────────────────┘
-                  bidirectional telemetry contract
+                  bidirectional NT4 telemetry contract
 ```
+
+XRP is intentionally outside that NT4 edge. Studio uses the dedicated `ares-xrp/1` JSONL/TCP link
+on port 5811; the exported project bundles its MicroPython runtime and needs no Gradle or monorepo.
 
 **Release-validation order matters.** Normal consumers resolve immutable ARESLib binaries from Maven
 Central and the monorepo's GitHub-hosted Maven branch at

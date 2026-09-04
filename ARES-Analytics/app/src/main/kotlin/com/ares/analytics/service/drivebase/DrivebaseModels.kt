@@ -42,6 +42,13 @@ fun DrivebaseKind.runtimeSupportLabel(league: League): String = when (runtimeSup
     DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE -> "NOT AVAILABLE FOR ${league.name}"
 }
 
+fun DrivebaseKind.displayName(league: League): String = when (this) {
+    DrivebaseKind.FTC_MECANUM -> if (league == League.XRP) "Four-motor mecanum" else "FTC mecanum"
+    DrivebaseKind.FRC_CTRE_SWERVE -> "FRC CTRE swerve"
+    DrivebaseKind.DIFFERENTIAL -> "Differential / tank"
+    DrivebaseKind.CUSTOM -> "Advanced / custom"
+}
+
 enum class DriveHardwareRole {
     FRONT_LEFT, FRONT_RIGHT, REAR_LEFT, REAR_RIGHT,
     LEFT_LEADER, LEFT_FOLLOWER, RIGHT_LEADER, RIGHT_FOLLOWER,
@@ -54,6 +61,27 @@ enum class DriveHardwareRole {
 
 enum class LocalizationKind {
     FTC_PINPOINT, WHEEL_ODOMETRY_GYRO, CTRE_POSE_ESTIMATOR, VISION_FUSION, CUSTOM, SPARKFUN_OTOS
+}
+
+fun localizationKindsForLeague(league: League): List<LocalizationKind> = when (league) {
+    League.FTC -> listOf(
+        LocalizationKind.FTC_PINPOINT,
+        LocalizationKind.WHEEL_ODOMETRY_GYRO,
+        LocalizationKind.VISION_FUSION,
+        LocalizationKind.CUSTOM,
+        LocalizationKind.SPARKFUN_OTOS,
+    )
+    League.FRC -> listOf(
+        LocalizationKind.CTRE_POSE_ESTIMATOR,
+        LocalizationKind.WHEEL_ODOMETRY_GYRO,
+        LocalizationKind.VISION_FUSION,
+        LocalizationKind.CUSTOM,
+    )
+    League.XRP -> listOf(
+        LocalizationKind.WHEEL_ODOMETRY_GYRO,
+        LocalizationKind.SPARKFUN_OTOS,
+        LocalizationKind.CUSTOM,
+    )
 }
 
 enum class CalibrationSource { MANUAL, SIMULATION, ROBOT_MEASURED, CTRE_TUNER_IMPORT }
@@ -360,8 +388,8 @@ fun DrivetrainDocument.toUiDrivebase(): DrivebaseDocument = DrivebaseDocument(
 )
 
 fun DrivebaseDocument.toCanonicalDrivebase(): DrivetrainDocument {
-    val base = canonical ?: canonicalTemplate(projectId, kind)
-    val originalUi = canonical?.toUiDrivebase()
+    val base = requireNotNull(canonical) { "Drivebase edits require a canonical drivetrain document" }
+    val originalUi = canonical.toUiDrivebase()
     val baseByUid = base.components.associateBy { it.uid }
     val components = hardware.map { edit ->
         val existing = baseByUid[edit.id]
@@ -413,7 +441,7 @@ fun DrivebaseDocument.toCanonicalDrivebase(): DrivetrainDocument {
         LocalizationKind.CUSTOM -> DrivetrainLocalizationSourceDocument("localization.custom", LocalizationSourceKind.CUSTOM, emptyList(), "com.areslib.localization.CustomLocalization")
         LocalizationKind.SPARKFUN_OTOS -> DrivetrainLocalizationSourceDocument("localization.otos", LocalizationSourceKind.SPARKFUN_OTOS, components.filter { it.role == DrivetrainComponentRole.ODOMETRY_SENSOR }.map { it.uid })
     }
-    val localizationChanged = originalUi == null || localization != originalUi.localization
+    val localizationChanged = localization != originalUi.localization
     val primaryKind = selectedSources.filter { it != LocalizationKind.VISION_FUSION }.single()
     val primary = if (localizationChanged) {
         val desired = source(primaryKind)
@@ -511,7 +539,10 @@ private fun DriveHardwareRole.toCanonicalRole(): DrivetrainComponentRole = when 
     else -> DrivetrainComponentRole.DRIVE_MOTOR
 }
 
-internal fun canonicalTemplate(projectId: String, kind: DrivebaseKind): DrivetrainDocument {
+internal fun canonicalTemplate(projectId: String, kind: DrivebaseKind, league: League): DrivetrainDocument {
+    require(kind.runtimeSupport(league) != DrivebaseRuntimeSupport.UNAVAILABLE_FOR_LEAGUE) {
+        "$kind is not available for ${league.name}"
+    }
     fun drive(
         uid: String,
         hardware: String,
@@ -525,21 +556,33 @@ internal fun canonicalTemplate(projectId: String, kind: DrivebaseKind): Drivetra
         DrivetrainComponentRole.DRIVE_MOTOR,
         hardware,
         moduleUid = module,
-        currentMeasurementRequired = true,
-        currentMeasurementAvailable = true,
+        currentMeasurementRequired = league != League.XRP,
+        currentMeasurementAvailable = league != League.XRP,
         inverted = inverted,
         xMeters = xMeters,
         yMeters = yMeters,
     )
     val components = when (kind) {
-        DrivebaseKind.FTC_MECANUM -> listOf(
+        DrivebaseKind.FTC_MECANUM -> if (league == League.XRP) listOf(
+            drive("drive.front-left", "1", xMeters = .07, yMeters = .0775),
+            drive("drive.front-right", "2", xMeters = .07, yMeters = -.0775),
+            drive("drive.rear-left", "3", xMeters = -.07, yMeters = .0775),
+            drive("drive.rear-right", "4", xMeters = -.07, yMeters = -.0775),
+        ) else listOf(
             drive("drive.front-left", "fl", xMeters = .18, yMeters = .18),
             drive("drive.front-right", "fr", inverted = true, xMeters = .18, yMeters = -.18),
             drive("drive.rear-left", "rl", xMeters = -.18, yMeters = .18),
             drive("drive.rear-right", "rr", inverted = true, xMeters = -.18, yMeters = -.18),
             DrivetrainComponentDocument("drive.pinpoint", "goBILDA Pinpoint", DrivetrainComponentRole.ODOMETRY_SENSOR, "pinpoint"),
         )
-        DrivebaseKind.DIFFERENTIAL -> listOf(drive("drive.left", "leftLeader"), drive("drive.right", "rightLeader", true), DrivetrainComponentDocument("drive.gyro", "Gyro", DrivetrainComponentRole.GYRO, "gyro"))
+        DrivebaseKind.DIFFERENTIAL -> if (league == League.XRP) listOf(
+            drive("drive.left", "1", xMeters = 0.0, yMeters = .0775),
+            drive("drive.right", "2", xMeters = 0.0, yMeters = -.0775),
+        ) else listOf(
+            drive("drive.left", "leftLeader"),
+            drive("drive.right", "rightLeader", true),
+            DrivetrainComponentDocument("drive.gyro", "Gyro", DrivetrainComponentRole.GYRO, "gyro"),
+        )
         DrivebaseKind.FRC_CTRE_SWERVE -> listOf("front-left", "front-right", "rear-left", "rear-right").flatMapIndexed { moduleIndex, corner ->
             val module = "module.$corner"
             val firstSimulationCanId = moduleIndex * 3 + 1
@@ -556,37 +599,51 @@ internal fun canonicalTemplate(projectId: String, kind: DrivebaseKind): Drivetra
         DrivetrainModuleDocument("module.$corner", corner.replace('-', ' ').replaceFirstChar(Char::uppercase), listOf("drive.$corner", "steer.$corner", "encoder.$corner"), x, y)
     } else emptyList()
     val primary = when (kind) {
-        DrivebaseKind.FTC_MECANUM -> DrivetrainLocalizationSourceDocument("localization.pinpoint", LocalizationSourceKind.PINPOINT, listOf("drive.pinpoint"))
+        DrivebaseKind.FTC_MECANUM -> if (league == League.XRP) {
+            DrivetrainLocalizationSourceDocument("localization.wheel-imu", LocalizationSourceKind.WHEEL_ENCODERS_IMU, components.map { it.uid })
+        } else {
+            DrivetrainLocalizationSourceDocument("localization.pinpoint", LocalizationSourceKind.PINPOINT, listOf("drive.pinpoint"))
+        }
         DrivebaseKind.FRC_CTRE_SWERVE -> DrivetrainLocalizationSourceDocument("localization.ctre", LocalizationSourceKind.CTRE_VENDOR, components.map { it.uid })
         else -> DrivetrainLocalizationSourceDocument("localization.wheel-imu", LocalizationSourceKind.WHEEL_ENCODERS_IMU, components.map { it.uid })
     }
-    val diameter = .096
+    val diameter = if (league == League.XRP) .060 else .096
     val document = DrivetrainDocument(
         uid = "drive.primary", drivebaseId = "primary", displayName = "Primary drivebase", description = "Robot-owned drivebase contract.",
         kind = when (kind) { DrivebaseKind.FTC_MECANUM -> DrivetrainKind.FTC_MECANUM; DrivebaseKind.FRC_CTRE_SWERVE -> DrivetrainKind.FRC_CTRE_SWERVE; DrivebaseKind.DIFFERENTIAL -> DrivetrainKind.DIFFERENTIAL; DrivebaseKind.CUSTOM -> DrivetrainKind.ADVANCED_CUSTOM },
-        platform = if (kind == DrivebaseKind.FTC_MECANUM) DrivetrainPlatform.FTC else DrivetrainPlatform.FRC,
+        platform = when (league) {
+            League.FTC -> DrivetrainPlatform.FTC
+            League.FRC -> DrivetrainPlatform.FRC
+            League.XRP -> DrivetrainPlatform.XRP
+        },
         components = components, modules = modules,
         geometry = DrivetrainGeometryDocument(
             diameter,
-            .36,
-            .36,
+            if (league == League.XRP) .155 else .36,
+            if (league == League.XRP) .140 else .36,
             1.0,
             if (kind == DrivebaseKind.FRC_CTRE_SWERVE) 1.0 else null,
-            if (kind == DrivebaseKind.FTC_MECANUM) 1.0 else 3.0,
-            if (kind == DrivebaseKind.FTC_MECANUM) 1.0 / .36 else 6.0,
+            if (league == League.XRP) .85 else if (kind == DrivebaseKind.FTC_MECANUM) 1.0 else 3.0,
+            if (league == League.XRP) 5.0 else if (kind == DrivebaseKind.FTC_MECANUM) 1.0 / .36 else 6.0,
         ),
         localization = DrivetrainLocalizationDocument(primary, components.firstOrNull { it.role == DrivetrainComponentRole.GYRO }?.uid ?: primary.uid),
         control = DrivetrainControlDocument(
             listOf(DrivetrainControlKind.OPEN_LOOP, DrivetrainControlKind.CHASSIS_VELOCITY),
             if (kind == DrivebaseKind.FTC_MECANUM) DrivetrainControlKind.CHASSIS_VELOCITY else DrivetrainControlKind.OPEN_LOOP,
+            fieldCentric = league != League.XRP,
         ),
-        simulation = DrivetrainSimulationDocument("com.areslib.simulator.DrivetrainModel", "com.areslib.simulator.DrivetrainAdapter"),
+        safety = DrivetrainSafetyDocument(currentValidityRequired = league != League.XRP),
+        simulation = if (league == League.XRP) {
+            DrivetrainSimulationDocument("ares_micro.simulation.XrpModel", "ares_micro.simulation.XrpAdapter")
+        } else {
+            DrivetrainSimulationDocument("com.areslib.simulator.DrivetrainModel", "com.areslib.simulator.DrivetrainAdapter")
+        },
         // Physical geometry is authoritative here. It must never be duplicated as a tuning value.
         parameters = emptyList(),
         ctreImport = if (kind == DrivebaseKind.FRC_CTRE_SWERVE) CtreSwerveImportDocument("src/main/java/frc/robot/generated/TunerConstants.java", "0".repeat(64), "CTRE Tuner", "unknown", "frc.robot.generated.TunerConstants", "rio") else null,
         canonicalProfileUid = "$projectId.profile.competition"
     )
-    return if (kind == DrivebaseKind.FTC_MECANUM) {
+    return if (league == League.FTC && kind == DrivebaseKind.FTC_MECANUM) {
         FtcMecanumRuntimeParameters.reconcile(document)
     } else {
         document

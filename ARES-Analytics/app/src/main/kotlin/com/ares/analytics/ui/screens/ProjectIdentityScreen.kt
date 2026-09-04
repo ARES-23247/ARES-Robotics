@@ -91,6 +91,7 @@ fun ProjectIdentityScreen(
                     onUpdate = viewModel::update,
                     onHubCommandTransport = viewModel::updateFtcHubCommandTransport,
                     onLimelightProxyEnabled = viewModel::updateFtcLimelightProxyEnabled,
+                    onXrpWifiMode = viewModel::updateXrpWifiMode,
                 )
             }
             if (state.generalErrors.isNotEmpty()) {
@@ -289,8 +290,10 @@ private fun ProjectIdentityForm(
     onUpdate: (ProjectIdentityField, String) -> Unit,
     onHubCommandTransport: (AresFtcHubCommandTransport) -> Unit,
     onLimelightProxyEnabled: (Boolean) -> Unit,
+    onXrpWifiMode: (String) -> Unit,
 ) {
     val isFtc = state.workspaceLeague == League.FTC
+    val isXrp = state.workspaceLeague == League.XRP
     val lengthM = state.draft.robotLengthMeters.toDoubleOrNull() ?: 0.0
     val widthM = state.draft.robotWidthMeters.toDoubleOrNull() ?: 0.0
     val lengthIn = lengthM * 39.3701
@@ -356,7 +359,8 @@ private fun ProjectIdentityForm(
             ReadOnlyIdentityRow("League", state.workspaceLeague.name)
             ReadOnlyIdentityRow(
                 "Coordinate convention",
-                if (isFtc) "CENTER_ORIGIN_CCW (0,0 center)" else "BLUE_CORNER_ORIGIN_CCW (0,0 blue corner)",
+                if (state.workspaceLeague == League.FRC) "BLUE_CORNER_ORIGIN_CCW (0,0 blue corner)"
+                else "CENTER_ORIGIN_CCW (0,0 center)",
             )
 
             HorizontalDivider(color = AresBorder)
@@ -418,6 +422,16 @@ private fun ProjectIdentityForm(
                 )
             }
 
+            if (isXrp) {
+                HorizontalDivider(color = AresBorder)
+                XrpRuntimeOptionsEditor(
+                    state = state,
+                    enabled = runtimeOptionsEnabled,
+                    onUpdate = onUpdate,
+                    onWifiModeChanged = onXrpWifiMode,
+                )
+            }
+
             HorizontalDivider(color = AresBorder)
 
             // Standard Field Environment Preset Card (Read-only automatic preset)
@@ -441,8 +455,11 @@ private fun ProjectIdentityForm(
                             fontSize = 12.sp,
                         )
                         Text(
-                            if (isFtc) "Standard 12ft × 12ft (3.66m × 3.66m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner."
-                            else "Standard 54ft × 27ft (16.54m × 8.21m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner.",
+                            when (state.workspaceLeague) {
+                                League.FTC -> "Standard 12ft × 12ft (3.66m × 3.66m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner."
+                                League.FRC -> "Standard 54ft × 27ft (16.54m × 8.21m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner."
+                                League.XRP -> "Desktop practice field 100in × 56in (2.54m × 1.42m). Change the canonical dimensions when your taped practice area is different."
+                            },
                             color = AresTextSecondary,
                             fontSize = 10.sp,
                         )
@@ -450,6 +467,72 @@ private fun ProjectIdentityForm(
                 }
             }
         }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun XrpRuntimeOptionsEditor(
+    state: ProjectIdentityEditorState,
+    enabled: Boolean,
+    onUpdate: (ProjectIdentityField, String) -> Unit,
+    onWifiModeChanged: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("XRP connection & safety", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+            Text(
+                "These settings are shared by the generated MicroPython robot, local simulator, and Studio. Use a unique Link port when running multiple projects on one computer.",
+                color = AresTextSecondary,
+                fontSize = 11.sp,
+            )
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = state.draft.xrpWifiMode == "AP",
+                onClick = { onWifiModeChanged("AP") },
+                enabled = enabled,
+                label = { Text("XRP creates Wi-Fi") },
+            )
+            FilterChip(
+                selected = state.draft.xrpWifiMode == "STATION",
+                onClick = { onWifiModeChanged("STATION") },
+                enabled = enabled,
+                label = { Text("Join an existing network") },
+            )
+        }
+        IdentityField(
+            label = "Wi-Fi network name (SSID)",
+            value = state.draft.xrpSsid,
+            onValueChange = { onUpdate(ProjectIdentityField.XRP_SSID, it) },
+            error = state.fieldErrors[ProjectIdentityField.XRP_SSID],
+            enabled = enabled,
+            help = "The network the laptop and XRP use together. Passwords remain in the untracked xrp_secrets.py file.",
+        )
+        GeometryRow(
+            firstLabel = "XRP Link port",
+            firstValue = state.draft.xrpLinkPort,
+            firstError = state.fieldErrors[ProjectIdentityField.XRP_LINK_PORT],
+            onFirst = { onUpdate(ProjectIdentityField.XRP_LINK_PORT, it) },
+            firstHelp = "Dedicated JSONL control/telemetry port; 5810 is reserved for NT4.",
+            secondLabel = "Deadman timeout (ms)",
+            secondValue = state.draft.xrpDeadmanTimeoutMs,
+            secondError = state.fieldErrors[ProjectIdentityField.XRP_DEADMAN_TIMEOUT],
+            onSecond = { onUpdate(ProjectIdentityField.XRP_DEADMAN_TIMEOUT, it) },
+            secondHelp = "Motors stop when fresh commands do not arrive within this interval.",
+            enabled = enabled,
+        )
+        IdentityField(
+            label = "Brownout threshold (volts)",
+            value = state.draft.xrpBrownoutThresholdVolts,
+            onValueChange = { onUpdate(ProjectIdentityField.XRP_BROWNOUT_THRESHOLD, it) },
+            error = state.fieldErrors[ProjectIdentityField.XRP_BROWNOUT_THRESHOLD],
+            enabled = enabled,
+            help = "Commands fail closed below this project-specific XRP battery voltage.",
+        )
     }
 }
 

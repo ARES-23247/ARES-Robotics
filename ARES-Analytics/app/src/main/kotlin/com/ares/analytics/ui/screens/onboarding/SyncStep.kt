@@ -186,14 +186,14 @@ private fun ProjectSelection(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProjectModeCard(
                 title = "Create standalone robot project",
-                description = "Export a complete FTC or FRC repository that works in Studio, an IDE, or the terminal.",
+                description = "Export a complete FTC, FRC, or XRP repository that works in Studio, an IDE, or the terminal.",
                 selected = mode == ProjectSetupMode.CREATE_NEW,
                 onClick = { onModeChange(ProjectSetupMode.CREATE_NEW) },
                 modifier = Modifier.weight(1f),
             )
             ProjectModeCard(
                 title = "Open an existing project",
-                description = "Use an ARES FTC or FRC repository already on this computer.",
+                description = "Use an ARES FTC, FRC, or XRP repository already on this computer.",
                 selected = mode == ProjectSetupMode.OPEN_EXISTING,
                 onClick = { onModeChange(ProjectSetupMode.OPEN_EXISTING) },
                 modifier = Modifier.weight(1f),
@@ -219,14 +219,22 @@ private fun ProjectSelection(
                         onClick = { onAuthoringModelChange(AresProjectAuthoringModel.GUI_OWNED) },
                     )
                     AuthoringModelCard(
-                        title = "Code-first Kotlin robot",
-                        description = "Your Kotlin is authoritative. Register actions, telemetry, tunables, safety evidence, and simulation support so Studio can display it.",
+                        title = if (league == League.XRP) "Code-first MicroPython robot" else "Code-first Kotlin robot",
+                        description = if (league == League.XRP) {
+                            "Your Python is authoritative. Register actions, telemetry, tunables, safety evidence, and simulation support so Studio can display it."
+                        } else {
+                            "Your Kotlin is authoritative. Register actions, telemetry, tunables, safety evidence, and simulation support so Studio can display it."
+                        },
                         selected = authoringModel == AresProjectAuthoringModel.CODE_FIRST,
                         onClick = { onAuthoringModelChange(AresProjectAuthoringModel.CODE_FIRST) },
                     )
                     AuthoringModelCard(
                         title = "Hybrid robot",
-                        description = "Studio owns drivetrain and routines; explicitly registered team Kotlin owns selected mechanisms.",
+                        description = if (league == League.XRP) {
+                            "Studio owns drivetrain and routines; explicitly registered team Python owns selected mechanisms."
+                        } else {
+                            "Studio owns drivetrain and routines; explicitly registered team Kotlin owns selected mechanisms."
+                        },
                         selected = authoringModel == AresProjectAuthoringModel.HYBRID,
                         onClick = { onAuthoringModelChange(AresProjectAuthoringModel.HYBRID) },
                     )
@@ -478,7 +486,7 @@ private fun LeagueSelector(league: League, onLeagueChange: (League) -> Unit) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        if (option == League.FTC) "FTC" else "FRC",
+                        option.name,
                         color = if (league == option) AresCyan else AresTextSecondary,
                         fontWeight = FontWeight.SemiBold,
                     )

@@ -23,9 +23,14 @@ data class RobotDimensions(
         const val MAX_SIZE_METERS = 2.00
         const val DEFAULT_FTC_SIZE_METERS = 0.4572
         const val DEFAULT_FRC_SIZE_METERS = 0.80
+        const val DEFAULT_XRP_SIZE_METERS = 0.16
 
         fun defaultFor(league: League): RobotDimensions {
-            val size = if (league == League.FTC) DEFAULT_FTC_SIZE_METERS else DEFAULT_FRC_SIZE_METERS
+            val size = when (league) {
+                League.FTC -> DEFAULT_FTC_SIZE_METERS
+                League.FRC -> DEFAULT_FRC_SIZE_METERS
+                League.XRP -> DEFAULT_XRP_SIZE_METERS
+            }
             return RobotDimensions(size, size)
         }
     }
@@ -51,18 +56,33 @@ fun legalCenterBounds(
     val projectedX = abs(cos(heading)) * halfLength + abs(sin(heading)) * halfWidth
     val projectedY = abs(sin(heading)) * halfLength + abs(cos(heading)) * halfWidth
 
-    val (xBounds, yBounds) = if (league == League.FTC) {
-        val halfField = CoordinateTransformers.FTC_FIELD_SIZE / 2.0
-        boundedOrCentered(-halfField + projectedX, halfField - projectedX, 0.0) to
-            boundedOrCentered(-halfField + projectedY, halfField - projectedY, 0.0)
-    } else {
-        boundedOrCentered(projectedX, CoordinateTransformers.FRC_FIELD_LENGTH - projectedX,
-            CoordinateTransformers.FRC_FIELD_LENGTH / 2.0) to
-            boundedOrCentered(projectedY, CoordinateTransformers.FRC_FIELD_WIDTH - projectedY,
-                CoordinateTransformers.FRC_FIELD_WIDTH / 2.0)
+    val (xBounds, yBounds) = when (league) {
+        League.FTC -> {
+            val halfField = CoordinateTransformers.FTC_FIELD_SIZE / 2.0
+            boundedOrCentered(-halfField + projectedX, halfField - projectedX, 0.0) to
+                boundedOrCentered(-halfField + projectedY, halfField - projectedY, 0.0)
+        }
+        League.FRC -> boundedOrCentered(
+            projectedX,
+            CoordinateTransformers.FRC_FIELD_LENGTH - projectedX,
+            CoordinateTransformers.FRC_FIELD_LENGTH / 2.0,
+        ) to boundedOrCentered(
+            projectedY,
+            CoordinateTransformers.FRC_FIELD_WIDTH - projectedY,
+            CoordinateTransformers.FRC_FIELD_WIDTH / 2.0,
+        )
+        League.XRP -> {
+            val halfLength = XRP_FIELD_LENGTH_METERS / 2.0
+            val halfWidth = XRP_FIELD_WIDTH_METERS / 2.0
+            boundedOrCentered(-halfLength + projectedX, halfLength - projectedX, 0.0) to
+                boundedOrCentered(-halfWidth + projectedY, halfWidth - projectedY, 0.0)
+        }
     }
     return AutoCenterBounds(xBounds.first, xBounds.second, yBounds.first, yBounds.second)
 }
 
 private fun boundedOrCentered(min: Double, max: Double, center: Double): Pair<Double, Double> =
     if (min <= max) min to max else center to center
+
+private const val XRP_FIELD_LENGTH_METERS = 2.54
+private const val XRP_FIELD_WIDTH_METERS = 1.4224

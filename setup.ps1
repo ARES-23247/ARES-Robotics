@@ -9,6 +9,7 @@ $required = @(
     'ARES-FRC',
     'ARES-FTC-Starter',
     'ARES-FRC-Starter',
+    'ARES-XRP-Starter',
     'ARES-Analytics',
     'release/ares-versions.properties',
     'build-logic/ares-versioning.gradle'
@@ -25,4 +26,5 @@ Write-Host "`nARES-Robotics source monorepo is ready." -ForegroundColor Green
 Write-Host '  Full test matrix:       .\build.ps1 -Task Test'
 Write-Host '  Studio compile only:    .\build.ps1 -Task Studio'
 Write-Host '  Studio launch:          cd ARES-Analytics; .\gradlew.bat :app:run'
+Write-Host '  XRP standalone verify:  cd ARES-XRP-Starter; .\ares.bat verify'
 Write-Host '  Candidate validation:   .\build.ps1 -Task ReleaseValidation -CandidateVersion <version>-rc.<commit>'

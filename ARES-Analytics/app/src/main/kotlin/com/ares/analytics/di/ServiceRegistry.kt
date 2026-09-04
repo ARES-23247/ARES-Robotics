@@ -134,6 +134,7 @@ class ServiceRegistry {
             session.copy(tags = summary.tags)
         }
     }
+    val xrpLinkService by lazy { XrpLinkService(nt4ClientService) }
     val logParserService by lazy { LogParserService(databaseService, summaryEngineService) }
     val replayEngineService by lazy { ReplayEngineService(databaseService, nt4ClientService) }
     val sysIdService by lazy { SysIdService(databaseService) }
@@ -302,6 +303,7 @@ class ServiceRegistry {
                 // Terminal disposal cancels and joins the WebSocket client job, then rejects
                 // Compose-driven restarts while later process shutdown updates UI state.
                 if (lazyFieldInitialized(::nt4ClientService)) {
+                    if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.disposeAndJoin()
                     telemetryPersisted = nt4ClientService.disposeAndJoin()
                 }
                 if (lazyFieldInitialized(::projectBuildService)) {

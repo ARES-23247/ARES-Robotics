@@ -51,4 +51,34 @@ class SubsystemPolicyTest {
             SubsystemUnits.motorMeasurementScale(28.0, Double.NaN, 0.1)
         }
     }
+
+    @Test
+    fun `XRP hand authored registration uses Python factories without Gradle metadata`() {
+        val document = SubsystemDocument(
+            documentId = "custom-arm",
+            displayName = "Custom arm",
+            kotlinTypeName = "CustomArm",
+            platform = SubsystemPlatform.XRP,
+            implementation = SubsystemImplementationDocument(
+                kind = SubsystemImplementationKind.HAND_AUTHORED,
+                ownership = SubsystemSourceOwnership.USER_OWNED,
+                sourceFiles = listOf("extensions/custom_arm.py"),
+                pythonModuleName = "extensions.custom_arm",
+                pythonFactoryName = "create_subsystem",
+                pythonSimulationFactoryName = "create_simulated_subsystem",
+                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.HAND_AUTHORED_SIMULATOR),
+            ),
+            generateMockIo = false,
+            generateTest = false,
+        )
+
+        assertFalse(
+            SubsystemSchema.validate(document).any { it.path.startsWith("implementation") },
+            SubsystemSchema.validate(document).joinToString(),
+        )
+        val kotlinRegistration = document.copy(
+            implementation = document.implementation.copy(modulePath = ":", subsystemClassName = "demo.CustomArm"),
+        )
+        assertTrue(SubsystemSchema.validate(kotlinRegistration).any { it.path == "implementation" })
+    }
 }

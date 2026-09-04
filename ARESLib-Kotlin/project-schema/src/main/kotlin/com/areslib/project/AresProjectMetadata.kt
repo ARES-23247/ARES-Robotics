@@ -49,7 +49,8 @@ data class AresFtcRuntimeOptionsDocument(
 data class AresXrpRuntimeOptionsDocument(
     val wifiMode: String = "AP",
     val ssid: String = "ARES-XRP-AUTO",
-    val port: Int = 5810,
+    /** Dedicated ARES XRP Link port. NT4 remains on 5810 for FTC/FRC robots and simulators. */
+    val port: Int = 5811,
     val deadmanTimeoutMs: Int = 200,
     val brownoutThresholdVolts: Double = 4.3,
 )
@@ -98,7 +99,7 @@ fun AresProjectMetadataDocument.requireFtcRuntimeOptions(): AresFtcRuntimeOption
 /** Returns the required XRP runtime policy from a current XRP project document. */
 fun AresProjectMetadataDocument.requireXrpRuntimeOptions(): AresXrpRuntimeOptionsDocument {
     require(league == AresLeague.XRP) { "XRP runtime options are only valid for XRP projects" }
-    return runtimeOptions.xrp ?: AresXrpRuntimeOptionsDocument()
+    return requireNotNull(runtimeOptions.xrp) { "XRP projects must declare runtimeOptions.xrp" }
 }
 
 fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<String> = buildList {
@@ -148,11 +149,36 @@ fun validateAresProjectMetadata(document: AresProjectMetadataDocument): List<Str
     if (document.league == AresLeague.FRC && document.runtimeOptions.ftc != null) {
         add("FRC projects cannot declare FTC runtime options")
     }
+    if (document.league != AresLeague.XRP && document.runtimeOptions.xrp != null) {
+        add("Only XRP projects may declare XRP runtime options")
+    }
     if (document.league == AresLeague.FTC && document.runtimeOptions.ftc == null) {
         add("FTC projects must declare runtimeOptions.ftc")
     }
     if (document.league == AresLeague.XRP && document.runtimeOptions.ftc != null) {
         add("XRP projects cannot declare FTC runtime options")
+    }
+    if (document.league == AresLeague.XRP) {
+        val options = document.runtimeOptions.xrp
+        if (options == null) {
+            add("XRP projects must declare runtimeOptions.xrp")
+        } else {
+            if (options.wifiMode !in setOf("AP", "STATION")) {
+                add("XRP wifiMode must be AP or STATION")
+            }
+            if (options.ssid.isBlank() || options.ssid.length > 32) {
+                add("XRP SSID must contain 1 to 32 characters")
+            }
+            if (options.port !in 1024..65535 || options.port == 5810) {
+                add("XRP Link port must be between 1024 and 65535 and must not use the NT4 port 5810")
+            }
+            if (options.deadmanTimeoutMs !in 100..1_000) {
+                add("XRP deadman timeout must be between 100 and 1000 milliseconds")
+            }
+            if (!options.brownoutThresholdVolts.isFinite() || options.brownoutThresholdVolts !in 3.0..6.0) {
+                add("XRP brownout threshold must be finite and between 3.0 and 6.0 volts")
+            }
+        }
     }
 }
 
@@ -215,13 +241,16 @@ object AresProjectMetadataCodec {
             AresXrpRuntimeOptionsDocument(
                 wifiMode = value.get("wifiMode")?.asString ?: "AP",
                 ssid = value.get("ssid")?.asString ?: "ARES-XRP-AUTO",
-                port = value.get("port")?.asInt ?: 5810,
+                port = value.get("port")?.asInt ?: 5811,
                 deadmanTimeoutMs = value.get("deadmanTimeoutMs")?.asInt ?: 200,
                 brownoutThresholdVolts = value.get("brownoutThresholdVolts")?.asDouble ?: 4.3,
             )
         }
         require(league != AresLeague.FTC || ftc != null) {
             "FTC project metadata must declare 'runtimeOptions.ftc'"
+        }
+        require(league != AresLeague.XRP || xrp != null) {
+            "XRP project metadata must declare 'runtimeOptions.xrp'"
         }
         val runtimeOptions = AresRuntimeOptionsDocument(ftc = ftc, xrp = xrp)
         return normalize(

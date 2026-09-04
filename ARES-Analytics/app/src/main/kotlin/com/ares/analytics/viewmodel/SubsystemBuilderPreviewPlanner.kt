@@ -30,6 +30,14 @@ internal class SubsystemBuilderPreviewPlanner(
         val validation = SubsystemSchema.validate(document).map {
             SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
         } + projectConnectionProblems(document, state.documents)
+        if (platform == SubsystemPlatform.XRP) {
+            return state.copy(
+                previewFiles = emptyList(),
+                starterConfirmationToken = null,
+                problems = (external + validation + safetyWarnings(document))
+                    .distinctBy { Triple(it.severity, it.path, it.message) },
+            )
+        }
         val generated = if (validation.isEmpty() && document.implementation.kind.isAresGenerated()) {
             val sourceFiles = SubsystemKotlinGenerator.generate(document, SubsystemKotlinCodegenTarget(platform, basePackage))
             val starterPlan = SubsystemStarterReconciler.plan(starterRoot(state).toPath(), sourceFiles)

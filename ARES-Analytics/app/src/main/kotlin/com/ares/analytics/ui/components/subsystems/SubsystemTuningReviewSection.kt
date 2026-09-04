@@ -28,6 +28,7 @@ import com.areslib.codegen.SubsystemArtifactGroup
 import com.areslib.codegen.SubsystemArtifactOwnership
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemFieldRole
+import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
@@ -224,7 +225,19 @@ private fun ProblemsCard(state: SubsystemGeneratorState, viewModel: SubsystemGen
 @Composable
 private fun ArtifactPlanCard(state: SubsystemGeneratorState, viewModel: SubsystemGeneratorViewModel) {
     val document = state.draft?.document ?: return
-    if (state.previewFiles.isEmpty()) return
+    if (state.previewFiles.isEmpty()) {
+        if (document.platform == SubsystemPlatform.XRP) {
+            EditorCard("Generated MicroPython", Icons.Default.Code) {
+                Text(
+                    "ARES will compile this descriptor with the project's native Python generator into " +
+                        "build/generated/ares/python and regenerate its safety tests. Verify & build shows the exact result.",
+                    color = AresTextSecondary,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+        return
+    }
 
     EditorCard("Generated Code Artifacts (${state.previewFiles.size})", Icons.Default.Code) {
         val starterCount = state.previewFiles.count { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }

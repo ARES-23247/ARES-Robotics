@@ -11,6 +11,7 @@ REQUIRED=(
   ARES-FRC
   ARES-FTC-Starter
   ARES-FRC-Starter
+  ARES-XRP-Starter
   ARES-Analytics
   release/ares-versions.properties
   build-logic/ares-versioning.gradle
@@ -35,3 +36,4 @@ fi
 echo "ARES-Robotics source monorepo is ready."
 echo "  Windows full matrix: ./build.ps1 -Task Test"
 echo "  Per-platform commands: see AGENTS.md"
+echo "  XRP standalone verify: cd ARES-XRP-Starter && ./ares verify"

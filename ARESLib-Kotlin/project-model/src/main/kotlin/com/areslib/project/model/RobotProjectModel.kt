@@ -229,11 +229,19 @@ public object RobotProjectAssembler {
         issues: MutableList<ProjectModelIssue>,
     ) {
         metadata ?: return
-        val subsystemPlatform = if (metadata.league == AresLeague.FTC) SubsystemPlatform.FTC else SubsystemPlatform.FRC
+        val subsystemPlatform = when (metadata.league) {
+            AresLeague.FTC -> SubsystemPlatform.FTC
+            AresLeague.FRC -> SubsystemPlatform.FRC
+            AresLeague.XRP -> SubsystemPlatform.XRP
+        }
         snapshot.subsystems.filter { it.platform != subsystemPlatform }.forEach {
             issues.error(ProjectDocumentKind.SUBSYSTEM, it.documentId, "platform", "league_mismatch", "${it.platform} subsystem cannot belong to ${metadata.league} project")
         }
-        val drivetrainPlatform = if (metadata.league == AresLeague.FTC) DrivetrainPlatform.FTC else DrivetrainPlatform.FRC
+        val drivetrainPlatform = when (metadata.league) {
+            AresLeague.FTC -> DrivetrainPlatform.FTC
+            AresLeague.FRC -> DrivetrainPlatform.FRC
+            AresLeague.XRP -> DrivetrainPlatform.XRP
+        }
         snapshot.drivetrains.filter { it.platform != drivetrainPlatform }.forEach {
             issues.error(ProjectDocumentKind.DRIVETRAIN, it.uid, "platform", "league_mismatch", "${it.platform} drivetrain cannot belong to ${metadata.league} project")
         }

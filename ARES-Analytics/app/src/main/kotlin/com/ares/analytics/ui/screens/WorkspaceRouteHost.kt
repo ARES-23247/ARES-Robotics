@@ -95,6 +95,7 @@ internal fun WorkspaceRouteHost(
             viewModel = scope.dashboard,
             services = scope.dashboardServices,
             currentConfig = workspace,
+            isRobotLinkConnected = state.nt4Connected,
             isLocalSimulatorSelected = state.targetSelection == TargetSelection.LOCAL_SIM,
             isSimulatorLaunchPreparationRunning = state.simulatorLaunchPreparationRunning,
             simulatorLaunchRequiresVerification = state.simulatorLaunchRequiresVerification,

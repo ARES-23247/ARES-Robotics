@@ -143,6 +143,11 @@ class RobotProjectTemplateService(
         "No reviewed ${kind.name.lowercase().replace('_', ' ')} for ${league.name} is bundled with this app."
     }
 
+    fun templateForOrNull(
+        league: League,
+        kind: RobotProjectTemplateKind = RobotProjectTemplateKind.GENERIC_STARTER,
+    ): RobotProjectTemplate? = templatesByLeagueAndKind[league to kind]
+
     fun plan(request: RobotProjectCreationRequest): RobotProjectCreationPlan {
         val template = templateFor(request.league, request.templateKind)
         val folderName = request.folderName.trim()
@@ -275,7 +280,11 @@ class RobotProjectTemplateService(
         val metadataFile = File(root, ".ares/project.json")
         check(metadataFile.isFile) { "The reviewed starter is missing .ares/project.json." }
         val oldMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
-        val expectedLeague = if (request.league == League.FTC) AresLeague.FTC else AresLeague.FRC
+        val expectedLeague = when (request.league) {
+            League.FTC -> AresLeague.FTC
+            League.FRC -> AresLeague.FRC
+            League.XRP -> AresLeague.XRP
+        }
         check(oldMetadata.league == expectedLeague) { "The starter's project metadata has the wrong league." }
         val personalizedProjectId = projectId(request.teamId, request.robotId)
         val personalizedMetadata = oldMetadata.copy(
@@ -696,7 +705,11 @@ internal fun templateDeploymentBlockReason(projectRoot: File): String? {
                 }
             HardwareSetupService().deploymentBlockReason(
                 projectRoot.path,
-                if (league == AresLeague.FTC) League.FTC else League.FRC,
+                when (league) {
+                    AresLeague.FTC -> League.FTC
+                    AresLeague.FRC -> League.FRC
+                    AresLeague.XRP -> League.XRP
+                },
             )
         }
         RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE ->

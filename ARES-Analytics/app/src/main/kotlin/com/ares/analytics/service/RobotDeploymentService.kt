@@ -142,10 +142,10 @@ class RobotDeploymentService internal constructor(
             canonicalProjectPath = root.path
             commandFactory.requireProjectDependenciesCompatible(root)
             templateDeploymentBlockReason(root)?.let { reason -> error(reason) }
-            if (league == League.FTC) {
-                deployFtc(generation, root, isWindows)
-            } else {
-                deployFrc(generation, root, isWindows)
+            when (league) {
+                League.FTC -> deployFtc(generation, root, isWindows)
+                League.FRC -> deployFrc(generation, root, isWindows)
+                League.XRP -> deployXrp(generation, root, isWindows)
             }
         } catch (cancelled: CancellationException) {
             updateIfOwner(
@@ -288,6 +288,37 @@ class RobotDeploymentService internal constructor(
                 projectPath = root.path,
                 league = League.FRC,
                 message = "FRC deploy completed for the RoboRIO configured by this project. No robot motion was commanded.",
+                progressPercent = 1.0f,
+                requestId = generation,
+            ),
+        )
+    }
+
+    private suspend fun deployXrp(generation: Long, root: File, isWindows: Boolean) {
+        commandFactory.requireProjectWrapper(root, League.XRP, isWindows)
+        updateIfOwner(
+            generation,
+            DeployExecutionState(
+                phase = DeployExecutionPhase.BUILDING,
+                projectPath = root.path,
+                league = League.XRP,
+                message = "Generating and verifying the XRP project before USB deployment...",
+                progressPercent = 0.4f,
+                requestId = generation,
+            ),
+        )
+        val exit = runOwnedProcess(
+            generation,
+            ProcessBuilder(commandFactory.xrpDeployBuild(isWindows)).directory(root).redirectErrorStream(true),
+        ) { line -> _output.emit(line) }
+        check(exit == 0) { "XRP deploy failed with exit code $exit" }
+        updateIfOwner(
+            generation,
+            DeployExecutionState(
+                phase = DeployExecutionPhase.SUCCEEDED,
+                projectPath = root.path,
+                league = League.XRP,
+                message = "XRP MicroPython project verified and copied to the connected controller. No robot motion was commanded.",
                 progressPercent = 1.0f,
                 requestId = generation,
             ),

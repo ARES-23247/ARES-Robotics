@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 11,
+  "documentId": "rangefinder",
+  "uid": "rangefinder",
+  "displayName": "Front rangefinder",
+  "kotlinTypeName": "FrontRangefinder",
+  "description": "The XRP's built-in front rangefinder, sampled once per robot cycle in canonical meters.",
+  "platform": "XRP",
+  "revision": 1,
+  "hardware": [
+    {
+      "hardwareId": "sensor",
+      "uid": "sensor",
+      "displayName": "Built-in rangefinder",
+      "kind": "DISTANCE_SENSOR",
+      "connection": {},
+      "measurements": [{"fieldId":"distance","source":"DISTANCE_METERS","scale":1.0,"offset":0.0,"maxAgeMs":250,"validMinimum":0.0,"validMaximum":4.0}],
+      "required": true,
+      "description": "Official XRPLib rangefinder adapter."
+    }
+  ],
+  "stateFields": [
+    {"fieldId":"distance","uid":"distance","displayName":"Distance","description":"Forward obstacle distance in meters.","type":"DOUBLE","role":"MEASUREMENT","unit":"m","defaultNumber":0.0,"minimum":0.0,"maximum":4.0}
+  ],
+  "controlLoops": [],
+  "tuningParameters": [],
+  "template": "DISTANCE_SENSOR",
+  "implementation": {"kind":"DECLARATIVE_GENERATED","ownership":"GENERATED_DO_NOT_EDIT","simulation":{"support":"GENERATED_MOCK"}},
+  "capabilityActionKeys": [],
+  "safety": {"feedbackTimeoutMs":250,"homing":{"method":"NONE"},"requiresCalibration":false,"requiresConfigurationHealth":true,"requiresCurrentMonitoring":false,"latchOutputFaults":false,"requiresExplicitNeutralRecovery":false,"telemetryEnabled":true,"zeroAllocationPeriodic":true},
+  "requiredAtStartup": true,
+  "generateMockIo": true,
+  "generateTest": true
+}

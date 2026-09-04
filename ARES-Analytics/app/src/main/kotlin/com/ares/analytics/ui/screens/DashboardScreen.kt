@@ -64,6 +64,7 @@ internal fun DashboardScreen(
     viewModel: DashboardViewModel,
     services: DashboardFeatureServices,
     currentConfig: WorkspaceConfig,
+    isRobotLinkConnected: Boolean,
     isLocalSimulatorSelected: Boolean,
     isSimulatorLaunchPreparationRunning: Boolean,
     simulatorLaunchRequiresVerification: Boolean,
@@ -232,7 +233,7 @@ internal fun DashboardScreen(
 
     val missionSnapshot = DashboardMissionSnapshot(
         workspace = currentConfig,
-        isConnected = state.isConnected,
+        isConnected = isRobotLinkConnected,
         isLocalSimulator = isLocalSimulator,
         isSimulatorRunning = isSimRunning,
         isReplayActive = isReplayActive || isReplayMode,
@@ -257,7 +258,18 @@ internal fun DashboardScreen(
         ) {
 
         if (isLocalSimulator) {
-            LocalSimulatorControlBar(
+            if (currentConfig.league == League.XRP) XrpSimulatorControlBar(
+                xrpLink = liveServices.xrpLinkService,
+                keyboardDriveState = liveServices.keyboardDriveState,
+                projectPath = currentConfig.projectPath,
+                isConnected = isRobotLinkConnected,
+                isSimulatorProcessRunning = isSimRunning,
+                isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
+                canLaunchSimulator = canLaunchSimulator,
+                simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
+                onLaunchSimulator = onLaunchSimulator,
+                modifier = Modifier.fillMaxWidth(),
+            ) else LocalSimulatorControlBar(
                 nt4Client = liveServices.nt4ClientService,
                 keyboardDriveState = liveServices.keyboardDriveState,
                 league = currentConfig.league,
@@ -265,7 +277,7 @@ internal fun DashboardScreen(
                 seasonId = currentConfig.seasonId,
                 robotId = currentConfig.robotId,
                 projectPath = currentConfig.projectPath,
-                isConnected = state.isConnected,
+                isConnected = isRobotLinkConnected,
                 isSimulatorProcessRunning = isSimRunning,
                 isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
                 launchRequiresVerification = simulatorLaunchRequiresVerification,
@@ -277,7 +289,7 @@ internal fun DashboardScreen(
             )
         }
 
-        if (shouldShowDashboardOfflineGuide(state.isConnected, state.primarySessionId, offlineGuideDismissed)) {
+        if (shouldShowDashboardOfflineGuide(isRobotLinkConnected, state.primarySessionId, offlineGuideDismissed)) {
             DashboardOfflineGuide(
                 onOpenRunHistory = onOpenRunHistory,
                 onOpenHelp = onOpenHelp,
@@ -292,6 +304,7 @@ internal fun DashboardScreen(
                 layout = layout,
                 services = services.widgets,
                 workspace = currentConfig,
+                isRobotLinkConnected = isRobotLinkConnected,
                 dashboardState = state,
                 replayFrame = displayedReplayFrame,
                 replaySessionStartMs = replaySessionStart,

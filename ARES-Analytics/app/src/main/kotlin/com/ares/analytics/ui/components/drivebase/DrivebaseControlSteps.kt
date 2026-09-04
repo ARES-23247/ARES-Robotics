@@ -186,7 +186,11 @@ fun ControlStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMod
                     }
                 }
                 Text(
-                    "Closed-loop wheel velocity uses the FTC motor controller's encoder loop. ARES keeps the controller's built-in PIDF when every custom motor PIDF value is zero. Calibrated overrides and feedforward belong in Tuning Studio.",
+                    when (state.league) {
+                        com.ares.analytics.shared.models.League.XRP -> "Closed-loop wheel velocity uses the declared XRP wheel encoders in the generated MicroPython runtime. Calibrated PID and feedforward values belong in Tuning Studio."
+                        com.ares.analytics.shared.models.League.FTC -> "Closed-loop wheel velocity uses the FTC motor controller's encoder loop. ARES keeps the controller's built-in PIDF when every custom motor PIDF value is zero. Calibrated overrides and feedforward belong in Tuning Studio."
+                        com.ares.analytics.shared.models.League.FRC -> "Closed-loop wheel velocity uses the selected FRC drive controller and its encoder feedback. Calibrated PID and feedforward values belong in Tuning Studio."
+                    },
                     color = AresGold,
                     fontSize = 10.sp,
                 )
@@ -282,7 +286,7 @@ private fun LabSlider(label: String, value: Double, onValueChange: (Double) -> U
 @Composable
 fun LocalizationStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewModel) {
     SectionHeading("5 · Choose localization", "Localization estimates robot pose on the field. Choose one primary source and optionally add vision correction.")
-    val kinds = LocalizationKind.entries
+    val kinds = localizationKindsForLeague(state.league)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         kinds.chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

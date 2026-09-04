@@ -72,7 +72,7 @@ class EnvironmentService(
             seasonId = identity.seasonId,
             robotId = identity.robotId,
             robotName = identity.name,
-            league = if (identity.league.equals("FRC", ignoreCase = true)) League.FRC else League.FTC,
+            league = identity.league.toLeague(),
         )
     }
 
@@ -94,7 +94,7 @@ class EnvironmentService(
                     seasonId = projectIdentity.seasonId,
                     robotId = projectIdentity.robotId,
                     robotName = projectIdentity.name,
-                    league = if (projectIdentity.league.equals("FRC", ignoreCase = true)) League.FRC else League.FTC
+                    league = projectIdentity.league.toLeague()
                 )
             }
         }
@@ -145,6 +145,12 @@ class EnvironmentService(
         val root = File(projectPath)
         if (!root.exists() || !root.isDirectory) return@withContext League.FTC
 
+        readProjectIdentityBlocking(projectPath)?.let { return@withContext it.league.toLeague() }
+
+        if (File(root, "main.py").isFile && File(root, "ares_micro").isDirectory) {
+            return@withContext League.XRP
+        }
+
         // Look for typical FRC indicators: build.gradle/settings.gradle mentioning 'frc', or 'wpilibj'
         // or a build.gradle with wpilib dependency.
         val searchFiles = root.walkTopDown().maxDepth(3)
@@ -176,7 +182,7 @@ class EnvironmentService(
                     "10.0.0.2"
                 }
             }
-            League.XRP -> "192.168.42.1"
+            League.XRP -> "192.168.4.1"
         }
     }
 
@@ -200,6 +206,13 @@ class EnvironmentService(
         }
         return null
     }
+}
+
+private fun String.toLeague(): League = when (uppercase()) {
+    "FTC" -> League.FTC
+    "FRC" -> League.FRC
+    "XRP" -> League.XRP
+    else -> throw IllegalArgumentException("Unsupported robot league '$this'")
 }
 
 data class JavaEnvResult(

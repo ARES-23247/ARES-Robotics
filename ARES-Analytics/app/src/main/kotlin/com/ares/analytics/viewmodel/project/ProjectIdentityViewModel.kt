@@ -15,8 +15,11 @@ import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.AresRuntimeOptionsDocument
+import com.areslib.project.AresXrpRuntimeOptionsDocument
 import com.areslib.project.requireFtcRuntimeOptions
+import com.areslib.project.requireXrpRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
@@ -33,6 +36,7 @@ import java.util.Locale
 enum class ProjectIdentityField {
     PROJECT_ID, TEAM_ID, SEASON_ID, ROBOT_ID, DISPLAY_NAME,
     ROBOT_LENGTH, ROBOT_WIDTH, FIELD_LENGTH, FIELD_WIDTH,
+    XRP_SSID, XRP_LINK_PORT, XRP_DEADMAN_TIMEOUT, XRP_BROWNOUT_THRESHOLD,
 }
 
 data class ProjectIdentityDraft(
@@ -45,8 +49,14 @@ data class ProjectIdentityDraft(
     val robotWidthMeters: String = "",
     val fieldLengthMeters: String = "",
     val fieldWidthMeters: String = "",
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val ftcHubCommandTransport: AresFtcHubCommandTransport = AresFtcHubCommandTransport.STANDARD_SDK,
     val ftcLimelightProxyEnabled: Boolean = false,
+    val xrpWifiMode: String = "AP",
+    val xrpSsid: String = "ARES-XRP-AUTO",
+    val xrpLinkPort: String = "5811",
+    val xrpDeadmanTimeoutMs: String = "200",
+    val xrpBrownoutThresholdVolts: String = "4.3",
 )
 
 data class ProjectIdentityChange(
@@ -148,6 +158,10 @@ class ProjectIdentityViewModel(
             ProjectIdentityField.ROBOT_WIDTH -> current.draft.copy(robotWidthMeters = value)
             ProjectIdentityField.FIELD_LENGTH -> current.draft.copy(fieldLengthMeters = value)
             ProjectIdentityField.FIELD_WIDTH -> current.draft.copy(fieldWidthMeters = value)
+            ProjectIdentityField.XRP_SSID -> current.draft.copy(xrpSsid = value)
+            ProjectIdentityField.XRP_LINK_PORT -> current.draft.copy(xrpLinkPort = value)
+            ProjectIdentityField.XRP_DEADMAN_TIMEOUT -> current.draft.copy(xrpDeadmanTimeoutMs = value)
+            ProjectIdentityField.XRP_BROWNOUT_THRESHOLD -> current.draft.copy(xrpBrownoutThresholdVolts = value)
         }
         val validation = validateProjectIdentityDraft(config.league, nextDraft)
         _state.value = current.copy(
@@ -170,9 +184,29 @@ class ProjectIdentityViewModel(
         copy(ftcLimelightProxyEnabled = enabled)
     }
 
+    fun updateXrpWifiMode(value: String) = updateXrpRuntimeOptions {
+        copy(xrpWifiMode = value)
+    }
+
     private fun updateFtcRuntimeOptions(transform: ProjectIdentityDraft.() -> ProjectIdentityDraft) {
         val config = workspace ?: return
         if (config.league != League.FTC) return
+        val current = _state.value
+        val nextDraft = current.draft.transform()
+        val validation = validateProjectIdentityDraft(config.league, nextDraft)
+        _state.value = current.copy(
+            draft = nextDraft,
+            fieldErrors = validation.fieldErrors,
+            generalErrors = validation.generalErrors,
+            proposal = null,
+            message = null,
+            messageIsError = false,
+        )
+    }
+
+    private fun updateXrpRuntimeOptions(transform: ProjectIdentityDraft.() -> ProjectIdentityDraft) {
+        val config = workspace ?: return
+        if (config.league != League.XRP) return
         val current = _state.value
         val nextDraft = current.draft.transform()
         val validation = validateProjectIdentityDraft(config.league, nextDraft)
@@ -435,6 +469,24 @@ internal fun validateProjectIdentityDraft(
     val robotWidth = parse(ProjectIdentityField.ROBOT_WIDTH, draft.robotWidthMeters, "Robot width")
     val fieldLength = parse(ProjectIdentityField.FIELD_LENGTH, draft.fieldLengthMeters, "Field length")
     val fieldWidth = parse(ProjectIdentityField.FIELD_WIDTH, draft.fieldWidthMeters, "Field width")
+    val xrpPort = if (league == League.XRP) draft.xrpLinkPort.trim().toIntOrNull().also { value ->
+        if (value == null || value !in 1024..65535 || value == 5810) {
+            errors[ProjectIdentityField.XRP_LINK_PORT] = "Use a port from 1024 to 65535 other than the NT4 port 5810."
+        }
+    } else null
+    val xrpDeadman = if (league == League.XRP) draft.xrpDeadmanTimeoutMs.trim().toIntOrNull().also { value ->
+        if (value == null || value !in 100..1_000) {
+            errors[ProjectIdentityField.XRP_DEADMAN_TIMEOUT] = "Use a deadman timeout from 100 to 1000 milliseconds."
+        }
+    } else null
+    val xrpBrownout = if (league == League.XRP) draft.xrpBrownoutThresholdVolts.trim().toDoubleOrNull().also { value ->
+        if (value == null || !value.isFinite() || value !in 3.0..6.0) {
+            errors[ProjectIdentityField.XRP_BROWNOUT_THRESHOLD] = "Use a brownout threshold from 3.0 to 6.0 volts."
+        }
+    } else null
+    if (league == League.XRP && (draft.xrpSsid.isBlank() || draft.xrpSsid.length > 32)) {
+        errors[ProjectIdentityField.XRP_SSID] = "Enter an XRP Wi-Fi network name using 1 to 32 characters."
+    }
     if (errors.isNotEmpty()) return ProjectIdentityDraftValidation(null, errors, emptyList())
 
     val document = AresProjectMetadataDocument(
@@ -451,15 +503,24 @@ internal fun validateProjectIdentityDraft(
         robotWidthMeters = requireNotNull(robotWidth),
         fieldLengthMeters = requireNotNull(fieldLength),
         fieldWidthMeters = requireNotNull(fieldWidth),
-        runtimeOptions = if (league == League.FTC) {
-            AresRuntimeOptionsDocument(
+        authoringModel = draft.authoringModel,
+        runtimeOptions = when (league) {
+            League.FTC -> AresRuntimeOptionsDocument(
                 ftc = AresFtcRuntimeOptionsDocument(
                     hubCommandTransport = draft.ftcHubCommandTransport,
                     limelightProxyEnabled = draft.ftcLimelightProxyEnabled,
                 ),
             )
-        } else {
-            AresRuntimeOptionsDocument()
+            League.XRP -> AresRuntimeOptionsDocument(
+                xrp = AresXrpRuntimeOptionsDocument(
+                    wifiMode = draft.xrpWifiMode,
+                    ssid = draft.xrpSsid.trim(),
+                    port = requireNotNull(xrpPort),
+                    deadmanTimeoutMs = requireNotNull(xrpDeadman),
+                    brownoutThresholdVolts = requireNotNull(xrpBrownout),
+                ),
+            )
+            League.FRC -> AresRuntimeOptionsDocument()
         },
     )
     val generalErrors = validateAresProjectMetadata(document)
@@ -475,6 +536,10 @@ internal fun projectIdentityDraft(
         ?.takeIf { it.league == AresLeague.FTC }
         ?.requireFtcRuntimeOptions()
         ?: AresFtcRuntimeOptionsDocument()
+    val xrpRuntime = current
+        ?.takeIf { it.league == AresLeague.XRP }
+        ?.requireXrpRuntimeOptions()
+        ?: AresXrpRuntimeOptionsDocument()
     return ProjectIdentityDraft(
         projectId = current?.projectId ?: suggestedProjectId(config),
         teamId = current?.identity?.teamId ?: config.teamId,
@@ -487,8 +552,14 @@ internal fun projectIdentityDraft(
             ?: config.robotWidthMeters?.asInput().orEmpty(),
         fieldLengthMeters = (current?.fieldLengthMeters ?: field.first).asInput(),
         fieldWidthMeters = (current?.fieldWidthMeters ?: field.second).asInput(),
+        authoringModel = current?.authoringModel ?: AresProjectAuthoringModel.GUI_OWNED,
         ftcHubCommandTransport = ftcRuntime.hubCommandTransport,
         ftcLimelightProxyEnabled = ftcRuntime.limelightProxyEnabled,
+        xrpWifiMode = xrpRuntime.wifiMode,
+        xrpSsid = xrpRuntime.ssid,
+        xrpLinkPort = xrpRuntime.port.toString(),
+        xrpDeadmanTimeoutMs = xrpRuntime.deadmanTimeoutMs.toString(),
+        xrpBrownoutThresholdVolts = xrpRuntime.brownoutThresholdVolts.asInput(),
     )
 }
 
@@ -499,7 +570,7 @@ internal fun projectIdentityChanges(
     fun changed(label: String, before: Any?, after: Any): ProjectIdentityChange? =
         if (before?.toString() == after.toString()) null
         else ProjectIdentityChange(label, before?.toString() ?: "missing", after.toString())
-    return listOfNotNull(
+    val shared = listOfNotNull(
         changed("Stable project ID", current?.projectId, proposed.projectId),
         changed("Team ID", current?.identity?.teamId, proposed.identity.teamId),
         changed("Season ID", current?.identity?.seasonId, proposed.identity.seasonId),
@@ -511,17 +582,35 @@ internal fun projectIdentityChanges(
         changed("Robot width (m)", current?.robotWidthMeters, proposed.robotWidthMeters),
         changed("Field length (m)", current?.fieldLengthMeters, proposed.fieldLengthMeters),
         changed("Field width (m)", current?.fieldWidthMeters, proposed.fieldWidthMeters),
-        changed(
+        changed("Authoring model", current?.authoringModel, proposed.authoringModel),
+    )
+    val platform = when (proposed.league) {
+        AresLeague.FTC -> listOfNotNull(
+            changed(
             "FTC hub command transport",
             current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()?.hubCommandTransport,
             proposed.requireFtcRuntimeOptions().hubCommandTransport,
-        ).takeIf { proposed.league == AresLeague.FTC },
-        changed(
+            ),
+            changed(
             "Limelight camera proxy",
             current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()?.limelightProxyEnabled,
             proposed.requireFtcRuntimeOptions().limelightProxyEnabled,
-        ).takeIf { proposed.league == AresLeague.FTC },
-    )
+            ),
+        )
+        AresLeague.XRP -> {
+            val before = current?.takeIf { it.league == AresLeague.XRP }?.requireXrpRuntimeOptions()
+            val after = proposed.requireXrpRuntimeOptions()
+            listOfNotNull(
+                changed("XRP Wi-Fi mode", before?.wifiMode, after.wifiMode),
+                changed("XRP Wi-Fi network", before?.ssid, after.ssid),
+                changed("XRP Link port", before?.port, after.port),
+                changed("XRP deadman timeout (ms)", before?.deadmanTimeoutMs, after.deadmanTimeoutMs),
+                changed("XRP brownout threshold (V)", before?.brownoutThresholdVolts, after.brownoutThresholdVolts),
+            )
+        }
+        AresLeague.FRC -> emptyList()
+    }
+    return shared + platform
 }
 
 private fun suggestedProjectId(config: WorkspaceConfig): String {
@@ -550,8 +639,8 @@ private fun League.toAresLeague(): AresLeague = when (this) {
 }
 
 private fun League.coordinateConvention(): AresCoordinateConvention = when (this) {
-    League.FTC -> AresCoordinateConvention.CENTER_ORIGIN_CCW
-    League.FRC, League.XRP -> AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW
+    League.FTC, League.XRP -> AresCoordinateConvention.CENTER_ORIGIN_CCW
+    League.FRC -> AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW
 }
 
 private fun Double.asInput(): String = String.format(Locale.ROOT, "%.6f", this).trimEnd('0').trimEnd('.')

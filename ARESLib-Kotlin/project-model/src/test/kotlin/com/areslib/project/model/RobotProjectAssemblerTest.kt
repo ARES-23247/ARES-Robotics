@@ -3,12 +3,26 @@ package com.areslib.project.model
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.controls.ControllerInputPlatform
+import com.areslib.drivetrain.DrivetrainComponentDocument
+import com.areslib.drivetrain.DrivetrainComponentRole
+import com.areslib.drivetrain.DrivetrainControlDocument
+import com.areslib.drivetrain.DrivetrainControlKind
+import com.areslib.drivetrain.DrivetrainDocument
+import com.areslib.drivetrain.DrivetrainGeometryDocument
+import com.areslib.drivetrain.DrivetrainKind
+import com.areslib.drivetrain.DrivetrainLocalizationDocument
+import com.areslib.drivetrain.DrivetrainLocalizationSourceDocument
+import com.areslib.drivetrain.DrivetrainPlatform
+import com.areslib.drivetrain.DrivetrainSafetyDocument
+import com.areslib.drivetrain.DrivetrainSimulationDocument
+import com.areslib.drivetrain.LocalizationSourceKind
 import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.AresFtcRuntimeOptionsDocument
 import com.areslib.project.AresRuntimeOptionsDocument
+import com.areslib.project.AresXrpRuntimeOptionsDocument
 import com.areslib.project.schema.AresControllerTarget
 import com.areslib.project.schema.AresSimulatorTarget
 import com.areslib.project.schema.ProjectActionKey
@@ -59,6 +73,21 @@ class RobotProjectAssemblerTest {
         assertFalse(wrongPlatform.isValid)
         assertTrue(wrongPlatform.issues.any { it.code == "project_identity_mismatch" })
         assertTrue(wrongPlatform.issues.any { it.code == "platform_mismatch" })
+    }
+
+    @Test
+    fun `XRP project accepts its canonical drivetrain platform`() {
+        val metadata = validSnapshot().metadata!!.copy(
+            league = AresLeague.XRP,
+            runtimeOptions = AresRuntimeOptionsDocument(xrp = AresXrpRuntimeOptionsDocument()),
+        )
+        val effective = RobotProjectAssembler.assemble(
+            validSnapshot().copy(metadata = metadata, drivetrains = listOf(xrpDifferential())),
+            ControllerInputPlatform.XRP,
+        )
+
+        assertTrue(effective.isValid, effective.issues.joinToString { it.message })
+        assertFalse(effective.issues.any { it.code == "league_mismatch" })
     }
 
     @Test
@@ -127,5 +156,39 @@ class RobotProjectAssemblerTest {
                 ),
             ),
         ),
+    )
+
+    private fun xrpDifferential() = DrivetrainDocument(
+        uid = "drive.primary",
+        drivebaseId = "primary",
+        displayName = "XRP differential",
+        description = "Two-motor XRP drivetrain",
+        kind = DrivetrainKind.DIFFERENTIAL,
+        platform = DrivetrainPlatform.XRP,
+        components = listOf("left" to "1", "right" to "2").map { (uid, port) ->
+            DrivetrainComponentDocument(
+                uid = "drive.$uid",
+                displayName = "$uid motor",
+                role = DrivetrainComponentRole.DRIVE_MOTOR,
+                hardwareId = port,
+            )
+        },
+        geometry = DrivetrainGeometryDocument(0.06, 0.155, 0.14, 1.0, null, 0.85, 5.0),
+        localization = DrivetrainLocalizationDocument(
+            primaryOdometry = DrivetrainLocalizationSourceDocument(
+                uid = "localization.wheels",
+                source = LocalizationSourceKind.WHEEL_ENCODERS_IMU,
+                componentUids = listOf("drive.left", "drive.right"),
+            ),
+            headingSourceUid = "localization.wheels",
+        ),
+        control = DrivetrainControlDocument(
+            supported = listOf(DrivetrainControlKind.OPEN_LOOP),
+            defaultControl = DrivetrainControlKind.OPEN_LOOP,
+        ),
+        safety = DrivetrainSafetyDocument(currentValidityRequired = false),
+        simulation = DrivetrainSimulationDocument("com.ares.XrpModel", "com.ares.XrpAdapter"),
+        parameters = emptyList(),
+        canonicalProfileUid = "profile.simulation",
     )
 }

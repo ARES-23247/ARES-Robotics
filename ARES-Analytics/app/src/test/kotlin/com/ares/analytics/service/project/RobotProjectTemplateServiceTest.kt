@@ -52,7 +52,7 @@ class RobotProjectTemplateServiceTest {
     fun `official generic starters require hardware review before deployment`() {
         val service = RobotProjectTemplateService()
 
-        listOf(League.FTC, League.FRC).forEach { league ->
+        listOf(League.FTC, League.FRC, League.XRP).forEach { league ->
             val template = service.templateFor(league)
             assertEquals(BuildConfig.ARES_VERSION, template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
@@ -529,7 +529,7 @@ class RobotProjectTemplateServiceTest {
             DrivebaseProjectRepository().saveReviewed(
                 root.path,
                 expectedContentHash = null,
-                document = defaultDrivebase("team1-robot", DrivebaseKind.FTC_MECANUM),
+                document = defaultDrivebase("team1-robot", DrivebaseKind.FTC_MECANUM, League.FTC),
             )
             File(ares, "template-provenance.json").writeText(
                 """{"schemaVersion":1,"templateId":"generic-ftc","templateRevision":"abc","templateArchiveSha256":"deadbeef","aresVersion":"6.1.0","deploymentPolicy":"HARDWARE_REVIEW_REQUIRED"}""",
@@ -598,7 +598,7 @@ class RobotProjectTemplateServiceTest {
                 ),
             ),
         )
-        val drivebase = defaultDrivebase("template-project", DrivebaseKind.FTC_MECANUM).toCanonicalDrivebase()
+        val drivebase = defaultDrivebase("template-project", DrivebaseKind.FTC_MECANUM, League.FTC).toCanonicalDrivebase()
         val profile = TuningProfileDocument(
             uid = drivebase.canonicalProfileUid,
             profileId = "competition",

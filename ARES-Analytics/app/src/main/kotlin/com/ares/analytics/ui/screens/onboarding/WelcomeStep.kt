@@ -39,7 +39,7 @@ fun WelcomeStep(currentStep: OnboardingStep) {
         OnboardingStep.REVIEW -> "Ready to finish"
     }
     val guidance = when (currentStep) {
-        OnboardingStep.PROJECT -> "Pick the folder you use to build your robot. ARES will detect FTC or FRC and fill in anything it recognizes."
+        OnboardingStep.PROJECT -> "Pick the folder you use to build your robot. ARES will detect FTC, FRC, or XRP and fill in anything it recognizes."
         OnboardingStep.ROBOT -> "Confirm the team, season, and robot. Detected values are already filled in and can be changed."
         OnboardingStep.OPTIONAL -> "Cloud sync and custom connection settings can be added now or later. The dashboard works fully offline."
         OnboardingStep.REVIEW -> "Review the workspace. Robot build tools are optional now and can be added later. Nothing is uploaded unless you choose cloud sync."
@@ -106,7 +106,7 @@ fun WelcomeStep(currentStep: OnboardingStep) {
                     lineHeight = 18.sp,
                 )
                 Text(
-                    "•  ARES turns those documents into reviewed Kotlin and verifies it in simulation before anything reaches a robot.",
+                    "•  ARES turns those documents into reviewed runtime code and verifies it in simulation before anything reaches a robot.",
                     color = AresTextSecondary,
                     fontSize = 12.5.sp,
                     lineHeight = 18.sp,

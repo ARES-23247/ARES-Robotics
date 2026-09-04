@@ -81,6 +81,8 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         val ftcHash = requiredArtifact("ftcStarterSha256").lowercase()
         val frcVersion = requiredProperty("frcStarterVersion")
         val frcHash = requiredArtifact("frcStarterSha256").lowercase()
+        val xrpVersion = requiredProperty("xrpStarterVersion")
+        val xrpHash = requiredArtifact("xrpStarterSha256").lowercase()
         val lightbotVersion = requiredProperty("lightbotExampleVersion")
         val lightbotHash = requiredArtifact("lightbotExampleSha256").lowercase()
 
@@ -119,6 +121,12 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         requireContains(workflowFile, "FRC_STARTER_SHA256: $frcHash", "workflow FRC template hash")
         requireContains(
             workflowFile,
+            "ARES-Robotics/releases/download/v$appVersion/ARES-XRP-Starter-$xrpVersion.zip",
+            "workflow XRP template URL",
+        )
+        requireContains(workflowFile, "XRP_STARTER_SHA256: $xrpHash", "workflow XRP template hash")
+        requireContains(
+            workflowFile,
             "ARES-Robotics/releases/download/v$appVersion/ARES-Lightbot-Example-$lightbotVersion.zip",
             "workflow Lightbot example URL",
         )
@@ -127,6 +135,7 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         listOf(
             Triple("ARES-FTC-Starter-$ftcVersion.zip", ftcHash, "FTC starter"),
             Triple("ARES-FRC-Starter-$frcVersion.zip", frcHash, "FRC starter"),
+            Triple("ARES-XRP-Starter-$xrpVersion.zip", xrpHash, "XRP starter"),
             Triple("ARES-Lightbot-Example-$lightbotVersion.zip", lightbotHash, "Lightbot example"),
         ).forEach { (fileName, expectedHash, label) ->
             val archive = File(templateDirectory, fileName)
@@ -144,7 +153,8 @@ val verifyReleaseVersionAlignment = tasks.register("verifyReleaseVersionAlignmen
         logger.lifecycle(
             "Release preflight passed: Studio $appVersion, ARES dependency $resolvedAresVersion " +
                 "(release pin $aresVersion), " +
-                "FTC starter $ftcVersion, FRC starter $frcVersion, Lightbot example $lightbotVersion.",
+                "FTC starter $ftcVersion, FRC starter $frcVersion, XRP starter $xrpVersion, " +
+                    "Lightbot example $lightbotVersion.",
         )
     }
 }

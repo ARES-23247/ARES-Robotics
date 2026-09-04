@@ -260,7 +260,7 @@ class HardwareSetupServiceTest {
     }
 
     private fun seedDrivebase(root: java.io.File, includeLogicalWheelModule: Boolean = false) {
-        val base = defaultDrivebase("team1-robot", DrivebaseKind.FTC_MECANUM)
+        val base = defaultDrivebase("team1-robot", DrivebaseKind.FTC_MECANUM, League.FTC)
         DrivebaseProjectRepository().saveReviewed(
             root.path,
             expectedContentHash = null,

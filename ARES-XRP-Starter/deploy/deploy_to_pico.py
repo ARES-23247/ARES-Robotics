@@ -10,6 +10,9 @@ import sys
 import subprocess
 
 def find_ares_micro_path():
+    bundled = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lib", "ares_micro"))
+    if os.path.isdir(bundled):
+        return bundled
     # Check parent monorepo path first
     candidate = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "ARESLib-Kotlin", "ares-micro", "ares_micro"))
     if os.path.isdir(candidate):
@@ -35,12 +38,28 @@ def deploy():
         print(f"[Deploy] Flashing ares_micro library from {ares_micro} -> :lib/ares_micro ...")
         subprocess.run(["mpremote", "cp", "-r", ares_micro, ":lib/ares_micro"], check=True)
     else:
-        print("[Deploy] Installing ares-micro from package repository via mip...")
-        subprocess.run(["mpremote", "mip", "install", "ares-micro"], check=True)
+        print("[Error] This project does not include its pinned ares_micro runtime.")
+        print("Re-export it from ARES Robotics Studio or use a verified XRP starter archive.")
+        sys.exit(2)
 
     main_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "main.py"))
     print(f"[Deploy] Flashing main.py -> :main.py ...")
     subprocess.run(["mpremote", "cp", main_script, ":main.py"], check=True)
+
+    generated_script = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), "..", "build", "generated", "ares", "python", "generated_ares_project.py"
+    ))
+    print(f"[Deploy] Flashing generated project -> :generated_ares_project.py ...")
+    subprocess.run(["mpremote", "cp", generated_script, ":generated_ares_project.py"], check=True)
+
+    hardware_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "hardware.py"))
+    print(f"[Deploy] Flashing XRPLib adapters -> :hardware.py ...")
+    subprocess.run(["mpremote", "cp", hardware_script, ":hardware.py"], check=True)
+
+    secrets_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "xrp_secrets.py"))
+    if os.path.isfile(secrets_script):
+        print("[Deploy] Flashing user-owned Wi-Fi secrets -> :xrp_secrets.py ...")
+        subprocess.run(["mpremote", "cp", secrets_script, ":xrp_secrets.py"], check=True)
 
     print("[Deploy] Resetting Pico W...")
     subprocess.run(["mpremote", "reset"], check=True)

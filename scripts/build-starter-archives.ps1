@@ -17,6 +17,7 @@ Get-Content -LiteralPath $releasePropertiesPath | ForEach-Object {
 $versions = @{
     'ARES-FTC-Starter' = $releaseProperties['ftcStarterVersion']
     'ARES-FRC-Starter' = $releaseProperties['frcStarterVersion']
+    'ARES-XRP-Starter' = $releaseProperties['xrpStarterVersion']
     'ARES-Lightbot-Example' = $releaseProperties['lightbotExampleVersion']
 }
 if ($versions.Values | Where-Object { -not $_ -or $_ -notmatch '^\d+\.\d+\.\d+$' }) {

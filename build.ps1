@@ -43,6 +43,20 @@ function Ensure-AndroidSdkPath {
     Write-Host "Configured ignored $Project/local.properties from the detected Android SDK." -ForegroundColor DarkGray
 }
 
+function Invoke-XrpBuild {
+    $projectRoot = Join-Path $workspaceRoot 'ARES-XRP-Starter'
+    Write-Host "`n==> ARES-XRP-Starter verify" -ForegroundColor Cyan
+    Push-Location -LiteralPath $projectRoot
+    try {
+        & (Join-Path $projectRoot 'ares.bat') generate
+        if ($LASTEXITCODE -ne 0) { throw "ARES-XRP-Starter generation failed with exit code $LASTEXITCODE" }
+        & (Join-Path $projectRoot 'ares.bat') verify
+        if ($LASTEXITCODE -ne 0) { throw "ARES-XRP-Starter verification failed with exit code $LASTEXITCODE" }
+    } finally {
+        Pop-Location
+    }
+}
+
 $versionArguments = @("-ParesVersion=$($release.aresVersion)")
 if ($Task -eq 'ReleaseValidation') {
     if ([string]::IsNullOrWhiteSpace($CandidateVersion)) {
@@ -75,6 +89,7 @@ Invoke-GradleBuild 'ARES-FTC' (@(':TeamCode:testDebugUnitTest', ':simulator:test
 Invoke-GradleBuild 'ARES-FRC' (@('test', '--no-parallel', '--console=plain') + $versionArguments)
 Invoke-GradleBuild 'ARES-FTC-Starter' (@(':TeamCode:testDebugUnitTest', ':simulator:test', ':TeamCode:assembleDebug', '--no-parallel', '--console=plain') + $versionArguments)
 Invoke-GradleBuild 'ARES-FRC-Starter' (@('test', '--no-parallel', '--console=plain') + $versionArguments)
+Invoke-XrpBuild
 Invoke-GradleBuild 'ARES-Analytics' (@(':shared:test', ':app:test', ':gateway:test', '--no-parallel', '--console=plain') + $versionArguments)
 
 Write-Host "`nARES source-monorepo $Task matrix passed." -ForegroundColor Green

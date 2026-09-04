@@ -60,6 +60,7 @@ fun FieldViewerCard(
     currentFrame: com.ares.analytics.service.ReplayFrame? = null,
     databaseService: DatabaseService? = null,
     replayStartTimestampMs: Long = 0L,
+    liveTransportConnected: Boolean? = null,
     league: League,
     projectPath: String? = null,
     properties: Map<String, String> = emptyMap(),
@@ -73,6 +74,7 @@ fun FieldViewerCard(
     val liveState = remember(currentFrame?.sequence, observedLiveState) {
         currentFrame?.toReplayPoseState() ?: observedLiveState
     }
+    val isLiveConnected = liveTransportConnected ?: liveState.isConnected
     val lightingPlacements by produceState(initialValue = emptyMap(), projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             loadRobotLightingPlacements(projectPath)
@@ -154,10 +156,10 @@ fun FieldViewerCard(
                     when {
                         currentFrame != null && currentFrame.playheadMs == currentFrame.timestampMs -> "Replay · sample exact"
                         currentFrame != null -> "Replay · sample ${currentFrame.playheadMs - currentFrame.timestampMs} ms old"
-                        liveState.isConnected -> "Connected"
+                        isLiveConnected -> "Connected"
                         else -> "Offline"
                     },
-                    color = if (liveState.isConnected) AresGreen else AresTextTertiary,
+                    color = if (currentFrame != null || isLiveConnected) AresGreen else AresTextTertiary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )

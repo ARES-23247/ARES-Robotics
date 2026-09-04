@@ -207,7 +207,7 @@ class ProjectSessionTest {
         val result = session.saveDrivebase(
             opened.revision,
             expectedContentHash = null,
-            defaultDrivebase("drive-project", DrivebaseKind.FTC_MECANUM),
+            defaultDrivebase("drive-project", DrivebaseKind.FTC_MECANUM, League.FTC),
         )
 
         val applied = assertIs<ProjectSessionMutationResult.Applied<*>>(result)

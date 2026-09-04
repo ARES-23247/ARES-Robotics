@@ -4,6 +4,7 @@ import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.shared.models.ThresholdRule
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.League
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
@@ -96,6 +97,8 @@ class AlertEngineService(
 
     private var engineJob: Job? = null
     private var lastBeepTime = 0L
+    @Volatile private var activeLeague: League = League.FTC
+    @Volatile private var xrpBatteryMinimumVolts: Double = DEFAULT_XRP_BATTERY_MINIMUM_VOLTS
 
     init {
         loadRules()
@@ -154,6 +157,17 @@ class AlertEngineService(
         }
     }
 
+    /** Selects platform-correct live safety thresholds without rewriting saved user rules. */
+    fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
+        activeLeague = league
+        xrpBatteryMinimumVolts = xrpBrownoutThresholdVolts
+            ?.takeIf { it.isFinite() && it in 3.0..6.0 }
+            ?: DEFAULT_XRP_BATTERY_MINIMUM_VOLTS
+        _alerts.update { current ->
+            current.filterValues { normalizeTopic(it.ruleKey) != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey }
+        }
+    }
+
     /**
      * Cancels the active telemetry evaluation coroutine job.
      */
@@ -184,7 +198,8 @@ class AlertEngineService(
         if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys ||
             frame.key.trimStart('/') in TelemetryMetricCatalog.LOOP_TIME.keys
         ) return
-        val rule = rules[normalizedKey] ?: return
+        val configuredRule = rules[normalizedKey] ?: return
+        val rule = effectiveRule(normalizedKey, configuredRule)
         val value = frame.value
 
         val minVal = rule.minValue
@@ -509,8 +524,21 @@ class AlertEngineService(
      * @return Human-readable display string.
      */
     fun getRuleDisplayName(key: String): String {
-        return rules[normalizeTopic(key)]?.displayName ?: key
+        val normalized = normalizeTopic(key)
+        return rules[normalized]?.let { effectiveRule(normalized, it).displayName } ?: key
     }
+
+    private fun effectiveRule(normalizedKey: String, configuredRule: ThresholdRule): ThresholdRule {
+        if (normalizedKey != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey || activeLeague != League.XRP) {
+            return configuredRule
+        }
+        return configuredRule.copy(
+            displayName = "Low XRP Battery Voltage (<${formatVoltage(xrpBatteryMinimumVolts)}V)",
+            minValue = xrpBatteryMinimumVolts,
+        )
+    }
+
+    private fun formatVoltage(value: Double): String = "%.2f".format(java.util.Locale.ROOT, value)
 
     private fun registerRule(rule: ThresholdRule) {
         rules[normalizeTopic(rule.key)] = rule
@@ -524,5 +552,6 @@ class AlertEngineService(
         const val LOOP_OVERRUN_THRESHOLD_MS = 25.0
         const val LOOP_SEVERE_THRESHOLD_MS = 100.0
         const val LOOP_OVERRUN_SAMPLE_COUNT = 3
+        const val DEFAULT_XRP_BATTERY_MINIMUM_VOLTS = 4.3
     }
 }

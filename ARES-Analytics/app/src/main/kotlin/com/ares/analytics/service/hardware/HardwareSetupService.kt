@@ -25,6 +25,7 @@ enum class HardwareInventoryOwner { DRIVEBASE, SUBSYSTEM }
 
 enum class HardwareAddressKind(val label: String) {
     FTC_HARDWARE_MAP("FTC hardware-map name"),
+    XRP_PORT("XRP built-in / expansion port"),
     CAN("CAN device"),
     PWM("PWM channel"),
     I2C("I2C device"),
@@ -227,10 +228,10 @@ class HardwareSetupService(
                         .filter { it.id in physicalComponentIds }
                         .forEach { device ->
                             val address = device.canId?.toString() ?: device.hardwareName.trim()
-                            val addressKind = if (league == League.FTC) {
-                                HardwareAddressKind.FTC_HARDWARE_MAP
-                            } else {
-                                HardwareAddressKind.CAN
+                            val addressKind = when (league) {
+                                League.FTC -> HardwareAddressKind.FTC_HARDWARE_MAP
+                                League.FRC -> HardwareAddressKind.CAN
+                                League.XRP -> HardwareAddressKind.XRP_PORT
                             }
                             items += HardwareInventoryItem(
                                 uid = "drivebase:${device.id}",
@@ -276,7 +277,12 @@ class HardwareSetupService(
                     .distinct()
                 val homing = subsystem.safety.homing.takeIf { it.actuatorId == device.hardwareId }
                 val address = when (league) {
-                    League.FTC, League.XRP -> device.connection.hardwareMapName.orEmpty().trim()
+                    League.FTC -> device.connection.hardwareMapName.orEmpty().trim()
+                    League.XRP -> when (device.kind) {
+                        SubsystemHardwareKind.DISTANCE_SENSOR -> "built-in rangefinder"
+                        SubsystemHardwareKind.IMU -> "built-in IMU"
+                        else -> device.connection.channel?.toString().orEmpty()
+                    }
                     League.FRC -> when (device.kind) {
                         SubsystemHardwareKind.QUADRATURE_ENCODER -> listOfNotNull(
                             device.connection.channel,
@@ -293,7 +299,8 @@ class HardwareSetupService(
                     }
                 }
                 val addressKind = when (league) {
-                    League.FTC, League.XRP -> HardwareAddressKind.FTC_HARDWARE_MAP
+                    League.FTC -> HardwareAddressKind.FTC_HARDWARE_MAP
+                    League.XRP -> HardwareAddressKind.XRP_PORT
                     League.FRC -> device.addressKind()
                 }
                 val bus = when {
@@ -546,6 +553,7 @@ class HardwareSetupService(
 
     private fun collisionKey(item: HardwareInventoryItem): String = when (item.addressKind) {
         HardwareAddressKind.FTC_HARDWARE_MAP -> "ftc:${item.address.lowercase()}"
+        HardwareAddressKind.XRP_PORT -> "xrp:${item.address.lowercase()}"
         HardwareAddressKind.CAN -> "can:${item.bus.orEmpty().lowercase()}:${item.address}"
         HardwareAddressKind.PWM -> "pwm:${item.address}"
         HardwareAddressKind.I2C -> "i2c:${item.address.lowercase()}"

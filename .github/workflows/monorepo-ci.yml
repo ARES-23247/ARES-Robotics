@@ -24,6 +24,7 @@ jobs:
       frc: ${{ steps.classify.outputs.frc }}
       ftc_starter: ${{ steps.classify.outputs.ftc_starter }}
       frc_starter: ${{ steps.classify.outputs.frc_starter }}
+      xrp_starter: ${{ steps.classify.outputs.xrp_starter }}
       analytics: ${{ steps.classify.outputs.analytics }}
     steps:
       - uses: actions/checkout@v7
@@ -248,6 +249,27 @@ jobs:
             dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
           fi
           ./gradlew test "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+
+  xrp-starter:
+    name: XRP MicroPython starter
+    needs: changes
+    if: needs.changes.outputs.full == 'true' || needs.changes.outputs.xrp_starter == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Compile DSL to Python and run standalone safety tests
+        working-directory: ARES-XRP-Starter
+        shell: bash
+        run: |
+          chmod +x ares
+          ./ares generate
+          ./ares verify
+      - name: Test the reusable MicroPython runtime
+        working-directory: ARESLib-Kotlin/ares-micro
+        run: python -m unittest discover -s tests -v
 
   analytics:
     name: Studio, gateway, and analytics

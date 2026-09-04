@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "uid": "ares.xrp.drivebase.differential",
+  "drivebaseId": "xrp-differential",
+  "displayName": "XRP differential drive",
+  "description": "Two-motor differential drive using the XRP board's built-in motor outputs and encoders.",
+  "kind": "DIFFERENTIAL",
+  "platform": "XRP",
+  "components": [
+    {"uid":"xrp.motor.left","displayName":"Left drive motor","role":"DRIVE_MOTOR","hardwareId":"left","controllerModel":"XRP built-in motor controller","encoderModel":"XRP built-in encoder","currentMeasurementRequired":false,"currentMeasurementAvailable":false,"xMeters":0.0,"yMeters":0.0775,"inverted":false,"required":true},
+    {"uid":"xrp.motor.right","displayName":"Right drive motor","role":"DRIVE_MOTOR","hardwareId":"right","controllerModel":"XRP built-in motor controller","encoderModel":"XRP built-in encoder","currentMeasurementRequired":false,"currentMeasurementAvailable":false,"xMeters":0.0,"yMeters":-0.0775,"inverted":false,"required":true}
+  ],
+  "modules": [],
+  "geometry": {
+    "wheelDiameterMeters": 0.060,
+    "trackWidthMeters": 0.155,
+    "wheelBaseMeters": 0.140,
+    "driveGearRatio": 1.0,
+    "maxLinearSpeedMetersPerSecond": 0.85,
+    "maxAngularSpeedRadiansPerSecond": 5.0
+  },
+  "localization": {
+    "primaryOdometry": {
+      "uid": "xrp.localization.encoders",
+      "source": "WHEEL_ENCODERS_IMU",
+      "componentUids": ["xrp.motor.left", "xrp.motor.right"],
+      "implementationClassName": "ares_micro.drivetrain.DifferentialDrivetrain"
+    },
+    "headingSourceUid": "xrp.localization.encoders",
+    "visionFusion": [],
+    "headingCcwPositive": true,
+    "cachedInputsRequired": true
+  },
+  "control": {
+    "supported": ["OPEN_LOOP", "CHASSIS_VELOCITY", "TRAJECTORY"],
+    "defaultControl": "CHASSIS_VELOCITY",
+    "fieldCentric": false
+  },
+  "safety": {
+    "safeNeutralRequired": true,
+    "configurationHealthRequired": true,
+    "staleFeedbackTimeoutMs": 200,
+    "currentValidityRequired": false,
+    "faultLatchingRequired": true,
+    "explicitNeutralRecoveryRequired": true,
+    "disabledOutputIsNeutral": true,
+    "enabledNeutralMode": "BRAKE",
+    "disabledPolicy": "FORCE_NEUTRAL_BRAKE",
+    "zeroAllocationPeriodicRequired": true
+  },
+  "simulation": {
+    "modelClassName": "ares_micro.simulation.XrpDifferentialModel",
+    "adapterClassName": "ares_micro.simulation.XrpDifferentialAdapter",
+    "usesPhysicalGeometry": true,
+    "usesCanonicalProfile": true,
+    "behavioralParityRequired": true
+  },
+  "parameters": [],
+  "calibrationProvenance": [],
+  "canonicalProfileUid": "ares.xrp.profile.simulation"
+}

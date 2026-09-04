@@ -81,6 +81,12 @@ data class SubsystemImplementationDocument(
     val subsystemClassName: String? = null,
     val ioContractClassName: String? = null,
     val hardwareAdapterClassName: String? = null,
+    /** Importable module for a user-owned XRP Python subsystem (for example extensions.arm). */
+    val pythonModuleName: String? = null,
+    /** Physical-runtime factory accepting one hardware factory argument. */
+    val pythonFactoryName: String? = null,
+    /** Optional simulation factory accepting one hardware factory argument. */
+    val pythonSimulationFactoryName: String? = null,
     val simulation: SubsystemSimulationDocument = SubsystemSimulationDocument(),
     val teaching: SubsystemTeachingDocument = SubsystemTeachingDocument(),
 )
@@ -109,7 +115,12 @@ enum class SubsystemHardwareKind {
 fun SubsystemHardwareKind.supportsPlatform(platform: SubsystemPlatform): Boolean = when (platform) {
     SubsystemPlatform.FTC -> this != SubsystemHardwareKind.SOLENOID
     SubsystemPlatform.FRC -> this != SubsystemHardwareKind.COLOR_SENSOR
-    SubsystemPlatform.XRP -> this != SubsystemHardwareKind.SOLENOID
+    SubsystemPlatform.XRP -> this in setOf(
+        SubsystemHardwareKind.MOTOR,
+        SubsystemHardwareKind.POSITIONAL_SERVO,
+        SubsystemHardwareKind.DISTANCE_SENSOR,
+        SubsystemHardwareKind.IMU,
+    )
 }
 
 /** Explicit cached signal read from one hardware device. */
@@ -177,9 +188,18 @@ enum class SubsystemTemplate {
 }
 
 /** Whether the generated physical adapter for this starter exists on [platform]. */
-fun SubsystemTemplate.supportsPlatform(platform: SubsystemPlatform): Boolean = when (this) {
-    SubsystemTemplate.PNEUMATIC_ACTUATOR -> platform == SubsystemPlatform.FRC
-    else -> true
+fun SubsystemTemplate.supportsPlatform(platform: SubsystemPlatform): Boolean = when (platform) {
+    SubsystemPlatform.FTC -> this != SubsystemTemplate.PNEUMATIC_ACTUATOR
+    SubsystemPlatform.FRC -> true
+    SubsystemPlatform.XRP -> this in setOf(
+        SubsystemTemplate.SIMPLE_ACTUATOR,
+        SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
+        SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM,
+        SubsystemTemplate.POSITIONAL_SERVO,
+        SubsystemTemplate.DISTANCE_SENSOR,
+        SubsystemTemplate.IMU_SENSOR,
+        SubsystemTemplate.ADVANCED_CUSTOM,
+    )
 }
 
 /** WPILib pneumatic module used by a generated FRC solenoid adapter. */

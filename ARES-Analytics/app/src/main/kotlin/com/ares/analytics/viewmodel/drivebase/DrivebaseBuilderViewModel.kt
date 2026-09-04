@@ -67,7 +67,7 @@ data class DrivebaseBuilderState(
     val league: League,
     val projectRevision: ProjectSessionRevision? = null,
     val saved: DrivebaseDocument? = null,
-    val draft: DrivebaseDocument = defaultDrivebase(projectId, defaultNoCodeDrivebaseKind(league)),
+    val draft: DrivebaseDocument = defaultDrivebase(projectId, defaultNoCodeDrivebaseKind(league), league),
     val step: DrivebaseBuilderStep = DrivebaseBuilderStep.DRIVE_TYPE,
     val selectedHardwareId: String? = null,
     val advanced: Boolean = false,
@@ -238,6 +238,7 @@ class DrivebaseBuilderViewModel(
                         defaultDrivebase(
                             _state.value.projectId,
                             defaultNoCodeDrivebaseKind(_state.value.league),
+                            _state.value.league,
                         ).withRuntimeRequirements().requireCanonicalProjectIdentity(_state.value.projectId)
                     } else {
                         saved.requireCanonicalProjectIdentity(_state.value.projectId)
@@ -427,7 +428,7 @@ class DrivebaseBuilderViewModel(
                 notes = "Read-only CTRE TunerConstants import; review every value before saving.",
                 values = imported.values
             )
-            val base = defaultDrivebase(state.projectId, DrivebaseKind.FRC_CTRE_SWERVE).canonical!!
+            val base = defaultDrivebase(state.projectId, DrivebaseKind.FRC_CTRE_SWERVE, League.FRC).canonical!!
             val cornerByRole = mapOf(
                 DriveHardwareRole.FRONT_LEFT_DRIVE to "front-left", DriveHardwareRole.FRONT_LEFT_STEER to "front-left", DriveHardwareRole.FRONT_LEFT_ENCODER to "front-left",
                 DriveHardwareRole.FRONT_RIGHT_DRIVE to "front-right", DriveHardwareRole.FRONT_RIGHT_STEER to "front-right", DriveHardwareRole.FRONT_RIGHT_ENCODER to "front-right",
@@ -608,7 +609,7 @@ private fun uidSegment(value: String, fallback: String): String =
     value.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { fallback }
 
 private fun drivebaseForKind(state: DrivebaseBuilderState, kind: DrivebaseKind): DrivebaseDocument {
-    val replacement = defaultDrivebase(state.projectId, kind)
+    val replacement = defaultDrivebase(state.projectId, kind, state.league)
     val replacementCanonical = replacement.canonical ?: return replacement
     val currentCanonical = state.draft.canonical ?: return replacement
     val reboundUid = currentCanonical.uid

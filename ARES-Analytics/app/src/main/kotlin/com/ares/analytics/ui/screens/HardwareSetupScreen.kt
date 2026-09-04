@@ -529,6 +529,8 @@ private fun HardwareItemCard(item: HardwareInventoryItem) {
                     com.ares.analytics.service.hardware.HardwareAddressKind.FTC_HARDWARE_MAP ->
                         if (item.address.isBlank()) "Add this device in Configure Robot → Hardware on the Driver Station, then enter the exact same name here."
                         else "In Configure Robot → Hardware on the Driver Station, name this device exactly: ${item.address}"
+                    com.ares.analytics.service.hardware.HardwareAddressKind.XRP_PORT ->
+                        "Connect this device to ${item.addressDescription}; the built-in drivetrain uses motor ports 1 and 2."
                     com.ares.analytics.service.hardware.HardwareAddressKind.CAN ->
                         "Set this device to ${item.addressDescription}; CAN IDs must be unique on each bus."
                     com.ares.analytics.service.hardware.HardwareAddressKind.PWM -> "Connect this device to ${item.addressDescription}."

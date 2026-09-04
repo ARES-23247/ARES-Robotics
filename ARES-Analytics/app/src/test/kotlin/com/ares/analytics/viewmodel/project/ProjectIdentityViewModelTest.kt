@@ -10,7 +10,9 @@ import com.areslib.project.AresFtcHubCommandTransport
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.requireFtcRuntimeOptions
+import com.areslib.project.requireXrpRuntimeOptions
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -312,6 +314,41 @@ class ProjectIdentityViewModelTest {
         assertNull(invalidNumber.document)
         assertTrue(outsideField.generalErrors.isNotEmpty())
         assertNull(outsideField.document)
+    }
+
+    @Test
+    fun `XRP runtime settings are validated and preserve the authoring model`() {
+        val valid = validateProjectIdentityDraft(
+            League.XRP,
+            validDraft().copy(
+                authoringModel = AresProjectAuthoringModel.HYBRID,
+                fieldLengthMeters = "2.54",
+                fieldWidthMeters = "1.4224",
+                xrpWifiMode = "STATION",
+                xrpSsid = "Robotics-Lab",
+                xrpLinkPort = "5821",
+                xrpDeadmanTimeoutMs = "250",
+                xrpBrownoutThresholdVolts = "4.2",
+            ),
+        )
+        val document = assertNotNull(valid.document)
+        assertEquals(AresProjectAuthoringModel.HYBRID, document.authoringModel)
+        assertEquals(5821, document.requireXrpRuntimeOptions().port)
+        assertEquals("Robotics-Lab", document.requireXrpRuntimeOptions().ssid)
+
+        val invalid = validateProjectIdentityDraft(
+            League.XRP,
+            validDraft().copy(
+                fieldLengthMeters = "2.54",
+                fieldWidthMeters = "1.4224",
+                xrpLinkPort = "5810",
+                xrpDeadmanTimeoutMs = "50",
+                xrpBrownoutThresholdVolts = "8.0",
+            ),
+        )
+        assertNotNull(invalid.fieldErrors[ProjectIdentityField.XRP_LINK_PORT])
+        assertNotNull(invalid.fieldErrors[ProjectIdentityField.XRP_DEADMAN_TIMEOUT])
+        assertNotNull(invalid.fieldErrors[ProjectIdentityField.XRP_BROWNOUT_THRESHOLD])
     }
 
     private fun validDraft() = ProjectIdentityDraft(

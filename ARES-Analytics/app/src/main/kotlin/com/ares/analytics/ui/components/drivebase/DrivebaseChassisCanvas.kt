@@ -176,6 +176,7 @@ fun MotorGridCard(
     isSelected: Boolean,
     onSelect: () -> Unit,
     onToggleInvert: () -> Unit,
+    addressLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -223,7 +224,7 @@ fun MotorGridCard(
                     )
                 }
                 Text(
-                    device?.canId?.let { "CAN $it${device.canBus?.let { bus -> " · $bus" }.orEmpty()}" }
+                    addressLabel ?: device?.canId?.let { "CAN $it${device.canBus?.let { bus -> " · $bus" }.orEmpty()}" }
                         ?: "hw: ${device?.hardwareName ?: "none"}",
                     color = AresCyan,
                     fontFamily = FontFamily.Monospace,

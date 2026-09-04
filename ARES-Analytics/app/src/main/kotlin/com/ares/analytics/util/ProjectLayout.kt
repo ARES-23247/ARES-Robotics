@@ -64,7 +64,11 @@ internal object ProjectLayout {
                 File(root, "src/main/kotlin")
             )
             League.FRC -> listOf(File(root, "src/main/kotlin"), File(root, "src/main/java"))
-            League.XRP -> listOf(File(root, "src"), File(root, "."))
+            League.XRP -> listOf(
+                File(root, "build/generated/ares/python"),
+                File(root, "extensions"),
+                root,
+            )
         }
         return sourceRoots.any { sourceRoot ->
             sourceRoot.isDirectory && sourceRoot.walkTopDown().any { file ->

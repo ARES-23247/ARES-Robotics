@@ -28,6 +28,38 @@ class DrivetrainDocumentTest {
     }
 
     @Test
+    fun `mecanum supports four motor XRP expansion hardware`() {
+        val xrpMecanum = mecanum().copy(
+            platform = DrivetrainPlatform.XRP,
+            components = mecanum().components
+                .filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR }
+                .mapIndexed { index, motor ->
+                    motor.copy(
+                        hardwareId = (index + 1).toString(),
+                        controllerModel = "XRP motor port",
+                        encoderModel = "XRP quadrature encoder",
+                        currentMeasurementRequired = false,
+                        currentMeasurementAvailable = false,
+                    )
+                },
+            localization = DrivetrainLocalizationDocument(
+                primaryOdometry = DrivetrainLocalizationSourceDocument(
+                    uid = "localization.xrp-wheel-imu",
+                    source = LocalizationSourceKind.WHEEL_ENCODERS_IMU,
+                    componentUids = listOf("drive.motor.fl"),
+                ),
+                headingSourceUid = "drive.motor.fl",
+            ),
+            safety = mecanum().safety.copy(currentValidityRequired = false),
+        )
+
+        val issues = validateDrivetrainDocument(xrpMecanum)
+
+        assertTrue(issues.none { it.path == "kind" })
+        assertTrue(issues.none { it.message.contains("current measurement") })
+    }
+
+    @Test
     fun `invalid localization safety ownership and geometry fail closed`() {
         val broken = mecanum().copy(
             geometry = mecanum().geometry.copy(trackWidthMeters = Double.NaN),
