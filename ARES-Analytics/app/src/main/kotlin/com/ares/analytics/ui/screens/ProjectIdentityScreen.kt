@@ -471,139 +471,7 @@ private fun ProjectIdentityForm(
 }
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
-private fun XrpRuntimeOptionsEditor(
-    state: ProjectIdentityEditorState,
-    enabled: Boolean,
-    onUpdate: (ProjectIdentityField, String) -> Unit,
-    onWifiModeChanged: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("XRP connection & safety", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-            Text(
-                "These settings are shared by the generated MicroPython robot, local simulator, and Studio. Use a unique Link port when running multiple projects on one computer.",
-                color = AresTextSecondary,
-                fontSize = 11.sp,
-            )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip(
-                selected = state.draft.xrpWifiMode == "AP",
-                onClick = { onWifiModeChanged("AP") },
-                enabled = enabled,
-                label = { Text("XRP creates Wi-Fi") },
-            )
-            FilterChip(
-                selected = state.draft.xrpWifiMode == "STATION",
-                onClick = { onWifiModeChanged("STATION") },
-                enabled = enabled,
-                label = { Text("Join an existing network") },
-            )
-        }
-        IdentityField(
-            label = "Wi-Fi network name (SSID)",
-            value = state.draft.xrpSsid,
-            onValueChange = { onUpdate(ProjectIdentityField.XRP_SSID, it) },
-            error = state.fieldErrors[ProjectIdentityField.XRP_SSID],
-            enabled = enabled,
-            help = "The network the laptop and XRP use together. Passwords remain in the untracked xrp_secrets.py file.",
-        )
-        GeometryRow(
-            firstLabel = "XRP Link port",
-            firstValue = state.draft.xrpLinkPort,
-            firstError = state.fieldErrors[ProjectIdentityField.XRP_LINK_PORT],
-            onFirst = { onUpdate(ProjectIdentityField.XRP_LINK_PORT, it) },
-            firstHelp = "Dedicated JSONL control/telemetry port; 5810 is reserved for NT4.",
-            secondLabel = "Deadman timeout (ms)",
-            secondValue = state.draft.xrpDeadmanTimeoutMs,
-            secondError = state.fieldErrors[ProjectIdentityField.XRP_DEADMAN_TIMEOUT],
-            onSecond = { onUpdate(ProjectIdentityField.XRP_DEADMAN_TIMEOUT, it) },
-            secondHelp = "Motors stop when fresh commands do not arrive within this interval.",
-            enabled = enabled,
-        )
-        IdentityField(
-            label = "Brownout threshold (volts)",
-            value = state.draft.xrpBrownoutThresholdVolts,
-            onValueChange = { onUpdate(ProjectIdentityField.XRP_BROWNOUT_THRESHOLD, it) },
-            error = state.fieldErrors[ProjectIdentityField.XRP_BROWNOUT_THRESHOLD],
-            enabled = enabled,
-            help = "Commands fail closed below this project-specific XRP battery voltage.",
-        )
-    }
-}
-
-@Composable
-@OptIn(ExperimentalLayoutApi::class)
-private fun FtcRuntimeOptionsEditor(
-    transport: AresFtcHubCommandTransport,
-    limelightProxyEnabled: Boolean,
-    enabled: Boolean,
-    onTransportChanged: (AresFtcHubCommandTransport) -> Unit,
-    onLimelightProxyChanged: (Boolean) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("Control Hub runtime", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-            Text(
-                "Choose how this robot sends motor commands. The choice is saved with the project, generated into robot code, and reported back on the dashboard.",
-                color = AresTextSecondary,
-                fontSize = 11.sp,
-            )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip(
-                selected = transport == AresFtcHubCommandTransport.STANDARD_SDK,
-                onClick = { onTransportChanged(AresFtcHubCommandTransport.STANDARD_SDK) },
-                enabled = enabled,
-                label = { Text("Standard FTC SDK · recommended") },
-            )
-            FilterChip(
-                selected = transport == AresFtcHubCommandTransport.ARES_PHOTON,
-                onClick = { onTransportChanged(AresFtcHubCommandTransport.ARES_PHOTON) },
-                enabled = enabled,
-                label = { Text("ARES Photon · experimental") },
-            )
-        }
-        Text(
-            if (transport == AresFtcHubCommandTransport.ARES_PHOTON) {
-                "Experimental: ARES may use a lower-overhead direct REV Hub write path. Every unsupported or failed command falls back to the FTC SDK. Verify it on restrained physical hardware before competition. Local simulation shows it as selected but not hardware-active."
-            } else {
-                "Uses the supported FTC SDK command path with ARES cached reads and safety handling. This is the safest starting point for a new robot."
-            },
-            color = if (transport == AresFtcHubCommandTransport.ARES_PHOTON) AresGold else AresTextSecondary,
-            fontSize = 11.sp,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Limelight camera proxy", color = AresTextPrimary, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "Off by default. Enable only when the laptop must reach Limelight web/video ports through the Control Hub.",
-                    color = AresTextSecondary,
-                    fontSize = 11.sp,
-                )
-            }
-            Switch(
-                checked = limelightProxyEnabled,
-                onCheckedChange = onLimelightProxyChanged,
-                enabled = enabled,
-            )
-        }
-    }
-}
-
-@Composable
-private fun GeometryRow(
+internal fun GeometryRow(
     firstLabel: String,
     firstValue: String,
     firstError: String?,
@@ -623,7 +491,7 @@ private fun GeometryRow(
 }
 
 @Composable
-private fun IdentityField(
+internal fun IdentityField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,

@@ -470,33 +470,6 @@ private fun RobotDetails(
 }
 
 @Composable
-private fun LeagueSelector(league: League, onLeagueChange: (League) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text("Competition", style = MaterialTheme.typography.labelSmall, color = AresTextSecondary)
-        Row(
-            modifier = Modifier.fillMaxWidth().border(1.dp, AresBorder, RoundedCornerShape(8.dp)),
-        ) {
-            League.entries.forEach { option ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(if (league == option) AresCyanGlow else Color.Transparent)
-                        .clickable { onLeagueChange(option) }
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        option.name,
-                        color = if (league == option) AresCyan else AresTextSecondary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun RobotProfilePicker(
     robots: List<RobotProfile>,
     selectedOptionText: String,

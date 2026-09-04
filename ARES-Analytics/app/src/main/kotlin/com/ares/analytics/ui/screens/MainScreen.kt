@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.di.ServiceRegistry
 import com.ares.analytics.service.BuildExecutionPhase
-import com.ares.analytics.service.XrpLinkService
 import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
@@ -56,14 +55,9 @@ import com.ares.analytics.viewmodel.tuning.GuidedExperimentProposal
 import com.ares.analytics.viewmodel.tuning.GuidedTuningExperimentViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModel
-import com.areslib.project.AresProjectMetadataCodec
-import com.areslib.project.requireXrpRuntimeOptions
-import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Root UI frame container and screen routing shell for the ARES Robotics Studio desktop application.
@@ -520,24 +514,6 @@ fun MainScreen(services: ServiceRegistry) {
         }
     }
 
-    LaunchedEffect(liveRobotIp, currentConfig.league, currentConfig.projectPath, stableProjectContentHash) {
-        val scanPort = if (currentConfig.league == League.XRP) {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    AresProjectMetadataCodec.decode(
-                        File(currentConfig.projectPath, ".ares/project.json").readText(),
-                    ).requireXrpRuntimeOptions().port
-                }.getOrDefault(XrpLinkService.DEFAULT_PORT)
-            }
-        } else {
-            5810
-        }
-        services.targetScannerService.startScanning(
-            liveRobotHost = liveRobotIp,
-            port = scanPort,
-        )
-    }
-
     // Auto-switch based on Most Recently Booted / Online status
     LaunchedEffect(isLocalSimOnline, isSimRunning, isLiveRobotOnline) {
         if (isLocalSimOnline || isSimRunning) {
@@ -547,54 +523,15 @@ fun MainScreen(services: ServiceRegistry) {
         }
     }
 
-    // Start NT4 connection once config is resolved or target/simulator status changes
-    LaunchedEffect(currentConfig, targetSelection, liveRobotIp, isSimRunning, stableProjectContentHash) {
-        println(
-            "[MainScreen LaunchedEffect] RUNNING: workspace=${currentConfig.id}, " +
-                "targetSelection=$targetSelection, isSimRunning=$isSimRunning",
-        )
-        focusRequester.requestFocus()
-        val host = if (targetSelection == TargetSelection.LOCAL_SIM) {
-            "127.0.0.1"
-        } else {
-            liveRobotIp
-        }
-        println("[MainScreen LaunchedEffect] Computed host=$host")
-        if (currentConfig.league == League.XRP) {
-            services.nt4ClientService.stop()
-            val metadata = withContext(Dispatchers.IO) {
-                runCatching {
-                    AresProjectMetadataCodec.decode(
-                        File(currentConfig.projectPath, ".ares/project.json").readText(),
-                    )
-                }.getOrNull()
-            }
-            if (metadata == null) {
-                services.xrpLinkService.stop()
-                return@LaunchedEffect
-            }
-            val options = metadata.requireXrpRuntimeOptions()
-            services.alertEngineService.configureRobotContext(
-                league = League.XRP,
-                xrpBrownoutThresholdVolts = options.brownoutThresholdVolts,
-            )
-            services.xrpLinkService.start(
-                host = host,
-                port = options.port,
-                expectedProjectId = metadata.projectId,
-            )
-        } else {
-            services.alertEngineService.configureRobotContext(currentConfig.league)
-            services.xrpLinkService.stop()
-            services.nt4ClientService.start(
-                host = host,
-                teamId = currentConfig.teamId,
-                seasonId = currentConfig.seasonId,
-                robotId = currentConfig.robotId
-            )
-            services.phoenixDiagnosticsService.start(host = host)
-        }
-    }
+    RobotConnectionCoordinator(
+        services = services,
+        config = currentConfig,
+        targetSelection = targetSelection,
+        liveRobotIp = liveRobotIp,
+        simulatorRunning = isSimRunning,
+        canonicalContentHash = stableProjectContentHash,
+        focusRequester = focusRequester,
+    )
 
     Box(
         modifier = Modifier

@@ -12,8 +12,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import javax.sound.sampled.AudioFormat
-import javax.sound.sampled.AudioSystem
 
 /**
  * High-performance real-time **Emergency Fault Alert & Diagnostic Engine**.
@@ -77,7 +75,7 @@ class AlertEngineService(
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
 
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private val audioMutex = kotlinx.coroutines.sync.Mutex()
+    private val audioNotifier = AlertAudioNotifier()
 
     // Active alert state: AlertId -> AlertRecord
     private val _alerts = MutableStateFlow<Map<String, AlertRecord>>(emptyMap())
@@ -96,9 +94,7 @@ class AlertEngineService(
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
 
     private var engineJob: Job? = null
-    private var lastBeepTime = 0L
-    @Volatile private var activeLeague: League = League.FTC
-    @Volatile private var xrpBatteryMinimumVolts: Double = DEFAULT_XRP_BATTERY_MINIMUM_VOLTS
+    private val platformThresholds = PlatformAlertThresholds()
 
     init {
         loadRules()
@@ -159,13 +155,8 @@ class AlertEngineService(
 
     /** Selects platform-correct live safety thresholds without rewriting saved user rules. */
     fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
-        activeLeague = league
-        xrpBatteryMinimumVolts = xrpBrownoutThresholdVolts
-            ?.takeIf { it.isFinite() && it in 3.0..6.0 }
-            ?: DEFAULT_XRP_BATTERY_MINIMUM_VOLTS
-        _alerts.update { current ->
-            current.filterValues { normalizeTopic(it.ruleKey) != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey }
-        }
+        platformThresholds.configure(league, xrpBrownoutThresholdVolts)
+        _alerts.update { it.filterValues { alert -> normalizeTopic(alert.ruleKey) != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey } }
     }
 
     /**
@@ -198,8 +189,7 @@ class AlertEngineService(
         if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys ||
             frame.key.trimStart('/') in TelemetryMetricCatalog.LOOP_TIME.keys
         ) return
-        val configuredRule = rules[normalizedKey] ?: return
-        val rule = effectiveRule(normalizedKey, configuredRule)
+        val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
         val value = frame.value
 
         val minVal = rule.minValue
@@ -480,42 +470,7 @@ class AlertEngineService(
         }
     }
 
-    private fun triggerAudibleAlert() {
-        val now = System.currentTimeMillis()
-        if (now - lastBeepTime > 1500) {
-            lastBeepTime = now
-            serviceScope.launch(Dispatchers.IO) {
-                if (audioMutex.tryLock()) {
-                    try {
-                        runCatching {
-                            playBeepTone(1000f, 100)
-                            delay(50)
-                            playBeepTone(1200f, 150)
-                        }
-                    } finally {
-                        audioMutex.unlock()
-                    }
-                }
-            }
-        }
-    }
-
-    private fun playBeepTone(frequency: Float, durationMs: Int) {
-        val sampleRate = 8000f
-        val numSamples = (durationMs * sampleRate / 1000).toInt()
-        val buf = ByteArray(numSamples)
-        for (i in 0 until numSamples) {
-            val angle = i / (sampleRate / frequency) * 2.0 * Math.PI
-            buf[i] = (Math.sin(angle) * 127.0).toInt().toByte()
-        }
-        val format = AudioFormat(sampleRate, 8, 1, true, true)
-        val line = AudioSystem.getSourceDataLine(format)
-        line.open(format)
-        line.start()
-        line.write(buf, 0, buf.size)
-        line.drain()
-        line.close()
-    }
+    private fun triggerAudibleAlert() = audioNotifier.trigger(serviceScope)
 
     /**
      * Retrieves human-readable display name for a rule key.
@@ -525,20 +480,8 @@ class AlertEngineService(
      */
     fun getRuleDisplayName(key: String): String {
         val normalized = normalizeTopic(key)
-        return rules[normalized]?.let { effectiveRule(normalized, it).displayName } ?: key
+        return rules[normalized]?.let { platformThresholds.effectiveRule(normalized, it).displayName } ?: key
     }
-
-    private fun effectiveRule(normalizedKey: String, configuredRule: ThresholdRule): ThresholdRule {
-        if (normalizedKey != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey || activeLeague != League.XRP) {
-            return configuredRule
-        }
-        return configuredRule.copy(
-            displayName = "Low XRP Battery Voltage (<${formatVoltage(xrpBatteryMinimumVolts)}V)",
-            minValue = xrpBatteryMinimumVolts,
-        )
-    }
-
-    private fun formatVoltage(value: Double): String = "%.2f".format(java.util.Locale.ROOT, value)
 
     private fun registerRule(rule: ThresholdRule) {
         rules[normalizeTopic(rule.key)] = rule
@@ -552,6 +495,5 @@ class AlertEngineService(
         const val LOOP_OVERRUN_THRESHOLD_MS = 25.0
         const val LOOP_SEVERE_THRESHOLD_MS = 100.0
         const val LOOP_OVERRUN_SAMPLE_COUNT = 3
-        const val DEFAULT_XRP_BATTERY_MINIMUM_VOLTS = 4.3
     }
 }

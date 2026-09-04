@@ -353,23 +353,6 @@ fun HardwareInspectorBody(
     }
 }
 
-private fun defaultVisualPlacement(kind: SubsystemHardwareKind): SubsystemVisualPlacementDocument =
-    if (kind == SubsystemHardwareKind.PRISM_DRIVER) {
-        placementForAnchor(SubsystemVisualAnchor.UNDERBODY)
-    } else {
-        placementForAnchor(SubsystemVisualAnchor.LEFT_SIDE)
-    }
-
-private fun placementForAnchor(anchor: SubsystemVisualAnchor): SubsystemVisualPlacementDocument = when (anchor) {
-    SubsystemVisualAnchor.LEFT_SIDE -> SubsystemVisualPlacementDocument(anchor, leftFraction = 0.5)
-    SubsystemVisualAnchor.RIGHT_SIDE -> SubsystemVisualPlacementDocument(anchor, leftFraction = -0.5)
-    SubsystemVisualAnchor.FRONT -> SubsystemVisualPlacementDocument(anchor, forwardFraction = 0.5)
-    SubsystemVisualAnchor.REAR -> SubsystemVisualPlacementDocument(anchor, forwardFraction = -0.5)
-    SubsystemVisualAnchor.CENTER,
-    SubsystemVisualAnchor.UNDERBODY,
-    SubsystemVisualAnchor.UNSPECIFIED -> SubsystemVisualPlacementDocument(anchor)
-}
-
 @Composable
 private fun MotorMechanismConversionAssistant(
     document: SubsystemDocument,
