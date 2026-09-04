@@ -159,6 +159,83 @@ class RobotVerificationReportLoaderTest {
         }
     }
 
+    @Test
+    fun `xrp python junit evidence joins generated contracts without pretending it is physical proof`() {
+        val root = Files.createTempDirectory("ares-xrp-verification-report").toFile()
+        try {
+            val document = SubsystemTemplates.create(
+                template = SubsystemTemplate.DIGITAL_OUTPUT,
+                platform = SubsystemPlatform.XRP,
+                documentId = "status-output",
+                displayName = "Status output",
+                kotlinTypeName = "StatusOutput",
+            )
+            val descriptor = root.resolve(".ares/subsystems/status-output.aressubsystem")
+            descriptor.parentFile.mkdirs()
+            descriptor.writeText(SubsystemDocumentCodec.encode(document))
+            writeResults(
+                root.resolve("build/test-results/test/TEST-ares-xrp-generated.xml"),
+                className = "test_generated_safety.GeneratedSafetyTest",
+                methods = listOf(
+                    "test_generated_project_identity_and_footprint_are_valid",
+                    "test_generated_drivetrain_safety_contract_is_valid",
+                    "test_generated_controls_resolve_typed_project_targets",
+                    "test_generated_autonomous_graph_is_closed",
+                    "test_generated_superstructure_references_and_interlocks_are_valid",
+                    "test_generated_subsystems_start_and_stop_neutral",
+                    "test_generated_subsystems_latch_failed_writes",
+                    "test_declared_target_limits_reject_out_of_range_values",
+                    "test_generated_subsystems_fail_closed_on_invalid_feedback",
+                    "test_generated_subsystem_actions_update_state",
+                    "test_generated_subsystems_recover_only_after_successful_neutral",
+                ),
+            )
+            writeResults(
+                root.resolve("build/test-results/test/TEST-ares-xrp-platform.xml"),
+                className = "test_generated_project.GeneratedProjectTest",
+                methods = listOf("test_stock_xrp_output_buzzer_and_full_imu_adapters"),
+            )
+            writeResults(
+                root.resolve("build/test-results/test/TEST-ares-xrp-simulator.xml"),
+                className = "test_xrp_simulator.XrpSimulatorIntegrationTest",
+                methods = listOf(
+                    "test_simulator_robot_accepts_leased_drive_and_updates_odometry",
+                    "test_simulator_robot_neutralizes_after_control_lease_loss",
+                ),
+            )
+
+            val report = RobotVerificationReportLoader.load(root, League.XRP, 0, provenance(0))
+
+            assertEquals(
+                0,
+                report.failedCount,
+                report.items.filter { it.status == VerificationResultStatus.FAILED }
+                    .joinToString("\n") { "${it.id}: ${it.advancedDetails}" },
+            )
+            assertEquals(0, report.blockedCount)
+            assertTrue(report.readyForPhysicalValidation)
+            assertTrue(report.items.any {
+                it.id == "status-output.actions.generated" &&
+                    it.status == VerificationResultStatus.PASSED
+            })
+            assertTrue(report.items.any {
+                it.id == "project.platform-integration" &&
+                    it.status == VerificationResultStatus.PASSED
+            })
+            assertTrue(report.items.any {
+                it.id == "project.simulator" &&
+                    it.status == VerificationResultStatus.PASSED &&
+                    it.evidenceLevel == VerificationEvidenceLevel.SIMULATION_VERIFIED
+            })
+            assertTrue(report.items.any {
+                it.id == "project.physical-checklist" &&
+                    it.status == VerificationResultStatus.NOT_RUN
+            })
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     private fun writeResults(file: java.io.File, className: String, methods: List<String>) {
         file.parentFile.mkdirs()
         file.writeText(

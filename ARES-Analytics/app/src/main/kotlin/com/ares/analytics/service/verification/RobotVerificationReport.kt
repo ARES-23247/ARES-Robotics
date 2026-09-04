@@ -11,6 +11,7 @@ import com.areslib.routine.validateAutonomousCatalog
 import com.areslib.routine.validateRoutineSet
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemDocumentCodec
+import com.areslib.subsystem.SubsystemGeneratedTestNames
 import com.areslib.subsystem.SubsystemVerificationEvidence
 import com.areslib.subsystem.subsystemVerificationContract
 import com.areslib.subsystem.SubsystemSchema
@@ -83,6 +84,12 @@ object RobotVerificationReportLoader {
         val root = projectRoot.canonicalFile
         val testCases = resultRoots(root, league).flatMap { (layer, directory) ->
             readTestCases(directory, layer)
+        }.map { result ->
+            if (league == League.XRP && result.className.endsWith(".XrpSimulatorIntegrationTest")) {
+                result.copy(layer = VerificationLayer.SIMULATOR)
+            } else {
+                result
+            }
         }
         val subsystemLoads = loadSubsystemDocuments(root)
         val documents = subsystemLoads.mapNotNull { it.document }
@@ -121,8 +128,16 @@ object RobotVerificationReportLoader {
             val classSuffix = ".${document.kotlinTypeName}GeneratedTest"
             subsystemVerificationContract(document).forEach { check ->
                 val matching = check.testMethodName?.let { method ->
-                    testCases.firstOrNull { result ->
-                        result.name == method && (result.className.endsWith(classSuffix) || result.className == document.kotlinTypeName + "GeneratedTest")
+                    if (league == League.XRP) {
+                        xrpSubsystemTestName(method)?.let { xrpName ->
+                            testCases.firstOrNull { result ->
+                                result.name == xrpName && result.className.endsWith(".GeneratedSafetyTest")
+                            }
+                        }
+                    } else {
+                        testCases.firstOrNull { result ->
+                            result.name == method && (result.className.endsWith(classSuffix) || result.className == document.kotlinTypeName + "GeneratedTest")
+                        }
                     }
                 }
                 val status = when (check.evidence) {
@@ -162,8 +177,13 @@ object RobotVerificationReportLoader {
         }
 
         PROJECT_GENERATED_CHECKS.forEach { check ->
+            val expectedName = if (league == League.XRP) xrpProjectTestName(check.methodName) else check.methodName
             val matching = testCases.firstOrNull { result ->
-                result.name == check.methodName && result.className.endsWith(PROJECT_GENERATED_TEST_CLASS)
+                result.name == expectedName && if (league == League.XRP) {
+                    result.className.endsWith(".GeneratedSafetyTest")
+                } else {
+                    result.className.endsWith(PROJECT_GENERATED_TEST_CLASS)
+                }
             }
             items += VerificationReportItem(
                 id = check.id,
@@ -194,12 +214,16 @@ object RobotVerificationReportLoader {
             },
             buildExitCode = buildExitCode,
         )
-        if (league == League.FTC) {
+        if (league == League.FTC || league == League.XRP) {
             items += aggregateLayer(
                 id = "project.simulator",
                 layer = VerificationLayer.SIMULATOR,
                 title = "Desktop simulator integration tests",
-                explanation = "The FTC project simulator, OpMode lifecycle, controls, telemetry, and mock hardware integration ran outside the generated subsystem suites.",
+                explanation = if (league == League.XRP) {
+                    "The XRP desktop simulator exercised leased controls, odometry, neutral-on-disconnect behavior, telemetry boundaries, and mock hardware outside the generated subsystem suites."
+                } else {
+                    "The FTC project simulator, OpMode lifecycle, controls, telemetry, and mock hardware integration ran outside the generated subsystem suites."
+                },
                 results = testCases.filter { it.layer == VerificationLayer.SIMULATOR },
                 buildExitCode = buildExitCode,
             )
@@ -222,7 +246,11 @@ object RobotVerificationReportLoader {
             id = "project.physical-checklist",
             layer = VerificationLayer.PHYSICAL_VALIDATION,
             title = "Supervised robot checklist",
-            explanation = "On the disabled robot, confirm wiring and device names; then verify direction, safe neutral, limits, sensors, both indicator lights, and Prism output under team supervision.",
+            explanation = when (league) {
+                League.FTC -> "On the disabled robot, confirm wiring and device names; then verify direction, safe neutral, limits, sensors, both indicator lights, and Prism output under team supervision."
+                League.FRC -> "On the disabled robot, confirm CAN identities and wiring; then verify direction, encoder polarity, safe neutral, limits, sensors, and brownout behavior under team supervision."
+                League.XRP -> "With the XRP safely lifted, confirm its board and runtime identity; then verify each motor direction, encoder polarity, safe neutral, lease-loss stop, battery threshold, built-in sensors, and declared expansion I/O."
+            },
             status = VerificationResultStatus.NOT_RUN,
             evidenceLevel = VerificationEvidenceLevel.PHYSICAL_VALIDATION_REQUIRED,
             source = "Physical commissioning checklist",
@@ -477,6 +505,27 @@ object RobotVerificationReportLoader {
         val title: String,
         val explanation: String,
     )
+
+    private fun xrpSubsystemTestName(methodName: String): String? = when (methodName) {
+        SubsystemGeneratedTestNames.SAFE_STARTUP,
+        SubsystemGeneratedTestNames.DISABLED_STOP -> "test_generated_subsystems_start_and_stop_neutral"
+        SubsystemGeneratedTestNames.OUTPUT_FAULT_POLICY -> "test_generated_subsystems_latch_failed_writes"
+        SubsystemGeneratedTestNames.CONTROL_LIMITS -> "test_declared_target_limits_reject_out_of_range_values"
+        SubsystemGeneratedTestNames.INVALID_AND_CLEANUP -> "test_generated_subsystems_fail_closed_on_invalid_feedback"
+        SubsystemGeneratedTestNames.STALE_FEEDBACK -> "test_generated_subsystems_reject_failed_feedback_reads"
+        SubsystemGeneratedTestNames.NEUTRAL_RECOVERY -> "test_generated_subsystems_recover_only_after_successful_neutral"
+        SubsystemGeneratedTestNames.GENERATED_ACTIONS -> "test_generated_subsystem_actions_update_state"
+        else -> null
+    }
+
+    private fun xrpProjectTestName(methodName: String): String = when (methodName) {
+        ProjectGeneratedTestNames.PROJECT_IDENTITY -> "test_generated_project_identity_and_footprint_are_valid"
+        ProjectGeneratedTestNames.DRIVETRAIN_SAFETY -> "test_generated_drivetrain_safety_contract_is_valid"
+        ProjectGeneratedTestNames.CONTROLS -> "test_generated_controls_resolve_typed_project_targets"
+        ProjectGeneratedTestNames.AUTONOMOUS -> "test_generated_autonomous_graph_is_closed"
+        ProjectGeneratedTestNames.SUPERSTRUCTURE -> "test_generated_superstructure_references_and_interlocks_are_valid"
+        else -> methodName
+    }
 
     private const val PROJECT_GENERATED_TEST_CLASS = ".GeneratedAresProjectContractTest"
     private val PROJECT_GENERATED_CHECKS = listOf(

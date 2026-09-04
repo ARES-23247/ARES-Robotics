@@ -29,7 +29,7 @@ def _ticks_diff(now, then):
 
 class XrpTelemetryServer:
     def __init__(self, project_id, content_sha256, drivetrain_type,
-                 host="0.0.0.0", port=5811, deadman_timeout_ms=200):
+                 host="0.0.0.0", port=5811, deadman_timeout_ms=200, runtime_identity=None):
         if not isinstance(project_id, str) or not project_id:
             raise ValueError("XRP link requires a canonical project ID")
         if not isinstance(content_sha256, str) or len(content_sha256) != 64:
@@ -57,9 +57,22 @@ class XrpTelemetryServer:
         self.active_selected_opmode = ""
         self.armed = False
         self.deadman_timeout_ms = int(deadman_timeout_ms)
+        self.runtime_identity = dict(runtime_identity or {})
 
         self.sequence = 0
+        self.field_sequence = 0
+        self.field_session = "%s-%s" % (project_id, _ticks_ms())
+        self.field_config_handler = None
         self._recv_buffer = ""
+
+    def set_field_config_handler(self, handler):
+        """Installs the desktop-simulator field replacement hook.
+
+        Physical XRP runtimes intentionally leave this unset.  A field update is
+        acknowledged only after the simulator has decoded and installed the exact
+        canonical payload.
+        """
+        self.field_config_handler = handler
 
     def start(self):
         """Binds and starts listening on non-blocking server socket."""
@@ -89,8 +102,15 @@ class XrpTelemetryServer:
                 self.is_connected = True
                 self._recv_buffer = ""
                 self._send(self.hello_payload())
+            except OSError as error:
+                # A non-blocking socket reports "no bytes available" as would-block;
+                # every other socket error means the peer is gone and must release
+                # the single XRP connection slot so Studio can reconnect.
+                error_code = error.args[0] if error.args else None
+                if error_code not in (11, 35, 10035):
+                    self.close_client()
             except Exception:
-                pass
+                self.close_client()
 
         # If connected, read pending data
         if self.is_connected and self.client_socket:
@@ -101,10 +121,24 @@ class XrpTelemetryServer:
                 else:
                     self._recv_buffer += chunk.decode('utf-8', 'ignore')
                     self._process_buffer()
+            except OSError as error:
+                # Only a would-block error means there is simply no complete
+                # command available yet. A reset/broken pipe is a disconnected
+                # peer and must release the single Studio connection slot.
+                error_code = error.args[0] if error.args else None
+                if error_code not in (11, 35, 10035):
+                    self.close_client()
             except Exception:
-                pass
+                self.close_client()
 
-    def publish_pose_frame(self, x, y, heading_rad, battery_volts=6.0, mode="TELEOP"):
+    def now_ms(self):
+        return _ticks_ms()
+
+    def elapsed_ms(self, since_ms):
+        return _ticks_diff(_ticks_ms(), since_ms)
+
+    def publish_pose_frame(self, x, y, heading_rad, battery_volts=6.0, mode="TELEOP",
+                           faulted=False, loop_time_ms=0, subsystems=None):
         """Publishes atomic pose and robot state to connected Studio client."""
         if not self.is_connected or self.client_socket is None:
             return
@@ -122,11 +156,14 @@ class XrpTelemetryServer:
             "mode": mode,
             "timestampMs": _ticks_ms(),
             "armed": self.armed,
+            "faulted": bool(faulted),
+            "loopTimeMs": loop_time_ms,
+            "subsystems": subsystems or {},
         }
         self._send(payload)
 
     def hello_payload(self):
-        return {
+        payload = {
             "protocol": PROTOCOL,
             "type": "hello",
             "role": "robot",
@@ -134,6 +171,8 @@ class XrpTelemetryServer:
             "contentSha256": self.content_sha256,
             "drivetrainType": self.drivetrain_type,
         }
+        payload.update(self.runtime_identity)
+        return payload
 
     def get_drive_frame(self):
         """Returns latest (vx, vy, omega) drive frame from Studio, or None."""
@@ -185,7 +224,12 @@ class XrpTelemetryServer:
                 continue
             try:
                 msg = json.loads(line)
-                if msg.get("protocol") != PROTOCOL or msg.get("type") != "control":
+                if msg.get("protocol") != PROTOCOL:
+                    continue
+                if msg.get("type") == "fieldConfig":
+                    self._apply_field_config(msg)
+                    continue
+                if msg.get("type") != "control":
                     continue
                 session_id = msg.get("sessionId")
                 sequence = msg.get("sequence")
@@ -241,3 +285,42 @@ class XrpTelemetryServer:
                     self.neutralize()
             except Exception:
                 self.neutralize()
+
+    def _apply_field_config(self, msg):
+        self.field_sequence += 1
+        base = {
+            "protocol": PROTOCOL,
+            "session": self.field_session,
+            "sequence": self.field_sequence,
+            "configId": str(msg.get("configId", "")),
+            "revision": msg.get("revision"),
+            "sha256": str(msg.get("sha256", "")),
+        }
+        try:
+            if self.field_config_handler is None:
+                raise ValueError("this XRP runtime does not support live field replacement")
+            payload = msg.get("payload")
+            if not isinstance(payload, str) or not payload:
+                raise ValueError("field payload is missing")
+            result = self.field_config_handler(payload)
+            if (
+                result.get("configId") != base["configId"]
+                or result.get("revision") != base["revision"]
+                or result.get("sha256") != base["sha256"]
+            ):
+                raise ValueError("field identity did not match the canonical payload")
+            response = dict(base)
+            response.update({
+                "type": "fieldApplied",
+                "obstacleCount": int(result.get("obstacleCount", 0)),
+                "elementCount": int(result.get("elementCount", 0)),
+                "aprilTagCount": int(result.get("aprilTagCount", 0)),
+            })
+            self._send(response)
+        except Exception as error:
+            response = dict(base)
+            response.update({
+                "type": "fieldRejected",
+                "message": str(error) or "field configuration was rejected",
+            })
+            self._send(response)

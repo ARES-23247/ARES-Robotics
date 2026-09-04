@@ -10,6 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "build" / "generated" / "ares" / "python"))
 sys.path.insert(0, str(ROOT / "lib"))
 sys.path.insert(0, str(ROOT.parent / "ARESLib-Kotlin" / "ares-micro"))
+sys.path.insert(0, str(ROOT / "simulator"))
 
 from generated_ares_project import (
     AUTONOMOUS_ROUTINES,
@@ -20,6 +21,7 @@ from generated_ares_project import (
     create_subsystems,
 )
 from ares_micro import XrpRobot, mock_hardware_factory
+from field_collision import FieldCollisionConstraint
 
 
 class SimMotor:
@@ -40,28 +42,7 @@ class SimMotor:
 
 
 def main():
-    motor_count = 4 if PROJECT["drivetrain_type"] == "mecanum" else 2
-    motors = tuple(SimMotor(PROJECT["max_linear_speed_mps"]) for _ in range(motor_count))
-    robot = XrpRobot(
-        project_id=PROJECT["project_id"],
-        content_sha256=CONTENT_SHA256,
-        drivetrain_type=PROJECT["drivetrain_type"],
-        use_otos=False,
-        motors=motors,
-        link_port=PROJECT["link_port"],
-        deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
-        brownout_threshold_volts=PROJECT["brownout_threshold_volts"],
-        battery_voltage_supplier=lambda: 6.0 - 0.6 * max(abs(motor.effort) for motor in motors),
-        track_width=PROJECT["track_width_meters"],
-        wheel_base=PROJECT["wheel_base_meters"],
-        wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,
-        max_linear_speed=PROJECT["max_linear_speed_mps"],
-    )
-    robot.set_subsystems(create_subsystems(mock_hardware_factory, simulation=True))
-    robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
-    if DEFAULT_AUTONOMOUS_ID in AUTONOMOUS_ROUTINES:
-        pose = AUTONOMOUS_ROUTINES[DEFAULT_AUTONOMOUS_ID]["starting_pose"]
-        robot.drivetrain.reset_pose(pose["xMeters"], pose["yMeters"], pose["headingRadians"])
+    robot, motors = create_simulated_robot()
     if not robot.start_server():
         raise RuntimeError("XRP simulator could not bind its control link port")
     running = True
@@ -84,6 +65,40 @@ def main():
         robot.step(dt=dt)
         time.sleep(max(0.0, 0.02 - (time.monotonic() - now)))
     robot.drivetrain.stop()
+
+
+def create_simulated_robot():
+    motor_count = 4 if PROJECT["drivetrain_type"] == "mecanum" else 2
+    motors = tuple(SimMotor(PROJECT["max_linear_speed_mps"]) for _ in range(motor_count))
+    robot = XrpRobot(
+        project_id=PROJECT["project_id"],
+        content_sha256=CONTENT_SHA256,
+        drivetrain_type=PROJECT["drivetrain_type"],
+        use_otos=False,
+        motors=motors,
+        link_port=PROJECT["link_port"],
+        deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
+        brownout_threshold_volts=PROJECT["brownout_threshold_volts"],
+        battery_voltage_supplier=lambda: 6.0 - 0.6 * max(abs(motor.effort) for motor in motors),
+        track_width=PROJECT["track_width_meters"],
+        wheel_base=PROJECT["wheel_base_meters"],
+        wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,
+        max_linear_speed=PROJECT["max_linear_speed_mps"],
+    )
+    robot.set_subsystems(create_subsystems(mock_hardware_factory, simulation=True))
+    collision = FieldCollisionConstraint(
+        ROOT / "deploy" / "paths" / "field.json",
+        robot_length=PROJECT["robot_length_meters"],
+        robot_width=PROJECT["robot_width_meters"],
+    )
+    robot.set_pose_constraint(collision.constrain)
+    robot.field_collision = collision
+    robot.telemetry.set_field_config_handler(collision.apply_payload)
+    robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
+    if DEFAULT_AUTONOMOUS_ID in AUTONOMOUS_ROUTINES:
+        pose = AUTONOMOUS_ROUTINES[DEFAULT_AUTONOMOUS_ID]["starting_pose"]
+        robot.drivetrain.reset_pose(pose["xMeters"], pose["yMeters"], pose["headingRadians"])
+    return robot, motors
 
 
 if __name__ == "__main__":

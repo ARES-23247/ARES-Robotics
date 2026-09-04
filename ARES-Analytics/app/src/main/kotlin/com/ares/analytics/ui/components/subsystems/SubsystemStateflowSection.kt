@@ -217,6 +217,8 @@ fun ControlInspectorBody(
     val outputUnit = when (actuator?.kind) {
         SubsystemHardwareKind.MOTOR -> "V"
         SubsystemHardwareKind.PRISM_DRIVER -> "µs"
+        SubsystemHardwareKind.BUZZER -> "MIDI note"
+        SubsystemHardwareKind.DIGITAL_OUTPUT -> "0 / 1"
         else -> "normalized"
     }
     var showControlLab by remember(loop.uid) { mutableStateOf(false) }

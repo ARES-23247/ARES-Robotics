@@ -420,6 +420,22 @@ class FieldEditorInteractionTest {
         assertTrue(FieldPrefabCatalog.forLeague(League.FTC).any { it.id == "decode-ball" })
         assertFalse(FieldPrefabCatalog.forLeague(League.FRC).any { it.id == "decode-ball" })
         assertTrue(FieldPrefabCatalog.forLeague(League.FRC).any { it.id == "note" })
+        assertTrue(FieldPrefabCatalog.forLeague(League.XRP).any { it.id == "tabletop-block" })
+        assertFalse(FieldPrefabCatalog.forLeague(League.XRP).any { it.id == "space-station" })
+    }
+
+    @Test
+    fun xrpPrefabsAreInsertedAtTheCenteredCoordinateOrigin() {
+        val viewModel = FieldEditorViewModel(CoroutineScope(SupervisorJob() + Dispatchers.Unconfined))
+        viewModel.onIntent(FieldEditorIntent.LoadConfig(null, League.XRP))
+
+        viewModel.onIntent(FieldEditorIntent.AddPrefab("tabletop-block"))
+
+        val block = viewModel.state.value.obstacles.single() as Obstacle.Rectangle
+        assertEquals(0.0, block.centerX)
+        assertEquals(0.0, block.centerY)
+        assertEquals(0.2, block.width)
+        assertEquals(0.2, block.height)
     }
 
     @Test

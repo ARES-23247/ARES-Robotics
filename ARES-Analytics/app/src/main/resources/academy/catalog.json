@@ -181,20 +181,20 @@
       "level": "STARTER",
       "track": "DRIVETRAIN",
       "title": "Launch Simulator & Drivetrain Telemetry",
-      "outcome": "Start the local JVM physics simulator, drive a holonomic chassis with live gamepad/keyboard input, and observe CCW+ heading and wheel speed telemetry.",
+      "outcome": "Start the platform-appropriate local physics simulator, drive a supported chassis with live gamepad/keyboard input, and observe CCW+ heading and wheel speed telemetry.",
       "durationMinutes": 5,
       "destination": "DASHBOARD",
       "action": "START_SIMULATOR",
       "requiresRobot": false,
       "beforeYouStart": [
-        "Open a configured FTC or FRC project workspace.",
+        "Open a configured FTC, FRC, or XRP project workspace.",
         "No robot hardware is required."
       ],
       "steps": [
         "Select Local Sim in the execution toolbar.",
         "Choose Start simulator and wait for the status to become connected.",
         "Open Dashboard and find pose, motor, and system-health telemetry.",
-        "Drive with WASD or connected USB gamepad to observe holonomic chassis motion.",
+        "Drive with WASD or a connected USB gamepad to observe the configured chassis motion.",
         "Stop the simulator when you finish so no background process remains."
       ],
       "successLooksLike": "The app reports a local simulator connection, chassis speeds reflect driver input, and dashboard telemetry updates in real time.",

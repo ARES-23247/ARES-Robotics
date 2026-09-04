@@ -10,8 +10,11 @@ class MockXrpDevice:
         self.readings = readings or {}
         self.last_output = None
         self.fail_writes = False
+        self.fail_reads = False
 
     def read(self, source):
+        if self.fail_reads:
+            raise OSError("simulated XRP read failure")
         return self.readings.get(source, 0.0)
 
     def write(self, value):

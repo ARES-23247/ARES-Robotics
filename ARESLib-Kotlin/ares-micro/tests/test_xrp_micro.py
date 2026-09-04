@@ -1,5 +1,8 @@
 import unittest
+import json
+import hashlib
 import math
+import struct
 import sys
 import os
 
@@ -78,6 +81,31 @@ class TestKinematics(unittest.TestCase):
         self.assertAlmostEqual(drivetrain.y, 0.0)
         self.assertAlmostEqual(drivetrain.heading, 0.0)
 
+    def test_differential_encoder_translation_uses_imu_heading(self):
+        class DriveIo:
+            def __init__(self):
+                self.left = 0.0
+                self.right = 0.0
+
+            def set_effort(self, left, right):
+                pass
+
+            def get_left_encoder_position(self):
+                return self.left
+
+            def get_right_encoder_position(self):
+                return self.right
+
+        io = DriveIo()
+        heading = [0.0]
+        drivetrain = DifferentialDrivetrain(drivetrain_io=io, heading_supplier=lambda: heading[0])
+        io.left = io.right = 100.0
+        heading[0] = math.pi / 2.0
+        drivetrain.update_odometry(dt=1.0)
+        self.assertAlmostEqual(drivetrain.heading, math.pi / 2.0)
+        self.assertAlmostEqual(drivetrain.x, math.sqrt(0.5), places=5)
+        self.assertAlmostEqual(drivetrain.y, math.sqrt(0.5), places=5)
+
     def test_wrap_angle(self):
         self.assertAlmostEqual(wrap_angle(0.0), 0.0)
         self.assertAlmostEqual(wrap_angle(3.0 * math.pi), math.pi)
@@ -87,12 +115,18 @@ class TestKinematics(unittest.TestCase):
 class MockI2C:
     def __init__(self):
         self.registers = {}
-        # Preload product ID 0x5C
-        self.registers[SparkFunOTOS.REG_PRODUCT_ID] = bytes([0x5C])
+        self.registers[SparkFunOTOS.REG_PRODUCT_ID] = bytes([SparkFunOTOS.PRODUCT_ID])
         # Preload 12 bytes of telemetry at REG_POS_X:
-        # posX = 5000 (0.5m), posY = 2000 (0.2m), posH = 1570 (1.57 rad ~ pi/2)
         import struct
-        self.registers[SparkFunOTOS.REG_POS_X] = struct.pack('<hhhhhh', 5000, 2000, 1570, 1000, 0, 500)
+        self.registers[SparkFunOTOS.REG_POS_X] = struct.pack(
+            '<hhhhhh',
+            round(0.5 / SparkFunOTOS.INT16_TO_METERS),
+            round(0.2 / SparkFunOTOS.INT16_TO_METERS),
+            round((math.pi / 2.0) / SparkFunOTOS.INT16_TO_RADIANS),
+            round(0.1 / SparkFunOTOS.INT16_TO_METERS_PER_SECOND),
+            0,
+            round(1.0 / SparkFunOTOS.INT16_TO_RADIANS_PER_SECOND),
+        )
 
     def readfrom_mem(self, addr, reg, nbytes):
         if reg in self.registers:
@@ -116,6 +150,35 @@ class TestSparkFunOTOS(unittest.TestCase):
         self.assertAlmostEqual(y, 0.2, places=3)
         self.assertAlmostEqual(h, 1.57, places=2)
         self.assertAlmostEqual(vx, 0.1, places=3)
+
+    def test_otos_uses_official_registers_scaling_and_pose_writes(self):
+        mock_i2c = MockI2C()
+        otos = SparkFunOTOS(i2c=mock_i2c)
+        otos.set_linear_scalar(1.025)
+        self.assertEqual(mock_i2c.registers[0x04], bytes([25]))
+        otos.set_angular_scalar(0.975)
+        self.assertEqual(mock_i2c.registers[0x05], bytes([231]))
+        otos.set_offsets(0.1, -0.2, math.pi / 4.0)
+        raw_x, raw_y, raw_h = struct.unpack('<hhh', mock_i2c.registers[0x10])
+        self.assertAlmostEqual(raw_x * SparkFunOTOS.INT16_TO_METERS, 0.1, places=3)
+        self.assertAlmostEqual(raw_y * SparkFunOTOS.INT16_TO_METERS, -0.2, places=3)
+        self.assertAlmostEqual(raw_h * SparkFunOTOS.INT16_TO_RADIANS, math.pi / 4.0, places=3)
+        otos.reset_tracking()
+        self.assertEqual(mock_i2c.registers[0x07], bytes([1]))
+
+    def test_otos_rejects_wrong_identity_and_propagates_runtime_io_failure(self):
+        mock_i2c = MockI2C()
+        mock_i2c.registers[SparkFunOTOS.REG_PRODUCT_ID] = bytes([0x5C])
+        self.assertFalse(SparkFunOTOS(i2c=mock_i2c).begin())
+
+        class FailingI2C(MockI2C):
+            def readfrom_mem(self, addr, reg, nbytes):
+                if reg == SparkFunOTOS.REG_POS_X:
+                    raise OSError('I2C disconnected')
+                return super().readfrom_mem(addr, reg, nbytes)
+
+        with self.assertRaises(OSError):
+            SparkFunOTOS(i2c=FailingI2C()).update()
 
 
 class TestAutonomousRoutine(unittest.TestCase):
@@ -205,6 +268,13 @@ class TestXrpRobotLifecycle(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.robot(drivetrain_type="differential", use_otos=False)
 
+    def test_robot_refuses_declared_otos_without_bus_or_sensor(self):
+        output = self.MockDriveIo()
+        with self.assertRaisesRegex(ValueError, "explicit physical I2C"):
+            self.robot(drivetrain_type="differential", use_otos=True, drivetrain_io=output)
+        with self.assertRaisesRegex(ValueError, "did not answer"):
+            self.robot(drivetrain_type="differential", use_otos=True, i2c=object(), drivetrain_io=output)
+
     def test_four_motor_xrp_mecanum_executes_strafe_frame(self):
         class Motor:
             def __init__(self):
@@ -253,6 +323,105 @@ class TestXrpRobotLifecycle(unittest.TestCase):
         )
         server._process_buffer()
         self.assertEqual(server.get_command(), "")
+
+    def test_connection_reset_releases_the_single_client_slot(self):
+        class ResetSocket:
+            def __init__(self):
+                self.closed = False
+
+            def recv(self, _size):
+                raise OSError(104, "connection reset")
+
+            def close(self):
+                self.closed = True
+
+        server = self.server()
+        client = ResetSocket()
+        server.server_socket = object()
+        server.client_socket = client
+        server.is_connected = True
+
+        server.poll()
+
+        self.assertFalse(server.is_connected)
+        self.assertTrue(client.closed)
+        self.assertIsNone(server.client_socket)
+
+    def test_simulator_field_update_is_acknowledged_only_after_exact_apply(self):
+        class CaptureSocket:
+            def __init__(self):
+                self.sent = []
+
+            def send(self, payload):
+                self.sent.append(payload.decode("utf-8"))
+
+        payload = json.dumps({
+            "id": "tabletop",
+            "revision": 7,
+            "widthMeters": 2.54,
+            "heightMeters": 1.4224,
+            "obstacles": [],
+        }, separators=(",", ":"))
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        server = self.server()
+        capture = CaptureSocket()
+        server.client_socket = capture
+        server.is_connected = True
+        server.set_field_config_handler(lambda raw: {
+            "configId": json.loads(raw)["id"],
+            "revision": json.loads(raw)["revision"],
+            "sha256": hashlib.sha256(raw.encode("utf-8")).hexdigest(),
+            "obstacleCount": 0,
+            "elementCount": 0,
+            "aprilTagCount": 0,
+        })
+        server._recv_buffer = json.dumps({
+            "protocol": PROTOCOL,
+            "type": "fieldConfig",
+            "configId": "tabletop",
+            "revision": 7,
+            "sha256": digest,
+            "payload": payload,
+        }) + "\n"
+
+        server._process_buffer()
+
+        receipt = json.loads(capture.sent[-1])
+        self.assertEqual(receipt["type"], "fieldApplied")
+        self.assertEqual(receipt["sha256"], digest)
+        self.assertEqual(receipt["revision"], 7)
+
+    def test_field_update_with_mismatched_identity_is_rejected(self):
+        class CaptureSocket:
+            def __init__(self):
+                self.sent = []
+
+            def send(self, payload):
+                self.sent.append(payload.decode("utf-8"))
+
+        server = self.server()
+        capture = CaptureSocket()
+        server.client_socket = capture
+        server.is_connected = True
+        server.set_field_config_handler(lambda _raw: {
+            "configId": "different",
+            "revision": 1,
+            "sha256": "b" * 64,
+        })
+        server._recv_buffer = json.dumps({
+            "protocol": PROTOCOL,
+            "type": "fieldConfig",
+            "configId": "expected",
+            "revision": 1,
+            "sha256": "a" * 64,
+            "payload": "{}",
+        }) + "\n"
+
+        server._process_buffer()
+
+        rejection = json.loads(capture.sent[-1])
+        self.assertEqual(rejection["type"], "fieldRejected")
+        self.assertIn("identity", rejection["message"])
 
     def test_explicit_auto_start_runs_registered_routine(self):
         output = self.MockDriveIo()
@@ -351,6 +520,45 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             drivetrain_io=output,
             brownout_threshold_volts=4.3,
             battery_voltage_supplier=lambda: 4.0,
+        )
+        robot.telemetry.last_command = "START_TELEOP"
+        robot.step()
+        self.assertTrue(robot.faulted)
+        self.assertEqual(robot.mode, XrpRobot.STATE_DISABLED)
+        self.assertEqual(output.last, (0.0, 0.0))
+
+    def test_simulator_pose_constraint_is_applied_before_telemetry(self):
+        output = self.MockDriveIo()
+        robot = self.robot(
+            drivetrain_type="differential",
+            use_otos=False,
+            drivetrain_io=output,
+            pose_constraint=lambda previous, proposed: previous,
+        )
+        robot.drivetrain.update_odometry = lambda dt: setattr(robot.drivetrain, "x", 0.5)
+        published = {}
+        robot.telemetry.publish_pose_frame = lambda **values: published.update(values)
+
+        robot.step()
+
+        self.assertEqual(robot.drivetrain.x, 0.0)
+        self.assertEqual(published["x"], 0.0)
+        self.assertEqual(published["loop_time_ms"], 20.0)
+        self.assertEqual(output.last, (0.0, 0.0))
+
+    def test_otos_read_failure_latches_fault_and_neutralizes(self):
+        class FailingI2C(MockI2C):
+            def readfrom_mem(self, addr, reg, nbytes):
+                if reg == SparkFunOTOS.REG_POS_X:
+                    raise OSError("OTOS disconnected")
+                return super().readfrom_mem(addr, reg, nbytes)
+
+        output = self.MockDriveIo()
+        robot = self.robot(
+            drivetrain_type="differential",
+            use_otos=True,
+            i2c=FailingI2C(),
+            drivetrain_io=output,
         )
         robot.telemetry.last_command = "START_TELEOP"
         robot.step()

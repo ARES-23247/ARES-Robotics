@@ -76,9 +76,9 @@ object FieldPrefabCatalog {
     )
 
     private val xrp = listOf(
-        FieldPrefab("orbit-ball", "Orbit Odyssey Ball", "Game pieces", FieldPrefabKind.GAME_PIECE, gamePieceType = "Orbit Ball"),
-        FieldPrefab("space-station", "Space Station Obstacle", "Structure", FieldPrefabKind.RECTANGLE, widthMeters = 0.4, heightMeters = 0.4),
-        FieldPrefab("moon-crater", "Moon Crater", "Structure", FieldPrefabKind.CIRCLE, radiusMeters = 0.15)
+        FieldPrefab("practice-puck", "Practice puck", "Game pieces", FieldPrefabKind.GAME_PIECE, gamePieceType = "Practice Puck"),
+        FieldPrefab("tabletop-block", "Tabletop block", "Structure", FieldPrefabKind.RECTANGLE, widthMeters = 0.2, heightMeters = 0.2),
+        FieldPrefab("practice-cylinder", "Practice cylinder", "Structure", FieldPrefabKind.CIRCLE, radiusMeters = 0.07)
     )
 
     fun forLeague(league: League): List<FieldPrefab> = shared + when (league) {

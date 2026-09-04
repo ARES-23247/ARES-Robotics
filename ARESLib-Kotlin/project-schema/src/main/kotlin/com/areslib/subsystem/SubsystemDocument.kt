@@ -101,25 +101,44 @@ enum class SubsystemHardwareKind {
     /** Standalone incremental A/B encoder. */
     QUADRATURE_ENCODER,
     DIGITAL_INPUT,
+    DIGITAL_OUTPUT,
     ANALOG_INPUT,
+    PWM_OUTPUT,
     DISTANCE_SENSOR,
     IMU,
     COLOR_SENSOR,
     /** FRC pneumatic binary actuator. */
     SOLENOID,
     INDICATOR_LIGHT,
+    BUZZER,
     PRISM_DRIVER,
 }
 
 /** True only when the generated physical adapter has an implemented, tested platform binding. */
 fun SubsystemHardwareKind.supportsPlatform(platform: SubsystemPlatform): Boolean = when (platform) {
-    SubsystemPlatform.FTC -> this != SubsystemHardwareKind.SOLENOID
-    SubsystemPlatform.FRC -> this != SubsystemHardwareKind.COLOR_SENSOR
+    SubsystemPlatform.FTC -> this !in setOf(
+        SubsystemHardwareKind.SOLENOID,
+        SubsystemHardwareKind.DIGITAL_OUTPUT,
+        SubsystemHardwareKind.PWM_OUTPUT,
+        SubsystemHardwareKind.BUZZER,
+    )
+    SubsystemPlatform.FRC -> this !in setOf(
+        SubsystemHardwareKind.COLOR_SENSOR,
+        SubsystemHardwareKind.DIGITAL_OUTPUT,
+        SubsystemHardwareKind.PWM_OUTPUT,
+        SubsystemHardwareKind.BUZZER,
+    )
     SubsystemPlatform.XRP -> this in setOf(
         SubsystemHardwareKind.MOTOR,
         SubsystemHardwareKind.POSITIONAL_SERVO,
+        SubsystemHardwareKind.DIGITAL_INPUT,
+        SubsystemHardwareKind.DIGITAL_OUTPUT,
+        SubsystemHardwareKind.ANALOG_INPUT,
+        SubsystemHardwareKind.PWM_OUTPUT,
         SubsystemHardwareKind.DISTANCE_SENSOR,
         SubsystemHardwareKind.IMU,
+        SubsystemHardwareKind.INDICATOR_LIGHT,
+        SubsystemHardwareKind.BUZZER,
     )
 }
 
@@ -134,9 +153,17 @@ enum class SubsystemMeasurementSource {
     ENCODER_VELOCITY_TURNS_PER_SECOND,
     DIGITAL_STATE,
     ANALOG_VOLTAGE,
+    REFLECTANCE_NORMALIZED,
     DISTANCE_METERS,
     IMU_YAW_RADIANS,
     IMU_YAW_RATE_RADIANS_PER_SECOND,
+    IMU_PITCH_RADIANS,
+    IMU_ROLL_RADIANS,
+    IMU_GYRO_X_RADIANS_PER_SECOND,
+    IMU_GYRO_Y_RADIANS_PER_SECOND,
+    IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+    IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+    IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED,
     COLOR_ARGB,
 }
 
@@ -172,6 +199,7 @@ enum class SubsystemTemplate {
     LIMIT_SWITCH_SENSOR,
     BEAM_BREAK_SENSOR,
     POTENTIOMETER_SENSOR,
+    REFLECTANCE_SENSOR,
     ABSOLUTE_ENCODER_SENSOR,
     QUADRATURE_ENCODER_SENSOR,
     DISTANCE_SENSOR,
@@ -183,21 +211,43 @@ enum class SubsystemTemplate {
     COMPOSITE_MECHANISM,
     TWO_DOF_ARM,
     INDICATOR_LIGHT_PWM,
+    DIGITAL_OUTPUT,
+    PWM_OUTPUT,
+    BUZZER_NOTE,
     PRISM_LED_DRIVER,
     ADVANCED_CUSTOM,
 }
 
 /** Whether the generated physical adapter for this starter exists on [platform]. */
 fun SubsystemTemplate.supportsPlatform(platform: SubsystemPlatform): Boolean = when (platform) {
-    SubsystemPlatform.FTC -> this != SubsystemTemplate.PNEUMATIC_ACTUATOR
-    SubsystemPlatform.FRC -> true
+    SubsystemPlatform.FTC -> this !in setOf(
+        SubsystemTemplate.PNEUMATIC_ACTUATOR,
+        SubsystemTemplate.REFLECTANCE_SENSOR,
+        SubsystemTemplate.DIGITAL_OUTPUT,
+        SubsystemTemplate.PWM_OUTPUT,
+        SubsystemTemplate.BUZZER_NOTE,
+    )
+    SubsystemPlatform.FRC -> this !in setOf(
+        SubsystemTemplate.REFLECTANCE_SENSOR,
+        SubsystemTemplate.DIGITAL_OUTPUT,
+        SubsystemTemplate.PWM_OUTPUT,
+        SubsystemTemplate.BUZZER_NOTE,
+    )
     SubsystemPlatform.XRP -> this in setOf(
         SubsystemTemplate.SIMPLE_ACTUATOR,
         SubsystemTemplate.POSITION_CONTROLLED_MECHANISM,
         SubsystemTemplate.VELOCITY_CONTROLLED_MECHANISM,
         SubsystemTemplate.POSITIONAL_SERVO,
+        SubsystemTemplate.LIMIT_SWITCH_SENSOR,
+        SubsystemTemplate.BEAM_BREAK_SENSOR,
+        SubsystemTemplate.POTENTIOMETER_SENSOR,
+        SubsystemTemplate.REFLECTANCE_SENSOR,
         SubsystemTemplate.DISTANCE_SENSOR,
         SubsystemTemplate.IMU_SENSOR,
+        SubsystemTemplate.INDICATOR_LIGHT_PWM,
+        SubsystemTemplate.DIGITAL_OUTPUT,
+        SubsystemTemplate.PWM_OUTPUT,
+        SubsystemTemplate.BUZZER_NOTE,
         SubsystemTemplate.ADVANCED_CUSTOM,
     )
 }
@@ -589,16 +639,29 @@ fun SubsystemHardwareKind.compatibleMeasurementSources(): List<SubsystemMeasurem
         SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND,
     )
     SubsystemHardwareKind.DIGITAL_INPUT -> listOf(SubsystemMeasurementSource.DIGITAL_STATE)
-    SubsystemHardwareKind.ANALOG_INPUT -> listOf(SubsystemMeasurementSource.ANALOG_VOLTAGE)
+    SubsystemHardwareKind.ANALOG_INPUT -> listOf(
+        SubsystemMeasurementSource.ANALOG_VOLTAGE,
+        SubsystemMeasurementSource.REFLECTANCE_NORMALIZED,
+    )
     SubsystemHardwareKind.DISTANCE_SENSOR -> listOf(SubsystemMeasurementSource.DISTANCE_METERS)
     SubsystemHardwareKind.IMU -> listOf(
         SubsystemMeasurementSource.IMU_YAW_RADIANS,
         SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND,
+        SubsystemMeasurementSource.IMU_PITCH_RADIANS,
+        SubsystemMeasurementSource.IMU_ROLL_RADIANS,
+        SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND,
+        SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND,
+        SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+        SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+        SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED,
     )
     SubsystemHardwareKind.COLOR_SENSOR -> listOf(SubsystemMeasurementSource.COLOR_ARGB)
     SubsystemHardwareKind.POSITIONAL_SERVO,
     SubsystemHardwareKind.CONTINUOUS_SERVO,
+    SubsystemHardwareKind.DIGITAL_OUTPUT,
+    SubsystemHardwareKind.PWM_OUTPUT,
     SubsystemHardwareKind.INDICATOR_LIGHT,
+    SubsystemHardwareKind.BUZZER,
     SubsystemHardwareKind.PRISM_DRIVER,
     SubsystemHardwareKind.SOLENOID -> emptyList()
 }
@@ -610,9 +673,17 @@ fun SubsystemMeasurementSource.valueType(): SubsystemValueType = when (this) {
     SubsystemMeasurementSource.ENCODER_POSITION_TURNS,
     SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND,
     SubsystemMeasurementSource.ANALOG_VOLTAGE,
+    SubsystemMeasurementSource.REFLECTANCE_NORMALIZED,
     SubsystemMeasurementSource.DISTANCE_METERS,
     SubsystemMeasurementSource.IMU_YAW_RADIANS,
-    SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND -> SubsystemValueType.DOUBLE
+    SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_PITCH_RADIANS,
+    SubsystemMeasurementSource.IMU_ROLL_RADIANS,
+    SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+    SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+    SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED -> SubsystemValueType.DOUBLE
     SubsystemMeasurementSource.DIGITAL_STATE -> SubsystemValueType.BOOLEAN
     SubsystemMeasurementSource.COLOR_ARGB -> SubsystemValueType.INT
 }
@@ -620,11 +691,19 @@ fun SubsystemMeasurementSource.valueType(): SubsystemValueType = when (this) {
 /** Canonical state-field unit required after measurement scale/offset conversion. */
 fun SubsystemMeasurementSource.canonicalUnit(): String? = when (this) {
     SubsystemMeasurementSource.ENCODER_POSITION_TURNS,
-    SubsystemMeasurementSource.IMU_YAW_RADIANS -> "rad"
+    SubsystemMeasurementSource.IMU_YAW_RADIANS,
+    SubsystemMeasurementSource.IMU_PITCH_RADIANS,
+    SubsystemMeasurementSource.IMU_ROLL_RADIANS -> "rad"
     SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND,
-    SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND -> "rad/s"
+    SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND -> "rad/s"
+    SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+    SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+    SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED -> "m/s²"
     SubsystemMeasurementSource.DISTANCE_METERS -> "m"
     SubsystemMeasurementSource.MOTOR_CURRENT_AMPS -> "A"
     SubsystemMeasurementSource.ANALOG_VOLTAGE -> "V"
+    SubsystemMeasurementSource.REFLECTANCE_NORMALIZED -> "normalized"
     else -> null
 }

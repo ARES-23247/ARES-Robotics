@@ -287,7 +287,10 @@ internal object SubsystemImplementationValidation {
         SubsystemHardwareKind.MOTOR,
         SubsystemHardwareKind.POSITIONAL_SERVO,
         SubsystemHardwareKind.CONTINUOUS_SERVO,
+        SubsystemHardwareKind.DIGITAL_OUTPUT,
+        SubsystemHardwareKind.PWM_OUTPUT,
         SubsystemHardwareKind.INDICATOR_LIGHT,
+        SubsystemHardwareKind.BUZZER,
         SubsystemHardwareKind.PRISM_DRIVER,
         SubsystemHardwareKind.SOLENOID,
     )

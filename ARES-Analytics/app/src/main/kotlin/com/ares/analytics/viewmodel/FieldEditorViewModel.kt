@@ -517,8 +517,9 @@ class FieldEditorViewModel(
     private fun addPrefab(prefabId: String) {
         val prefab = FieldPrefabCatalog.find(activeLeague, prefabId) ?: return
         val state = _state.value
-        val centerX = if (activeLeague == League.FTC) 0.0 else state.fieldImageConfig.widthMeters / 2.0
-        val centerY = if (activeLeague == League.FTC) 0.0 else state.fieldImageConfig.heightMeters / 2.0
+        val usesCenteredCoordinates = activeLeague == League.FTC || activeLeague == League.XRP
+        val centerX = if (usesCenteredCoordinates) 0.0 else state.fieldImageConfig.widthMeters / 2.0
+        val centerY = if (usesCenteredCoordinates) 0.0 else state.fieldImageConfig.heightMeters / 2.0
         when (prefab.kind) {
             FieldPrefabKind.RECTANGLE -> {
                 val obstacle = Obstacle.Rectangle(nextId("rect"), prefab.name, centerX, centerY, prefab.widthMeters, prefab.heightMeters)

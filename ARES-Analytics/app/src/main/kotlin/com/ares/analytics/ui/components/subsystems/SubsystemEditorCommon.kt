@@ -35,12 +35,16 @@ fun SubsystemHardwareKind.isActuator(): Boolean =
     this == SubsystemHardwareKind.MOTOR ||
     this == SubsystemHardwareKind.POSITIONAL_SERVO ||
     this == SubsystemHardwareKind.CONTINUOUS_SERVO ||
+    this == SubsystemHardwareKind.DIGITAL_OUTPUT ||
+    this == SubsystemHardwareKind.PWM_OUTPUT ||
     this == SubsystemHardwareKind.INDICATOR_LIGHT ||
+    this == SubsystemHardwareKind.BUZZER ||
     this == SubsystemHardwareKind.PRISM_DRIVER ||
     this == SubsystemHardwareKind.SOLENOID
 
 fun SubsystemHardwareDocument.connectionLabel(platform: SubsystemPlatform): String = when (platform) {
-    SubsystemPlatform.FTC, SubsystemPlatform.XRP -> connection.hardwareMapName?.let { "hwMap: $it" } ?: "unconfigured"
+    SubsystemPlatform.FTC -> connection.hardwareMapName?.let { "hwMap: $it" } ?: "unconfigured"
+    SubsystemPlatform.XRP -> connection.channel?.let { "XRP channel $it" } ?: "XRP built-in"
     SubsystemPlatform.FRC -> when (kind) {
         SubsystemHardwareKind.MOTOR -> "CAN ${connection.canId ?: 0} (${connection.canBus})"
         SubsystemHardwareKind.SOLENOID -> "${connection.pneumaticsModuleType?.name ?: "pneumatics"} CAN ${connection.canId ?: 0}, channel ${connection.channel ?: 0}"
@@ -301,7 +305,9 @@ fun SubsystemHardwareKind.uiLabel(): String = when (this) {
     SubsystemHardwareKind.POSITIONAL_SERVO -> "Positional Servo (PWM 0-1)"
     SubsystemHardwareKind.CONTINUOUS_SERVO -> "Continuous Servo (CR)"
     SubsystemHardwareKind.DIGITAL_INPUT -> "Digital Input / Limit Switch"
+    SubsystemHardwareKind.DIGITAL_OUTPUT -> "Digital GPIO Output"
     SubsystemHardwareKind.ANALOG_INPUT -> "Analog Sensor / Potentiometer"
+    SubsystemHardwareKind.PWM_OUTPUT -> "PWM GPIO Output"
     SubsystemHardwareKind.COLOR_SENSOR -> "Color / Proximity Sensor (I2C)"
     SubsystemHardwareKind.ABSOLUTE_ENCODER -> "Absolute Encoder (angle)"
     SubsystemHardwareKind.QUADRATURE_ENCODER -> "Quadrature Encoder (position + speed)"
@@ -309,6 +315,7 @@ fun SubsystemHardwareKind.uiLabel(): String = when (this) {
     SubsystemHardwareKind.IMU -> "IMU / Gyroscope"
     SubsystemHardwareKind.SOLENOID -> "Pneumatic Solenoid (FRC)"
     SubsystemHardwareKind.INDICATOR_LIGHT -> "RGB Indicator Light (Servo PWM)"
+    SubsystemHardwareKind.BUZZER -> "Built-in Buzzer"
     SubsystemHardwareKind.PRISM_DRIVER -> "goBILDA Prism LED Driver (PWM pulse width)"
 }
 

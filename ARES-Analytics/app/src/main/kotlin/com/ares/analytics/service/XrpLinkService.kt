@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,10 +15,12 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.BufferedWriter
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -36,6 +39,28 @@ data class XrpPeerIdentity(
     val projectId: String,
     val contentSha256: String,
     val drivetrainType: String,
+    val boardType: String? = null,
+    val micropythonVersion: String? = null,
+    val xrplibVersion: String? = null,
+    val aresRuntimeVersion: String? = null,
+)
+
+data class XrpFieldApplyReceipt(
+    val session: String,
+    val sequence: Long,
+    val configId: String,
+    val revision: Long,
+    val sha256: String,
+    val obstacleCount: Int,
+    val elementCount: Int,
+    val aprilTagCount: Int,
+) {
+    val eventId: String get() = "$session:$sequence"
+}
+
+data class XrpFieldApplyFailure(
+    val eventId: String,
+    val message: String,
 )
 
 /** Dedicated Pico-friendly link; XRP deliberately does not impersonate an NT4 server. */
@@ -52,6 +77,10 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
     val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
     private val _controlRequest = MutableStateFlow(XrpControlRequest())
     val controlRequest: StateFlow<XrpControlRequest> = _controlRequest.asStateFlow()
+    private val _fieldApplyReceipt = MutableStateFlow<XrpFieldApplyReceipt?>(null)
+    val fieldApplyReceipt: StateFlow<XrpFieldApplyReceipt?> = _fieldApplyReceipt.asStateFlow()
+    private val _fieldApplyFailure = MutableStateFlow<XrpFieldApplyFailure?>(null)
+    val fieldApplyFailure: StateFlow<XrpFieldApplyFailure?> = _fieldApplyFailure.asStateFlow()
     private var socket: Socket? = null
     private var writer: BufferedWriter? = null
     private var job: Job? = null
@@ -67,6 +96,8 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         _isConnected.value = false
         _peerIdentity.value = null
         _connectionError.value = null
+        _fieldApplyReceipt.value = null
+        _fieldApplyFailure.value = null
         job = scope.launch {
             while (currentCoroutineContext().isActive && generation.get() == requestedGeneration) {
                 try {
@@ -146,6 +177,50 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         sent
     }
 
+    suspend fun publishFieldConfig(payload: String): Boolean = writerMutex.withLock {
+        val root = runCatching { JsonParser.parseString(payload).asJsonObject }.getOrNull()
+            ?: return@withLock false
+        val configId = root.stringOrNull("id")?.takeIf(String::isNotBlank)
+            ?: return@withLock false
+        val revision = root.finiteLong("revision") ?: return@withLock false
+        val activeWriter = writer ?: return@withLock false
+        val message = JsonObject().apply {
+            addProperty("protocol", PROTOCOL)
+            addProperty("type", "fieldConfig")
+            addProperty("configId", configId)
+            addProperty("revision", revision)
+            addProperty("sha256", Sha256.hex(payload))
+            addProperty("payload", payload)
+        }
+        val sent = runCatching {
+            activeWriter.write(message.toString())
+            activeWriter.newLine()
+            activeWriter.flush()
+        }.isSuccess
+        if (!sent) {
+            writer = null
+            runCatching { socket?.close() }
+            socket = null
+            _isConnected.value = false
+        }
+        sent
+    }
+
+    suspend fun awaitFieldApply(
+        configId: String,
+        revision: Long,
+        sha256: String,
+        previousEventId: String?,
+    ): XrpFieldApplyReceipt? = withTimeoutOrNull(FIELD_APPLY_TIMEOUT_MS) {
+        fieldApplyReceipt.first { receipt ->
+            receipt != null &&
+                receipt.eventId != previousEventId &&
+                receipt.configId == configId &&
+                receipt.revision == revision &&
+                receipt.sha256.equals(sha256, ignoreCase = true)
+        }
+    }
+
     fun requestTeleOp() {
         _controlRequest.value = XrpControlRequest(
             mode = XrpRequestedMode.TELEOP,
@@ -221,12 +296,56 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         val drivetrainType = root.stringOrNull("drivetrainType")
             ?.takeIf { it in DRIVETRAIN_TYPES }
             ?: return null
-        return XrpPeerIdentity(projectId, contentSha256, drivetrainType)
+        return XrpPeerIdentity(
+            projectId = projectId,
+            contentSha256 = contentSha256,
+            drivetrainType = drivetrainType,
+            boardType = root.stringOrNull("boardType"),
+            micropythonVersion = root.stringOrNull("micropythonVersion"),
+            xrplibVersion = root.stringOrNull("xrplibVersion"),
+            aresRuntimeVersion = root.stringOrNull("aresRuntimeVersion"),
+        )
     }
 
     private suspend fun acceptLine(line: String) {
         val root = runCatching { JsonParser.parseString(line).asJsonObject }.getOrNull() ?: return
-        if (root.get("protocol")?.asString != PROTOCOL || root.get("type")?.asString != "telemetry") return
+        if (root.get("protocol")?.asString != PROTOCOL) return
+        when (root.stringOrNull("type")) {
+            "fieldApplied" -> acceptFieldApplied(root)
+            "fieldRejected" -> acceptFieldRejected(root)
+            "telemetry" -> acceptTelemetry(root)
+        }
+    }
+
+    private fun acceptFieldApplied(root: JsonObject) {
+        val session = root.stringOrNull("session")?.takeIf(String::isNotBlank) ?: return
+        val sequence = root.finiteLong("sequence") ?: return
+        val configId = root.stringOrNull("configId")?.takeIf(String::isNotBlank) ?: return
+        val revision = root.finiteLong("revision") ?: return
+        val sha256 = root.stringOrNull("sha256")?.lowercase()?.takeIf { it.matches(SHA256) } ?: return
+        val obstacleCount = root.finiteInt("obstacleCount") ?: return
+        val elementCount = root.finiteInt("elementCount") ?: return
+        val aprilTagCount = root.finiteInt("aprilTagCount") ?: return
+        _fieldApplyReceipt.value = XrpFieldApplyReceipt(
+            session,
+            sequence,
+            configId,
+            revision,
+            sha256,
+            obstacleCount,
+            elementCount,
+            aprilTagCount,
+        )
+    }
+
+    private fun acceptFieldRejected(root: JsonObject) {
+        val session = root.stringOrNull("session")?.takeIf(String::isNotBlank) ?: return
+        val sequence = root.finiteLong("sequence") ?: return
+        val message = root.stringOrNull("message")?.takeIf(String::isNotBlank) ?: return
+        _fieldApplyFailure.value = XrpFieldApplyFailure("$session:$sequence", message)
+    }
+
+    private suspend fun acceptTelemetry(root: JsonObject) {
         val sequence = root.finiteLong("sequence") ?: return
         if (sequence <= lastTelemetrySequence) return
         val x = root.finiteDouble("poseX") ?: return
@@ -239,8 +358,27 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
             telemetrySink.acceptExternalLiveTelemetry("ARES/EstimatedPose/$index", value)
         }
         root.finiteDouble("battery")?.let { telemetrySink.acceptExternalLiveTelemetry("Robot/BatteryVoltage", it) }
+        root.finiteDouble("loopTimeMs")?.let { telemetrySink.acceptExternalLiveTelemetry("Robot/LoopTimeMs", it) }
+        root.get("faulted")?.takeIf { it.isJsonPrimitive }?.asBoolean?.let {
+            telemetrySink.acceptExternalLiveTelemetry("Robot/Faulted", if (it) 1.0 else 0.0)
+        }
         root.get("mode")?.takeIf { it.isJsonPrimitive }?.asString?.let {
             telemetrySink.acceptExternalLiveTelemetry("Robot/Mode", 0.0, it)
+        }
+        root.getAsJsonObject("subsystems")?.entrySet()?.forEach { (subsystemId, state) ->
+            if (!state.isJsonObject) return@forEach
+            state.asJsonObject.entrySet().forEach fieldLoop@{ (fieldId, value) ->
+                if (!value.isJsonPrimitive) return@fieldLoop
+                val path = "Subsystem/$subsystemId/$fieldId"
+                val primitive = value.asJsonPrimitive
+                when {
+                    primitive.isNumber -> primitive.asDouble.takeIf(Double::isFinite)?.let {
+                        telemetrySink.acceptExternalLiveTelemetry(path, it)
+                    }
+                    primitive.isBoolean -> telemetrySink.acceptExternalLiveTelemetry(path, if (primitive.asBoolean) 1.0 else 0.0)
+                    primitive.isString -> telemetrySink.acceptExternalLiveTelemetry(path, 0.0, primitive.asString)
+                }
+            }
         }
     }
 
@@ -270,6 +408,10 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
             ?.toLong()
     }.getOrNull()
 
+    private fun JsonObject.finiteInt(name: String): Int? = finiteLong(name)
+        ?.takeIf { it <= Int.MAX_VALUE }
+        ?.toInt()
+
     private fun stoppedRequest() = XrpControlRequest(revision = controlRevision.incrementAndGet())
 
     companion object {
@@ -281,6 +423,7 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         private const val CONNECT_TIMEOUT_MS = 500
         private const val HANDSHAKE_TIMEOUT_MS = 1_000
         private const val RECONNECT_DELAY_MS = 500L
+        private const val FIELD_APPLY_TIMEOUT_MS = 2_000L
         private const val MAX_LINE_LENGTH = 16_384
     }
 }

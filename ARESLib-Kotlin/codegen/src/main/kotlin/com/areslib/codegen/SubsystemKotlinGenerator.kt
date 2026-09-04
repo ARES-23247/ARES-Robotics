@@ -370,12 +370,15 @@ private fun SubsystemHardwareDocument.dslFunction(): String = when (kind) {
     SubsystemHardwareKind.ABSOLUTE_ENCODER -> "absoluteEncoder"
     SubsystemHardwareKind.QUADRATURE_ENCODER -> "quadratureEncoder"
     SubsystemHardwareKind.DIGITAL_INPUT -> "digitalInput"
+    SubsystemHardwareKind.DIGITAL_OUTPUT -> "digitalOutput"
     SubsystemHardwareKind.ANALOG_INPUT -> "analogInput"
+    SubsystemHardwareKind.PWM_OUTPUT -> "pwmOutput"
     SubsystemHardwareKind.DISTANCE_SENSOR -> "distanceSensor"
     SubsystemHardwareKind.IMU -> "imu"
     SubsystemHardwareKind.COLOR_SENSOR -> "colorSensor"
     SubsystemHardwareKind.SOLENOID -> "solenoid"
     SubsystemHardwareKind.INDICATOR_LIGHT -> "indicatorLight"
+    SubsystemHardwareKind.BUZZER -> "buzzer"
     SubsystemHardwareKind.PRISM_DRIVER -> "prismDriver"
 }
 

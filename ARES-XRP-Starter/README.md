@@ -17,7 +17,8 @@ ARES-XRP-Starter/
 ├── extensions/            # Optional USER-OWNED Python mechanisms
 ├── tests/                 # Handwritten project/runtime integration tests
 ├── simulator/             # Desktop XRP simulator
-├── deploy/deploy_to_pico.py # Verified mpremote deployment
+├── device/                 # Pinned official firmware/XRPLib identity manifest
+├── deploy/xrp_device.py    # Preflight, verified image download, A/B deploy, rollback
 ├── hardware.py            # Official XRPLib adapter boundary
 └── main.py                # Small physical-controller entry point
 ```
@@ -29,17 +30,44 @@ ARES-XRP-Starter/
    XRP motor ports 1–4—plus XRP devices, controls, and autonomous routines.
 3. Select **Verify & build**, or run `ares.bat verify` (`./ares verify` on macOS/Linux).
 4. Launch the simulator from Studio, or run `ares.bat simulate`.
-5. Plug in your Raspberry Pi Pico W via USB and deploy:
+5. Prepare the verified official device image for the exact controller model. This downloads both
+   the UF2 and XRPLib source archive and rejects either unless its byte length and SHA-256 match:
+   ```bash
+   ares.bat prepare-image --board xrp-2350
+   ```
+   Supported board IDs are `xrp-2350`, `xrp-beta`, and `xrp-nano`. Flash the resulting UF2 only to
+   the matching BOOTSEL volume, then install the pinned XRPLib `2026.08.2` using the official XRP
+   loader. ARES does not silently flash a board or guess its model.
+6. Plug in the running controller via USB and perform a read-only preflight:
+   ```bash
+   ares.bat device-preflight --board xrp-2350
+   ```
+   Preflight checks the board identity, MicroPython `1.28.0`, XRPLib `2026.08.2`, and every XRPLib
+   API required by the generated robot. A mismatch fails closed before files are changed.
+7. Deploy:
    ```bash
    ares.bat deploy
    ```
-   This verifies the project, installs the exact bundled `ares_micro` runtime, and uploads the generated Python, hardware boundary, extensions, secrets (when configured), and `main.py`.
-6. Connect your laptop to the robot's Wi-Fi Access Point and control the robot with ARES Studio.
+   This verifies the project, stages the bundled `ares_micro` runtime, generated Python, hardware
+   boundary, extensions, and optional secrets into an inactive content-addressed slot, compiles
+   every staged Python file on the controller, and only then atomically activates it. An interrupted
+   or invalid upload leaves the previous slot active. Run `ares.bat rollback` over USB to reactivate
+   the prior slot.
+   To inspect the exact content-addressed deployment without a controller, run
+   `ares.bat plan-deploy`; it stages and compiles the same payload but performs no device mutation.
+8. Connect your laptop to the robot's Wi-Fi Access Point and control the robot with ARES Studio.
 
 The `.ares` documents are canonical for GUI-owned behavior. `ares generate` compiles them directly
 to deterministic MicroPython and generated safety tests under `build/generated/ares`; those files
 are disposable and never edited. This is not Kotlin transpilation and Studio does not attempt to
 reverse-engineer arbitrary Python.
+
+Robot Builder provides typed XRP templates for mechanism motors on ports 3/4, servos on ports 1–4,
+the rangefinder, left/middle/right reflectance channels, the user button, green and RGB LEDs, the
+buzzer, full IMU orientation/rate/acceleration, and explicit digital, PWM, and ADC expansion I/O.
+The generated verification suite exercises applicable startup/stop, input validity, output-write,
+target-limit, action, recovery, control, simulator, project-identity, and autonomous graph contracts.
+It emits standard JUnit XML under `build/test-results/test` for Studio's unified Verification view.
 
 For a hybrid project, register a USER-OWNED module under `extensions/` with explicit physical and
 simulation factory names plus its action, telemetry, tuning, and safety metadata. After export, the
@@ -57,6 +85,8 @@ repository can be built, tested, simulated, and deployed entirely from an IDE or
 - The physical runtime reads battery voltage from the official XRPLib `board` adapter and latches a
   brownout fault below the configured threshold.
 
-Desktop results are **Simulation verified** only. Before physical use, verify firmware/XRPLib,
+Desktop results are **Simulation verified** only. A successful device preflight is **Configuration
+reviewed**, not physical validation. Before physical use, verify firmware/XRPLib,
 motor direction (including every mecanum wheel), encoder polarity and scale, safe neutral, Wi-Fi behavior, measured brownout
 threshold, mechanism limits, and deadman stop on a supported XRP while lifted safely off the floor.
+The exact completed and pending gates are recorded in [docs/PHYSICAL_READINESS.md](docs/PHYSICAL_READINESS.md).

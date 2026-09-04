@@ -85,4 +85,42 @@ class SubsystemHardwareScaffoldingTest {
         assertEquals(SubsystemHubFacingDirection.FORWARD, imu.hardware.imuUsbFacingDirection)
         assertTrue(encoder.controlLoops.isEmpty())
     }
+
+    @Test
+    fun `XRP IMU scaffolds full canonical motion state`() {
+        val imu = SubsystemHardwareScaffolding.create(
+            SubsystemHardwareKind.IMU,
+            "imu",
+            "Built-in IMU",
+            SubsystemPlatform.XRP,
+        )
+
+        assertEquals(
+            setOf("imuYaw", "imuYawRate", "imuPitch", "imuRoll", "imuGyroX", "imuGyroY", "imuAccelX", "imuAccelY", "imuAccelZ"),
+            imu.stateFields.map { it.fieldId }.toSet(),
+        )
+        assertEquals(setOf("rad", "rad/s", "m/s²"), imu.stateFields.mapNotNull { it.unit }.toSet())
+    }
+
+    @Test
+    fun `XRP output scaffolds are bounded and fail closed`() {
+        val digital = SubsystemHardwareScaffolding.create(
+            SubsystemHardwareKind.DIGITAL_OUTPUT,
+            "signal",
+            "Signal",
+            SubsystemPlatform.XRP,
+        )
+        val buzzer = SubsystemHardwareScaffolding.create(
+            SubsystemHardwareKind.BUZZER,
+            "buzzer",
+            "Buzzer",
+            SubsystemPlatform.XRP,
+        )
+
+        assertEquals(0.0, digital.hardware.safeOutput)
+        assertEquals(1.0, digital.stateFields.single().maximum)
+        assertEquals(0.0, buzzer.hardware.safeOutput)
+        assertEquals(127.0, buzzer.stateFields.single().maximum)
+        assertEquals(SubsystemControlStrategy.DIRECT, buzzer.controlLoops.single().strategy)
+    }
 }

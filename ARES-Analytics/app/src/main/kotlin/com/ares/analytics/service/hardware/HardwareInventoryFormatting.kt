@@ -12,10 +12,13 @@ internal fun SubsystemHardwareDocument.addressKind(): HardwareAddressKind = when
     SubsystemHardwareKind.MOTOR -> HardwareAddressKind.CAN
     SubsystemHardwareKind.POSITIONAL_SERVO,
     SubsystemHardwareKind.CONTINUOUS_SERVO,
+    SubsystemHardwareKind.PWM_OUTPUT,
+    SubsystemHardwareKind.BUZZER,
     SubsystemHardwareKind.INDICATOR_LIGHT,
     SubsystemHardwareKind.PRISM_DRIVER -> HardwareAddressKind.PWM
     SubsystemHardwareKind.COLOR_SENSOR -> HardwareAddressKind.I2C
     SubsystemHardwareKind.DIGITAL_INPUT,
+    SubsystemHardwareKind.DIGITAL_OUTPUT,
     SubsystemHardwareKind.QUADRATURE_ENCODER -> HardwareAddressKind.DIO
     SubsystemHardwareKind.ANALOG_INPUT,
     SubsystemHardwareKind.ABSOLUTE_ENCODER,

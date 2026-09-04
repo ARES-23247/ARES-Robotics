@@ -13,6 +13,81 @@ for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
 
 
 class GeneratedProjectTest(unittest.TestCase):
+    def test_stock_xrp_input_and_light_adapters_use_public_xrplib_boundaries(self):
+        hardware_path = ROOT / "hardware.py"
+        spec = importlib.util.spec_from_file_location("ares_xrp_hardware", hardware_path)
+        hardware = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hardware)
+
+        digital = hardware._DigitalInputAdapter(lambda: True)
+        analog = hardware._AnalogInputAdapter(lambda: 0.625)
+        self.assertTrue(digital.read("DIGITAL_STATE"))
+        self.assertEqual(analog.read("ANALOG_VOLTAGE"), 0.625)
+
+        class Board:
+            def __init__(self):
+                self.green = False
+                self.rgb = None
+
+            def led_on(self): self.green = True
+            def led_off(self): self.green = False
+            def set_rgb_led(self, red, green, blue): self.rgb = (red, green, blue)
+
+        board = Board()
+        hardware._IndicatorLightAdapter(board).write(1.0)
+        self.assertTrue(board.green)
+        hardware._IndicatorLightAdapter(board, 0).write(0.5)
+        hardware._IndicatorLightAdapter(board, 2).write(1.0)
+        self.assertEqual(board.rgb, (128, 0, 255))
+
+    def test_stock_xrp_output_buzzer_and_full_imu_adapters(self):
+        hardware_path = ROOT / "hardware.py"
+        spec = importlib.util.spec_from_file_location("ares_xrp_hardware_outputs", hardware_path)
+        hardware = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hardware)
+
+        class Pin:
+            def __init__(self): self.value_written = None
+            def value(self, value): self.value_written = value
+
+        class Pwm:
+            def __init__(self): self.duty = None
+            def duty_u16(self, value): self.duty = value
+
+        pin, pwm = Pin(), Pwm()
+        hardware._DigitalOutputAdapter(pin).write(0.75)
+        hardware._PwmOutputAdapter(pwm).write(0.25)
+        self.assertEqual(pin.value_written, 1)
+        self.assertEqual(pwm.duty, 16384)
+
+        class Buzzer:
+            def __init__(self): self.notes, self.reset = [], 0
+            def play_note(self, note, duration, blocking): self.notes.append((note, duration, blocking))
+            def reset_buzzer(self): self.reset += 1
+
+        buzzer = Buzzer()
+        adapter = hardware._BuzzerAdapter(buzzer)
+        adapter.write(69)
+        adapter.write(69)
+        adapter.write(0)
+        self.assertEqual(buzzer.notes, [("A4", "quarter", False)])
+        self.assertEqual(buzzer.reset, 1)
+
+        class Imu:
+            def get_yaw(self): return 90.0
+            def get_pitch(self): return 30.0
+            def get_roll(self): return -15.0
+            def get_gyro_x_rate(self): return 1000.0
+            def get_gyro_y_rate(self): return -2000.0
+            def get_gyro_z_rate(self): return 500.0
+            def get_acc_x(self): return 1000.0
+            def get_acc_y(self): return 0.0
+            def get_acc_z(self): return -1000.0
+
+        imu = hardware._ImuAdapter(Imu())
+        self.assertAlmostEqual(imu.read("IMU_PITCH_RADIANS"), 0.5235987756)
+        self.assertAlmostEqual(imu.read("IMU_GYRO_X_RADIANS_PER_SECOND"), 0.0174532925)
+        self.assertAlmostEqual(imu.read("IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED"), -9.80665)
     def test_verify_regenerates_disposable_outputs_before_running_tests(self):
         tool_path = ROOT / "tools" / "ares_project.py"
         spec = importlib.util.spec_from_file_location("ares_project_verify_tool", tool_path)

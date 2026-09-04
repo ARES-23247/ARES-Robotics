@@ -15,20 +15,24 @@ class XrpRobot:
     STATE_AUTO = "AUTO"
     STATE_TELEOP = "TELEOP"
 
-    def __init__(self, project_id, content_sha256, drivetrain_type="differential", use_otos=True, i2c=None,
+    def __init__(self, project_id, content_sha256, drivetrain_type="differential", use_otos=False, i2c=None,
                  drivetrain_io=None, motors=None, link_port=5811,
                  deadman_timeout_ms=200, brownout_threshold_volts=4.3,
                  battery_voltage_supplier=None, track_width=0.155,
-                 wheel_base=0.140, wheel_radius=0.030, max_linear_speed=0.85):
+                 wheel_base=0.140, wheel_radius=0.030, max_linear_speed=0.85,
+                 heading_supplier=None, runtime_identity=None, pose_constraint=None):
+        if use_otos and i2c is None:
+            raise ValueError("SPARKFUN_OTOS localization requires an explicit physical I2C bus")
         self.otos = SparkFunOTOS(i2c=i2c) if use_otos else None
-        if self.otos and i2c is not None:
-            self.otos.begin()
+        if self.otos and not self.otos.begin():
+            raise ValueError("SPARKFUN_OTOS was selected but did not answer on the configured I2C bus")
 
         if drivetrain_type.lower() == "mecanum":
             motors = motors or ()
             self.drivetrain = MecanumDrivetrain(
                 *motors, track_width=track_width, wheel_base=wheel_base,
                 wheel_radius=wheel_radius, max_speed=max_linear_speed, otos=self.otos,
+                heading_supplier=heading_supplier,
             )
         else:
             motors = motors or (None, None)
@@ -36,6 +40,7 @@ class XrpRobot:
                 left_motor=motors[0], right_motor=motors[1],
                 drivetrain_io=drivetrain_io, track_width=track_width,
                 wheel_radius=wheel_radius, max_speed=max_linear_speed, otos=self.otos,
+                heading_supplier=heading_supplier,
             )
 
         if not self.drivetrain.has_output():
@@ -46,6 +51,7 @@ class XrpRobot:
             drivetrain_type=drivetrain_type.lower(),
             port=link_port,
             deadman_timeout_ms=deadman_timeout_ms,
+            runtime_identity=runtime_identity,
         )
         self.mode = self.STATE_INIT
         self.active_routine = None
@@ -55,6 +61,11 @@ class XrpRobot:
         self.subsystems = []
         self.brownout_threshold_volts = float(brownout_threshold_volts)
         self.battery_voltage_supplier = battery_voltage_supplier or (lambda: 6.0)
+        self.pose_constraint = pose_constraint
+
+    def set_pose_constraint(self, pose_constraint):
+        """Installs a simulator-only pose constraint in canonical field coordinates."""
+        self.pose_constraint = pose_constraint
 
     def start_server(self):
         """Starts the wireless telemetry server for ARES Studio tethering."""
@@ -140,11 +151,30 @@ class XrpRobot:
             self.telemetry.neutralize()
             self.drivetrain.stop()
 
-        # 3. Update sensor odometry
-        self.drivetrain.update_odometry(dt=dt)
-
-        # 4. Mode-based execution
+        # 3. Update sensor odometry and execute the selected mode. Sensor failures
+        # use the same fail-closed path as actuator failures.
         try:
+            previous_pose = (
+                self.drivetrain.x,
+                self.drivetrain.y,
+                self.drivetrain.heading,
+            )
+            self.drivetrain.update_odometry(dt=dt)
+            if self.pose_constraint:
+                constrained_pose = self.pose_constraint(
+                    previous_pose,
+                    (self.drivetrain.x, self.drivetrain.y, self.drivetrain.heading),
+                )
+                if constrained_pose != (
+                    self.drivetrain.x,
+                    self.drivetrain.y,
+                    self.drivetrain.heading,
+                ):
+                    self.drivetrain.reset_pose(*constrained_pose)
+                    self.drivetrain.vx = 0.0
+                    self.drivetrain.vy = 0.0
+                    self.drivetrain.omega = 0.0
+                    self.drivetrain.stop()
             if self.mode == self.STATE_AUTO:
                 # Autonomous motion remains leased by Studio. A disconnect or stale heartbeat
                 # stops the robot within the configured deadman interval.
@@ -207,5 +237,10 @@ class XrpRobot:
             y=self.drivetrain.y,
             heading_rad=self.drivetrain.heading,
             battery_volts=battery_volts,
-            mode=self.mode
+            mode=self.mode,
+            faulted=self.faulted or any(subsystem.faulted for subsystem in self.subsystems),
+            # LoopTimeMs is the control period, not only the sub-millisecond CPU work inside
+            # this method. Studio uses it to display effective control frequency and overruns.
+            loop_time_ms=max(0.0, float(dt) * 1000.0),
+            subsystems={subsystem.document_id: dict(subsystem.state) for subsystem in self.subsystems},
         )

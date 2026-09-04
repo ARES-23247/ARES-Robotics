@@ -127,20 +127,17 @@ fun FieldCanvas(
     val activeImage = fieldImage ?: localFieldImage
     val activeConfig = fieldImageConfig ?: localFieldImageConfig
     val useConfiguredFieldSize = fieldImageConfig != null || localFieldConfigLoaded
+    val defaultFieldSize = when (league) {
+        League.FTC -> CoordinateTransformers.FTC_FIELD_SIZE to CoordinateTransformers.FTC_FIELD_SIZE
+        League.FRC -> CoordinateTransformers.FRC_FIELD_LENGTH to CoordinateTransformers.FRC_FIELD_WIDTH
+        League.XRP -> 2.54 to 1.4224
+    }
     val fieldWidthM = if (useConfiguredFieldSize && activeConfig.widthMeters > 0.0) {
         activeConfig.widthMeters
-    } else if (league == League.FTC) {
-        CoordinateTransformers.FTC_FIELD_SIZE
-    } else {
-        CoordinateTransformers.FRC_FIELD_LENGTH
-    }
+    } else defaultFieldSize.first
     val fieldHeightM = if (useConfiguredFieldSize && activeConfig.heightMeters > 0.0) {
         activeConfig.heightMeters
-    } else if (league == League.FTC) {
-        CoordinateTransformers.FTC_FIELD_SIZE
-    } else {
-        CoordinateTransformers.FRC_FIELD_WIDTH
-    }
+    } else defaultFieldSize.second
     var editorMode by remember { mutableStateOf(EditorMode.SELECT) }
     var selectedWaypointIndex by remember { mutableStateOf(-1) }
     var selectedObstacleId by remember { mutableStateOf<String?>(null) }
@@ -380,6 +377,7 @@ fun FieldCanvas(
                         fieldWidthM = fieldWidthM,
                         fieldHeightM = fieldHeightM,
                         league = league,
+                        robotDimensions = robotDimensions,
                         indicatorLights = indicatorLights,
                         prismPulseWidthUs = prismPulseWidthUs,
                     )
