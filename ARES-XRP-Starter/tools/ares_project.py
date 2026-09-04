@@ -289,9 +289,15 @@ def generate(check: bool = False) -> None:
             raise ValueError("Generated XRP safety tests are stale; run `ares generate`")
         return
     GENERATED.parent.mkdir(parents=True, exist_ok=True)
-    GENERATED.write_text(expected, encoding="utf-8", newline="\n")
+    current_source = GENERATED.read_text(encoding="utf-8") if GENERATED.is_file() else None
+    if current_source != expected:
+        GENERATED.write_text(expected, encoding="utf-8", newline="\n")
     GENERATED_TESTS.mkdir(parents=True, exist_ok=True)
-    (GENERATED_TESTS / "test_generated_safety.py").write_text(generated_test_source(), encoding="utf-8", newline="\n")
+    generated_test = GENERATED_TESTS / "test_generated_safety.py"
+    expected_test = generated_test_source()
+    current_test = generated_test.read_text(encoding="utf-8") if generated_test.is_file() else None
+    if current_test != expected_test:
+        generated_test.write_text(expected_test, encoding="utf-8", newline="\n")
     print(f"Generated {GENERATED.relative_to(ROOT)}")
 
 
@@ -300,7 +306,10 @@ def generated_test_source() -> str:
 
 
 def test() -> None:
-    generate(check=True)
+    # Generated sources and tests are disposable build outputs. A freshly cloned or
+    # exported standalone project must therefore be verifiable before they exist.
+    # `ares check` remains the explicit command for detecting stale generated files.
+    generate()
     sys.path.insert(0, str(GENERATED.parent))
     for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
         if candidate.is_dir():
@@ -325,7 +334,6 @@ def discover_test_suites() -> unittest.TestSuite:
 
 def build() -> None:
     """Regenerate canonical plumbing and run the complete compile/safety verification."""
-    generate()
     test()
 
 

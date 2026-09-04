@@ -3,6 +3,7 @@ import json
 import pathlib
 import sys
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -12,6 +13,23 @@ for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
 
 
 class GeneratedProjectTest(unittest.TestCase):
+    def test_verify_regenerates_disposable_outputs_before_running_tests(self):
+        tool_path = ROOT / "tools" / "ares_project.py"
+        spec = importlib.util.spec_from_file_location("ares_project_verify_tool", tool_path)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        empty_suite = unittest.TestSuite()
+
+        with (
+            mock.patch.object(tool, "generate") as generate,
+            mock.patch.object(tool, "discover_test_suites", return_value=empty_suite),
+            mock.patch.object(tool.unittest, "TextTestRunner") as runner,
+        ):
+            runner.return_value.run.return_value.wasSuccessful.return_value = True
+            tool.test()
+
+        generate.assert_called_once_with()
+
     def test_source_and_generated_suites_use_independent_discovery_roots(self):
         tool_path = ROOT / "tools" / "ares_project.py"
         spec = importlib.util.spec_from_file_location("ares_project_discovery_tool", tool_path)

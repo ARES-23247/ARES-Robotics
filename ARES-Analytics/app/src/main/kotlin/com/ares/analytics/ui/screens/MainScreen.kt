@@ -807,6 +807,10 @@ fun MainScreen(services: ServiceRegistry) {
                                     requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
                                     mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                                 },
+                                chooseStandaloneExport = { chooseStandaloneArchiveDestination(currentConfig) },
+                                exportStandaloneProject = { destination ->
+                                    exportStandaloneArchive(currentConfig, services.projectArchiveExporter, destination)
+                                },
                                 openAcademyLesson = {
                                     requestedCheckpointId = null
                                     requestedLessonId = it

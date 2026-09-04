@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -52,7 +53,9 @@ import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemSchema
 import com.areslib.project.AresProjectAuthoringModel
+import java.io.File
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Unified Robot Studio workspace. The hierarchy and context inspector wrap the real canonical
@@ -75,7 +78,8 @@ fun RobotStudioScreen(
     onOpenPitDiagnostics: () -> Unit,
     onRunVerification: () -> Unit,
     onOpenInIde: () -> String,
-    onCreateStandaloneProject: () -> Unit,
+    onChooseStandaloneExport: () -> File?,
+    onExportStandaloneProject: suspend (File) -> String,
     initialSelection: RobotStudioSelection = RobotStudioSelection.Identity,
 ) {
     val state by viewModel.state.collectAsState()
@@ -202,7 +206,8 @@ fun RobotStudioScreen(
             selection = RobotStudioSelection.Subsystem(subsystemViewModel.state.value.selectedDocumentId.orEmpty())
         },
         onOpenInIde = onOpenInIde,
-        onCreateStandaloneProject = onCreateStandaloneProject,
+        onChooseStandaloneExport = onChooseStandaloneExport,
+        onExportStandaloneProject = onExportStandaloneProject,
     ) { selected ->
         when (selected) {
             RobotStudioSelection.Identity -> ProjectIdentityScreen(
@@ -266,7 +271,8 @@ internal fun RobotStudioWorkspace(
     onSelect: (RobotStudioSelection) -> Unit,
     onAddSubsystem: () -> Unit,
     onOpenInIde: (() -> String)? = null,
-    onCreateStandaloneProject: (() -> Unit)? = null,
+    onChooseStandaloneExport: (() -> File?)? = null,
+    onExportStandaloneProject: (suspend (File) -> String)? = null,
     modifier: Modifier = Modifier,
     centerContent: @Composable (RobotStudioSelection) -> Unit,
 ) {
@@ -281,8 +287,10 @@ internal fun RobotStudioWorkspace(
         }
 
         Column(Modifier.fillMaxSize()) {
-            if (onOpenInIde != null || onCreateStandaloneProject != null) {
+            if (onOpenInIde != null || (onChooseStandaloneExport != null && onExportStandaloneProject != null)) {
                 var ideMessage by remember(state.projectPath) { mutableStateOf<String?>(null) }
+                var exportInProgress by remember(state.projectPath) { mutableStateOf(false) }
+                val actionScope = rememberCoroutineScope()
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
@@ -302,8 +310,24 @@ internal fun RobotStudioWorkspace(
                     onOpenInIde?.let { open ->
                         OutlinedButton(onClick = { ideMessage = open() }) { Text("Open in IDE") }
                     }
-                    onCreateStandaloneProject?.let { create ->
-                        OutlinedButton(onClick = create) { Text("Export standalone repository") }
+                    val chooseExport = onChooseStandaloneExport
+                    val export = onExportStandaloneProject
+                    if (chooseExport != null && export != null) {
+                        OutlinedButton(
+                            enabled = !exportInProgress,
+                            onClick = {
+                                val destination = chooseExport()
+                                if (destination != null) {
+                                    actionScope.launch {
+                                        exportInProgress = true
+                                        ideMessage = export(destination)
+                                        exportInProgress = false
+                                    }
+                                }
+                            },
+                        ) {
+                            Text(if (exportInProgress) "Exporting…" else "Export standalone archive")
+                        }
                     }
                 }
                 ideMessage?.let { message ->
