@@ -30,6 +30,8 @@ import com.ares.analytics.viewmodel.DashboardIntent
 import com.ares.analytics.viewmodel.DashboardViewModel
 import kotlinx.coroutines.launch
 import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.project.requireXrpRuntimeOptions
+import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 
 /**
  * Primary telemetry analytics dashboard screen displaying real-time robot visualization cards.
@@ -64,6 +66,7 @@ internal fun DashboardScreen(
     viewModel: DashboardViewModel,
     services: DashboardFeatureServices,
     currentConfig: WorkspaceConfig,
+    isRobotLinkConnected: Boolean,
     isLocalSimulatorSelected: Boolean,
     isSimulatorLaunchPreparationRunning: Boolean,
     simulatorLaunchRequiresVerification: Boolean,
@@ -110,6 +113,17 @@ internal fun DashboardScreen(
     val tuningDeclarations by produceState<List<TuningParameterDeclaration>>(emptyList(), currentConfig.projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             services.tuningProfiles.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()
+        }
+    }
+    val xrpBrownoutThresholdVolts by produceState<Double?>(null, currentConfig.league, currentConfig.projectPath) {
+        value = if (currentConfig.league == League.XRP) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                ProjectMetadataRepository().load(currentConfig.projectPath).getOrNull()
+                    ?.requireXrpRuntimeOptions()
+                    ?.brownoutThresholdVolts
+            }
+        } else {
+            null
         }
     }
 
@@ -232,7 +246,7 @@ internal fun DashboardScreen(
 
     val missionSnapshot = DashboardMissionSnapshot(
         workspace = currentConfig,
-        isConnected = state.isConnected,
+        isConnected = isRobotLinkConnected,
         isLocalSimulator = isLocalSimulator,
         isSimulatorRunning = isSimRunning,
         isReplayActive = isReplayActive || isReplayMode,
@@ -241,6 +255,7 @@ internal fun DashboardScreen(
         batteryVoltage = batteryVoltage,
         brownoutCount = brownoutCount,
         loopOverruns = loopOverruns,
+        xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
         activeAlerts = state.alerts,
         frameRateHz = frameRateHz,
         lastUpdateAgeMs = lastUpdateAgeMs,
@@ -257,7 +272,18 @@ internal fun DashboardScreen(
         ) {
 
         if (isLocalSimulator) {
-            LocalSimulatorControlBar(
+            if (currentConfig.league == League.XRP) XrpSimulatorControlBar(
+                xrpLink = liveServices.xrpLinkService,
+                keyboardDriveState = liveServices.keyboardDriveState,
+                projectPath = currentConfig.projectPath,
+                isConnected = isRobotLinkConnected,
+                isSimulatorProcessRunning = isSimRunning,
+                isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
+                canLaunchSimulator = canLaunchSimulator,
+                simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
+                onLaunchSimulator = onLaunchSimulator,
+                modifier = Modifier.fillMaxWidth(),
+            ) else LocalSimulatorControlBar(
                 nt4Client = liveServices.nt4ClientService,
                 keyboardDriveState = liveServices.keyboardDriveState,
                 league = currentConfig.league,
@@ -265,7 +291,7 @@ internal fun DashboardScreen(
                 seasonId = currentConfig.seasonId,
                 robotId = currentConfig.robotId,
                 projectPath = currentConfig.projectPath,
-                isConnected = state.isConnected,
+                isConnected = isRobotLinkConnected,
                 isSimulatorProcessRunning = isSimRunning,
                 isLaunchPreparationRunning = isSimulatorLaunchPreparationRunning,
                 launchRequiresVerification = simulatorLaunchRequiresVerification,
@@ -277,7 +303,7 @@ internal fun DashboardScreen(
             )
         }
 
-        if (shouldShowDashboardOfflineGuide(state.isConnected, state.primarySessionId, offlineGuideDismissed)) {
+        if (shouldShowDashboardOfflineGuide(isRobotLinkConnected, state.primarySessionId, offlineGuideDismissed)) {
             DashboardOfflineGuide(
                 onOpenRunHistory = onOpenRunHistory,
                 onOpenHelp = onOpenHelp,
@@ -292,6 +318,8 @@ internal fun DashboardScreen(
                 layout = layout,
                 services = services.widgets,
                 workspace = currentConfig,
+                isRobotLinkConnected = isRobotLinkConnected,
+                xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
                 dashboardState = state,
                 replayFrame = displayedReplayFrame,
                 replaySessionStartMs = replaySessionStart,
@@ -315,14 +343,13 @@ internal fun DashboardScreen(
         }
 
         // Timeline Scrubber Bar
-        val isConnected by liveServices.nt4ClientService.isConnected.collectAsState()
         val isReplayActive by liveServices.nt4ClientService.isReplayActive.collectAsState()
 
-        if (state.primarySessionId != null || isConnected) {
+        if (state.primarySessionId != null || isRobotLinkConnected) {
             ReplayTimelineScrubber(
                 replayEngine = replayEngine,
                 replayState = replayState,
-                isLiveConnection = state.primarySessionId == null,
+                isLiveConnection = state.primarySessionId == null && isRobotLinkConnected,
                 isReplayActive = isReplayActive,
                 sessionMode = state.sessionMode,
                 sessionId = state.primarySessionId,

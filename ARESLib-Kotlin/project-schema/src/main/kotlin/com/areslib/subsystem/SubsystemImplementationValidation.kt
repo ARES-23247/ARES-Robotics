@@ -10,10 +10,19 @@ internal object SubsystemImplementationValidation {
         val duplicateSourceFiles = duplicateSubsystemIds(implementation.sourceFiles)
         duplicateSourceFiles.forEach { issue("implementation.sourceFiles", "Source file '$it' is duplicated") }
         implementation.sourceFiles.forEachIndexed { index, path ->
-            if (!path.isSafeSubsystemProjectRelativeKotlinPath()) {
+            val valid = if (document.platform == SubsystemPlatform.XRP) {
+                path.isSafeSubsystemProjectRelativePath() && path.endsWith(".py")
+            } else {
+                path.isSafeSubsystemProjectRelativeKotlinPath()
+            }
+            if (!valid) {
                 issue(
                     "implementation.sourceFiles[$index]",
-                    "Source files must be normalized project-relative Kotlin paths",
+                    if (document.platform == SubsystemPlatform.XRP) {
+                        "XRP source files must be normalized project-relative Python paths"
+                    } else {
+                        "Source files must be normalized project-relative Kotlin paths"
+                    },
                 )
             }
         }
@@ -30,6 +39,15 @@ internal object SubsystemImplementationValidation {
         ).forEach { (field, className) ->
             if (className != null && !className.matches(SUBSYSTEM_QUALIFIED_KOTLIN_NAME)) {
                 issue("implementation.$field", "Class name must be a fully qualified Kotlin name")
+            }
+        }
+        listOf(
+            "pythonModuleName" to implementation.pythonModuleName,
+            "pythonFactoryName" to implementation.pythonFactoryName,
+            "pythonSimulationFactoryName" to implementation.pythonSimulationFactoryName,
+        ).forEach { (field, name) ->
+            if (name != null && !name.matches(SUBSYSTEM_QUALIFIED_PYTHON_NAME)) {
+                issue("implementation.$field", "Python registration names must contain identifiers separated by dots")
             }
         }
         val teaching = implementation.teaching
@@ -61,7 +79,8 @@ internal object SubsystemImplementationValidation {
                 }
                 if (implementation.modulePath != null || implementation.sourceFiles.isNotEmpty() ||
                     implementation.subsystemClassName != null || implementation.ioContractClassName != null ||
-                    implementation.hardwareAdapterClassName != null
+                    implementation.hardwareAdapterClassName != null || implementation.pythonModuleName != null ||
+                    implementation.pythonFactoryName != null || implementation.pythonSimulationFactoryName != null
                 ) {
                     issue("implementation", "Declarative generated source locations come from the Gradle generated-source target")
                 }
@@ -90,7 +109,8 @@ internal object SubsystemImplementationValidation {
                 }
                 if (implementation.modulePath != null || implementation.sourceFiles.isNotEmpty() ||
                     implementation.subsystemClassName != null || implementation.ioContractClassName != null ||
-                    implementation.hardwareAdapterClassName != null
+                    implementation.hardwareAdapterClassName != null || implementation.pythonModuleName != null ||
+                    implementation.pythonFactoryName != null || implementation.pythonSimulationFactoryName != null
                 ) {
                     issue("implementation", "Generated starter source locations come from the code-generation target")
                 }
@@ -116,18 +136,37 @@ internal object SubsystemImplementationValidation {
                 if (implementation.ownership != SubsystemSourceOwnership.USER_OWNED) {
                     issue("implementation.ownership", "Hand-authored Kotlin must use USER_OWNED ownership")
                 }
-                if (implementation.modulePath == null) {
-                    issue("implementation.modulePath", "Hand-authored subsystems require an owning Gradle module")
-                }
                 if (implementation.sourceFiles.isEmpty()) {
                     issue("implementation.sourceFiles", "Hand-authored subsystems require at least one user-owned source file")
                 }
-                listOf(
-                    "subsystemClassName" to implementation.subsystemClassName,
-                    "ioContractClassName" to implementation.ioContractClassName,
-                    "hardwareAdapterClassName" to implementation.hardwareAdapterClassName,
-                ).forEach { (field, className) ->
-                    if (className == null) issue("implementation.$field", "Hand-authored subsystems must name this runtime type")
+                if (document.platform == SubsystemPlatform.XRP) {
+                    if (implementation.modulePath != null || implementation.subsystemClassName != null ||
+                        implementation.ioContractClassName != null || implementation.hardwareAdapterClassName != null
+                    ) {
+                        issue("implementation", "Hand-authored XRP subsystems use Python factories, not Gradle or Kotlin classes")
+                    }
+                    if (implementation.pythonModuleName == null) {
+                        issue("implementation.pythonModuleName", "Hand-authored XRP subsystems require an importable Python module")
+                    }
+                    if (implementation.pythonFactoryName == null) {
+                        issue("implementation.pythonFactoryName", "Hand-authored XRP subsystems require a physical Python factory")
+                    }
+                } else {
+                    if (implementation.modulePath == null) {
+                        issue("implementation.modulePath", "Hand-authored subsystems require an owning Gradle module")
+                    }
+                    listOf(
+                        "subsystemClassName" to implementation.subsystemClassName,
+                        "ioContractClassName" to implementation.ioContractClassName,
+                        "hardwareAdapterClassName" to implementation.hardwareAdapterClassName,
+                    ).forEach { (field, className) ->
+                        if (className == null) issue("implementation.$field", "Hand-authored subsystems must name this runtime type")
+                    }
+                    if (implementation.pythonModuleName != null || implementation.pythonFactoryName != null ||
+                        implementation.pythonSimulationFactoryName != null
+                    ) {
+                        issue("implementation", "FTC and FRC hand-authored subsystems use Kotlin registration, not Python factories")
+                    }
                 }
                 if (document.generateMockIo || document.generateTest) {
                     issue(
@@ -141,7 +180,11 @@ internal object SubsystemImplementationValidation {
                         "Hand-authored subsystems cannot claim a generated mock",
                     )
                     SubsystemSimulationSupport.HAND_AUTHORED_MOCK,
-                    SubsystemSimulationSupport.HAND_AUTHORED_SIMULATOR -> if (implementation.simulation.adapterClassName == null) {
+                    SubsystemSimulationSupport.HAND_AUTHORED_SIMULATOR -> if (
+                        document.platform == SubsystemPlatform.XRP && implementation.pythonSimulationFactoryName == null
+                    ) {
+                        issue("implementation.pythonSimulationFactoryName", "Available XRP simulation support requires its Python factory")
+                    } else if (document.platform != SubsystemPlatform.XRP && implementation.simulation.adapterClassName == null) {
                         issue("implementation.simulation.adapterClassName", "Available simulation support requires its adapter class")
                     }
                     SubsystemSimulationSupport.UNAVAILABLE -> if (implementation.simulation.adapterClassName != null) {
@@ -248,5 +291,7 @@ internal object SubsystemImplementationValidation {
         SubsystemHardwareKind.PRISM_DRIVER,
         SubsystemHardwareKind.SOLENOID,
     )
+
+    private val SUBSYSTEM_QUALIFIED_PYTHON_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*")
 }
 

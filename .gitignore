@@ -14,3 +14,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.iml
+# Python bytecode is never a project source or release asset.
+__pycache__/
+*.py[cod]
+/ARES-XRP-Starter/build/
+/ARES-XRP-Starter/xrp_secrets.py

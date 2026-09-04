@@ -5,6 +5,7 @@ import com.ares.analytics.service.AresProjectGenerator
 import com.ares.analytics.service.SubsystemDesignAssistant
 import com.ares.analytics.service.SubsystemDesignProposal
 import com.ares.analytics.service.sanitizeSubsystemDesignCandidate
+import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.AresProjectDocuments
@@ -281,16 +282,29 @@ class SubsystemGeneratorViewModel(
         var id = "existing-subsystem"
         while (id in used) id = "existing-subsystem-${++suffix}"
         val name = if (suffix == 1) "ExistingSubsystem" else "ExistingSubsystem$suffix"
-        val packageName = "$basePackage.${id.replace('-', '_')}"
+        val safeId = id.replace('-', '_')
+        val packageName = "$basePackage.$safeId"
         val sourceRoot = when (league) {
             League.FTC -> "TeamCode/src/main/java"
             League.FRC -> "src/main/kotlin"
             League.XRP -> "src"
         }
-        val document = SubsystemTemplates.create(SubsystemTemplate.ADVANCED_CUSTOM, id, name, platform).copy(
-            generateMockIo = false,
-            generateTest = false,
-            implementation = SubsystemImplementationDocument(
+        val implementation = if (league == League.XRP) {
+            SubsystemImplementationDocument(
+                kind = SubsystemImplementationKind.HAND_AUTHORED,
+                ownership = SubsystemSourceOwnership.USER_OWNED,
+                sourceFiles = listOf("extensions/$safeId.py"),
+                pythonModuleName = "extensions.$safeId",
+                pythonFactoryName = "create_subsystem",
+                pythonSimulationFactoryName = "create_simulated_subsystem",
+                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.HAND_AUTHORED_SIMULATOR),
+                teaching = SubsystemTeachingDocument(
+                    level = SubsystemTeachingLevel.INTERMEDIATE,
+                    summary = "Team-owned Python subsystem registered explicitly with ARES.",
+                ),
+            )
+        } else {
+            SubsystemImplementationDocument(
                 kind = SubsystemImplementationKind.HAND_AUTHORED,
                 ownership = SubsystemSourceOwnership.USER_OWNED,
                 modulePath = if (league == League.FTC) ":TeamCode" else ":",
@@ -303,7 +317,12 @@ class SubsystemGeneratorViewModel(
                     level = SubsystemTeachingLevel.INTERMEDIATE,
                     summary = "Existing team-owned subsystem registered with ARES.",
                 ),
-            ),
+            )
+        }
+        val document = SubsystemTemplates.create(SubsystemTemplate.ADVANCED_CUSTOM, id, name, platform).copy(
+            generateMockIo = false,
+            generateTest = false,
+            implementation = implementation,
         )
         _state.update { current ->
             current.copy(
@@ -708,7 +727,10 @@ class SubsystemGeneratorViewModel(
             _state.update { it.copy(status = "Fix validation errors before saving.") }
             return
         }
-        runCatching { persistence.save(current.projectPath, current.projectRevision, draft) }
+        runCatching {
+            ensureXrpExtensionScaffold(current.projectPath, draft)
+            persistence.save(current.projectPath, current.projectRevision, draft)
+        }
             .onSuccess { saved ->
                 _state.update { state ->
                     val persisted = saved.document
@@ -917,6 +939,58 @@ class SubsystemGeneratorViewModel(
     override fun close() = scope.cancel()
 
     private companion object {
+        fun ensureXrpExtensionScaffold(projectPath: String, document: SubsystemDocument) {
+            if (document.platform != SubsystemPlatform.XRP ||
+                document.implementation.kind != SubsystemImplementationKind.HAND_AUTHORED
+            ) return
+            val relative = document.implementation.sourceFiles.singleOrNull()
+                ?: error("An XRP extension must declare exactly one USER-OWNED Python source file")
+            val root = File(projectPath).canonicalFile
+            val target = File(root, relative).canonicalFile
+            require(target.toPath().startsWith(root.toPath()) && target.extension == "py") {
+                "The XRP extension source must be a project-relative Python file"
+            }
+            if (target.exists()) return
+            writeFileAtomically(target) { temporary ->
+                temporary.writeText(
+                    """\
+                    |\"\"\"USER-OWNED XRP subsystem extension. Studio will never overwrite this file.\"\"\"
+                    |
+                    |class UserSubsystem:
+                    |    def __init__(self, hardware_factory):
+                    |        self.hardware_factory = hardware_factory
+                    |        self.document_id = ${document.documentId.quotedPython()}
+                    |        self.capability_action_keys = ()
+                    |        self.faulted = False
+                    |
+                    |    def periodic(self, dt):
+                    |        pass
+                    |
+                    |    def stop(self):
+                    |        pass
+                    |
+                    |    def recover_neutral(self):
+                    |        self.stop()
+                    |        self.faulted = False
+                    |        return True
+                    |
+                    |    def handle_action(self, action_key, arguments):
+                    |        raise ValueError(\"Unsupported action: \" + action_key)
+                    |
+                    |
+                    |def create_subsystem(hardware_factory):
+                    |    return UserSubsystem(hardware_factory)
+                    |
+                    |
+                    |def create_simulated_subsystem(hardware_factory):
+                    |    return UserSubsystem(hardware_factory)
+                    |""".trimMargin(),
+                )
+            }
+        }
+
+        fun String.quotedPython(): String = "'" + replace("\\", "\\\\").replace("'", "\\'") + "'"
+
         fun uniqueId(base: String, used: List<String>): String {
             if (base !in used) return base
             var suffix = 2

@@ -102,8 +102,11 @@ object SubsystemTemplates {
     }
 
     private fun motorConnection(platform: SubsystemPlatform, name: String, canId: Int = 1) =
-        if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = name)
-        else SubsystemHardwareConnection(canId = canId)
+        when (platform) {
+            SubsystemPlatform.FTC -> SubsystemHardwareConnection(hardwareMapName = name)
+            SubsystemPlatform.FRC -> SubsystemHardwareConnection(canId = canId)
+            SubsystemPlatform.XRP -> SubsystemHardwareConnection(channel = 3)
+        }
 
     private fun digitalConnection(platform: SubsystemPlatform, name: String, channel: Int = 0) =
         if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = name)
@@ -178,15 +181,17 @@ object SubsystemTemplates {
             hardware = listOf(
                 SubsystemHardwareDocument(
                     "motor", "Motor", SubsystemHardwareKind.MOTOR, motorConnection(platform, "motor"),
-                    measurements = listOf(
-                        SubsystemMeasurementDocument("position", SubsystemMeasurementSource.MOTOR_POSITION_NATIVE),
-                        SubsystemMeasurementDocument("velocity", SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND),
-                        SubsystemMeasurementDocument(
-                            "currentAmps",
-                            SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
-                            validMinimum = 0.0,
-                        ),
-                    ),
+                    measurements = buildList {
+                        add(SubsystemMeasurementDocument("position", SubsystemMeasurementSource.MOTOR_POSITION_NATIVE))
+                        add(SubsystemMeasurementDocument("velocity", SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND))
+                        if (platform != SubsystemPlatform.XRP) add(
+                            SubsystemMeasurementDocument(
+                                "currentAmps",
+                                SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
+                                validMinimum = 0.0,
+                            ),
+                        )
+                    },
                     safeOutput = 0.0,
                 )
             ),
@@ -194,7 +199,7 @@ object SubsystemTemplates {
                 add(SubsystemStateFieldDocument("target", "Target", SubsystemValueType.DOUBLE, SubsystemFieldRole.TARGET, defaultNumber = 0.0))
                 add(SubsystemStateFieldDocument("position", "Position", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0))
                 add(SubsystemStateFieldDocument("velocity", "Velocity", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0))
-                add(SubsystemStateFieldDocument("currentAmps", "Current", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, unit = "A", defaultNumber = 0.0, minimum = 0.0))
+                if (platform != SubsystemPlatform.XRP) add(SubsystemStateFieldDocument("currentAmps", "Current", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, unit = "A", defaultNumber = 0.0, minimum = 0.0))
             },
             controlLoops = listOf(
                 SubsystemControlLoopDocument(
@@ -205,7 +210,7 @@ object SubsystemTemplates {
             ),
             safety = SubsystemSafetyDocument(
                 feedbackTimeoutMs = 250L,
-                requiresCurrentMonitoring = true,
+                requiresCurrentMonitoring = platform != SubsystemPlatform.XRP,
             ),
             autonomousResourceKey = id,
         )
@@ -343,7 +348,11 @@ object SubsystemTemplates {
         hardware = listOf(
             SubsystemHardwareDocument(
                 "servo", "Servo", SubsystemHardwareKind.POSITIONAL_SERVO,
-                if (platform == SubsystemPlatform.FTC || platform == SubsystemPlatform.XRP) SubsystemHardwareConnection(hardwareMapName = "servo") else SubsystemHardwareConnection(channel = 0),
+                when (platform) {
+                    SubsystemPlatform.FTC -> SubsystemHardwareConnection(hardwareMapName = "servo")
+                    SubsystemPlatform.FRC -> SubsystemHardwareConnection(channel = 0)
+                    SubsystemPlatform.XRP -> SubsystemHardwareConnection(channel = 1)
+                },
                 safeOutput = 0.5,
             )
         ),

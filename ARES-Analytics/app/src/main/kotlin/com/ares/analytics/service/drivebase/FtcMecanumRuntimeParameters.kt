@@ -5,6 +5,7 @@ import com.areslib.drivetrain.DrivetrainComponentDocument
 import com.areslib.drivetrain.DrivetrainComponentRole
 import com.areslib.drivetrain.DrivetrainDocument
 import com.areslib.drivetrain.DrivetrainKind
+import com.areslib.drivetrain.DrivetrainPlatform
 import com.areslib.drivetrain.LocalizationSourceKind
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningParameterDeclaration
@@ -41,7 +42,7 @@ internal object FtcMecanumRuntimeParameters {
     }
 
     fun reconcile(document: DrivetrainDocument): DrivetrainDocument {
-        if (document.kind != DrivetrainKind.FTC_MECANUM) return document
+        if (document.kind != DrivetrainKind.FTC_MECANUM || document.platform != DrivetrainPlatform.FTC) return document
         val topologyReady = reconcileVisionTopology(reconcilePinpointTopology(document))
         val required = requiredFor(topologyReady)
         val requiredKeys = required.mapTo(HashSet()) { it.key }
@@ -61,7 +62,7 @@ internal object FtcMecanumRuntimeParameters {
 
     /** Validates the one current FTC runtime contract without rewriting persisted documents. */
     fun validationIssues(document: DrivetrainDocument): List<String> {
-        if (document.kind != DrivetrainKind.FTC_MECANUM) return emptyList()
+        if (document.kind != DrivetrainKind.FTC_MECANUM || document.platform != DrivetrainPlatform.FTC) return emptyList()
         val expected = requiredFor(document).associateBy { it.key }
         val actual = document.parameters.associateBy { it.key }
         return buildList {
@@ -214,6 +215,6 @@ internal object FtcMecanumRuntimeParameters {
 
 /** Returns a reviewed draft with every generator-required declaration represented explicitly. */
 internal fun DrivebaseDocument.withRuntimeRequirements(): DrivebaseDocument {
-    if (kind != DrivebaseKind.FTC_MECANUM) return this
+    if (kind != DrivebaseKind.FTC_MECANUM || canonical?.platform != DrivetrainPlatform.FTC) return this
     return FtcMecanumRuntimeParameters.reconcile(toCanonicalDrivebase()).toUiDrivebase()
 }

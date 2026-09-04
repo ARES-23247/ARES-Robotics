@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "documentId": "xrp-driver",
+  "revision": 1,
+  "displayName": "XRP desktop gamepad",
+  "deviceMatchers": [{"nameContains":"gamepad","minimumAxisCount":4,"minimumButtonCount":8}],
+  "controls": [
+    {"controlId":"left_stick_y","displayName":"Left stick Y","type":"AXIS","surface":"FRONT","anchor":{"x":0.35,"y":0.72},"mappings":[{"platform":"XRP","axisIndex":1}],"aliases":[]},
+    {"controlId":"right_stick_x","displayName":"Right stick X","type":"AXIS","surface":"FRONT","anchor":{"x":0.65,"y":0.62},"mappings":[{"platform":"XRP","axisIndex":2}],"aliases":[]},
+    {"controlId":"back","displayName":"Back","type":"BUTTON","surface":"FRONT","anchor":{"x":0.43,"y":0.40},"mappings":[{"platform":"XRP","buttonIndex":6}],"aliases":["back","share"]},
+    {"controlId":"start","displayName":"Start","type":"BUTTON","surface":"FRONT","anchor":{"x":0.57,"y":0.40},"mappings":[{"platform":"XRP","buttonIndex":7}],"aliases":["start","options"]}
+  ]
+}

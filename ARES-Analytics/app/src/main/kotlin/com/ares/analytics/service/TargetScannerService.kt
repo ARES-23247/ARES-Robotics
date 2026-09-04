@@ -10,7 +10,7 @@ import java.net.Socket
 /**
  * Background network polling service discovering online telemetry hosts (Local Simulation & Live Robot).
  *
- * Periodically attempts socket connections to port `5810` (every 2.0s with a 200ms timeout), updating active online status flows
+ * Periodically attempts socket connections to the selected platform link port, updating active online status flows
  * for local desktop simulators (`127.0.0.1:5810`) and live wireless robot control hubs.
  *
  * ### Thread Safety & Performance Guarantees:
@@ -32,16 +32,17 @@ class TargetScannerService {
      * Starts continuous socket polling for local and remote robot telemetry endpoints.
      *
      * @param liveRobotHost IP address or hostname of the live robot controller (e.g., `"192.168.43.1"`).
+     * @param port platform link port: NT4 uses 5810 and XRP uses its dedicated JSON link port.
      */
-    fun startScanning(liveRobotHost: String) {
+    fun startScanning(liveRobotHost: String, port: Int = 5810) {
         scannerJob?.cancel()
         scannerJob = serviceScope.launch {
             while (isActive) {
                 // Check Local Sim
-                _isLocalSimOnline.value = checkPort("127.0.0.1", 5810)
+                _isLocalSimOnline.value = checkPort("127.0.0.1", port)
 
                 // Check Live Robot
-                _isLiveRobotOnline.value = checkPort(liveRobotHost, 5810)
+                _isLiveRobotOnline.value = checkPort(liveRobotHost, port)
 
                 delay(2000) // Poll every 2 seconds
             }

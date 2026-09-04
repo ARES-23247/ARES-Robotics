@@ -8,11 +8,19 @@
     "displayName": "ARES XRP Starter"
   },
   "league": "XRP",
-  "coordinateConvention": "CORNER_ORIGIN_CCW",
+  "coordinateConvention": "CENTER_ORIGIN_CCW",
   "robotLengthMeters": 0.155,
   "robotWidthMeters": 0.155,
   "fieldLengthMeters": 2.54,
   "fieldWidthMeters": 1.4224,
   "authoringModel": "GUI_OWNED",
-  "runtimeOptions": {}
+  "runtimeOptions": {
+    "xrp": {
+      "wifiMode": "AP",
+      "ssid": "ARES-XRP-AUTO",
+      "port": 5811,
+      "deadmanTimeoutMs": 200,
+      "brownoutThresholdVolts": 4.3
+    }
+  }
 }

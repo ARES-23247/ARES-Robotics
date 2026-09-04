@@ -284,7 +284,7 @@ fun validateDrivetrainDocument(document: DrivetrainDocument): List<DrivetrainVal
     when (document.kind) {
         DrivetrainKind.FTC_MECANUM -> {
             if ((document.platform != DrivetrainPlatform.FTC && document.platform != DrivetrainPlatform.XRP) || document.ctreImport != null) {
-                issue("kind", "Mecanum cannot use FRC/CTRE metadata")
+                issue("kind", "Mecanum requires FTC or XRP and cannot use CTRE metadata")
             }
             val driveMotors = document.components.filter { it.role == DrivetrainComponentRole.DRIVE_MOTOR }
             if (driveMotors.size != 4) issue("components", "Mecanum requires exactly four drive motors")

@@ -158,7 +158,7 @@ class ProjectBuildService internal constructor(
             val projectRoot = requireSafeProjectRoot(projectPath)
             val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
             commandFactory.requireProjectDependenciesCompatible(projectRoot)
-            commandFactory.requireGradleWrapper(projectRoot, isWindows)
+            commandFactory.requireProjectWrapper(projectRoot, league, isWindows)
             val command = commandFactory.verificationBuild(league, isWindows)
             val pendingRun = VerificationRunStore.begin(
                 projectRoot = projectRoot,
@@ -289,8 +289,8 @@ class ProjectBuildService internal constructor(
         val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
         val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
         commandFactory.requireProjectDependenciesCompatible(root)
-        commandFactory.requireGradleWrapper(root, isWindows)
-        val command = commandFactory.authoring(task, isWindows, confirmationToken)
+        commandFactory.requireProjectWrapper(root, league, isWindows)
+        val command = commandFactory.authoring(league, task, isWindows, confirmationToken)
         val diagnosticLines = ArrayDeque<String>(GENERATION_DIAGNOSTIC_LINE_LIMIT)
         try {
             val exitCode = runOwnedBuildProcess(
@@ -336,10 +336,10 @@ class ProjectBuildService internal constructor(
             }
             val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
             commandFactory.requireProjectDependenciesCompatible(root)
-            commandFactory.requireGradleWrapper(root, isWindows)
+            commandFactory.requireProjectWrapper(root, league, isWindows)
 
-            val command = commandFactory.authoring("generateAresProject", isWindows)
-            _buildOutput.emit("[ARES] Generating checked-in Kotlin from canonical project files")
+            val command = commandFactory.authoring(league, "generateAresProject", isWindows)
+            _buildOutput.emit("[ARES] Generating ${if (league == League.XRP) "MicroPython" else "Kotlin"} from canonical project files")
             val exitCode = runOwnedBuildProcess(
                 generation,
                 commandFactory.configureEnvironment(ProcessBuilder(command)
@@ -364,7 +364,7 @@ class ProjectBuildService internal constructor(
                 generation,
                 AresGenerationState(
                     AresGenerationPhase.SUCCEEDED,
-                    "Generated Kotlin is current.$suffix Robot builds will still verify it is not stale.",
+                    "Generated ${if (league == League.XRP) "MicroPython" else "Kotlin"} is current.$suffix Robot builds will still verify it is not stale.",
                     hash
                 )
             )
@@ -649,7 +649,7 @@ class ProjectBuildService internal constructor(
         val relative = when (league) {
             League.FTC -> "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt"
             League.FRC -> "src/main/kotlin/com/areslib/frc/generated/GeneratedAresProject.kt"
-            League.XRP -> "src/generated_ares_project.py"
+            League.XRP -> "build/generated/ares/python/generated_ares_project.py"
         }
         val generated = File(root, relative).canonicalFile
         if (!generated.isFile || !generated.toPath().startsWith(root.toPath())) return null
@@ -659,7 +659,9 @@ class ProjectBuildService internal constructor(
     private companion object {
         const val GENERATION_DIAGNOSTIC_LINE_LIMIT = 24
         const val GENERATION_DIAGNOSTIC_CHARACTER_LIMIT = 4_000
-        val GENERATED_CONTENT_HASH = Regex("CONTENT_SHA256:\\s*String\\s*=\\s*\"([0-9a-fA-F]{64})\"")
+        val GENERATED_CONTENT_HASH = Regex(
+            "(?:CONTENT_SHA256:\\s*String\\s*=|CONTENT_SHA256\\s*=)\\s*\"([0-9a-fA-F]{64})\"",
+        )
     }
 }
 

@@ -328,6 +328,25 @@ open class Nt4ClientService(
         telemetryStore.accept(frame)
     }
 
+    /** Accepts normalized telemetry from a non-NT4 platform transport such as the XRP link. */
+    suspend fun acceptExternalLiveTelemetry(key: String, value: Double, stringValue: String? = null) {
+        require(value.isFinite()) { "External live telemetry must be finite" }
+        val nowMs = System.currentTimeMillis()
+        val liveReceiptUs = liveReceiptTimestampUs()
+        val frame = TelemetryFrame(
+            timestampMs = nowMs,
+            timestampUs = nowMs * 1_000L,
+            sessionId = LIVE_SESSION_ID,
+            key = com.ares.analytics.service.log.TelemetryTopicExtractor.normalizeTopic(key.removePrefix("/")),
+            value = value,
+            stringValue = stringValue,
+        )
+        pendingFrames.send(
+            frame.copy(timestampMs = liveReceiptUs / 1_000L, timestampUs = liveReceiptUs),
+        )
+        telemetryStore.accept(frame, notifyConsumers = !isReplayActive.value)
+    }
+
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
 

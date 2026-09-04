@@ -14,6 +14,7 @@ desktop toolchains while giving them one reviewed source history and one release
 | `ARES-Analytics/` | ARES Robotics Studio, local analytics database, telemetry/replay, cloud-optional services, and gateway |
 | `ARES-FTC-Starter/` | Canonical source for the generated public FTC starter mirror |
 | `ARES-FRC-Starter/` | Canonical source for the generated public FRC starter mirror |
+| `ARES-XRP-Starter/` | Python-native XRP starter, deterministic `.ares` compiler, simulator, and Pico W deployment tooling |
 | `templates/` | Monorepo-owned mechanical runtime templates that must not be copied into editable robot source |
 | `build-logic/`, `release/` | Shared dependency and immutable release identity policy |
 
@@ -70,7 +71,7 @@ consumers use immutable `org.aresfirst.ares` artifacts. Cross-project changes us
 prerelease version and one isolated validation repository; ambient `mavenLocal()` resolution is
 forbidden.
 
-Public FTC and FRC starter repositories are release mirrors. Their bytes are exported with
+Public FTC, FRC, and XRP starter repositories are release mirrors. Their bytes are exported with
 `scripts/export-starter-mirrors.ps1`, and reproducible release archives are built with
 `scripts/build-starter-archives.ps1`; manual drift or checksum mismatch is rejected by CI.
 

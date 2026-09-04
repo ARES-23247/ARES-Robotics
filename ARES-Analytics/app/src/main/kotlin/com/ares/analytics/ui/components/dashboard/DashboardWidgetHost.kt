@@ -18,6 +18,8 @@ fun DashboardWidgetHost(
     layout: DashboardLayoutConfig,
     services: DashboardWidgetServices,
     workspace: WorkspaceConfig,
+    isRobotLinkConnected: Boolean,
+    xrpBrownoutThresholdVolts: Double?,
     dashboardState: DashboardState,
     replayFrame: ReplayFrame?,
     replaySessionStartMs: Long,
@@ -37,6 +39,8 @@ fun DashboardWidgetHost(
     val renderContext = DashboardWidgetRenderContext(
         services = services,
         workspace = workspace,
+        isRobotLinkConnected = isRobotLinkConnected,
+        xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
         dashboardState = dashboardState,
         layout = layout,
         replayFrame = replayFrame,

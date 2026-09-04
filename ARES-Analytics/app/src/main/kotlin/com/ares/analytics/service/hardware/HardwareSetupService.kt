@@ -25,6 +25,7 @@ enum class HardwareInventoryOwner { DRIVEBASE, SUBSYSTEM }
 
 enum class HardwareAddressKind(val label: String) {
     FTC_HARDWARE_MAP("FTC hardware-map name"),
+    XRP_PORT("XRP built-in / expansion port"),
     CAN("CAN device"),
     PWM("PWM channel"),
     I2C("I2C device"),
@@ -227,10 +228,10 @@ class HardwareSetupService(
                         .filter { it.id in physicalComponentIds }
                         .forEach { device ->
                             val address = device.canId?.toString() ?: device.hardwareName.trim()
-                            val addressKind = if (league == League.FTC) {
-                                HardwareAddressKind.FTC_HARDWARE_MAP
-                            } else {
-                                HardwareAddressKind.CAN
+                            val addressKind = when (league) {
+                                League.FTC -> HardwareAddressKind.FTC_HARDWARE_MAP
+                                League.FRC -> HardwareAddressKind.CAN
+                                League.XRP -> HardwareAddressKind.XRP_PORT
                             }
                             items += HardwareInventoryItem(
                                 uid = "drivebase:${device.id}",
@@ -276,7 +277,12 @@ class HardwareSetupService(
                     .distinct()
                 val homing = subsystem.safety.homing.takeIf { it.actuatorId == device.hardwareId }
                 val address = when (league) {
-                    League.FTC, League.XRP -> device.connection.hardwareMapName.orEmpty().trim()
+                    League.FTC -> device.connection.hardwareMapName.orEmpty().trim()
+                    League.XRP -> when (device.kind) {
+                        SubsystemHardwareKind.DISTANCE_SENSOR -> "built-in rangefinder"
+                        SubsystemHardwareKind.IMU -> "built-in IMU"
+                        else -> device.connection.channel?.toString().orEmpty()
+                    }
                     League.FRC -> when (device.kind) {
                         SubsystemHardwareKind.QUADRATURE_ENCODER -> listOfNotNull(
                             device.connection.channel,
@@ -293,7 +299,8 @@ class HardwareSetupService(
                     }
                 }
                 val addressKind = when (league) {
-                    League.FTC, League.XRP -> HardwareAddressKind.FTC_HARDWARE_MAP
+                    League.FTC -> HardwareAddressKind.FTC_HARDWARE_MAP
+                    League.XRP -> HardwareAddressKind.XRP_PORT
                     League.FRC -> device.addressKind()
                 }
                 val bus = when {
@@ -546,6 +553,7 @@ class HardwareSetupService(
 
     private fun collisionKey(item: HardwareInventoryItem): String = when (item.addressKind) {
         HardwareAddressKind.FTC_HARDWARE_MAP -> "ftc:${item.address.lowercase()}"
+        HardwareAddressKind.XRP_PORT -> "xrp:${item.address.lowercase()}"
         HardwareAddressKind.CAN -> "can:${item.bus.orEmpty().lowercase()}:${item.address}"
         HardwareAddressKind.PWM -> "pwm:${item.address}"
         HardwareAddressKind.I2C -> "i2c:${item.address.lowercase()}"
@@ -611,58 +619,3 @@ class HardwareSetupService(
     }
 
 }
-
-private fun DriveHardwareRole.readableName(): String = name.lowercase().replace('_', ' ')
-
-/** Logical drivebase/module grouping nodes are not devices students configure on a controller. */
-private fun SubsystemHardwareKind.readableName(): String = name.lowercase().replace('_', ' ')
-
-private fun com.areslib.subsystem.SubsystemHardwareDocument.addressKind(): HardwareAddressKind = when (kind) {
-    SubsystemHardwareKind.MOTOR -> HardwareAddressKind.CAN
-    SubsystemHardwareKind.POSITIONAL_SERVO,
-    SubsystemHardwareKind.CONTINUOUS_SERVO,
-    SubsystemHardwareKind.INDICATOR_LIGHT,
-    SubsystemHardwareKind.PRISM_DRIVER -> HardwareAddressKind.PWM
-    SubsystemHardwareKind.COLOR_SENSOR -> HardwareAddressKind.I2C
-    SubsystemHardwareKind.DIGITAL_INPUT,
-    SubsystemHardwareKind.QUADRATURE_ENCODER -> HardwareAddressKind.DIO
-    SubsystemHardwareKind.ANALOG_INPUT,
-    SubsystemHardwareKind.ABSOLUTE_ENCODER,
-    SubsystemHardwareKind.DISTANCE_SENSOR -> HardwareAddressKind.ANALOG
-    SubsystemHardwareKind.IMU -> HardwareAddressKind.SPI
-    SubsystemHardwareKind.SOLENOID -> HardwareAddressKind.PNEUMATICS
-}
-
-private fun com.areslib.subsystem.SubsystemHardwareDocument.configurationDetails(): List<String> = buildList {
-    val follower = following
-    follower?.leaderId?.takeIf(String::isNotBlank)?.let { leaderId ->
-        add("Follower of hardware ID: $leaderId (${follower.transform.name.lowercase().replace('_', ' ')})")
-    }
-    encoderCountsPerRevolution?.let { add("Encoder resolution: ${formatSetupNumber(it)} counts/revolution") }
-    distanceMetersPerVolt?.let { add("Distance calibration: ${formatSetupNumber(it)} meters/volt") }
-    if (kind == SubsystemHardwareKind.IMU) {
-        val logo = imuLogoFacingDirection
-        val usb = imuUsbFacingDirection
-        when {
-            logo != null && usb != null ->
-                add("Control Hub mounting: logo faces ${logo.name.lowercase()}, USB faces ${usb.name.lowercase()}")
-            logo == null && usb == null ->
-                add("Onboard SPI gyro; ARES converts the raw heading to CCW-positive radians")
-            else -> error("${displayName} has an incomplete IMU orientation declaration.")
-        }
-    }
-    safeOutput?.let { add("Safe neutral output: ${formatSetupNumber(it)}") }
-    currentLimitAmps?.let { add("Configured current limit: ${formatSetupNumber(it)} A") }
-}
-
-private fun formatSetupNumber(value: Double): String = if (value == value.toLong().toDouble()) {
-    value.toLong().toString()
-} else {
-    value.toString()
-}
-
-private val MOTION_ACTUATOR_KINDS = setOf(
-    SubsystemHardwareKind.MOTOR,
-    SubsystemHardwareKind.POSITIONAL_SERVO,
-    SubsystemHardwareKind.CONTINUOUS_SERVO,
-)

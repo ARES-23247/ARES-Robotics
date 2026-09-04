@@ -33,6 +33,8 @@ data class DashboardWidgetRenderContext(
     private val services: DashboardWidgetServices,
     private val declaredCapabilities: Set<DashboardWidgetCapability> = emptySet(),
     val workspace: WorkspaceConfig,
+    val isRobotLinkConnected: Boolean,
+    val xrpBrownoutThresholdVolts: Double?,
     val dashboardState: DashboardState,
     val layout: DashboardLayoutConfig,
     val replayFrame: ReplayFrame?,
@@ -116,6 +118,7 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 currentFrame = context.replayFrame,
                 databaseService = context.analysisServices.databaseService,
                 replayStartTimestampMs = context.replaySessionStartMs,
+                liveTransportConnected = context.isRobotLinkConnected,
                 league = context.workspace.league,
                 projectPath = context.workspace.projectPath,
                 properties = widget.properties,
@@ -222,7 +225,15 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
         },
 
         definition("system_health", "Dashboard & Robot Health", "Ingest, query, cache, reconnect, loop, and battery health.", Icons.Default.Memory, DashboardWidgetCategory.DIAGNOSTICS, 3, 4, recommended = true, capabilities = liveReplay) { _, context, modifier ->
-            SystemHealthCard(context.liveServices.nt4ClientService, context.liveServices.dashboardHealthService, context.replayFrame, modifier)
+            SystemHealthCard(
+                nt4ClientService = context.liveServices.nt4ClientService,
+                dashboardHealthService = context.liveServices.dashboardHealthService,
+                currentFrame = context.replayFrame,
+                league = context.workspace.league,
+                isRobotLinkConnected = context.isRobotLinkConnected,
+                xrpBrownoutThresholdVolts = context.xrpBrownoutThresholdVolts,
+                modifier = modifier,
+            )
         },
         definition("alerts", "Live Alerts", "Battery, motor, communications, and sensor warnings.", Icons.Default.Warning, DashboardWidgetCategory.DIAGNOSTICS, 3, 4, recommended = true, capabilities = liveReplay + DashboardWidgetCapability.DATABASE) { _, context, modifier ->
             AlertPanel(context.liveServices.alertEngineService, modifier)

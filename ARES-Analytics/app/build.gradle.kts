@@ -29,9 +29,11 @@ fun requiredStarterArtifact(name: String): String = starterArtifactProperties.ge
 val bundledAresVersion = requiredReleaseProperty("aresVersion")
 val ftcStarterVersion = requiredReleaseProperty("ftcStarterVersion")
 val frcStarterVersion = requiredReleaseProperty("frcStarterVersion")
+val xrpStarterVersion = requiredReleaseProperty("xrpStarterVersion")
 val lightbotExampleVersion = requiredReleaseProperty("lightbotExampleVersion")
 val ftcStarterSha256 = requiredStarterArtifact("ftcStarterSha256")
 val frcStarterSha256 = requiredStarterArtifact("frcStarterSha256")
+val xrpStarterSha256 = requiredStarterArtifact("xrpStarterSha256")
 val lightbotExampleSha256 = requiredStarterArtifact("lightbotExampleSha256")
 val aresProductName = "ARES Robotics Studio"
 val aresProductTagline = "Design • Simulate • Operate • Analyze"
@@ -180,9 +182,11 @@ tasks.register("generateBuildConfig") {
     val aresVersion = bundledAresVersion
     val ftcVersion = ftcStarterVersion
     val frcVersion = frcStarterVersion
+    val xrpVersion = xrpStarterVersion
     val lightbotVersion = lightbotExampleVersion
     val ftcHash = ftcStarterSha256
     val frcHash = frcStarterSha256
+    val xrpHash = xrpStarterSha256
     val lightbotHash = lightbotExampleSha256
     inputs.property("aresAnalyticsVersion", version)
     inputs.property("aresProductName", productName)
@@ -236,9 +240,11 @@ tasks.register("generateBuildConfig") {
             |    const val ARES_VERSION = "$aresVersion"
             |    const val FTC_STARTER_VERSION = "$ftcVersion"
             |    const val FRC_STARTER_VERSION = "$frcVersion"
+            |    const val XRP_STARTER_VERSION = "$xrpVersion"
             |    const val LIGHTBOT_EXAMPLE_VERSION = "$lightbotVersion"
             |    const val FTC_STARTER_SHA256 = "$ftcHash"
             |    const val FRC_STARTER_SHA256 = "$frcHash"
+            |    const val XRP_STARTER_SHA256 = "$xrpHash"
             |    const val LIGHTBOT_EXAMPLE_SHA256 = "$lightbotHash"
             |}
             """.trimMargin()

@@ -57,36 +57,62 @@ class PidPoseFollower:
 
 
 class AutonomousRoutine:
-    """
-    Sequences a list of waypoints and actions into a complete autonomous run.
-    """
-    def __init__(self, name="Autonomous", waypoints=None):
+    """Deterministic DRIVE_TO, WAIT, and ACTION sequence used by generated XRP code."""
+
+    def __init__(self, name="Autonomous", waypoints=None, steps=None, action_handler=None):
         self.name = name
         self.waypoints = waypoints or []
+        self.steps = steps or [
+            {"kind": "DRIVE_TO", "waypoint": waypoint}
+            for waypoint in self.waypoints
+        ]
+        self.action_handler = action_handler
         self.current_idx = 0
+        self.step_elapsed_seconds = 0.0
         self.follower = PidPoseFollower()
         self.is_finished = False
 
-    def update(self, current_x, current_y, current_heading):
+    def update(self, current_x, current_y, current_heading, dt=0.02):
         """
         Advances routine by computing next (vx, vy, omega).
         Returns (vx, omega, finished).
         """
-        if self.current_idx >= len(self.waypoints):
+        if self.current_idx >= len(self.steps):
             self.is_finished = True
             return (0.0, 0.0, True)
 
-        target = self.waypoints[self.current_idx]
+        step = self.steps[self.current_idx]
+        kind = step["kind"]
+        if kind == "WAIT":
+            self.step_elapsed_seconds += max(0.0, float(dt))
+            if self.step_elapsed_seconds >= float(step["duration_seconds"]):
+                self._advance()
+            return (0.0, 0.0, self.is_finished)
+        if kind == "ACTION":
+            if self.action_handler is None:
+                raise ValueError("XRP autonomous ACTION requires a registered action handler")
+            self.action_handler(step["action_key"], step.get("arguments", {}))
+            self._advance()
+            return (0.0, 0.0, self.is_finished)
+        if kind != "DRIVE_TO":
+            raise ValueError("Unsupported generated XRP routine step: " + str(kind))
+
+        target = step["waypoint"]
         vx, omega, reached = self.follower.calculate_differential(current_x, current_y, current_heading, target)
 
         if reached:
-            self.current_idx += 1
-            if self.current_idx >= len(self.waypoints):
-                self.is_finished = True
+            self._advance()
+            if self.is_finished:
                 return (0.0, 0.0, True)
 
         return (vx, omega, False)
 
     def reset(self):
         self.current_idx = 0
+        self.step_elapsed_seconds = 0.0
         self.is_finished = False
+
+    def _advance(self):
+        self.current_idx += 1
+        self.step_elapsed_seconds = 0.0
+        self.is_finished = self.current_idx >= len(self.steps)

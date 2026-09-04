@@ -23,6 +23,18 @@ import kotlin.test.assertTrue
 
 class RoutineEditorModelTest {
     @Test
+    fun `XRP center-origin goals use the XRP practice field rather than FRC corner bounds`() {
+        val dimensions = RobotDimensions.defaultFor(League.XRP)
+
+        assertEquals(RoutinePose(0.0, 0.0, 0.0), clampRoutinePose(RoutinePose(0.0, 0.0, 0.0), League.XRP, dimensions))
+        assertEquals(RoutinePose(-0.9, -0.4, 0.0), clampRoutinePose(RoutinePose(-0.9, -0.4, 0.0), League.XRP, dimensions))
+
+        val clamped = clampRoutinePose(RoutinePose(-2.0, -2.0, 0.0), League.XRP, dimensions)
+        assertEquals(-1.19, clamped.xMeters, 1e-9)
+        assertEquals(-0.6312, clamped.yMeters, 1e-9)
+    }
+
+    @Test
     fun `every supported step kind gets an editable payload`() {
         RoutineStepKind.entries.forEach { kind ->
             val step = defaultRoutineStep(

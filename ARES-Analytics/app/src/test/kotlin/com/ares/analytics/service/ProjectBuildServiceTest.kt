@@ -201,6 +201,7 @@ class ProjectBuildServiceTest {
         run {
             val ftc = commands.verificationBuild(League.FTC, isWindows = true)
             val frc = commands.verificationBuild(League.FRC, isWindows = false)
+            val xrp = commands.verificationBuild(League.XRP, isWindows = true)
 
             assertTrue(":TeamCode:verifyAresProject" in ftc)
             assertTrue("generateAresProject" in ftc)
@@ -213,6 +214,7 @@ class ProjectBuildServiceTest {
             assertTrue("test" in frc)
             assertTrue("build" in frc)
             assertTrue(frc.indexOf("generateAresProject") < frc.indexOf("verifyAresProject"))
+            assertEquals(listOf("cmd.exe", "/d", "/s", "/c", "ares.bat", "build"), xrp)
             listOf(ftc, frc).forEach { command ->
                 assertTrue("--no-parallel" in command)
                 assertTrue("--no-daemon" in command)
@@ -234,6 +236,7 @@ class ProjectBuildServiceTest {
         run {
             val ftc = commands.simulation(isWindows = true, product = SimulationProductId.FTC_DESKTOP_OPMODE)
             val frc = commands.simulation(isWindows = false, product = SimulationProductId.FRC_WPILIB_DESKTOP)
+            val xrp = commands.simulation(isWindows = true, product = SimulationProductId.XRP_DESKTOP)
 
             assertEquals(listOf("cmd.exe", "/c", "gradlew.bat"), ftc.take(3))
             assertTrue(":TeamCode:runSim" in ftc)
@@ -241,6 +244,7 @@ class ProjectBuildServiceTest {
             assertTrue("simulateJava" in frc)
             assertTrue("-ParesFrcHalGui=false" in frc)
             assertFalse(ftc.any { it.startsWith("-ParesFrcHalGui=") })
+            assertEquals(listOf("cmd.exe", "/d", "/s", "/c", "ares.bat", "simulate"), xrp)
             listOf(ftc, frc).forEach { command ->
                 assertTrue("--no-parallel" in command)
                 assertTrue("--no-daemon" in command)
@@ -260,11 +264,13 @@ class ProjectBuildServiceTest {
         run {
             val token = "a".repeat(64)
             val windows = commands.authoring(
+                league = League.FTC,
                 task = ":TeamCode:replaceSubsystemStarters",
                 isWindows = true,
                 confirmationToken = token,
             )
             val unix = commands.authoring(
+                league = League.FRC,
                 task = "generateSubsystemStarters",
                 isWindows = false,
             )

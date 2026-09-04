@@ -10,14 +10,16 @@ permissions:
   contents: read
 
 env:
-  ARES_VERSION: 15.0.4
-  STUDIO_VERSION: 5.0.6
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v5.0.6/ARES-FTC-Starter-15.0.5.zip
-  FTC_STARTER_SHA256: 0c9137e9a29c3731d933caf3afd7df1c489c6106ffa388daecd0a3870a0880f7
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v5.0.6/ARES-FRC-Starter-15.0.5.zip
-  FRC_STARTER_SHA256: 6773ec1ecf7f9cc93b95c17e48aa196427f6279f6fab2d9066b036e162b729fb
-  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v5.0.6/ARES-Lightbot-Example-1.0.4.zip
-  LIGHTBOT_EXAMPLE_SHA256: d178238ae9404294abd4c6d368a9c49c5d08d4806203794e9b3d8eaf498e9c24
+  ARES_VERSION: 16.0.0
+  STUDIO_VERSION: 6.0.0
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v6.0.0/ARES-FTC-Starter-16.0.0.zip
+  FTC_STARTER_SHA256: 4b0f6c841fd7ea0ae8e865570934929ad4c3279c7e49b6d7b808ba8335febfa9
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v6.0.0/ARES-FRC-Starter-16.0.0.zip
+  FRC_STARTER_SHA256: 61487132a4db928e1f5a35c297317c0b613b71911ccd4c569685fee52af18c78
+  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v6.0.0/ARES-XRP-Starter-1.0.0.zip
+  XRP_STARTER_SHA256: f2b2fc5942e859c7e4ad846d4753ccc9049db06778092a325976cf54ef186c3a
+  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v6.0.0/ARES-Lightbot-Example-2.0.0.zip
+  LIGHTBOT_EXAMPLE_SHA256: 8f9b36884c96155b6e2ed317cfad1ed5a1db10eb937e9983457b52f33823b792
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
@@ -226,8 +228,9 @@ jobs:
           .\scripts\export-starter-mirrors.ps1 -OutputRoot $mirrors -Check
           Compress-Archive -Path "$mirrors\ARES-FTC-Starter\*" -DestinationPath "$archives\ftc.zip"
           Compress-Archive -Path "$mirrors\ARES-FRC-Starter\*" -DestinationPath "$archives\frc.zip"
+          Compress-Archive -Path "$mirrors\ARES-XRP-Starter\*" -DestinationPath "$archives\xrp.zip"
 
-      - name: Create, generate, test, simulate, and package fresh FTC and FRC projects
+      - name: Create, generate, test, simulate, and package fresh FTC, FRC, and XRP projects
         shell: pwsh
         env:
           ARES_OFFICIAL_TEMPLATE_ARCHIVE_DIR: ${{ runner.temp }}\ares-official-templates
@@ -355,6 +358,7 @@ jobs:
           $templates = @(
             @{ Name = "ARES-FTC-Starter-$($release['ftcStarterVersion']).zip"; HashKey = 'ftcStarterSha256' },
             @{ Name = "ARES-FRC-Starter-$($release['frcStarterVersion']).zip"; HashKey = 'frcStarterSha256' },
+            @{ Name = "ARES-XRP-Starter-$($release['xrpStarterVersion']).zip"; HashKey = 'xrpStarterSha256' },
             @{ Name = "ARES-Lightbot-Example-$($release['lightbotExampleVersion']).zip"; HashKey = 'lightbotExampleSha256' }
           )
           foreach ($template in $templates) {

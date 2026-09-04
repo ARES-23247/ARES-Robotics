@@ -33,10 +33,10 @@ import com.areslib.drivetrain.DrivetrainNeutralMode
 fun DriveTypeStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewModel) {
     SectionHeading("1 · Choose how the robot moves", "Select your drive kinematics archetype. ARES rebuilds the editable configuration draft accordingly.")
     val cards = listOf(
-        Triple(DrivebaseKind.FTC_MECANUM, "FTC Mecanum", "Four angled rollers allow omnidirectional forward, strafe, and turning motion."),
-        Triple(DrivebaseKind.FRC_CTRE_SWERVE, "FRC CTRE Swerve", "Four independently steering and driving modules; supports read-only TunerConstants import."),
-        Triple(DrivebaseKind.DIFFERENTIAL, "Differential / Tank", "Left and right wheel groups drive like a tank; no sideways strafing motion."),
-        Triple(DrivebaseKind.CUSTOM, "Advanced / Custom", "Start with an example motor and gyro, then declare, configure, and classify custom hardware.")
+        Triple(DrivebaseKind.FTC_MECANUM, DrivebaseKind.FTC_MECANUM.displayName(state.league), "Four angled rollers allow omnidirectional forward, strafe, and turning motion."),
+        Triple(DrivebaseKind.FRC_CTRE_SWERVE, DrivebaseKind.FRC_CTRE_SWERVE.displayName(state.league), "Four independently steering and driving modules; supports read-only TunerConstants import."),
+        Triple(DrivebaseKind.DIFFERENTIAL, DrivebaseKind.DIFFERENTIAL.displayName(state.league), "Left and right wheel groups drive like a tank; no sideways strafing motion."),
+        Triple(DrivebaseKind.CUSTOM, DrivebaseKind.CUSTOM.displayName(state.league), "Start with an example motor and gyro, then declare, configure, and classify custom hardware.")
     ).filter { (kind, _, _) -> kind in visibleDrivebaseKinds(state.league, state.advanced, state.draft.kind) }
 
     if (!state.advanced) {
@@ -113,7 +113,11 @@ fun DriveTypeStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewM
 @Composable
 fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewModel) {
     val hardwareGuidance = when (state.draft.kind) {
-        DrivebaseKind.FTC_MECANUM -> "Configure all four wheel motors plus Pinpoint, IMU, vision, or other reviewed localization sensors."
+        DrivebaseKind.FTC_MECANUM -> if (state.league == League.XRP) {
+            "Configure all four XRP motor ports plus the built-in IMU and wheel encoders. Ports 3 and 4 use the expansion connectors."
+        } else {
+            "Configure all four wheel motors plus Pinpoint, IMU, vision, or other reviewed localization sensors."
+        }
         DrivebaseKind.FRC_CTRE_SWERVE -> "Review all four drive/steer/encoder modules plus the gyro imported from the vendor configuration."
         DrivebaseKind.DIFFERENTIAL -> "Describe left/right leaders, optional followers, and a gyro. This remains descriptor-only until a season runtime adapter is implemented."
         DrivebaseKind.CUSTOM -> "Classify every custom drive device and sensor. This remains descriptor-only until a team-owned runtime adapter is implemented."
@@ -232,6 +236,8 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                         Text(
                             if (state.league == com.ares.analytics.shared.models.League.FTC) {
                                 "FTC hardware-map names: fl, fr, rl, rr"
+                            } else if (state.league == League.XRP) {
+                                "XRP motor ports: 1 and 2 built in; 3 and 4 on the expansion connectors"
                             } else {
                                 "FRC: assign a unique CAN ID and bus to every drive device"
                             },
@@ -256,6 +262,7 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                         isSelected = fl?.id == state.selectedHardwareId,
                         onSelect = { fl?.id?.let { viewModel.onIntent(DrivebaseBuilderIntent.SelectHardware(it)) } },
                         onToggleInvert = { fl?.let { dev -> viewModel.onIntent(DrivebaseBuilderIntent.UpdateHardware(dev.copy(inverted = !dev.inverted))) } },
+                        addressLabel = fl?.takeIf { state.league == League.XRP }?.let { "PORT ${it.hardwareName}" },
                         modifier = Modifier.weight(1f),
                     )
                     MotorGridCard(
@@ -265,6 +272,7 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                         isSelected = fr?.id == state.selectedHardwareId,
                         onSelect = { fr?.id?.let { viewModel.onIntent(DrivebaseBuilderIntent.SelectHardware(it)) } },
                         onToggleInvert = { fr?.let { dev -> viewModel.onIntent(DrivebaseBuilderIntent.UpdateHardware(dev.copy(inverted = !dev.inverted))) } },
+                        addressLabel = fr?.takeIf { state.league == League.XRP }?.let { "PORT ${it.hardwareName}" },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -278,6 +286,7 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                         isSelected = rl?.id == state.selectedHardwareId,
                         onSelect = { rl?.id?.let { viewModel.onIntent(DrivebaseBuilderIntent.SelectHardware(it)) } },
                         onToggleInvert = { rl?.let { dev -> viewModel.onIntent(DrivebaseBuilderIntent.UpdateHardware(dev.copy(inverted = !dev.inverted))) } },
+                        addressLabel = rl?.takeIf { state.league == League.XRP }?.let { "PORT ${it.hardwareName}" },
                         modifier = Modifier.weight(1f),
                     )
                     MotorGridCard(
@@ -287,6 +296,7 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                         isSelected = rr?.id == state.selectedHardwareId,
                         onSelect = { rr?.id?.let { viewModel.onIntent(DrivebaseBuilderIntent.SelectHardware(it)) } },
                         onToggleInvert = { rr?.let { dev -> viewModel.onIntent(DrivebaseBuilderIntent.UpdateHardware(dev.copy(inverted = !dev.inverted))) } },
+                        addressLabel = rr?.takeIf { state.league == League.XRP }?.let { "PORT ${it.hardwareName}" },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -304,10 +314,16 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                 ) {
                     Column {
                         Text("AUXILIARY SENSORS & CAMERAS (${auxHardware.size})", color = AresTextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        Text("Pinpoint odometry, Limelight cameras, IMUs, and distance sensors", color = AresTextTertiary, fontSize = 10.sp)
+                        Text(
+                            if (state.league == League.XRP) "Built-in IMU and rangefinder; custom expansion sensors require an explicit adapter"
+                            else "Pinpoint odometry, Limelight cameras, IMUs, and distance sensors",
+                            color = AresTextTertiary,
+                            fontSize = 10.sp,
+                        )
                     }
-                    var addMenu by remember { mutableStateOf(false) }
-                    Box {
+                    if (state.league != League.XRP) {
+                        var addMenu by remember { mutableStateOf(false) }
+                        Box {
                         Button(
                             onClick = { addMenu = true },
                             colors = ButtonDefaults.buttonColors(containerColor = AresCyan, contentColor = AresOnAccent),
@@ -356,6 +372,7 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                             )
                         }
                     }
+                    }
                 }
 
                 if (auxHardware.isEmpty()) {
@@ -366,7 +383,11 @@ fun HardwareStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewMo
                         border = BorderStroke(1.dp, AresBorder)
                     ) {
                         Text(
-                            "No auxiliary sensors configured. Click '+ Add Sensor / Camera' above to add Pinpoint odometry, Limelights, or distance sensors.",
+                            if (state.league == League.XRP) {
+                                "The generated XRP runtime reads the built-in IMU, wheel encoders, and rangefinder without declaring fictitious CAN devices."
+                            } else {
+                                "No auxiliary sensors configured. Click '+ Add Sensor / Camera' above to add Pinpoint odometry, Limelights, or distance sensors."
+                            },
                             color = AresTextTertiary,
                             fontSize = 11.sp,
                             modifier = Modifier.padding(10.dp)

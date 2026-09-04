@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-OUTPUT_KEYS = ("full", "lib", "ftc", "frc", "ftc_starter", "frc_starter", "analytics")
+OUTPUT_KEYS = ("full", "lib", "ftc", "frc", "ftc_starter", "frc_starter", "xrp_starter", "analytics")
 
 
 def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> dict[str, bool]:
@@ -32,6 +32,8 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
             result["ftc_starter"] = True
         elif path.startswith("ARES-FRC-Starter/"):
             result["frc_starter"] = True
+        elif path.startswith("ARES-XRP-Starter/"):
+            result["xrp_starter"] = True
         elif path.startswith("ARES-Analytics/"):
             result["analytics"] = True
         elif _requires_full_matrix(path):
@@ -43,7 +45,7 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
             result["full"] = True
 
     if result["full"]:
-        for key in ("ftc", "frc", "ftc_starter", "frc_starter", "analytics"):
+        for key in ("ftc", "frc", "ftc_starter", "frc_starter", "xrp_starter", "analytics"):
             result[key] = True
     return result
 

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ares-xrp-starter",
+  "revision": 1,
+  "defaultEntryId": "orbit-preview",
+  "entries": [
+    {
+      "entryId":"orbit-preview",
+      "displayName":"Orbit preview",
+      "description":"Short simulation-first XRP route across the practice field.",
+      "routineId":"orbit-preview",
+      "startingPose":{"xMeters":-0.9,"yMeters":-0.4,"headingRadians":0.0},
+      "authoredAlliance":"RED",
+      "mirrorForOppositeAlliance":false,
+      "sortOrder":0,
+      "enabled":true
+    }
+  ]
+}

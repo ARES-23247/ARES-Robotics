@@ -1,0 +1,9 @@
+# Deterministic outputs regenerated from the canonical .ares documents.
+build/
+
+# CPython/MicroPython tooling caches are machine-local, never project source.
+__pycache__/
+*.py[cod]
+
+# Local Wi-Fi credentials are copied from the tracked example when needed.
+xrp_secrets.py

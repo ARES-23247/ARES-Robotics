@@ -26,6 +26,9 @@ import com.areslib.subsystem.SubsystemSchema
 /** Deterministic Kotlin source generator shared by Gradle, Analytics preview, and tests. */
 object SubsystemKotlinGenerator {
     fun generate(document: SubsystemDocument, target: SubsystemKotlinCodegenTarget): List<GeneratedSubsystemFile> {
+        require(target.platform != SubsystemPlatform.XRP) {
+            "XRP projects use the standalone MicroPython generator, not Kotlin subsystem codegen"
+        }
         val issues = SubsystemSchema.validate(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
         require(document.implementation.kind.isAresGenerated()) {
@@ -79,6 +82,9 @@ object SubsystemKotlinGenerator {
         documents: List<SubsystemDocument>,
         target: SubsystemKotlinCodegenTarget,
     ): GeneratedSubsystemFile {
+        require(target.platform != SubsystemPlatform.XRP) {
+            "XRP projects use the standalone MicroPython generator, not Kotlin subsystem codegen"
+        }
         val source = SubsystemRegistryRenderer.render(documents, target)
         return generated(
             "GeneratedSubsystemRegistry.kt",
@@ -330,8 +336,9 @@ $fieldLines
 
 
     private fun hardwareIoSource(document: SubsystemDocument, pkg: String): String = when (document.platform) {
-        SubsystemPlatform.FTC, SubsystemPlatform.XRP -> SubsystemFtcIoRenderer.render(document, pkg)
+        SubsystemPlatform.FTC -> SubsystemFtcIoRenderer.render(document, pkg)
         SubsystemPlatform.FRC -> SubsystemFrcIoRenderer.render(document, pkg)
+        SubsystemPlatform.XRP -> error("XRP hardware adapters are generated as MicroPython")
     }
 
 

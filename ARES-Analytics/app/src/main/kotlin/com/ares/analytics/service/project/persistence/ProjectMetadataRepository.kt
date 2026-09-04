@@ -161,8 +161,8 @@ internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
         "Project metadata field 'projectId' must be text."
     }
     val league = primitive("league").takeIf { it.isString }?.content
-    require(league == "FTC" || league == "FRC") {
-        "Project metadata field 'league' must be FTC or FRC."
+    require(league == "FTC" || league == "FRC" || league == "XRP") {
+        "Project metadata field 'league' must be FTC, FRC, or XRP."
     }
     val convention = primitive("coordinateConvention").takeIf { it.isString }?.content
     require(convention == "CENTER_ORIGIN_CCW" || convention == "BLUE_CORNER_ORIGIN_CCW") {

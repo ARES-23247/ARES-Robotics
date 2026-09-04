@@ -15,8 +15,11 @@ import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectIdentityDocument
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.project.AresRuntimeOptionsDocument
+import com.areslib.project.AresXrpRuntimeOptionsDocument
 import com.areslib.project.requireFtcRuntimeOptions
+import com.areslib.project.requireXrpRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
@@ -33,8 +36,8 @@ import java.util.Locale
 enum class ProjectIdentityField {
     PROJECT_ID, TEAM_ID, SEASON_ID, ROBOT_ID, DISPLAY_NAME,
     ROBOT_LENGTH, ROBOT_WIDTH, FIELD_LENGTH, FIELD_WIDTH,
+    XRP_SSID, XRP_LINK_PORT, XRP_DEADMAN_TIMEOUT, XRP_BROWNOUT_THRESHOLD,
 }
-
 data class ProjectIdentityDraft(
     val projectId: String = "",
     val teamId: String = "",
@@ -45,8 +48,14 @@ data class ProjectIdentityDraft(
     val robotWidthMeters: String = "",
     val fieldLengthMeters: String = "",
     val fieldWidthMeters: String = "",
+    val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val ftcHubCommandTransport: AresFtcHubCommandTransport = AresFtcHubCommandTransport.STANDARD_SDK,
     val ftcLimelightProxyEnabled: Boolean = false,
+    val xrpWifiMode: String = "AP",
+    val xrpSsid: String = "ARES-XRP-AUTO",
+    val xrpLinkPort: String = "5811",
+    val xrpDeadmanTimeoutMs: String = "200",
+    val xrpBrownoutThresholdVolts: String = "4.3",
 )
 
 data class ProjectIdentityChange(
@@ -148,6 +157,10 @@ class ProjectIdentityViewModel(
             ProjectIdentityField.ROBOT_WIDTH -> current.draft.copy(robotWidthMeters = value)
             ProjectIdentityField.FIELD_LENGTH -> current.draft.copy(fieldLengthMeters = value)
             ProjectIdentityField.FIELD_WIDTH -> current.draft.copy(fieldWidthMeters = value)
+            ProjectIdentityField.XRP_SSID -> current.draft.copy(xrpSsid = value)
+            ProjectIdentityField.XRP_LINK_PORT -> current.draft.copy(xrpLinkPort = value)
+            ProjectIdentityField.XRP_DEADMAN_TIMEOUT -> current.draft.copy(xrpDeadmanTimeoutMs = value)
+            ProjectIdentityField.XRP_BROWNOUT_THRESHOLD -> current.draft.copy(xrpBrownoutThresholdVolts = value)
         }
         val validation = validateProjectIdentityDraft(config.league, nextDraft)
         _state.value = current.copy(
@@ -170,9 +183,29 @@ class ProjectIdentityViewModel(
         copy(ftcLimelightProxyEnabled = enabled)
     }
 
+    fun updateXrpWifiMode(value: String) = updateXrpRuntimeOptions {
+        copy(xrpWifiMode = value)
+    }
+
     private fun updateFtcRuntimeOptions(transform: ProjectIdentityDraft.() -> ProjectIdentityDraft) {
         val config = workspace ?: return
         if (config.league != League.FTC) return
+        val current = _state.value
+        val nextDraft = current.draft.transform()
+        val validation = validateProjectIdentityDraft(config.league, nextDraft)
+        _state.value = current.copy(
+            draft = nextDraft,
+            fieldErrors = validation.fieldErrors,
+            generalErrors = validation.generalErrors,
+            proposal = null,
+            message = null,
+            messageIsError = false,
+        )
+    }
+
+    private fun updateXrpRuntimeOptions(transform: ProjectIdentityDraft.() -> ProjectIdentityDraft) {
+        val config = workspace ?: return
+        if (config.league != League.XRP) return
         val current = _state.value
         val nextDraft = current.draft.transform()
         val validation = validateProjectIdentityDraft(config.league, nextDraft)
@@ -390,168 +423,3 @@ class ProjectIdentityViewModel(
         League.XRP -> ControllerInputPlatform.XRP
     }
 }
-
-internal data class ProjectIdentityDraftValidation(
-    val document: AresProjectMetadataDocument?,
-    val fieldErrors: Map<ProjectIdentityField, String>,
-    val generalErrors: List<String>,
-)
-
-internal fun validateProjectIdentityDraft(
-    league: League,
-    draft: ProjectIdentityDraft,
-): ProjectIdentityDraftValidation {
-    val errors = linkedMapOf<ProjectIdentityField, String>()
-    val projectId = draft.projectId.trim()
-    if (!projectId.matches(Regex("[A-Za-z][A-Za-z0-9._-]{0,63}"))) {
-        errors[ProjectIdentityField.PROJECT_ID] =
-            "Use a stable ID that starts with a letter and contains only letters, numbers, dot, underscore, or dash."
-    }
-    val teamId = draft.teamId.trim()
-    if (!teamId.matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,31}"))) {
-        errors[ProjectIdentityField.TEAM_ID] = "Use the team number or another stable team key."
-    }
-    val seasonId = draft.seasonId.trim()
-    if (!seasonId.matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,31}"))) {
-        errors[ProjectIdentityField.SEASON_ID] = "Use a stable season key such as 2026."
-    }
-    val robotId = draft.robotId.trim()
-    if (!robotId.matches(Regex("[A-Za-z][A-Za-z0-9._-]{0,63}"))) {
-        errors[ProjectIdentityField.ROBOT_ID] = "Use a stable robot key that starts with a letter."
-    }
-    val displayName = draft.displayName.trim()
-    if (displayName.isEmpty() || displayName.length > 80) {
-        errors[ProjectIdentityField.DISPLAY_NAME] = "Enter a robot name using 1 to 80 characters."
-    }
-    fun parse(field: ProjectIdentityField, raw: String, label: String): Double? {
-        val value = raw.trim().toDoubleOrNull()
-        if (value == null || !value.isFinite() || value <= 0.0) {
-            errors[field] = "$label must be a positive number in meters."
-            return null
-        }
-        return value
-    }
-    val robotLength = parse(ProjectIdentityField.ROBOT_LENGTH, draft.robotLengthMeters, "Robot length")
-    val robotWidth = parse(ProjectIdentityField.ROBOT_WIDTH, draft.robotWidthMeters, "Robot width")
-    val fieldLength = parse(ProjectIdentityField.FIELD_LENGTH, draft.fieldLengthMeters, "Field length")
-    val fieldWidth = parse(ProjectIdentityField.FIELD_WIDTH, draft.fieldWidthMeters, "Field width")
-    if (errors.isNotEmpty()) return ProjectIdentityDraftValidation(null, errors, emptyList())
-
-    val document = AresProjectMetadataDocument(
-        projectId = projectId,
-        identity = AresProjectIdentityDocument(
-            teamId = teamId,
-            seasonId = seasonId,
-            robotId = robotId,
-            displayName = displayName,
-        ),
-        league = league.toAresLeague(),
-        coordinateConvention = league.coordinateConvention(),
-        robotLengthMeters = requireNotNull(robotLength),
-        robotWidthMeters = requireNotNull(robotWidth),
-        fieldLengthMeters = requireNotNull(fieldLength),
-        fieldWidthMeters = requireNotNull(fieldWidth),
-        runtimeOptions = if (league == League.FTC) {
-            AresRuntimeOptionsDocument(
-                ftc = AresFtcRuntimeOptionsDocument(
-                    hubCommandTransport = draft.ftcHubCommandTransport,
-                    limelightProxyEnabled = draft.ftcLimelightProxyEnabled,
-                ),
-            )
-        } else {
-            AresRuntimeOptionsDocument()
-        },
-    )
-    val generalErrors = validateAresProjectMetadata(document)
-    return ProjectIdentityDraftValidation(document.takeIf { generalErrors.isEmpty() }, errors, generalErrors)
-}
-
-internal fun projectIdentityDraft(
-    config: WorkspaceConfig,
-    current: AresProjectMetadataDocument?,
-): ProjectIdentityDraft {
-    val field = defaultFieldDimensions(config.league)
-    val ftcRuntime = current
-        ?.takeIf { it.league == AresLeague.FTC }
-        ?.requireFtcRuntimeOptions()
-        ?: AresFtcRuntimeOptionsDocument()
-    return ProjectIdentityDraft(
-        projectId = current?.projectId ?: suggestedProjectId(config),
-        teamId = current?.identity?.teamId ?: config.teamId,
-        seasonId = current?.identity?.seasonId ?: config.seasonId,
-        robotId = current?.identity?.robotId ?: config.robotId,
-        displayName = current?.identity?.displayName ?: config.robotName.ifBlank { config.robotId },
-        robotLengthMeters = current?.robotLengthMeters?.asInput()
-            ?: config.robotLengthMeters?.asInput().orEmpty(),
-        robotWidthMeters = current?.robotWidthMeters?.asInput()
-            ?: config.robotWidthMeters?.asInput().orEmpty(),
-        fieldLengthMeters = (current?.fieldLengthMeters ?: field.first).asInput(),
-        fieldWidthMeters = (current?.fieldWidthMeters ?: field.second).asInput(),
-        ftcHubCommandTransport = ftcRuntime.hubCommandTransport,
-        ftcLimelightProxyEnabled = ftcRuntime.limelightProxyEnabled,
-    )
-}
-
-internal fun projectIdentityChanges(
-    current: AresProjectMetadataDocument?,
-    proposed: AresProjectMetadataDocument,
-): List<ProjectIdentityChange> {
-    fun changed(label: String, before: Any?, after: Any): ProjectIdentityChange? =
-        if (before?.toString() == after.toString()) null
-        else ProjectIdentityChange(label, before?.toString() ?: "missing", after.toString())
-    return listOfNotNull(
-        changed("Stable project ID", current?.projectId, proposed.projectId),
-        changed("Team ID", current?.identity?.teamId, proposed.identity.teamId),
-        changed("Season ID", current?.identity?.seasonId, proposed.identity.seasonId),
-        changed("Robot ID", current?.identity?.robotId, proposed.identity.robotId),
-        changed("Robot display name", current?.identity?.displayName, proposed.identity.displayName),
-        changed("League", current?.league, proposed.league),
-        changed("Coordinate convention", current?.coordinateConvention, proposed.coordinateConvention),
-        changed("Robot length (m)", current?.robotLengthMeters, proposed.robotLengthMeters),
-        changed("Robot width (m)", current?.robotWidthMeters, proposed.robotWidthMeters),
-        changed("Field length (m)", current?.fieldLengthMeters, proposed.fieldLengthMeters),
-        changed("Field width (m)", current?.fieldWidthMeters, proposed.fieldWidthMeters),
-        changed(
-            "FTC hub command transport",
-            current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()?.hubCommandTransport,
-            proposed.requireFtcRuntimeOptions().hubCommandTransport,
-        ).takeIf { proposed.league == AresLeague.FTC },
-        changed(
-            "Limelight camera proxy",
-            current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()?.limelightProxyEnabled,
-            proposed.requireFtcRuntimeOptions().limelightProxyEnabled,
-        ).takeIf { proposed.league == AresLeague.FTC },
-    )
-}
-
-private fun suggestedProjectId(config: WorkspaceConfig): String {
-    val raw = "team${config.teamId}-${config.robotId}-${config.seasonId}"
-    val normalized = raw.replace(Regex("[^A-Za-z0-9._-]+"), "-").trim('-', '.', '_').take(64)
-    return normalized.takeIf { it.firstOrNull()?.isLetter() == true } ?: "project-${normalized.take(56)}"
-}
-
-private val STABLE_IDENTITY_FIELDS = setOf(
-    ProjectIdentityField.PROJECT_ID,
-    ProjectIdentityField.TEAM_ID,
-    ProjectIdentityField.SEASON_ID,
-    ProjectIdentityField.ROBOT_ID,
-)
-
-private fun defaultFieldDimensions(league: League): Pair<Double, Double> = when (league) {
-    League.FTC -> 3.6576 to 3.6576
-    League.FRC -> 16.541 to 8.211
-    League.XRP -> 2.54 to 1.4224
-}
-
-private fun League.toAresLeague(): AresLeague = when (this) {
-    League.FTC -> AresLeague.FTC
-    League.FRC -> AresLeague.FRC
-    League.XRP -> AresLeague.XRP
-}
-
-private fun League.coordinateConvention(): AresCoordinateConvention = when (this) {
-    League.FTC -> AresCoordinateConvention.CENTER_ORIGIN_CCW
-    League.FRC, League.XRP -> AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW
-}
-
-private fun Double.asInput(): String = String.format(Locale.ROOT, "%.6f", this).trimEnd('0').trimEnd('.')

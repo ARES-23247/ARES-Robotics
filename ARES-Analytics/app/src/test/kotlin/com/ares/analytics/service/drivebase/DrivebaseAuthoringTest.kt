@@ -63,8 +63,8 @@ class DrivebaseAuthoringTest {
 
     @Test
     fun `no-code validation blocks cross-league and team-written runtime architectures`() {
-        val differential = defaultDrivebase("team", DrivebaseKind.DIFFERENTIAL)
-        val crossLeague = defaultDrivebase("team", DrivebaseKind.FRC_CTRE_SWERVE)
+        val differential = defaultDrivebase("team", DrivebaseKind.DIFFERENTIAL, League.FTC)
+        val crossLeague = defaultDrivebase("team", DrivebaseKind.FRC_CTRE_SWERVE, League.FRC)
 
         assertTrue(validateDrivebaseForLeague(differential, League.FTC).any {
             it.path == "runtime" && it.severity == DrivebaseIssueSeverity.ERROR && it.message.contains("CODE REQUIRED")
@@ -72,14 +72,41 @@ class DrivebaseAuthoringTest {
         assertTrue(validateDrivebaseForLeague(crossLeague, League.FTC).any {
             it.path == "runtime" && it.severity == DrivebaseIssueSeverity.ERROR && it.message.contains("different competition platform")
         })
-        assertTrue(validateDrivebaseForLeague(defaultDrivebase("team", DrivebaseKind.FTC_MECANUM), League.FTC).none {
+        assertTrue(validateDrivebaseForLeague(defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC), League.FTC).none {
             it.path == "runtime"
         })
     }
 
     @Test
+    fun `XRP offers stock differential and four-port mecanum as honest no-code choices`() {
+        assertEquals(
+            listOf(DrivebaseKind.DIFFERENTIAL, DrivebaseKind.FTC_MECANUM, DrivebaseKind.CUSTOM),
+            drivebaseKindsForLeague(League.XRP),
+        )
+        val differential = defaultDrivebase("xrp-project", DrivebaseKind.DIFFERENTIAL, League.XRP)
+        assertEquals(com.areslib.drivetrain.DrivetrainPlatform.XRP, differential.canonical?.platform)
+        assertEquals(listOf("1", "2"), differential.hardware.map { it.hardwareName })
+
+        val mecanum = defaultDrivebase("xrp-project", DrivebaseKind.FTC_MECANUM, League.XRP)
+        assertEquals(com.areslib.drivetrain.DrivetrainPlatform.XRP, mecanum.canonical?.platform)
+        assertEquals(listOf("1", "2", "3", "4"), mecanum.hardware.map { it.hardwareName })
+        assertTrue(mecanum.hardware.none { it.currentMeasurementRequired || it.currentMeasurementAvailable })
+        val errors = validateDrivebaseForLeague(mecanum, League.XRP)
+            .filter { it.severity == DrivebaseIssueSeverity.ERROR }
+        assertTrue(errors.isEmpty(), errors.joinToString("\n") { "${it.path}: ${it.message}" })
+        assertEquals("Four-motor mecanum", DrivebaseKind.FTC_MECANUM.displayName(League.XRP))
+        assertEquals("FTC mecanum", DrivebaseKind.FTC_MECANUM.displayName(League.FTC))
+        assertEquals(
+            listOf(LocalizationKind.WHEEL_ODOMETRY_GYRO, LocalizationKind.SPARKFUN_OTOS, LocalizationKind.CUSTOM),
+            localizationKindsForLeague(League.XRP),
+        )
+        assertFalse(LocalizationKind.FTC_PINPOINT in localizationKindsForLeague(League.XRP))
+        assertFalse(LocalizationKind.CTRE_POSE_ESTIMATOR in localizationKindsForLeague(League.XRP))
+    }
+
+    @Test
     fun `default FRC CTRE swerve starts with unique simulation addresses and is reviewable`() {
-        val draft = defaultDrivebase("team", DrivebaseKind.FRC_CTRE_SWERVE)
+        val draft = defaultDrivebase("team", DrivebaseKind.FRC_CTRE_SWERVE, League.FRC)
         val initialErrors = validateDrivebaseForLeague(draft, League.FRC)
             .filter { it.severity == DrivebaseIssueSeverity.ERROR }
         assertEquals((1..13).toList(), draft.hardware.map { it.canId })
@@ -116,7 +143,7 @@ class DrivebaseAuthoringTest {
                 """{"schemaVersion":4,"projectId":"visible-frc-project","identity":{"teamId":"99998","seasonId":"2026","robotId":"VisibleFrcRobot","displayName":"Visible FRC Robot"},"league":"FRC","coordinateConvention":"BLUE_CORNER_ORIGIN_CCW","robotLengthMeters":0.75,"robotWidthMeters":0.65,"fieldLengthMeters":16.54175,"fieldWidthMeters":8.21055,"authoringModel":"GUI_OWNED","runtimeOptions":{}}""",
             )
         }
-        val stale = canonicalTemplate("stale-project", DrivebaseKind.FRC_CTRE_SWERVE).toUiDrivebase()
+        val stale = canonicalTemplate("stale-project", DrivebaseKind.FRC_CTRE_SWERVE, League.FRC).toUiDrivebase()
         val runtimeProjectId = "visible-frc-project"
         val current = stale.copy(
             projectId = runtimeProjectId,
@@ -146,7 +173,7 @@ class DrivebaseAuthoringTest {
             val ares = File(root, ".ares")
             val drivetrainDirectory = File(ares, "drivetrains").apply { mkdirs() }
             val tuningDirectory = File(ares, "tuning").apply { mkdirs() }
-            val current = canonicalTemplate("visible-frc-project", DrivebaseKind.FRC_CTRE_SWERVE).let { template ->
+            val current = canonicalTemplate("visible-frc-project", DrivebaseKind.FRC_CTRE_SWERVE, League.FRC).let { template ->
                 template.copy(components = template.components.mapIndexed { index, component ->
                     component.copy(hardwareId = (index + 1).toString())
                 })
@@ -221,9 +248,9 @@ class DrivebaseAuthoringTest {
 
     @Test
     fun `FTC and full CTRE canonical documents round trip exactly through UI adapter`() {
-        val ftc = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM).copy(
+        val ftc = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM, League.FTC).copy(
             description = "Description must survive",
-            components = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM).components.mapIndexed { index, component ->
+            components = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM, League.FTC).components.mapIndexed { index, component ->
                 component.copy(
                     controllerModel = "controller-$index",
                     encoderModel = "encoder-$index",
@@ -236,7 +263,7 @@ class DrivebaseAuthoringTest {
             safety = DrivetrainSafetyDocument(currentValidityRequired = false, faultLatchingRequired = false, zeroAllocationPeriodicRequired = false),
             simulation = DrivetrainSimulationDocument("fixture.Model", "fixture.Adapter", usesPhysicalGeometry = false, usesCanonicalProfile = false, behavioralParityRequired = false)
         )
-        val swerveBase = canonicalTemplate("team", DrivebaseKind.FRC_CTRE_SWERVE)
+        val swerveBase = canonicalTemplate("team", DrivebaseKind.FRC_CTRE_SWERVE, League.FRC)
         val swerve = swerveBase.copy(
             components = swerveBase.components.map { it.copy(controllerModel = "TalonFX", encoderModel = "CANcoder", currentLimitAmps = 40.0) },
             localization = swerveBase.localization.copy(
@@ -256,14 +283,14 @@ class DrivebaseAuthoringTest {
 
     @Test
     fun `one UI field edit patches only that canonical field`() {
-        val canonical = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM)
+        val canonical = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM, League.FTC)
         val edited = canonical.toUiDrivebase().copy(displayName = "Student drive").toCanonicalDrivebase()
         assertEquals(canonical.copy(displayName = "Student drive"), edited)
     }
 
     @Test
     fun `mecanum template uses canonical names and explicit safety`() {
-        val document = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM)
+        val document = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC)
 
         assertEquals(listOf("fl", "fr", "rl", "rr", "pinpoint"), document.hardware.map { it.hardwareName })
         assertTrue(document.safety.safeNeutralRequired)
@@ -283,7 +310,7 @@ class DrivebaseAuthoringTest {
         val root = Files.createTempDirectory("ares-drivebase-pinpoint-repair").toFile()
         try {
             val repository = DrivebaseProjectRepository()
-            val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM)
+            val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC)
             val incomplete = complete.copy(
                 canonical = complete.canonical!!.copy(
                     parameters = complete.canonical.parameters.filterNot { it.key.startsWith("localization.pinpoint") },
@@ -345,7 +372,7 @@ class DrivebaseAuthoringTest {
 
     @Test
     fun `differential leaders followers and inversion survive authoring and preview`() {
-        val differential = defaultDrivebase("team", DrivebaseKind.DIFFERENTIAL)
+        val differential = defaultDrivebase("team", DrivebaseKind.DIFFERENTIAL, League.FTC)
         assertEquals(DriveHardwareRole.LEFT_LEADER, differential.hardware.first { it.id == "drive.left" }.role)
         assertEquals(DriveHardwareRole.RIGHT_LEADER, differential.hardware.first { it.id == "drive.right" }.role)
 
@@ -443,7 +470,7 @@ class DrivebaseAuthoringTest {
 
     @Test
     fun `localization requires one compatible primary and optional vision`() {
-        val base = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM)
+        val base = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC)
         val multiple = base.copy(localization = listOf(LocalizationKind.FTC_PINPOINT, LocalizationKind.WHEEL_ODOMETRY_GYRO))
         val incompatible = base.copy(localization = listOf(LocalizationKind.CTRE_POSE_ESTIMATOR))
         val valid = base.copy(localization = listOf(LocalizationKind.FTC_PINPOINT, LocalizationKind.VISION_FUSION))
@@ -455,7 +482,7 @@ class DrivebaseAuthoringTest {
 
     @Test
     fun `FTC short motor IDs retain all four physical corner roles`() {
-        val template = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM)
+        val template = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM, League.FTC)
         val canonical = template.copy(
             components = template.components.map { component ->
                 if (component.role == com.areslib.drivetrain.DrivetrainComponentRole.DRIVE_MOTOR) {
@@ -508,7 +535,7 @@ class DrivebaseAuthoringTest {
     fun `reviewed save writes canonical UID path atomically and preserves content hash history`() {
         val root = Files.createTempDirectory("ares-drivebase").toFile()
         val repository = DrivebaseProjectRepository()
-        val initial = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM)
+        val initial = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC)
 
         val saved = repository.saveReviewed(root.path, null, initial)
         val canonical = File(root, ".ares/drivetrains/drive.primary.aresdrivetrain")
@@ -535,9 +562,37 @@ class DrivebaseAuthoringTest {
     }
 
     @Test
+    fun `reviewed XRP drive type change atomically retargets its canonical tuning profile`() {
+        val root = Files.createTempDirectory("ares-xrp-drivebase-change").toFile()
+        try {
+            val repository = DrivebaseProjectRepository()
+            val differential = repository.saveReviewed(
+                root.path,
+                null,
+                defaultDrivebase("xrp-project", DrivebaseKind.DIFFERENTIAL, League.XRP),
+            )
+            val previousHash = DrivetrainDocumentCodec.contentHash(requireNotNull(differential.canonical))
+            val mecanum = repository.saveReviewed(
+                root.path,
+                previousHash,
+                defaultDrivebase("xrp-project", DrivebaseKind.FTC_MECANUM, League.XRP),
+            )
+
+            val workspace = com.ares.analytics.service.tuning.TuningProfileRepository().load(root.path).getOrThrow()
+            assertEquals(requireNotNull(mecanum.canonical).uid, workspace.profiles.single().drivebaseUid)
+            assertEquals(
+                requireNotNull(mecanum.canonical).parameters.map { it.uid }.toSet(),
+                workspace.profiles.single().values.map { it.parameterUid }.toSet(),
+            )
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `unsaved edits require confirmation before reload or drive type change`() = runBlocking {
         val root = Files.createTempDirectory("ares-drivebase-dirty").toFile()
-        DrivebaseProjectRepository().saveReviewed(root.path, null, defaultDrivebase("team", DrivebaseKind.FTC_MECANUM))
+        DrivebaseProjectRepository().saveReviewed(root.path, null, defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC))
         val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val viewModel = DrivebaseBuilderViewModel(root.path, "team", League.FTC, viewModelScope)
         try {
@@ -573,7 +628,7 @@ class DrivebaseAuthoringTest {
     @Test
     fun `builder rejects an incomplete persisted Pinpoint runtime contract`() = runBlocking {
         val root = Files.createTempDirectory("ares-drivebase-runtime-repair").toFile()
-        val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM).canonical!!
+        val complete = defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC).canonical!!
         val removedPinpointUid = complete.components.single {
             it.role == DrivetrainComponentRole.ODOMETRY_SENSOR
         }.uid
@@ -614,7 +669,7 @@ class DrivebaseAuthoringTest {
     @Test
     fun `unchanged and reverted drafts do not enter an empty save review`() = runBlocking {
         val root = Files.createTempDirectory("ares-drivebase-noop-review").toFile()
-        DrivebaseProjectRepository().saveReviewed(root.path, null, defaultDrivebase("team", DrivebaseKind.FTC_MECANUM))
+        DrivebaseProjectRepository().saveReviewed(root.path, null, defaultDrivebase("team", DrivebaseKind.FTC_MECANUM, League.FTC))
         val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val viewModel = DrivebaseBuilderViewModel(root.path, "team", League.FTC, viewModelScope)
         try {

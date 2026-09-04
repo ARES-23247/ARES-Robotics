@@ -39,7 +39,9 @@ internal class ProjectProcessCommandFactory(
         ?.joinToString(",") { it.path }
         ?.let { "-Porg.gradle.java.installations.paths=$it" }
 
-    fun verificationBuild(league: League, isWindows: Boolean): List<String> = decorateGradle(buildList {
+    fun verificationBuild(league: League, isWindows: Boolean): List<String> {
+        if (league == League.XRP) return xrpProjectCommand(isWindows, "build")
+        return decorateGradle(buildList {
         addGradleWrapper(isWindows)
         when (league) {
             League.FTC -> addAll(
@@ -52,19 +54,24 @@ internal class ProjectProcessCommandFactory(
                 ),
             )
             League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
-            League.XRP -> addAll(listOf("generateAresProject", "test"))
+            League.XRP -> error("XRP uses its Python-native project wrapper")
         }
         addDesktopGradleProcessOptions()
         add("--rerun-tasks")
-    })
+        })
+    }
 
-    fun authoring(task: String, isWindows: Boolean, confirmationToken: String? = null): List<String> =
+    fun authoring(league: League, task: String, isWindows: Boolean, confirmationToken: String? = null): List<String> =
+        if (league == League.XRP) {
+            xrpProjectCommand(isWindows, "generate")
+        } else {
         decorateGradle(buildList {
             addGradleWrapper(isWindows)
             add(task)
             addDesktopGradleProcessOptions()
             confirmationToken?.let { add("-Pares.subsystemReplacementToken=$it") }
         })
+        }
 
     fun ftcDeployBuild(isWindows: Boolean): List<String> = decorateGradle(buildList {
         addGradleWrapper(isWindows)
@@ -86,14 +93,17 @@ internal class ProjectProcessCommandFactory(
         addDesktopGradleProcessOptions()
     })
 
+    fun xrpDeployBuild(isWindows: Boolean): List<String> = xrpProjectCommand(isWindows, "deploy")
+
     fun simulation(isWindows: Boolean, product: SimulationProductId): List<String> {
+        if (product == SimulationProductId.XRP_DESKTOP) return xrpProjectCommand(isWindows, "simulate")
         val command = decorateGradle(buildList {
             addGradleWrapper(isWindows)
             add(
                 when (product) {
                     SimulationProductId.FTC_DESKTOP_OPMODE -> ":TeamCode:runSim"
                     SimulationProductId.FRC_WPILIB_DESKTOP -> "simulateJava"
-                    SimulationProductId.XRP_DESKTOP -> "runSim"
+                    SimulationProductId.XRP_DESKTOP -> error("XRP uses its Python-native project wrapper")
                 },
             )
             addDesktopGradleProcessOptions()
@@ -135,6 +145,26 @@ internal class ProjectProcessCommandFactory(
         normalizeUnixGradleWrapper(wrapperScript)
         check(wrapperScript.setExecutable(true, false) || wrapperScript.canExecute()) {
             "Could not make ${wrapperScript.path} executable"
+        }
+    }
+
+    fun requireProjectWrapper(root: File, league: League, isWindows: Boolean) {
+        if (league != League.XRP) {
+            requireGradleWrapper(root, isWindows)
+            return
+        }
+        val wrapper = File(root, if (isWindows) "ares.bat" else "ares").canonicalFile
+        require(wrapper.isFile && wrapper.toPath().startsWith(root.toPath())) {
+            "This XRP project does not contain its native ${wrapper.name} wrapper"
+        }
+        val tool = File(root, "tools/ares_project.py").canonicalFile
+        require(tool.isFile && tool.toPath().startsWith(root.toPath())) {
+            "This XRP project does not contain tools/ares_project.py"
+        }
+        if (!isWindows) {
+            check(wrapper.setExecutable(true, false) || wrapper.canExecute()) {
+                "Could not make ${wrapper.path} executable"
+            }
         }
     }
 
@@ -186,6 +216,10 @@ internal class ProjectProcessCommandFactory(
         add("--no-daemon")
         add("--console=plain")
     }
+
+    private fun xrpProjectCommand(isWindows: Boolean, task: String): List<String> =
+        if (isWindows) listOf("cmd.exe", "/d", "/s", "/c", "ares.bat", task)
+        else listOf("./ares", task)
 
     private fun validatedAresVersion(rawVersion: String): String {
         val version = rawVersion.trim()

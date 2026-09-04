@@ -4,6 +4,7 @@ import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.shared.models.ThresholdRule
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.shared.models.League
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
@@ -11,8 +12,6 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import javax.sound.sampled.AudioFormat
-import javax.sound.sampled.AudioSystem
 
 /**
  * High-performance real-time **Emergency Fault Alert & Diagnostic Engine**.
@@ -76,7 +75,7 @@ class AlertEngineService(
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
 
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private val audioMutex = kotlinx.coroutines.sync.Mutex()
+    private val audioNotifier = AlertAudioNotifier()
 
     // Active alert state: AlertId -> AlertRecord
     private val _alerts = MutableStateFlow<Map<String, AlertRecord>>(emptyMap())
@@ -95,7 +94,7 @@ class AlertEngineService(
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
 
     private var engineJob: Job? = null
-    private var lastBeepTime = 0L
+    private val platformThresholds = PlatformAlertThresholds()
 
     init {
         loadRules()
@@ -154,6 +153,12 @@ class AlertEngineService(
         }
     }
 
+    /** Selects platform-correct live safety thresholds without rewriting saved user rules. */
+    fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
+        platformThresholds.configure(league, xrpBrownoutThresholdVolts)
+        _alerts.update { it.filterValues { alert -> normalizeTopic(alert.ruleKey) != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey } }
+    }
+
     /**
      * Cancels the active telemetry evaluation coroutine job.
      */
@@ -184,7 +189,7 @@ class AlertEngineService(
         if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys ||
             frame.key.trimStart('/') in TelemetryMetricCatalog.LOOP_TIME.keys
         ) return
-        val rule = rules[normalizedKey] ?: return
+        val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
         val value = frame.value
 
         val minVal = rule.minValue
@@ -465,42 +470,7 @@ class AlertEngineService(
         }
     }
 
-    private fun triggerAudibleAlert() {
-        val now = System.currentTimeMillis()
-        if (now - lastBeepTime > 1500) {
-            lastBeepTime = now
-            serviceScope.launch(Dispatchers.IO) {
-                if (audioMutex.tryLock()) {
-                    try {
-                        runCatching {
-                            playBeepTone(1000f, 100)
-                            delay(50)
-                            playBeepTone(1200f, 150)
-                        }
-                    } finally {
-                        audioMutex.unlock()
-                    }
-                }
-            }
-        }
-    }
-
-    private fun playBeepTone(frequency: Float, durationMs: Int) {
-        val sampleRate = 8000f
-        val numSamples = (durationMs * sampleRate / 1000).toInt()
-        val buf = ByteArray(numSamples)
-        for (i in 0 until numSamples) {
-            val angle = i / (sampleRate / frequency) * 2.0 * Math.PI
-            buf[i] = (Math.sin(angle) * 127.0).toInt().toByte()
-        }
-        val format = AudioFormat(sampleRate, 8, 1, true, true)
-        val line = AudioSystem.getSourceDataLine(format)
-        line.open(format)
-        line.start()
-        line.write(buf, 0, buf.size)
-        line.drain()
-        line.close()
-    }
+    private fun triggerAudibleAlert() = audioNotifier.trigger(serviceScope)
 
     /**
      * Retrieves human-readable display name for a rule key.
@@ -509,7 +479,8 @@ class AlertEngineService(
      * @return Human-readable display string.
      */
     fun getRuleDisplayName(key: String): String {
-        return rules[normalizeTopic(key)]?.displayName ?: key
+        val normalized = normalizeTopic(key)
+        return rules[normalized]?.let { platformThresholds.effectiveRule(normalized, it).displayName } ?: key
     }
 
     private fun registerRule(rule: ThresholdRule) {

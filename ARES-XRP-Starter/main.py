@@ -5,44 +5,80 @@ Starts Wi-Fi AP / STA network and executes the 50Hz ARES robot cycle.
 """
 
 import time
-from ares_micro import XrpRobot, AutonomousRoutine, Waypoint
+from ares_micro import XrpRobot
+from generated_ares_project import CONTENT_SHA256, PROJECT, DEFAULT_AUTONOMOUS_ID, create_autonomous_routines, create_subsystems
+from hardware import create_xrp_hardware, create_xrp_mecanum_motors
 
-def init_wifi(ssid="ARES-XRP-23247", password="aresrobotics"):
-    """Configures Pico W Wi-Fi in Access Point mode."""
+def _wifi_password(required):
     try:
-        import network
-        ap = network.WLAN(network.AP_IF)
-        ap.config(essid=ssid, password=password)
-        ap.active(True)
-        while not ap.active():
+        from xrp_secrets import WIFI_PASSWORD
+        if WIFI_PASSWORD:
+            return WIFI_PASSWORD
+    except ImportError:
+        pass
+    if required:
+        raise RuntimeError("STATION mode requires WIFI_PASSWORD in user-owned xrp_secrets.py")
+    return "aresrobotics"
+
+
+def init_wifi(mode, ssid):
+    """Configures the declared Pico W access-point or station mode."""
+    import network
+    if mode == "AP":
+        interface = network.WLAN(network.AP_IF)
+        interface.config(essid=ssid, password=_wifi_password(False))
+        interface.active(True)
+        while not interface.active():
             time.sleep(0.1)
-        print("[Wi-Fi] Access Point active. SSID:", ssid, "IP:", ap.ifconfig()[0])
-        return True
-    except Exception as e:
-        print("[Wi-Fi] Note: Running without network hardware:", e)
-        return False
+    elif mode == "STATION":
+        interface = network.WLAN(network.STA_IF)
+        interface.active(True)
+        interface.connect(ssid, _wifi_password(True))
+        remaining = 150
+        while not interface.isconnected() and remaining > 0:
+            remaining -= 1
+            time.sleep(0.1)
+        if not interface.isconnected():
+            raise RuntimeError("Timed out joining the configured Wi-Fi network")
+    else:
+        raise RuntimeError("Unsupported generated Wi-Fi mode: " + str(mode))
+    print("[Wi-Fi]", mode, "active. SSID:", ssid, "IP:", interface.ifconfig()[0])
+    return True
 
 def main():
     print("=== ARES Robotics - XRP MicroPython Controller ===")
-    init_wifi()
+    init_wifi(PROJECT["wifi_mode"], PROJECT["wifi_ssid"])
 
-    # Create XRP robot with Differential drivetrain and OTOS odometry
-    robot = XrpRobot(drivetrain_type="differential", use_otos=True)
+    try:
+        from XRPLib.defaults import board as xrp_board, drivetrain as xrp_drivetrain
+    except ImportError as error:
+        raise RuntimeError("XRPLib is required on the XRP controller") from error
+
+    mecanum_motors = None
+    differential_io = xrp_drivetrain
+    if PROJECT["drivetrain_type"] == "mecanum":
+        mecanum_motors = create_xrp_mecanum_motors(PROJECT["drive_motors"])
+        differential_io = None
+    robot = XrpRobot(
+        project_id=PROJECT["project_id"],
+        content_sha256=CONTENT_SHA256,
+        drivetrain_type=PROJECT["drivetrain_type"],
+        use_otos=PROJECT["use_otos"],
+        drivetrain_io=differential_io,
+        motors=mecanum_motors,
+        link_port=PROJECT["link_port"],
+        deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
+        brownout_threshold_volts=PROJECT["brownout_threshold_volts"],
+        battery_voltage_supplier=xrp_board.get_battery_voltage,
+        track_width=PROJECT["track_width_meters"],
+        wheel_base=PROJECT["wheel_base_meters"],
+        wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,
+        max_linear_speed=PROJECT["max_linear_speed_mps"],
+    )
     robot.start_server()
 
-    # Pre-configure Orbit Odyssey sample autonomous routine:
-    # 1. Start at Red Launch (0.35, 0.71)
-    # 2. Drive to Red Rubble Zone (0.85, 0.50)
-    # 3. Orbit pass Earth Pedestal (1.27, 1.20)
-    orbit_routine = AutonomousRoutine(
-        name="Orbit Odyssey Autonomous",
-        waypoints=[
-            Waypoint(x=0.35, y=0.7112, heading_rad=0.0, speed=0.4),
-            Waypoint(x=0.85, y=0.50, heading_rad=0.0, speed=0.5),
-            Waypoint(x=1.27, y=1.20, heading_rad=0.0, speed=0.5),
-        ]
-    )
-    robot.set_autonomous_routine(orbit_routine)
+    robot.set_subsystems(create_subsystems(create_xrp_hardware))
+    robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
 
     print("[Robot] Ready for ARES Studio Driver Station connection.")
 

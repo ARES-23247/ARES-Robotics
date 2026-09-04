@@ -200,13 +200,26 @@ fun HardwareInspectorBody(
                     viewModel.updateHardware(device.hardwareId) { it.copy(connection = it.connection.copy(channel = value, canId = null)) }
                 }
             }
-            SubsystemPlatform.XRP -> TextInput("XRP Device Name / Pin", device.connection.hardwareMapName.orEmpty()) { value ->
-                viewModel.updateHardware(device.hardwareId) { it.copy(connection = SubsystemHardwareConnection(hardwareMapName = value)) }
+            SubsystemPlatform.XRP -> when (device.kind) {
+                SubsystemHardwareKind.MOTOR -> IntInput("XRP motor channel (3 or 4)", device.connection.channel ?: 3) { value ->
+                    viewModel.updateHardware(device.hardwareId) {
+                        it.copy(connection = SubsystemHardwareConnection(channel = value))
+                    }
+                }
+                SubsystemHardwareKind.POSITIONAL_SERVO -> IntInput("XRP servo channel (1–4)", device.connection.channel ?: 1) { value ->
+                    viewModel.updateHardware(device.hardwareId) {
+                        it.copy(connection = SubsystemHardwareConnection(channel = value))
+                    }
+                }
+                SubsystemHardwareKind.DISTANCE_SENSOR -> FieldGuidance("Uses the XRP's built-in rangefinder; no pin or name is required.")
+                SubsystemHardwareKind.IMU -> FieldGuidance("Uses the XRP's built-in IMU; no pin or name is required.")
+                else -> FieldGuidance("This hardware type is not available in the generated XRP runtime.")
             }
         }
         Row(verticalAlignment = Alignment.Top) {
             FieldGuidance(
                 if (document.platform == SubsystemPlatform.FTC) "Use this exact name in the FTC Robot Controller configuration. Names are case-sensitive."
+                else if (document.platform == SubsystemPlatform.XRP) "Use the printed XRP expansion channel. Drive motors 1 and 2 are reserved for the drivetrain."
                 else "Use the device ID, bus, or channel configured in the matching vendor hardware tools."
             )
             Spacer(Modifier.weight(1f))
@@ -338,23 +351,6 @@ fun HardwareInspectorBody(
             }
         }
     }
-}
-
-private fun defaultVisualPlacement(kind: SubsystemHardwareKind): SubsystemVisualPlacementDocument =
-    if (kind == SubsystemHardwareKind.PRISM_DRIVER) {
-        placementForAnchor(SubsystemVisualAnchor.UNDERBODY)
-    } else {
-        placementForAnchor(SubsystemVisualAnchor.LEFT_SIDE)
-    }
-
-private fun placementForAnchor(anchor: SubsystemVisualAnchor): SubsystemVisualPlacementDocument = when (anchor) {
-    SubsystemVisualAnchor.LEFT_SIDE -> SubsystemVisualPlacementDocument(anchor, leftFraction = 0.5)
-    SubsystemVisualAnchor.RIGHT_SIDE -> SubsystemVisualPlacementDocument(anchor, leftFraction = -0.5)
-    SubsystemVisualAnchor.FRONT -> SubsystemVisualPlacementDocument(anchor, forwardFraction = 0.5)
-    SubsystemVisualAnchor.REAR -> SubsystemVisualPlacementDocument(anchor, forwardFraction = -0.5)
-    SubsystemVisualAnchor.CENTER,
-    SubsystemVisualAnchor.UNDERBODY,
-    SubsystemVisualAnchor.UNSPECIFIED -> SubsystemVisualPlacementDocument(anchor)
 }
 
 @Composable

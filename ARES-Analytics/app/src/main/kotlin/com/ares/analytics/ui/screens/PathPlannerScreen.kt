@@ -71,7 +71,9 @@ fun PathPlannerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var pendingProjectPath by remember { mutableStateOf<String?>(null) }
-    var selectedPane by remember { mutableStateOf(RoutineBuilderPane.ROUTINE) }
+    // Field-first is the least surprising compact layout: a new student immediately sees the
+    // coordinate surface they are programming instead of an empty form that can look fieldless.
+    var selectedPane by remember(projectPath) { mutableStateOf(RoutineBuilderPane.FIELD_PREVIEW) }
 
     pendingProjectPath?.let { selectedPath ->
         AlertDialog(
@@ -156,9 +158,10 @@ fun PathPlannerScreen(
 
         LaunchedEffect(presentation.useTabbedBody, state.tourStep?.target) {
             if (presentation.useTabbedBody) {
-                selectedPane = when (state.tourStep?.target) {
-                    AutonomousTourTarget.CANVAS -> RoutineBuilderPane.FIELD_PREVIEW
-                    else -> RoutineBuilderPane.ROUTINE
+                when (state.tourStep?.target) {
+                    AutonomousTourTarget.CANVAS -> selectedPane = RoutineBuilderPane.FIELD_PREVIEW
+                    null -> Unit
+                    else -> selectedPane = RoutineBuilderPane.ROUTINE
                 }
             }
         }

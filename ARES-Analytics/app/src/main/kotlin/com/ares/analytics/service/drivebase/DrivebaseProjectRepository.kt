@@ -2,6 +2,7 @@ package com.ares.analytics.service.drivebase
 
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.ares.analytics.service.tuning.TuningProfileRepository
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.Sha256
 import com.areslib.tuning.*
 import com.google.gson.JsonParser
@@ -46,9 +47,12 @@ class DrivebaseProjectRepository {
         }
         val matchingProfile = matchingProfiles.singleOrNull()
         require(matchingProfile == null ||
-            (matchingProfile.projectId == canonicalProjectId && matchingProfile.drivebaseUid == canonical.uid && matchingProfile.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN)
-        ) { "Canonical tuning profile ${canonical.canonicalProfileUid} targets a different project or drivebase." }
-        val baseProfile = matchingProfile ?: TuningProfileDocument(
+            (matchingProfile.projectId == canonicalProjectId && matchingProfile.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN)
+        ) { "Canonical tuning profile ${canonical.canonicalProfileUid} belongs to a different project or authority." }
+        val baseProfile = matchingProfile?.copy(
+            drivebaseUid = canonical.uid,
+            description = "Canonical values for ${canonical.displayName}",
+        ) ?: TuningProfileDocument(
             uid = canonical.canonicalProfileUid,
             profileId = canonical.canonicalProfileUid.substringAfterLast('.'),
             displayName = "Competition",
@@ -314,4 +318,5 @@ object CtreTunerConstantsReader {
     }
 }
 
-fun defaultDrivebase(projectId: String, kind: DrivebaseKind): DrivebaseDocument = canonicalTemplate(projectId, kind).toUiDrivebase()
+fun defaultDrivebase(projectId: String, kind: DrivebaseKind, league: League): DrivebaseDocument =
+    canonicalTemplate(projectId, kind, league).toUiDrivebase()

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "documentId": "orbit-preview",
+  "revision": 1,
+  "name": "Orbit preview",
+  "description": "A conservative two-waypoint route for desktop simulation before physical validation.",
+  "steps": [
+    {
+      "kind":"DRIVE_TO",
+      "stepId":"step-center",
+      "arguments":{},
+      "drive":{"target":{"xMeters":0.0,"yMeters":0.0,"headingRadians":0.0},"motionPresetKey":"safe","markers":[],"duringActionKeys":[],"arrivalActionKeys":[]},
+      "children":[],
+      "elseChildren":[]
+    },
+    {
+      "kind":"DRIVE_TO",
+      "stepId":"step-finish",
+      "arguments":{},
+      "drive":{"target":{"xMeters":0.75,"yMeters":0.35,"headingRadians":0.0},"motionPresetKey":"safe","markers":[],"duringActionKeys":[],"arrivalActionKeys":[]},
+      "children":[],
+      "elseChildren":[]
+    }
+  ]
+}

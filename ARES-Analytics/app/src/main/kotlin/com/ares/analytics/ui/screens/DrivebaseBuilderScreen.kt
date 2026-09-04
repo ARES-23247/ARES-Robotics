@@ -282,12 +282,7 @@ fun DrivebaseBuilderScreen(
                 DrivebaseDiscardAction.RELOAD -> "Discard Edits & Reload From Disk?"
             }
             val targetName = state.pendingKind?.let { kind ->
-                when (kind) {
-                    DrivebaseKind.FTC_MECANUM -> "FTC Mecanum"
-                    DrivebaseKind.FRC_CTRE_SWERVE -> "FRC CTRE Swerve"
-                    DrivebaseKind.DIFFERENTIAL -> "Differential / Tank"
-                    DrivebaseKind.CUSTOM -> "Advanced / Custom"
-                }
+                kind.displayName(state.league)
             } ?: "another drivebase"
             val message = when (action) {
                 DrivebaseDiscardAction.CHANGE_KIND -> "You have unsaved modifications on your current drivebase. Switching to $targetName will discard your uncommitted changes. Do you want to continue?"

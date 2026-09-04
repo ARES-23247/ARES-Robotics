@@ -37,10 +37,12 @@ $excludedFiles = @('local.properties', '.ares-starter-mirror.json')
 $templates = @(
     @{ Name = 'ARES-FTC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter' },
     @{ Name = 'ARES-FRC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FRC-Starter' },
+    @{ Name = 'ARES-XRP-Starter'; Source = Join-Path $workspaceRoot 'ARES-XRP-Starter' },
     @{ Name = 'ARES-Lightbot-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC' }
 )
 $ftcRuntimeRelativePath = 'TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
 $ftcRuntimeSource = Join-Path $workspaceRoot 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
+$xrpRuntimeSource = Join-Path $workspaceRoot 'ARESLib-Kotlin/ares-micro/ares_micro'
 
 function Get-RelativeFileHashes([string]$Root) {
     $result = [ordered]@{}
@@ -87,6 +89,14 @@ foreach ($template in $templates) {
     if ($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') {
         $sourceHashes[$ftcRuntimeRelativePath] = (Get-FileHash -Algorithm SHA256 -LiteralPath $ftcRuntimeSource).Hash.ToLowerInvariant()
     }
+    if ($template.Name -eq 'ARES-XRP-Starter') {
+        Get-ChildItem -LiteralPath $xrpRuntimeSource -Recurse -File |
+            Where-Object { $_.FullName -notmatch '[\\/]__pycache__[\\/]' -and $_.Extension -ne '.pyc' } |
+            ForEach-Object {
+                $runtimeRelative = [System.IO.Path]::GetRelativePath($xrpRuntimeSource, $_.FullName).Replace('\', '/')
+                $sourceHashes["lib/ares_micro/$runtimeRelative"] = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
+            }
+    }
 
     if ($Check) {
         if (-not (Test-Path -LiteralPath $destination)) { throw "Missing generated mirror: $destination" }
@@ -106,6 +116,8 @@ foreach ($template in $templates) {
             Join-Path $workspaceRoot $entry
         } elseif (($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') -and $entry -eq $ftcRuntimeRelativePath) {
             $ftcRuntimeSource
+        } elseif ($template.Name -eq 'ARES-XRP-Starter' -and $entry.StartsWith('lib/ares_micro/')) {
+            Join-Path $xrpRuntimeSource $entry.Substring('lib/ares_micro/'.Length)
         } else {
             Join-Path $template.Source $entry
         }

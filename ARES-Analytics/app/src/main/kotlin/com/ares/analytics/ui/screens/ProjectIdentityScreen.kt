@@ -91,6 +91,7 @@ fun ProjectIdentityScreen(
                     onUpdate = viewModel::update,
                     onHubCommandTransport = viewModel::updateFtcHubCommandTransport,
                     onLimelightProxyEnabled = viewModel::updateFtcLimelightProxyEnabled,
+                    onXrpWifiMode = viewModel::updateXrpWifiMode,
                 )
             }
             if (state.generalErrors.isNotEmpty()) {
@@ -289,8 +290,10 @@ private fun ProjectIdentityForm(
     onUpdate: (ProjectIdentityField, String) -> Unit,
     onHubCommandTransport: (AresFtcHubCommandTransport) -> Unit,
     onLimelightProxyEnabled: (Boolean) -> Unit,
+    onXrpWifiMode: (String) -> Unit,
 ) {
     val isFtc = state.workspaceLeague == League.FTC
+    val isXrp = state.workspaceLeague == League.XRP
     val lengthM = state.draft.robotLengthMeters.toDoubleOrNull() ?: 0.0
     val widthM = state.draft.robotWidthMeters.toDoubleOrNull() ?: 0.0
     val lengthIn = lengthM * 39.3701
@@ -356,7 +359,8 @@ private fun ProjectIdentityForm(
             ReadOnlyIdentityRow("League", state.workspaceLeague.name)
             ReadOnlyIdentityRow(
                 "Coordinate convention",
-                if (isFtc) "CENTER_ORIGIN_CCW (0,0 center)" else "BLUE_CORNER_ORIGIN_CCW (0,0 blue corner)",
+                if (state.workspaceLeague == League.FRC) "BLUE_CORNER_ORIGIN_CCW (0,0 blue corner)"
+                else "CENTER_ORIGIN_CCW (0,0 center)",
             )
 
             HorizontalDivider(color = AresBorder)
@@ -418,6 +422,16 @@ private fun ProjectIdentityForm(
                 )
             }
 
+            if (isXrp) {
+                HorizontalDivider(color = AresBorder)
+                XrpRuntimeOptionsEditor(
+                    state = state,
+                    enabled = runtimeOptionsEnabled,
+                    onUpdate = onUpdate,
+                    onWifiModeChanged = onXrpWifiMode,
+                )
+            }
+
             HorizontalDivider(color = AresBorder)
 
             // Standard Field Environment Preset Card (Read-only automatic preset)
@@ -441,8 +455,11 @@ private fun ProjectIdentityForm(
                             fontSize = 12.sp,
                         )
                         Text(
-                            if (isFtc) "Standard 12ft × 12ft (3.66m × 3.66m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner."
-                            else "Standard 54ft × 27ft (16.54m × 8.21m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner.",
+                            when (state.workspaceLeague) {
+                                League.FTC -> "Standard 12ft × 12ft (3.66m × 3.66m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner."
+                                League.FRC -> "Standard 54ft × 27ft (16.54m × 8.21m) competition perimeter. Game elements & AprilTags are configured in the Field Editor / Autonomous Planner."
+                                League.XRP -> "Desktop practice field 100in × 56in (2.54m × 1.42m). Change the canonical dimensions when your taped practice area is different."
+                            },
                             color = AresTextSecondary,
                             fontSize = 10.sp,
                         )
@@ -454,73 +471,7 @@ private fun ProjectIdentityForm(
 }
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
-private fun FtcRuntimeOptionsEditor(
-    transport: AresFtcHubCommandTransport,
-    limelightProxyEnabled: Boolean,
-    enabled: Boolean,
-    onTransportChanged: (AresFtcHubCommandTransport) -> Unit,
-    onLimelightProxyChanged: (Boolean) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("Control Hub runtime", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-            Text(
-                "Choose how this robot sends motor commands. The choice is saved with the project, generated into robot code, and reported back on the dashboard.",
-                color = AresTextSecondary,
-                fontSize = 11.sp,
-            )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip(
-                selected = transport == AresFtcHubCommandTransport.STANDARD_SDK,
-                onClick = { onTransportChanged(AresFtcHubCommandTransport.STANDARD_SDK) },
-                enabled = enabled,
-                label = { Text("Standard FTC SDK · recommended") },
-            )
-            FilterChip(
-                selected = transport == AresFtcHubCommandTransport.ARES_PHOTON,
-                onClick = { onTransportChanged(AresFtcHubCommandTransport.ARES_PHOTON) },
-                enabled = enabled,
-                label = { Text("ARES Photon · experimental") },
-            )
-        }
-        Text(
-            if (transport == AresFtcHubCommandTransport.ARES_PHOTON) {
-                "Experimental: ARES may use a lower-overhead direct REV Hub write path. Every unsupported or failed command falls back to the FTC SDK. Verify it on restrained physical hardware before competition. Local simulation shows it as selected but not hardware-active."
-            } else {
-                "Uses the supported FTC SDK command path with ARES cached reads and safety handling. This is the safest starting point for a new robot."
-            },
-            color = if (transport == AresFtcHubCommandTransport.ARES_PHOTON) AresGold else AresTextSecondary,
-            fontSize = 11.sp,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Limelight camera proxy", color = AresTextPrimary, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "Off by default. Enable only when the laptop must reach Limelight web/video ports through the Control Hub.",
-                    color = AresTextSecondary,
-                    fontSize = 11.sp,
-                )
-            }
-            Switch(
-                checked = limelightProxyEnabled,
-                onCheckedChange = onLimelightProxyChanged,
-                enabled = enabled,
-            )
-        }
-    }
-}
-
-@Composable
-private fun GeometryRow(
+internal fun GeometryRow(
     firstLabel: String,
     firstValue: String,
     firstError: String?,
@@ -540,7 +491,7 @@ private fun GeometryRow(
 }
 
 @Composable
-private fun IdentityField(
+internal fun IdentityField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,

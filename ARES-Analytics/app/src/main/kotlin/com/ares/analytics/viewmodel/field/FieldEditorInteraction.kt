@@ -198,8 +198,8 @@ private data class FieldBounds(val minX: Double, val maxX: Double, val minY: Dou
     companion object {
         fun forLeague(league: League, width: Double, height: Double): FieldBounds =
             when (league) {
-                League.FTC -> FieldBounds(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0)
-                League.FRC, League.XRP -> FieldBounds(0.0, width, 0.0, height)
+                League.FTC, League.XRP -> FieldBounds(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0)
+                League.FRC -> FieldBounds(0.0, width, 0.0, height)
             }
     }
 }

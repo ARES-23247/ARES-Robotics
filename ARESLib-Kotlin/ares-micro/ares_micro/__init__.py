@@ -7,6 +7,7 @@ from .drivetrain import DifferentialDrivetrain, MecanumDrivetrain
 from .telemetry import XrpTelemetryServer
 from .opmode import Waypoint, PidPoseFollower, AutonomousRoutine
 from .robot import XrpRobot
+from .subsystem import GeneratedXrpSubsystem, MockXrpDevice, mock_hardware_factory
 
 __all__ = [
     "DifferentialDriveKinematics",

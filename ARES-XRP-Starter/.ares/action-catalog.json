@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ares-xrp-starter",
+  "revision": 1,
+  "actions": [
+    {
+      "key": "drivetrain.recoverNeutral",
+      "displayName": "Recover drive after a fault",
+      "description": "Requires released controls and a fresh XRP control session before clearing the drive fault latch.",
+      "category": "Drive safety",
+      "parameters": [],
+      "resources": [{"resourceKey":"drivetrain","access":"EXCLUSIVE"}],
+      "allowedContexts": ["TELEOP", "TEST"]
+    }
+  ],
+  "conditions": []
+}

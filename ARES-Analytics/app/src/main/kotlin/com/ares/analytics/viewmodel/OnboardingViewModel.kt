@@ -54,7 +54,7 @@ data class OnboardingState(
     val projectFolderName: String = "",
     val projectDetectionMessage: String? = null,
     val projectTemplateName: String = "ARES FTC",
-    val projectTemplateVersion: String = "6.1.0",
+    val projectTemplateVersion: String = "",
     val projectCreationMessage: String? = null,
     val authoringModel: AresProjectAuthoringModel = AresProjectAuthoringModel.GUI_OWNED,
     val teamId: String = "",
@@ -145,7 +145,7 @@ class OnboardingViewModel(
     private val _state = MutableStateFlow(
         OnboardingState(
             projectTemplateName = initialTemplate.displayName,
-            projectTemplateVersion = initialTemplate.aresVersion,
+            projectTemplateVersion = initialTemplate.artifactVersion,
         ),
     )
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -185,7 +185,7 @@ class OnboardingViewModel(
                                     nt4Host = "127.0.0.1",
                                     simulatorCommand = "",
                                     projectTemplateName = template.displayName,
-                                    projectTemplateVersion = template.aresVersion,
+                                    projectTemplateVersion = template.artifactVersion,
                                 )
                                 lightbot.copy(projectPath = plannedProjectPath(lightbot))
                             }
@@ -232,12 +232,15 @@ class OnboardingViewModel(
                 is OnboardingIntent.UpdateRobotId -> updateRequiredField { it.copy(robotId = intent.robotId) }
                 is OnboardingIntent.UpdateRobotName -> _state.update { it.copy(robotName = intent.robotName) }
                 is OnboardingIntent.UpdateLeague -> _state.update { current ->
-                    val template = projectTemplateService.templateFor(intent.league)
+                    val template = projectTemplateService.templateForOrNull(intent.league)
                     val next = current.copy(
                         league = intent.league,
                         nt4Host = environmentService.getDefaultNt4Host(intent.league, current.teamId),
-                        projectTemplateName = template.displayName,
-                        projectTemplateVersion = template.aresVersion,
+                        projectTemplateName = template?.displayName.orEmpty(),
+                        projectTemplateVersion = template?.artifactVersion.orEmpty(),
+                        errorMessage = if (template == null && current.projectSetupMode.createsProject) {
+                            "No reviewed ${intent.league.name} starter is bundled with this Studio build."
+                        } else null,
                     )
                     if (next.projectSetupMode.createsProject) {
                         next.copy(projectPath = plannedProjectPath(next))
@@ -303,7 +306,7 @@ class OnboardingViewModel(
 
         val robotConfig = environmentService.readProjectIdentity(path)
         if (robotConfig != null) {
-            val detectedLeague = if (robotConfig.league.equals("FRC", ignoreCase = true)) League.FRC else League.FTC
+            val detectedLeague = League.valueOf(robotConfig.league.uppercase())
             _state.update {
                 it.copy(
                     teamId = robotConfig.teamId,
@@ -430,7 +433,7 @@ class OnboardingViewModel(
                         projectSetupMode = ProjectSetupMode.OPEN_EXISTING,
                         projectPath = result.destination.path,
                         projectDetectionMessage =
-                            "Created ${result.template.displayName} ${result.template.aresVersion} from a verified ${result.source.name.lowercase().replace('_', ' ')}.",
+                            "Created ${result.template.displayName} ${result.template.artifactVersion} from a verified ${result.source.name.lowercase().replace('_', ' ')}.",
                         projectCreationMessage = "Project files and local version history are ready.",
                     )
                 }
@@ -503,112 +506,3 @@ class OnboardingViewModel(
     }
 
 }
-
-private fun plannedProjectPath(state: OnboardingState): String {
-    val parent = state.projectParentPath.trim()
-    val name = state.projectFolderName.trim()
-    return if (parent.isBlank() || name.isBlank()) "" else File(parent, name).path
-}
-
-/**
- * League detection filled the project page in, so a recognized project moves the student straight
- * to the robot-details page. An unrecognized directory (possibly a partial path while typing)
- * leaves the wizard where it is, and a student who already advanced is never pulled back.
- */
-internal fun advanceAfterDetection(currentStep: OnboardingStep, recognizedProject: Boolean): OnboardingStep =
-    if (currentStep == OnboardingStep.PROJECT && recognizedProject) OnboardingStep.ROBOT else currentStep
-
-internal data class JavaBuildToolsReadiness(
-    val isValid: Boolean,
-    val majorVersion: Int?,
-    val message: String,
-)
-
-internal fun evaluateJavaBuildTools(commandSucceeded: Boolean, rawMessage: String): JavaBuildToolsReadiness {
-    if (!commandSucceeded) {
-        return JavaBuildToolsReadiness(
-            isValid = false,
-            majorVersion = null,
-            message = "ARES Robotics Studio is ready. Robot builds and simulation need JDK 17 or 21, but a supported JDK was not found.",
-        )
-    }
-    val major = parseJavaMajorVersion(rawMessage)
-    return when (major) {
-        17, 21 -> JavaBuildToolsReadiness(
-            true,
-            major,
-            "JDK $major is ready for robot builds and simulation.",
-        )
-        null -> JavaBuildToolsReadiness(
-            false,
-            null,
-            "ARES Robotics Studio is ready, but the Java version could not be identified. Install JDK 17 or 21 before building or simulating a robot.",
-        )
-        else -> JavaBuildToolsReadiness(
-            false,
-            major,
-            "ARES Robotics Studio is ready, but robot builds and simulation need JDK 17 or 21. We found Java $major; install a supported JDK and ARES will discover it automatically.",
-        )
-    }
-}
-
-internal fun parseJavaMajorVersion(message: String): Int? {
-    val version = Regex("(?:java|openjdk) version \"([^\"]+)\"", RegexOption.IGNORE_CASE)
-        .find(message)
-        ?.groupValues
-        ?.get(1)
-        ?: Regex("version[=: ]+([0-9]+(?:\\.[0-9]+)*)", RegexOption.IGNORE_CASE)
-            .find(message)
-            ?.groupValues
-            ?.get(1)
-        ?: return null
-    val parts = version.split('.')
-    val first = parts.firstOrNull()?.takeWhile(Char::isDigit)?.toIntOrNull() ?: return null
-    return if (first == 1) parts.getOrNull(1)?.takeWhile(Char::isDigit)?.toIntOrNull() else first
-}
-
-internal fun validateOnboardingFields(
-    state: OnboardingState,
-    throughStep: OnboardingStep,
-): OnboardingFieldErrors {
-    val validateProject = throughStep.ordinal >= OnboardingStep.PROJECT.ordinal
-    val validateRobot = throughStep.ordinal >= OnboardingStep.ROBOT.ordinal
-    return OnboardingFieldErrors(
-        projectPath = when {
-            !validateProject -> null
-            state.projectSetupMode.createsProject && state.projectParentPath.isBlank() ->
-                "Choose where ARES should create the robot project."
-            state.projectSetupMode.createsProject && !File(state.projectParentPath.trim()).isDirectory ->
-                "The parent folder does not exist or cannot be opened."
-            state.projectSetupMode.createsProject -> {
-                RobotProjectTemplateService.projectFolderNameError(state.projectFolderName.trim())
-                    ?: File(state.projectParentPath.trim(), state.projectFolderName.trim())
-                        .takeIf(File::exists)
-                        ?.let { "A file or folder already exists at ${it.path}." }
-            }
-            state.projectPath.isBlank() -> "Choose your robot project folder."
-            !File(state.projectPath.trim()).isDirectory -> "This folder does not exist or cannot be opened."
-            else -> null
-        },
-        teamId = when {
-            !validateRobot -> null
-            state.teamId.isBlank() -> "Enter your FIRST team number."
-            state.teamId.any { !it.isDigit() } -> "Use numbers only for the team number."
-            else -> null
-        },
-        seasonId = when {
-            !validateRobot -> null
-            state.seasonId.isBlank() -> "Enter the season, for example 2026."
-            else -> null
-        },
-        robotId = when {
-            !validateRobot -> null
-            state.robotId.isBlank() -> "Enter a short robot ID."
-            else -> null
-        },
-    )
-}
-
-/** Build-tool readiness is advisory; local analysis and workspace authoring remain available without a supported JDK. */
-internal fun validateOnboardingCompletion(state: OnboardingState): OnboardingFieldErrors =
-    validateOnboardingFields(state, OnboardingStep.REVIEW)

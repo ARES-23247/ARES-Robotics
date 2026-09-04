@@ -199,7 +199,6 @@ the secret to a desktop build.
 - [Architecture](ARCHITECTURE.md) — modules, service lifecycles, persistence, replay, and extension points
 - [Telemetry contract](docs/TELEMETRY_CONTRACT.md) — canonical topics, types, coordinate conventions, and NT4 behavior
 - [Operations guide](docs/OPERATIONS.md) — setup, connections, import/replay workflows, and troubleshooting
-- [Security audit](AUDIT.md) — dated audit evidence; verify status against current code before treating an item as open
 
 ## Where to start in the code
 

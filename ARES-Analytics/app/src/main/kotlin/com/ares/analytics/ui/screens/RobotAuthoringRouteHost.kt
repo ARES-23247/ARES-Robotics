@@ -23,6 +23,7 @@ import com.ares.analytics.viewmodel.hardware.HardwareSetupViewModel
 import com.ares.analytics.viewmodel.project.ProjectIdentityViewModel
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioViewModel
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioViewModel
+import java.io.File
 
 /** Dependencies intentionally limited to the canonical robot-authoring feature family. */
 internal data class RobotAuthoringFeatureScope(
@@ -41,7 +42,9 @@ internal data class RobotAuthoringRouteActions(
     val navigate: (NavigationTarget) -> Unit,
     val runVerification: () -> Unit,
     val openInIde: () -> String,
-    val createStandaloneProject: () -> Unit,
+    val createProject: () -> Unit,
+    val chooseStandaloneExport: () -> File?,
+    val exportStandaloneProject: suspend (File) -> String,
     val refreshRobotStudio: () -> Unit,
 )
 
@@ -64,7 +67,7 @@ internal fun RobotAuthoringRouteHost(
     )
     if (route !in authoringRoutes) return false
     if (config.projectPath.isBlank()) {
-        AuthoringProjectEmptyState(route, actions.createStandaloneProject)
+        AuthoringProjectEmptyState(route, actions.createProject)
         return true
     }
     return when (route) {
@@ -88,7 +91,8 @@ internal fun RobotAuthoringRouteHost(
             onOpenPitDiagnostics = { actions.navigate(NavigationTarget.PIT_DIAGNOSTICS) },
             onRunVerification = actions.runVerification,
             onOpenInIde = actions.openInIde,
-            onCreateStandaloneProject = actions.createStandaloneProject,
+            onChooseStandaloneExport = actions.chooseStandaloneExport,
+            onExportStandaloneProject = actions.exportStandaloneProject,
         )
         true
     }

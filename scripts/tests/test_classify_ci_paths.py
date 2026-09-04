@@ -26,6 +26,12 @@ class ClassifyCiPathsTest(unittest.TestCase):
         result = MODULE.classify_paths(["ARESLib-Kotlin/core/src/main/kotlin/Clock.kt"])
         self.assertTrue(all(result.values()))
 
+    def test_xrp_change_runs_only_python_native_starter(self):
+        result = MODULE.classify_paths(["ARES-XRP-Starter/tools/ares_project.py"])
+        self.assertTrue(result["xrp_starter"])
+        self.assertFalse(result["full"])
+        self.assertFalse(result["analytics"])
+
     def test_shared_release_change_runs_every_consumer_without_marking_library_source(self):
         result = MODULE.classify_paths(["release/ares-versions.properties"])
         self.assertTrue(result["full"])

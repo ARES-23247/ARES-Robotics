@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 2,
+  "uid": "ares.xrp.profile.simulation",
+  "profileId": "simulation",
+  "displayName": "XRP simulation baseline",
+  "description": "Built-in XRP geometry for simulation; physical dimensions still require review.",
+  "projectId": "ares-xrp-starter",
+  "drivebaseUid": "ares.xrp.drivebase.differential",
+  "authority": "CANONICAL_CHECKED_IN",
+  "values": []
+}

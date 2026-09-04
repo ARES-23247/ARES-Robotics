@@ -4,6 +4,7 @@ import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.shared.models.ThresholdRule
+import com.ares.analytics.shared.models.League
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -30,6 +31,34 @@ class MockNt4ClientService(databaseService: DatabaseService) : Nt4ClientService(
  * AlertEngineServiceTest class.
  */
 class AlertEngineServiceTest {
+
+    @Test
+    fun `XRP battery rule uses the canonical project threshold`() = runBlocking {
+        val tempDb = File.createTempFile("xrp_battery_alert_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath)
+        val nt4Service = MockNt4ClientService(databaseService)
+        val thresholds = File(tempDb.parentFile, "missing-xrp-thresholds-${System.nanoTime()}.json")
+        val alertService = AlertEngineService(databaseService, nt4Service, thresholds.absolutePath)
+        try {
+            alertService.configureRobotContext(League.XRP, xrpBrownoutThresholdVolts = 4.3)
+            delay(100)
+            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_000L, "xrp-session", "Robot/BatteryVoltage", 6.0))
+            delay(100)
+            assertTrue(alertService.alerts.value.isEmpty())
+
+            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_020L, "xrp-session", "Robot/BatteryVoltage", 4.2))
+            val alert = kotlinx.coroutines.withTimeout(2_000) {
+                alertService.alerts.first { it.any { record -> record.sessionId == "xrp-session" } }
+            }.single()
+            assertEquals(4.2, alert.peakValue)
+            assertEquals("Low XRP Battery Voltage (<4.30V)", alertService.getRuleDisplayName(alert.ruleKey))
+        } finally {
+            alertService.dispose()
+            databaseService.close()
+            thresholds.delete()
+            tempDb.delete()
+        }
+    }
 
     @Test
     fun `one moderate loop spike is diagnostic evidence but repeated spikes alert`() = runBlocking {

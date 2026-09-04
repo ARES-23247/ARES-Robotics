@@ -31,7 +31,7 @@ import kotlin.test.assertTrue
  */
 class OfficialProjectTemplateIntegrationTest {
     @Test
-    fun `official pinned archives create source-valid FTC and FRC projects`() = runBlocking {
+    fun `official pinned archives create source-valid FTC FRC and XRP projects`() = runBlocking {
         val archiveDirectory = (
             System.getProperty("ares.officialTemplateArchiveDir")
                 ?: System.getenv("ARES_OFFICIAL_TEMPLATE_ARCHIVE_DIR")
@@ -61,8 +61,9 @@ class OfficialProjectTemplateIntegrationTest {
         val archives = mapOf(
             League.FTC to File(archiveRoot, "ftc.zip"),
             League.FRC to File(archiveRoot, "frc.zip"),
+            League.XRP to File(archiveRoot, "xrp.zip"),
         )
-        assertTrue(archives.values.all(File::isFile), "Download both pinned archives before this release check.")
+        assertTrue(archives.values.all(File::isFile), "Provide the FTC, FRC, and XRP archives before this release check.")
         val service = RobotProjectTemplateService(
             cacheDirectory = File(output, "cache"),
             archiveDownloader = { template, destination ->
@@ -71,7 +72,7 @@ class OfficialProjectTemplateIntegrationTest {
         )
         val history = localHistoryService()
 
-        listOf(League.FTC, League.FRC).forEach { league ->
+        listOf(League.FTC, League.FRC, League.XRP).forEach { league ->
             val destination = File(output, league.name.lowercase())
             if (destination.exists()) destination.deleteRecursively()
             val result = service.create(
@@ -100,7 +101,7 @@ class OfficialProjectTemplateIntegrationTest {
             val generatedRuntime = when (league) {
                 League.FTC -> "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt"
                 League.FRC -> "src/main/kotlin/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt"
-                League.XRP -> "src/generated_ares_project.py"
+                League.XRP -> "build/generated/ares/python/generated_ares_project.py"
             }
             val checkpoint = history.checkpoint(
                 result.destination.path,
@@ -126,7 +127,10 @@ class OfficialProjectTemplateIntegrationTest {
         validationVersion: String?,
     ) {
         val windows = System.getProperty("os.name").contains("win", ignoreCase = true)
-        val command = buildList {
+        val command = if (league == League.XRP) {
+            if (windows) listOf("cmd.exe", "/d", "/s", "/c", "ares.bat", "build")
+            else listOf("./ares", "build")
+        } else buildList {
             if (windows) addAll(listOf("cmd.exe", "/c", "gradlew.bat")) else add("./gradlew")
             when (league) {
                 League.FTC -> addAll(
@@ -140,7 +144,7 @@ class OfficialProjectTemplateIntegrationTest {
                     ),
                 )
                 League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
-                League.XRP -> addAll(listOf("generateAresProject", "test"))
+                League.XRP -> error("XRP uses its Python-native project wrapper")
             }
             validationVersion?.let { add("-ParesVersion=$it") }
             repositoryUri?.let { add("-ParesRepository=$it") }

@@ -138,6 +138,22 @@ object SubsystemSchema {
                     if (device.kind == SubsystemHardwareKind.SOLENOID) {
                         issue("$path.kind", "Generated pneumatic solenoids are not available for XRP projects")
                     }
+                    if (!device.kind.supportsPlatform(SubsystemPlatform.XRP)) {
+                        issue("$path.kind", "${device.kind} has no generated XRPLib adapter")
+                    }
+                    when (device.kind) {
+                        SubsystemHardwareKind.MOTOR -> if (device.connection.channel !in setOf(3, 4)) {
+                            issue("$path.connection.channel", "XRP mechanism motors use channel 3 or 4")
+                        }
+                        SubsystemHardwareKind.POSITIONAL_SERVO -> if (device.connection.channel !in setOf(1, 2, 3, 4)) {
+                            issue("$path.connection.channel", "XRP servos use channel 1 through 4")
+                        }
+                        SubsystemHardwareKind.DISTANCE_SENSOR,
+                        SubsystemHardwareKind.IMU -> if (device.connection.channel != null) {
+                            issue("$path.connection.channel", "The default XRP sensor has no selectable channel")
+                        }
+                        else -> Unit
+                    }
                 }
             }
             if (device.kind != SubsystemHardwareKind.QUADRATURE_ENCODER && device.connection.secondaryChannel != null) {

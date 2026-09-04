@@ -11,10 +11,12 @@ import com.ares.analytics.service.DriverAnalysisService
 import com.ares.analytics.service.GamepadService
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayEngineService
+import com.ares.analytics.service.XrpLinkService
 
 /** Live robot/simulator dependencies available to dashboard widget renderers. */
 data class DashboardLiveWidgetServices(
     val nt4ClientService: Nt4ClientService,
+    val xrpLinkService: XrpLinkService,
     val alertEngineService: AlertEngineService,
     val dashboardHealthService: DashboardHealthService,
     val keyboardDriveState: KeyboardDriveState,

@@ -138,6 +138,39 @@ class AresProjectMetadataTest {
         assertThrows(IllegalArgumentException::class.java) { AresProjectMetadataCodec.decode(stringBoolean) }
     }
 
+    @Test
+    fun `XRP requires an explicit isolated fail closed link policy`() {
+        val xrp = AresProjectMetadataDocument(
+            projectId = "student-xrp",
+            identity = identity("00000", "starter", "student-xrp", "Student XRP"),
+            league = AresLeague.XRP,
+            coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
+            robotLengthMeters = 0.155,
+            robotWidthMeters = 0.155,
+            fieldLengthMeters = 2.54,
+            fieldWidthMeters = 1.4224,
+            runtimeOptions = AresRuntimeOptionsDocument(
+                xrp = AresXrpRuntimeOptionsDocument(
+                    wifiMode = "AP",
+                    ssid = "ARES-XRP-TEST",
+                    port = 5811,
+                    deadmanTimeoutMs = 200,
+                    brownoutThresholdVolts = 4.3,
+                ),
+            ),
+        )
+
+        assertEquals(xrp, AresProjectMetadataCodec.decode(AresProjectMetadataCodec.encode(xrp)))
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.encode(xrp.copy(runtimeOptions = AresRuntimeOptionsDocument()))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.encode(
+                xrp.copy(runtimeOptions = AresRuntimeOptionsDocument(xrp = xrp.runtimeOptions.xrp!!.copy(port = 5810))),
+            )
+        }
+    }
+
     private fun identity(team: String, season: String, robot: String, name: String) =
         AresProjectIdentityDocument(team, season, robot, name)
 }

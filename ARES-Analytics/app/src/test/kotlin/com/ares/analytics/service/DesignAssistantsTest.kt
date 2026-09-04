@@ -31,7 +31,7 @@ import kotlin.test.assertTrue
 class DesignAssistantsTest {
     @Test
     fun `drivebase proposal preserves repository identity and evidence`() {
-        val current = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM)
+        val current = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM, League.FTC)
         val proposed = current.copy(
             uid = "ai-replaced-uid",
             drivebaseId = "ai-drive",
@@ -123,7 +123,7 @@ class DesignAssistantsTest {
 
     @Test
     fun `malformed assistant envelopes fail closed`() {
-        val current = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM)
+        val current = canonicalTemplate("team", DrivebaseKind.FTC_MECANUM, League.FTC)
         assertFailsWith<IllegalArgumentException> {
             parseDrivebaseDesignProposalResponse(current, """{"summary":"missing document"}""")
         }
