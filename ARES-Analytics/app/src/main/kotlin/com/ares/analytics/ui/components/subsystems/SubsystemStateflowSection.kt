@@ -214,13 +214,7 @@ fun ControlInspectorBody(
         SubsystemControlStrategy.PROFILED_POSITION_PID,
     ) && SubsystemUnits.isCanonicalAngle(selectedTarget?.unit) &&
         SubsystemUnits.isCanonicalAngle(selectedMeasurement?.unit)
-    val outputUnit = when (actuator?.kind) {
-        SubsystemHardwareKind.MOTOR -> "V"
-        SubsystemHardwareKind.PRISM_DRIVER -> "µs"
-        SubsystemHardwareKind.BUZZER -> "MIDI note"
-        SubsystemHardwareKind.DIGITAL_OUTPUT -> "0 / 1"
-        else -> "normalized"
-    }
+    val outputUnit = subsystemControlOutputUnit(actuator?.kind)
     var showControlLab by remember(loop.uid) { mutableStateOf(false) }
     var showFeedforwardLab by remember(loop.uid) { mutableStateOf(false) }
     var editCustomAngleRange by remember(loop.uid) { mutableStateOf(false) }

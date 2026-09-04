@@ -200,49 +200,7 @@ fun HardwareInspectorBody(
                     viewModel.updateHardware(device.hardwareId) { it.copy(connection = it.connection.copy(channel = value, canId = null)) }
                 }
             }
-            SubsystemPlatform.XRP -> when (device.kind) {
-                SubsystemHardwareKind.MOTOR -> IntInput("XRP motor channel (3 or 4)", device.connection.channel ?: 3) { value ->
-                    viewModel.updateHardware(device.hardwareId) {
-                        it.copy(connection = SubsystemHardwareConnection(channel = value))
-                    }
-                }
-                SubsystemHardwareKind.POSITIONAL_SERVO -> IntInput("XRP servo channel (1–4)", device.connection.channel ?: 1) { value ->
-                    viewModel.updateHardware(device.hardwareId) {
-                        it.copy(connection = SubsystemHardwareConnection(channel = value))
-                    }
-                }
-                SubsystemHardwareKind.DIGITAL_INPUT -> IntInput("GPIO channel (blank is the built-in button)", device.connection.channel ?: 0) { value ->
-                    viewModel.updateHardware(device.hardwareId) {
-                        it.copy(connection = SubsystemHardwareConnection(channel = value))
-                    }
-                }
-                SubsystemHardwareKind.DIGITAL_OUTPUT,
-                SubsystemHardwareKind.PWM_OUTPUT -> IntInput("XRP GPIO channel (0–29)", device.connection.channel ?: 0) { value ->
-                    viewModel.updateHardware(device.hardwareId) {
-                        it.copy(connection = SubsystemHardwareConnection(channel = value))
-                    }
-                }
-                SubsystemHardwareKind.ANALOG_INPUT -> if (
-                    device.measurements.any { it.source == SubsystemMeasurementSource.REFLECTANCE_NORMALIZED }
-                ) {
-                    IntInput("Reflectance channel (0 left, 1 middle, 2 right)", device.connection.channel ?: 0) { value ->
-                        viewModel.updateHardware(device.hardwareId) {
-                            it.copy(connection = SubsystemHardwareConnection(channel = value))
-                        }
-                    }
-                } else {
-                    IntInput("ADC-capable GPIO channel (26–29)", device.connection.channel ?: 26) { value ->
-                        viewModel.updateHardware(device.hardwareId) {
-                            it.copy(connection = SubsystemHardwareConnection(channel = value))
-                        }
-                    }
-                }
-                SubsystemHardwareKind.DISTANCE_SENSOR -> FieldGuidance("Uses the XRP's built-in rangefinder; no pin or name is required.")
-                SubsystemHardwareKind.IMU -> FieldGuidance("Uses the XRP's built-in IMU for yaw, pitch, roll, angular velocity, and acceleration; no pin or name is required.")
-                SubsystemHardwareKind.INDICATOR_LIGHT -> FieldGuidance("No channel uses the green status LED. Channels 0, 1, and 2 control the red, green, and blue RGB components.")
-                SubsystemHardwareKind.BUZZER -> FieldGuidance("Uses the board's built-in buzzer. The device preflight verifies it exists before deployment.")
-                else -> FieldGuidance("This hardware type is not available in the generated XRP runtime.")
-            }
+            SubsystemPlatform.XRP -> XrpHardwareConnectionEditor(device, viewModel)
         }
         Row(verticalAlignment = Alignment.Top) {
             FieldGuidance(
