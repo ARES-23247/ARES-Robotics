@@ -69,8 +69,14 @@ class ReleaseCandidateTest(unittest.TestCase):
         args.expected_tree = "a" * 40
         def command(argv, **kwargs):
             if argv[0] == "gh":
-                self.assertIn("--signer-workflow", argv)
-                self.assertIn("--cert-identity", argv)
+                identity_flags = {"--cert-identity", "--cert-identity-regex", "--signer-repo", "--signer-workflow"}
+                self.assertEqual({"--cert-identity"}, identity_flags.intersection(argv))
+                self.assertEqual(
+                    "https://github.com/ARES-23247/ARES-Robotics/.github/workflows/build-distributions.yml@refs/pull/1/merge",
+                    argv[argv.index("--cert-identity") + 1],
+                )
+                self.assertEqual("b" * 40, argv[argv.index("--signer-digest") + 1])
+                self.assertIn("--deny-self-hosted-runners", argv)
                 if argv[argv.index("--source-digest") + 1] != actual_commit:
                     raise subprocess.CalledProcessError(1, argv)
             return mock.Mock(stdout=actual_tree + "\n")
