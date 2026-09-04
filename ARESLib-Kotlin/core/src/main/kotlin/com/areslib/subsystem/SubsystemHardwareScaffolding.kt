@@ -29,6 +29,12 @@ object SubsystemHardwareScaffolding {
             SubsystemPlatform.XRP -> when (kind) {
                 SubsystemHardwareKind.MOTOR -> SubsystemHardwareConnection(channel = 3)
                 SubsystemHardwareKind.POSITIONAL_SERVO -> SubsystemHardwareConnection(channel = 1)
+                SubsystemHardwareKind.DIGITAL_INPUT -> SubsystemHardwareConnection()
+                SubsystemHardwareKind.DIGITAL_OUTPUT -> SubsystemHardwareConnection(channel = 0)
+                SubsystemHardwareKind.ANALOG_INPUT -> SubsystemHardwareConnection(channel = 26)
+                SubsystemHardwareKind.PWM_OUTPUT -> SubsystemHardwareConnection(channel = 0)
+                SubsystemHardwareKind.INDICATOR_LIGHT -> SubsystemHardwareConnection()
+                SubsystemHardwareKind.BUZZER -> SubsystemHardwareConnection()
                 else -> SubsystemHardwareConnection()
             }
             SubsystemPlatform.FRC -> when (kind) {
@@ -57,23 +63,29 @@ object SubsystemHardwareScaffolding {
                         displayName,
                         kind,
                         connection,
-                        measurements = listOf(
-                            SubsystemMeasurementDocument(position, SubsystemMeasurementSource.MOTOR_POSITION_NATIVE),
-                            SubsystemMeasurementDocument(velocity, SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND),
-                            SubsystemMeasurementDocument(
-                                current,
-                                SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
-                                validMinimum = 0.0,
-                            ),
-                        ),
+                        measurements = buildList {
+                            add(SubsystemMeasurementDocument(position, SubsystemMeasurementSource.MOTOR_POSITION_NATIVE))
+                            add(SubsystemMeasurementDocument(velocity, SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND))
+                            if (platform != SubsystemPlatform.XRP) {
+                                add(
+                                    SubsystemMeasurementDocument(
+                                        current,
+                                        SubsystemMeasurementSource.MOTOR_CURRENT_AMPS,
+                                        validMinimum = 0.0,
+                                    )
+                                )
+                            }
+                        },
                         safeOutput = 0.0,
                     ),
-                    stateFields = listOf(
-                        SubsystemStateFieldDocument(target, "Target voltage", SubsystemValueType.DOUBLE, SubsystemFieldRole.TARGET, "V", defaultNumber = 0.0, minimum = -12.0, maximum = 12.0),
-                        SubsystemStateFieldDocument(position, "Position", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0),
-                        SubsystemStateFieldDocument(velocity, "Velocity", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0),
-                        SubsystemStateFieldDocument(current, "Current", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "A", defaultNumber = 0.0, minimum = 0.0),
-                    ),
+                    stateFields = buildList {
+                        add(SubsystemStateFieldDocument(target, "Target voltage", SubsystemValueType.DOUBLE, SubsystemFieldRole.TARGET, "V", defaultNumber = 0.0, minimum = -12.0, maximum = 12.0))
+                        add(SubsystemStateFieldDocument(position, "Position", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0))
+                        add(SubsystemStateFieldDocument(velocity, "Velocity", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, defaultNumber = 0.0))
+                        if (platform != SubsystemPlatform.XRP) {
+                            add(SubsystemStateFieldDocument(current, "Current", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "A", defaultNumber = 0.0, minimum = 0.0))
+                        }
+                    },
                     controlLoops = listOf(
                         SubsystemControlLoopDocument(
                             fieldId("control"),
@@ -152,12 +164,34 @@ object SubsystemHardwareScaffolding {
                 ),
                 SubsystemStateFieldDocument(fieldId("active"), "Active", SubsystemValueType.BOOLEAN, SubsystemFieldRole.MEASUREMENT, defaultBoolean = false),
             )
+            SubsystemHardwareKind.DIGITAL_OUTPUT -> outputScaffold(
+                kind,
+                hardwareId,
+                displayName,
+                connection,
+                fieldId("active"),
+                "Requested state (0 off, 1 on)",
+                0.0,
+                1.0,
+                SubsystemControlStrategy.DIRECT,
+            )
             SubsystemHardwareKind.ANALOG_INPUT -> sensorScaffold(
                 SubsystemHardwareDocument(
                     hardwareId, displayName, kind, connection,
                     measurements = listOf(SubsystemMeasurementDocument(fieldId("voltage"), SubsystemMeasurementSource.ANALOG_VOLTAGE)),
                 ),
                 SubsystemStateFieldDocument(fieldId("voltage"), "Voltage", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "V", defaultNumber = 0.0),
+            )
+            SubsystemHardwareKind.PWM_OUTPUT -> outputScaffold(
+                kind,
+                hardwareId,
+                displayName,
+                connection,
+                fieldId("dutyCycle"),
+                "PWM duty cycle",
+                0.0,
+                1.0,
+                SubsystemControlStrategy.DIRECT,
             )
             SubsystemHardwareKind.DISTANCE_SENSOR -> sensorScaffold(
                 SubsystemHardwareDocument(
@@ -186,17 +220,35 @@ object SubsystemHardwareScaffolding {
             SubsystemHardwareKind.IMU -> {
                 val yaw = fieldId("yaw")
                 val yawRate = fieldId("yawRate")
+                val xrpMeasurements = if (platform == SubsystemPlatform.XRP) listOf(
+                    SubsystemMeasurementDocument(fieldId("pitch"), SubsystemMeasurementSource.IMU_PITCH_RADIANS),
+                    SubsystemMeasurementDocument(fieldId("roll"), SubsystemMeasurementSource.IMU_ROLL_RADIANS),
+                    SubsystemMeasurementDocument(fieldId("gyroX"), SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND),
+                    SubsystemMeasurementDocument(fieldId("gyroY"), SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND),
+                    SubsystemMeasurementDocument(fieldId("accelX"), SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED),
+                    SubsystemMeasurementDocument(fieldId("accelY"), SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED),
+                    SubsystemMeasurementDocument(fieldId("accelZ"), SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED),
+                ) else emptyList()
+                val xrpFields = if (platform == SubsystemPlatform.XRP) listOf(
+                    SubsystemStateFieldDocument(fieldId("pitch"), "Pitch", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "rad", defaultNumber = 0.0),
+                    SubsystemStateFieldDocument(fieldId("roll"), "Roll", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "rad", defaultNumber = 0.0),
+                    SubsystemStateFieldDocument(fieldId("gyroX"), "Gyroscope X", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "rad/s", defaultNumber = 0.0),
+                    SubsystemStateFieldDocument(fieldId("gyroY"), "Gyroscope Y", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "rad/s", defaultNumber = 0.0),
+                    SubsystemStateFieldDocument(fieldId("accelX"), "Acceleration X", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "m/s²", defaultNumber = 0.0),
+                    SubsystemStateFieldDocument(fieldId("accelY"), "Acceleration Y", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "m/s²", defaultNumber = 0.0),
+                    SubsystemStateFieldDocument(fieldId("accelZ"), "Acceleration Z", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "m/s²", defaultNumber = 0.0),
+                ) else emptyList()
                 SubsystemHardwareScaffold(
                     hardware = SubsystemHardwareDocument(
                         hardwareId, displayName, kind, connection,
                         measurements = listOf(
                             SubsystemMeasurementDocument(yaw, SubsystemMeasurementSource.IMU_YAW_RADIANS),
                             SubsystemMeasurementDocument(yawRate, SubsystemMeasurementSource.IMU_YAW_RATE_RADIANS_PER_SECOND),
-                        ),
-                        description = if (platform == SubsystemPlatform.FTC) {
-                            "Cached CCW-positive yaw and yaw rate. Confirm how the Control Hub is mounted before build."
-                        } else {
-                            "Cached CCW-positive yaw and yaw rate. The generated FRC adapter uses the roboRIO onboard SPI gyro."
+                        ) + xrpMeasurements,
+                        description = when (platform) {
+                            SubsystemPlatform.FTC -> "Cached CCW-positive yaw and yaw rate. Confirm how the Control Hub is mounted before build."
+                            SubsystemPlatform.FRC -> "Cached CCW-positive yaw and yaw rate. The generated FRC adapter uses the roboRIO onboard SPI gyro."
+                            SubsystemPlatform.XRP -> "Built-in XRP IMU with orientation, three-axis acceleration, and three-axis angular velocity in canonical SI units."
                         },
                         imuLogoFacingDirection = if (platform == SubsystemPlatform.FTC) {
                             SubsystemHubFacingDirection.UP
@@ -208,7 +260,7 @@ object SubsystemHardwareScaffolding {
                     stateFields = listOf(
                         SubsystemStateFieldDocument(yaw, "Yaw", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "rad", defaultNumber = 0.0, minimum = -Math.PI, maximum = Math.PI),
                         SubsystemStateFieldDocument(yawRate, "Yaw rate", SubsystemValueType.DOUBLE, SubsystemFieldRole.MEASUREMENT, "rad/s", defaultNumber = 0.0),
-                    ),
+                    ) + xrpFields,
                     controlLoops = emptyList(),
                 )
             }
@@ -239,6 +291,17 @@ object SubsystemHardwareScaffolding {
                 "Color spectrum position",
                 0.0,
                 1.0,
+                SubsystemControlStrategy.DIRECT,
+            )
+            SubsystemHardwareKind.BUZZER -> outputScaffold(
+                kind,
+                hardwareId,
+                displayName,
+                connection,
+                fieldId("midiNote"),
+                "MIDI note (0 is silent)",
+                0.0,
+                127.0,
                 SubsystemControlStrategy.DIRECT,
             )
             SubsystemHardwareKind.PRISM_DRIVER -> outputScaffold(

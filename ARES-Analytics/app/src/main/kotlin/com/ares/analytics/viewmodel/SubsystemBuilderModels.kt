@@ -167,6 +167,7 @@ val subsystemTemplateOptions = listOf(
     SubsystemTemplateOption(SubsystemTemplate.LIMIT_SWITCH_SENSOR, "Limit switch", "A cached digital end-stop with explicit active polarity and freshness.", "Sensors", true),
     SubsystemTemplateOption(SubsystemTemplate.BEAM_BREAK_SENSOR, "Beam-break sensor", "A cached presence sensor for game pieces, indexing, and interlocks.", "Sensors", true),
     SubsystemTemplateOption(SubsystemTemplate.POTENTIOMETER_SENSOR, "Potentiometer", "An analog position input with documented voltage-to-state conversion.", "Sensors"),
+    SubsystemTemplateOption(SubsystemTemplate.REFLECTANCE_SENSOR, "XRP reflectance sensor", "One built-in left, middle, or right line-reflectance channel with a normalized reading.", "Sensors", true),
     SubsystemTemplateOption(SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR, "Absolute encoder", "An absolute angular measurement published in canonical radians; controller wrap is not inferred.", "Sensors"),
     SubsystemTemplateOption(SubsystemTemplate.QUADRATURE_ENCODER_SENSOR, "Quadrature encoder", "Position and velocity feedback with explicit counts-per-revolution calibration.", "Sensors"),
     SubsystemTemplateOption(SubsystemTemplate.DISTANCE_SENSOR, "Distance sensor", "A cached metric distance signal with validity bounds and freshness.", "Sensors"),
@@ -208,6 +209,9 @@ val subsystemTemplateOptions = listOf(
         "Color-safe named lighting output with a declared off state.",
         "Servos and indicators",
     ),
+    SubsystemTemplateOption(SubsystemTemplate.DIGITAL_OUTPUT, "XRP digital output", "A fail-closed general-purpose GPIO output with an explicit safe-off state.", "Actuators"),
+    SubsystemTemplateOption(SubsystemTemplate.PWM_OUTPUT, "XRP PWM output", "A bounded general-purpose PWM output for supported expansion hardware.", "Actuators"),
+    SubsystemTemplateOption(SubsystemTemplate.BUZZER_NOTE, "XRP buzzer", "Non-blocking notes on the built-in buzzer, selected by standard MIDI note number.", "Servos and indicators", true),
     SubsystemTemplateOption(
         SubsystemTemplate.PRISM_LED_DRIVER,
         "goBILDA Prism LED driver",

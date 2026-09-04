@@ -4,10 +4,11 @@ Runs automatically on power-on or boot on the Raspberry Pi Pico W.
 Starts Wi-Fi AP / STA network and executes the 50Hz ARES robot cycle.
 """
 
+import math
 import time
 from ares_micro import XrpRobot
 from generated_ares_project import CONTENT_SHA256, PROJECT, DEFAULT_AUTONOMOUS_ID, create_autonomous_routines, create_subsystems
-from hardware import create_xrp_hardware, create_xrp_mecanum_motors
+from hardware import create_otos_i2c, create_xrp_hardware, create_xrp_mecanum_motors
 
 def _wifi_password(required):
     try:
@@ -50,7 +51,8 @@ def main():
     init_wifi(PROJECT["wifi_mode"], PROJECT["wifi_ssid"])
 
     try:
-        from XRPLib.defaults import board as xrp_board, drivetrain as xrp_drivetrain
+        from XRPLib.defaults import board as xrp_board, drivetrain as xrp_drivetrain, imu as xrp_imu
+        from XRPLib.version import __version__ as xrplib_version
     except ImportError as error:
         raise RuntimeError("XRPLib is required on the XRP controller") from error
 
@@ -59,6 +61,11 @@ def main():
     if PROJECT["drivetrain_type"] == "mecanum":
         mecanum_motors = create_xrp_mecanum_motors(PROJECT["drive_motors"])
         differential_io = None
+    otos_i2c = None
+    if PROJECT["use_otos"]:
+        from machine import I2C, Pin
+        machine_name = str(__import__("sys").implementation[2])
+        otos_i2c = create_otos_i2c(machine_name, I2C, Pin)
     robot = XrpRobot(
         project_id=PROJECT["project_id"],
         content_sha256=CONTENT_SHA256,
@@ -70,6 +77,13 @@ def main():
         deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
         brownout_threshold_volts=PROJECT["brownout_threshold_volts"],
         battery_voltage_supplier=xrp_board.get_battery_voltage,
+        heading_supplier=lambda: math.radians(xrp_imu.get_yaw()),
+        i2c=otos_i2c,
+        runtime_identity=dict(PROJECT["runtime_identity"], **{
+            "boardType": str(__import__("sys").implementation[2]),
+            "micropythonVersion": ".".join(str(__import__("sys").implementation[1][index]) for index in range(3)),
+            "xrplibVersion": xrplib_version,
+        }),
         track_width=PROJECT["track_width_meters"],
         wheel_base=PROJECT["wheel_base_meters"],
         wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,

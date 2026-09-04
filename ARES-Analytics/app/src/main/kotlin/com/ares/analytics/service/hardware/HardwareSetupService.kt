@@ -12,6 +12,7 @@ import com.areslib.drivetrain.DrivetrainComponentRole
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemHardwareKind
+import com.areslib.subsystem.SubsystemMeasurementSource
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -281,6 +282,19 @@ class HardwareSetupService(
                     League.XRP -> when (device.kind) {
                         SubsystemHardwareKind.DISTANCE_SENSOR -> "built-in rangefinder"
                         SubsystemHardwareKind.IMU -> "built-in IMU"
+                        SubsystemHardwareKind.BUZZER -> "built-in buzzer"
+                        SubsystemHardwareKind.INDICATOR_LIGHT -> device.connection.channel?.let { "RGB component $it" } ?: "built-in green LED"
+                        SubsystemHardwareKind.DIGITAL_INPUT -> device.connection.channel?.toString() ?: "built-in user button"
+                        SubsystemHardwareKind.ANALOG_INPUT -> if (
+                            device.measurements.any { it.source == SubsystemMeasurementSource.REFLECTANCE_NORMALIZED }
+                        ) {
+                            when (device.connection.channel) {
+                                0 -> "built-in left reflectance"
+                                1 -> "built-in middle reflectance"
+                                2 -> "built-in right reflectance"
+                                else -> "invalid built-in reflectance channel"
+                            }
+                        } else device.connection.channel?.toString().orEmpty()
                         else -> device.connection.channel?.toString().orEmpty()
                     }
                     League.FRC -> when (device.kind) {

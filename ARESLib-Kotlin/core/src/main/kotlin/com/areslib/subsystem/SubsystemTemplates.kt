@@ -59,6 +59,7 @@ object SubsystemTemplates {
         SubsystemTemplate.LIMIT_SWITCH_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DIGITAL_INPUT, "Limit switch", "Cached limit-switch state for homing, interlocks, or diagnostics.")
         SubsystemTemplate.BEAM_BREAK_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DIGITAL_INPUT, "Beam-break sensor", "Cached beam-break state for game-piece detection without hidden hardware reads.")
         SubsystemTemplate.POTENTIOMETER_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.ANALOG_INPUT, "Potentiometer", "Cached potentiometer voltage with explicit scale and offset for physical units.")
+        SubsystemTemplate.REFLECTANCE_SENSOR -> reflectanceSensor(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.ABSOLUTE_ENCODER, "Absolute encoder", "Standalone absolute encoder converted to canonical radians.")
         SubsystemTemplate.QUADRATURE_ENCODER_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.QUADRATURE_ENCODER, "Quadrature encoder", "Incremental encoder with reviewed counts per revolution and canonical radian outputs.")
         SubsystemTemplate.DISTANCE_SENSOR -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DISTANCE_SENSOR, "Distance sensor", "Cached distance measurement in meters with validity and freshness checks.")
@@ -73,6 +74,9 @@ object SubsystemTemplates {
         SubsystemTemplate.COMPOSITE_MECHANISM -> composite(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.TWO_DOF_ARM -> twoDofArm(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.INDICATOR_LIGHT_PWM -> indicatorLight(documentId, displayName, kotlinTypeName, platform)
+        SubsystemTemplate.DIGITAL_OUTPUT -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.DIGITAL_OUTPUT, "Digital output", "Fail-closed GPIO output with an explicit safe-off state.")
+        SubsystemTemplate.PWM_OUTPUT -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.PWM_OUTPUT, "PWM output", "Bounded GPIO PWM duty cycle with an explicit safe-off state.")
+        SubsystemTemplate.BUZZER_NOTE -> hardwareTemplate(documentId, displayName, kotlinTypeName, platform, template, SubsystemHardwareKind.BUZZER, "Built-in buzzer", "Non-blocking built-in buzzer note selected by MIDI number; zero is silent.")
         SubsystemTemplate.PRISM_LED_DRIVER -> prismDriver(documentId, displayName, kotlinTypeName, platform)
         SubsystemTemplate.ADVANCED_CUSTOM -> advanced(documentId, displayName, kotlinTypeName, platform)
     }.withRecommendedTuningParameters().withTemplateOwnership(implementationKind)
@@ -122,9 +126,16 @@ object SubsystemTemplates {
         hardwareName: String,
         description: String,
     ): SubsystemDocument {
+        val hardwareId = when (kind) {
+            SubsystemHardwareKind.SOLENOID -> "solenoid"
+            SubsystemHardwareKind.DIGITAL_OUTPUT -> "digitalOutput"
+            SubsystemHardwareKind.PWM_OUTPUT -> "pwmOutput"
+            SubsystemHardwareKind.BUZZER -> "buzzer"
+            else -> "sensor"
+        }
         val scaffold = SubsystemHardwareScaffolding.create(
             kind = kind,
-            hardwareId = "sensor".takeIf { kind !in setOf(SubsystemHardwareKind.SOLENOID) } ?: "solenoid",
+            hardwareId = hardwareId,
             displayName = hardwareName,
             platform = platform,
             hardwareMapName = when (kind) {
@@ -133,7 +144,12 @@ object SubsystemTemplates {
                 else -> "sensor"
             },
         )
-        val actuator = kind == SubsystemHardwareKind.SOLENOID
+        val actuator = kind in setOf(
+            SubsystemHardwareKind.SOLENOID,
+            SubsystemHardwareKind.DIGITAL_OUTPUT,
+            SubsystemHardwareKind.PWM_OUTPUT,
+            SubsystemHardwareKind.BUZZER,
+        )
         return SubsystemDocument(
             documentId = id,
             displayName = displayName,
@@ -152,6 +168,58 @@ object SubsystemTemplates {
                 requiresExplicitNeutralRecovery = actuator,
             ),
             autonomousResourceKey = id.takeIf { actuator },
+        )
+    }
+
+    private fun reflectanceSensor(
+        id: String,
+        displayName: String,
+        kotlinTypeName: String,
+        platform: SubsystemPlatform,
+    ): SubsystemDocument {
+        require(platform == SubsystemPlatform.XRP) { "The built-in reflectance template is available only for XRP projects" }
+        val hardware = SubsystemHardwareDocument(
+            hardwareId = "reflectance",
+            displayName = "Reflectance sensor",
+            kind = SubsystemHardwareKind.ANALOG_INPUT,
+            connection = SubsystemHardwareConnection(channel = 0),
+            measurements = listOf(
+                SubsystemMeasurementDocument(
+                    fieldId = "reflectance",
+                    source = SubsystemMeasurementSource.REFLECTANCE_NORMALIZED,
+                    validMinimum = 0.0,
+                    validMaximum = 1.0,
+                )
+            ),
+            description = "Built-in XRP reflectance channel. Choose left, middle, or right with channel 0, 1, or 2.",
+        )
+        return SubsystemDocument(
+            documentId = id,
+            displayName = displayName,
+            kotlinTypeName = kotlinTypeName,
+            description = "Cached normalized XRP reflectance reading for line following and edge detection.",
+            platform = platform,
+            template = SubsystemTemplate.REFLECTANCE_SENSOR,
+            hardware = listOf(hardware),
+            stateFields = listOf(
+                SubsystemStateFieldDocument(
+                    fieldId = "reflectance",
+                    displayName = "Reflectance",
+                    type = SubsystemValueType.DOUBLE,
+                    role = SubsystemFieldRole.MEASUREMENT,
+                    unit = "normalized",
+                    defaultNumber = 0.0,
+                    minimum = 0.0,
+                    maximum = 1.0,
+                )
+            ),
+            safety = SubsystemSafetyDocument(
+                feedbackTimeoutMs = 250L,
+                requiresConfigurationHealth = true,
+                requiresCurrentMonitoring = false,
+                latchOutputFaults = false,
+                requiresExplicitNeutralRecovery = false,
+            ),
         )
     }
 

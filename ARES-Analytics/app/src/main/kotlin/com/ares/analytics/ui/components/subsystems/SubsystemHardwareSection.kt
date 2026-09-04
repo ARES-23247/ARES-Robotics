@@ -200,21 +200,7 @@ fun HardwareInspectorBody(
                     viewModel.updateHardware(device.hardwareId) { it.copy(connection = it.connection.copy(channel = value, canId = null)) }
                 }
             }
-            SubsystemPlatform.XRP -> when (device.kind) {
-                SubsystemHardwareKind.MOTOR -> IntInput("XRP motor channel (3 or 4)", device.connection.channel ?: 3) { value ->
-                    viewModel.updateHardware(device.hardwareId) {
-                        it.copy(connection = SubsystemHardwareConnection(channel = value))
-                    }
-                }
-                SubsystemHardwareKind.POSITIONAL_SERVO -> IntInput("XRP servo channel (1–4)", device.connection.channel ?: 1) { value ->
-                    viewModel.updateHardware(device.hardwareId) {
-                        it.copy(connection = SubsystemHardwareConnection(channel = value))
-                    }
-                }
-                SubsystemHardwareKind.DISTANCE_SENSOR -> FieldGuidance("Uses the XRP's built-in rangefinder; no pin or name is required.")
-                SubsystemHardwareKind.IMU -> FieldGuidance("Uses the XRP's built-in IMU; no pin or name is required.")
-                else -> FieldGuidance("This hardware type is not available in the generated XRP runtime.")
-            }
+            SubsystemPlatform.XRP -> XrpHardwareConnectionEditor(device, viewModel)
         }
         Row(verticalAlignment = Alignment.Top) {
             FieldGuidance(

@@ -126,7 +126,9 @@ class SubsystemKotlinGeneratorTest {
                 SubsystemArtifact.CONTROLLER,
                 SubsystemArtifact.MOCK_IO,
             )
-            val cases = SubsystemTemplate.entries.map { template ->
+            val cases = SubsystemTemplate.entries
+                .filter { it.supportsPlatform(SubsystemPlatform.FTC) || it.supportsPlatform(SubsystemPlatform.FRC) }
+                .map { template ->
                 val platform = if (template.supportsPlatform(SubsystemPlatform.FTC)) {
                     SubsystemPlatform.FTC
                 } else {
@@ -196,7 +198,7 @@ class SubsystemKotlinGeneratorTest {
 
             assertEquals(ExitCode.OK, result, messages.joinToString("\n"))
             assertEquals(
-                SubsystemTemplate.entries.size * portableArtifacts.size,
+                cases.size * portableArtifacts.size,
                 sourceFiles.size,
             )
         } finally {

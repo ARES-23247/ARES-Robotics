@@ -25,7 +25,10 @@ internal object SubsystemFrcIoRenderer {
                 SubsystemHardwareKind.DISTANCE_SENSOR -> "edu.wpi.first.wpilibj.AnalogInput"
                 SubsystemHardwareKind.IMU -> "edu.wpi.first.wpilibj.ADXRS450_Gyro"
                 SubsystemHardwareKind.SOLENOID -> "edu.wpi.first.wpilibj.Solenoid"
-                SubsystemHardwareKind.COLOR_SENSOR -> error("FRC color sensors are rejected by validation")
+                SubsystemHardwareKind.COLOR_SENSOR,
+                SubsystemHardwareKind.DIGITAL_OUTPUT,
+                SubsystemHardwareKind.PWM_OUTPUT,
+                SubsystemHardwareKind.BUZZER -> error("${device.kind} is rejected by FRC validation")
             }
         }
         if (document.hardware.any { it.kind == SubsystemHardwareKind.SOLENOID }) {
@@ -56,7 +59,10 @@ internal object SubsystemFrcIoRenderer {
                     }
                     "Solenoid(${device.connection.canId}, $module, ${device.connection.channel})"
                 }
-                SubsystemHardwareKind.COLOR_SENSOR -> error("Unsupported")
+                SubsystemHardwareKind.COLOR_SENSOR,
+                SubsystemHardwareKind.DIGITAL_OUTPUT,
+                SubsystemHardwareKind.PWM_OUTPUT,
+                SubsystemHardwareKind.BUZZER -> error("Unsupported")
             }
             "    private val ${device.hardwareId} = $constructor"
         }
@@ -109,6 +115,15 @@ internal object SubsystemFrcIoRenderer {
                 SubsystemMeasurementSource.ENCODER_VELOCITY_TURNS_PER_SECOND -> "${device.hardwareId}.rate"
                 SubsystemMeasurementSource.DIGITAL_STATE -> "${device.hardwareId}.get()"
                 SubsystemMeasurementSource.ANALOG_VOLTAGE -> "${device.hardwareId}.voltage"
+                SubsystemMeasurementSource.REFLECTANCE_NORMALIZED,
+                SubsystemMeasurementSource.IMU_PITCH_RADIANS,
+                SubsystemMeasurementSource.IMU_ROLL_RADIANS,
+                SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND,
+                SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND,
+                SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+                SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+                SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED ->
+                    error("${measurement.source} is rejected by FRC validation")
                 SubsystemMeasurementSource.DISTANCE_METERS ->
                     "${device.hardwareId}.voltage * ${requireNotNull(device.distanceMetersPerVolt).kotlinDouble()}"
                 // WPILib Gyro raw angle/rate are clockwise-positive. Negate at the hardware
@@ -228,7 +243,10 @@ internal object SubsystemFrcIoRenderer {
                 SubsystemHardwareKind.SOLENOID,
                 SubsystemHardwareKind.INDICATOR_LIGHT,
                 SubsystemHardwareKind.PRISM_DRIVER -> "        try { ${device.hardwareId}.close() } catch (_: Exception) { /* Continue closing. */ }"
-                SubsystemHardwareKind.COLOR_SENSOR -> ""
+                SubsystemHardwareKind.COLOR_SENSOR,
+                SubsystemHardwareKind.DIGITAL_OUTPUT,
+                SubsystemHardwareKind.PWM_OUTPUT,
+                SubsystemHardwareKind.BUZZER -> ""
             }
         }
         return """

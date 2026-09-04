@@ -11,12 +11,14 @@ import pathlib
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ARES = ROOT / ".ares"
 GENERATED_ROOT = ROOT / "build" / "generated" / "ares"
 GENERATED = GENERATED_ROOT / "python" / "generated_ares_project.py"
 GENERATED_TESTS = GENERATED_ROOT / "tests"
+TEST_RESULTS = ROOT / "build" / "test-results" / "test"
 
 
 def load_json(path: pathlib.Path) -> dict:
@@ -65,7 +67,10 @@ def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict
 
 def load_subsystems() -> list[dict]:
     documents = []
-    supported_hardware = {"MOTOR", "POSITIONAL_SERVO", "DISTANCE_SENSOR", "IMU"}
+    supported_hardware = {
+        "MOTOR", "POSITIONAL_SERVO", "DIGITAL_INPUT", "DIGITAL_OUTPUT", "ANALOG_INPUT",
+        "PWM_OUTPUT", "DISTANCE_SENSOR", "IMU", "INDICATOR_LIGHT", "BUZZER",
+    }
     for path in sorted((ARES / "subsystems").glob("*.aressubsystem")):
         document = load_json(path)
         if document.get("schemaVersion") != 11 or document.get("platform") != "XRP":
@@ -93,11 +98,27 @@ def load_subsystems() -> list[dict]:
                 raise ValueError("Generated XRP mechanism motors must use channel 3 or 4")
             if kind == "POSITIONAL_SERVO" and channel not in (1, 2, 3, 4):
                 raise ValueError("Generated XRP servos must use channel 1..4")
+            if kind == "DIGITAL_INPUT" and channel is not None and channel not in range(30):
+                raise ValueError("Generated XRP digital inputs use GPIO 0..29")
+            if kind in ("DIGITAL_OUTPUT", "PWM_OUTPUT") and channel not in range(30):
+                raise ValueError("Generated XRP digital and PWM outputs use GPIO 0..29")
+            measurement_sources = {item.get("source") for item in device.get("measurements", [])}
+            is_reflectance = "REFLECTANCE_NORMALIZED" in measurement_sources
+            if kind == "ANALOG_INPUT" and not is_reflectance and channel not in (26, 27, 28, 29):
+                raise ValueError("Generated XRP analog inputs use GPIO 26..29 unless they are built-in reflectance sensors")
+            if kind == "ANALOG_INPUT" and is_reflectance and channel not in (0, 1, 2):
+                raise ValueError("Built-in XRP reflectance sensors use channel 0=left, 1=middle, or 2=right")
+            if kind == "INDICATOR_LIGHT" and channel is not None and channel not in (0, 1, 2):
+                raise ValueError("Generated XRP indicator lights use no channel for green or RGB component 0..2")
+            if kind == "BUZZER" and channel is not None:
+                raise ValueError("The built-in XRP buzzer has no selectable channel")
         safety = document.get("safety", {})
         if safety.get("requiresCurrentMonitoring"):
             raise ValueError("XRPLib does not expose motor current for generated safety checks")
         if safety.get("homing", {}).get("method", "NONE") != "NONE":
             raise ValueError("Generated XRP homing is not available yet")
+        if safety.get("requiresCalibration"):
+            raise ValueError("Generated XRP calibration is not available yet")
         if document.get("interlocks"):
             raise ValueError("Generated XRP cross-subsystem interlocks are not available yet")
         documents.append(document)
@@ -178,6 +199,7 @@ def validate() -> tuple[dict, dict, str | None, dict[str, dict], list[dict]]:
 
 def generated_source(project: dict, drivebase: dict, default_routine_id: str | None, routines: dict[str, dict], subsystems: list[dict]) -> str:
     options = project["runtimeOptions"]["xrp"]
+    device_identity = load_json(ROOT / "device" / "xrp-runtime-manifest.json")
     drivetrain_type = "mecanum" if drivebase["kind"] == "FTC_MECANUM" else "differential"
     values = {
         "project_id": project["projectId"],
@@ -187,6 +209,8 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
         "link_port": options["port"],
         "deadman_timeout_ms": options["deadmanTimeoutMs"],
         "brownout_threshold_volts": options["brownoutThresholdVolts"],
+        "robot_length_meters": project["robotLengthMeters"],
+        "robot_width_meters": project["robotWidthMeters"],
         "drive_motors": [
             {
                 "port": int(component["hardwareId"]),
@@ -201,6 +225,11 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
         "wheel_diameter_meters": drivebase["geometry"]["wheelDiameterMeters"],
         "max_linear_speed_mps": drivebase["geometry"]["maxLinearSpeedMetersPerSecond"],
         "max_angular_speed_radps": drivebase["geometry"]["maxAngularSpeedRadiansPerSecond"],
+        "runtime_identity": {
+            "micropythonVersion": device_identity["firmware"]["micropythonVersion"],
+            "xrplibVersion": device_identity["xrplib"]["version"],
+            "aresRuntimeVersion": device_identity["aresRuntime"]["starterVersion"],
+        },
     }
     generated_routines = {}
     for entry_id, routine in routines.items():
@@ -302,14 +331,141 @@ def generate(check: bool = False) -> None:
 
 
 def generated_test_source() -> str:
-    return '''"""Generated safety checks. Do not edit by hand."""\n\nimport unittest\nfrom generated_ares_project import PROJECT, AUTONOMOUS_ROUTINES, DEFAULT_AUTONOMOUS_ID, create_subsystems\nfrom ares_micro import mock_hardware_factory\n\nclass GeneratedSafetyTest(unittest.TestCase):\n    def test_fail_closed_link_policy(self):\n        self.assertNotEqual(PROJECT["link_port"], 5810)\n        self.assertGreaterEqual(PROJECT["deadman_timeout_ms"], 100)\n        self.assertLessEqual(PROJECT["deadman_timeout_ms"], 1000)\n\n    def test_default_autonomous_is_declared(self):\n        if DEFAULT_AUTONOMOUS_ID is not None:\n            self.assertIn(DEFAULT_AUTONOMOUS_ID, AUTONOMOUS_ROUTINES)\n\n    def test_generated_subsystems_start_and_stop_neutral(self):\n        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):\n            self.assertFalse(subsystem.faulted)\n            subsystem.stop()\n\nif __name__ == "__main__":\n    unittest.main()\n'''
+    return '''"""Generated safety checks. Do not edit by hand."""
+
+import unittest
+from generated_ares_project import PROJECT, AUTONOMOUS_ROUTINES, DEFAULT_AUTONOMOUS_ID, create_subsystems
+from ares_micro import mock_hardware_factory
+
+
+class GeneratedSafetyTest(unittest.TestCase):
+    def test_generated_project_identity_and_footprint_are_valid(self):
+        from tools import ares_project
+        project, _, _, _, _ = ares_project.validate()
+        self.assertEqual(project["league"], "XRP")
+
+    def test_generated_drivetrain_safety_contract_is_valid(self):
+        from tools import ares_project
+        _, drivebase, _, _, _ = ares_project.validate()
+        ares_project.validate_drivebase(drivebase)
+
+    def test_generated_controls_resolve_typed_project_targets(self):
+        from tools import ares_project
+        ares_project.validate()
+
+    def test_generated_autonomous_graph_is_closed(self):
+        from tools import ares_project
+        _, _, default_id, routines, _ = ares_project.validate()
+        if default_id is not None:
+            self.assertIn(default_id, routines)
+
+    def test_generated_superstructure_references_and_interlocks_are_valid(self):
+        from pathlib import Path
+        self.assertFalse(list((Path.cwd() / ".ares" / "superstructures").glob("*.aressuperstructure")),
+                         "XRP superstructures are not a generated runtime capability")
+
+    def test_fail_closed_link_policy(self):
+        self.assertNotEqual(PROJECT["link_port"], 5810)
+        self.assertGreaterEqual(PROJECT["deadman_timeout_ms"], 100)
+        self.assertLessEqual(PROJECT["deadman_timeout_ms"], 1000)
+
+    def test_default_autonomous_is_declared(self):
+        if DEFAULT_AUTONOMOUS_ID is not None:
+            self.assertIn(DEFAULT_AUTONOMOUS_ID, AUTONOMOUS_ROUTINES)
+
+    def test_generated_subsystems_start_and_stop_neutral(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            self.assertFalse(subsystem.faulted)
+            subsystem.stop()
+            for declaration in subsystem.descriptor.get("hardware", []):
+                neutral = declaration.get("safeOutput")
+                if neutral is not None:
+                    self.assertEqual(subsystem.devices[declaration["hardwareId"]].last_output, neutral)
+
+    def test_generated_subsystems_fail_closed_on_invalid_feedback(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            measurements = [
+                (device, measurement)
+                for device in subsystem.descriptor.get("hardware", [])
+                for measurement in device.get("measurements", [])
+                if next(field for field in subsystem.descriptor["stateFields"] if field["fieldId"] == measurement["fieldId"])["type"] == "DOUBLE"
+            ]
+            if not measurements:
+                continue
+            device, measurement = measurements[0]
+            source = measurement["source"]
+            subsystem.devices[device["hardwareId"]].readings[source] = float("nan")
+            subsystem.periodic()
+            self.assertTrue(subsystem.faulted)
+
+    def test_generated_subsystems_reject_failed_feedback_reads(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            measured = [
+                device for device in subsystem.descriptor.get("hardware", [])
+                if device.get("measurements")
+            ]
+            if not measured:
+                continue
+            subsystem.devices[measured[0]["hardwareId"]].fail_reads = True
+            subsystem.periodic()
+            self.assertTrue(subsystem.faulted)
+
+    def test_generated_subsystems_latch_failed_writes(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            actuators = [
+                device for device in subsystem.descriptor.get("hardware", [])
+                if device.get("safeOutput") is not None
+            ]
+            if not actuators:
+                continue
+            subsystem.devices[actuators[0]["hardwareId"]].fail_writes = True
+            subsystem.periodic()
+            self.assertTrue(subsystem.faulted)
+
+    def test_declared_target_limits_reject_out_of_range_values(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            for field in subsystem.descriptor.get("stateFields", []):
+                if field.get("role") != "TARGET" or field.get("maximum") is None:
+                    continue
+                with self.assertRaises(ValueError):
+                    subsystem.set_target(field["fieldId"], field["maximum"] + 1.0)
+
+    def test_generated_subsystem_actions_update_state(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            for field in subsystem.descriptor.get("stateFields", []):
+                if field.get("role") != "TARGET":
+                    continue
+                value = field.get("defaultNumber", field.get("defaultBoolean", field.get("defaultInt", field.get("defaultText"))))
+                subsystem.set_target(field["fieldId"], value)
+                self.assertEqual(subsystem.state[field["fieldId"]], value)
+
+    def test_generated_subsystems_recover_only_after_successful_neutral(self):
+        for subsystem in create_subsystems(mock_hardware_factory, simulation=True):
+            actuators = [device for device in subsystem.descriptor.get("hardware", []) if device.get("safeOutput") is not None]
+            if not actuators:
+                continue
+            adapter = subsystem.devices[actuators[0]["hardwareId"]]
+            adapter.fail_writes = True
+            subsystem.periodic()
+            self.assertFalse(subsystem.recover_neutral())
+            adapter.fail_writes = False
+            self.assertTrue(subsystem.recover_neutral())
+
+
+if __name__ == "__main__":
+    unittest.main()
+'''
 
 
 def test() -> None:
     # Generated sources and tests are disposable build outputs. A freshly cloned or
     # exported standalone project must therefore be verifiable before they exist.
     # `ares check` remains the explicit command for detecting stale generated files.
+    if TEST_RESULTS.is_dir():
+        for previous in TEST_RESULTS.glob("TEST-*.xml"):
+            previous.unlink()
     generate()
+    sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(GENERATED.parent))
     for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
         if candidate.is_dir():
@@ -318,9 +474,48 @@ def test() -> None:
         if "__pycache__" not in source.parts:
             compile(source.read_text(encoding="utf-8"), str(source), "exec")
     combined = discover_test_suites()
-    result = unittest.TextTestRunner(verbosity=2).run(combined)
+    result = unittest.TextTestRunner(verbosity=2, resultclass=RecordingTestResult).run(combined)
+    write_junit_report(result)
     if not result.wasSuccessful():
         raise SystemExit(1)
+
+
+class RecordingTestResult(unittest.TextTestResult):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.successes = []
+
+    def addSuccess(self, test):
+        self.successes.append(test)
+        super().addSuccess(test)
+
+
+def write_junit_report(result) -> None:
+    failures = {test.id(): detail for test, detail in result.failures}
+    errors = {test.id(): detail for test, detail in result.errors}
+    skipped = {test.id(): reason for test, reason in result.skipped}
+    tests = list(result.successes) + [test for test, _ in result.failures + result.errors + result.skipped]
+    suite = ET.Element("testsuite", {
+        "name": "ares-xrp",
+        "tests": str(len(tests)),
+        "failures": str(len(failures)),
+        "errors": str(len(errors)),
+        "skipped": str(len(skipped)),
+    })
+    for test_case in sorted(tests, key=lambda item: item.id()):
+        identity = test_case.id()
+        case = ET.SubElement(suite, "testcase", {
+            "classname": identity.rsplit(".", 1)[0],
+            "name": getattr(test_case, "_testMethodName", identity),
+        })
+        if identity in failures:
+            ET.SubElement(case, "failure", {"message": "assertion failed"}).text = failures[identity]
+        elif identity in errors:
+            ET.SubElement(case, "error", {"message": "test error"}).text = errors[identity]
+        elif identity in skipped:
+            ET.SubElement(case, "skipped", {"message": skipped[identity]})
+    TEST_RESULTS.mkdir(parents=True, exist_ok=True)
+    ET.ElementTree(suite).write(TEST_RESULTS / "TEST-ares-xrp.xml", encoding="utf-8", xml_declaration=True)
 
 
 def discover_test_suites() -> unittest.TestSuite:
@@ -345,14 +540,20 @@ def simulate() -> None:
 
 def deploy() -> None:
     build()
-    command = [sys.executable, str(ROOT / "deploy" / "deploy_to_pico.py")]
+    command = [sys.executable, str(ROOT / "deploy" / "xrp_device.py"), "deploy"]
     raise SystemExit(subprocess.call(command, cwd=ROOT))
+
+
+def device_command(command: str, extra: list[str]) -> None:
+    raise SystemExit(subprocess.call([sys.executable, str(ROOT / "deploy" / "xrp_device.py"), command, *extra], cwd=ROOT))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ares", description="ARES XRP project tool")
-    parser.add_argument("command", choices=("generate", "check", "verify", "test", "build", "simulate", "deploy"))
-    command = parser.parse_args().command
+    parser.add_argument("command", choices=("generate", "check", "verify", "test", "build", "simulate", "deploy", "device-preflight", "prepare-image", "plan-deploy", "rollback"))
+    parser.add_argument("args", nargs=argparse.REMAINDER)
+    parsed = parser.parse_args()
+    command = parsed.command
     if command == "generate":
         generate()
     elif command == "check":
@@ -363,8 +564,17 @@ def main() -> None:
         build()
     elif command == "simulate":
         simulate()
-    else:
+    elif command == "deploy":
         deploy()
+    elif command == "device-preflight":
+        device_command("preflight", parsed.args)
+    elif command == "prepare-image":
+        device_command("prepare-image", parsed.args)
+    elif command == "plan-deploy":
+        build()
+        device_command("plan-deploy", parsed.args)
+    else:
+        device_command("rollback", parsed.args)
 
 
 if __name__ == "__main__":

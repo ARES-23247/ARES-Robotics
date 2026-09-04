@@ -47,7 +47,13 @@ fun getCanvasOffsetBase(
     fieldH: Double,
     league: League
 ): Offset {
-    return if (league == League.FTC) {
+    return if (league == League.FTC || league == League.XRP) {
+        if (league == League.XRP) {
+            return Offset(
+                ((wp.x / fieldW + 0.5) * canvasW).toFloat(),
+                ((0.5 - wp.y / fieldH) * canvasH).toFloat(),
+            )
+        }
         val x = (-wp.y / fieldW + 0.5) * canvasW
         val y = (-wp.x / fieldH + 0.5) * canvasH
         Offset(x.toFloat(), y.toFloat())
@@ -66,7 +72,13 @@ fun getRobotCoordBase(
     fieldH: Double,
     league: League
 ): Waypoint {
-    return if (league == League.FTC) {
+    return if (league == League.FTC || league == League.XRP) {
+        if (league == League.XRP) {
+            return Waypoint(
+                (offset.x / canvasW - 0.5) * fieldW,
+                (0.5 - offset.y / canvasH) * fieldH,
+            )
+        }
         val ry = -(offset.x / canvasW - 0.5) * fieldW
         val rx = -(offset.y / canvasH - 0.5) * fieldH
         Waypoint(rx, ry)
@@ -194,7 +206,13 @@ fun getDragDeltaInFieldCoords(
         dyPx = rotatedY
     }
 
-    return if (league == League.FTC) {
+    return if (league == League.FTC || league == League.XRP) {
+        if (league == League.XRP) {
+            return Waypoint(
+                (dxPx / canvasW) * fieldW / zoomScale,
+                -(dyPx / canvasH) * fieldH / zoomScale,
+            )
+        }
         val dx = -(dyPx / canvasH) * fieldH / zoomScale
         val dy = -(dxPx / canvasW) * fieldW / zoomScale
         Waypoint(dx, dy)

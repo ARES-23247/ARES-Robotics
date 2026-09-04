@@ -1,52 +1,44 @@
-"""
-ARES Micro - SparkFun Optical Tracking Odometry Sensor (OTOS) MicroPython Driver
-Communicates over I2C to read 2D position (x, y, heading), linear velocity, and angular rate.
-Compatible with standard MicroPython `machine.I2C` and mock I2C interfaces for desktop testing.
+"""SparkFun Qwiic OTOS driver for the ARES MicroPython runtime.
+
+The register map and SI conversion factors mirror SparkFun's published OTOS
+driver. Communication errors deliberately propagate so the robot lifecycle can
+neutralize outputs and latch a fault instead of reusing stale localization.
 """
 
-import struct
 import math
+import struct
+import time
+
 
 class SparkFunOTOS:
     DEFAULT_I2C_ADDR = 0x17
+    PRODUCT_ID = 0x5F
 
-    # Registers
     REG_PRODUCT_ID = 0x00
     REG_HW_VERSION = 0x01
     REG_FW_VERSION = 0x02
-    REG_RESET = 0x03
     REG_LINEAR_SCALAR = 0x04
     REG_ANGULAR_SCALAR = 0x05
-    REG_OFFSET_X = 0x06
-    REG_OFFSET_Y = 0x08
-    REG_OFFSET_H = 0x0A
+    REG_IMU_CALIBRATION = 0x06
+    REG_RESET = 0x07
+    REG_OFFSET_X = 0x10
+    REG_STATUS = 0x1F
     REG_POS_X = 0x20
-    REG_POS_Y = 0x22
-    REG_POS_H = 0x24
     REG_VEL_X = 0x26
-    REG_VEL_Y = 0x28
-    REG_VEL_H = 0x2A
-    REG_ACC_X = 0x2C
-    REG_ACC_Y = 0x2E
-    REG_ACC_H = 0x30
 
-    # Conversion constants: raw 16-bit signed ticks to SI meters and radians
-    # OTOS default raw tick resolution: 0.0001 meters (0.1 mm) for position, 0.001 rad for heading
-    POS_SCALING_METERS = 0.0001
-    VEL_SCALING_METERS_PER_SEC = 0.0001
-    HEADING_SCALING_RADIANS = 0.001
+    INT16_TO_METERS = 10.0 / 32768.0
+    INT16_TO_METERS_PER_SECOND = 5.0 / 32768.0
+    INT16_TO_RADIANS = math.pi / 32768.0
+    INT16_TO_RADIANS_PER_SECOND = math.radians(2000.0) / 32768.0
+    METERS_TO_INT16 = 1.0 / INT16_TO_METERS
+    RADIANS_TO_INT16 = 1.0 / INT16_TO_RADIANS
+    MIN_SCALAR = 0.872
+    MAX_SCALAR = 1.127
 
     def __init__(self, i2c=None, address=DEFAULT_I2C_ADDR, is_heading_ccw_positive=True):
         self.i2c = i2c
-        self.address = address
-        self.is_ccw = is_heading_ccw_positive
-        self.offset_x = 0.0
-        self.offset_y = 0.0
-        self.offset_heading = 0.0
-        self.linear_scalar = 1.0
-        self.angular_scalar = 1.0
-
-        # Cached last readings
+        self.address = int(address)
+        self.is_ccw = bool(is_heading_ccw_positive)
         self.x = 0.0
         self.y = 0.0
         self.heading = 0.0
@@ -55,95 +47,113 @@ class SparkFunOTOS:
         self.omega = 0.0
 
     def begin(self):
-        """Initializes sensor and verifies communication."""
+        """Return true only when the exact OTOS product ID answers."""
         if self.i2c is None:
             return False
         try:
-            prod_id = self._read_byte(self.REG_PRODUCT_ID)
-            return prod_id == 0x5C or prod_id > 0
+            return self._read_byte(self.REG_PRODUCT_ID) == self.PRODUCT_ID
         except Exception:
             return False
 
     def reset_tracking(self):
-        """Resets the tracking accumulator on the physical sensor."""
+        """Reset the onboard tracking accumulator to the origin."""
         self._write_byte(self.REG_RESET, 0x01)
-        self.x = 0.0
-        self.y = 0.0
-        self.heading = 0.0
+        self.x = self.y = self.heading = 0.0
+        self.vx = self.vy = self.omega = 0.0
 
-    def calibrate_imu(self):
-        """Commands the OTOS to run onboard IMU zero calibration."""
-        self._write_byte(self.REG_RESET, 0x02)
+    def calibrate_imu(self, num_samples=255, wait_until_done=True):
+        """Calibrate the onboard IMU; return false if completion times out."""
+        samples = int(num_samples)
+        if samples < 1 or samples > 255:
+            raise ValueError("OTOS IMU calibration samples must be in 1..255")
+        self._write_byte(self.REG_IMU_CALIBRATION, samples)
+        time.sleep(0.003)
+        if not wait_until_done:
+            return True
+        for _ in range(samples):
+            if self._read_byte(self.REG_IMU_CALIBRATION) == 0:
+                return True
+            time.sleep(0.003)
+        return False
 
     def set_linear_scalar(self, scalar):
-        """Sets linear scalar calibration multiplier."""
-        self.linear_scalar = float(scalar)
+        self._write_scalar(self.REG_LINEAR_SCALAR, scalar)
 
     def set_angular_scalar(self, scalar):
-        """Sets angular scalar calibration multiplier."""
-        self.angular_scalar = float(scalar)
+        self._write_scalar(self.REG_ANGULAR_SCALAR, scalar)
 
     def set_offsets(self, offset_x_m, offset_y_m, offset_h_rad):
-        """Sets sensor mounting offset relative to robot center."""
-        self.offset_x = float(offset_x_m)
-        self.offset_y = float(offset_y_m)
-        self.offset_heading = float(offset_h_rad)
+        """Store the sensor-to-robot-center mounting transform on the OTOS."""
+        self._write_pose(
+            self.REG_OFFSET_X,
+            float(offset_x_m),
+            float(offset_y_m),
+            self._device_heading(float(offset_h_rad)),
+        )
+
+    def set_pose(self, x_m=0.0, y_m=0.0, heading_rad=0.0):
+        """Set the tracked robot pose without losing it on the next sensor poll."""
+        x = float(x_m)
+        y = float(y_m)
+        heading = float(heading_rad)
+        self._write_pose(self.REG_POS_X, x, y, self._device_heading(heading))
+        self.x, self.y, self.heading = x, y, heading
+        self.vx = self.vy = self.omega = 0.0
 
     def update(self):
-        """
-        Polls position and velocity from OTOS registers.
-        Returns (x, y, heading_rad, vx, vy, omega).
-        """
+        """Read a coherent position and velocity burst in SI units."""
+        data = self._read_mem(self.REG_POS_X, 12)
+        if len(data) != 12:
+            raise OSError("OTOS returned an incomplete pose/velocity frame")
+        raw_x, raw_y, raw_h, raw_vx, raw_vy, raw_vh = struct.unpack("<hhhhhh", data)
+        heading_sign = 1.0 if self.is_ccw else -1.0
+        self.x = raw_x * self.INT16_TO_METERS
+        self.y = raw_y * self.INT16_TO_METERS
+        self.heading = raw_h * self.INT16_TO_RADIANS * heading_sign
+        self.vx = raw_vx * self.INT16_TO_METERS_PER_SECOND
+        self.vy = raw_vy * self.INT16_TO_METERS_PER_SECOND
+        self.omega = raw_vh * self.INT16_TO_RADIANS_PER_SECOND * heading_sign
+        return self.x, self.y, self.heading, self.vx, self.vy, self.omega
+
+    def _device_heading(self, heading_rad):
+        return heading_rad if self.is_ccw else -heading_rad
+
+    def _write_scalar(self, register, scalar):
+        value = float(scalar)
+        if not math.isfinite(value) or value < self.MIN_SCALAR or value > self.MAX_SCALAR:
+            raise ValueError("OTOS scalar must be in 0.872..1.127")
+        self._write_byte(register, int(round((value - 1.0) * 1000.0)) & 0xFF)
+
+    def _write_pose(self, register, x, y, heading):
+        values = (
+            self._scaled_int16(x, self.METERS_TO_INT16),
+            self._scaled_int16(y, self.METERS_TO_INT16),
+            self._scaled_int16(heading, self.RADIANS_TO_INT16),
+        )
+        self._write_mem(register, struct.pack("<hhh", *values))
+
+    @staticmethod
+    def _scaled_int16(value, scale):
+        raw = int(round(float(value) * scale))
+        if raw < -32768 or raw > 32767:
+            raise ValueError("OTOS pose value is outside the signed 16-bit register range")
+        return raw
+
+    def _read_byte(self, register):
+        data = self._read_mem(register, 1)
+        if len(data) != 1:
+            raise OSError("OTOS returned an incomplete register value")
+        return data[0]
+
+    def _write_byte(self, register, value):
+        self._write_mem(register, bytes((int(value) & 0xFF,)))
+
+    def _read_mem(self, register, length):
         if self.i2c is None:
-            return (self.x, self.y, self.heading, self.vx, self.vy, self.omega)
+            raise OSError("OTOS I2C bus is not configured")
+        return self.i2c.readfrom_mem(self.address, register, length)
 
-        try:
-            # Read 12 bytes starting at REG_POS_X:
-            # posX(2), posY(2), posH(2), velX(2), velY(2), velH(2)
-            data = self._read_mem(self.REG_POS_X, 12)
-            raw_x, raw_y, raw_h, raw_vx, raw_vy, raw_vh = struct.unpack('<hhhhhh', data)
-
-            mult = 1.0 if self.is_ccw else -1.0
-
-            raw_pos_x = raw_x * self.POS_SCALING_METERS * self.linear_scalar
-            raw_pos_y = raw_y * self.POS_SCALING_METERS * self.linear_scalar
-            raw_pos_h = raw_h * self.HEADING_SCALING_RADIANS * self.angular_scalar * mult
-
-            raw_vel_x = raw_vx * self.VEL_SCALING_METERS_PER_SEC * self.linear_scalar
-            raw_vel_y = raw_vy * self.VEL_SCALING_METERS_PER_SEC * self.linear_scalar
-            raw_vel_h = raw_vh * self.HEADING_SCALING_RADIANS * self.angular_scalar * mult
-
-            # Apply robot center offset transformation
-            cos_h = math.cos(raw_pos_h)
-            sin_h = math.sin(raw_pos_h)
-
-            self.x = raw_pos_x - (self.offset_x * cos_h - self.offset_y * sin_h)
-            self.y = raw_pos_y - (self.offset_x * sin_h + self.offset_y * cos_h)
-            self.heading = raw_pos_h
-            self.vx = raw_vel_x
-            self.vy = raw_vel_y
-            self.omega = raw_vel_h
-
-        except Exception:
-            pass
-
-        return (self.x, self.y, self.heading, self.vx, self.vy, self.omega)
-
-    def _read_byte(self, reg):
-        buf = self._read_mem(reg, 1)
-        return buf[0] if len(buf) > 0 else 0
-
-    def _write_byte(self, reg, val):
-        if self.i2c is not None:
-            try:
-                self.i2c.writeto_mem(self.address, reg, bytes([val]))
-            except Exception:
-                pass
-
-    def _read_mem(self, reg, nbytes):
-        if self.i2c is not None:
-            try:
-                return self.i2c.readfrom_mem(self.address, reg, nbytes)
-            except Exception:
-                pass
-        return bytes(nbytes)
+    def _write_mem(self, register, data):
+        if self.i2c is None:
+            raise OSError("OTOS I2C bus is not configured")
+        self.i2c.writeto_mem(self.address, register, data)

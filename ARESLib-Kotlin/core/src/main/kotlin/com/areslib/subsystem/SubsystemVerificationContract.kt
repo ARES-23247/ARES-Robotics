@@ -61,6 +61,8 @@ object SubsystemGeneratedTestNames {
 fun subsystemVerificationContract(document: SubsystemDocument): List<SubsystemVerificationCheck> {
     if (!document.generateTest) return emptyList()
 
+    val hasActuator = document.hardware.any { it.safeOutput != null }
+    val hasFeedback = document.hardware.any { it.measurements.isNotEmpty() }
     val checks = mutableListOf(
         SubsystemVerificationCheck(
             id = "${document.documentId}.state.safe-startup",
@@ -70,54 +72,56 @@ fun subsystemVerificationContract(document: SubsystemDocument): List<SubsystemVe
             evidence = SubsystemVerificationEvidence.GENERATED_BEHAVIOR_TEST,
             testMethodName = SubsystemGeneratedTestNames.SAFE_STARTUP,
         ),
-        SubsystemVerificationCheck(
+    )
+    if (hasActuator) checks += SubsystemVerificationCheck(
             id = "${document.documentId}.outputs.fault-policy",
             category = SubsystemVerificationCategory.INVALID_FEEDBACK_AND_WRITES,
             title = "Failed output writes fail closed",
             explanation = "A rejected actuator write applies every declared safe output and follows the selected fault-latching policy.",
             evidence = SubsystemVerificationEvidence.GENERATED_BEHAVIOR_TEST,
             testMethodName = SubsystemGeneratedTestNames.OUTPUT_FAULT_POLICY,
-        ),
-        SubsystemVerificationCheck(
+        )
+    if (document.safety.homing.method != SubsystemHomingMethod.NONE || document.safety.requiresCurrentMonitoring) {
+        checks += SubsystemVerificationCheck(
             id = "${document.documentId}.safety.homing-current",
             category = SubsystemVerificationCategory.LIMITS_AND_HOMING,
             title = "Homing and current permits remain independent",
             explanation = "Homing state and current validity cannot silently substitute for one another when motion is permitted.",
             evidence = SubsystemVerificationEvidence.GENERATED_BEHAVIOR_TEST,
             testMethodName = SubsystemGeneratedTestNames.HOMING_AND_CURRENT,
-        ),
-        SubsystemVerificationCheck(
+        )
+    }
+    if (document.controlLoops.isNotEmpty()) checks += SubsystemVerificationCheck(
             id = "${document.documentId}.controls.output-limits",
             category = SubsystemVerificationCategory.LIMITS_AND_HOMING,
             title = "Controller outputs stay inside declared limits",
             explanation = "Extreme target requests cannot drive any generated actuator beyond its configured output envelope.",
             evidence = SubsystemVerificationEvidence.GENERATED_BEHAVIOR_TEST,
             testMethodName = SubsystemGeneratedTestNames.CONTROL_LIMITS,
-        ),
-        SubsystemVerificationCheck(
+        )
+    if (hasActuator) checks += SubsystemVerificationCheck(
             id = "${document.documentId}.lifecycle.disabled-stop",
             category = SubsystemVerificationCategory.SAFE_STARTUP_AND_STOP,
             title = "Disabled and stop commands are neutral",
             explanation = "A zero output scale models disabled/stop behavior and commands the declared safe neutral.",
             evidence = SubsystemVerificationEvidence.GENERATED_BEHAVIOR_TEST,
             testMethodName = SubsystemGeneratedTestNames.DISABLED_STOP,
-        ),
-        SubsystemVerificationCheck(
+        )
+    if (hasFeedback || hasActuator) checks += SubsystemVerificationCheck(
             id = "${document.documentId}.feedback.invalid-cleanup",
             category = SubsystemVerificationCategory.INVALID_FEEDBACK_AND_WRITES,
             title = "Invalid feedback and cleanup fail closed",
             explanation = "Invalid cached inputs are reported and resource cleanup remains safe and idempotent.",
             evidence = SubsystemVerificationEvidence.GENERATED_BEHAVIOR_TEST,
             testMethodName = SubsystemGeneratedTestNames.INVALID_AND_CLEANUP,
-        ),
-        SubsystemVerificationCheck(
+        )
+    checks += SubsystemVerificationCheck(
             id = "${document.documentId}.parity.generated-adapters",
             category = SubsystemVerificationCategory.HARDWARE_SIMULATION_PARITY,
             title = "Hardware and simulation share one generated contract",
             explanation = "The physical and mock adapters compile against the same IO, controller, limits, inversion, follower, and safe-output contract.",
             evidence = SubsystemVerificationEvidence.COMPILED_GENERATED_CODE,
-        ),
-    )
+        )
 
     if (document.safety.feedbackTimeoutMs != null) {
         checks += SubsystemVerificationCheck(

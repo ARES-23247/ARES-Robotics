@@ -13,7 +13,8 @@ class DifferentialDrivetrain:
     Controls Left & Right motors and tracks dead-reckoned odometry.
     """
     def __init__(self, left_motor=None, right_motor=None, drivetrain_io=None,
-                 track_width=0.155, wheel_radius=0.030, max_speed=0.85, otos=None):
+                 track_width=0.155, wheel_radius=0.030, max_speed=0.85, otos=None,
+                 heading_supplier=None):
         self.left_motor = left_motor
         self.right_motor = right_motor
         self.drivetrain_io = drivetrain_io
@@ -21,6 +22,7 @@ class DifferentialDrivetrain:
         self.wheel_radius = wheel_radius
         self.max_speed = float(max_speed)
         self.otos = otos
+        self.heading_supplier = heading_supplier
         self.kinematics = DifferentialDriveKinematics(track_width)
 
         # Odometry pose (m, m, rad)
@@ -87,13 +89,15 @@ class DifferentialDrivetrain:
         self.last_right_pos = cur_right
 
         d_center = (d_left + d_right) / 2.0
-        d_theta = (d_right - d_left) / self.track_width
+        wheel_d_theta = (d_right - d_left) / self.track_width
+        next_heading = wrap_angle(float(self.heading_supplier())) if self.heading_supplier else wrap_angle(self.heading + wheel_d_theta)
+        d_theta = wrap_angle(next_heading - self.heading)
 
         # Runge-Kutta / midpoint heading integration
         mid_heading = self.heading + (d_theta / 2.0)
         self.x += d_center * math.cos(mid_heading)
         self.y += d_center * math.sin(mid_heading)
-        self.heading = wrap_angle(self.heading + d_theta)
+        self.heading = next_heading
 
         if dt > 0:
             self.vx = d_center / dt
@@ -105,7 +109,7 @@ class DifferentialDrivetrain:
         self.y = float(y)
         self.heading = float(heading_rad)
         if self.otos:
-            self.otos.reset_tracking()
+            self.otos.set_pose(self.x, self.y, self.heading)
 
     def _get_motor_distance(self, motor):
         if motor and hasattr(motor, "get_position"):
@@ -123,12 +127,13 @@ class MecanumDrivetrain:
     """
     def __init__(self, fl_motor=None, fr_motor=None, bl_motor=None, br_motor=None,
                  track_width=0.155, wheel_base=0.140, wheel_radius=0.030,
-                 max_speed=0.85, otos=None):
+                 max_speed=0.85, otos=None, heading_supplier=None):
         self.fl = fl_motor
         self.fr = fr_motor
         self.bl = bl_motor
         self.br = br_motor
         self.otos = otos
+        self.heading_supplier = heading_supplier
         self.wheel_radius = float(wheel_radius)
         self.max_speed = float(max_speed)
         self.kinematics = MecanumKinematics(track_width, wheel_base)
@@ -173,11 +178,13 @@ class MecanumDrivetrain:
         positions = [self._get_motor_distance(motor) for motor in (self.fl, self.fr, self.bl, self.br)]
         deltas = [current - previous for current, previous in zip(positions, self.last_positions)]
         self.last_positions = positions
-        dx_robot, dy_robot, d_heading = self.kinematics.to_chassis_speeds(*deltas)
+        dx_robot, dy_robot, wheel_d_heading = self.kinematics.to_chassis_speeds(*deltas)
+        next_heading = wrap_angle(float(self.heading_supplier())) if self.heading_supplier else wrap_angle(self.heading + wheel_d_heading)
+        d_heading = wrap_angle(next_heading - self.heading)
         mid_heading = self.heading + d_heading / 2.0
         self.x += dx_robot * math.cos(mid_heading) - dy_robot * math.sin(mid_heading)
         self.y += dx_robot * math.sin(mid_heading) + dy_robot * math.cos(mid_heading)
-        self.heading = wrap_angle(self.heading + d_heading)
+        self.heading = next_heading
         if dt > 0:
             self.vx = dx_robot / dt
             self.vy = dy_robot / dt
@@ -188,7 +195,7 @@ class MecanumDrivetrain:
         self.y = float(y)
         self.heading = float(heading_rad)
         if self.otos:
-            self.otos.reset_tracking()
+            self.otos.set_pose(self.x, self.y, self.heading)
         self.last_positions = [self._get_motor_distance(motor) for motor in (self.fl, self.fr, self.bl, self.br)]
 
     def _get_motor_distance(self, motor):

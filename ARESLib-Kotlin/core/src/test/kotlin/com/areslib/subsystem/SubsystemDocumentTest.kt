@@ -12,11 +12,24 @@ class SubsystemDocumentTest {
         assertTrue(!SubsystemHardwareKind.SOLENOID.supportsPlatform(SubsystemPlatform.FTC))
         assertTrue(SubsystemHardwareKind.COLOR_SENSOR.supportsPlatform(SubsystemPlatform.FTC))
         assertTrue(!SubsystemHardwareKind.COLOR_SENSOR.supportsPlatform(SubsystemPlatform.FRC))
+        val platformSpecific = setOf(
+            SubsystemHardwareKind.SOLENOID,
+            SubsystemHardwareKind.COLOR_SENSOR,
+            SubsystemHardwareKind.DIGITAL_OUTPUT,
+            SubsystemHardwareKind.PWM_OUTPUT,
+            SubsystemHardwareKind.BUZZER,
+        )
         SubsystemHardwareKind.entries
-            .filterNot { it == SubsystemHardwareKind.SOLENOID || it == SubsystemHardwareKind.COLOR_SENSOR }
+            .filterNot { it in platformSpecific }
             .forEach { kind ->
                 assertTrue(kind.supportsPlatform(SubsystemPlatform.FTC), "$kind should have an FTC adapter")
                 assertTrue(kind.supportsPlatform(SubsystemPlatform.FRC), "$kind should have an FRC adapter")
+            }
+        platformSpecific.filterNot { it == SubsystemHardwareKind.SOLENOID || it == SubsystemHardwareKind.COLOR_SENSOR }
+            .forEach { kind ->
+                assertTrue(kind.supportsPlatform(SubsystemPlatform.XRP), "$kind should have an XRP adapter")
+                assertTrue(!kind.supportsPlatform(SubsystemPlatform.FTC), "$kind should remain XRP-specific")
+                assertTrue(!kind.supportsPlatform(SubsystemPlatform.FRC), "$kind should remain XRP-specific")
             }
     }
 
@@ -70,6 +83,23 @@ class SubsystemDocumentTest {
         assertEquals(SubsystemHubFacingDirection.FORWARD, imu.hardware.single().imuUsbFacingDirection)
         listOf(absolute, quadrature, distance, imu).forEach {
             assertTrue(SubsystemSchema.validate(it).isEmpty()) { SubsystemSchema.validate(it).toString() }
+        }
+    }
+
+    @Test
+    fun `XRP reflectance template uses normalized semantics`() {
+        val reflectance = SubsystemTemplates.create(
+            SubsystemTemplate.REFLECTANCE_SENSOR,
+            "line-sensor",
+            "LineSensor",
+            SubsystemPlatform.XRP,
+        )
+
+        assertEquals(SubsystemMeasurementSource.REFLECTANCE_NORMALIZED, reflectance.hardware.single().measurements.single().source)
+        assertEquals("normalized", reflectance.stateFields.single().unit)
+        assertTrue(SubsystemSchema.validate(reflectance).isEmpty()) { SubsystemSchema.validate(reflectance).toString() }
+        assertThrows(IllegalArgumentException::class.java) {
+            SubsystemTemplates.create(SubsystemTemplate.REFLECTANCE_SENSOR, "bad", "Bad", SubsystemPlatform.FTC)
         }
     }
 

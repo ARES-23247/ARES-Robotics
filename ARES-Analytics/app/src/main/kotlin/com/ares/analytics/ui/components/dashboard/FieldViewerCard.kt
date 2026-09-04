@@ -32,6 +32,7 @@ import com.ares.analytics.viewmodel.LivePoseState
 import com.ares.analytics.viewmodel.field.toReplayPoseState
 import com.ares.analytics.viewmodel.field.loadReplayFieldTrace
 import com.ares.analytics.viewmodel.field.loadRobotLightingPlacements
+import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import androidx.compose.material.icons.filled.SwapHoriz
 
 private fun waypointOrNull(x: Double?, y: Double?, headingRad: Double?): Waypoint? {
@@ -63,6 +64,7 @@ fun FieldViewerCard(
     liveTransportConnected: Boolean? = null,
     league: League,
     projectPath: String? = null,
+    robotDimensions: RobotDimensions = RobotDimensions.defaultFor(league),
     properties: Map<String, String> = emptyMap(),
     onPropertiesChanged: (Map<String, String>) -> Unit = {},
     modifier: Modifier = Modifier
@@ -361,6 +363,7 @@ fun FieldViewerCard(
                         )
                     },
                     prismPulseWidthUs = liveState.prismLights.toSortedMap().values.firstOrNull(),
+                    robotDimensions = robotDimensions,
                     modifier = Modifier.fillMaxSize()
                 )
             }

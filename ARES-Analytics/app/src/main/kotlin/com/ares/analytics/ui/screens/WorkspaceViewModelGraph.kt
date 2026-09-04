@@ -15,6 +15,8 @@ import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.viewmodel.CloudViewModel
 import com.ares.analytics.viewmodel.DashboardViewModel
 import com.ares.analytics.viewmodel.FieldEditorViewModel
+import com.ares.analytics.viewmodel.field.SimulatorFieldApplyFailure
+import com.ares.analytics.viewmodel.field.SimulatorFieldApplyReceipt
 import com.ares.analytics.viewmodel.ImportCenterIntent
 import com.ares.analytics.viewmodel.ImportCenterViewModel
 import com.ares.analytics.viewmodel.MainIntent
@@ -94,9 +96,65 @@ internal fun rememberWorkspaceViewModelGraph(
         )
     }
     val fieldEditor = remember(config.id) {
+        val xrpLink = services.xrpLinkService
         FieldEditorViewModel(
             scope = workspaceScope,
             nt4ClientService = services.nt4ClientService,
+            fieldConfigPublisher = if (config.league == League.XRP) {
+                xrpLink::publishFieldConfig
+            } else {
+                null
+            },
+            fieldApplyReceiptProvider = if (config.league == League.XRP) {
+                {
+                    xrpLink.fieldApplyReceipt.value?.let { receipt ->
+                        SimulatorFieldApplyReceipt(
+                            receipt.session,
+                            receipt.sequence,
+                            receipt.configId,
+                            receipt.revision,
+                            receipt.sha256,
+                            receipt.obstacleCount,
+                            receipt.elementCount,
+                            receipt.aprilTagCount,
+                        )
+                    }
+                }
+            } else {
+                null
+            },
+            fieldApplyFailureProvider = if (config.league == League.XRP) {
+                {
+                    xrpLink.fieldApplyFailure.value?.let { failure ->
+                        SimulatorFieldApplyFailure(failure.eventId, failure.message)
+                    }
+                }
+            } else {
+                null
+            },
+            fieldApplyConfirmer = if (config.league == League.XRP) {
+                { expected, previous ->
+                    xrpLink.awaitFieldApply(
+                        expected.configId,
+                        expected.revision,
+                        expected.sha256,
+                        previous?.eventId,
+                    )?.let { receipt ->
+                        SimulatorFieldApplyReceipt(
+                            receipt.session,
+                            receipt.sequence,
+                            receipt.configId,
+                            receipt.revision,
+                            receipt.sha256,
+                            receipt.obstacleCount,
+                            receipt.elementCount,
+                            receipt.aprilTagCount,
+                        )
+                    }
+                }
+            } else {
+                null
+            },
             projectSession = services.projectSession,
         )
     }

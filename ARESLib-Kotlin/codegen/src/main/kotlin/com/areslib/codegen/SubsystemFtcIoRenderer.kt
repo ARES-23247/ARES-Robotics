@@ -26,7 +26,10 @@ internal object SubsystemFtcIoRenderer {
                 SubsystemHardwareKind.DISTANCE_SENSOR -> "com.qualcomm.robotcore.hardware.DistanceSensor"
                 SubsystemHardwareKind.IMU -> "com.qualcomm.robotcore.hardware.IMU"
                 SubsystemHardwareKind.COLOR_SENSOR -> "com.qualcomm.robotcore.hardware.ColorSensor"
-                SubsystemHardwareKind.SOLENOID -> error("FTC solenoids are rejected by validation")
+                SubsystemHardwareKind.SOLENOID,
+                SubsystemHardwareKind.DIGITAL_OUTPUT,
+                SubsystemHardwareKind.PWM_OUTPUT,
+                SubsystemHardwareKind.BUZZER -> error("${device.kind} is rejected by FTC validation")
             }
         }
         if (document.hardware.any { it.kind == SubsystemHardwareKind.DISTANCE_SENSOR }) {
@@ -108,6 +111,15 @@ internal object SubsystemFtcIoRenderer {
                     "${device.hardwareId}?.velocity?.div(${requireNotNull(device.encoderCountsPerRevolution).kotlinDouble()}) ?: Double.NaN"
                 SubsystemMeasurementSource.DIGITAL_STATE -> "${device.hardwareId}?.state ?: false"
                 SubsystemMeasurementSource.ANALOG_VOLTAGE -> "${device.hardwareId}?.voltage ?: 0.0"
+                SubsystemMeasurementSource.REFLECTANCE_NORMALIZED,
+                SubsystemMeasurementSource.IMU_PITCH_RADIANS,
+                SubsystemMeasurementSource.IMU_ROLL_RADIANS,
+                SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND,
+                SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND,
+                SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+                SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+                SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED ->
+                    error("${measurement.source} is rejected by FTC validation")
                 SubsystemMeasurementSource.DISTANCE_METERS ->
                     "${device.hardwareId}?.getDistance(DistanceUnit.METER) ?: Double.NaN"
                 SubsystemMeasurementSource.IMU_YAW_RADIANS ->

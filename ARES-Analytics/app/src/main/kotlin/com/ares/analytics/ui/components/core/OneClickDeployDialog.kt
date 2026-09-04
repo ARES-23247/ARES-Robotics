@@ -117,10 +117,10 @@ fun OneClickDeployDialog(
         ) {
                 if (state.phase == DeployExecutionPhase.IDLE) {
                     Text(
-                        text = if (league == League.FTC) {
-                            "ARES will connect only to Control Hub 192.168.43.1:5555, regenerate project plumbing, run FTC and simulator tests, build the APK, install it, and verify the package."
-                        } else {
-                            "ARES will regenerate project plumbing, run the FRC tests and build checks, then deploy through this project's configured RoboRIO target."
+                        text = when (league) {
+                            League.FTC -> "ARES will connect only to Control Hub 192.168.43.1:5555, regenerate project plumbing, run FTC and simulator tests, build the APK, install it, and verify the package."
+                            League.FRC -> "ARES will regenerate project plumbing, run the FRC tests and build checks, then deploy through this project's configured RoboRIO target."
+                            League.XRP -> "ARES will regenerate and test the MicroPython project, identify the connected XRP over USB, verify its pinned firmware and XRPLib contract, then activate a recoverable content-addressed deployment slot."
                         },
                         color = AresTextPrimary,
                         fontSize = 13.sp,
@@ -169,7 +169,11 @@ fun OneClickDeployDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         DeployStepItem(
-                            stepName = if (league == League.FTC) "1. Verify the selected Control Hub" else "1. Verify the selected robot project",
+                            stepName = when (league) {
+                                League.FTC -> "1. Verify the selected Control Hub"
+                                League.FRC -> "1. Verify the selected robot project"
+                                League.XRP -> "1. Verify the connected XRP and runtime"
+                            },
                             isDone = state.phase == DeployExecutionPhase.BUILDING ||
                                 state.phase == DeployExecutionPhase.INSTALLING ||
                                 state.phase == DeployExecutionPhase.SUCCEEDED,

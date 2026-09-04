@@ -2,6 +2,17 @@ package com.areslib.subsystem
 
 import com.areslib.tuning.validateTuningParameterDeclarations
 
+private val xrpOnlyMeasurementSources = setOf(
+    SubsystemMeasurementSource.REFLECTANCE_NORMALIZED,
+    SubsystemMeasurementSource.IMU_PITCH_RADIANS,
+    SubsystemMeasurementSource.IMU_ROLL_RADIANS,
+    SubsystemMeasurementSource.IMU_GYRO_X_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_GYRO_Y_RADIANS_PER_SECOND,
+    SubsystemMeasurementSource.IMU_ACCEL_X_METERS_PER_SECOND_SQUARED,
+    SubsystemMeasurementSource.IMU_ACCEL_Y_METERS_PER_SECOND_SQUARED,
+    SubsystemMeasurementSource.IMU_ACCEL_Z_METERS_PER_SECOND_SQUARED,
+)
+
 /** Public validation façade for canonical subsystem documents and project-wide relationships. */
 object SubsystemSchema {
     fun validate(document: SubsystemDocument): List<SubsystemValidationIssue> = buildList {
@@ -73,6 +84,9 @@ object SubsystemSchema {
             if (device.displayName.isBlank()) issue("$path.displayName", "Hardware display name is required")
             when (document.platform) {
                 SubsystemPlatform.FTC -> {
+                    if (!device.kind.supportsPlatform(SubsystemPlatform.FTC)) {
+                        issue("$path.kind", "${device.kind} has no generated FTC adapter")
+                    }
                     if (device.connection.hardwareMapName.isNullOrBlank()) {
                         issue("$path.connection.hardwareMapName", "FTC hardware requires a hardware-map name")
                     }
@@ -128,8 +142,11 @@ object SubsystemSchema {
                     SubsystemHardwareKind.PRISM_DRIVER -> if (device.connection.channel == null || device.connection.channel !in 0..31) {
                         issue("$path.connection.channel", "FRC channel must be from 0 to 31")
                     }
-                    SubsystemHardwareKind.COLOR_SENSOR ->
-                        issue("$path.kind", "Generated FRC color-sensor wiring is not supported yet")
+                    SubsystemHardwareKind.COLOR_SENSOR,
+                    SubsystemHardwareKind.DIGITAL_OUTPUT,
+                    SubsystemHardwareKind.PWM_OUTPUT,
+                    SubsystemHardwareKind.BUZZER ->
+                        issue("$path.kind", "${device.kind} has no generated FRC adapter")
                 }
                 SubsystemPlatform.XRP -> {
                     if (device.connection.canId != null) {
@@ -148,8 +165,30 @@ object SubsystemSchema {
                         SubsystemHardwareKind.POSITIONAL_SERVO -> if (device.connection.channel !in setOf(1, 2, 3, 4)) {
                             issue("$path.connection.channel", "XRP servos use channel 1 through 4")
                         }
+                        SubsystemHardwareKind.DIGITAL_INPUT -> if (device.connection.channel != null && device.connection.channel !in 0..29) {
+                            issue("$path.connection.channel", "XRP digital inputs use GPIO channel 0 through 29, or no channel for the built-in user button")
+                        }
+                        SubsystemHardwareKind.DIGITAL_OUTPUT,
+                        SubsystemHardwareKind.PWM_OUTPUT -> if (device.connection.channel !in 0..29) {
+                            issue("$path.connection.channel", "XRP digital and PWM outputs use GPIO channel 0 through 29")
+                        }
+                        SubsystemHardwareKind.ANALOG_INPUT -> if (
+                            device.measurements.none { it.source == SubsystemMeasurementSource.REFLECTANCE_NORMALIZED } &&
+                                device.connection.channel !in 26..29
+                        ) {
+                            issue("$path.connection.channel", "XRP analog inputs use ADC-capable GPIO 26 through 29")
+                        } else if (
+                            device.measurements.any { it.source == SubsystemMeasurementSource.REFLECTANCE_NORMALIZED } &&
+                                device.connection.channel !in 0..2
+                        ) {
+                            issue("$path.connection.channel", "Built-in XRP reflectance sensors use channel 0 for left, 1 for middle, or 2 for right")
+                        }
+                        SubsystemHardwareKind.INDICATOR_LIGHT -> if (device.connection.channel != null && device.connection.channel !in 0..2) {
+                            issue("$path.connection.channel", "XRP indicator lights use no channel for green, or RGB component channel 0, 1, or 2")
+                        }
                         SubsystemHardwareKind.DISTANCE_SENSOR,
-                        SubsystemHardwareKind.IMU -> if (device.connection.channel != null) {
+                        SubsystemHardwareKind.IMU,
+                        SubsystemHardwareKind.BUZZER -> if (device.connection.channel != null) {
                             issue("$path.connection.channel", "The default XRP sensor has no selectable channel")
                         }
                         else -> Unit
@@ -217,6 +256,15 @@ object SubsystemSchema {
                     }
                     SubsystemHardwareKind.CONTINUOUS_SERVO -> if (neutral !in -1.0..1.0) {
                         issue("$path.safeOutput", "Continuous-servo neutral must be within -1 to 1")
+                    }
+                    SubsystemHardwareKind.DIGITAL_OUTPUT -> if (neutral != 0.0 && neutral != 1.0) {
+                        issue("$path.safeOutput", "Digital-output neutral must be exactly 0 (off) or 1 (on)")
+                    }
+                    SubsystemHardwareKind.PWM_OUTPUT -> if (neutral !in 0.0..1.0) {
+                        issue("$path.safeOutput", "PWM-output neutral must be within 0 to 1")
+                    }
+                    SubsystemHardwareKind.BUZZER -> if (neutral !in 0.0..127.0) {
+                        issue("$path.safeOutput", "Buzzer neutral must be a MIDI note from 0 through 127")
                     }
                     SubsystemHardwareKind.POSITIONAL_SERVO,
                     SubsystemHardwareKind.INDICATOR_LIGHT -> if (neutral !in 0.0..1.0) {
@@ -289,6 +337,9 @@ object SubsystemSchema {
                     val source = measurement.source
                     if (source !in device.kind.compatibleMeasurementSources()) {
                         issue("$measurementPath.source", "$source cannot be read from ${device.kind}")
+                    }
+                    if (document.platform != SubsystemPlatform.XRP && source in xrpOnlyMeasurementSources) {
+                        issue("$measurementPath.source", "$source is available only from the generated XRP adapter")
                     }
                     val requiredType = source.valueType()
                     if (field.type != requiredType) {
@@ -487,7 +538,10 @@ object SubsystemSchema {
         SubsystemHardwareKind.MOTOR,
         SubsystemHardwareKind.POSITIONAL_SERVO,
         SubsystemHardwareKind.CONTINUOUS_SERVO,
+        SubsystemHardwareKind.DIGITAL_OUTPUT,
+        SubsystemHardwareKind.PWM_OUTPUT,
         SubsystemHardwareKind.INDICATOR_LIGHT,
+        SubsystemHardwareKind.BUZZER,
         SubsystemHardwareKind.PRISM_DRIVER,
         SubsystemHardwareKind.SOLENOID,
     )
