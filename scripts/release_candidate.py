@@ -206,10 +206,11 @@ def verify_provenance(args: argparse.Namespace) -> None:
     if source["repository"] != args.expected_repository or not source["workflowRef"].startswith(workflow + "@refs/"):
         raise CandidateError("candidate workflow identity is not the trusted builder")
     commit = source["commit"]
+    # gh treats signer-workflow and cert-identity as mutually exclusive.
+    # The exact certificate identity includes the validated builder path and ref.
     subprocess.run([
         "gh", "attestation", "verify", str(args.archive),
         "--repo", args.expected_repository,
-        "--signer-workflow", workflow,
         "--source-digest", commit,
         "--signer-digest", commit,
         "--cert-identity", "https://github.com/" + source["workflowRef"],
