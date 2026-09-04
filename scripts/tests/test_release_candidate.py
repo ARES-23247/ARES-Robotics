@@ -6,6 +6,8 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
+import subprocess
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "release_candidate.py"
@@ -58,6 +60,40 @@ class ReleaseCandidateTest(unittest.TestCase):
         args.expected_ares_version = overrides.get("ares", "14.0.0")
         args.expected_studio_version = overrides.get("studio", "4.0.0")
         return release_candidate.verify(args)
+
+    def provenance(self, actual_commit="b" * 40, actual_tree="a" * 40):
+        args = Args()
+        args.manifest = self.manifest
+        args.archive = Path(self.temp.name) / "candidate.tar.gz"
+        args.expected_repository = "ARES-23247/ARES-Robotics"
+        args.expected_tree = "a" * 40
+        def command(argv, **kwargs):
+            if argv[0] == "gh":
+                self.assertIn("--signer-workflow", argv)
+                self.assertIn("--cert-identity", argv)
+                if argv[argv.index("--source-digest") + 1] != actual_commit:
+                    raise subprocess.CalledProcessError(1, argv)
+            return mock.Mock(stdout=actual_tree + "\n")
+        with mock.patch.object(release_candidate.subprocess, "run", side_effect=command):
+            release_candidate.verify_provenance(args)
+
+    def test_actual_attested_source_cannot_differ_from_claimed_commit(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.provenance(actual_commit="c" * 40)
+
+    def test_actual_attested_tree_cannot_differ_from_claimed_tree(self):
+        with self.assertRaisesRegex(release_candidate.CandidateError, "attested source Git tree"):
+            self.provenance(actual_tree="c" * 40)
+
+    def test_verified_commit_may_differ_from_main_when_trees_match(self):
+        self.provenance()
+
+    def test_other_workflow_cannot_supply_a_candidate(self):
+        data = json.loads(self.manifest.read_text())
+        data["source"]["workflowRef"] = "ARES-23247/ARES-Robotics/.github/workflows/evil.yml@refs/heads/main"
+        self.manifest.write_text(json.dumps(data))
+        with self.assertRaisesRegex(release_candidate.CandidateError, "trusted builder"):
+            self.provenance()
 
     def test_sealed_candidate_verifies(self):
         manifest = self.verify()

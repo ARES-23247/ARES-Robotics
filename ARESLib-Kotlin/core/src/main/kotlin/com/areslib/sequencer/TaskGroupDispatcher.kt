@@ -11,6 +11,9 @@ import java.util.IdentityHashMap
 class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     override val name = "Sequential(${tasks.joinToString { it.name }})"
     override val requiredResources: Long = TaskResourceValidator.union(tasks)
+    internal fun suspendTimeouts(paused: Boolean) {
+        for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
+    }
     private var currentIndex = 0
     private var currentTaskStartTimeMs = 0L
     private val pendingActions = mutableListOf<RobotAction>()
@@ -103,6 +106,9 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
     }
     override val name = "Parallel(${tasks.joinToString { it.name }})"
     override val requiredResources: Long = TaskResourceValidator.union(tasks)
+    internal fun suspendTimeouts(paused: Boolean) {
+        for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
+    }
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
@@ -194,6 +200,9 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
     }
     override val name = "ParallelRace(${tasks.joinToString { it.name }})"
     override val requiredResources: Long = TaskResourceValidator.union(tasks)
+    internal fun suspendTimeouts(paused: Boolean) {
+        for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
+    }
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
@@ -295,6 +304,9 @@ class ParallelDeadlineGroup(
     }
     override val name = "ParallelDeadline(deadline=${deadline.name}, others=${otherTasks.joinToString { it.name }})"
     override val requiredResources: Long = TaskResourceValidator.union(tasks)
+    internal fun suspendTimeouts(paused: Boolean) {
+        for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
+    }
     private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()

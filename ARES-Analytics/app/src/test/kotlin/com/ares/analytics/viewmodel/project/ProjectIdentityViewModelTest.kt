@@ -207,7 +207,7 @@ class ProjectIdentityViewModelTest {
             advanceUntilIdle()
 
             val loaded = viewModel.state.value
-            assertTrue(loaded.protectedError.orEmpty().contains("retired schema-3 format"))
+            assertTrue(loaded.protectedError.orEmpty().contains("retired project format"))
             assertTrue(loaded.protectedError.orEmpty().contains("will not rewrite this project"))
             assertNull(loaded.protectedContentHash)
             assertFalse(loaded.canReview)
@@ -231,7 +231,7 @@ class ProjectIdentityViewModelTest {
         withProject { project ->
             // Current-format corruption remains repairable. Retired schema-3 files that omit
             // authoringModel are intentionally not migrated by Studio.
-            val invalidBytes = """{"schemaVersion":4,"authoringModel":"GUI_OWNED"}""".toByteArray()
+            val invalidBytes = """{"schemaVersion":5,"authoringModel":"GUI_OWNED"}""".toByteArray()
             val file = File(project, ".ares/project.json").apply {
                 parentFile.mkdirs()
                 writeBytes(invalidBytes)
@@ -277,7 +277,7 @@ class ProjectIdentityViewModelTest {
         withProject { project ->
             val file = File(project, ".ares/project.json").apply {
                 parentFile.mkdirs()
-                writeText("""{"schemaVersion":4,"authoringModel":"GUI_OWNED"}""")
+                writeText("""{"schemaVersion":5,"authoringModel":"GUI_OWNED"}""")
             }
             val viewModel = ProjectIdentityViewModel(
                 scope = this,
@@ -322,6 +322,7 @@ class ProjectIdentityViewModelTest {
             League.XRP,
             validDraft().copy(
                 authoringModel = AresProjectAuthoringModel.HYBRID,
+                xrpControllerModel = com.areslib.project.AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040,
                 fieldLengthMeters = "2.54",
                 fieldWidthMeters = "1.4224",
                 xrpWifiMode = "STATION",
@@ -335,6 +336,10 @@ class ProjectIdentityViewModelTest {
         assertEquals(AresProjectAuthoringModel.HYBRID, document.authoringModel)
         assertEquals(5821, document.requireXrpRuntimeOptions().port)
         assertEquals("Robotics-Lab", document.requireXrpRuntimeOptions().ssid)
+        assertEquals(
+            com.areslib.project.AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040,
+            document.requireXrpRuntimeOptions().controllerModel,
+        )
 
         val invalid = validateProjectIdentityDraft(
             League.XRP,

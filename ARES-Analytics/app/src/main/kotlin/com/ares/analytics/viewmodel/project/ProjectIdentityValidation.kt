@@ -96,6 +96,7 @@ private fun ProjectIdentityDraft.runtimeOptions(
     )
     League.XRP -> AresRuntimeOptionsDocument(
         xrp = AresXrpRuntimeOptionsDocument(
+            controllerModel = xrpControllerModel,
             wifiMode = xrpWifiMode,
             ssid = xrpSsid.trim(),
             port = requireNotNull(xrpPort),
@@ -111,7 +112,7 @@ internal fun projectIdentityDraft(config: WorkspaceConfig, current: AresProjectM
     val ftcRuntime = current?.takeIf { it.league == AresLeague.FTC }?.requireFtcRuntimeOptions()
         ?: AresFtcRuntimeOptionsDocument()
     val xrpRuntime = current?.takeIf { it.league == AresLeague.XRP }?.requireXrpRuntimeOptions()
-        ?: AresXrpRuntimeOptionsDocument()
+        ?: AresXrpRuntimeOptionsDocument(AresXrpControllerModel.SPARKFUN_XRP_RP2350)
     return ProjectIdentityDraft(
         projectId = current?.projectId ?: suggestedProjectId(config),
         teamId = current?.identity?.teamId ?: config.teamId,
@@ -125,6 +126,7 @@ internal fun projectIdentityDraft(config: WorkspaceConfig, current: AresProjectM
         authoringModel = current?.authoringModel ?: AresProjectAuthoringModel.GUI_OWNED,
         ftcHubCommandTransport = ftcRuntime.hubCommandTransport,
         ftcLimelightProxyEnabled = ftcRuntime.limelightProxyEnabled,
+        xrpControllerModel = xrpRuntime.controllerModel,
         xrpWifiMode = xrpRuntime.wifiMode,
         xrpSsid = xrpRuntime.ssid,
         xrpLinkPort = xrpRuntime.port.toString(),
@@ -163,6 +165,7 @@ internal fun projectIdentityChanges(
             val before = current?.takeIf { it.league == AresLeague.XRP }?.requireXrpRuntimeOptions()
             val after = proposed.requireXrpRuntimeOptions()
             listOfNotNull(
+                changed("XRP controller model", before?.controllerModel, after.controllerModel),
                 changed("XRP Wi-Fi mode", before?.wifiMode, after.wifiMode),
                 changed("XRP Wi-Fi network", before?.ssid, after.ssid),
                 changed("XRP Link port", before?.port, after.port),

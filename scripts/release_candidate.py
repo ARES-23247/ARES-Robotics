@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import subprocess
 import tarfile
 from typing import Any
 
@@ -192,6 +193,37 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     return manifest
 
 
+def verify_provenance(args: argparse.Namespace) -> None:
+    """Bind manifest claims to certificate identity, then resolve that verified commit's tree.
+
+    GitHub CLI's source/signer constraints check certificate fields, not the
+    workflow-controlled SLSA predicate. No candidate-provided code is executed.
+    """
+    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    _validate_identity(manifest)
+    source = manifest["source"]
+    workflow = args.expected_repository + "/.github/workflows/build-distributions.yml"
+    if source["repository"] != args.expected_repository or not source["workflowRef"].startswith(workflow + "@refs/"):
+        raise CandidateError("candidate workflow identity is not the trusted builder")
+    commit = source["commit"]
+    subprocess.run([
+        "gh", "attestation", "verify", str(args.archive),
+        "--repo", args.expected_repository,
+        "--signer-workflow", workflow,
+        "--source-digest", commit,
+        "--signer-digest", commit,
+        "--cert-identity", "https://github.com/" + source["workflowRef"],
+        "--deny-self-hosted-runners",
+    ], check=True)
+    # A PR merge SHA can differ from the eventual protected merge SHA; trees
+    # must still match exactly. Fetch by the now-verified digest, never a branch.
+    subprocess.run(["git", "fetch", "--no-tags", "origin", commit], check=True)
+    tree = subprocess.run(["git", "rev-parse", commit + "^{tree}"],
+                          check=True, capture_output=True, text=True).stdout.strip()
+    if tree != source["tree"] or tree != args.expected_tree:
+        raise CandidateError("attested source Git tree does not match the manifest and protected main")
+
+
 def extract(args: argparse.Namespace) -> None:
     archive = args.archive.resolve()
     root = args.root.resolve()
@@ -239,6 +271,12 @@ def _parser() -> argparse.ArgumentParser:
     verify_parser.add_argument("--expected-ares-version")
     verify_parser.add_argument("--expected-studio-version")
 
+    provenance_parser = subparsers.add_parser("verify-provenance")
+    provenance_parser.add_argument("--archive", type=Path, required=True)
+    provenance_parser.add_argument("--manifest", type=Path, required=True)
+    provenance_parser.add_argument("--expected-repository", required=True)
+    provenance_parser.add_argument("--expected-tree", required=True)
+
     extract_parser = subparsers.add_parser("extract")
     extract_parser.add_argument("--archive", type=Path, required=True)
     extract_parser.add_argument("--root", type=Path, required=True)
@@ -250,13 +288,15 @@ def main() -> int:
     try:
         if args.command == "seal":
             seal(args)
+        elif args.command == "verify-provenance":
+            verify_provenance(args)
         elif args.command == "verify":
             manifest = verify(args)
             print(json.dumps(manifest, separators=(",", ":"), sort_keys=True))
         else:
             extract(args)
         return 0
-    except (CandidateError, json.JSONDecodeError, OSError) as error:
+    except (CandidateError, json.JSONDecodeError, OSError, subprocess.CalledProcessError) as error:
         print(f"release candidate rejected: {error}", file=sys.stderr)
         return 1
 

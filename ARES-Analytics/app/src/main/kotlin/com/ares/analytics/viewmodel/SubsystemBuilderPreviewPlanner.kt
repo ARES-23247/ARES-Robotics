@@ -11,6 +11,8 @@ import com.areslib.subsystem.SubsystemImplementationKind
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemSchema
 import com.areslib.subsystem.isAresGenerated
+import com.areslib.project.AresXrpControllerModel
+import com.areslib.subsystem.SubsystemHardwareKind
 import java.io.File
 
 /**
@@ -29,7 +31,8 @@ internal class SubsystemBuilderPreviewPlanner(
         val document = state.draft?.document ?: return state.copy(previewFiles = emptyList(), problems = external)
         val validation = SubsystemSchema.validate(document).map {
             SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
-        } + projectConnectionProblems(document, state.documents)
+        } + projectConnectionProblems(document, state.documents) +
+            xrpControllerProblems(document, state.xrpControllerModel)
         if (platform == SubsystemPlatform.XRP) {
             return state.copy(
                 previewFiles = emptyList(),
@@ -84,6 +87,40 @@ internal class SubsystemBuilderPreviewPlanner(
             problems = (external + validation + safetyWarnings(document))
                 .distinctBy { Triple(it.severity, it.path, it.message) },
         )
+    }
+
+    private fun xrpControllerProblems(
+        document: com.areslib.subsystem.SubsystemDocument,
+        controllerModel: AresXrpControllerModel?,
+    ): List<SubsystemProblem> {
+        if (platform != SubsystemPlatform.XRP) return emptyList()
+        if (controllerModel == null) {
+            return listOf(
+                SubsystemProblem(
+                    SubsystemProblemSeverity.ERROR,
+                    "project:project.json",
+                    "Select an XRP controller model in Project Identity before configuring hardware.",
+                ),
+            )
+        }
+        return document.hardware.mapIndexedNotNull { index, device ->
+            val channel = device.connection.channel ?: return@mapIndexedNotNull null
+            val allowed = when (device.kind) {
+                SubsystemHardwareKind.MOTOR -> controllerModel.motorChannels
+                SubsystemHardwareKind.POSITIONAL_SERVO -> controllerModel.servoChannels
+                else -> return@mapIndexedNotNull null
+            }
+            if (channel in allowed) null else SubsystemProblem(
+                SubsystemProblemSeverity.ERROR,
+                "hardware[$index].connection.channel",
+                "${controllerModel.displayName()} supports ${device.kind.name.lowercase().replace('_', ' ')} channels ${allowed.first} through ${allowed.last}; channel $channel is unavailable.",
+            )
+        }
+    }
+
+    private fun AresXrpControllerModel.displayName(): String = when (this) {
+        AresXrpControllerModel.SPARKFUN_XRP_RP2350 -> "SparkFun XRP (RP2350)"
+        AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040 -> "SparkFun XRP Beta (RP2040)"
     }
 
     private fun artifactDestination(

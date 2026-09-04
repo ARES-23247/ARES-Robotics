@@ -34,7 +34,7 @@ class Store(
     @Volatile var state: RobotState = initialState
         private set
 
-    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(RobotState) -> Unit>()
+    @Volatile private var listeners = emptyArray<(RobotState) -> Unit>()
     
     /**
      * Optional synchronous observer invoked immediately before each reduction while holding the
@@ -60,9 +60,9 @@ class Store(
             state = reduceWithRuntime(state, action)
             currentState = state
         }
-        val listenerCount = listeners.size
-        for (i in 0 until listenerCount) {
-            listeners[i](currentState)
+        val snapshot = listeners
+        for (i in snapshot.indices) {
+            snapshot[i](currentState)
         }
     }
 
@@ -80,9 +80,9 @@ class Store(
             }
             currentState = state
         }
-        val listenerCount = listeners.size
-        for (i in 0 until listenerCount) {
-            listeners[i](currentState)
+        val snapshot = listeners
+        for (i in snapshot.indices) {
+            snapshot[i](currentState)
         }
     }
 
@@ -93,8 +93,14 @@ class Store(
      * the dispatching thread, outside the store lock, in copy-on-write list order.
      */
     fun subscribe(listener: (RobotState) -> Unit): () -> Unit {
-        listeners.add(listener)
-        return { listeners.remove(listener) }
+        // A distinct registration preserves duplicate subscriptions and idempotent removal.
+        val registration: (RobotState) -> Unit = { listener(it) }
+        synchronized(this) { listeners = listeners + registration }
+        return {
+            synchronized(this) {
+                listeners = listeners.filterNot { it === registration }.toTypedArray()
+            }
+        }
     }
 
     private fun reduceWithRuntime(currentState: RobotState, action: RobotAction): RobotState {

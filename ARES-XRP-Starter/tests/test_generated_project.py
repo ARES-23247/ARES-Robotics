@@ -13,6 +13,23 @@ for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
 
 
 class GeneratedProjectTest(unittest.TestCase):
+    def test_runtime_identity_fingerprints_the_same_files_as_studio(self):
+        import hashlib
+        tool_spec = importlib.util.spec_from_file_location("fingerprint_tool", ROOT / "tools/ares_project.py")
+        tool = importlib.util.module_from_spec(tool_spec)
+        tool_spec.loader.exec_module(tool)
+        ignored = ("history/", "recovery/", "drafts/", "backups/", "evidence/", "local/", "verification/")
+        paths = [p for p in (ROOT / ".ares").rglob("*") if p.is_file()
+                 and not p.relative_to(ROOT / ".ares").as_posix().startswith(ignored)]
+        field = ROOT / "deploy/paths/field.json"
+        if field.is_file(): paths.append(field)
+        content = b"".join(p.relative_to(ROOT).as_posix().encode() + b"\0" + p.read_bytes() + b"\0"
+                           for p in sorted(paths, key=lambda p: p.relative_to(ROOT).as_posix()))
+        self.assertEqual(hashlib.sha256(content).hexdigest(), tool.canonical_content_sha256())
+        generated = {}
+        exec((ROOT / "build/generated/ares/python/generated_ares_project.py").read_text(), generated)
+        self.assertEqual(tool.canonical_content_sha256(), generated["PROJECT"]["runtime_identity"]["canonicalContentSha256"])
+
     def test_stock_xrp_input_and_light_adapters_use_public_xrplib_boundaries(self):
         hardware_path = ROOT / "hardware.py"
         spec = importlib.util.spec_from_file_location("ares_xrp_hardware", hardware_path)
@@ -130,6 +147,17 @@ class GeneratedProjectTest(unittest.TestCase):
         tool.validate_drivebase(base)
         with self.assertRaisesRegex(ValueError, "port 1, 2, 3, and 4"):
             tool.validate_drivebase({**base, "components": base["components"][:-1]})
+
+    def test_controller_profiles_reject_ports_the_selected_board_does_not_have(self):
+        tool_path = ROOT / "tools" / "ares_project.py"
+        spec = importlib.util.spec_from_file_location("ares_project_board_profile_tool", tool_path)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+
+        tool.validate_controller_port("POSITIONAL_SERVO", 4, "SPARKFUN_XRP_RP2350")
+        tool.validate_controller_port("POSITIONAL_SERVO", 2, "SPARKFUN_XRP_BETA_RP2040")
+        with self.assertRaisesRegex(ValueError, "SPARKFUN_XRP_BETA_RP2040.*1..2"):
+            tool.validate_controller_port("POSITIONAL_SERVO", 3, "SPARKFUN_XRP_BETA_RP2040")
 
     def test_mecanum_generation_preserves_four_explicit_ports_and_geometry(self):
         tool_path = ROOT / "tools" / "ares_project.py"

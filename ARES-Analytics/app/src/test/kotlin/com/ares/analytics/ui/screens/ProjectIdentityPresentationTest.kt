@@ -49,9 +49,9 @@ class ProjectIdentityPresentationTest {
             "Project metadata is missing required field: authoringModel",
         )
 
-        assertTrue(explanation.orEmpty().contains("retired schema-3 project format"))
-        assertTrue(explanation.orEmpty().contains("schema-4 projects only"))
+        assertTrue(explanation.orEmpty().contains("retired project format"))
+        assertTrue(explanation.orEmpty().contains("schema-5 projects only"))
         assertTrue(explanation.orEmpty().contains("will not rewrite this project automatically"))
-        assertTrue(explanation.orEmpty().contains("do not need to delete the old folder"))
+        assertTrue(explanation.orEmpty().contains("Create or export a current robot project"))
     }
 }

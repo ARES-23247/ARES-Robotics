@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.areslib.util.sha256Hex
 
-const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 4
+const val ARES_PROJECT_METADATA_SCHEMA_VERSION: Int = 5
 
 enum class AresLeague { FTC, FRC, XRP }
 
@@ -45,8 +45,19 @@ data class AresFtcRuntimeOptionsDocument(
     val limelightProxyEnabled: Boolean = false,
 )
 
-/** XRP-only runtime choices that configure wireless and safety behavior. */
+/** The two SparkFun controllers supported by the ARES XRP runtime. */
+enum class AresXrpControllerModel(
+    val firmwareBoardId: String,
+    val motorChannels: IntRange,
+    val servoChannels: IntRange,
+) {
+    SPARKFUN_XRP_RP2350("xrp-2350", 1..4, 1..4),
+    SPARKFUN_XRP_BETA_RP2040("xrp-beta", 1..4, 1..2),
+}
+
+/** XRP-only runtime choices that configure controller identity, wireless, and safety behavior. */
 data class AresXrpRuntimeOptionsDocument(
+    val controllerModel: AresXrpControllerModel,
     val wifiMode: String = "AP",
     val ssid: String = "ARES-XRP-AUTO",
     /** Dedicated ARES XRP Link port. NT4 remains on 5810 for FTC/FRC robots and simulators. */
@@ -239,11 +250,12 @@ object AresProjectMetadataCodec {
             require(element.isJsonObject) { "Project metadata field 'runtimeOptions.xrp' must be an object or null" }
             val value = element.asJsonObject
             AresXrpRuntimeOptionsDocument(
-                wifiMode = value.get("wifiMode")?.asString ?: "AP",
-                ssid = value.get("ssid")?.asString ?: "ARES-XRP-AUTO",
-                port = value.get("port")?.asInt ?: 5811,
-                deadmanTimeoutMs = value.get("deadmanTimeoutMs")?.asInt ?: 200,
-                brownoutThresholdVolts = value.get("brownoutThresholdVolts")?.asDouble ?: 4.3,
+                controllerModel = value.requiredEnum("controllerModel"),
+                wifiMode = value.requiredString("wifiMode"),
+                ssid = value.requiredString("ssid"),
+                port = value.requiredInt("port"),
+                deadmanTimeoutMs = value.requiredInt("deadmanTimeoutMs"),
+                brownoutThresholdVolts = value.requiredDouble("brownoutThresholdVolts"),
             )
         }
         require(league != AresLeague.FTC || ftc != null) {

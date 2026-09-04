@@ -1,15 +1,24 @@
 package com.ares.analytics.ui.components.subsystems
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
+import com.areslib.project.AresXrpControllerModel
 import com.areslib.subsystem.SubsystemHardwareConnection
 import com.areslib.subsystem.SubsystemHardwareDocument
 import com.areslib.subsystem.SubsystemHardwareKind
 import com.areslib.subsystem.SubsystemMeasurementSource
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 internal fun XrpHardwareConnectionEditor(
     device: SubsystemHardwareDocument,
+    controllerModel: AresXrpControllerModel?,
     viewModel: SubsystemGeneratorViewModel,
 ) {
     fun updateChannel(channel: Int) {
@@ -19,14 +28,16 @@ internal fun XrpHardwareConnectionEditor(
     }
 
     when (device.kind) {
-        SubsystemHardwareKind.MOTOR -> IntInput(
-            "XRP motor channel (3 or 4)",
-            device.connection.channel ?: 3,
+        SubsystemHardwareKind.MOTOR -> XrpPortSelector(
+            "XRP motor channel",
+            controllerModel?.motorChannels?.filter { it >= 3 }.orEmpty(),
+            device.connection.channel,
             ::updateChannel,
         )
-        SubsystemHardwareKind.POSITIONAL_SERVO -> IntInput(
-            "XRP servo channel (1–4)",
-            device.connection.channel ?: 1,
+        SubsystemHardwareKind.POSITIONAL_SERVO -> XrpPortSelector(
+            "XRP servo channel",
+            controllerModel?.servoChannels?.toList().orEmpty(),
+            device.connection.channel,
             ::updateChannel,
         )
         SubsystemHardwareKind.DIGITAL_INPUT -> IntInput(
@@ -63,5 +74,29 @@ internal fun XrpHardwareConnectionEditor(
             "Uses the board's built-in buzzer. The device preflight verifies it exists before deployment.",
         )
         else -> FieldGuidance("This hardware type is not available in the generated XRP runtime.")
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun XrpPortSelector(
+    label: String,
+    availableChannels: List<Int>,
+    selectedChannel: Int?,
+    onSelect: (Int) -> Unit,
+) {
+    if (availableChannels.isEmpty()) {
+        FieldGuidance("Select the XRP controller model in Project Identity first.")
+        return
+    }
+    Text("$label (${availableChannels.joinToString()})")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        availableChannels.forEach { channel ->
+            FilterChip(
+                selected = selectedChannel == channel,
+                onClick = { onSelect(channel) },
+                label = { Text(channel.toString()) },
+            )
+        }
     }
 }

@@ -38,13 +38,13 @@ internal fun RobotConnectionCoordinator(
         if (config.league == League.XRP) {
             services.nt4ClientService.stop()
             val metadata = loadXrpMetadata(config)
-            if (metadata == null) {
+            if (metadata == null || canonicalContentHash == null) {
                 services.xrpLinkService.stop()
                 return@LaunchedEffect
             }
             val options = metadata.requireXrpRuntimeOptions()
             services.alertEngineService.configureRobotContext(League.XRP, options.brownoutThresholdVolts)
-            services.xrpLinkService.start(host, options.port, metadata.projectId)
+            services.xrpLinkService.start(host, options.port, metadata.projectId, canonicalContentHash)
         } else {
             services.alertEngineService.configureRobotContext(config.league)
             services.xrpLinkService.stop()

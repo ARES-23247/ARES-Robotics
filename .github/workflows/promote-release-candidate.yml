@@ -105,8 +105,14 @@ jobs:
             echo 'The candidate artifact contains no sealed release-candidate archive.' >&2
             exit 1
           fi
-          gh attestation verify "$archive" --repo "$GITHUB_REPOSITORY"
+          gh attestation verify "$archive" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/build-distributions.yml"
           python scripts/release_candidate.py extract --archive "$archive" --root verified-candidate
+          python scripts/release_candidate.py verify-provenance \
+            --archive "$archive" \
+            --manifest verified-candidate/release-candidate.json \
+            --expected-repository "$GITHUB_REPOSITORY" \
+            --expected-tree "$(git rev-parse 'HEAD^{tree}')"
 
       - name: Verify exact Git tree, versions, and every candidate file
         id: identity

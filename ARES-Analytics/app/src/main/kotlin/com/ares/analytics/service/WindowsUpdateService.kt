@@ -75,22 +75,28 @@ fun interface WindowsInstallerSignatureVerifier {
 class PowerShellAuthenticodeVerifier : WindowsInstallerSignatureVerifier {
     override suspend fun verify(installer: File): InstallerSignature = withContext(Dispatchers.IO) {
         val script = """
-            ${'$'}signature = Get-AuthenticodeSignature -LiteralPath ${'$'}args[0]
+            ${'$'}ErrorActionPreference = 'Stop'
+            ${'$'}ProgressPreference = 'SilentlyContinue'
+            ${'$'}signature = Get-AuthenticodeSignature -LiteralPath ${'$'}env:ARES_INSTALLER_PATH -ErrorAction Stop
             ${'$'}thumbprint = if (${'$'}null -ne ${'$'}signature.SignerCertificate) { ${'$'}signature.SignerCertificate.Thumbprint } else { '' }
             ${'$'}subject = if (${'$'}null -ne ${'$'}signature.SignerCertificate) { ${'$'}signature.SignerCertificate.Subject } else { '' }
-            Write-Output ("{0}|{1}|{2}" -f ${'$'}signature.Status, ${'$'}thumbprint, ${'$'}subject)
+            Write-Output ("ARES_SIGNATURE|{0}|{1}|{2}" -f ${'$'}signature.Status, ${'$'}thumbprint, ${'$'}subject)
         """.trimIndent()
-        val process = ProcessBuilder(
-            "powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script, installer.absolutePath,
-        ).redirectErrorStream(true).start()
-        val output = process.inputStream.bufferedReader().use { it.readText() }.trim().takeLast(4_096)
-        if (!process.waitFor(30, TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            return@withContext InstallerSignature(false, null)
-        }
-        val exitCode = process.exitValue()
-        if (exitCode != 0) return@withContext InstallerSignature(false, null)
-        val parts = output.lineSequence().lastOrNull().orEmpty().split('|', limit = 3)
+        val result = runBoundedProcess(
+            ProcessBuilder(
+                "powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand",
+                java.util.Base64.getEncoder().encodeToString(script.toByteArray(Charsets.UTF_16LE)),
+            ).apply {
+                // PowerShell 7's module path can load incompatible type data in Windows PowerShell.
+                environment().keys.removeIf { it.equals("PSModulePath", ignoreCase = true) }
+                environment()["ARES_INSTALLER_PATH"] = installer.absolutePath
+            },
+            timeoutMs = 30_000L,
+        ) ?: return@withContext InstallerSignature(false, null)
+        if (result.exitCode != 0) return@withContext InstallerSignature(false, null)
+        val output = result.output.trim()
+        val parts = output.lineSequence().singleOrNull { it.startsWith("ARES_SIGNATURE|") }
+            .orEmpty().removePrefix("ARES_SIGNATURE|").split('|', limit = 3)
         InstallerSignature(
             valid = parts.getOrNull(0).equals("Valid", ignoreCase = true),
             thumbprint = parts.getOrNull(1)?.normalizeThumbprint()?.takeIf(String::isNotEmpty),

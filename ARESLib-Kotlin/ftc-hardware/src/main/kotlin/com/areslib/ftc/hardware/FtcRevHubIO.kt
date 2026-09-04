@@ -78,6 +78,8 @@ class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null) : MotorIO {
     override val position: Double get() = delegate.position
     override val currentAmps: Double get() = delegate.currentAmps
 
+    override fun refresh() = delegate.refresh()
+
     /** Resets external encoder position reference if present. */
     override fun resetEncoder() = delegate.resetEncoder()
 }
@@ -114,6 +116,8 @@ class FtcEncoder(motor: DcMotorEx) : MotorIO {
  *
  * Useful for joint mechanisms driven by a motor with position feedback provided by an external encoder.
  *
+ * Register only this composite for loop refresh and close; it owns both delegates.
+ *
  * @param actuator [MotorIO] handling voltage power commands.
  * @param sensor [MotorIO] providing position and velocity telemetry feedback.
  *
@@ -121,6 +125,10 @@ class FtcEncoder(motor: DcMotorEx) : MotorIO {
  */
 class CompositeMotorIO(private val actuator: MotorIO, private val sensor: MotorIO) : MotorIO, AutoCloseable {
     private val delegate = RevCompositeMotorController(actuator, sensor)
+    override var powerScale: Double
+        get() = delegate.powerScale
+        set(value) { delegate.powerScale = value }
+    override fun refresh() = delegate.refresh()
     override var power: Double
         get() = delegate.power
         set(value) { delegate.power = value }
@@ -132,8 +140,11 @@ class CompositeMotorIO(private val actuator: MotorIO, private val sensor: MotorI
     override fun resetEncoder() = delegate.resetEncoder()
 
     override fun close() {
-        if (actuator is AutoCloseable) actuator.close()
-        if (sensor is AutoCloseable) sensor.close()
+        try {
+            if (actuator is AutoCloseable) actuator.close()
+        } finally {
+            if (sensor !== actuator && sensor is AutoCloseable) sensor.close()
+        }
     }
 }
 

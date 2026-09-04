@@ -14,6 +14,67 @@ import kotlin.test.assertTrue
  */
 class TaskExecutorSuspensionTest {
     @Test
+    fun `watchdog freezes nested groups and starts queued children only when initialized`() {
+        val state = RobotState()
+        val executor = TaskExecutor()
+        RobotClock.useMockTime(0L)
+        try {
+            val child = TimeWaitTask(100L).withTimeout(150L)
+            val queued = TimeWaitTask(500L).withTimeout(150L)
+            val root = ParallelTaskGroup(listOf(SequentialTaskGroup(listOf(child, queued))))
+            executor.addTask(root)
+            executor.update(state, 0)
+            RobotClock.useMockTime(50)
+            executor.suspend()
+            RobotClock.useMockTime(5000)
+            TaskTimeoutManager.runWatchdogCheck()
+            assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(child))
+            executor.resume()
+            RobotClock.useMockTime(5050)
+            executor.update(state, 5050)
+            assertEquals(TaskStatus.COMPLETED, TaskStateMachine.getStatus(child))
+            assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(queued))
+            RobotClock.useMockTime(5201)
+            TaskTimeoutManager.runWatchdogCheck()
+            assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(queued))
+        } finally {
+            executor.cancelAll(state)
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
+    fun `suspended preemption preserves original budget and pauses preemptor watchdog`() {
+        val state = RobotState()
+        val executor = TaskExecutor()
+        RobotClock.useMockTime(0)
+        try {
+            val original = TimeWaitTask(1000).withTimeout(1500)
+            executor.addTask(original)
+            executor.update(state, 0)
+            RobotClock.useMockTime(100)
+            executor.suspend()
+            RobotClock.useMockTime(5000)
+            val preemptor = TimeWaitTask(100).withTimeout(200)
+            executor.preempt(preemptor, state, 5000)
+            RobotClock.useMockTime(10000)
+            TaskTimeoutManager.runWatchdogCheck()
+            assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(original))
+            assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(preemptor))
+            executor.resume()
+            RobotClock.useMockTime(10100)
+            executor.update(state, 10100)
+            assertEquals(original.name, executor.activeTaskName)
+            RobotClock.useMockTime(10999)
+            executor.update(state, 10999)
+            assertEquals(original.name, executor.activeTaskName)
+        } finally {
+            executor.cancelAll(state)
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
     fun `suspended wall time does not count toward task duration`() {
         com.areslib.util.RobotClock.useMockTime(0L)
         try {

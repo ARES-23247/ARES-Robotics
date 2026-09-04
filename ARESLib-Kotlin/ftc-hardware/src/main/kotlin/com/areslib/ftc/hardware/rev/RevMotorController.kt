@@ -216,6 +216,8 @@ class RevCRServoController(
             } catch (_: Exception) {}
         }
 
+    override fun refresh() { externalEncoder?.refresh() }
+
     override val velocity: Double
         get() = externalEncoder?.velocity ?: 0.0
 
@@ -295,6 +297,15 @@ class RevCompositeMotorController(
     private val actuator: MotorIO,
     private val sensor: MotorIO
 ) : MotorIO {
+    override var powerScale: Double
+        get() = actuator.powerScale
+        set(value) { actuator.powerScale = value }
+
+    override fun refresh() {
+        actuator.refresh()
+        if (sensor !== actuator) sensor.refresh()
+    }
+
     override var power: Double
         get() = actuator.power
         set(value) {

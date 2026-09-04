@@ -33,24 +33,26 @@ ARES-XRP-Starter/
 5. Prepare the verified official device image for the exact controller model. This downloads both
    the UF2 and XRPLib source archive and rejects either unless its byte length and SHA-256 match:
    ```bash
-   ares.bat prepare-image --board xrp-2350
+   ares.bat prepare-image
    ```
-   Supported board IDs are `xrp-2350`, `xrp-beta`, and `xrp-nano`. Flash the resulting UF2 only to
-   the matching BOOTSEL volume, then install the pinned XRPLib `2026.08.2` using the official XRP
-   loader. ARES does not silently flash a board or guess its model.
+   Choose either **SparkFun XRP (RP2350)** or **SparkFun XRP Beta (RP2040)** in Studio's Project
+   Identity screen first. ARES downloads the matching pinned official UF2 and refuses to prepare
+   or deploy the other board. Flash the resulting UF2 to the matching BOOTSEL volume, then install
+   pinned XRPLib `2026.08.2` with the official loader.
 6. Plug in the running controller via USB and perform a read-only preflight:
    ```bash
-   ares.bat device-preflight --board xrp-2350
+   ares.bat device-preflight
    ```
-   Preflight checks the board identity, MicroPython `1.28.0`, XRPLib `2026.08.2`, and every XRPLib
-   API required by the generated robot. A mismatch fails closed before files are changed.
+   Preflight checks the selected board identity, its motor and servo ports, MicroPython `1.28.0`,
+   XRPLib `2026.08.2`, and every API required by the generated robot. A mismatch fails closed before
+   files are changed.
 7. Deploy:
    ```bash
    ares.bat deploy
    ```
    This verifies the project, stages the bundled `ares_micro` runtime, generated Python, hardware
-   boundary, extensions, and optional secrets into an inactive content-addressed slot, compiles
-   every staged Python file on the controller, and only then atomically activates it. An interrupted
+   boundary, extensions, and optional secrets into a fresh slot for each attempt. It verifies every
+   file hash and compiles every staged Python file on the controller before replacing the active marker. An interrupted
    or invalid upload leaves the previous slot active. Run `ares.bat rollback` over USB to reactivate
    the prior slot.
    To inspect the exact content-addressed deployment without a controller, run
@@ -79,7 +81,9 @@ repository can be built, tested, simulated, and deployed entirely from an IDE or
   separate from FTC/FRC NT4 on 5810.
 - Every control frame has a session, monotonic sequence, one-shot request revision, explicit arm
   state, and a bounded deadman lease. Invalid, stale, disconnected, or non-finite input commands
-  neutral output.
+  neutral output for both the drivetrain and mechanisms. Resuming requires a new explicit start
+  request. Studio also checks the generated canonical project fingerprint, so stale deployments
+  with the same project ID cannot enable control.
 - AP mode uses the generated SSID and a starter password. STATION mode reads `WIFI_PASSWORD` from
   ignored `xrp_secrets.py`; copy `xrp_secrets.example.py` and never commit the secret.
 - The physical runtime reads battery voltage from the official XRPLib `board` adapter and latches a

@@ -20,6 +20,56 @@ class XrpLinkServiceTest {
     private val tempDir: Path = Files.createTempDirectory("ares-xrp-link-test-")
 
     @Test
+    fun `replacement waits for obsolete blocking connect and its cleanup`() = runBlocking {
+        val database = DatabaseService(tempDir.resolve("switch.duckdb").toString())
+        val telemetry = Nt4ClientService(database)
+        val entered = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        val oldSocket = object : java.net.Socket() {
+            override fun connect(endpoint: java.net.SocketAddress, timeout: Int) {
+                entered.countDown()
+                check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                throw java.io.IOException("obsolete connect completed late")
+            }
+        }
+        val service = XrpLinkService(telemetry) { if (calls.incrementAndGet() == 1) oldSocket else java.net.Socket() }
+        val server = ServerSocket(0)
+        val holdPeer = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val serverJob = launch(Dispatchers.IO) {
+            server.accept().use { socket ->
+                val writer = socket.getOutputStream().bufferedWriter()
+                writer.write("{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\",\"projectId\":\"new-project\",\"canonicalContentSha256\":\"${"a".repeat(64)}\",\"contentSha256\":\"${"a".repeat(64)}\",\"drivetrainType\":\"differential\"}\n")
+                writer.flush()
+                holdPeer.await()
+            }
+        }
+        try {
+            service.start("127.0.0.1", server.localPort, "old-project", "a".repeat(64))
+            assertTrue(withContext(Dispatchers.IO) { entered.await(3, java.util.concurrent.TimeUnit.SECONDS) })
+            service.start("127.0.0.1", server.localPort, "new-project", "a".repeat(64))
+            delay(100)
+            assertEquals(1, calls.get(), "new owner must wait for old connect cleanup")
+            release.countDown()
+            withTimeout(3000) { while (!service.isConnected.value) delay(10) }
+            assertEquals("new-project", service.peerIdentity.value?.projectId)
+            assertEquals(null, service.connectionError.value)
+            service.requestTeleOp()
+            delay(100)
+            assertTrue(service.isConnected.value)
+            assertEquals(XrpRequestedMode.TELEOP, service.controlRequest.value.mode)
+        } finally {
+            release.countDown()
+            holdPeer.complete(Unit)
+            server.close()
+            service.disposeAndJoin()
+            serverJob.join()
+            telemetry.disposeAndJoin()
+            database.closeAndJoin()
+        }
+    }
+
+    @Test
     fun `valid handshake carries control and monotonic telemetry`() = runBlocking {
         val database = DatabaseService(tempDir.resolve("xrp.duckdb").toString())
         val telemetry = Nt4ClientService(database)
@@ -31,7 +81,7 @@ class XrpLinkServiceTest {
                 val writer = socket.getOutputStream().bufferedWriter()
                 writer.write(
                         "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
-                        "\"projectId\":\"test-project\",\"contentSha256\":\"${"a".repeat(64)}\"," +
+                        "\"projectId\":\"test-project\",\"canonicalContentSha256\":\"${"a".repeat(64)}\",\"contentSha256\":\"${"a".repeat(64)}\"," +
                         "\"drivetrainType\":\"mecanum\",\"boardType\":\"0\"," +
                         "\"micropythonVersion\":\"1.28.0\",\"xrplibVersion\":\"2026.08.2\"," +
                         "\"aresRuntimeVersion\":\"1.0.0\"}\n",
@@ -46,7 +96,7 @@ class XrpLinkServiceTest {
             }
         }
         try {
-            service.start("127.0.0.1", server.localPort, "test-project")
+            service.start("127.0.0.1", server.localPort, "test-project", "a".repeat(64))
             withTimeout(3_000) {
                 while (!service.isConnected.value) delay(10)
             }
@@ -84,7 +134,7 @@ class XrpLinkServiceTest {
                 val writer = socket.getOutputStream().bufferedWriter()
                 writer.write(
                     "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
-                        "\"projectId\":\"field-project\",\"contentSha256\":\"${"c".repeat(64)}\"," +
+                        "\"projectId\":\"field-project\",\"canonicalContentSha256\":\"${"a".repeat(64)}\",\"contentSha256\":\"${"c".repeat(64)}\"," +
                         "\"drivetrainType\":\"mecanum\"}\n",
                 )
                 writer.flush()
@@ -104,7 +154,7 @@ class XrpLinkServiceTest {
             }
         }
         try {
-            service.start("127.0.0.1", server.localPort, "field-project")
+            service.start("127.0.0.1", server.localPort, "field-project", "a".repeat(64))
             withTimeout(3_000) {
                 while (!service.isConnected.value) delay(10)
             }
@@ -139,7 +189,7 @@ class XrpLinkServiceTest {
             }
         }
         try {
-            service.start("127.0.0.1", server.localPort, "test-project")
+            service.start("127.0.0.1", server.localPort, "test-project", "a".repeat(64))
             delay(250)
             assertFalse(service.isConnected.value)
             assertTrue(service.connectionError.value?.contains("handshake") == true)
@@ -163,7 +213,7 @@ class XrpLinkServiceTest {
                 socket.getOutputStream().bufferedWriter().use { writer ->
                     writer.write(
                         "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
-                            "\"projectId\":\"another-robot\",\"contentSha256\":\"${"b".repeat(64)}\"," +
+                            "\"projectId\":\"another-robot\",\"canonicalContentSha256\":\"${"a".repeat(64)}\",\"contentSha256\":\"${"b".repeat(64)}\"," +
                             "\"drivetrainType\":\"differential\"}\n",
                     )
                     writer.flush()
@@ -171,9 +221,42 @@ class XrpLinkServiceTest {
             }
         }
         try {
-            service.start("127.0.0.1", server.localPort, "expected-robot")
+            service.start("127.0.0.1", server.localPort, "expected-robot", "a".repeat(64))
             withTimeout(3_000) {
                 while (service.connectionError.value?.contains("another-robot") != true) delay(10)
+            }
+            assertFalse(service.isConnected.value)
+            assertEquals(null, service.peerIdentity.value)
+        } finally {
+            service.disposeAndJoin()
+            telemetry.disposeAndJoin()
+            database.closeAndJoin()
+            withContext(Dispatchers.IO) { server.close() }
+            serverJob.cancel()
+        }
+    }
+    @Test
+    fun `handshake rejects a stale build even with the same project ID`() = runBlocking {
+        val database = DatabaseService(tempDir.resolve("stale-project.duckdb").toString())
+        val telemetry = Nt4ClientService(database)
+        val service = XrpLinkService(telemetry)
+        val server = ServerSocket(0)
+        val serverJob = launch(Dispatchers.IO) {
+            server.accept().use { socket ->
+                socket.getOutputStream().bufferedWriter().use { writer ->
+                    writer.write(
+                        "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
+                            "\"projectId\":\"expected-robot\",\"canonicalContentSha256\":\"${"b".repeat(64)}\",\"contentSha256\":\"${"b".repeat(64)}\"," +
+                            "\"drivetrainType\":\"differential\"}\n",
+                    )
+                    writer.flush()
+                }
+            }
+        }
+        try {
+            service.start("127.0.0.1", server.localPort, "expected-robot", "a".repeat(64))
+            withTimeout(3_000) {
+                while (service.connectionError.value?.contains("project content differs") != true) delay(10)
             }
             assertFalse(service.isConnected.value)
             assertEquals(null, service.peerIdentity.value)

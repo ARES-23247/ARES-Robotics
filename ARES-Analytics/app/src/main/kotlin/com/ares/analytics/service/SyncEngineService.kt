@@ -536,29 +536,18 @@ class SyncEngineService(
         val cloudFileName = requireNotNull(summary.cloudFileName) { "Cloud manifest is missing its canonical filename" }
         val cloudSha256 = requireNotNull(summary.cloudSha256) { "Cloud manifest is missing its SHA-256" }
         require(summary.fileSizeBytes > 0L) { "Cloud manifest file size is invalid" }
-        val tempFile = File.createTempFile("cloud_sync_${summary.sessionId}_", ".ares-session.zip")
-        var attempt = 0
-        var success = false
-        var delayMs = 1000L
-        while (attempt < 3 && !success) {
-            try {
+        withDownloadedCloudArchive(
+            prefix = "cloud_sync_${summary.sessionId}_",
+            download = { tempFile ->
                 googleDriveService.readFileStreaming(
                     fileId = cloudFileId,
                     destination = tempFile,
                     expectedName = cloudFileName,
                     expectedBytes = summary.fileSizeBytes,
-                    expectedSha256 = cloudSha256
+                    expectedSha256 = cloudSha256,
                 )
-                success = true
-            } catch (e: Exception) {
-                attempt++
-                if (attempt >= 3) throw e
-                kotlinx.coroutines.delay(delayMs)
-                delayMs += 1000L
-            }
-        }
-
-        try {
+            },
+        ) { tempFile ->
             sessionBundleService.extractAndValidate(tempFile, summary).use { extracted ->
                 val manifest = extracted.manifest
                 databaseService.importCloudSessionBundleAtomically(
@@ -573,8 +562,6 @@ class SyncEngineService(
                     importReports = manifest.importReports,
                 )
             }
-        } finally {
-            tempFile.delete()
         }
     }
 

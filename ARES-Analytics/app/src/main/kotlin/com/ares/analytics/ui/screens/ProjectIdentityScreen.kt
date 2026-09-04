@@ -27,6 +27,7 @@ import com.ares.analytics.viewmodel.project.ProjectIdentityEditorState
 import com.ares.analytics.viewmodel.project.ProjectIdentityField
 import com.ares.analytics.viewmodel.project.ProjectIdentityViewModel
 import com.areslib.project.AresFtcHubCommandTransport
+import com.areslib.project.AresXrpControllerModel
 
 /** Reviewed editor for canonical `.ares/project.json`; workspace preferences remain separate. */
 @Composable
@@ -91,6 +92,7 @@ fun ProjectIdentityScreen(
                     onUpdate = viewModel::update,
                     onHubCommandTransport = viewModel::updateFtcHubCommandTransport,
                     onLimelightProxyEnabled = viewModel::updateFtcLimelightProxyEnabled,
+                    onXrpControllerModel = viewModel::updateXrpControllerModel,
                     onXrpWifiMode = viewModel::updateXrpWifiMode,
                 )
             }
@@ -234,7 +236,7 @@ internal fun projectIdentityReviewGuidance(state: ProjectIdentityEditorState): S
 
 internal fun protectedProjectIdentityExplanation(error: String): String? = when {
     error.contains("authoringModel") ->
-        "This folder uses the retired schema-3 project format. Current Studio supports schema-4 projects only and will not rewrite this project automatically. Open the current Lightbot project, or create/export a new robot from Studio; you do not need to delete the old folder."
+        "This folder uses a retired project format. Current Studio supports schema-5 projects only and will not rewrite this project automatically. Create or export a current robot project from Studio."
     else -> null
 }
 
@@ -290,6 +292,7 @@ private fun ProjectIdentityForm(
     onUpdate: (ProjectIdentityField, String) -> Unit,
     onHubCommandTransport: (AresFtcHubCommandTransport) -> Unit,
     onLimelightProxyEnabled: (Boolean) -> Unit,
+    onXrpControllerModel: (AresXrpControllerModel) -> Unit,
     onXrpWifiMode: (String) -> Unit,
 ) {
     val isFtc = state.workspaceLeague == League.FTC
@@ -428,6 +431,7 @@ private fun ProjectIdentityForm(
                     state = state,
                     enabled = runtimeOptionsEnabled,
                     onUpdate = onUpdate,
+                    onControllerModelChanged = onXrpControllerModel,
                     onWifiModeChanged = onXrpWifiMode,
                 )
             }

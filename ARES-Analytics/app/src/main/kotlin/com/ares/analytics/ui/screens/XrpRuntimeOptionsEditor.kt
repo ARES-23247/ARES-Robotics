@@ -11,6 +11,7 @@ import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.viewmodel.project.ProjectIdentityEditorState
 import com.ares.analytics.viewmodel.project.ProjectIdentityField
+import com.areslib.project.AresXrpControllerModel
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
@@ -18,15 +19,31 @@ internal fun XrpRuntimeOptionsEditor(
     state: ProjectIdentityEditorState,
     enabled: Boolean,
     onUpdate: (ProjectIdentityField, String) -> Unit,
+    onControllerModelChanged: (AresXrpControllerModel) -> Unit,
     onWifiModeChanged: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("XRP connection & safety", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+            Text("XRP controller, connection & safety", color = AresTextPrimary, fontWeight = FontWeight.Bold)
             Text(
                 "These settings are shared by the generated MicroPython robot, local simulator, and Studio. Use a unique Link port when running multiple projects on one computer.",
                 color = AresTextSecondary,
                 fontSize = 11.sp,
+            )
+        }
+        Text("Controller model", color = AresTextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = state.draft.xrpControllerModel == AresXrpControllerModel.SPARKFUN_XRP_RP2350,
+                onClick = { onControllerModelChanged(AresXrpControllerModel.SPARKFUN_XRP_RP2350) },
+                enabled = enabled,
+                label = { Text("SparkFun XRP (RP2350 · 4 servos)") },
+            )
+            FilterChip(
+                selected = state.draft.xrpControllerModel == AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040,
+                onClick = { onControllerModelChanged(AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040) },
+                enabled = enabled,
+                label = { Text("SparkFun XRP Beta (RP2040 · 2 servos)") },
             )
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

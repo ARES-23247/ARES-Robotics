@@ -27,6 +27,8 @@ import com.areslib.subsystem.SubsystemStateFieldDocument
 import com.areslib.subsystem.SubsystemValueType
 import com.areslib.codegen.SubsystemStarterPlan
 import com.areslib.codegen.SubsystemArtifactGroup
+import com.areslib.project.AresXrpControllerModel
+import com.areslib.subsystem.SubsystemTemplates
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
@@ -39,6 +41,36 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SubsystemGeneratorViewModelTest {
+    @Test
+    fun `XRP Beta rejects servo ports unavailable on its controller`() {
+        val document = SubsystemTemplates.create(
+            SubsystemTemplate.POSITIONAL_SERVO,
+            "beta-servo",
+            "BetaServo",
+            SubsystemPlatform.XRP,
+        ).let { candidate ->
+            candidate.copy(hardware = candidate.hardware.map { device ->
+                device.copy(connection = device.connection.copy(channel = 3))
+            })
+        }
+        val state = SubsystemGeneratorState(
+            projectPath = "",
+            league = League.XRP,
+            xrpControllerModel = AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040,
+            documents = listOf(document),
+            selectedDocumentId = document.documentId,
+            draft = SubsystemEditorDraft(document),
+        )
+
+        val result = SubsystemBuilderPreviewPlanner(
+            League.XRP,
+            SubsystemPlatform.XRP,
+            "xrp.subsystems",
+        ).plan(state)
+
+        assertTrue(result.problems.any { it.message.contains("supports positional servo channels 1 through 2") })
+    }
+
     @Test
     fun `new FTC templates receive non-colliding hardware map names`() {
         val root = Files.createTempDirectory("ares-subsystem-unique-ftc-addresses").toFile()

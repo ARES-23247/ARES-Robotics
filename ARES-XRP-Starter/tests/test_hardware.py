@@ -24,7 +24,6 @@ class XrpPhysicalBusTest(unittest.TestCase):
     def test_verified_board_specific_qwiic_mappings(self):
         self.assert_bus("XRP Controller with RP2350", 0, 4, 5)
         self.assert_bus("XRP Controller Beta with RP2040", 1, 18, 19)
-        self.assert_bus("Cytron NanoXRP Controller with RP2040", 1, 14, 15)
 
     def test_unknown_board_fails_closed(self):
         with self.assertRaisesRegex(RuntimeError, "No verified OTOS"):

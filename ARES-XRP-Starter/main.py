@@ -89,22 +89,25 @@ def main():
         wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,
         max_linear_speed=PROJECT["max_linear_speed_mps"],
     )
-    robot.start_server()
+    try:
+        robot.start_server()
 
-    robot.set_subsystems(create_subsystems(create_xrp_hardware))
-    robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
+        robot.set_subsystems(create_subsystems(create_xrp_hardware))
+        robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
 
-    print("[Robot] Ready for ARES Studio Driver Station connection.")
+        print("[Robot] Ready for ARES Studio Driver Station connection.")
 
-    # 50Hz main loop (20ms)
-    loop_period_sec = 0.02
-    while True:
-        start_time = time.time()
-        robot.step(dt=loop_period_sec)
-        elapsed = time.time() - start_time
-        sleep_time = loop_period_sec - elapsed
-        if sleep_time > 0:
-            time.sleep(sleep_time)
+        # 50Hz main loop (20ms)
+        loop_period_sec = 0.02
+        while True:
+            start_time = time.time()
+            robot.step(dt=loop_period_sec)
+            elapsed = time.time() - start_time
+            sleep_time = loop_period_sec - elapsed
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+    finally:
+        robot.shutdown()
 
 if __name__ == "__main__":
     main()

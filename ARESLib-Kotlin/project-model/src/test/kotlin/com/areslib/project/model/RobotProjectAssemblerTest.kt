@@ -23,6 +23,7 @@ import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.AresFtcRuntimeOptionsDocument
 import com.areslib.project.AresRuntimeOptionsDocument
 import com.areslib.project.AresXrpRuntimeOptionsDocument
+import com.areslib.project.AresXrpControllerModel
 import com.areslib.project.schema.AresControllerTarget
 import com.areslib.project.schema.AresSimulatorTarget
 import com.areslib.project.schema.ProjectActionKey
@@ -79,7 +80,9 @@ class RobotProjectAssemblerTest {
     fun `XRP project accepts its canonical drivetrain platform`() {
         val metadata = validSnapshot().metadata!!.copy(
             league = AresLeague.XRP,
-            runtimeOptions = AresRuntimeOptionsDocument(xrp = AresXrpRuntimeOptionsDocument()),
+            runtimeOptions = AresRuntimeOptionsDocument(
+                xrp = AresXrpRuntimeOptionsDocument(AresXrpControllerModel.SPARKFUN_XRP_RP2350),
+            ),
         )
         val effective = RobotProjectAssembler.assemble(
             validSnapshot().copy(metadata = metadata, drivetrains = listOf(xrpDifferential())),

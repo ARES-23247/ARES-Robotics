@@ -18,7 +18,8 @@ object TaskTimeoutManager {
     private data class TimeoutState(
         val timeoutMs: Long,
         val startTimeMs: Long? = null,
-        val elapsedBeforePauseMs: Long = 0L
+        val elapsedBeforePauseMs: Long = 0L,
+        val paused: Boolean = false
     )
 
     private val states = WeakIdentityMap<Task, TimeoutState>()
@@ -66,7 +67,8 @@ object TaskTimeoutManager {
         states[task] = TimeoutState(
             timeoutMs = ms,
             startTimeMs = current?.startTimeMs,
-            elapsedBeforePauseMs = current?.elapsedBeforePauseMs ?: 0L
+            elapsedBeforePauseMs = current?.elapsedBeforePauseMs ?: 0L,
+            paused = current?.paused ?: false
         )
     }
 
@@ -74,7 +76,7 @@ object TaskTimeoutManager {
     @Synchronized
     fun start(task: Task) {
         val current = states[task] ?: return
-        states[task] = current.copy(startTimeMs = RobotClock.currentTimeMillis(), elapsedBeforePauseMs = 0L)
+        states[task] = current.copy(startTimeMs = RobotClock.currentTimeMillis(), elapsedBeforePauseMs = 0L, paused = false)
     }
 
     /** Stops watchdog time while [task] is preempted without discarding its timeout configuration. */
@@ -85,7 +87,8 @@ object TaskTimeoutManager {
         val elapsed = (RobotClock.currentTimeMillis() - start).coerceAtLeast(0L)
         states[task] = current.copy(
             startTimeMs = null,
-            elapsedBeforePauseMs = current.elapsedBeforePauseMs + elapsed
+            elapsedBeforePauseMs = current.elapsedBeforePauseMs + elapsed,
+            paused = true
         )
     }
 
@@ -93,7 +96,8 @@ object TaskTimeoutManager {
     @Synchronized
     fun resume(task: Task) {
         val current = states[task] ?: return
-        states[task] = current.copy(startTimeMs = RobotClock.currentTimeMillis())
+        if (!current.paused) return
+        states[task] = current.copy(startTimeMs = RobotClock.currentTimeMillis(), paused = false)
     }
     
     /** Removes both timeout configuration and watchdog start time for [task]. */
@@ -107,5 +111,18 @@ object TaskTimeoutManager {
     fun isTimedOut(task: Task, elapsedMs: Long): Boolean {
         val state = states[task] ?: return false
         return elapsedMs > state.timeoutMs
+    }
+}
+
+/** Pause only running watchdogs; resuming must never start a queued child's clock. */
+internal fun Task.setTimeoutSuspended(paused: Boolean) {
+    if (paused) TaskTimeoutManager.pause(this) else TaskTimeoutManager.resume(this)
+    when (this) {
+        is SequentialTaskGroup -> suspendTimeouts(paused)
+        is ParallelTaskGroup -> suspendTimeouts(paused)
+        is ParallelRaceGroup -> suspendTimeouts(paused)
+        is ParallelDeadlineGroup -> suspendTimeouts(paused)
+        is FollowPathTask -> suspendTimeouts(paused)
+        is PathfindToPoseTask -> suspendTimeouts(paused)
     }
 }

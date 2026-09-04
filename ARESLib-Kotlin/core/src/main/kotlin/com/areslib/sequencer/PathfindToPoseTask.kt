@@ -100,6 +100,10 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     /** Stops drive output while a higher-priority task owns the drivetrain. */
+    internal fun suspendTimeouts(paused: Boolean) {
+        delegateTask?.setTimeoutSuspended(paused)
+    }
+
     override fun pause(state: RobotState): List<RobotAction> =
         delegateTask?.pause(state) ?: emptyList()
 

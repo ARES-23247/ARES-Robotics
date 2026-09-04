@@ -293,6 +293,22 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val scratchPathPoint = com.areslib.pathing.PathPoint(Pose2d(), 0.0)
     private val actionsList = mutableListOf<RobotAction>()
     
+    private var timeoutPausedAt: Long? = null
+    internal fun suspendTimeouts(paused: Boolean) {
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
+        if (paused && timeoutPausedAt == null) timeoutPausedAt = now
+        if (!paused) {
+            timeoutPausedAt?.let { started ->
+                val duration = now - started
+                lastTimeMs += duration
+                for (task in activeEventTasks) {
+                    taskStartTimes[task]?.let { taskStartTimes[task] = it + duration }
+                }
+            }
+            timeoutPausedAt = null
+        }
+        for (task in activeEventTasks) task.setTimeoutSuspended(paused)
+    }
     private val activeEventTasks = mutableListOf<Task>()
     private val taskStartTimes = mutableMapOf<Task, Long>()
 
@@ -302,6 +318,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
         activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
+        timeoutPausedAt = null
         triggeredEvents = BooleanArray(activePath.events.size)
         activeEventTasks.clear()
         taskStartTimes.clear()

@@ -447,3 +447,21 @@ To capture the settled window and close it through the native window lifecycle:
 The script sets `ARES_ANALYTICS_DATA_DIR` only for the launched process. Source-based harnesses may
 instead set that environment variable or the `ares.analytics.dataDir` JVM property directly. Never
 point an automated acceptance journey at a student's real `~/.ares-analytics` directory.
+
+## Opening an older telemetry database
+
+Studio validates the current telemetry schema and rejects missing required columns. It does not
+silently discard historical rows or invent missing timestamps. Before upgrading, close Studio and
+back up the database together with any adjacent `.wal` file; keep that pair from the same closed
+session. Preserve the original robot log files and exported session bundles independently.
+
+If startup reports an incompatible schema, keep the original database/WAL pair untouched. Use the
+previous compatible Studio release on a copy to export sessions, then launch the current
+release with `ARES_ANALYTICS_DATA_DIR` set to a new, empty directory and re-import the original logs
+or supported session exports. This creates a separate Studio profile, including its database. Do not delete a WAL
+or rename a database while Studio is using it. When the earlier app is unavailable, preserve the
+copy for an explicit migration; the current application has no general legacy-schema converter.
+
+XRP control requires matching project ID and canonical project fingerprint. A mismatched or older
+peer remains disconnected and reports that the current project must be verified and deployed.
+Project identity alone is not treated as proof that the board is running the open project revision.

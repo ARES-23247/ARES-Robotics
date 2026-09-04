@@ -43,6 +43,7 @@ data class XrpPeerIdentity(
     val micropythonVersion: String? = null,
     val xrplibVersion: String? = null,
     val aresRuntimeVersion: String? = null,
+    val canonicalContentSha256: String? = null,
 )
 
 data class XrpFieldApplyReceipt(
@@ -64,7 +65,11 @@ data class XrpFieldApplyFailure(
 )
 
 /** Dedicated Pico-friendly link; XRP deliberately does not impersonate an NT4 server. */
-class XrpLinkService(private val telemetrySink: Nt4ClientService) {
+class XrpLinkService internal constructor(
+    private val telemetrySink: Nt4ClientService,
+    private val socketFactory: () -> Socket,
+) {
+    constructor(telemetrySink: Nt4ClientService) : this(telemetrySink, ::Socket)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val generation = AtomicLong()
     private val controlRevision = AtomicLong()
@@ -81,32 +86,41 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
     val fieldApplyReceipt: StateFlow<XrpFieldApplyReceipt?> = _fieldApplyReceipt.asStateFlow()
     private val _fieldApplyFailure = MutableStateFlow<XrpFieldApplyFailure?>(null)
     val fieldApplyFailure: StateFlow<XrpFieldApplyFailure?> = _fieldApplyFailure.asStateFlow()
-    private var socket: Socket? = null
-    private var writer: BufferedWriter? = null
+    private val lifecycleLock = Any()
+    @Volatile private var socket: Socket? = null
+    @Volatile private var writer: BufferedWriter? = null
     private var job: Job? = null
     private var lastTelemetrySequence = -1L
 
-    fun start(host: String, port: Int = DEFAULT_PORT, expectedProjectId: String) {
+    fun start(host: String, port: Int = DEFAULT_PORT, expectedProjectId: String, expectedCanonicalContentSha256: String) = synchronized(lifecycleLock) {
         require(expectedProjectId.isNotBlank()) { "XRP link requires the canonical project ID" }
+        require(expectedCanonicalContentSha256.matches(SHA256)) { "XRP link requires the canonical project fingerprint" }
         val requestedGeneration = generation.incrementAndGet()
-        job?.cancel()
+        val previous = job
+        previous?.cancel()
         runCatching { socket?.close() }
-        socket = null
-        writer = null
-        _isConnected.value = false
-        _peerIdentity.value = null
-        _connectionError.value = null
-        _fieldApplyReceipt.value = null
-        _fieldApplyFailure.value = null
+        clearConnectionState()
         job = scope.launch {
+            // A replaced owner must finish all telemetry delivery and cleanup before
+            // its successor can publish a connection, even if connect was blocking.
+            previous?.cancelAndJoin()
+            currentCoroutineContext().ensureActive()
+            synchronized(lifecycleLock) {
+                if (generation.get() != requestedGeneration) return@launch
+                clearConnectionState()
+                _connectionError.value = null
+            }
             while (currentCoroutineContext().isActive && generation.get() == requestedGeneration) {
                 try {
-                    connectAndRead(host, port, expectedProjectId, requestedGeneration)
+                    connectAndRead(host, port, expectedProjectId, expectedCanonicalContentSha256, requestedGeneration)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    _connectionError.value = error.message ?: "XRP link connection failed"
-                    disconnectSocket()
+                    synchronized(lifecycleLock) {
+                        if (generation.get() == requestedGeneration) {
+                            _connectionError.value = error.message ?: "XRP link connection failed"
+                        }
+                    }
                     delay(RECONNECT_DELAY_MS)
                 }
             }
@@ -114,12 +128,16 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
     }
 
     suspend fun stop() {
-        requestStop()
-        generation.incrementAndGet()
-        runCatching { socket?.close() }
-        job?.cancelAndJoin()
-        job = null
-        disconnectSocket()
+        val stopping = synchronized(lifecycleLock) {
+            generation.incrementAndGet()
+            runCatching { socket?.close() }
+            clearConnectionState()
+            job?.also { it.cancel() }
+        }
+        stopping?.join()
+        synchronized(lifecycleLock) {
+            if (job === stopping) job = null
+        }
     }
 
     suspend fun disposeAndJoin() {
@@ -146,7 +164,10 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         require(command != "START_AUTO" || !selectedOpMode.isNullOrBlank()) {
             "XRP autonomous start requires a selected routine"
         }
-        val activeWriter = writer ?: return@withLock false
+        val active = synchronized(lifecycleLock) {
+            if (!_isConnected.value) null else socket?.let { connection -> writer?.let { connection to it } }
+        } ?: return@withLock false
+        val (activeSocket, activeWriter) = active
         val message = JsonObject().apply {
             addProperty("protocol", PROTOCOL)
             addProperty("type", "control")
@@ -167,13 +188,7 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
             activeWriter.newLine()
             activeWriter.flush()
         }.isSuccess
-        if (!sent) {
-            writer = null
-            runCatching { socket?.close() }
-            socket = null
-            _isConnected.value = false
-            _controlRequest.value = stoppedRequest()
-        }
+        if (!sent) disconnectSocket(activeSocket)
         sent
     }
 
@@ -183,7 +198,10 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         val configId = root.stringOrNull("id")?.takeIf(String::isNotBlank)
             ?: return@withLock false
         val revision = root.finiteLong("revision") ?: return@withLock false
-        val activeWriter = writer ?: return@withLock false
+        val active = synchronized(lifecycleLock) {
+            if (!_isConnected.value) null else socket?.let { connection -> writer?.let { connection to it } }
+        } ?: return@withLock false
+        val (activeSocket, activeWriter) = active
         val message = JsonObject().apply {
             addProperty("protocol", PROTOCOL)
             addProperty("type", "fieldConfig")
@@ -197,12 +215,7 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
             activeWriter.newLine()
             activeWriter.flush()
         }.isSuccess
-        if (!sent) {
-            writer = null
-            runCatching { socket?.close() }
-            socket = null
-            _isConnected.value = false
-        }
+        if (!sent) disconnectSocket(activeSocket)
         sent
     }
 
@@ -252,34 +265,49 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         host: String,
         port: Int,
         expectedProjectId: String,
+        expectedCanonicalContentSha256: String,
         requestedGeneration: Long,
     ) {
-        val connected = Socket().apply {
-            tcpNoDelay = true
-            connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
-            soTimeout = HANDSHAKE_TIMEOUT_MS
-        }
-        socket = connected
-        writer = connected.getOutputStream().bufferedWriter(StandardCharsets.UTF_8)
-        connected.getInputStream().bufferedReader(StandardCharsets.UTF_8).use { reader ->
-            val hello = reader.readLine()?.takeIf { it.length <= MAX_LINE_LENGTH }
-                ?: error("XRP link closed before protocol handshake")
-            val peer = parseHello(hello) ?: error("XRP link protocol handshake was invalid")
-            require(peer.projectId == expectedProjectId) {
-                "XRP link reached project '${peer.projectId}', but Studio opened '$expectedProjectId'"
+        val connected = socketFactory()
+        try {
+            synchronized(lifecycleLock) {
+                if (generation.get() != requestedGeneration) return
+                socket = connected // stop() can now interrupt connect and handshake reads.
             }
-            connected.soTimeout = 0
-            lastTelemetrySequence = -1L
-            _peerIdentity.value = peer
-            _connectionError.value = null
-            _isConnected.value = true
-            while (currentCoroutineContext().isActive && generation.get() == requestedGeneration) {
-                val line = reader.readLine() ?: break
-                if (line.length > MAX_LINE_LENGTH) continue
-                acceptLine(line)
+            connected.tcpNoDelay = true
+            connected.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
+            connected.soTimeout = HANDSHAKE_TIMEOUT_MS
+            connected.getInputStream().bufferedReader(StandardCharsets.UTF_8).use { reader ->
+                val hello = reader.readLine()?.takeIf { it.length <= MAX_LINE_LENGTH }
+                    ?: error("XRP link closed before protocol handshake")
+                val peer = parseHello(hello) ?: error("XRP link protocol handshake was invalid")
+                require(peer.projectId == expectedProjectId) {
+                    "XRP link reached project '${peer.projectId}', but Studio opened '$expectedProjectId'"
+                }
+                require(peer.canonicalContentSha256 == expectedCanonicalContentSha256) {
+                    "XRP project content differs from Studio. Verify and deploy the current project before enabling control."
+                }
+                currentCoroutineContext().ensureActive()
+                synchronized(lifecycleLock) {
+                    if (generation.get() != requestedGeneration || socket !== connected) return
+                    connected.soTimeout = 0
+                    lastTelemetrySequence = -1L
+                    writer = connected.getOutputStream().bufferedWriter(StandardCharsets.UTF_8)
+                    _peerIdentity.value = peer
+                    _connectionError.value = null
+                    _isConnected.value = true
+                }
+                while (currentCoroutineContext().isActive && generation.get() == requestedGeneration) {
+                    val line = reader.readLine() ?: break
+                    currentCoroutineContext().ensureActive()
+                    if (generation.get() != requestedGeneration) break
+                    if (line.length > MAX_LINE_LENGTH) continue
+                    acceptLine(line)
+                }
             }
+        } finally {
+            disconnectSocket(connected)
         }
-        disconnectSocket()
     }
 
     private fun parseHello(line: String): XrpPeerIdentity? {
@@ -304,6 +332,7 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
             micropythonVersion = root.stringOrNull("micropythonVersion"),
             xrplibVersion = root.stringOrNull("xrplibVersion"),
             aresRuntimeVersion = root.stringOrNull("aresRuntimeVersion"),
+            canonicalContentSha256 = root.stringOrNull("canonicalContentSha256")?.lowercase()?.takeIf { it.matches(SHA256) },
         )
     }
 
@@ -382,16 +411,23 @@ class XrpLinkService(private val telemetrySink: Nt4ClientService) {
         }
     }
 
-    private suspend fun disconnectSocket() {
-        writerMutex.withLock {
-            writer = null
-            runCatching { socket?.close() }
-            socket = null
-            _isConnected.value = false
-            _peerIdentity.value = null
-            _controlRequest.value = stoppedRequest()
-            lastTelemetrySequence = -1L
+    private fun disconnectSocket(ownedSocket: Socket) {
+        runCatching { ownedSocket.close() }
+        synchronized(lifecycleLock) {
+            if (socket === ownedSocket) clearConnectionState()
         }
+    }
+
+    /** Called only while holding lifecycleLock. */
+    private fun clearConnectionState() {
+        writer = null
+        socket = null
+        _isConnected.value = false
+        _peerIdentity.value = null
+        _fieldApplyReceipt.value = null
+        _fieldApplyFailure.value = null
+        _controlRequest.value = stoppedRequest()
+        lastTelemetrySequence = -1L
     }
 
     private fun JsonObject.finiteDouble(name: String): Double? = runCatching {

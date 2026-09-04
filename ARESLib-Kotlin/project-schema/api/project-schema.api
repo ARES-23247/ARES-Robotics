@@ -1240,19 +1240,31 @@ public final class com/areslib/project/AresRuntimeOptionsDocument {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/project/AresXrpControllerModel : java/lang/Enum {
+	public static final field SPARKFUN_XRP_BETA_RP2040 Lcom/areslib/project/AresXrpControllerModel;
+	public static final field SPARKFUN_XRP_RP2350 Lcom/areslib/project/AresXrpControllerModel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getFirmwareBoardId ()Ljava/lang/String;
+	public final fun getMotorChannels ()Lkotlin/ranges/IntRange;
+	public final fun getServoChannels ()Lkotlin/ranges/IntRange;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/project/AresXrpControllerModel;
+	public static fun values ()[Lcom/areslib/project/AresXrpControllerModel;
+}
+
 public final class com/areslib/project/AresXrpRuntimeOptionsDocument {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;IID)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;IIDILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
+	public fun <init> (Lcom/areslib/project/AresXrpControllerModel;Ljava/lang/String;Ljava/lang/String;IID)V
+	public synthetic fun <init> (Lcom/areslib/project/AresXrpControllerModel;Ljava/lang/String;Ljava/lang/String;IIDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/areslib/project/AresXrpControllerModel;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()I
+	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()I
-	public final fun component5 ()D
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;IID)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
-	public static synthetic fun copy$default (Lcom/areslib/project/AresXrpRuntimeOptionsDocument;Ljava/lang/String;Ljava/lang/String;IIDILjava/lang/Object;)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
+	public final fun component5 ()I
+	public final fun component6 ()D
+	public final fun copy (Lcom/areslib/project/AresXrpControllerModel;Ljava/lang/String;Ljava/lang/String;IID)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
+	public static synthetic fun copy$default (Lcom/areslib/project/AresXrpRuntimeOptionsDocument;Lcom/areslib/project/AresXrpControllerModel;Ljava/lang/String;Ljava/lang/String;IIDILjava/lang/Object;)Lcom/areslib/project/AresXrpRuntimeOptionsDocument;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBrownoutThresholdVolts ()D
+	public final fun getControllerModel ()Lcom/areslib/project/AresXrpControllerModel;
 	public final fun getDeadmanTimeoutMs ()I
 	public final fun getPort ()I
 	public final fun getSsid ()Ljava/lang/String;

@@ -42,7 +42,7 @@ class AresProjectMetadataTest {
             AresProjectMetadataCodec.decode(missingOwnership)
         }
         val priorSchemaThree = AresProjectMetadataCodec.encode(codeFirst)
-            .replace("\"schemaVersion\": 4", "\"schemaVersion\": 3")
+            .replace("\"schemaVersion\": 5", "\"schemaVersion\": 3")
         assertThrows(IllegalArgumentException::class.java) {
             AresProjectMetadataCodec.decode(priorSchemaThree)
         }
@@ -151,6 +151,7 @@ class AresProjectMetadataTest {
             fieldWidthMeters = 1.4224,
             runtimeOptions = AresRuntimeOptionsDocument(
                 xrp = AresXrpRuntimeOptionsDocument(
+                    controllerModel = AresXrpControllerModel.SPARKFUN_XRP_RP2350,
                     wifiMode = "AP",
                     ssid = "ARES-XRP-TEST",
                     port = 5811,
@@ -161,6 +162,15 @@ class AresProjectMetadataTest {
         )
 
         assertEquals(xrp, AresProjectMetadataCodec.decode(AresProjectMetadataCodec.encode(xrp)))
+        val missingControllerModel = AresProjectMetadataCodec.encode(xrp)
+            .lineSequence()
+            .filterNot { it.contains("\"controllerModel\"") }
+            .joinToString("\n")
+        assertThrows(IllegalArgumentException::class.java) {
+            AresProjectMetadataCodec.decode(missingControllerModel)
+        }
+        assertEquals(1..4, xrp.requireXrpRuntimeOptions().controllerModel.servoChannels)
+        assertEquals(1..2, AresXrpControllerModel.SPARKFUN_XRP_BETA_RP2040.servoChannels)
         assertThrows(IllegalArgumentException::class.java) {
             AresProjectMetadataCodec.encode(xrp.copy(runtimeOptions = AresRuntimeOptionsDocument()))
         }
