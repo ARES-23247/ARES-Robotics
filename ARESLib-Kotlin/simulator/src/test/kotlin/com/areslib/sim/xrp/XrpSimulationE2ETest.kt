@@ -2,6 +2,7 @@ package com.areslib.sim.xrp
 
 import com.areslib.networktables.NT4Instance
 import com.areslib.networktables.NT4Server
+import com.areslib.state.RobotFieldManager
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,23 +15,14 @@ class XrpSimulationE2ETest {
     fun testXrpEndToEndSimulationAndTelemetry() {
         println("[XRP E2E Test] Starting XRP End-to-End Simulation Test...")
 
-        // Locate Orbit Odyssey field preset
-        val candidatePaths = listOf(
-            File("../ARES-Analytics/app/src/main/resources/field-presets/xrp/orbit_odyssey_2026.json"),
-            File("../../ARES-Analytics/app/src/main/resources/field-presets/xrp/orbit_odyssey_2026.json"),
-            File("c:/Users/david/dev/robotics/ARES-Robotics/ARES-Analytics/app/src/main/resources/field-presets/xrp/orbit_odyssey_2026.json")
-        )
-        val fieldPresetFile = candidatePaths.firstOrNull { it.isFile }
-        val fieldArg = fieldPresetFile?.absolutePath ?: ""
+        val fieldPresetFile = locateMonorepoFieldPreset()
+        val previousFieldConfig = RobotFieldManager.activeConfig
 
         // Launch XRP Simulator in headless background thread
         XrpSimLauncher.isRunning = true
         val simThread = Thread {
             try {
-                XrpSimLauncher.main(
-                    if (fieldArg.isNotEmpty()) arrayOf("--headless", "--field-config", fieldArg)
-                    else arrayOf("--headless")
-                )
+                XrpSimLauncher.main(arrayOf("--headless", "--field-config", fieldPresetFile.absolutePath))
             } catch (t: Throwable) {
                 System.err.println("[XRP E2E Test] Exception in simThread:")
                 t.printStackTrace()
@@ -49,6 +41,11 @@ class XrpSimulationE2ETest {
                 attempts++
             }
             assertNotNull(server, "NT4 Server should be running")
+            assertEquals(
+                "xrp-2026-orbit-odyssey",
+                RobotFieldManager.activeConfig.id,
+                "XRP simulation must load the canonical field selected by Studio",
+            )
 
             // Wait for first pose frame publication
             var initialFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
@@ -109,6 +106,15 @@ class XrpSimulationE2ETest {
             println("[XRP E2E Test] Stopping simulation...")
             XrpSimLauncher.isRunning = false
             simThread.interrupt()
+            RobotFieldManager.setActiveConfig(previousFieldConfig)
         }
+    }
+
+    private fun locateMonorepoFieldPreset(): File {
+        val relativePath = "ARES-Analytics/app/src/main/resources/field-presets/xrp/orbit_odyssey_2026.json"
+        return generateSequence(File(System.getProperty("user.dir")).canonicalFile) { it.parentFile }
+            .map { directory -> directory.resolve(relativePath) }
+            .firstOrNull(File::isFile)
+            ?: error("Canonical XRP field preset was not found from ${System.getProperty("user.dir")}")
     }
 }

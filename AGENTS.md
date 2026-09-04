@@ -233,9 +233,9 @@ ARES Robotics Studio plus its Ktor gateway. Kotlin 2.4.10, Compose 1.12.0, Ktor 
   - `ui/` — `theme/` (`AresTheme`, Colors, Type), `screens/` (16 screens), `components/dashboard/` (~40 widgets incl. FieldViewerCard, PoseViewerCard, TelemetryChartPanel, MecanumVisualizer, SwerveVisualizer, ControlLoopProfilerCard), `components/pathplanner/`, `components/core/`, `components/terminal/`, etc.
 - **`gateway/src/main/kotlin/com/ares/analytics/gateway/`** — Small Ktor Netty service on Cloud Run (:8080). Google OIDC authentication, per-subject rate limiting, a 1 MiB body limit, `GET /healthz`, and the pit-forensics diagnostics route. Session storage and Google Drive synchronization remain desktop-owned.
 - **`shared/`** — shared JSON (`AppJson`), `Models.kt` (field geometry, Obstacle, GamePiece, AprilTagPlacement), `PathPlannerModels.kt` (full PathPlanner v2025.0 schema), `models/` (Session, SessionSummary, TelemetryFrame, AlertRecord, WorkspaceConfig, TopologyNode, HardwareTopology, ForensicsRequest, DriverProfile).
-- **Docs:** `README.md`, `ARCHITECTURE.md`, `docs/TELEMETRY_CONTRACT.md`, and `docs/OPERATIONS.md` describe current behavior. `AUDIT.md` and `reports/` are dated evidence snapshots and may include remediated findings.
+- **Docs:** `README.md`, `ARCHITECTURE.md`, `docs/TELEMETRY_CONTRACT.md`, and `docs/OPERATIONS.md` describe current behavior. Superseded point-in-time audit reports are not kept in the product tree; use current source, tests, and protected verification artifacts as evidence.
 - **Build/run:** `.\gradlew.bat :app:run` (mainClass `com.ares.analytics.MainKt`); `.\gradlew.bat run` (root) orchestrates gateway (bg) + app (fg). Native dist: `:app:packageReleaseMsi`.
-- **Audit status:** Never infer the live backlog from `AUDIT.md` severity counts; verify each dated finding against current source and tests.
+- **Audit status:** Derive the live backlog from current source and protected verification results, not copied historical reports.
 
 ## 7. ARES-Analytics Desktop Launch Reliability (MANDATORY)
 
