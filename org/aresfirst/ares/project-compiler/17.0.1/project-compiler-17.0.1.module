@@ -1,0 +1,115 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "project-compiler",
+    "version": "17.0.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "17.0.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-compiler-17.0.1.jar",
+          "url": "project-compiler-17.0.1.jar",
+          "size": 71976,
+          "sha512": "0148021aedf65c1c5837e46cd78266c07bf6fada0cab421180b46304df1d4eda893e293cb14507baba843708eef21a93858093fc328e9aeb6ea9dc223d271220",
+          "sha256": "e9e73e7463f156585f430ed6ef2938d541d8848168c3c2975bdca163f9a11f2c",
+          "sha1": "eae84f1272b0f9350362c937b5e4792b17ef94f1",
+          "md5": "0263a0457eb756cb54a488406c3fdb20"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-model",
+          "version": {
+            "requires": "17.0.1"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-compiler-17.0.1.jar",
+          "url": "project-compiler-17.0.1.jar",
+          "size": 71976,
+          "sha512": "0148021aedf65c1c5837e46cd78266c07bf6fada0cab421180b46304df1d4eda893e293cb14507baba843708eef21a93858093fc328e9aeb6ea9dc223d271220",
+          "sha256": "e9e73e7463f156585f430ed6ef2938d541d8848168c3c2975bdca163f9a11f2c",
+          "sha1": "eae84f1272b0f9350362c937b5e4792b17ef94f1",
+          "md5": "0263a0457eb756cb54a488406c3fdb20"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "project-compiler-17.0.1-sources.jar",
+          "url": "project-compiler-17.0.1-sources.jar",
+          "size": 10327,
+          "sha512": "e4ad3d485b88bdb5512b3336bc7c944adc76dcedbdf009ada5770161b898056c125732a695fa142051fd877a8b5a19fc11742d389eb3b98a24bd369cbd4c92d1",
+          "sha256": "747eced28f3085b2b5fd7e4280fd9f33e216f14e21194f77e9dbd77e7707f336",
+          "sha1": "0bfb0cd4d10a9d8ce8afbdbe4b352e6d912664df",
+          "md5": "1596ecee3b1cf4856ddad1b2a6caadd4"
+        }
+      ]
+    }
+  ]
+}
