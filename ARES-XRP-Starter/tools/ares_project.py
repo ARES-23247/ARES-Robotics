@@ -308,12 +308,19 @@ def test() -> None:
     for source in sorted(ROOT.rglob("*.py")):
         if "__pycache__" not in source.parts:
             compile(source.read_text(encoding="utf-8"), str(source), "exec")
-    suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
-    generated_suite = unittest.defaultTestLoader.discover(str(GENERATED_TESTS))
-    combined = unittest.TestSuite((suite, generated_suite))
+    combined = discover_test_suites()
     result = unittest.TextTestRunner(verbosity=2).run(combined)
     if not result.wasSuccessful():
         raise SystemExit(1)
+
+
+def discover_test_suites() -> unittest.TestSuite:
+    # Each discovery root needs its own loader. Reusing defaultTestLoader leaks the first
+    # top-level directory into the second discovery on Linux and makes generated tests appear
+    # non-importable even though both directories contain valid standalone test modules.
+    source_suite = unittest.TestLoader().discover(str(ROOT / "tests"))
+    generated_suite = unittest.TestLoader().discover(str(GENERATED_TESTS))
+    return unittest.TestSuite((source_suite, generated_suite))
 
 
 def build() -> None:

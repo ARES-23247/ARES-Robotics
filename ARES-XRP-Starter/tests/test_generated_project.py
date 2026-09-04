@@ -12,6 +12,14 @@ for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
 
 
 class GeneratedProjectTest(unittest.TestCase):
+    def test_source_and_generated_suites_use_independent_discovery_roots(self):
+        tool_path = ROOT / "tools" / "ares_project.py"
+        spec = importlib.util.spec_from_file_location("ares_project_discovery_tool", tool_path)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+
+        self.assertGreaterEqual(tool.discover_test_suites().countTestCases(), 8)
+
     def test_mecanum_requires_all_four_xrp_motor_ports(self):
         tool_path = ROOT / "tools" / "ares_project.py"
         spec = importlib.util.spec_from_file_location("ares_project_tool", tool_path)
