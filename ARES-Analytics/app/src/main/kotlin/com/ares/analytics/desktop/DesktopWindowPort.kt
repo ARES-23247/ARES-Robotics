@@ -256,6 +256,11 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
         val selectedPath = requestedPath.absoluteFile
         require(selectedPath.exists()) { "chooser path does not exist: ${selectedPath.absolutePath}" }
         onEventThread {
+            val aresOverride = com.ares.analytics.ui.components.core.AresFileChooserLauncher.testSelectionOverride
+            if (aresOverride != null) {
+                aresOverride(selectedPath)
+                return@onEventThread
+            }
             val chooser = Window.getWindows()
                 .asSequence()
                 .filter { it.isShowing }
