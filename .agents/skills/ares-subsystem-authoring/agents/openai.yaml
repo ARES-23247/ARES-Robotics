@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARES Subsystem Authoring"
+  short_description: "Build safe generated or hand-authored subsystems"
+  default_prompt: "Use $ares-subsystem-authoring to design or update an ARES subsystem safely."

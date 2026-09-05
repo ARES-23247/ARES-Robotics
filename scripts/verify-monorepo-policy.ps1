@@ -3,6 +3,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+& python (Join-Path $PSScriptRoot 'verify_agent_guidance.py')
+if ($LASTEXITCODE -ne 0) { throw 'Shared agent guidance verification failed.' }
 & (Join-Path $PSScriptRoot 'verify-doc-links.ps1')
 if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
 $manifest = Join-Path $root 'release/ares-versions.properties'
@@ -199,6 +201,10 @@ foreach ($source in $frcProductSources) {
 # scanned here.
 $currentGuidance = @(
     'AGENTS.md',
+    'GEMINI.md',
+    'docs/agents/README.md',
+    'docs/agents/WORKSPACE_GUIDE.md',
+    '.agents/rules/ares-workspace.md',
     'ARESLib-Kotlin/GEMINI.md',
     'ARES-FTC-Starter/AGENTS.md',
     'ARES-FRC-Starter/AGENTS.md',

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARES Build and Release"
+  short_description: "Build, launch, validate, and publish ARES"
+  default_prompt: "Use $ares-build-release to build or launch the ARES workspace in dependency order."

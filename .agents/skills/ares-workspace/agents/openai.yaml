@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARES Workspace"
+  short_description: "Develop and audit the ARES source monorepo"
+  default_prompt: "Use $ares-workspace to make a safe cross-product ARES change."
