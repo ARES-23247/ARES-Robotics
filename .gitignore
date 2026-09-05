@@ -19,3 +19,21 @@ __pycache__/
 *.py[cod]
 /ARES-XRP-Starter/build/
 /ARES-XRP-Starter/xrp_secrets.py
+
+# Shared agent guidance is source, including when a developer has broad global ignores.
+!AGENTS.md
+!GEMINI.md
+!/.agents/
+!/.agents/skills/
+!/.agents/skills/**/
+!/.agents/skills/**
+!/.agents/rules/
+!/.agents/rules/**
+# Agent sessions, credentials, caches, and local overrides are not shared guidance.
+/.agents/tmp/
+/.agents/cache/
+/.agents/*.local.*
+/.agents/skills/**/__pycache__/
+/.agents/skills/**/*.py[cod]
+/.gemini/settings.local.json
+/.codex/config.local.toml
