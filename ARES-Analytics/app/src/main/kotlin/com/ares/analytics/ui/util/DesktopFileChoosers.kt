@@ -1,12 +1,12 @@
 package com.ares.analytics.ui.util
 
+import com.ares.analytics.ui.components.core.AresFileChooserLauncher
+import com.ares.analytics.ui.components.core.AresFileChooserMode
 import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
 /**
  * Standardized native desktop file and directory choosers for ARES-Analytics.
- * Unifies Swing JFileChooser setup, filters, and canonical file normalization.
+ * Uses the modern ARES Compose File and Directory Chooser with seamless theme matching.
  */
 internal object DesktopFileChoosers {
 
@@ -16,17 +16,12 @@ internal object DesktopFileChoosers {
         approveButtonText: String = "Select"
     ): File? {
         val initial = initialPath?.takeIf(String::isNotBlank)?.let(::File)?.takeIf(File::exists)
-        val chooser = JFileChooser(initial).apply {
-            this.dialogTitle = dialogTitle
-            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-            isAcceptAllFileFilterUsed = false
-            this.approveButtonText = approveButtonText
-        }
-        return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            chooser.selectedFile.canonicalFile
-        } else {
-            null
-        }
+        return AresFileChooserLauncher.show(
+            mode = AresFileChooserMode.DIRECTORY,
+            dialogTitle = dialogTitle,
+            initialDirectory = initial,
+            approveButtonText = approveButtonText,
+        )?.firstOrNull()?.canonicalFile
     }
 
     fun chooseOpenFile(
@@ -47,19 +42,13 @@ internal object DesktopFileChoosers {
         filterDescription: String?,
         extensions: List<String>
     ): File? {
-        val extArray = extensions.toTypedArray()
-        val chooser = JFileChooser(initialDirectory).apply {
-            this.dialogTitle = dialogTitle
-            fileSelectionMode = JFileChooser.FILES_ONLY
-            if (extArray.isNotEmpty() && filterDescription != null) {
-                fileFilter = FileNameExtensionFilter(filterDescription, *extArray)
-            }
-        }
-        return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            chooser.selectedFile.canonicalFile
-        } else {
-            null
-        }
+        return AresFileChooserLauncher.show(
+            mode = AresFileChooserMode.OPEN_FILE,
+            dialogTitle = dialogTitle,
+            initialDirectory = initialDirectory,
+            filterDescription = filterDescription,
+            extensions = extensions,
+        )?.firstOrNull()?.canonicalFile
     }
 
     fun chooseSaveFile(
@@ -83,22 +72,15 @@ internal object DesktopFileChoosers {
         filterDescription: String?,
         extensions: List<String>
     ): File? {
-        val extArray = extensions.toTypedArray()
-        val chooser = JFileChooser(initialDirectory).apply {
-            this.dialogTitle = dialogTitle
-            fileSelectionMode = JFileChooser.FILES_ONLY
-            if (defaultFileName != null) {
-                selectedFile = File(defaultFileName)
-            }
-            if (extArray.isNotEmpty() && filterDescription != null) {
-                fileFilter = FileNameExtensionFilter(filterDescription, *extArray)
-            }
-        }
-        return if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
-            ensureExtension(chooser.selectedFile, extensions)
-        } else {
-            null
-        }
+        val files = AresFileChooserLauncher.show(
+            mode = AresFileChooserMode.SAVE_FILE,
+            dialogTitle = dialogTitle,
+            initialDirectory = initialDirectory,
+            defaultFileName = defaultFileName,
+            filterDescription = filterDescription,
+            extensions = extensions,
+        )
+        return files?.firstOrNull()?.let { ensureExtension(it, extensions) }
     }
 
     fun chooseOpenFiles(
@@ -119,19 +101,13 @@ internal object DesktopFileChoosers {
         filterDescription: String?,
         extensions: List<String>
     ): List<File> {
-        val extArray = extensions.toTypedArray()
-        val chooser = JFileChooser(initialDirectory).apply {
-            this.dialogTitle = dialogTitle
-            isMultiSelectionEnabled = true
-            fileSelectionMode = JFileChooser.FILES_ONLY
-            if (extArray.isNotEmpty() && filterDescription != null) {
-                fileFilter = FileNameExtensionFilter(filterDescription, *extArray)
-            }
-        }
-        if (chooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return emptyList()
-        return chooser.selectedFiles?.map { it.canonicalFile }.orEmpty().ifEmpty {
-            listOfNotNull(chooser.selectedFile?.canonicalFile)
-        }
+        return AresFileChooserLauncher.show(
+            mode = AresFileChooserMode.OPEN_FILES,
+            dialogTitle = dialogTitle,
+            initialDirectory = initialDirectory,
+            filterDescription = filterDescription,
+            extensions = extensions,
+        )?.map { it.canonicalFile }.orEmpty()
     }
 
     internal fun ensureExtension(selectedFile: File, extensions: List<String>): File {
@@ -147,3 +123,4 @@ internal object DesktopFileChoosers {
         }
     }
 }
+
