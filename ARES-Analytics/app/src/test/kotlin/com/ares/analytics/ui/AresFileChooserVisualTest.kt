@@ -39,6 +39,7 @@ class AresFileChooserVisualTest {
             File(tempDir, "match_replay.mp4").createNewFile()
 
             val scene = ImageComposeScene(940, 640)
+            try {
             scene.setContent {
                 AresTheme {
                     AresFileChooserContent(
@@ -62,7 +63,10 @@ class AresFileChooserVisualTest {
                 println("Rendered AresFileChooser screenshot to: ${outputFile.absolutePath}")
             }
 
+            data?.close()
+            image.close()
             assertTrue(outputFile.exists() && outputFile.length() > 10_000, "Screenshot should be rendered with content")
+            } finally { scene.close() }
         } finally {
             tempDir.deleteRecursively()
         }
