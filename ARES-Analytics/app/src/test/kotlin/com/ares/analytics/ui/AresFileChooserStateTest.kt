@@ -74,6 +74,57 @@ class AresFileChooserStateTest {
         assertTrue(results.isEmpty())
     }
 
+    @Test fun missingSelectedFolderDoesNotSilentlyApproveItsParent() = withState(AresFileChooserMode.DIRECTORY) { root, state, results ->
+        val selected = File(root, "selected").apply { mkdir() }
+        state.refresh()
+        state.awaitIdle()
+        state.selectedFiles = setOf(selected)
+        assertTrue(selected.delete())
+        state.handleApprove()
+        state.awaitIdle()
+        assertTrue(results.isEmpty())
+        assertNotNull(state.errorText)
+    }
+
+    @Test fun failedNavigationCannotApproveThePreviousDirectory() = withState(AresFileChooserMode.SAVE_FILE) { root, state, results ->
+        state.fileNameInput = "report.json"
+        state.navigateTo(File(root, "missing"))
+        state.awaitIdle()
+        assertNotNull(state.listingError)
+        state.handleApprove()
+        state.awaitIdle()
+        assertTrue(results.isEmpty())
+        state.navigateTo(root)
+        state.awaitIdle()
+        state.handleApprove()
+        state.awaitIdle()
+        assertEquals(listOf(listOf(File(root, "report.json"))), results)
+    }
+
+    @Test fun overwriteRejectsADestinationWhoseParentDisappeared() = withState(AresFileChooserMode.SAVE_FILE) { root, state, results ->
+        val parent = File(root, "destination").apply { mkdir() }
+        val existing = File(parent, "report.json").apply { writeText("original") }
+        state.fileNameInput = "destination/report.json"
+        state.handleApprove()
+        state.awaitIdle()
+        assertEquals(existing, state.pendingOverwrite)
+        assertTrue(existing.delete())
+        assertTrue(parent.delete())
+        state.confirmOverwrite()
+        state.awaitIdle()
+        assertTrue(results.isEmpty())
+        assertNotNull(state.errorText)
+    }
+
+    @Test fun relativePathEntryUsesTheCurrentChooserDirectory() = withState(AresFileChooserMode.DIRECTORY) { root, state, _ ->
+        val child = File(root, "child").apply { mkdir() }
+        state.pathEditText = "child"
+        state.goToEditedPath()
+        state.awaitIdle()
+        assertEquals(child, state.currentDirectory)
+        assertNull(state.listingError)
+    }
+
     @Test fun newFolderReportsFailureAndNavigatesOnlyAfterCreation() = withState(AresFileChooserMode.DIRECTORY) { root, state, _ ->
         state.newFolderName = ".."
         state.createFolder()

@@ -114,6 +114,10 @@ class SubsystemGeneratorViewModel(
     }
 
     private fun blockDraftReplacement(): Boolean {
+        if (!_state.value.projectLoaded) {
+            _state.update { it.copy(status = "Load the project successfully before adding a subsystem.") }
+            return true
+        }
         if (!_state.value.dirty) return false
         _state.update { it.copy(status = "Save or reload the current draft before adding another subsystem.") }
         return true
@@ -148,6 +152,7 @@ class SubsystemGeneratorViewModel(
                         ?.takeIf { it.league == AresLeague.XRP }
                         ?.requireXrpRuntimeOptions()
                         ?.controllerModel,
+                    projectLoaded = true,
                     documents = matching,
                     selectedDocumentId = first?.documentId,
                     draft = first?.let(::SubsystemEditorDraft),
@@ -175,7 +180,8 @@ class SubsystemGeneratorViewModel(
         _state.update { latest ->
             val comparable = latest.copy(generationPhase = expected.generationPhase,
                 generationMessage = expected.generationMessage, generatedContentHash = expected.generatedContentHash)
-            if (generation != reloadGeneration.get() || comparable != expected) latest else loaded.copy(generationPhase = latest.generationPhase,
+            val initialLoad = !latest.projectLoaded && latest.draft == null
+            if (generation != reloadGeneration.get() || (!initialLoad && comparable != expected)) latest else loaded.copy(generationPhase = latest.generationPhase,
                 generationMessage = latest.generationMessage, generatedContentHash = latest.generatedContentHash)
         }
     }

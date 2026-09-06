@@ -17,7 +17,7 @@ internal fun approveChooserSelection(
     extensions: List<String>,
 ): ChooserAction = when (mode) {
     AresFileChooserMode.DIRECTORY -> {
-        val target = selected.firstOrNull()?.takeIf { it.isDirectory } ?: directory
+        val target = selected.firstOrNull() ?: directory
         require(target.isDirectory) { "The selected folder is no longer available." }
         ChooserAction.Selected(listOf(target.canonicalFile))
     }
@@ -32,8 +32,13 @@ internal fun approveChooserSelection(
             "$name.${extensions.first()}"
         } else name
         val target = File(directory, effectiveName).canonicalFile
-        require(!target.isDirectory) { "Select a file, not a folder." }
-        require(target.parentFile?.isDirectory == true) { "The destination folder does not exist." }
+        validateChooserSaveTarget(target)
         if (target.exists()) ChooserAction.Overwrite(target) else ChooserAction.Selected(listOf(target))
     }
+}
+
+/** Recheck the same destination when approval follows an overwrite prompt. */
+internal fun validateChooserSaveTarget(target: File) {
+    require(!target.isDirectory) { "Select a file, not a folder." }
+    require(target.parentFile?.isDirectory == true) { "The destination folder does not exist." }
 }

@@ -1,12 +1,7 @@
 package com.ares.analytics.ui.components.core
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.ares.analytics.ui.theme.*
 import java.io.File
-import java.util.*
 import kotlinx.coroutines.*
 
 internal class AresFileChooserState(
@@ -113,7 +108,11 @@ internal class AresFileChooserState(
     }
 
     fun navigateUp() { currentDirectory.parentFile?.let(::navigateTo) }
-    fun goToEditedPath() { navigateTo(File(pathEditText.trim())); isEditingPath = false }
+    fun goToEditedPath() {
+        val path = File(pathEditText.trim())
+        navigateTo(if (path.isAbsolute) path else File(currentDirectory, path.path))
+        isEditingPath = false
+    }
     fun metadata(file: File): ChooserEntry? = entries.firstOrNull { it.file == file }
     fun isDirectory(file: File): Boolean = metadata(file)?.directory == true
 
@@ -216,12 +215,13 @@ internal class AresFileChooserState(
         val target = pendingOverwrite ?: return
         pendingOverwrite = null
         fileAction {
-            require(!target.isDirectory) { "Select a file, not a folder." }
+            validateChooserSaveTarget(target)
             ChooserAction.Selected(listOf(target.canonicalFile))
         }
     }
 
     fun handleApprove() {
+        if (listingError != null) return
         val directory = currentDirectory
         val selected = selectedFiles.toList()
         val name = fileNameInput.trim()
