@@ -1,6 +1,13 @@
 package com.ares.analytics.ui.help
 
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.learning.LearningLevel
+import com.ares.analytics.domain.learning.LearningAction
+import com.ares.analytics.domain.learning.LearningLab
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningCheckpointEvidence
+import com.ares.analytics.domain.learning.ControlsMissionCheckpointIds
+
+import com.ares.analytics.domain.navigation.NavigationTarget
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

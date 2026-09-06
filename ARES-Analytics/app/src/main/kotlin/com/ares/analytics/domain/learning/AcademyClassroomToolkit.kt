@@ -1,7 +1,7 @@
-package com.ares.analytics.ui.help
+package com.ares.analytics.domain.learning
 
-import com.ares.analytics.service.LearningProgress
-import com.ares.analytics.service.AcademyLearningAssignment
+import com.ares.analytics.domain.learning.LearningProgress
+import com.ares.analytics.domain.learning.AcademyLearningAssignment
 import kotlinx.serialization.Serializable
 
 @Serializable

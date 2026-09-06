@@ -36,7 +36,7 @@ internal fun AresFileChooserActions(state: AresFileChooserState) = with(state) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             when (mode) {
                 AresFileChooserMode.DIRECTORY -> {
-                    val selected = selectedFiles.firstOrNull()?.takeIf(File::isDirectory)
+                    val selected = selectedFiles.firstOrNull()?.takeIf(::isDirectory)
                     if (selected != null) {
                         Text(
                             text = "Selected: ${selected.name}",
@@ -72,6 +72,8 @@ internal fun AresFileChooserActions(state: AresFileChooserState) = with(state) {
                         value = fileNameInput,
                         onValueChange = { fileNameInput = it },
                         label = "Save as file name",
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { handleApprove() }),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                         placeholder = defaultFileName ?: "untitled",
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -111,13 +113,13 @@ internal fun AresFileChooserActions(state: AresFileChooserState) = with(state) {
             val canApprove = when (mode) {
                 AresFileChooserMode.DIRECTORY -> true
                 AresFileChooserMode.SAVE_FILE -> fileNameInput.isNotBlank()
-                AresFileChooserMode.OPEN_FILE -> selectedFiles.any(File::isFile)
-                AresFileChooserMode.OPEN_FILES -> selectedFiles.any(File::isFile)
+                AresFileChooserMode.OPEN_FILE -> selectedFiles.any { metadata(it)?.directory == false }
+                AresFileChooserMode.OPEN_FILES -> selectedFiles.any { metadata(it)?.directory == false }
             }
 
             Button(
                 onClick = ::handleApprove,
-                enabled = canApprove,
+                enabled = canApprove && !loading && !busy && listingError == null,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AresCyan,
                     contentColor = AresOnAccent,

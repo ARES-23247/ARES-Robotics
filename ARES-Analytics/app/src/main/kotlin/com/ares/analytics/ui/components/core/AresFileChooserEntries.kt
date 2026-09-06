@@ -23,6 +23,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.ui.theme.*
+import androidx.compose.ui.input.key.*
+import androidx.compose.foundation.focusable
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -94,13 +96,17 @@ Column(
 
     // Entries List
     val listState = rememberLazyListState()
-    if (filteredEntries.isEmpty()) {
+    LaunchedEffect(selectedFiles) {
+        val index = filteredEntries.indexOf(selectedFiles.firstOrNull())
+        if (index >= 0) listState.animateScrollToItem(index)
+    }
+    if (loading || listingError != null || filteredEntries.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = if (searchQuery.isNotEmpty()) "No files or folders match \"$searchQuery\"" else "This folder is empty",
+                text = if (loading) "Loading folder…" else listingError ?: if (searchQuery.isNotEmpty()) "No files or folders match \"$searchQuery\"" else "This folder is empty",
                 color = AresTextSecondary,
                 fontSize = 13.sp
             )
@@ -108,12 +114,20 @@ Column(
     } else {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) false else when (event.key) {
+                    Key.DirectionDown -> { moveSelection(1); true }
+                    Key.DirectionUp -> { moveSelection(-1); true }
+                    Key.Enter -> { activateSelection(); true }
+                    else -> false
+                }
+            }.focusable(),
         ) {
             items(filteredEntries, key = { it.absolutePath }) { file ->
                 val isSelected = selectedFiles.contains(file)
-                val isDirectory = file.isDirectory
-                val robotFlavor = if (isDirectory) detectRobotFlavor(file) else null
+                val entry = metadata(file) ?: return@items
+                val isDirectory = entry.directory
+                val robotFlavor = entry.flavor
 
                 Row(
                     modifier = Modifier
@@ -155,7 +169,7 @@ Column(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
-                            imageVector = resolveFileIcon(file),
+                            imageVector = resolveFileIcon(file, isDirectory),
                             contentDescription = null,
                             tint = if (isDirectory) AresCyan else AresTextSecondary,
                             modifier = Modifier.size(18.dp),
@@ -199,7 +213,7 @@ Column(
 
                     // Modified Date
                     Text(
-                        text = formatTimestamp(file.lastModified()),
+                        text = formatTimestamp(entry.modified),
                         color = AresTextSecondary,
                         fontSize = 11.sp,
                         modifier = Modifier.weight(0.18f),
@@ -208,7 +222,7 @@ Column(
 
                     // Size
                     Text(
-                        text = if (isDirectory) "--" else formatFileSize(file.length()),
+                        text = if (isDirectory) "--" else formatFileSize(entry.size),
                         color = AresTextSecondary,
                         fontSize = 11.sp,
                         modifier = Modifier.weight(0.12f),
@@ -252,8 +266,8 @@ private fun HeaderCell(
     }
 }
 
-private fun resolveFileIcon(file: File): ImageVector {
-    if (file.isDirectory) return Icons.Default.Folder
+private fun resolveFileIcon(file: File, directory: Boolean): ImageVector {
+    if (directory) return Icons.Default.Folder
     val ext = file.extension.lowercase()
     return when (ext) {
         "png", "jpg", "jpeg", "svg", "bmp", "webp", "gif" -> Icons.Default.Image

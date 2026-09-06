@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademySuperstructureSnapshot
+
 import com.ares.analytics.viewmodel.superstructure.PreviewPortCondition
 import com.ares.analytics.viewmodel.superstructure.SuperstructureStudioState
 

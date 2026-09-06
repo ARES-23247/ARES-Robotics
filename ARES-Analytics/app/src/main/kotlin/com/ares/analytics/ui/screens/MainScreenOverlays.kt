@@ -18,7 +18,7 @@ import com.ares.analytics.service.UpdateCheckerService
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.ui.components.CommandPalette
 import com.ares.analytics.ui.components.LearningCoachDrawer
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.components.core.OneClickDeployDialog
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.components.layout.UpdateNotificationBanner

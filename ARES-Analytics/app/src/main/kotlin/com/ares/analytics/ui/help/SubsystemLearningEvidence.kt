@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademySubsystemSnapshot
+
 import com.ares.analytics.viewmodel.SubsystemBuilderStage
 import com.ares.analytics.viewmodel.SubsystemGeneratorState
 import com.ares.analytics.viewmodel.SubsystemProblemSeverity

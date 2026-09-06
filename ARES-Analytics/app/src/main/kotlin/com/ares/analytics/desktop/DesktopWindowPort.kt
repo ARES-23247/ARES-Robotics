@@ -354,7 +354,7 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
     private fun dispatchTestKeyEvent(eventId: Int, keyCode: Int, modifiers: Int) {
         onEventThread {
             val inputSurface = requireSkiaInputSurface()
-            inputSurface.dispatchEvent(
+            java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().dispatchEvent(
                 KeyEvent(
                     inputSurface,
                     eventId,
@@ -379,8 +379,11 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
         return "captured $sequence"
     }
 
+    private fun activeTestWindow(): Window =
+        com.ares.analytics.ui.components.core.AresFileChooserLauncher.activeDialog?.takeIf { it.isShowing } ?: window
+
     private fun requireSkiaLayer(): SkiaLayer =
-        findSkiaLayer(window) ?: error("the Compose SkiaLayer is not attached to the desktop window")
+        findSkiaLayer(activeTestWindow()) ?: error("the Compose SkiaLayer is not attached to the active window")
 
     /** Skiko delegates input listeners to the heavyweight Canvas nested inside SkiaLayer. */
     private fun requireSkiaInputSurface(): Component {
@@ -417,11 +420,12 @@ internal class AwtDesktopWindowPort(private val window: Window) : DesktopWindowP
         captureComposeFramebuffer(
             outputFile = File(outputDirectory, "capture-${sequence.toString().padStart(3, '0')}.png"),
             diagnosticLabel = "on-demand",
+            target = activeTestWindow(),
         )
 
-    private fun captureComposeFramebuffer(outputFile: File, diagnosticLabel: String): Boolean = runCatching {
-        require(window.isShowing) { "desktop window is not showing" }
-        val layer = findSkiaLayer(window)
+    private fun captureComposeFramebuffer(outputFile: File, diagnosticLabel: String, target: Window = window): Boolean = runCatching {
+        require(target.isShowing) { "desktop window is not showing" }
+        val layer = findSkiaLayer(target)
             ?: error("the Compose SkiaLayer is not attached to the desktop window")
         layer.renderImmediately()
         val bitmap = layer.screenshot()

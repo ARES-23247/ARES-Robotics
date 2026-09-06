@@ -236,6 +236,7 @@ fun OnboardingScreen(
 
                         if (state.currentStep == OnboardingStep.REVIEW) {
                             JavaVerificationStep(
+                                league = state.league,
                         isValid = state.javaEnvValid,
                         isVerifying = state.isVerifyingJava,
                         message = state.javaEnvMsg,
@@ -272,11 +273,7 @@ fun OnboardingScreen(
                 NavigationButtons(
                     step = state.currentStep,
                     isSaving = state.isSaving,
-                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
-                        "Create Lightbot copy"
-                    } else {
-                        "Create standalone project"
-                    },
+                    finishLabel = onboardingFinishLabel(state.projectSetupMode),
                     onCancel = onCancel,
                     onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },
                     onNext = { viewModel.handleIntent(OnboardingIntent.NextStep) },
@@ -343,4 +340,10 @@ private fun NavigationButtons(
             }
         }
     }
+}
+
+internal fun onboardingFinishLabel(mode: ProjectSetupMode): String = when (mode) {
+    ProjectSetupMode.OPEN_EXISTING -> "Open project"
+    ProjectSetupMode.CREATE_NEW -> "Create standalone project"
+    ProjectSetupMode.EXPLORE_LIGHTBOT -> "Create Lightbot copy"
 }

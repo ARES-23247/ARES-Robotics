@@ -19,7 +19,7 @@ import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.simulation.SimulationProductId
-import com.ares.analytics.viewmodel.controls.controlsCoverage
+import com.ares.analytics.domain.project.controlsCoverage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

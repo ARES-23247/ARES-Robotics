@@ -168,7 +168,7 @@ fun SubsystemGeneratorScreen(
                             Text("Spec", fontSize = 11.sp)
                         }
                         IconButton(
-                            onClick = { viewModel.reload() },
+                            onClick = { viewModel.reloadAsync() },
                             modifier = Modifier.size(headerControlHeight),
                         ) {
                             Icon(Icons.Default.Refresh, contentDescription = "Reload subsystem", modifier = Modifier.size(18.dp), tint = AresTextSecondary)
