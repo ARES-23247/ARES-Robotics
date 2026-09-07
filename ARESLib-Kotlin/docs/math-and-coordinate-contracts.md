@@ -38,12 +38,39 @@ Each `Store` privately owns a fixed history of timestamped pose/covariance snaps
 - Camera latency must be subtracted once at the hardware boundary.
 - The history and measurement must use the same field frame.
 - A pose reset must reset the estimator/history coherently; do not splice a new pose into old history.
+- Capture timestamps older than the most recently accepted vision observation are rejected as
+  `vision_out_of_order`. Odometry replay cannot reconstruct later camera corrections, so accepting
+  such a frame would erase information already fused. Independent observations at the same capture
+  timestamp remain supported. Full out-of-order camera replay would require retaining measurement
+  updates as well as odometry.
 - Drive and vision observations must go through `Store.dispatch`; a direct `rootReducer` call has no EKF runtime owner and intentionally performs only the stateless slice transition.
 - `PoseEstimatorState.history` is retained as an empty read-only compatibility view. Use the observable pose, covariance, diagnostics, and `lastObservationTimestampMs`; runtime history is not telemetry or application state.
 
 Vision input is rejected when required data is invalid, no tags are reported, ambiguity exceeds the configured maximum, the covariance cannot be inverted, the observation is outside the field/history contract, or its Mahalanobis innovation exceeds the configured threshold. `PoseEstimatorState.lastMeasurementAccepted` and `lastRejectionReason` are intended for diagnostics.
 
 The measurement standard-deviation vector contains standard deviations, not variances: X/Y are meters and heading is radians. The estimator squares/scales them when constructing measurement covariance.
+
+Innovation validity is checked even when statistical outlier gating is disabled. The NIS is
+computed by whitening the residual with the innovation covariance's Cholesky factor; only accepted
+observations need the inverse used for the Kalman gain. Turning odometry contributes to heading
+process noise even when an independent gyro-rate sample is unavailable.
+
+## Control, wheel limits, and sampled trajectories
+
+Continuous PID wraps both position error and the measurement difference used by its derivative.
+Wheel normalization applies one scale to the entire drive vector. Negative/NaN limits and
+non-finite wheel commands produce a neutral vector; positive infinity represents no speed limit.
+FTC fallback and XRP wheel odometry integrate constant-curvature arcs with the SE(2) exponential.
+
+`SCurveTrajectoryParameterizer` produces a spatial profile seed with heuristic acceleration ramps;
+it does not implement a seven-phase continuous-time S-curve. `JerkLimitedTrajectoryProvider`
+checks the sampled vector acceleration and finite-difference jerk and uniformly stretches time
+when needed. Translation velocities and angular velocities use that same scale. A diagnostic
+reports reduced nonzero entry/exit speeds. These sampled checks are not a proof of continuous jerk
+through piecewise-linear geometry corners or a drivetrain force/dynamics model.
+
+Distance sampling uses binary search over nondecreasing path distances. Mutable sample outputs
+avoid allocation; object-returning convenience methods retain their existing allocation behavior.
 
 ## Pinpoint boundary
 

@@ -1,14 +1,13 @@
 package com.ares.analytics.viewmodel.sysid
 
-import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.viewmodel.SysIdState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import org.ejml.simple.SimpleMatrix
+import com.areslib.math.wrapAngle
 
 /** Runs feedforward regression and transient classification for the selected mechanism. */
 class SysIdRegressionSolver(
-    private val nt4ClientService: Nt4ClientService,
     private val _state: MutableStateFlow<SysIdState>
 ) {
     fun runCalibrationAnalysis(calibrationType: String, data: List<DoubleArray>) {
@@ -18,6 +17,14 @@ class SysIdRegressionSolver(
         }
 
         try {
+            val requiredColumns = when (calibrationType) {
+                "TRACK_WIDTH_SPIN" -> 7
+                "LINEAR_DRIVE" -> 3
+                else -> 4
+            }
+            require(data.all { row -> row.size >= requiredColumns && (0 until requiredColumns).all { row[it].isFinite() } }) {
+                "Calibration samples are incomplete or non-finite; collect a new run with the current robot runtime"
+            }
             when (calibrationType) {
                 "PINPOINT_SPIN" -> {
                     val n = data.size
@@ -61,9 +68,7 @@ class SysIdRegressionSolver(
 
                     for (i in 1 until n) {
                         val currentHeading = data[i][5]
-                        var diff = currentHeading - lastHeading
-                        while (diff < -kotlin.math.PI) diff += 2 * kotlin.math.PI
-                        while (diff > kotlin.math.PI) diff -= 2 * kotlin.math.PI
+                        val diff = wrapAngle(currentHeading - lastHeading)
                         accumHeading += diff
                         unwrappedHeadings[i] = accumHeading
                         lastHeading = currentHeading
@@ -86,11 +91,14 @@ class SysIdRegressionSolver(
                         sumXY += x * y
                         sumX2 += x * x
                     }
-                    val k = if (sumX2 > 1e-6) sumXY / sumX2 else 0.45
-                    // This analysis cannot infer a schema-v3 declaration UID from a display key.
-                    // Geometry is reviewed on the Drivebase Builder before promotion.
-                    val wheelBase = 0.45
+                    require(sumX2 > 1e-6) { "Insufficient rotation to estimate track width" }
+                    val k = sumXY / sumX2
+                    val wheelBase = data.first()[6]
+                    require(wheelBase > 0.0 && data.all { it[6] == wheelBase }) {
+                        "Wheelbase must be positive and unchanged throughout calibration"
+                    }
                     val recTrackWidth = 2.0 * k - wheelBase
+                    require(recTrackWidth.isFinite() && recTrackWidth > 0.0) { "Calibration produced an invalid track width" }
 
                     _state.update {
                         it.copy(
@@ -101,9 +109,20 @@ class SysIdRegressionSolver(
                 }
                 "VISION_CALIBRATION" -> {
                     val n = data.size
-                    val meanX = data.map { it[1] }.average()
-                    val meanY = data.map { it[2] }.average()
-                    val meanHeading = data.map { it[3] }.average()
+                    var meanX = 0.0
+                    var meanY = 0.0
+                    var sumSin = 0.0
+                    var sumCos = 0.0
+                    for (row in data) {
+                        meanX += row[1] / n
+                        meanY += row[2] / n
+                        sumSin += kotlin.math.sin(row[3])
+                        sumCos += kotlin.math.cos(row[3])
+                    }
+                    require(kotlin.math.hypot(sumSin, sumCos) > 1e-6 * n) {
+                        "Heading samples have no identifiable circular mean"
+                    }
+                    val meanHeading = kotlin.math.atan2(sumSin, sumCos)
                     var varX = 0.0
                     var varY = 0.0
                     var varHeading = 0.0
@@ -111,9 +130,7 @@ class SysIdRegressionSolver(
                     for (row in data) {
                         val dx = row[1] - meanX
                         val dy = row[2] - meanY
-                        var dHeading = row[3] - meanHeading
-                        while (dHeading < -kotlin.math.PI) dHeading += 2 * kotlin.math.PI
-                        while (dHeading > kotlin.math.PI) dHeading -= 2 * kotlin.math.PI
+                        val dHeading = wrapAngle(row[3] - meanHeading)
 
                         varX += dx * dx
                         varY += dy * dy
@@ -138,8 +155,11 @@ class SysIdRegressionSolver(
                     val reportedDisplacement = lastDisplacement - firstDisplacement
                     val actualDistance = _state.value.linearDriveActualDistanceMeters
 
-                    if (actualDistance > 0.1 && reportedDisplacement > 0.05) {
-                        val currentTicks = 2000.0
+                    if (actualDistance.isFinite() && actualDistance > 0.1 && reportedDisplacement > 0.05) {
+                        val currentTicks = data.first()[2]
+                        require(currentTicks > 0.0 && data.all { it[2] == currentTicks }) {
+                            "Encoder scale must be positive and unchanged throughout calibration"
+                        }
                         val recTicks = currentTicks * (reportedDisplacement / actualDistance)
 
                         _state.update {

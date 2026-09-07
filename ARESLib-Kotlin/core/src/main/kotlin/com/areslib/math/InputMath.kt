@@ -69,7 +69,8 @@ object InputMath {
      */
     fun processJoystickVector(rawX: Double, rawY: Double, deadband: Double = 0.05, exponent: Double = 1.0): Pair<Double, Double> {
         val mag = kotlin.math.hypot(rawX, rawY)
-        if (mag < deadband || mag.isNaN()) return Pair(0.0, 0.0)
+        if (mag == 0.0 || !mag.isFinite() || !deadband.isFinite() || deadband < 0.0 || deadband >= 1.0 ||
+            !exponent.isFinite() || exponent < 0.0 || mag < deadband) return Pair(0.0, 0.0)
 
         val normMag = ((mag - deadband) / (1.0 - deadband)).coerceIn(0.0, 1.0)
         val curvedMag = applyCurve(normMag, exponent)

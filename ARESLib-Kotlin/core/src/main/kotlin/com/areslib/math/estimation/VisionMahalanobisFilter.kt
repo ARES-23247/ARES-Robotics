@@ -91,14 +91,20 @@ object VisionMahalanobisFilter {
             state.lastRejectionReason = "empty_history"
             return state
         }
+        if (measurement.timestampMs < state.lastVisionTimestampMs) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "vision_out_of_order"
+            return state
+        }
 
-        if (measurement.ambiguity.isNaN() || measurement.ambiguity > maxAmbiguity) {
+        if (!measurement.ambiguity.isFinite() || measurement.ambiguity > maxAmbiguity) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "high_ambiguity"
             return state
         }
-        if (measurement.targetPose.x.isNaN() || measurement.targetPose.y.isNaN() || measurement.targetPose.z.isNaN() ||
-            measurement.targetPose.rotation.x.isNaN() || measurement.targetPose.rotation.y.isNaN() || measurement.targetPose.rotation.z.isNaN()) {
+        val measuredHeading = measurement.targetPose.rotation.z
+        if (!measurement.targetPose.x.isFinite() || !measurement.targetPose.y.isFinite() || !measurement.targetPose.z.isFinite() ||
+            !measurement.targetPose.rotation.x.isFinite() || !measurement.targetPose.rotation.y.isFinite() || !measuredHeading.isFinite()) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "nan_measurement"
             return state
@@ -150,15 +156,14 @@ object VisionMahalanobisFilter {
         val distance = if (tagPose != null) {
             val dx = baseEntry.x - tagPose.x
             val dy = baseEntry.y - tagPose.y
-            val dz = 0.0 - tagPose.z
-            val dist3d = kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
-            if (dist3d > 1e-4) {
-                val losAngle = kotlin.math.atan2(-dy, -dx)
+            val planarDistance = kotlin.math.hypot(dx, dy)
+            if (planarDistance > 1e-4) {
                 val tagYaw = tagPose.rotation.z
-                val cosPhi = kotlin.math.abs(kotlin.math.cos(losAngle - tagYaw))
+                val cosPhi = kotlin.math.abs(
+                    (dx * kotlin.math.cos(tagYaw) + dy * kotlin.math.sin(tagYaw)) / planarDistance)
                 incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 1.0)
             }
-            kotlin.math.sqrt(dx * dx + dy * dy)
+            planarDistance
         } else {
             kotlin.math.abs(measurement.robotPoseTargetSpace.z)
         }
@@ -168,9 +173,10 @@ object VisionMahalanobisFilter {
 
         val multiTagFactor = kotlin.math.max(0.5, 1.0 / kotlin.math.sqrt(numTags.coerceAtLeast(1).toDouble()))
         val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-        val scaledStdDevsX = visionStdDevX * (multiTagFactor * distFactor * finalScale)
-        val scaledStdDevsY = visionStdDevY * (multiTagFactor * distFactor * finalScale)
-        val scaledStdDevsZ = visionStdDevHeading * (multiTagFactor * distFactor * finalScale)
+        val stdDevScale = multiTagFactor * distFactor * finalScale
+        val scaledStdDevsX = visionStdDevX * stdDevScale
+        val scaledStdDevsY = visionStdDevY * stdDevScale
+        val scaledStdDevsZ = visionStdDevHeading * stdDevScale
 
         scratchR.m00 = scaledStdDevsX * scaledStdDevsX; scratchR.m01 = 0.0; scratchR.m02 = 0.0
         scratchR.m10 = 0.0; scratchR.m11 = scaledStdDevsY * scaledStdDevsY; scratchR.m12 = 0.0
@@ -214,6 +220,29 @@ object VisionMahalanobisFilter {
         }
         val l22 = kotlin.math.sqrt(l22Squared)
 
+        val headingDiff = wrapAngle(measuredHeading - baseEntry.headingRad)
+
+        val yX = measurement.targetPose.x - baseEntry.x
+        val yY = measurement.targetPose.y - baseEntry.y
+        val yZ = headingDiff
+
+        // Whiten the residual with L before computing its squared norm. This avoids
+        // cancellation in y^T S^-1 y, and rejected observations need no inverse.
+        val whitenedX = yX / l00
+        val whitenedY = (yY - l10 * whitenedX) / l11
+        val whitenedHeading = (yZ - l20 * whitenedX - l21 * whitenedY) / l22
+        val dMSquared = whitenedX * whitenedX + whitenedY * whitenedY + whitenedHeading * whitenedHeading
+        state.lastNormalizedInnovationSquared = if (dMSquared.isFinite() && dMSquared >= 0.0) dMSquared else 0.0
+        if (!dMSquared.isFinite() || dMSquared < -1e-9 ||
+            (useMahalanobisRejection && dMSquared > mahalanobisThreshold)) {
+                state.lastMeasurementAccepted = false
+                state.lastRejectionReason = if (!dMSquared.isFinite() || dMSquared < -1e-9) "invalid_innovation" else "mahalanobis_rejected"
+                state.lastInnovationX = yX
+                state.lastInnovationY = yY
+                state.lastInnovationTheta = yZ
+                return state
+        }
+
         val a = 1.0 / l00
         val b = -l10 / (l00 * l11)
         val c = (l10 * l21 - l20 * l11) / (l00 * l11 * l22)
@@ -229,30 +258,6 @@ object VisionMahalanobisFilter {
         scratchSInv.m20 = scratchSInv.m02
         scratchSInv.m21 = scratchSInv.m12
         scratchSInv.m22 = f * f
-
-        val measurementPose2d = measurement.targetPose.toPose2d()
-        val headingDiff = wrapAngle(measurementPose2d.heading.radians - baseEntry.headingRad)
-
-        val yX = measurementPose2d.x - baseEntry.x
-        val yY = measurementPose2d.y - baseEntry.y
-        val yZ = headingDiff
-
-        val sInvYX = scratchSInv.m00 * yX + scratchSInv.m01 * yY + scratchSInv.m02 * yZ
-        val sInvYY = scratchSInv.m10 * yX + scratchSInv.m11 * yY + scratchSInv.m12 * yZ
-        val sInvYZ = scratchSInv.m20 * yX + scratchSInv.m21 * yY + scratchSInv.m22 * yZ
-
-        val dMSquared = yX * sInvYX + yY * sInvYY + yZ * sInvYZ
-        state.lastNormalizedInnovationSquared = if (dMSquared.isFinite() && dMSquared >= 0.0) dMSquared else 0.0
-        if (useMahalanobisRejection) {
-            if (!dMSquared.isFinite() || dMSquared < -1e-9 || dMSquared > mahalanobisThreshold) {
-                state.lastMeasurementAccepted = false
-                state.lastRejectionReason = if (!dMSquared.isFinite() || dMSquared < -1e-9) "invalid_innovation" else "mahalanobis_rejected"
-                state.lastInnovationX = yX
-                state.lastInnovationY = yY
-                state.lastInnovationTheta = yZ
-                return state
-            }
-        }
 
         scratchK.m00 = baseEntry.covariance.m00 * scratchSInv.m00 + baseEntry.covariance.m01 * scratchSInv.m10 + baseEntry.covariance.m02 * scratchSInv.m20
         scratchK.m01 = baseEntry.covariance.m00 * scratchSInv.m01 + baseEntry.covariance.m01 * scratchSInv.m11 + baseEntry.covariance.m02 * scratchSInv.m21
@@ -410,6 +415,7 @@ object VisionMahalanobisFilter {
         state.lastInnovationY = yY
         state.lastInnovationTheta = yZ
         state.lastMeasurementAccepted = true
+        state.lastVisionTimestampMs = measurement.timestampMs
         state.lastRejectionReason = null
 
         return state

@@ -145,11 +145,9 @@ object SplineMotionProfiler {
         val pathPoints = mutableListOf<PathPoint>()
         var accumulatedDistance = 0.0
 
-        val initialTangent = if (points.size >= 2) {
-            val dx = points[1].x - points[0].x
-            val dy = points[1].y - points[0].y
-            Rotation2d(Math.atan2(dy, dx))
-        } else Rotation2d(0.0)
+        val initialTangent = BezierSpline.evaluateHeading(
+            parsedWaypoints[0].anchor, parsedWaypoints[0].nextControl,
+            parsedWaypoints[1].prevControl, parsedWaypoints[1].anchor, 0.0)
 
         pathPoints.add(
             PathPoint(

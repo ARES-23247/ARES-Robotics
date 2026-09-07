@@ -21,6 +21,24 @@ import java.lang.management.ManagementFactory
 import com.sun.management.ThreadMXBean
 
 class ZeroGcRegressionTest {
+    @Test
+    fun `direct vision correction does not allocate a temporary pose`() {
+        val state = PoseEstimatorState()
+        val measurement = com.areslib.state.VisionMeasurement(timestampMs = 0L)
+        PoseEstimator.addOdometryObservationDirect(state, 0L, 0.0, 0.0, 0.0)
+        repeat(10_000) {
+            PoseEstimator.addVisionMeasurementDirect(state, measurement, 0.1, 0.1, 0.1)
+        }
+        val before = getAllocatedBytes()
+        repeat(1_000) {
+            PoseEstimator.addVisionMeasurementDirect(state, measurement, 0.1, 0.1, 0.1)
+        }
+        val allocated = getAllocatedBytes() - before
+        println("[ZeroGC Test] Direct vision: $allocated bytes per 1,000 corrections")
+        assertTrue(state.lastMeasurementAccepted)
+        assertTrue(allocated <= 4096L, "Direct vision allocated $allocated bytes")
+    }
+
 
     private object NoOpTelemetry : ITelemetry {
         override fun putNumber(key: String, value: Double) = Unit

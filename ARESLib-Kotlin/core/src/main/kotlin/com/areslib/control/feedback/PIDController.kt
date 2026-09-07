@@ -31,7 +31,6 @@ class PIDController(
     var i: Double,
     var d: Double
 ) {
-    private var prevError: Double = 0.0
     private var prevMeasurement: Double = 0.0
     private var totalError: Double = 0.0
     private var setpoint: Double = 0.0
@@ -98,7 +97,6 @@ class PIDController(
      * first outputs after every reset.
      */
     fun reset() {
-        prevError = 0.0
         prevMeasurement = 0.0
         totalError = 0.0
         filteredDerivative = 0.0
@@ -158,18 +156,21 @@ class PIDController(
             // deadzone. Refresh the derivative baseline without integrating or allowing
             // stored I/D state to command the mechanism while it is within tolerance.
             prevMeasurement = measurement
-            prevError = 0.0
             filteredDerivative = 0.0
             isFirstStep = false
             return 0.0
         }
 
-        val measurementDerivative = if (isFirstStep) 0.0 else (measurement - prevMeasurement) / dtSeconds
+        var measurementDelta = measurement - prevMeasurement
+        if (isContinuous) {
+            val errorBound = (continuousMax - continuousMin) * 0.5
+            measurementDelta = inputModulus(measurementDelta, -errorBound, errorBound)
+        }
+        val measurementDerivative = if (isFirstStep) 0.0 else measurementDelta / dtSeconds
         filteredDerivative = derivativeAlpha * measurementDerivative + derivativeRetention * filteredDerivative
         
         isFirstStep = false
         prevMeasurement = measurement
-        prevError = error
 
         val proposedError = totalError + error * dtSeconds
         var clampedIntegral = proposedError
@@ -199,8 +200,7 @@ class PIDController(
         
         if (wrapInput <= 0) return input
         
-        val numMax = (modulus / wrapInput).toInt()
-        modulus -= numMax * wrapInput
+        modulus %= wrapInput
         
         if (modulus < 0) {
             modulus += wrapInput

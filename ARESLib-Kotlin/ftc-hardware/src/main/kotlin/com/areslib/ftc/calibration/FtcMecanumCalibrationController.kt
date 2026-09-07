@@ -87,7 +87,7 @@ class FtcMecanumCalibrationController {
     private val EMPTY_SYSID_DATA = DoubleArray(0)
     private val sysIdData = DoubleArray(5)
     private val pinpointData = DoubleArray(5)
-    private val trackWidthData = DoubleArray(6)
+    private val trackWidthData = DoubleArray(7)
     private val visionData = DoubleArray(5)
     private val linearData = DoubleArray(5)
 
@@ -463,6 +463,7 @@ class FtcMecanumCalibrationController {
                     trackWidthData[3] = rlPosMeters
                     trackWidthData[4] = rrPosMeters
                     trackWidthData[5] = imuHeading
+                    trackWidthData[6] = store.state.tuning.drive.wheelBaseMeters
                     dataLogging.putDoubleArray("SysId/Data", trackWidthData)
                     telemetryManager.nt4.putDoubleArray("SysId/Data", trackWidthData)
                 }
@@ -491,7 +492,7 @@ class FtcMecanumCalibrationController {
 
                     linearData[0] = timestamp.toDouble()
                     linearData[1] = avgDisplacement
-                    linearData[2] = 0.0
+                    linearData[2] = ticks
                     linearData[3] = 0.0
                     linearData[4] = 0.0
                     dataLogging.putDoubleArray("SysId/Data", linearData)

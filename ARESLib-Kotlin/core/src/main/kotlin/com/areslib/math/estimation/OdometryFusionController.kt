@@ -227,12 +227,12 @@ object OdometryFusionController {
         }
 
         scratchQ.setTo(baseQ)
-        val speed = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY) / (if (dtSeconds > 1e-6) dtSeconds else 0.02)
+        val speed = translationSpeed
         val translationMovementScale = if (isStationary) 0.001 else kotlin.math.max(0.001, speed)
         // Route calibration normalizes heading error by distance + rotation. This lets a turn-in-place
         // grow heading covariance without pretending that translation uncertainty grew equally.
         val headingMovementScale = if (isStationary) 0.001 else
-            kotlin.math.max(0.001, speed + kotlin.math.abs(correctedGyroRate))
+            kotlin.math.max(0.001, speed + kotlin.math.max(odometryYawRate, kotlin.math.abs(correctedGyroRate)))
         val translationProcessNoiseScale = tiltScale * slipScale * translationMovementScale * dtSeconds
         val headingProcessNoiseScale = tiltScale * slipScale * headingMovementScale * dtSeconds
         val crossProcessNoiseScale = kotlin.math.sqrt(

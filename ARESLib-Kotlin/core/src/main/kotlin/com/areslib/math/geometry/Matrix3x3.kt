@@ -127,28 +127,36 @@ data class Matrix3x3(
      * @return Inverted [Matrix3x3] (returns zero matrix if determinant is non-invertible/near-zero).
      */
     fun inverse(): Matrix3x3 {
-        val c00 = m11 * m22 - m12 * m21
-        val c01 = m10 * m22 - m12 * m20
-        val c02 = m10 * m21 - m11 * m20
-
-        val det = m00 * c00 - m01 * c01 + m02 * c02
-
-        if (!det.isFinite() || kotlin.math.abs(det) < 1e-24) return Matrix3x3()
-
-        val invDet = 1.0 / det
+        // Normalize before forming cofactors: a determinant scales cubically with the
+        // input units, so an absolute cutoff rejects well-conditioned small matrices
+        // and unscaled cofactors overflow for large ones.
+        val scale = maxOf(
+            maxOf(kotlin.math.abs(m00), kotlin.math.abs(m01), kotlin.math.abs(m02)),
+            maxOf(kotlin.math.abs(m10), kotlin.math.abs(m11), kotlin.math.abs(m12)),
+            maxOf(kotlin.math.abs(m20), kotlin.math.abs(m21), kotlin.math.abs(m22)))
+        if (!scale.isFinite() || scale == 0.0) return Matrix3x3()
+        val a00 = m00 / scale; val a01 = m01 / scale; val a02 = m02 / scale
+        val a10 = m10 / scale; val a11 = m11 / scale; val a12 = m12 / scale
+        val a20 = m20 / scale; val a21 = m21 / scale; val a22 = m22 / scale
+        val c00 = a11 * a22 - a12 * a21
+        val c01 = a10 * a22 - a12 * a20
+        val c02 = a10 * a21 - a11 * a20
+        val det = a00 * c00 - a01 * c01 + a02 * c02
+        if (!det.isFinite() || kotlin.math.abs(det) <= 1e-15) return Matrix3x3()
+        val invDet = (1.0 / det) / scale
 
         return Matrix3x3(
              c00 * invDet,
-            -(m01 * m22 - m02 * m21) * invDet,
-             (m01 * m12 - m02 * m11) * invDet,
+            -(a01 * a22 - a02 * a21) * invDet,
+             (a01 * a12 - a02 * a11) * invDet,
             
             -c01 * invDet,
-             (m00 * m22 - m02 * m20) * invDet,
-            -(m00 * m12 - m02 * m10) * invDet,
+             (a00 * a22 - a02 * a20) * invDet,
+            -(a00 * a12 - a02 * a10) * invDet,
             
              c02 * invDet,
-            -(m00 * m21 - m01 * m20) * invDet,
-             (m00 * m11 - m01 * m10) * invDet
+            -(a00 * a21 - a01 * a20) * invDet,
+             (a00 * a11 - a01 * a10) * invDet
         )
     }
 

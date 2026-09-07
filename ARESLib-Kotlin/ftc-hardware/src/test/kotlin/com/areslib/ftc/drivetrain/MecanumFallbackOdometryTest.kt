@@ -9,6 +9,16 @@ import org.junit.jupiter.api.Test
 
 class MecanumFallbackOdometryTest {
     @Test
+    fun `fallback integrates a quarter circle with unit arc length`() {
+        val odometry = MecanumFallbackOdometry()
+        odometry.getFallbackPoseUpdate(0L, 0.0, 0.0, 0.0, 0.0, 100.0, 100.0, 0.0)
+        val moved = odometry.getFallbackPoseUpdate(
+            1000L, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, Math.PI / 2.0)
+        assertEquals(2.0 / Math.PI, moved.xMeters, 1e-12)
+        assertEquals(2.0 / Math.PI, moved.yMeters, 1e-12)
+    }
+
+    @Test
     fun `fallback starts at fused pose and preserves independent imu alignment`() {
         val odometry = MecanumFallbackOdometry()
         val start = Pose2d(3.0, 4.0, Rotation2d(1.0))

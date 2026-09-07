@@ -103,16 +103,19 @@ class MecanumFallbackOdometry {
         val dx = (dFl + dFr + dRl + dRr) / 4.0
         val dy = (-dFl + dFr + dRl - dRr) / 4.0
 
-        // Rotate the interval displacement at its midpoint heading. This is materially
-        // more accurate than using only the end heading during simultaneous translation
-        // and rotation, while remaining allocation-free.
+        // The encoders measure arc length. The SE(2) exponential is a midpoint
+        // rotation times sinc(dHeading / 2), converting that arc to its chord.
         val deltaHeading = wrapAngle(alignedHeading - lastAlignedHeadingRadians)
-        val midpointHeading = wrapAngle(lastAlignedHeadingRadians + deltaHeading * 0.5)
+        val halfHeading = deltaHeading * 0.5
+        val chordScale = if (kotlin.math.abs(halfHeading) < 1e-6) {
+            1.0 - halfHeading * halfHeading / 6.0
+        } else kotlin.math.sin(halfHeading) / halfHeading
+        val midpointHeading = lastAlignedHeadingRadians + halfHeading
         val cos = kotlin.math.cos(midpointHeading)
         val sin = kotlin.math.sin(midpointHeading)
 
-        val deltaFieldX = dx * cos - dy * sin
-        val deltaFieldY = dx * sin + dy * cos
+        val deltaFieldX = (dx * cos - dy * sin) * chordScale
+        val deltaFieldY = (dx * sin + dy * cos) * chordScale
 
         fallbackX += deltaFieldX
         fallbackY += deltaFieldY

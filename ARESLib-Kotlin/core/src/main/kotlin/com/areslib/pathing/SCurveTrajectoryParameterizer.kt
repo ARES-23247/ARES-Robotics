@@ -10,18 +10,15 @@ import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
- * High-Performance Jerk-Limited S-Curve Trajectory Parameterizer.
+ * Spatial velocity-profile seed for [JerkLimitedTrajectoryProvider].
  *
- * Parameterizes discrete spatial waypoints into a dynamically smooth, jerk-bounded trajectory [Path].
- * Applies cubic Bezier spline interpolation and 7-segment velocity profiling to limit velocity ($v_{\text{max}}$),
- * acceleration ($a_{\text{max}}$), jerk ($j_{\text{max}}$), and centripetal cornering acceleration ($a_{\text{centripetal}}$).
+ * Linearly samples waypoint segments and applies forward/backward velocity sweeps.
+ * Jerk limits influence the acceleration ramp, but the sweeps alone do not bound jerk
+ * at cruise or corner transitions. Use [JerkLimitedTrajectoryProvider] for a timed
+ * trajectory with checked finite-difference acceleration and jerk limits.
  *
  * ### Mathematical Formulations:
- * 1. **7-Segment Jerk Integration Equations**:
- *    $$j(t) = \pm j_{\text{max}}$$
- *    $$a(t) = a_0 + j(t) \cdot t$$
- *    $$v(t) = v_0 + a_0 t + \frac{1}{2} j(t) \cdot t^2$$
- *    $$s(t) = s_0 + v_0 t + \frac{1}{2} a_0 t^2 + \frac{1}{6} j(t) \cdot t^3$$
+ * 1. **Acceleration-ramp seed**: $a_{k+1} \le a_k + j_{max}\Delta s / v_{avg}$.
  * 2. **Centripetal Cornering Velocity Constraint**:
  *    $$v_{\text{corner}} = \sqrt{\frac{a_{\text{centripetal}}}{\max(\epsilon, |\kappa|)}}$$
  * 3. **Forward/Backward Constraint Integration**:
@@ -221,7 +218,10 @@ object SCurveTrajectoryParameterizer {
                 accelerations[i + 1] = maxAllowedAcc
             } else {
                 val achievedAcc = (velocities[i + 1] * velocities[i + 1] - vCurr * vCurr) / (2.0 * ds)
-                accelerations[i + 1] = achievedAcc.coerceIn(-constraints.maxAccelerationMps2, constraints.maxAccelerationMps2)
+                // A local speed ceiling can force deceleration. It is not an upper
+                // bound on forward acceleration after the corner; carrying its negative
+                // value onward creates artificial zero-speed plateaus.
+                accelerations[i + 1] = achievedAcc.coerceIn(0.0, constraints.maxAccelerationMps2)
             }
         }
 
@@ -250,7 +250,7 @@ object SCurveTrajectoryParameterizer {
                 decel = maxAllowedDec
             } else {
                 decel = ((velocities[i - 1] * velocities[i - 1] - vCurr * vCurr) / (2.0 * ds))
-                    .coerceIn(-constraints.maxAccelerationMps2, constraints.maxAccelerationMps2)
+                    .coerceIn(0.0, constraints.maxAccelerationMps2)
             }
         }
 

@@ -47,7 +47,8 @@ class KalmanFilter(
      * @return Calculated optimal state estimate $\hat{x}_k$.
      */
     fun calculate(measurement: Double): Double {
-        if (!measurement.isFinite() || !processNoise.isFinite() || !measurementNoise.isFinite()) {
+        if (!measurement.isFinite() || !processNoise.isFinite() || processNoise < 0.0 ||
+            !measurementNoise.isFinite() || measurementNoise < 0.0) {
             return x
         }
 
@@ -62,14 +63,15 @@ class KalmanFilter(
 
         // 2. Correct (Measurement Update)
         val denominator = p + measurementNoise
-        val k = if (kotlin.math.abs(denominator) > 1e-12) p / denominator else 0.0 // Kalman Gain with div-by-zero protection
+        val k = if (denominator > 0.0) p / denominator else 0.0
         
         val delta = measurement - x
         if (delta.isFinite()) {
             x += k * delta
         }
         
-        p *= (1.0 - k)                     // Update error covariance
+        // Equivalent to (1 - K) P, without subtracting nearly equal numbers when R << P.
+        p = if (denominator > 0.0) measurementNoise * k else p
 
         return x
     }

@@ -277,3 +277,12 @@ published robot-state frame. A connected NT4 socket is not proof that the robot 
 commissioning and readiness UI must observe this changing topic locally before presenting cached
 hardware values as live. The counter is transport evidence only: it does not certify any sensor,
 actuator, wiring, or physical safety check.
+
+## FTC calibration sample configuration
+
+`SysId/Data` carries one packed calibration sample. `TRACK_WIDTH_SPIN` uses
+`[timestampMs, flMeters, frMeters, rlMeters, rrMeters, headingRad, wheelBaseMeters]`.
+`LINEAR_DRIVE` uses `[timestampMs, displacementMeters, ticksPerMeter, 0, 0]`.
+The configuration values are those actually used by the robot during collection. Studio rejects
+missing or changing configuration instead of substituting a nominal wheelbase or encoder scale.
+Vision calibration uses a circular heading mean and wrapped residuals in radians.
