@@ -53,6 +53,12 @@ use these stable result checks alongside the existing required security/policy c
 - `Desktop package validation result`
 - `CodeQL validation result`
 
+Require `Desktop package validation result` instead of the two OS-specific native-package check
+names. When the entire matrix is skipped, GitHub reports one unexpanded matrix job name and never
+creates those two checks. Requiring them would leave documentation-only PRs blocked indefinitely.
+The package result gate depends on the complete matrix and fails if either selected native build
+fails, so it preserves both build requirements while allowing intentional scope skips.
+
 The source change adds these check jobs; it does not edit hosted branch-protection/ruleset settings.
 Existing product job names are retained. Required checks still run on merge-queue commits and do not
 rerun on the resulting `main` push.
