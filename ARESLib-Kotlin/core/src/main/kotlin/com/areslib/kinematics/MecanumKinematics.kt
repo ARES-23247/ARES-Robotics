@@ -34,7 +34,8 @@ class MecanumKinematics(
     private val wheelBaseMeters: Double
 ) {
     init {
-        require(trackWidthMeters > 0.0 && wheelBaseMeters > 0.0) {
+        require(trackWidthMeters.isFinite() && wheelBaseMeters.isFinite() &&
+            trackWidthMeters > 0.0 && wheelBaseMeters > 0.0) {
             "trackWidthMeters and wheelBaseMeters must both be positive (got trackWidth=$trackWidthMeters, wheelBase=$wheelBaseMeters)"
         }
     }
@@ -107,7 +108,11 @@ class MecanumKinematics(
          */
         fun normalize(speeds: DoubleArray, maxSpeedMetersPerSecond: Double) {
             if (speeds.size < 4) return
-            if (maxSpeedMetersPerSecond <= 0.0 || maxSpeedMetersPerSecond.isNaN()) {
+            val maxMagnitude = kotlin.math.max(
+                kotlin.math.max(kotlin.math.abs(speeds[0]), kotlin.math.abs(speeds[1])),
+                kotlin.math.max(kotlin.math.abs(speeds[2]), kotlin.math.abs(speeds[3])))
+            val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
+            if (scale == 0.0) {
                 speeds[0] = 0.0
                 speeds[1] = 0.0
                 speeds[2] = 0.0
@@ -115,14 +120,7 @@ class MecanumKinematics(
                 return
             }
 
-            val m0 = kotlin.math.abs(speeds[0])
-            val m1 = kotlin.math.abs(speeds[1])
-            val m2 = kotlin.math.abs(speeds[2])
-            val m3 = kotlin.math.abs(speeds[3])
-            val maxMagnitude = kotlin.math.max(kotlin.math.max(m0, m1), kotlin.math.max(m2, m3))
-
-            if (maxMagnitude > maxSpeedMetersPerSecond) {
-                val scale = maxSpeedMetersPerSecond / maxMagnitude
+            if (scale < 1.0) {
                 speeds[0] *= scale
                 speeds[1] *= scale
                 speeds[2] *= scale

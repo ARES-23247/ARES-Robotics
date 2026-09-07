@@ -43,8 +43,9 @@ data class MecanumWheelSpeeds(
             abs(backRightMetersPerSecond)
         )
         
-        if (maxMagnitude > maxSpeedMetersPerSecond) {
-            val scale = maxSpeedMetersPerSecond / maxMagnitude
+        val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
+        if (scale == 0.0) return MecanumWheelSpeeds()
+        if (scale < 1.0) {
             return MecanumWheelSpeeds(
                 frontLeftMetersPerSecond * scale,
                 frontRightMetersPerSecond * scale,

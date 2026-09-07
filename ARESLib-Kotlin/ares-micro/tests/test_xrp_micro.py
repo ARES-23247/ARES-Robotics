@@ -103,8 +103,8 @@ class TestKinematics(unittest.TestCase):
         heading[0] = math.pi / 2.0
         drivetrain.update_odometry(dt=1.0)
         self.assertAlmostEqual(drivetrain.heading, math.pi / 2.0)
-        self.assertAlmostEqual(drivetrain.x, math.sqrt(0.5), places=5)
-        self.assertAlmostEqual(drivetrain.y, math.sqrt(0.5), places=5)
+        self.assertAlmostEqual(drivetrain.x, 2.0 / math.pi, places=5)
+        self.assertAlmostEqual(drivetrain.y, 2.0 / math.pi, places=5)
 
     def test_wrap_angle(self):
         self.assertAlmostEqual(wrap_angle(0.0), 0.0)

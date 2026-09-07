@@ -74,14 +74,14 @@ class SysIdDataCollector(
                         val idx = frame.key.removePrefix("SysId/Data/").toIntOrNull()
                         if (idx != null) {
                             val t = frame.timestampMs
-                            val arr = dataBuffer.getOrPut(t) { DoubleArray(6) }
-                            if (idx < arr.size) {
+                            val arr = dataBuffer.getOrPut(t) { DoubleArray(7) }
+                            if (idx in arr.indices) {
                                 arr[idx] = frame.value
                             }
                             val expectedMaxIdx = when (_state.value.activeCalibration) {
                                 "PINPOINT_SPIN", "VISION_CALIBRATION" -> 3
                                 "LINEAR_DRIVE" -> 4
-                                "TRACK_WIDTH_SPIN" -> 5
+                                "TRACK_WIDTH_SPIN" -> 6
                                 else -> 4
                             }
 

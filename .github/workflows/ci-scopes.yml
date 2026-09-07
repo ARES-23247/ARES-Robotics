@@ -1,0 +1,91 @@
+name: Resolve CI scopes
+
+on:
+  workflow_call:
+    outputs:
+      full:
+        description: Whether full validation is affected
+        value: ${{ jobs.classify.outputs.full }}
+      lib:
+        description: Whether lib validation is affected
+        value: ${{ jobs.classify.outputs.lib }}
+      ftc:
+        description: Whether ftc validation is affected
+        value: ${{ jobs.classify.outputs.ftc }}
+      frc:
+        description: Whether frc validation is affected
+        value: ${{ jobs.classify.outputs.frc }}
+      ftc_starter:
+        description: Whether ftc_starter validation is affected
+        value: ${{ jobs.classify.outputs.ftc_starter }}
+      frc_starter:
+        description: Whether frc_starter validation is affected
+        value: ${{ jobs.classify.outputs.frc_starter }}
+      xrp_starter:
+        description: Whether xrp_starter validation is affected
+        value: ${{ jobs.classify.outputs.xrp_starter }}
+      analytics:
+        description: Whether analytics validation is affected
+        value: ${{ jobs.classify.outputs.analytics }}
+      analytics_app:
+        description: Whether analytics_app validation is affected
+        value: ${{ jobs.classify.outputs.analytics_app }}
+      analytics_shared:
+        description: Whether analytics_shared validation is affected
+        value: ${{ jobs.classify.outputs.analytics_shared }}
+      analytics_gateway:
+        description: Whether analytics_gateway validation is affected
+        value: ${{ jobs.classify.outputs.analytics_gateway }}
+      dashboard:
+        description: Whether dashboard validation is affected
+        value: ${{ jobs.classify.outputs.dashboard }}
+      autos:
+        description: Whether autos validation is affected
+        value: ${{ jobs.classify.outputs.autos }}
+      packages:
+        description: Whether packages validation is affected
+        value: ${{ jobs.classify.outputs.packages }}
+      jvm:
+        description: Whether jvm validation is affected
+        value: ${{ jobs.classify.outputs.jvm }}
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    name: Classify affected products
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.classify.outputs.full }}
+      lib: ${{ steps.classify.outputs.lib }}
+      ftc: ${{ steps.classify.outputs.ftc }}
+      frc: ${{ steps.classify.outputs.frc }}
+      ftc_starter: ${{ steps.classify.outputs.ftc_starter }}
+      frc_starter: ${{ steps.classify.outputs.frc_starter }}
+      xrp_starter: ${{ steps.classify.outputs.xrp_starter }}
+      analytics: ${{ steps.classify.outputs.analytics }}
+      analytics_app: ${{ steps.classify.outputs.analytics_app }}
+      analytics_shared: ${{ steps.classify.outputs.analytics_shared }}
+      analytics_gateway: ${{ steps.classify.outputs.analytics_gateway }}
+      dashboard: ${{ steps.classify.outputs.dashboard }}
+      autos: ${{ steps.classify.outputs.autos }}
+      packages: ${{ steps.classify.outputs.packages }}
+      jvm: ${{ steps.classify.outputs.jvm }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Resolve scopes for the checked-out review tree
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: >-
+          python scripts/classify_ci_paths.py
+          --event-name "$EVENT_NAME"
+          --base-sha "$BASE_SHA"
+          --head-sha "$GITHUB_SHA"
+          --github-output "$GITHUB_OUTPUT"
+          --github-summary "$GITHUB_STEP_SUMMARY"
+

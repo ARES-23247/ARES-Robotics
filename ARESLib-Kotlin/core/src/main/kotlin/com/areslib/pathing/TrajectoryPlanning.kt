@@ -318,15 +318,24 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             spacingMeters = request.sampleSpacingMeters
         )
         val trajectory = timeParameterize(path, request.limits)
+        val diagnostics = mutableListOf(TrajectoryDiagnostic(
+            TrajectoryDiagnosticSeverity.INFO,
+            "kinematic_profile",
+            "Generated a kinematic profile with checked sample acceleration and jerk; no drivetrain force optimization was applied"
+        ))
+        val first = trajectory.states.first()
+        val last = trajectory.states.last()
+        if (abs(hypot(first.velocityXMps, first.velocityYMps) - request.startVelocityMps) > 1e-6 ||
+            abs(hypot(last.velocityXMps, last.velocityYMps) - request.endVelocityMps) > 1e-6) {
+            diagnostics += TrajectoryDiagnostic(
+                TrajectoryDiagnosticSeverity.WARNING,
+                "boundary_velocity_scaled",
+                "Time scaling reduced the requested entry or exit speed; review the trajectory handover"
+            )
+        }
         return TrajectoryGenerationResult(
             trajectory = trajectory,
-            diagnostics = listOf(
-                TrajectoryDiagnostic(
-                    TrajectoryDiagnosticSeverity.INFO,
-                    "kinematic_profile",
-                    "Generated a jerk-limited kinematic profile; no drivetrain force optimization was applied"
-                )
-            )
+            diagnostics = diagnostics
         )
     }
 
@@ -334,6 +343,7 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
         val count = path.points.size
         val segmentTimes = DoubleArray(max(0, count - 1))
         val segmentAngularVelocities = DoubleArray(segmentTimes.size)
+        var timeScale = 1.0
         for (index in segmentTimes.indices) {
             val before = path.points[index]
             val after = path.points[index + 1]
@@ -347,7 +357,8 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             }
             val headingDelta = wrapAngle(after.pose.heading.radians - before.pose.heading.radians)
             val rotationTime = abs(headingDelta) / limits.maxAngularVelocityRps
-            segmentTimes[index] = max(translationTime, rotationTime).coerceAtLeast(1e-6)
+            segmentTimes[index] = translationTime.coerceAtLeast(1e-6)
+            timeScale = max(timeScale, rotationTime / segmentTimes[index])
             segmentAngularVelocities[index] = headingDelta / segmentTimes[index]
         }
 
@@ -359,15 +370,34 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
                 abs(segmentAngularVelocities[index] - segmentAngularVelocities[index - 1]) / averageTime
             )
         }
-        val angularScale = if (maximumAlpha > limits.maxAngularAccelerationRps2) {
-            sqrt(maximumAlpha / limits.maxAngularAccelerationRps2)
-        } else {
-            1.0
+        timeScale = max(timeScale, sqrt(maximumAlpha / limits.maxAngularAccelerationRps2))
+
+        // The spatial sweeps are a seed, not a proof of the final vector acceleration
+        // or jerk bounds (especially at a turn or a cruise transition). Measure those
+        // derivatives and stretch the entire clock coherently. Under t' = s*t,
+        // velocity, acceleration and jerk scale by 1/s, 1/s² and 1/s³ respectively.
+        var previousAx = 0.0
+        var previousAy = 0.0
+        for (index in segmentTimes.indices) {
+            val before = path.points[index]
+            val after = path.points[index + 1]
+            val dt = segmentTimes[index]
+            val ax = (after.velocityMps * cos(after.tangentRadians) -
+                before.velocityMps * cos(before.tangentRadians)) / dt
+            val ay = (after.velocityMps * sin(after.tangentRadians) -
+                before.velocityMps * sin(before.tangentRadians)) / dt
+            timeScale = max(timeScale, sqrt(hypot(ax, ay) / limits.maxAccelerationMps2))
+            if (index > 0) {
+                val jerk = hypot(ax - previousAx, ay - previousAy) / dt
+                timeScale = max(timeScale, Math.cbrt(jerk / limits.maxJerkMps3))
+            }
+            previousAx = ax
+            previousAy = ay
         }
-        if (angularScale > 1.0) {
+        if (timeScale > 1.0) {
             for (index in segmentTimes.indices) {
-                segmentTimes[index] *= angularScale
-                segmentAngularVelocities[index] /= angularScale
+                segmentTimes[index] *= timeScale
+                segmentAngularVelocities[index] /= timeScale
             }
         }
 
@@ -380,7 +410,7 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
         val omega = DoubleArray(count)
         for (index in 0 until count) {
             val point = path.points[index]
-            val adjustedSpeed = point.velocityMps / angularScale
+            val adjustedSpeed = point.velocityMps / timeScale
             velocityX[index] = adjustedSpeed * cos(point.tangentRadians)
             velocityY[index] = adjustedSpeed * sin(point.tangentRadians)
             omega[index] = when {

@@ -94,6 +94,7 @@ class SwerveKinematics(
                 outStates[i].speedMetersPerSecond = 0.0
                 outStates[i].angle = previousStates[i].angle
                 previousStates[i].speedMetersPerSecond = 0.0
+                previousSteerVels[i] = 0.0
             }
             hasPreviousState = true
             return
@@ -212,14 +213,12 @@ class SwerveKinematics(
         var realMaxSpeed = 0.0
         for (state in moduleStates) {
             val absSpeed = kotlin.math.abs(state.speedMetersPerSecond)
-            if (absSpeed > realMaxSpeed) {
-                realMaxSpeed = absSpeed
-            }
+            realMaxSpeed = kotlin.math.max(realMaxSpeed, absSpeed)
         }
-        if (realMaxSpeed > maxSpeedMps && realMaxSpeed > 1e-4) {
-            val scale = maxSpeedMps / realMaxSpeed
+        val scale = wheelSpeedScale(realMaxSpeed, maxSpeedMps)
+        if (scale < 1.0) {
             for (state in moduleStates) {
-                state.speedMetersPerSecond *= scale
+                state.speedMetersPerSecond = if (scale == 0.0) 0.0 else state.speedMetersPerSecond * scale
             }
         }
     }

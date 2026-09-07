@@ -15,32 +15,7 @@ concurrency:
 
 jobs:
   changes:
-    name: Classify affected products
-    runs-on: ubuntu-latest
-    outputs:
-      full: ${{ steps.classify.outputs.full }}
-      lib: ${{ steps.classify.outputs.lib }}
-      ftc: ${{ steps.classify.outputs.ftc }}
-      frc: ${{ steps.classify.outputs.frc }}
-      ftc_starter: ${{ steps.classify.outputs.ftc_starter }}
-      frc_starter: ${{ steps.classify.outputs.frc_starter }}
-      xrp_starter: ${{ steps.classify.outputs.xrp_starter }}
-      analytics: ${{ steps.classify.outputs.analytics }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Classify changed paths
-        id: classify
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: >-
-          python scripts/classify_ci_paths.py
-          --event-name "${{ github.event_name }}"
-          --base-sha "$BASE_SHA"
-          --head-sha "$GITHUB_SHA"
-          --github-output "$GITHUB_OUTPUT"
+    uses: ./.github/workflows/ci-scopes.yml
 
   policy:
     name: Source and release policy
@@ -297,11 +272,31 @@ jobs:
         env:
           CANDIDATE_RESULT: ${{ needs.candidate.result }}
           CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+          TEST_APP: ${{ needs.changes.outputs.analytics_app }}
+          TEST_SHARED: ${{ needs.changes.outputs.analytics_shared }}
+          TEST_GATEWAY: ${{ needs.changes.outputs.analytics_gateway }}
         run: |
           dependency_args=()
           if [[ "$CANDIDATE_RESULT" == "success" ]]; then
             dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
             dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
           fi
-          ./gradlew :shared:test :app:test :gateway:test \
+          test_tasks=()
+          if [[ "$TEST_SHARED" == "true" ]]; then test_tasks+=(:shared:test); fi
+          if [[ "$TEST_APP" == "true" ]]; then test_tasks+=(:app:test); fi
+          if [[ "$TEST_GATEWAY" == "true" ]]; then test_tasks+=(:gateway:test); fi
+          if (( ${#test_tasks[@]} == 0 )); then echo "No selected Studio test tasks" >&2; exit 1; fi
+          ./gradlew "${test_tasks[@]}" \
             "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+
+  result:
+    name: Monorepo CI result
+    needs: [changes, policy, candidate, ftc, frc, ftc-starter, frc-starter, xrp-starter, analytics]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check selected scope results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python scripts/check_ci_results.py

@@ -7,11 +7,16 @@ import math
 
 def wrap_angle(angle_rad):
     """Normalizes an angle to [-pi, pi]."""
-    while angle_rad > math.pi:
-        angle_rad -= 2.0 * math.pi
-    while angle_rad < -math.pi:
-        angle_rad += 2.0 * math.pi
-    return angle_rad
+    if not math.isfinite(angle_rad):
+        raise ValueError("Angle must be finite")
+    wrapped = (angle_rad + math.pi) % (2.0 * math.pi) - math.pi
+    return math.pi if wrapped == -math.pi and angle_rad > 0.0 else wrapped
+
+
+def arc_chord_scale(delta_heading):
+    """SE(2) arc-to-chord factor for a midpoint rotation, stable at zero."""
+    half = delta_heading * 0.5
+    return 1.0 - half * half / 6.0 if abs(half) < 1e-6 else math.sin(half) / half
 
 class DifferentialDriveKinematics:
     """
@@ -22,7 +27,7 @@ class DifferentialDriveKinematics:
     - Counter-clockwise rotation = +Omega
     """
     def __init__(self, track_width_meters=0.155):
-        if track_width_meters <= 0.0:
+        if not math.isfinite(track_width_meters) or track_width_meters <= 0.0:
             raise ValueError("track_width_meters must be positive")
         self.track_width = float(track_width_meters)
         self._half_track = self.track_width / 2.0
@@ -56,7 +61,8 @@ class MecanumKinematics:
     Converts chassis velocities (vx, vy, omega) to/from 4 wheel speeds (FL, FR, BL, BR).
     """
     def __init__(self, track_width_meters=0.155, wheel_base_meters=0.140):
-        if track_width_meters <= 0.0 or wheel_base_meters <= 0.0:
+        if (not math.isfinite(track_width_meters) or not math.isfinite(wheel_base_meters)
+                or track_width_meters <= 0.0 or wheel_base_meters <= 0.0):
             raise ValueError("Dimensions must be positive")
         self.track_width = float(track_width_meters)
         self.wheel_base = float(wheel_base_meters)

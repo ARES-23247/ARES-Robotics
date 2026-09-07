@@ -178,8 +178,9 @@ class EstimatorMathRegressionTest {
 
         // tilt 25.75 * slip 10 * speed 2 m/s * dt 0.2 s
         assertEquals(103.0, state.history[1].qScale, 1e-12)
-        // Heading also includes measured angular rate and is independently replayed.
-        assertEquals(108.15, state.history[1].qHeadingScale, 1e-12)
+        // Heading includes the larger of odometry and gyro angular rates, including
+        // wheel/gyro disagreement, and is independently replayed.
+        assertEquals(154.5, state.history[1].qHeadingScale, 1e-12)
         val forwardCovariance = state.covarianceArray.copyOf()
 
         val scratchHistory = HistoryBuffer(150)

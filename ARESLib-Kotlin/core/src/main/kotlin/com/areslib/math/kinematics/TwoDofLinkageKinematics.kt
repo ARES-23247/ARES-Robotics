@@ -108,6 +108,7 @@ class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
      * @return [LinkageJointAngles] if point is reachable, or null if target is outside workspace.
      */
     fun inverseKinematics(x: Double, y: Double, config: ElbowConfiguration = ElbowConfiguration.ELBOW_UP): LinkageJointAngles? {
+        if (!x.isFinite() || !y.isFinite()) return null
         val rSq = x * x + y * y
         val l1 = params.l1
         val l2 = params.l2

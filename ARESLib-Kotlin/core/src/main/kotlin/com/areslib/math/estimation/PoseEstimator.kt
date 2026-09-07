@@ -222,23 +222,7 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
     fun deepCopy(): HistoryBuffer {
         if (readOnly && count == 0) return HistoryBuffer()
         val newBuf = HistoryBuffer(capacity)
-        for (i in 0 until capacity) {
-            val src = entries[i]
-            val dest = newBuf.entries[i]
-            dest.timestampMs = src.timestampMs
-            dest.x = src.x
-            dest.y = src.y
-            dest.headingRad = src.headingRad
-            dest.covariance.setTo(src.covariance)
-            dest.qScale = src.qScale
-            dest.qHeadingScale = src.qHeadingScale
-            dest.deltaXRobot = src.deltaXRobot
-            dest.deltaYRobot = src.deltaYRobot
-            dest.deltaHeadingRad = src.deltaHeadingRad
-            dest.hasMotion = src.hasMotion
-        }
-        newBuf.head = head
-        newBuf.count = count
+        copyInto(newBuf)
         return newBuf
     }
 
@@ -271,25 +255,15 @@ class HistoryBuffer(private val capacity: Int = 150) : AbstractList<PoseHistoryE
             }
             return
         }
-        destination.head = this.head
-        destination.count = this.count
-        for (i in 0 until capacity) {
-            val src = this.entries[i]
-            val dest = destination.entries[i]
-            dest.timestampMs = src.timestampMs
-            dest.x = src.x
-            dest.y = src.y
-            dest.headingRad = src.headingRad
-            dest.covariance.setTo(src.covariance)
-            dest.qScale = src.qScale
-            dest.qHeadingScale = src.qHeadingScale
-            dest.deltaXRobot = src.deltaXRobot
-            dest.deltaYRobot = src.deltaYRobot
-            dest.deltaHeadingRad = src.deltaHeadingRad
-            dest.hasMotion = src.hasMotion
+        destination.head = head
+        destination.count = count
+        // Inactive ring slots cannot be observed and will be overwritten before use.
+        for (i in 0 until count) {
+            val physicalIndex = (head - count + i + capacity) % capacity
+            copyEntry(entries[physicalIndex], destination.entries[physicalIndex])
         }
     }
-    
+
     /**
      * Updates an existing historical entry at [index] in-place with new pose data.
      *
@@ -398,6 +372,9 @@ data class PoseEstimatorState(
 ) {
     /** Timestamp of the newest accepted drive observation; history itself is runtime-owned. */
     var lastObservationTimestampMs: Long = -1L
+    // Replay stores odometry, not camera corrections. Rewinding past an accepted
+    // camera correction would erase it, so vision capture times must be ordered.
+    internal var lastVisionTimestampMs: Long = Long.MIN_VALUE
     /**
      * Creates an independently owned mutable estimator workspace.
      *
@@ -409,7 +386,10 @@ data class PoseEstimatorState(
         covarianceArray = covarianceArray.copyOf(),
         history = history.deepCopy(),
         lastKalmanGain = lastKalmanGain.copyOf()
-    ).also { it.lastObservationTimestampMs = lastObservationTimestampMs }
+    ).also {
+        it.lastObservationTimestampMs = lastObservationTimestampMs
+        it.lastVisionTimestampMs = lastVisionTimestampMs
+    }
 
     val estimatedPose: Pose2d
         get() = Pose2d(estimatedPoseX, estimatedPoseY, Rotation2d(estimatedPoseHeading))

@@ -33,7 +33,7 @@ class DifferentialDriveKinematics(
     val trackWidthMeters: Double
 ) {
     init {
-        require(trackWidthMeters > 0.0) {
+        require(trackWidthMeters.isFinite() && trackWidthMeters > 0.0) {
             "trackWidthMeters must be positive (got trackWidth=$trackWidthMeters)"
         }
     }
@@ -116,18 +116,15 @@ class DifferentialDriveKinematics(
          */
         fun normalize(speeds: DoubleArray, maxSpeedMetersPerSecond: Double) {
             if (speeds.size < 2) return
-            if (maxSpeedMetersPerSecond <= 0.0 || maxSpeedMetersPerSecond.isNaN()) {
+            val maxMagnitude = kotlin.math.max(kotlin.math.abs(speeds[0]), kotlin.math.abs(speeds[1]))
+            val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
+            if (scale == 0.0) {
                 speeds[0] = 0.0
                 speeds[1] = 0.0
                 return
             }
 
-            val m0 = kotlin.math.abs(speeds[0])
-            val m1 = kotlin.math.abs(speeds[1])
-            val maxMagnitude = kotlin.math.max(m0, m1)
-
-            if (maxMagnitude > maxSpeedMetersPerSecond) {
-                val scale = maxSpeedMetersPerSecond / maxMagnitude
+            if (scale < 1.0) {
                 speeds[0] *= scale
                 speeds[1] *= scale
             }

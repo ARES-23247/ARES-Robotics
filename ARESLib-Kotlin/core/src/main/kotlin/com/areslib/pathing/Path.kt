@@ -97,7 +97,8 @@ data class Path(
         if (distanceMeters <= points.first().distanceMeters) return points.first()
         if (distanceMeters >= points.last().distanceMeters) return points.last()
 
-        for (i in 0 until points.size - 1) {
+        val i = segmentIndex(distanceMeters)
+        if (i >= 0) {
             val p1 = points[i]
             val p2 = points[i + 1]
 
@@ -159,7 +160,8 @@ data class Path(
             return
         }
 
-        for (i in 0 until points.size - 1) {
+        val i = segmentIndex(distanceMeters)
+        if (i >= 0) {
             val p1 = points[i]
             val p2 = points[i + 1]
 
@@ -188,6 +190,18 @@ data class Path(
         out.x = last.pose.x; out.y = last.pose.y; out.headingRad = last.pose.heading.radians
         out.velocityMps = last.velocityMps; out.distanceMeters = last.distanceMeters; out.curvature = last.curvature
         out.tangentRadians = last.tangentRadians
+    }
+
+    /** Finds the first segment ending at or beyond the query in O(log N) point reads. */
+    private fun segmentIndex(distanceMeters: Double): Int {
+        if (distanceMeters.isNaN()) return -1
+        var low = 1
+        var high = points.lastIndex
+        while (low < high) {
+            val middle = low + (high - low) / 2
+            if (points[middle].distanceMeters < distanceMeters) low = middle + 1 else high = middle
+        }
+        return low - 1
     }
 
     /**

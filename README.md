@@ -75,7 +75,10 @@ Public FTC, FRC, and XRP starter repositories are release mirrors. Their bytes a
 `scripts/export-starter-mirrors.ps1`, and reproducible release archives are built with
 `scripts/build-starter-archives.ps1`; manual drift or checksum mismatch is rejected by CI.
 
-Protected pull requests run:
+Protected pull requests and merge-queue commits select affected products and their consumers using
+one [CI scope resolver](docs/ci-test-scopes.md). For example, gateway-only changes run gateway tests,
+shared Studio model changes run all three Studio modules, and ARESLib/shared build changes run the
+full matrix. Available checks include:
 
 - ARESLib tests, API checks, and isolated candidate publication
 - FTC, FRC, both starter, simulator, and Studio/gateway tests against that exact candidate
@@ -83,10 +86,12 @@ Protected pull requests run:
 - dashboard performance validation and CodeQL
 - real Windows MSI and native macOS DMG packaging, including packaged-project loading
 
-The same required checks run for merge-queue commits. They do not rerun after the reviewed tree is
-merged to `main`; scheduled and manual workflows remain available for independent health checks.
+Unaffected jobs report explicit skips; stable result checks propagate classification and test failures.
+Checks do not rerun after the reviewed tree is merged to `main`; scheduled and manual workflows remain
+available for independent health checks. Manual runs select all scopes for the dispatched workflow.
 
-The packaging run seals those exact outputs into an attested release candidate. After merge, the
+When release artifacts are affected, the packaging run executes its complete verification contract
+and seals those exact outputs into an attested release candidate. After merge, the
 protected promotion workflow accepts only a candidate whose complete Git tree equals `main`, whose
 originating run and workflow are trusted, and whose file hashes and canonical versions still match.
 It publishes the verified Maven, starter, MSI, and DMG bytes without rerunning compilation or tests.

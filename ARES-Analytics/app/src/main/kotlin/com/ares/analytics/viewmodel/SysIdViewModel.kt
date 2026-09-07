@@ -139,7 +139,7 @@ class SysIdViewModel(
     private val _state = MutableStateFlow(SysIdState())
     val state: StateFlow<SysIdState> = _state.asStateFlow()
 
-    private val regressionSolver = SysIdRegressionSolver(nt4ClientService, _state)
+    private val regressionSolver = SysIdRegressionSolver(_state)
     private val signalGenerator = SysIdSignalGenerator(nt4ClientService, _state, scope, tuningProposalInbox = tuningProposalInbox)
     private val dataCollector = SysIdDataCollector(
         nt4ClientService,
