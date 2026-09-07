@@ -3,14 +3,15 @@
   <groupId>org.aresfirst.ares</groupId>
   <artifactId>xrp-hardware</artifactId>
   <versioning>
-    <latest>17.0.1</latest>
-    <release>17.0.1</release>
+    <latest>17.0.2</latest>
+    <release>17.0.2</release>
     <versions>
       <version>15.0.4</version>
       <version>16.0.0</version>
       <version>16.0.1</version>
       <version>17.0.1</version>
+      <version>17.0.2</version>
     </versions>
-    <lastUpdated>20260904220459</lastUpdated>
+    <lastUpdated>20260907230035</lastUpdated>
   </versioning>
 </metadata>
