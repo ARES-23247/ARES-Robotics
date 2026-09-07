@@ -10,7 +10,12 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    uses: ./.github/workflows/ci-scopes.yml
+
   verify:
+    needs: changes
+    if: needs.changes.outputs.autos == 'true'
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -27,3 +32,15 @@ jobs:
       - name: Verify autonomous contracts
         shell: powershell
         run: .\verify-autos.ps1
+
+  result:
+    name: Autonomous validation result
+    needs: [changes, verify]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check selected scope results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python scripts/check_ci_results.py

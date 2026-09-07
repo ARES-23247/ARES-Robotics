@@ -26,7 +26,12 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    uses: ./.github/workflows/ci-scopes.yml
+
   candidate:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
     name: Prepare package dependency candidate
     runs-on: ubuntu-latest
     outputs:
@@ -434,3 +439,15 @@ jobs:
           path: release-candidate-${{ github.run_id }}.tar.gz
           if-no-files-found: error
           retention-days: 30
+
+  result:
+    name: Desktop package validation result
+    needs: [changes, candidate, studio-verification, zero-code-project-acceptance, build-packages, starter-archives, seal-candidate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check selected scope results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python scripts/check_ci_results.py

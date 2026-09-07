@@ -17,7 +17,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    uses: ./.github/workflows/ci-scopes.yml
+
   analyze:
+    needs: changes
+    if: needs.changes.outputs.jvm == 'true'
     name: CodeQL Java/Kotlin monorepo
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -74,6 +79,8 @@ jobs:
         uses: github/codeql-action/analyze@v4
 
   analyze-xrp-python:
+    needs: changes
+    if: needs.changes.outputs.xrp_starter == 'true'
     name: CodeQL XRP Python
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -101,3 +108,15 @@ jobs:
           ./ares verify
       - name: Analyze Python
         uses: github/codeql-action/analyze@v4
+
+  result:
+    name: CodeQL validation result
+    needs: [changes, analyze, analyze-xrp-python]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check selected scope results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python scripts/check_ci_results.py

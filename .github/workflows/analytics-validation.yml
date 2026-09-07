@@ -23,8 +23,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    uses: ./.github/workflows/ci-scopes.yml
+
   smoke:
-    if: github.event_name != 'schedule' && inputs.profile != 'soak'
+    needs: changes
+    if: needs.changes.outputs.dashboard == 'true' && github.event_name != 'schedule' && inputs.profile != 'soak'
     name: Dashboard smoke and performance budgets
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -57,6 +61,7 @@ jobs:
             ARES-Analytics/app/build/test-results/dashboardSmoke/**
 
   soak:
+    needs: changes
     if: github.event_name == 'schedule' || inputs.profile == 'soak'
     name: Dashboard 30-minute-equivalent soak
     runs-on: ubuntu-latest
@@ -84,3 +89,15 @@ jobs:
             ARES-Analytics/app/build/reports/dashboard-validation/**
             ARES-Analytics/app/build/reports/tests/dashboardSoak/**
             ARES-Analytics/app/build/test-results/dashboardSoak/**
+
+  result:
+    name: Analytics validation result
+    needs: [changes, smoke, soak]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check selected scope results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python scripts/check_ci_results.py
