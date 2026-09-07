@@ -86,3 +86,22 @@ go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -shellcheck= -pyflakes
 
 The regression suite includes both review events, cross-product Git renames, mixed changes, shared
 module dependencies, unusual filenames, more than 4,000 changed paths, and failed/cancelled jobs.
+
+## Previewing a branch's scopes
+
+After fetching the current base branch, you can inspect the scope selection before opening a PR:
+
+```powershell
+git fetch origin
+$scopeBase = git rev-parse origin/main
+$scopeHead = git rev-parse HEAD
+$scopeOutput = Join-Path ([IO.Path]::GetTempPath()) ("ares-ci-scopes-" + [guid]::NewGuid() + ".txt")
+python scripts/classify_ci_paths.py --event-name pull_request --base-sha $scopeBase --head-sha $scopeHead --github-output $scopeOutput
+Get-Content -LiteralPath $scopeOutput
+```
+
+This compares committed branch content with the fetched base. Uncommitted edits are not included;
+GitHub additionally tests the synthetic merge tree described above. For a PR that changes only this
+document, every product scope should be `false`. Source/release policy and the five final-status
+checks should pass, while product tests, dashboard validation, CodeQL analysis, and package jobs
+report explicit skips. A full validation can still be requested with a manual workflow run.
