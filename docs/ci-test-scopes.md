@@ -53,6 +53,12 @@ use these stable result checks alongside the existing required security/policy c
 - `Desktop package validation result`
 - `CodeQL validation result`
 
+Require `Desktop package validation result` instead of the two OS-specific native-package check
+names. When the entire matrix is skipped, GitHub reports one unexpanded matrix job name and never
+creates those two checks. Requiring them would leave documentation-only PRs blocked indefinitely.
+The package result gate depends on the complete matrix and fails if either selected native build
+fails, so it preserves both build requirements while allowing intentional scope skips.
+
 The source change adds these check jobs; it does not edit hosted branch-protection/ruleset settings.
 Existing product job names are retained. Required checks still run on merge-queue commits and do not
 rerun on the resulting `main` push.
@@ -86,3 +92,22 @@ go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -shellcheck= -pyflakes
 
 The regression suite includes both review events, cross-product Git renames, mixed changes, shared
 module dependencies, unusual filenames, more than 4,000 changed paths, and failed/cancelled jobs.
+
+## Previewing a branch's scopes
+
+After fetching the current base branch, you can inspect the scope selection before opening a PR:
+
+```powershell
+git fetch origin
+$scopeBase = git rev-parse origin/main
+$scopeHead = git rev-parse HEAD
+$scopeOutput = Join-Path ([IO.Path]::GetTempPath()) ("ares-ci-scopes-" + [guid]::NewGuid() + ".txt")
+python scripts/classify_ci_paths.py --event-name pull_request --base-sha $scopeBase --head-sha $scopeHead --github-output $scopeOutput
+Get-Content -LiteralPath $scopeOutput
+```
+
+This compares committed branch content with the fetched base. Uncommitted edits are not included;
+GitHub additionally tests the synthetic merge tree described above. For a PR that changes only this
+document, every product scope should be `false`. Source/release policy and the five final-status
+checks should pass, while product tests, dashboard validation, CodeQL analysis, and package jobs
+report explicit skips. A full validation can still be requested with a manual workflow run.
