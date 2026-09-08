@@ -55,3 +55,27 @@ also do not establish a swept-volume guarantee for the later smoothed trajectory
 On hardware, record complete frame period and phase durations under representative autonomous,
 vision, telemetry, and CAN loads; inspect p50/p95/p99/max, overruns, dropped logs, and freshness.
 Encoder scale, slip, sensor noise, and actuator timing require physical validation.
+
+## Validation evidence
+
+Validation uses isolated candidate `17.0.3-rc.dab0a3a9cfdc` from the reviewed library tree.
+
+| Scope | Result |
+| --- | --- |
+| All ARESLib modules | 1,061 tests passed; API compatibility and isolated publication passed. |
+| FTC robot and simulator | 109 tests passed. |
+| FRC robot | 134 tests passed. |
+| FTC starter | 14 tests passed. |
+| FRC starter | 34 tests passed. |
+| Studio shared, gateway, and app | 1,244 tests passed; six opt-in checks skipped. Release version/archive preflight passed. |
+| CI scope/result scripts | 41 tests passed. |
+| Repository checks | Source/release policy and current documentation links passed. |
+
+New regression tests reproduced the control-limit, encoder-timing, unreachable-route,
+and planner endpoint/corner failures before their fixes. Hardware deployment and complete
+physical loop-period measurements were not performed.
+
+The six skipped Studio checks cover three generated-project integration suites, native
+file-picker interaction, the dashboard performance baseline, and physical dashboard telemetry.
+Hosted CI runs its separately configured integration and performance scopes; the local unit
+test result does not substitute for those checks.
