@@ -37,6 +37,7 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
 
     private var lastPosition = 0.0
     private var lastTime = 0L
+    private var hasPositionSample = false
 
     /**
      * Synchronously polls physical electrical current draw ($A$) from REV Lynx Hub hardware registers.
@@ -67,14 +68,22 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
         try {
             cachedPosition = motor.currentPosition.toDouble()
             val now = RobotClock.currentTimeMillis()
-            if (lastTime != 0L) {
+            if (hasPositionSample && now >= lastTime) {
                 val dt = (now - lastTime) / 1000.0
                 if (dt > 0.0) {
                     cachedVelocity = (cachedPosition - lastPosition) / dt
+                } else {
+                    // Publish the latest position, but retain the finite-difference baseline
+                    // until time advances. Repeated reads must not discard displacement.
+                    return
                 }
+            } else {
+                // Initial samples (including t=0) and replay rewinds start a new baseline.
+                cachedVelocity = 0.0
             }
             lastPosition = cachedPosition
             lastTime = now
+            hasPositionSample = true
         } catch (_: Exception) {}
     }
 
