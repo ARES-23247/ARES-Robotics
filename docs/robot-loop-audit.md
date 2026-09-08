@@ -79,3 +79,44 @@ The six skipped Studio checks cover three generated-project integration suites, 
 file-picker interaction, the dashboard performance baseline, and physical dashboard telemetry.
 Hosted CI runs its separately configured integration and performance scopes; the local unit
 test result does not substitute for those checks.
+
+## Second pass: different files and boundaries
+
+The second pass reviews spline construction and constraint sweeps, digital/analog filtering,
+the delta-action Redux boundary, estimator propagation/replay ownership, and task timeout/
+preemption handling. Its runtime edits are in `SplineMotionProfiler`, `EMAFilter`, `Debouncer`,
+and `DriveReducer`, with the `DriveHardwareUpdate` coordinate contract clarified in `RobotAction`.
+It does not repeat the first pass's controller, encoder, FTC profiler, or planner edits.
+
+| Area | Finding and correction |
+| --- | --- |
+| Spline endpoint | The backward pass overwrote the forward-reachable end speed with the requested speed, bypassing acceleration and local speed constraints. Keep endpoint requests as ceilings and preserve the stricter forward result. |
+| Acceleration-zone boundary | The forward and backward passes selected opposite endpoints' acceleration limits. Each edge now uses the stricter endpoint in both directions. |
+| Tight-curve curvature | Clipping measured curvature to 100 per meter understated sharp bends and raised their centripetal speed ceiling. Preserve the finite-difference curvature, including small positive distance intervals. |
+| Rotation interpolation | Each unanchored sample searched backward and forward for anchors, producing quadratic work on sparsely anchored paths. Walk anchor intervals once; locate explicit rotation targets with binary search while preserving earlier-sample ties and point-towards precedence. |
+| Profiling allocations | Resolve speed/acceleration constraints once per sample and update privately owned point velocities/curvatures directly, avoiding duplicate zone scans and point copies. |
+| EMA recovery | One NaN/infinite sample permanently contaminated filter memory. Return the invalid sample to preserve downstream fault detection, but leave filter memory unchanged so valid readings can recover. |
+| Debounce replay | Clock rewinds either stalled dwell completion or reused time from the discarded timeline. Restart dwell on any backward sample timestamp; reject negative durations. |
+| Raw delta odometry | `DriveHardwareUpdate` already feeds a robot-local SE(2) twist into the EKF, but raw odometry added it directly to field X/Y. Integrate the twist arc and rotate it by raw odometry's own heading; wrap the resulting heading. Absolute `PoseUpdate` behavior is unchanged. |
+
+Before correction, 11 regression cases failed across these math/filter issues. Three additional
+cases preserve rotation interpolation, target precedence, and dense-path construction behavior.
+The existing drive reducer assertion now checks the finite-turn arc rather than straight addition.
+
+The same 8,001-sample synthetic spline construction test measured a median of 68.7051 ms before
+and 22.6945 ms after correction across three builds per run on this desktop JVM. This is supporting
+evidence for reduced construction work, not a real-robot timing guarantee or a whole-loop benchmark.
+Rotation-anchor interpolation is now linear in samples; explicit target lookup is logarithmic per
+target. Point-towards and constraint-zone matching still scale with sample and zone counts.
+
+The sampled spline profile remains spatial: it does not prove jerk limits or a swept-volume
+collision guarantee, and zones narrower than sampling intervals need denser geometry sampling.
+Known-route precomputation remains appropriate because construction is still synchronous.
+
+The estimator Jacobian/covariance and store timestamp paths, task preemption/timeout ownership,
+and FRC base update ordering were inspected without additional changes in this pass. This is a
+bounded source audit; existing regression coverage does not prove absence of all defects.
+
+Second-pass candidate: `17.0.3-rc.3f8b883fac92`. The final 17.0.3 identity remains the unpublished
+version already prepared in this open PR; its source-tree binding and isolated candidate are new.
+No published artifact is overwritten.

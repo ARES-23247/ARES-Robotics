@@ -27,9 +27,26 @@ object DriveReducer {
                 }
 
                 observationDtSeconds(state, action.timestampMs) ?: return state
-                val nextOdomX = state.odometryX + action.deltaX
-                val nextOdomY = state.odometryY + action.deltaY
-                val nextOdomHeading = state.odometryHeading + action.deltaHeading
+                // DriveHardwareUpdate carries a robot-local twist, like the estimator
+                // input. Integrate its arc, then rotate using raw odometry's own heading.
+                // Vision corrections must not rotate the independent raw odometry trace.
+                val theta = action.deltaHeading
+                val s: Double
+                val c: Double
+                if (kotlin.math.abs(theta) < 1e-6) {
+                    s = 1.0 - theta * theta / 6.0
+                    c = theta * 0.5
+                } else {
+                    s = kotlin.math.sin(theta) / theta
+                    c = (1.0 - kotlin.math.cos(theta)) / theta
+                }
+                val arcX = s * action.deltaX - c * action.deltaY
+                val arcY = c * action.deltaX + s * action.deltaY
+                val cosHeading = kotlin.math.cos(state.odometryHeading)
+                val sinHeading = kotlin.math.sin(state.odometryHeading)
+                val nextOdomX = state.odometryX + arcX * cosHeading - arcY * sinHeading
+                val nextOdomY = state.odometryY + arcX * sinHeading + arcY * cosHeading
+                val nextOdomHeading = com.areslib.math.wrapAngle(state.odometryHeading + theta)
                 state.copy(
                     xVelocityMetersPerSecond = action.xVelocity,
                     yVelocityMetersPerSecond = action.yVelocity,

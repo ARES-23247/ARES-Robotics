@@ -21,8 +21,8 @@ interface RobotAction {
      * @property xVelocity Robot's X velocity in meters/second (WPILib: +X = forward).
      * @property yVelocity Robot's Y velocity in meters/second (WPILib: +Y = left).
      * @property angularVelocity Robot's angular velocity in radians/second (CCW-positive).
-     * @property deltaX Incremental X translation in meters since last frame.
-     * @property deltaY Incremental Y translation in meters since last frame.
+     * @property deltaX Robot-local forward component of the SE(2) displacement twist in meters since last frame.
+     * @property deltaY Robot-local leftward component of the SE(2) displacement twist in meters since last frame.
      * @property deltaHeading Incremental heading change in radians since last frame (CCW-positive).
      * @property pitchDegrees Robot pitch angle in degrees (nose-up positive).
      * @property rollDegrees Robot roll angle in degrees (right-side-down positive).

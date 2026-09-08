@@ -29,11 +29,14 @@ class EMAFilter(private val alpha: Double) {
 
     /**
      * Calculates the filtered estimate value given a new raw sensor input reading $x_k$.
+     * Non-finite samples are returned unchanged so callers can detect invalid feedback,
+     * but do not seed or update filter memory. The next finite sample can recover normally.
      *
      * @param input Raw sensor measurement reading ($x_k$).
      * @return Filtered, smoothed sensor estimate ($y_k$).
      */
     fun calculate(input: Double): Double {
+        if (!input.isFinite()) return input
         if (!hasFirstValue) {
             previousEstimate = input
             hasFirstValue = true

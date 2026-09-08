@@ -34,9 +34,9 @@ class DriveReducerTest {
         val newState = reduceThroughStore(initialState, action)
         
         assertNotSame(initialState, newState)
-        assertEquals(0.05, newState.drive.odometryX)
-        assertEquals(0.02, newState.drive.odometryY)
-        assertEquals(0.01, newState.drive.odometryHeading)
+        assertEquals(0.049899167503, newState.drive.odometryX, 1e-10)
+        assertEquals(0.020249664585, newState.drive.odometryY, 1e-10)
+        assertEquals(0.01, newState.drive.odometryHeading, 1e-10)
         assertEquals(2000L, newState.timestampMs)
     }
 

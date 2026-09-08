@@ -38,6 +38,8 @@ object SplineMotionProfiler {
 
     /**
      * Constructs a fully profiled [Path] from parsed PathPlanner JSON trajectory data.
+     * Requested endpoint speeds are ceilings: local speed and reachable acceleration
+     * limits may reduce them. This spatial profile does not promise jerk bounds.
      *
      * @param data Parsed trajectory structure [PathPlannerJsonParser.ParsedPathData].
      * @return Fully parameterized and velocity-profiled [Path].
@@ -215,9 +217,8 @@ object SplineMotionProfiler {
             val dTheta = pNext.pose.heading.radians - pPrev.pose.heading.radians
             val normDTheta = wrapAngle(dTheta)
 
-            val kappa = if (ds > 1e-4) normDTheta / ds else 0.0
-            val clampedKappa = kappa.coerceIn(-100.0, 100.0)
-            pathPoints[idx] = pathPoints[idx].copy(curvature = clampedKappa)
+            // Understating tight curvature would increase the centripetal speed ceiling.
+            pathPoints[idx].curvature = if (ds > 0.0) normDTheta / ds else 0.0
         }
     }
 
@@ -245,38 +246,30 @@ object SplineMotionProfiler {
         }
 
         data.rotationTargets.forEach { target ->
-            var minDiff = Double.MAX_VALUE
-            var bestIdx = -1
-            for (k in pathPoints.indices) {
-                val diff = Math.abs(relativePositions[k] - target.waypointRelativePos)
-                if (diff < minDiff) {
-                    minDiff = diff
-                    bestIdx = k
-                }
+            val found = relativePositions.binarySearch(target.waypointRelativePos)
+            val bestIdx = if (found >= 0) found else {
+                val after = (-found - 1).coerceAtMost(relativePositions.lastIndex)
+                val before = (after - 1).coerceAtLeast(0)
+                if (Math.abs(relativePositions[before] - target.waypointRelativePos) <=
+                    Math.abs(relativePositions[after] - target.waypointRelativePos)) before else after
             }
-            if (bestIdx != -1 && explicitRotations[bestIdx] == null) {
+            if (explicitRotations[bestIdx] == null) {
                 explicitRotations[bestIdx] = Math.toRadians(target.rotationDegrees)
             }
         }
 
+        // Walk anchor intervals once instead of rescanning both sides of every sample.
+        var prevIdx = 0
+        var nextIdx = 0
         for (idx in pathPoints.indices) {
             if (explicitRotations[idx] != null) {
+                prevIdx = idx
                 val p = pathPoints[idx]
                 pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(explicitRotations[idx]!!)))
             } else {
-                var prevIdx = 0
-                for (k in idx - 1 downTo 0) {
-                    if (explicitRotations[k] != null) {
-                        prevIdx = k
-                        break
-                    }
-                }
-                var nextIdx = pathPoints.size - 1
-                for (k in idx + 1 until pathPoints.size) {
-                    if (explicitRotations[k] != null) {
-                        nextIdx = k
-                        break
-                    }
+                if (nextIdx <= idx) {
+                    nextIdx = idx + 1
+                    while (nextIdx < pathPoints.lastIndex && explicitRotations[nextIdx] == null) nextIdx++
                 }
                 val dCurr = pathPoints[idx].distanceMeters
                 val dPrev = pathPoints[prevIdx].distanceMeters
@@ -304,66 +297,48 @@ object SplineMotionProfiler {
         constraintZones: List<PathPlannerJsonParser.ParsedConstraintsZone>,
         maxCentripetalAccel: Double = 2.0
     ) {
-        // Pass 1: Forward Sweep
-        pathPoints[0] = pathPoints[0].copy(velocityMps = startVel)
+        // Resolve each point's limits once. These points are private to construction,
+        // so changing their velocity fields avoids allocating copies during both sweeps.
+        val accelerations = DoubleArray(pathPoints.size)
+        for (i in pathPoints.indices) {
+            val pos = relativePositions.getOrElse(i) { 0.0 }
+            var maxVel = defaultMaxVel
+            var maxAccel = defaultMaxAccel
+            for (zone in constraintZones) {
+                if (pos >= zone.minWaypointRelativePos && pos <= zone.maxWaypointRelativePos) {
+                    maxVel = zone.maxVelocity
+                    maxAccel = zone.maxAcceleration
+                    break
+                }
+            }
+            accelerations[i] = maxAccel
+            val curvature = Math.abs(pathPoints[i].curvature)
+            pathPoints[i].velocityMps = if (curvature > 0.0) {
+                minOf(maxVel, Math.sqrt(maxCentripetalAccel / curvature))
+            } else maxVel
+        }
+
+        pathPoints[0].velocityMps = minOf(pathPoints[0].velocityMps, startVel)
         for (i in 1 until pathPoints.size) {
             val prev = pathPoints[i - 1]
             val curr = pathPoints[i]
-            val dx = curr.distanceMeters - prev.distanceMeters
-
-            val pos = if (i < relativePositions.size) relativePositions[i] else 0.0
-            var activeMaxVel = defaultMaxVel
-            var activeMaxAccel = defaultMaxAccel
-            for (zone in constraintZones) {
-                if (pos >= zone.minWaypointRelativePos && pos <= zone.maxWaypointRelativePos) {
-                    activeMaxVel = zone.maxVelocity
-                    activeMaxAccel = zone.maxAcceleration
-                    break
-                }
-            }
-
-            val kappa = curr.curvature
-            val pointMaxVel = if (Math.abs(kappa) > 1e-4) {
-                val radius = 1.0 / Math.abs(kappa)
-                minOf(activeMaxVel, Math.sqrt(maxCentripetalAccel * radius))
-            } else {
-                activeMaxVel
-            }
-
-            val maxReachable = KinematicsMath.finalVelocity(prev.velocityMps, activeMaxAccel, dx)
-            val newVel = minOf(pointMaxVel, maxReachable)
-            pathPoints[i] = curr.copy(velocityMps = newVel)
+            val distance = curr.distanceMeters - prev.distanceMeters
+            // An edge crossing a constraint boundary must satisfy its stricter endpoint.
+            val maxAccel = minOf(accelerations[i - 1], accelerations[i])
+            curr.velocityMps = minOf(curr.velocityMps,
+                KinematicsMath.finalVelocity(prev.velocityMps, maxAccel, distance))
         }
 
-        // Pass 2: Backward Sweep
-        pathPoints[pathPoints.size - 1] = pathPoints[pathPoints.size - 1].copy(velocityMps = endVel)
+        // Do not raise the endpoint above the speed reached by the forward sweep.
+        val end = pathPoints.last()
+        end.velocityMps = minOf(end.velocityMps, endVel)
         for (i in pathPoints.size - 2 downTo 0) {
             val next = pathPoints[i + 1]
             val curr = pathPoints[i]
-            val dx = next.distanceMeters - curr.distanceMeters
-
-            val pos = if (i < relativePositions.size) relativePositions[i] else 0.0
-            var activeMaxVel = defaultMaxVel
-            var activeMaxAccel = defaultMaxAccel
-            for (zone in constraintZones) {
-                if (pos >= zone.minWaypointRelativePos && pos <= zone.maxWaypointRelativePos) {
-                    activeMaxVel = zone.maxVelocity
-                    activeMaxAccel = zone.maxAcceleration
-                    break
-                }
-            }
-
-            val kappa = curr.curvature
-            val pointMaxVel = if (Math.abs(kappa) > 1e-4) {
-                val radius = 1.0 / Math.abs(kappa)
-                minOf(activeMaxVel, Math.sqrt(maxCentripetalAccel * radius))
-            } else {
-                activeMaxVel
-            }
-
-            val maxReachable = KinematicsMath.finalVelocity(next.velocityMps, activeMaxAccel, dx)
-            val newVel = minOf(curr.velocityMps, minOf(pointMaxVel, maxReachable))
-            pathPoints[i] = curr.copy(velocityMps = newVel)
+            val distance = next.distanceMeters - curr.distanceMeters
+            val maxAccel = minOf(accelerations[i], accelerations[i + 1])
+            curr.velocityMps = minOf(curr.velocityMps,
+                KinematicsMath.finalVelocity(next.velocityMps, maxAccel, distance))
         }
     }
 }
