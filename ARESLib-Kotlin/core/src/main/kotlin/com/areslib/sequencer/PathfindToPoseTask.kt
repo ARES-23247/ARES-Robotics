@@ -37,6 +37,7 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
+        delegateTask = null
         val startPose = state.drive.poseEstimator.estimatedPose
         val shouldTransform = mirrorForAlliance && state.drive.alliance != authoredAlliance
         // AllianceMirroring's RED branch is the involutive geometry operation. Authorship
@@ -54,16 +55,21 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         // Plan 2D coordinate waypoints using Theta* any-angle pathfinder
         val coordinateWaypoints = ThetaStarPlanner.plan(costmap, startTrans, targetTrans)
 
-        // Ensure we always have at least start and end if pathfind fails or returns direct
-        val finalWaypoints = if (coordinateWaypoints.size < 2) {
-            listOf(startTrans, targetTrans)
-        } else {
-            coordinateWaypoints
+        if (coordinateWaypoints.size < 2) {
+            // An empty plan means blocked/invalid endpoints or no route. A straight-line
+            // substitute would turn a planner rejection into motion through the obstacle.
+            val newlyFailed = TaskStateMachine.markFailed(this)
+            try {
+                follower.stop()
+            } finally {
+                if (newlyFailed) TaskCallbacks.invokeFail(this)
+            }
+            return emptyList()
         }
 
         // Generate smooth profiled trajectory splines through coordinate joints
         val path = PathPlannerParser.generatePath(
-            points = finalWaypoints,
+            points = coordinateWaypoints,
             startHeading = startPose.heading,
             endHeading = activeTargetPose.heading,
             maxVelocityMps = maxVelocityMps,
@@ -78,6 +84,7 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (TaskStateMachine.getStatus(this) == TaskStatus.FAILED) return false
         val delegate = delegateTask ?: return true
         val completed = delegate.isCompleted(state, elapsedMs)
         if (!completed && TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {

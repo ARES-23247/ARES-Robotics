@@ -146,14 +146,14 @@ class FrcSwerveRobot(
                 BeachedSignalState.NOT_BEACHED -> false
                 BeachedSignalState.UNKNOWN -> wasBeached
             }
-            val lastPose = store.state.drive.poseEstimator.estimatedPose
+            val lastEstimate = store.state.drive.poseEstimator
             val odometryPoseValid = driveState.odometryX.isFinite() &&
                 driveState.odometryY.isFinite() && driveState.odometryHeading.isFinite()
-            val x = if (currentlyBeached || !odometryPoseValid) lastPose.x else driveState.odometryX
-            val y = if (currentlyBeached || !odometryPoseValid) lastPose.y else driveState.odometryY
+            val x = if (currentlyBeached || !odometryPoseValid) lastEstimate.estimatedPoseX else driveState.odometryX
+            val y = if (currentlyBeached || !odometryPoseValid) lastEstimate.estimatedPoseY else driveState.odometryY
             // Heading remains observable while translational odometry is frozen; this preserves
             // the established beached contract and gives the recovery seed the latest yaw.
-            val heading = if (odometryPoseValid) driveState.odometryHeading else lastPose.heading.radians
+            val heading = if (odometryPoseValid) driveState.odometryHeading else lastEstimate.estimatedPoseHeading
             val motionMeasurementsValid = !currentlyBeached &&
                 hardwareMeasurementsValid && odometryPoseValid &&
                 driveState.xVelocityMetersPerSecond.isFinite() &&
@@ -180,7 +180,8 @@ class FrcSwerveRobot(
             } else 0.0
 
             if (wasBeached && beachedState == BeachedSignalState.NOT_BEACHED) {
-                swerveIO.seedPose(lastPose)
+                // Materialize geometry only on the recovery transition, not every sensor frame.
+                swerveIO.seedPose(lastEstimate.estimatedPose)
             }
             wasBeached = currentlyBeached
 

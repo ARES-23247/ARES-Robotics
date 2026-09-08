@@ -58,8 +58,6 @@ class HolonomicDriveController(
     private val yAdrc: LinearADRC? = null,
     private val thetaAdrc: LinearADRC? = null
 ) {
-    private val maxOutputMpsSq: Double = maxOutputMps * maxOutputMps
-
     init {
         thetaController.enableContinuousInput(-Math.PI, Math.PI)
         thetaAdrc?.enableContinuousInput(-Math.PI, Math.PI)
@@ -98,7 +96,7 @@ class HolonomicDriveController(
     }
 
     /**
-     * Zero-GC direct primitive calculation overload for holonomic trajectory tracking control.
+     * Primitive calculation overload returning an independently owned chassis-speed value.
      *
      * @param currentX Current robot X position in meters ($m$).
      * @param currentY Current robot Y position in meters ($m$).
@@ -128,6 +126,32 @@ class HolonomicDriveController(
         maxCentripetalAccel: Double = 2.5,
         progressPercentage: Double = 0.0
     ): ChassisSpeeds {
+        return ChassisSpeeds().also { out ->
+            calculateInto(out, currentX, currentY, currentHeadingRad, targetX, targetY,
+                targetHeadingRad, targetVelocityMps, dtSeconds, pathTangentRadians,
+                curvature, maxCentripetalAccel, progressPercentage)
+        }
+    }
+
+    /** Allocation-free loop entry point. The caller owns [out]; no returned snapshot is reused. */
+    internal fun calculateInto(
+        out: ChassisSpeeds,
+        currentX: Double,
+        currentY: Double,
+        currentHeadingRad: Double,
+        targetX: Double,
+        targetY: Double,
+        targetHeadingRad: Double,
+        targetVelocityMps: Double,
+        dtSeconds: Double,
+        pathTangentRadians: Double = Double.NaN,
+        curvature: Double = 0.0,
+        maxCentripetalAccel: Double = 2.5,
+        progressPercentage: Double = 0.0
+    ) {
+        out.vxMetersPerSecond = 0.0
+        out.vyMetersPerSecond = 0.0
+        out.omegaRadiansPerSecond = 0.0
         if (!currentX.isFinite() || !currentY.isFinite() || !currentHeadingRad.isFinite() ||
             !targetX.isFinite() || !targetY.isFinite() || !targetHeadingRad.isFinite() ||
             !targetVelocityMps.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
@@ -135,7 +159,7 @@ class HolonomicDriveController(
             !maxCentripetalAccel.isFinite() || maxCentripetalAccel <= 0.0 ||
             !maxOutputMps.isFinite() || maxOutputMps <= 0.0 || !progressPercentage.isFinite()
         ) {
-            return ChassisSpeeds()
+            return
         }
 
         val xError = targetX - currentX
@@ -155,12 +179,9 @@ class HolonomicDriveController(
         val cosTangent = cos(pathTangent)
         val sinTangent = sin(pathTangent)
 
-        val lateralError = xError * sinTangent - yError * cosTangent
-
-        var angularError = targetHeadingRad - currentHeadingRad
-        angularError = com.areslib.math.wrapAngle(angularError)
-
         telemetry?.let { tel ->
+            val lateralError = xError * sinTangent - yError * cosTangent
+            val angularError = com.areslib.math.wrapAngle(targetHeadingRad - currentHeadingRad)
             tel.putNumber("PathError/LateralMeters", lateralError)
             tel.putNumber("PathError/AngularDegrees", Math.toDegrees(angularError))
             tel.putNumber("PathError/XErrorMeters", xError)
@@ -178,12 +199,12 @@ class HolonomicDriveController(
             ?: thetaController.calculate(currentHeadingRad, targetHeadingRad, dtSeconds)
 
         if (!xFeedback.isFinite() || !yFeedback.isFinite() || !thetaFeedback.isFinite()) {
-            return ChassisSpeeds()
+            return
         }
 
-        val limitedVelocity = if (kotlin.math.abs(curvature) > 1e-4) {
+        val limitedVelocity = if (curvature != 0.0) {
             val maxVel = kotlin.math.sqrt(maxCentripetalAccel / kotlin.math.abs(curvature))
-            kotlin.math.min(targetVelocityMps, maxVel)
+            targetVelocityMps.coerceIn(-maxVel, maxVel)
         } else {
             targetVelocityMps
         }
@@ -197,16 +218,17 @@ class HolonomicDriveController(
         val cosHeading = cos(currentHeadingRad)
         val sinHeading = sin(currentHeadingRad)
 
-        var vxRobot = fieldRelativeX * cosHeading + fieldRelativeY * sinHeading
-        var vyRobot = -fieldRelativeX * sinHeading + fieldRelativeY * cosHeading
+        val vxRobot = fieldRelativeX * cosHeading + fieldRelativeY * sinHeading
+        val vyRobot = -fieldRelativeX * sinHeading + fieldRelativeY * cosHeading
 
-        val magSq = vxRobot * vxRobot + vyRobot * vyRobot
-        if (magSq > maxOutputMpsSq) {
-            val scale = maxOutputMps / kotlin.math.sqrt(magSq)
-            vxRobot *= scale
-            vyRobot *= scale
+        ChassisSpeeds.discretizeInto(vxRobot, vyRobot, thetaFeedback, dtSeconds, out)
+        // Discretization can increase translation magnitude while turning. Bound the final
+        // commanded twist, preserving direction, rather than only its continuous precursor.
+        val magnitude = kotlin.math.hypot(out.vxMetersPerSecond, out.vyMetersPerSecond)
+        if (magnitude > maxOutputMps) {
+            val scale = maxOutputMps / magnitude
+            out.vxMetersPerSecond *= scale
+            out.vyMetersPerSecond *= scale
         }
-
-        return ChassisSpeeds.discretize(vxRobot, vyRobot, thetaFeedback, dtSeconds)
     }
 }

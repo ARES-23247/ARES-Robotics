@@ -5,14 +5,15 @@ import kotlin.math.roundToInt
 import com.areslib.pathing.planner.PlannerState
 
 /**
- * A state-of-the-art any-angle global pathfinder implementing the **Theta\*** path planning algorithm.
+ * Any-angle grid pathfinder implementing the **Theta\*** path planning algorithm.
  *
  * Traditional A* restricts paths to grid lines, generating jagged, artificial zigzag patterns.
  * Theta* bypasses these restrictions by performing a high-speed Bresenham line-of-sight check during
  * neighbor expansion. If a direct line-of-sight exists between a candidate node's parent and a neighbor,
  * the path skips the candidate, linking the neighbor directly to the parent.
  *
- * This results in mathematically optimal, straight, grid-snap-free global paths around costmap obstacles.
+ * Parent shortcuts reduce grid-constrained turns; this heuristic search does not promise a globally
+ * shortest continuous path. Both shortcuts and neighboring edges honor inflated obstacle corners.
  *
  * ### Physical Units & Guarantees:
  * - **Coordinates:** Field-relative meters ($m$)
@@ -47,15 +48,13 @@ object ThetaStarPlanner {
         val endX = ((end.x - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
         val endY = ((end.y - costmap.origin.y) / costmap.resolutionMeters).roundToInt()
 
-        // Handle simple start == end edge case
-        if (startX == endX && startY == endY) {
-            return listOf(start, end)
-        }
-
         // Out of bounds check
         if (startX !in 0 until costmap.widthCells || startY !in 0 until costmap.heightCells) return emptyList()
         if (endX !in 0 until costmap.widthCells || endY !in 0 until costmap.heightCells) return emptyList()
-        if (!costmap.isCellTraversable(endX, endY)) return emptyList()
+        if (!costmap.isCellTraversable(startX, startY) || !costmap.isCellTraversable(endX, endY)) return emptyList()
+
+        // The same-cell shortcut must not bypass endpoint validity.
+        if (startX == endX && startY == endY) return listOf(start, end)
 
         val capacity = costmap.widthCells * costmap.heightCells
         val state = statePool.poll() ?: PlannerState(10000)
@@ -101,6 +100,11 @@ object ThetaStarPlanner {
     
                         // Ensure cell is bounds and traversable
                         if (!costmap.isCellTraversable(nx, ny)) continue
+                        // The fallback A* edge must obey the same corner rule as the Theta*
+                        // shortcut. Checking only the destination permits diagonal collisions.
+                        if (dx != 0 && dy != 0 &&
+                            (!costmap.isCellTraversable(currX + dx, currY) ||
+                                !costmap.isCellTraversable(currX, currY + dy))) continue
     
                         val nKey = ny * costmap.widthCells + nx
                         if (state.isClosed(nKey)) continue

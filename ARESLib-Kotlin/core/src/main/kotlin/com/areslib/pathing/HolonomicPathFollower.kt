@@ -47,6 +47,7 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
     val driveController = HolonomicDriveController(xController, yController, thetaController)
 
     private var currentPath: Path? = null
+    private val chassisSpeeds = com.areslib.math.geometry.ChassisSpeeds()
     private val triggeredEvents = mutableSetOf<String>()
 
     /** Callback invoked whenever a PathEvent is crossed */
@@ -84,11 +85,15 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
                 }
             }
             
-            val chassisSpeeds = driveController.calculate(
-                currentPose = currentPose,
-                targetPose = targetState.pose,
+            driveController.calculateInto(
+                out = chassisSpeeds,
+                currentX = currentPose.x,
+                currentY = currentPose.y,
+                currentHeadingRad = currentPose.heading.radians,
+                targetX = targetState.pose.x,
+                targetY = targetState.pose.y,
                 targetVelocityMps = targetState.velocityMps,
-                targetHeading = targetState.pose.heading,
+                targetHeadingRad = targetState.pose.heading.radians,
                 dtSeconds = dtSeconds,
                 pathTangentRadians = targetState.tangentRadians,
                 curvature = targetState.curvature

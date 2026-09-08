@@ -49,6 +49,21 @@ class PathfindToPoseTaskLifecycleTest {
     }
 
     @Test
+    fun `unreachable target stops instead of substituting a straight path`() {
+        costmap.setObstacle(1.0, 2.0)
+        costmap.inflate(0.0)
+        val task = newTask()
+        var failures = 0
+        task.onFail { failures++ }
+        task.initialize(RobotState())
+        assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(task))
+        assertEquals(listOf(Triple(0.0, 0.0, 0.0)), drivetrain.commands)
+        assertFalse(task.isCompleted(RobotState(), 100L))
+        assertTrue(task.execute(RobotState(), 100L).isEmpty())
+        assertEquals(1, failures)
+    }
+
+    @Test
     fun `wrapper timeout fails the task and invokes the fail callback`() {
         val task = newTask()
         var failInvoked = false

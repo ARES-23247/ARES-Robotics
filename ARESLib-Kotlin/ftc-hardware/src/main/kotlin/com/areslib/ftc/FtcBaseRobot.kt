@@ -201,6 +201,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
     private var hasReadSensorsThisFrame = false
+    private var sensorReadDurationNanos = 0L
     private val odometrySourceArbiter = FtcOdometrySourceArbiter()
     private var heldFallbackX = 0.0
     private var heldFallbackY = 0.0
@@ -241,7 +242,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
-        refreshCachedImu(timestamp)
+        refreshCachedImu()
         val s2 = com.areslib.util.RobotClock.nanoTime()
 
         val pinpoint = pinpointIO
@@ -316,6 +317,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             visionMs = (s4 - s3) / 1_000_000.0
         )
         profiler.publishSensorsProfiling(telemetryManager)
+        sensorReadDurationNanos = com.areslib.util.RobotClock.nanoTime() - s0
         } catch (failure: Throwable) {
             hasReadSensorsThisFrame = false
             throw failure
@@ -352,7 +354,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    private fun refreshCachedImu(timestampMs: Long) {
+    private fun refreshCachedImu() {
         val imu = imuIO
         if (imu == null) {
             cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
@@ -367,7 +369,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         try {
             imu.updateInputs(imuSampleBuffer)
-            val sampleAgeMs = timestampMs - imuSampleBuffer.timestampMs
+            // A new asynchronous sample can arrive after the frame timestamp was captured.
+            // Validate against the time of consumption, not the earlier frame boundary.
+            val sampleAgeMs = com.areslib.util.RobotClock.currentTimeMillis() - imuSampleBuffer.timestampMs
             val valid = imuSampleBuffer.timestampMs > 0L && sampleAgeMs in 0..IMU_MAX_SAMPLE_AGE_MS &&
                 imuSampleBuffer.headingRadians.isFinite() && imuSampleBuffer.pitchRadians.isFinite() &&
                 imuSampleBuffer.rollRadians.isFinite() && imuSampleBuffer.yawVelocityRadPerSec.isFinite() &&
@@ -431,13 +435,17 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             val dtSeconds = if (lastUpdateTime == 0L || timestamp == lastUpdateTime) 0.02 else (timestamp - lastUpdateTime) / 1000.0
             lastUpdateTime = timestamp
 
-            val t0 = com.areslib.util.RobotClock.nanoTime()
+            val sensorsAlreadyRead = hasReadSensorsThisFrame
+            val updateStartNanos = com.areslib.util.RobotClock.nanoTime()
             try {
                 readSensors()
             } finally {
                 hasReadSensorsThisFrame = false
             }
             val t1 = com.areslib.util.RobotClock.nanoTime()
+            // OpModes may sample before calculating drive intent. Include that cached sensor
+            // work in the core-loop budget without counting the intervening caller code as IO.
+            val t0 = if (sensorsAlreadyRead) t1 - sensorReadDurationNanos else updateStartNanos
 
             val effectiveScale = powerManager.update(dtSeconds, timestamp)
             val batteryVoltage = powerManager.batteryVoltage
