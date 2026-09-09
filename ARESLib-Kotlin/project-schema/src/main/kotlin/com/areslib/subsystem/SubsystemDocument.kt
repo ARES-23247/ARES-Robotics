@@ -302,9 +302,9 @@ data class SubsystemFeedforwardDocument(
     val kA: Double = 0.0,
     /** Elevator constant or arm cosine gravity compensation in output volts. */
     val kG: Double = 0.0,
-    /** Desired velocity; null uses the loop target for velocity-control loops and zero otherwise. */
+    /** Desired velocity; null uses profile velocity, the velocity-control target, or zero for other loops. */
     val velocityFieldId: String? = null,
-    /** Desired acceleration; null means zero acceleration feedforward. */
+    /** Desired acceleration; null uses the profile's average step acceleration, or zero for other loops. */
     val accelerationFieldId: String? = null,
     /** Arm angle measurement in radians; required for ARM gravity compensation. */
     val gravityAngleFieldId: String? = null,

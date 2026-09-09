@@ -43,11 +43,25 @@ All loop results are checked before output writes begin. The declared field type
 numeric limits apply to target updates; missing feedback required by a control loop is an
 unhealthy configuration, even when the underlying device is marked optional.
 
+Profiled position control uses a reusable trapezoidal reference with zero terminal
+velocity, bounded acceleration, and continuous braking after a goal or constraint change.
+The default maximum velocity is 1 and acceleration is 2 in the declared position units
+per second and per second squared. Stop or fault resets the reference; the next valid
+step initializes from fresh feedback. Angular profiles take the shortest wrapped goal.
+
+Simple motor, elevator, arm, and two-joint arm feedforward contribute motor volts before
+clamping and anti-windup. Explicit velocity/acceleration fields override the profile's
+velocity and average step acceleration. Without those fields, velocity loops use their
+target and other unprofiled loops use zero. Referenced measurement fields require an
+available sensor even when that device is optional. Invalid or unrepresentable profile
+or feedforward math faults and neutralizes the subsystem. Four-bar feedforward remains
+unsupported, matching descriptor validation.
+
 Descriptor topology is fixed when a subsystem is constructed. Reconstruct it after
-changing hardware, measurement, field, or loop identities. This runtime still allocates
-Python numeric results. Profiled setpoints, feedforward, and the remaining advanced
-descriptor safety features are open implementation/audit work; ordinary PID execution
-does not establish that those declarations are implemented.
+changing hardware, measurement, field, loop identities, or feedforward field references.
+This runtime still allocates Python numeric results. The remaining advanced descriptor
+safety features are open implementation/audit work; these controller tests do not
+establish that every descriptor declaration is implemented or validate device loop timing.
 
 ## Installation on Raspberry Pi Pico W
 

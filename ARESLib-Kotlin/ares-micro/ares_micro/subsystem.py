@@ -3,10 +3,7 @@
 import math
 
 
-def _number(value):
-    if type(value) not in (int, float) or not math.isfinite(value):
-        raise ValueError("XRP controller values must be finite numbers")
-    return value
+from .control_math import EMPTY, TrapezoidProfile, feedforward, number as _number
 
 
 def _wrap_delta(value, period):
@@ -51,6 +48,8 @@ class GeneratedXrpSubsystem:
         self._hardware = tuple(descriptor.get("hardware", []))
         self._loops = tuple(descriptor.get("controlLoops", []))
         self._outputs = [0.0] * len(self._loops)
+        self._profiles = {loop["loopId"]: TrapezoidProfile() for loop in self._loops
+                          if loop["strategy"] == "PROFILED_POSITION_PID"}
         self._read_groups = []
         available_measurements = set()
         self._reset_control()
@@ -81,6 +80,35 @@ class GeneratedXrpSubsystem:
                     or (loop["strategy"] not in ("DIRECT", "SERVO_POSITION")
                         and loop.get("measurementFieldId") not in available_measurements)):
                 self.configured = False
+                self.faulted = True
+        hardware_by_id = {device["hardwareId"]: device for device in self._hardware}
+        for loop in self._loops:
+            model = loop.get("feedforward", EMPTY)
+            kind = model.get("kind", "NONE")
+            if kind == "NONE":
+                continue
+            actuator = hardware_by_id.get(loop["actuatorId"], EMPTY)
+            references = [model.get("velocityFieldId"), model.get("accelerationFieldId")]
+            if kind == "ARM":
+                references.append(model.get("gravityAngleFieldId"))
+                if model.get("gravityAngleFieldId") is None:
+                    self.configured = False
+            if kind == "TWO_DOF_ARM":
+                linkage = descriptor.get("linkage", EMPTY)
+                references.extend((linkage.get("joint1AngleFieldId"), linkage.get("joint2AngleFieldId")))
+                if not linkage.get("enabled") or any(ref is None for ref in references[-2:]):
+                    self.configured = False
+            if (loop["strategy"] not in ("POSITION_PID", "VELOCITY_PID", "PROFILED_POSITION_PID")
+                    or actuator.get("kind") != "MOTOR"):
+                self.configured = False
+            for reference in references:
+                if reference is None:
+                    continue
+                field = self._fields.get(reference, EMPTY)
+                if (field.get("type") not in ("DOUBLE", "INT") or
+                        field.get("role") == "MEASUREMENT" and reference not in available_measurements):
+                    self.configured = False
+            if not self.configured:
                 self.faulted = True
         self.stop()
 
@@ -167,6 +195,9 @@ class GeneratedXrpSubsystem:
             self._previous_error[key] = None
             self._derivative[key] = 0.0
             self._bang_bang[key] = 0.0
+            profile = self._profiles.get(key)
+            if profile is not None:
+                profile.reset()
 
     def _calculate(self, loop, dt):
         target_value = self.state[loop["targetFieldId"]]
@@ -184,7 +215,7 @@ class GeneratedXrpSubsystem:
         else:
             measurement = _number(self.state[loop["measurementFieldId"]])
             error = _number(target - measurement)
-            continuous = loop.get("continuousInput", {})
+            continuous = loop.get("continuousInput", EMPTY)
             period = None
             if continuous.get("enabled"):
                 if strategy not in ("POSITION_PID", "PROFILED_POSITION_PID"):
@@ -196,6 +227,17 @@ class GeneratedXrpSubsystem:
                     raise ValueError("Continuous XRP angle input must span one turn")
                 error = _wrap_delta(error, period)
             key = loop["loopId"]
+            desired_velocity = target if strategy == "VELOCITY_PID" else 0.0
+            desired_acceleration = 0.0
+            if strategy == "PROFILED_POSITION_PID":
+                profile = self._profiles[key]
+                constraints = loop.get("motionProfile", EMPTY)
+                profile.advance(dt, measurement, target, constraints.get("maximumVelocity", 1.0),
+                                constraints.get("maximumAcceleration", 2.0), period)
+                error = _number(profile.position - measurement)
+                if period is not None:
+                    error = _wrap_delta(error, period)
+                desired_velocity, desired_acceleration = profile.velocity, profile.acceleration
             if strategy == "BANG_BANG":
                 tolerance = _number(loop.get("tolerance", 0.0))
                 hysteresis = _number(loop.get("hysteresis", 0.0))
@@ -229,7 +271,8 @@ class GeneratedXrpSubsystem:
                 self._previous_error[key] = error
                 self._derivative[key] = derivative
                 candidate = _number(self._integral[key] + error * dt) if ki != 0 else 0.0
-                output = _number(kp * error + ki * candidate + kd * derivative)
+                compensation = feedforward(loop, self.state, self.descriptor.get("linkage", EMPTY), desired_velocity, desired_acceleration)
+                output = _number(kp * error + ki * candidate + kd * derivative + compensation)
                 bounded = max(minimum_output, min(maximum_output, output))
                 # Integrate only when unsaturated or when the integral change moves
                 # output back toward its allowed range, including negative kI.
