@@ -23,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap
  * upon fault detection.
  *
  * ### Diagnostic Failure Equations & Thresholds:
- * - **1.0s Moving Average Current Window ($N = 20$ samples):**
- *   $$\bar{I}_{\text{avg}} = \frac{1}{N} \sum_{i=1}^{N} I_i \quad (N = 20 \text{ samples at } 20\text{ Hz})$$
+ * - **1.0s sample-average current window (at most 512 retained samples):**
+ *   $$\bar{I}_{\text{avg}} = \frac{1}{N} \sum_{i=1}^{N} I_i$$
  *
  * - **Motor Mechanical Binding / Loose Screw Stall:**
  *   $$\text{Stall} \iff |P| > 0.35 \;\land\; |\omega| < 5.0\text{ ticks/s} \;\land\; \bar{I}_{\text{avg}} > 5.0\text{ Amps}$$
@@ -46,12 +46,11 @@ import java.util.concurrent.ConcurrentHashMap
  *   One scheduler/GC outlier is retained for analysis but does not interrupt the driver.
  *
  * ### Physical Units & Guarantees:
- * - **Power ($P$):** Normalized motor duty cycle $[-1.0, 1.0]$ or Volts ($V$)
+ * - **Power ($P$):** Normalized motor duty cycle $[-1.0, 1.0]$
  * - **Current ($I$):** Amperes ($A$)
- * - **Velocity ($\omega$):** Encoder ticks/s or meters per second ($m/s$)
+ * - **Velocity ($\omega$):** Encoder ticks/s (legacy MotorIO topics)
  * - **Temperature ($T$):** Degrees Celsius ($^\circ\text{C}$)
  * - **Loop Latency ($t_{\text{loop}}$):** Milliseconds ($ms$)
- * - **Control Flow:** Zero nested `if` statements enforced via clean, argument-less `when` expressions.
  *
  * @param databaseService DuckDB persistent logging service for historical run analytics.
  * @param nt4ClientService Active NetworkTables NT4 websocket streaming client.
@@ -71,11 +70,19 @@ class AlertEngineService(
     private val rules = ConcurrentHashMap<String, ThresholdRule>()
     /** Last values are isolated per recording so a new session cannot inherit stale hardware state. */
     private val recentValues = ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>()
-    /** One-second current windows, isolated by session and motor. */
-    private val currentBuffers = ConcurrentHashMap<String, ArrayDeque<TimedCurrentSample>>()
     /** Fixed-size loop evidence, isolated by recording and actual source key. */
     private val loopTimeBuffers = ConcurrentHashMap<RuleIdentity, LoopOverrunWindow>()
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
+    private val motorRoutes = buildMap {
+        motorNames.forEach { motor ->
+            put("Hardware/Motors/$motor/Power", motor to MotorFeedbackSignal.POWER)
+            put("Hardware/Motors/$motor/Velocity", motor to MotorFeedbackSignal.VELOCITY)
+            put("Hardware/Motors/$motor/CurrentAmps", motor to MotorFeedbackSignal.CURRENT)
+        }
+    }
+    private val motorTemperatureKeys = motorNames.mapTo(HashSet()) { "Hardware/Motors/$it/TempC" }
+    private data class MotorBinding(val state: MotorDiagnosticState, val stall: ThresholdRule, val disconnected: ThresholdRule)
+    private val motorDiagnostics = HashMap<RuleIdentity, MotorBinding>()
 
     private val serviceScope = CoroutineScope(dispatcher + SupervisorJob())
     private val audioNotifier = AlertAudioNotifier()
@@ -177,6 +184,10 @@ class AlertEngineService(
                         if (previous != null && (frame.timestampUs < previous.timestampUs ||
                             (frame.timestampUs == previous.timestampUs && frame.sampleOrder <= previous.sampleOrder))) return@withLock
                         lastSourceOrders[identity] = SourceOrder(frame.timestampUs, frame.sampleOrder)
+                        motorRoutes[key]?.let { evaluateMotorFrame(frame, it) }
+                        if (key in motorTemperatureKeys) rules.getOrPut(key) {
+                            ThresholdRule(key, "WARNING: Motor overheating (>70°C)!", maxValue = 70.0, audibleAlert = true)
+                        }
                         if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
                         recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[key] = frame.value
                         evaluateFrame(frame)
@@ -192,7 +203,7 @@ class AlertEngineService(
         if (evaluationTargetEpoch == epoch) return
         evaluationTargetEpoch = epoch
         recentValues.clear()
-        currentBuffers.clear()
+        motorDiagnostics.clear()
         loopTimeBuffers.clear()
         lastEvaluationTimes.clear()
         lastSourceOrders.clear()
@@ -248,7 +259,7 @@ class AlertEngineService(
     }
 
     /**
-     * Multi-signal composite diagnostic evaluation (Stalls, Cable Disconnects, Over-Temp, CAN Errors, Vision Latency).
+     * CAN, I2C, vision and temporal loop diagnostics. Motor evidence is evaluated separately.
      *
      * @param frame Current telemetry frame being processed.
      */
@@ -257,36 +268,6 @@ class AlertEngineService(
         val ts = frame.timestampMs
         val sessionId = frame.sessionId
         val sessionValues = recentValues[sessionId] ?: return
-
-        // 1. Motor Stalling & Disconnect Check across all motors using 1.0-second moving average
-        if (normalizedFrameKey.startsWith("Hardware/Motors/")) motorNames.forEach { m ->
-            val pwr = kotlin.math.abs(sessionValues["Hardware/Motors/$m/Power"] ?: sessionValues["Hardware/Motors/$m/Voltage"] ?: 0.0)
-            val vel = kotlin.math.abs(sessionValues["Hardware/Motors/$m/Velocity"] ?: 0.0)
-            val currentKey = "Hardware/Motors/$m/CurrentAmps"
-            val current = sessionValues[currentKey] ?: 0.0
-
-            val bufferKey = "$sessionId\u0000$m"
-            val buf = currentBuffers.getOrPut(bufferKey) { ArrayDeque() }
-            if (normalizedFrameKey == currentKey) {
-                buf.addLast(TimedCurrentSample(ts, current))
-            }
-            while (buf.isNotEmpty() && ts - buf.first().timestampMs > CURRENT_WINDOW_MS) {
-                buf.removeFirst()
-            }
-            val hasCurrentSample = buf.isNotEmpty()
-            val avgCurrent = if (hasCurrentSample) buf.sumOf { it.amps } / buf.size else 0.0
-
-            val stallKey = "Hardware/Motors/$m/Stall"
-            val disconnectKey = "Hardware/Motors/$m/Disconnected"
-
-            val isStalled = hasCurrentSample && pwr > 0.35 && vel < 5.0 && avgCurrent > 5.0
-            val stallRule = rules.getOrPut(stallKey) { ThresholdRule(stallKey, "CRITICAL: Motor '$m' Mechanical Binding / Stall!", maxValue = 0.5, audibleAlert = true) }
-            evaluateRuleState(stallKey, isStalled, if (isStalled) 1.0 else 0.0, ts, sessionId, stallRule)
-
-            val isDisconnected = hasCurrentSample && pwr > 0.35 && vel < 5.0 && avgCurrent < 0.1 && avgCurrent >= 0.0
-            val disconnectRule = rules.getOrPut(disconnectKey) { ThresholdRule(disconnectKey, "WARNING: Motor '$m' Cable Disconnected!", maxValue = 0.5, audibleAlert = true) }
-            evaluateRuleState(disconnectKey, isDisconnected, if (isDisconnected) 1.0 else 0.0, ts, sessionId, disconnectRule)
-        }
 
         // 2. CAN Bus Utilization & Error Check
         if ((normalizedFrameKey.startsWith("Diagnostics/CANBus/") && normalizedFrameKey.endsWith("/Utilization")) ||
@@ -316,15 +297,6 @@ class AlertEngineService(
         evaluateRuleState("Hardware/I2C/Timeouts", isI2cError, i2cTimeouts, ts, sessionId, i2cRule)
         }
 
-        // 4. Over-Temperature Thermal Alert (>70C)
-        if (normalizedFrameKey.startsWith("Hardware/Motors/")) motorNames.forEach { m ->
-            val tempC = sessionValues["Hardware/Motors/$m/TempC"] ?: 0.0
-            val isOverheat = tempC > 70.0
-            val tempKey = "Hardware/Motors/$m/TempC"
-            val tempRule = rules.getOrPut(tempKey) { ThresholdRule(tempKey, "WARNING: Motor '$m' Overheating (>70°C)!", maxValue = 70.0, audibleAlert = true) }
-            evaluateRuleState(tempKey, isOverheat, tempC, ts, sessionId, tempRule)
-        }
-
         // 5. Limelight Vision Frame Rate Stale Alert (<5 FPS)
         if (normalizedFrameKey == "Vision/Limelight/FPS") {
         val limelightFps = sessionValues["Vision/Limelight/FPS"] ?: 30.0
@@ -349,6 +321,23 @@ class AlertEngineService(
             }
             evaluateRuleState(loopKey, window.isSlow, window.peakMs, ts, sessionId, loopRule)
         }
+    }
+
+    private suspend fun evaluateMotorFrame(frame: TelemetryFrame, route: Pair<String, MotorFeedbackSignal>) {
+        val binding = motorDiagnostics.getOrPut(RuleIdentity(frame.sessionId, route.first)) {
+            val stallKey = "Hardware/Motors/${route.first}/Stall"
+            val disconnectedKey = "Hardware/Motors/${route.first}/Disconnected"
+            MotorBinding(MotorDiagnosticState(),
+                rules.getOrPut(stallKey) { ThresholdRule(stallKey, "CRITICAL: Motor '${route.first}' Mechanical Binding / Stall!", maxValue = 0.5, audibleAlert = true) },
+                rules.getOrPut(disconnectedKey) { ThresholdRule(disconnectedKey, "WARNING: Motor '${route.first}' Cable Disconnected!", maxValue = 0.5, audibleAlert = true) })
+        }
+        val value = if (frame.stringValue == null) frame.value else Double.NaN
+        if (!binding.state.accept(route.second, frame.timestampUs, value) || !binding.state.hasEvidence) return
+        val state = binding.state
+        evaluateRuleState(binding.stall.key, state.isStalled, if (state.isStalled) 1.0 else 0.0,
+            state.timestampUs / 1_000L, frame.sessionId, binding.stall)
+        evaluateRuleState(binding.disconnected.key, state.isDisconnected, if (state.isDisconnected) 1.0 else 0.0,
+            state.timestampUs / 1_000L, frame.sessionId, binding.disconnected)
     }
 
     private fun isCompositeSignal(key: String): Boolean =
@@ -385,8 +374,6 @@ class AlertEngineService(
         currentCoroutineContext().ensureActive()
         if (outcome.shouldBeep && evaluationTargetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()) triggerAudibleAlert()
     }
-
-    private data class TimedCurrentSample(val timestampMs: Long, val amps: Double)
 
     private suspend fun persistAlert(alert: AlertRecord) {
         if (alert.sessionId != "live-telemetry") {
@@ -439,7 +426,4 @@ class AlertEngineService(
 
     private fun normalizeTopic(key: String): String = TelemetryMetricCatalog.normalizeTopic(key)
 
-    private companion object {
-        const val CURRENT_WINDOW_MS = 1_000L
-    }
 }

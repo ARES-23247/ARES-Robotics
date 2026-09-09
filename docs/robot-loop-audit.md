@@ -450,3 +450,12 @@ invalid-period recovery and cross-source alias mixing. Three primitive sample sl
 occurrence peak replace per-sample allocation and full-window rescanning. An independent
 50,000-sample oracle verifies decisions/peaks; detector updates measured zero allocations.
 Motor windows, configuration semantics, freshness and persistence failure recovery remain open.
+
+## Thirty-second pass: motor diagnostic evidence and averaging
+
+The [motor diagnostic audit](audits/motor-diagnostic-window-audit.md) requires complete fresh
+feedback in defined units, prevents unrelated motors from clearing faults, and invalidates
+unknown current before reuse. Primitive bounded storage and stable weighted means replace
+sample objects and repeated full sums. Exact microsecond windows, configured temperature
+thresholds, a full-sample oracle and helper allocation measurements cover these changes.
+Persistence recovery, other composite configuration and global retention remain open.

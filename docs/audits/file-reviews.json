@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "6f53cf237681d375af24c350157c8a96e90b3b2e27d4562aa5361cb72302a34b",
+      "sha256": "c2feda1a41d9631bea3ad9398a0e0ba3f9de14ad055a1c86f86426f34938e001",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -480,7 +480,10 @@
         "ARESLib-Kotlin/build/audit-pass30-policy.log",
         "docs/audits/loop-overrun-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass31-studio.log",
-        "ARESLib-Kotlin/build/audit-pass31-policy.log"
+        "ARESLib-Kotlin/build/audit-pass31-policy.log",
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2108,10 +2111,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "97c14afe8226cb690c0d899820019479a40a32868418fce2503658a3464dca47",
+      "sha256": "f468f5c8d247bfa4c30628c8be389b7d6d0f6f4080955257f9272e3000167ae7",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open. Pass 31 replaces unbounded/rescanned loop queues with fixed-state per-recording/per-source detectors, preserves actual alias rule keys, rejects invalid periods and reuses the existing source identity. Configured temporal-policy/peak semantics, other composites and persistence remain open.",
+      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open. Pass 31 replaces unbounded/rescanned loop queues with fixed-state per-recording/per-source detectors, preserves actual alias rule keys, rejects invalid periods and reuses the existing source identity. Configured temporal-policy/peak semantics, other composites and persistence remain open. Pass 32 motor routes require complete fresh valid evidence, preserve unknown faults, use bounded primitive averaging and evaluate configured temperature only on its source update. Synthetic motor policy configuration, other composites, failure recovery and global retention remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
@@ -2122,7 +2125,10 @@
         "ARESLib-Kotlin/build/audit-pass30-policy.log",
         "docs/audits/loop-overrun-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass31-studio.log",
-        "ARESLib-Kotlin/build/audit-pass31-policy.log"
+        "ARESLib-Kotlin/build/audit-pass31-policy.log",
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
@@ -2237,10 +2243,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "c8e08e73b295e3b85581b50859cf6a53d798fb66285fe525df33b23e253514d9",
+      "sha256": "6ba8ecd8531a8db2f4aa07b5aad5b8137a9150c5c2bb90a46e87108ed46339d4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2248,7 +2254,10 @@
         "ARESLib-Kotlin/build/audit-pass30-policy.log",
         "docs/audits/loop-overrun-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass31-studio.log",
-        "ARESLib-Kotlin/build/audit-pass31-policy.log"
+        "ARESLib-Kotlin/build/audit-pass31-policy.log",
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2309,6 +2318,72 @@
         "ARESLib-Kotlin/build/audit-pass31-focused.log",
         "ARESLib-Kotlin/build/audit-pass31-studio.log",
         "ARESLib-Kotlin/build/audit-pass31-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/MotorCurrentWindow.kt": {
+      "sha256": "0c3f4c5657f5b873648abef9b4689bd022889d0f27032fcaa023eab3c76f890f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire bounded primitive current window reviewed: chronology, inclusive source microseconds, overflow unknown interval, delayed insertion, reset, nonnegative stable tree means and bounded expiry work. Full-sample oracle, extremes and boundary tests passed.",
+      "evidence": [
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/MotorDiagnosticState.kt": {
+      "sha256": "8f35078030a2dfe5512b271b995b3cfb189c24901cbc1fb47a2418f12a5872d7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire motor-state helper reviewed: normalized duty, ticks/s velocity, nonnegative current, per-field chronology/freshness, invalidation, lazy bounded averaging and fixed diagnostic decisions. Boundary/integration tests and measured helper allocation passed.",
+      "evidence": [
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/MotorCurrentWindowTest.kt": {
+      "sha256": "3bbc0a2c3138fc76a15d73d26bb9641f5f8b7a5245b07ec5fd46baff54f6598e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 11-method fixture reviewed and executed: independent 10,000-sample oracle, overflow/expiry/reset/delayed input and extreme arithmetic.",
+      "evidence": [
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/MotorDiagnosticStateTest.kt": {
+      "sha256": "347c9ceb63ebb683f0ac0f536599602898964996dc2a56c9cbeba01471f9ae0a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method fixture reviewed and executed: validity/age/chronology/threshold/overflow behavior and two consecutive allocation windows.",
+      "evidence": [
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/MotorDiagnosticAuditTest.kt": {
+      "sha256": "05e48554ac441683d6205ad2af8ba48964774033dd7dc26a39e0831ea812574e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 11-method integration fixture reviewed and executed with actual TelemetryStore: baseline defects, independent motors, invalid/stale evidence, configured temperature and delayed occurrence time.",
+      "evidence": [
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+      ]
+    },
+    "docs/audits/motor-diagnostic-window-audit.md": {
+      "sha256": "73805647b8589ac0160fbda176668baf16aa2b4b2261ef1723e27b02d6e8b1a9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 32 report reviewed against baseline/focused/full tests, allocation, coverage, policy and inventory evidence. Distinguishes helper/per-motor bounds from whole-engine/global/hardware limits.",
+      "evidence": [
+        "docs/audits/motor-diagnostic-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass32-studio.log",
+        "ARESLib-Kotlin/build/audit-pass32-policy.log"
       ]
     }
   }

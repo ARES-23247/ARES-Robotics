@@ -104,7 +104,10 @@ fan-out and reentrant publication/reset ordering.
 Pass 31 covers [loop-overrun windows](loop-overrun-window-audit.md): source microsecond
 boundaries, independent aliases, valid periods, constant three-slot evidence, preserved
 occurrence peaks, an independent oracle and measured detector allocations.
-Next are motor-current moving windows, signal freshness/units and persistence failure recovery,
+Pass 32 covers [motor diagnostic evidence and current windows](motor-diagnostic-window-audit.md):
+complete fresh feedback, exact units/time, independent motor updates, bounded stable averaging,
+invalid-input recovery and removal of duplicate temperature evaluation.
+Next are persistence failure recovery and remaining composite configuration semantics,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
