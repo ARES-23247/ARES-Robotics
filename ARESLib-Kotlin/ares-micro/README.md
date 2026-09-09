@@ -32,6 +32,23 @@ disarmed control request requires a newer Start revision before motion can resum
 an ordinary heartbeat cannot renew a lease after its deadline has passed. Deadman
 timeouts are integer milliseconds in 100..1000, matching generated project validation.
 
+## Mechanism control
+
+Position/velocity PID resets its integral and derivative history on stop, wraps continuous
+angular error and derivative deltas, filters derivatives with the declared time constant,
+and limits integral accumulation during saturation. Bang-bang control supports signed
+outputs, restart hysteresis, and one neutral tick during reversal. A raw hardware source
+mapped to several measurements is sampled once per cycle before applying each transform.
+All loop results are checked before output writes begin. The declared field types and
+numeric limits apply to target updates; missing feedback required by a control loop is an
+unhealthy configuration, even when the underlying device is marked optional.
+
+Descriptor topology is fixed when a subsystem is constructed. Reconstruct it after
+changing hardware, measurement, field, or loop identities. This runtime still allocates
+Python numeric results. Profiled setpoints, feedforward, and the remaining advanced
+descriptor safety features are open implementation/audit work; ordinary PID execution
+does not establish that those declarations are implemented.
+
 ## Installation on Raspberry Pi Pico W
 
 Copy the `ares_micro` directory to `/lib/ares_micro` on your Pico W filesystem via `mpremote`:
