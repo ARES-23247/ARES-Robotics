@@ -412,7 +412,6 @@ class DatabaseService(
             // writers. Lock order here matches the repository's established write->read order.
             dbMutex.withLock {
                 readMutex.withLock {
-                    sessionMetadataRepo.dispose()
                     if (!readConn.isClosed) { readConn.close() }
                     if (!conn.isClosed) {
                         runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }

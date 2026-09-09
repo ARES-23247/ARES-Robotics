@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "9b0b6a46cf698b546269461dac4932aaec15dbc143bc7596cccfb6bb080bc134",
+      "sha256": "106aadb337b9b7f67a5d3d172fb0ff1b87b9fb0d0255482b43b751b1ebdcd150",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -469,7 +469,8 @@
         "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
         "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
         "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+        "ARESLib-Kotlin/build/audit-pass24-policy.log",
+        "docs/audits/database-coordinator-transactions-audit.md"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1446,29 +1447,31 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt": {
-      "sha256": "68882c56cd8c084d71c571dbdf5e432b46e7500abcd874de6e31088fd0350b7a",
+      "sha256": "1524e81053b0d5260d455c3ee86dc5164f78d4755b578a0887c32bcc42b30ca5",
       "review": "partial",
       "validation": "passed",
-      "scope": "Completed-session lookup, workspace filtering/order, six existing metadata read-connection paths and atomic paired tag/match edits reviewed. Eight regressions cover identity/import visibility, SQL binding, unrelated malformed JSON, read coordination, nullable details, missing summaries and rollback on failed second-table updates. Other CRUD/batching, import-deduplication, JSON/domain validation and lifecycle remain open. Full Studio gate passes; 281/289 lines, 52/68 branches do not close the remaining review.",
+      "scope": "Completed-session lookup, workspace filtering/order, six existing metadata read-connection paths and atomic paired tag/match edits reviewed. Eight regressions cover identity/import visibility, SQL binding, unrelated malformed JSON, read coordination, nullable details, missing summaries and rollback on failed second-table updates. Other CRUD/batching, import-deduplication, JSON/domain validation and lifecycle remain open. Full Studio gate passes; 281/289 lines, 52/68 branches do not close the remaining review. Pass 25 also reviews shared transaction ownership for deletion/paired summary edits and native console delegation, removing cached JDBC batch/disposal state; repository/metadata/full Studio suites passed. Remaining CRUD, JSON/domain and console read contracts stay open.",
       "evidence": [
         "docs/audits/telemetry-density-metadata-audit.md",
         "ARESLib-Kotlin/build/audit-pass23-density-before.log",
         "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        "ARESLib-Kotlin/build/audit-pass23-policy.log",
+        "docs/audits/database-coordinator-transactions-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": {
-      "sha256": "8da3dc3f6478e721e64b364ada3bd553f8c68d49735ace91424ba4cee7a48129",
+      "sha256": "c04cacc46b8830f3057d9fba91078b783c3d8de13633226429caa54ff4aecde6",
       "review": "partial",
       "validation": "passed",
-      "scope": "Selected-session facade and alert identity lookup reviewed; reader delegation and paired metadata mutations exercised by integration tests. Alert policy predicate remains unchanged. The broader facade, constructor, backup/import, integration event and shutdown behavior remain open.",
+      "scope": "Selected-session facade and alert identity lookup reviewed; reader delegation and paired metadata mutations exercised by integration tests. Alert policy predicate remains unchanged. The broader facade, constructor, backup/import, integration event and shutdown behavior remain open. Pass 25 removes the obsolete console statement-cache disposal call inside existing locked close; writer-local resources now close in their own operation. Rest of facade remains partial.",
       "evidence": [
         "docs/audits/telemetry-density-metadata-audit.md",
         "ARESLib-Kotlin/build/audit-pass23-density-before.log",
         "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        "ARESLib-Kotlin/build/audit-pass23-policy.log",
+        "docs/audits/database-coordinator-transactions-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GuidedRunAnalysisService.kt": {
@@ -1580,18 +1583,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DuckDbAppenderTransaction.kt": {
-      "sha256": "1718605a60104cf8803fb2832f30605127f50ddc08792d4c3492fde84a7ba162",
+      "sha256": "b32d1bd0bd2b415e2c42f5b59c995caef027afd022d08d0018a48c6b9926f368",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full native transaction helper review: starts actual JDBC transaction with a small statement, joins caller-owned transactions, commits only after block/native closure, rolls back Exception/Error/cancellation, suppresses cleanup faults and closes uncertain writers after failed rollback/reset instead of committing during auto-commit restoration. Actual driver visibility/rollback tests and injected JDBC cleanup faults pass. Underlying close failures and post-commit acknowledgement/retry uncertainty are not claimed recoverable. Final gate: 23/23 lines, 14/22 branches; secondary cleanup combinations remain unexecuted.",
+      "scope": "Entire native wrapper delegates to shared helper with native transaction activation. Native rollback/cleanup and repository suites passed; 1/1 line covered.",
       "evidence": [
-        "docs/audits/database-metrics-actions-audit.md",
-        "ARESLib-Kotlin/build/audit-pass24-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused.log",
-        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseMetricsTest.kt": {
@@ -1682,6 +1680,86 @@
         "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
         "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
         "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseTransactionCoordinator.kt": {
+      "sha256": "1cdfe98d25ec91b0b135859b9617e5da360de44d178d879fca74aade6ded66b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire coordinator: exact connection routing, independent mutexes, read timing, attempted-operation metrics, cancellation/failure lock release and checkpoint coordination. Eight dedicated tests and full Studio gate passed; clocks remain monotonic by contract.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DuckDbTransaction.kt": {
+      "sha256": "b67da3b86c3ccefe33a23b2b28478300d5e040de80c8e23f8286684f274b05dc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire generic transaction helper: ownership, SQL/native activation selection, commit, Throwable rollback, uncertain-writer close, suppressed cleanup failures and auto-commit restoration. Existing cleanup/native and new repository tests passed; Kover 24/24 lines, 14/48 branches, remaining cleanup combinations explicitly open.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/ConsoleMessageWriter.kt": {
+      "sha256": "8a68682a65cd409df676db617160452bd8e898c233dd941092b46703287bf545",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire writer: empty input, transaction activation/ownership, temporary native staging, single session binding, last duplicate severity, deterministic duplicate resolution, failure rollback/retry and large batch. Kover 21/21 lines, 4/4 branches. SQL memory scales with batch; broader input domains remain existing contract.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/RunEvidenceRepository.kt": {
+      "sha256": "133b10f792f3ed617413c293a6a1f01e1d7405468cdc766a351b3732ffb77857",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 25 reviews the transaction boundaries of all three evidence replacement/completion mutations, caller ownership and shared failure cleanup. Caller rollback regression and full Studio tests passed. Diagnostics reads, ordering, timestamp/source interpretation and remaining mappings require review.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseBackupExporter.kt": {
+      "sha256": "736d175258d4c57eda971000559dc357084ae551fe8c00a04d7cbfe6fb025956",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 25 reviews both Parquet import transaction wrappers, caller ownership, fatal-error rollback and unchanged return contracts. Backup/import invariant and full Studio suites passed. Remaining export/import SQL, filesystem, schema and cloud behavior require review.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/db/RepositoryTransactionAuditTest.kt": {
+      "sha256": "e38717a3befe3310208ad9e52a9acf071898a41e38460724c84c5cc02caea354",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method suite: owned in-memory databases, caller rollback, console duplicates/failure/large batches, Parquet ownership and fatal import rollback; focused and full Studio execution passed.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/db/DatabaseCoordinatorAuditTest.kt": {
+      "sha256": "4897e3ef53bff749d605da1cff3441a74382cf939b9edb1451234d8512906f32",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method suite: exact routing, clock usage/read timing, failed/cancelled operations, independent reader progress, queued cancellation and checkpoint. Focused/full Studio execution passed.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "docs/audits/database-coordinator-transactions-audit.md": {
+      "sha256": "fdc7accfa284f7d29e075fb7e8c68e90ee9ba2c0e0c3d92f281c628ce7402f0d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 25 report checked against baseline reproductions, focused/full Studio results, Kover counters and headless dashboard artifact. Explicit remaining scope and non-hardware limitations.",
+      "evidence": [
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass25-studio.log"
       ]
     }
   }

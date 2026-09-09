@@ -18,7 +18,6 @@ internal class SessionMetadataRepository(
 ) {
     private val conn: Connection get() = transactions.writeConnection
     private val readConn: Connection get() = transactions.readConnection
-    private val statementCache = java.util.concurrent.ConcurrentHashMap<String, java.sql.PreparedStatement>()
 
     private suspend fun <T> withDbLock(block: suspend () -> T): T = transactions.write(block)
     private suspend fun <T> withReadLock(block: suspend () -> T): T = transactions.read(block)
@@ -137,9 +136,7 @@ internal class SessionMetadataRepository(
     }
 
     suspend fun deleteSession(sessionId: String) = withDbLock {
-        val previousAutoCommit = conn.autoCommit
-        try {
-            conn.autoCommit = false
+        withDuckDbTransaction(conn) {
             val sessionOwnedTables = arrayOf(
                 "session_summaries",
                 "telemetry_frames",
@@ -157,12 +154,6 @@ internal class SessionMetadataRepository(
                     ps.executeUpdate()
                 }
             }
-            conn.commit()
-        } catch (e: Exception) {
-            conn.rollback()
-            throw e
-        } finally {
-            conn.autoCommit = previousAutoCommit
         }
     }
 
@@ -259,21 +250,13 @@ internal class SessionMetadataRepository(
 
     /** Both copies become visible together; a failed summary update cannot leave a partial edit. */
     private fun updateSessionAndSummary(assignments: String, bind: (java.sql.PreparedStatement) -> Unit) {
-        val ownsTransaction = conn.autoCommit
-        if (ownsTransaction) conn.autoCommit = false
-        try {
+        withDuckDbTransaction(conn) {
             for (table in arrayOf("sessions", "session_summaries")) {
                 conn.prepareStatement("UPDATE $table SET $assignments WHERE session_id = ?").use { statement ->
                     bind(statement)
                     statement.executeUpdate()
                 }
             }
-            if (ownsTransaction) conn.commit()
-        } catch (error: Exception) {
-            if (ownsTransaction) runCatching { conn.rollback() }.exceptionOrNull()?.let(error::addSuppressed)
-            throw error
-        } finally {
-            if (ownsTransaction) conn.autoCommit = true
         }
     }
 
@@ -324,40 +307,8 @@ internal class SessionMetadataRepository(
         }
     }
 
-    private inline fun <T> executeBatchInsert(
-        targetConn: Connection,
-        items: List<T>,
-        sql: String,
-        batchSize: Int = 10000,
-        crossinline bind: (java.sql.PreparedStatement, T) -> Unit
-    ) {
-        targetConn.autoCommit = false
-        try {
-            val cacheKey = "${targetConn.hashCode()}_$sql"
-            val ps = statementCache.getOrPut(cacheKey) { targetConn.prepareStatement(sql) }
-            items.chunked(batchSize).forEach { chunk ->
-                for (item in chunk) {
-                    bind(ps, item)
-                    ps.addBatch()
-                }
-                ps.executeBatch()
-            }
-            targetConn.commit()
-        } catch (e: Exception) {
-            targetConn.rollback()
-            throw e
-        } finally {
-            targetConn.autoCommit = true
-        }
-    }
-
     suspend fun insertConsoleMessages(messages: List<ConsoleMessage>, sessionId: String) = withDbLock {
-        executeBatchInsert(conn, messages, "INSERT OR REPLACE INTO console_messages (timestamp_ms, session_id, text, severity) VALUES (?, ?, ?, ?)") { ps, msg ->
-            ps.setLong(1, msg.timestampMs)
-            ps.setString(2, sessionId)
-            ps.setString(3, msg.text)
-            ps.setString(4, msg.severity)
-        }
+        writeConsoleMessages(conn, messages, sessionId)
     }
 
     suspend fun getConsoleMessages(sessionId: String): List<ConsoleMessage> = withReadLock {
@@ -451,11 +402,6 @@ internal class SessionMetadataRepository(
         )
     }
 
-
-    fun dispose() {
-        statementCache.values.forEach { statement -> runCatching { statement.close() } }
-        statementCache.clear()
-    }
 
     private companion object {
         const val IMPORT_STATE_IMPORTING = "IMPORTING"

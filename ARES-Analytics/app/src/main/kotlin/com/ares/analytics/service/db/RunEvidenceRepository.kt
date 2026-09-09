@@ -60,13 +60,11 @@ internal class RunEvidenceRepository(
     suspend fun replaceAnalysisDiagnostics(
         sessionId: String,
         diagnostics: List<AnalysisDiagnostic>,
-    ) = transactions.write {
+    ): Unit = transactions.write {
         require(diagnostics.all { it.sessionId == sessionId }) {
             "Every analysis diagnostic must belong to the replaced session"
         }
-        val previousAutoCommit = writeConnection.autoCommit
-        try {
-            writeConnection.autoCommit = false
+        withDuckDbTransaction(writeConnection) {
             writeConnection.prepareStatement("DELETE FROM analysis_diagnostics WHERE session_id = ?").use { statement ->
                 statement.setString(1, sessionId)
                 statement.executeUpdate()
@@ -83,12 +81,6 @@ internal class RunEvidenceRepository(
                 }
                 statement.executeBatch()
             }
-            writeConnection.commit()
-        } catch (failure: Throwable) {
-            writeConnection.rollback()
-            throw failure
-        } finally {
-            writeConnection.autoCommit = previousAutoCommit
         }
     }
 
@@ -116,16 +108,8 @@ internal class RunEvidenceRepository(
         require(reports.all { it.sessionId == sessionId }) {
             "Every import report must belong to the replaced session"
         }
-        val previousAutoCommit = writeConnection.autoCommit
-        try {
-            writeConnection.autoCommit = false
+        withDuckDbTransaction(writeConnection) {
             replaceImportReportsWithinTransaction(sessionId, reports)
-            writeConnection.commit()
-        } catch (failure: Throwable) {
-            writeConnection.rollback()
-            throw failure
-        } finally {
-            writeConnection.autoCommit = previousAutoCommit
         }
     }
 
@@ -135,17 +119,9 @@ internal class RunEvidenceRepository(
         require(reports.all { it.sessionId == session.sessionId }) {
             "Every import report must belong to the completed session"
         }
-        val previousAutoCommit = writeConnection.autoCommit
-        try {
-            writeConnection.autoCommit = false
+        withDuckDbTransaction(writeConnection) {
             sessions.upsertCompletedSessionWithinTransaction(session)
             replaceImportReportsWithinTransaction(session.sessionId, reports)
-            writeConnection.commit()
-        } catch (failure: Throwable) {
-            writeConnection.rollback()
-            throw failure
-        } finally {
-            writeConnection.autoCommit = previousAutoCommit
         }
     }
 

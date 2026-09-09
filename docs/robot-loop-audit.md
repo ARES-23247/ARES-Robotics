@@ -395,3 +395,11 @@ and incoherent latency means, primitive sample recording, explicit nearest-rank 
 partial native action batches, lazy JDBC transaction activation, persistent/live telemetry
 transaction ownership and deterministic action ties. Failure injection and separate readers
 verify actual rollback/visibility. Broader database and physical timing work remains open.
+
+## Twenty-fifth pass: database coordination and repository transactions
+
+The [twenty-fifth-pass report](audits/database-coordinator-transactions-audit.md) records
+caller-owned transactions committed by repository wrappers, fatal import rollback,
+pending console rows leaked across calls, native staging/upsert and redundant write timing.
+The large console fixture now completes without its prior timeout. Remaining diagnostics,
+schema/backup, sampling and physical timing scopes stay open.

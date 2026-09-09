@@ -83,8 +83,11 @@ direct/workspace session lookups, read coordination and atomic paired metadata e
 Pass 24 covers [database metrics and action storage](database-metrics-actions-audit.md):
 coherent primitive latency tracking, stable means, nearest-rank p95, native appender
 transaction activation for actions/telemetry, input domains and deterministic action ties.
-Next are the database coordinator, remaining mutations, dashboard health sampling and
-recording-memory costs, stale approval, legacy states, verified project/evidence
+Pass 25 covers [database coordination and repository transactions](database-coordinator-transactions-audit.md):
+caller-owned transaction preservation, shared cleanup across metadata/evidence/imports,
+set-based console writes and cancelled/failed coordinator attempts.
+Next are diagnostics/evidence reads, remaining schema/backup behavior, dashboard health
+sampling and recording-memory costs, stale approval, legacy states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining
 Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,

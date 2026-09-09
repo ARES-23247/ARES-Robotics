@@ -83,7 +83,7 @@ class DatabaseBackupExporter(
      * @param file Target `.parquet` log file containing serialized telemetry records.
      * @throws java.sql.SQLException If DuckDB encounters a file read or table insertion error.
      */
-    suspend fun importParquet(file: File) = withDbLock {
+    suspend fun importParquet(file: File): Unit = withDbLock {
         val absolutePath = sqlLiteral(file.canonicalPath.replace("\\", "/"))
         val columns = parquetColumns(absolutePath)
         val required = setOf("timestamp_ms", "session_id", "key", "value")
@@ -96,9 +96,7 @@ class DatabaseBackupExporter(
         val sampleOrderExpression = sampleOrderExpression(columns)
         val normalizedKeyExpression = normalizedKeyExpression()
         val numericValueExpression = "TRY_CAST(value AS DOUBLE)"
-        val previousAutoCommit = conn.autoCommit
-        conn.autoCommit = false
-        try {
+        withDuckDbTransaction(conn) {
             validateParquetFrames(absolutePath, columns, requireSourceSession = true)
             conn.createStatement().use { st ->
                 st.execute(
@@ -125,12 +123,6 @@ class DatabaseBackupExporter(
                     FROM read_parquet('$absolutePath')
                 """.trimIndent())
             }
-            conn.commit()
-        } catch (error: Exception) {
-            conn.rollback()
-            throw error
-        } finally {
-            conn.autoCommit = previousAutoCommit
         }
     }
 
@@ -209,9 +201,7 @@ class DatabaseBackupExporter(
         val sampleOrderExpression = sampleOrderExpression(columns)
         val normalizedKeyExpression = normalizedKeyExpression()
         val numericValueExpression = "TRY_CAST(value AS DOUBLE)"
-        val previousAutoCommit = conn.autoCommit
-        conn.autoCommit = false
-        try {
+        withDuckDbTransaction(conn) {
             validateParquetFrames(safePath, columns, requireSourceSession = false)
             if (ancillaryData != null) {
                 val tables = arrayOf(
@@ -291,13 +281,7 @@ class DatabaseBackupExporter(
                 }
                 cloudImportFailureInjector?.invoke(CloudImportStage.ANCILLARY)
             }
-            conn.commit()
             result
-        } catch (error: Exception) {
-            conn.rollback()
-            throw error
-        } finally {
-            conn.autoCommit = previousAutoCommit
         }
     }
 

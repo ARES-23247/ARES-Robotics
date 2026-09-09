@@ -31,12 +31,12 @@ internal class DatabaseTransactionCoordinator(
     fun writeConnectionFor(sessionId: String): Connection =
         if (sessionId == LIVE_TELEMETRY_SESSION_ID) ephemeralWriteConnection else writeConnection
 
+    // Counts attempts that enter this IO context, including failures/cancellation while waiting.
     suspend fun <T> write(block: suspend () -> T): T = withContext(Dispatchers.IO) {
-        val started = metrics.nowNanos()
         try {
             writeMutex.withLock { block() }
         } finally {
-            metrics.recordWrite(metrics.nowNanos() - started)
+            metrics.recordWrite(0L)
         }
     }
 
