@@ -306,3 +306,10 @@ The [twelfth-pass report](audits/pid-controller-audit.md) records sign-aware int
 saturation, disabled-state cleanup, finite arithmetic and periodic differences, invalid
 configuration recovery, and removal of repeated work and console IO. It includes
 before/after regressions, per-thread allocation evidence and explicit coverage limits.
+
+## Thirteenth pass: XRP profiles and feedforward
+
+The [thirteenth-pass report](audits/xrp-profile-feedforward-audit.md) records previously
+ignored profile/feedforward declarations, continuous braking and reset behavior, gravity
+models, auxiliary sensor dependencies, finite outputs and reusable reference state.
+Twenty-two new tests pass. Advanced descriptor safety and physical timing remain open.

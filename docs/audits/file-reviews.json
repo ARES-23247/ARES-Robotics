@@ -458,15 +458,14 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "8895dca1ddd8d5316a9e6a0e4a495cb0d256533566de636ef9d4df0da281e9c4",
+      "sha256": "e8e2eb4577ac88d5cfac9805845ee51d24a2d6a5d82d534858492d63459041df",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full audit accounting and work-queue documentation reviewed through pass 12. Guidance and links in 173 current documents passed. Records remaining MicroPython, controller, repository-wide and hardware work; documentation disposition only.",
+      "scope": "Full accounting/work-queue documentation reviewed through pass 13. Shared guidance and links in 174 current documents pass. Remaining descriptor, repository and physical validation is explicitly open.",
       "evidence": [
-        "docs/audits/pid-controller-audit.md",
-        "ARESLib-Kotlin/build/audit-pass12-library.log",
-        "ARESLib-Kotlin/build/audit-pass12-studio.log",
-        "ARESLib-Kotlin/build/audit-pass12-policy.log"
+        "docs/audits/xrp-profile-feedforward-audit.md",
+        "ARESLib-Kotlin/build/audit-pass13-studio.log",
+        "ARESLib-Kotlin/build/audit-pass13-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -521,14 +520,12 @@
       ]
     },
     "ARESLib-Kotlin/ares-micro/README.md": {
-      "sha256": "81b6d8ea78e623626862ae55e3aa62bfeb39f5cd0e42640eb56066b1aa6becd0",
+      "sha256": "8e783346e0a8eaf0635bddc754299a92f0cfb26dcbf77777b0729ecc3da1b5d9",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full runtime documentation review with basic mechanism control, fixed topology and advanced-feature limits added. Statements checked against source, canonical descriptor defaults and passing Python tests. Manual device copy remains unexecuted on hardware.",
+      "scope": "Full runtime documentation review, updated for profile/feedforward defaults, reset, unsupported features and allocation/device limitations. Source and tests substantiate the changed mechanism contract. Hardware installation remains unexecuted.",
       "evidence": [
-        "docs/audits/xrp-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass9-micro.log",
-        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
+        "docs/audits/xrp-profile-feedforward-audit.md"
       ]
     },
     "ARESLib-Kotlin/ares-micro/ares_micro/__init__.py": {
@@ -542,14 +539,12 @@
       ]
     },
     "ARESLib-Kotlin/ares-micro/ares_micro/subsystem.py": {
-      "sha256": "08834c2f3ac8969485ac97adfa137ff4441e343c8bd582c0c8c2cf99a4a917c1",
+      "sha256": "a54f7585fe1dfb374226125677f4fbd719531389fad9deea25bbb6212fd553b0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 9 audits basic PID/bang-bang math, stop/reset, target types, output validation and source-read grouping. 101 shared Python tests pass, including 16 new regressions; 94.9% source line execution. Profiles, feedforward, advanced safety, typed/fresh/disabled feedback, followers and structural validation remain open; this is not full feature coverage.",
+      "scope": "Passes 9 and 13 cover basic controllers, profile references, feedforward, reset, typed targets, auxiliary sensor dependencies and preparing all outputs before writes. 123 shared Python tests pass; 246/258 executable lines exercised. Advanced safety, typed/fresh/disabled feedback, followers and remaining structural validation stay open.",
       "evidence": [
-        "docs/audits/xrp-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass9-micro.log",
-        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
+        "docs/audits/xrp-profile-feedforward-audit.md"
       ]
     },
     "docs/audits/xrp-robot-autonomous-audit.md": {
@@ -779,6 +774,53 @@
         "ARESLib-Kotlin/build/audit-pass12-library.log",
         "ARESLib-Kotlin/build/audit-pass12-studio.log",
         "ARESLib-Kotlin/build/audit-pass12-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/control_math.py": {
+      "sha256": "c5385187cdbb6a319660d6a3039f3c8d42b2cbd508e3adf3199b763268530f71",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full analytic zero-terminal-velocity profile and feedforward helper review. Five helper methods plus 17 subsystem methods pass within 123 shared Python tests; 116/121 executable lines exercised. Includes overspeed, reversal, time partitioning, overflow, gravity defaults and numeric constraints. CPython evidence; no MicroPython device timing or heap claim.",
+      "evidence": [
+        "docs/audits/xrp-profile-feedforward-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_control_math.py": {
+      "sha256": "6b91e53ea112ed19ef15d3a9769ec76204bf272376671f07799619a0ce460830",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution in the 123-test Python suite. Analytic expectations, trajectory invariants and controller/IO behavior are checked. Does not establish every numeric combination or hardware behavior.",
+      "evidence": [
+        "docs/audits/xrp-profile-feedforward-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_subsystem_profile_feedforward.py": {
+      "sha256": "be07fde6d1a4d2123c6e944c140c0964b693ba1fc0b4f8fa8adc09eafccbfcb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution in the 123-test Python suite. Analytic expectations, trajectory invariants and controller/IO behavior are checked. Does not establish every numeric combination or hardware behavior.",
+      "evidence": [
+        "docs/audits/xrp-profile-feedforward-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt": {
+      "sha256": "6909ea648fea1afb62fb9ecd72f18f2d69c8756fa70c67253f891a6b71b94585",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed profile/feedforward/linkage declarations and canonical defaults; corrected nullable velocity/acceleration KDoc to describe profile references. Existing schema tests/API checks pass with up-to-date test reuse. Remaining declarations require full review.",
+      "evidence": [
+        "docs/audits/xrp-profile-feedforward-audit.md"
+      ]
+    },
+    "docs/audits/xrp-profile-feedforward-audit.md": {
+      "sha256": "c65f76f69ced1764f9d9f7d61d1f0057a7073a2dcc5f424f0955e8cd5ed7d63e",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass report checked against source diff, baseline/final Python logs, trace output, candidate/archive identities and completed consumer/policy logs. Distinguishes up-to-date test reuse, initial incomplete sandbox run and physical limitations.",
+      "evidence": [
+        "docs/audits/xrp-profile-feedforward-audit.md",
+        "ARESLib-Kotlin/build/audit-pass13-studio.log",
+        "ARESLib-Kotlin/build/audit-pass13-policy.log"
       ]
     }
   }

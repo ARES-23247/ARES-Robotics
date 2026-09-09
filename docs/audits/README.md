@@ -56,8 +56,10 @@ continuous braking and generated-profile parity. The remaining MicroPython profi
 feedforward contracts still need implementation and verification.
 Pass 12 covers the [basic PID controller](pid-controller-audit.md), including signed
 anti-windup, invalid-state recovery, overflow, periodic differences, and measured allocations.
-The next passes should cover the remaining MicroPython profile/feedforward runtime,
-then logging/transport and Studio analytics math.
+Pass 13 covers [MicroPython profiles and feedforward](xrp-profile-feedforward-audit.md),
+including continuous braking, gravity models, sensor dependencies and finite output.
+The next passes should cover advanced descriptor safety, logging/transport and Studio
+analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.
