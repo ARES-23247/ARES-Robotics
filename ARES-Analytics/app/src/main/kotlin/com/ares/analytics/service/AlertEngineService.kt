@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.util.IdentityHashMap
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -99,6 +100,9 @@ class AlertEngineService(
     private data class RuleIdentity(val sessionId: String, val key: String)
     // Guard occurrence chronology, including healthy samples that do not create a record.
     private val lastEvaluationTimes = HashMap<RuleIdentity, Long>()
+    private data class SourceOrder(val timestampUs: Long, val sampleOrder: Long)
+    private val lastSourceOrders = HashMap<RuleIdentity, SourceOrder>()
+    private var evaluationTargetEpoch: Long? = null
     private var engineJob: Job? = null
     private val platformThresholds = PlatformAlertThresholds()
 
@@ -149,15 +153,50 @@ class AlertEngineService(
     fun startEngine() {
         engineJob?.cancel()
 
-        engineJob = serviceScope.launch {
-            nt4ClientService.telemetryFlow.collect { frame ->
-                if (frame.stringValue != null || !frame.value.isFinite()) return@collect
-                val normalizedKey = normalizeTopic(frame.key)
-                recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[normalizedKey] = frame.value
-                evaluateFrame(frame)
-                evaluateCompositeRules(frame, normalizedKey)
+        val store = nt4ClientService.telemetryStore
+        val retained = IdentityHashMap<TelemetryPublication, Boolean>()
+        store.publications.replayCache.forEach { retained[it] = true }
+        engineJob = serviceScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            coroutineScope {
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    store.targetEpochs.collect {
+                        transitionMutex.withLock { selectTargetEpoch(store.currentTargetEpoch()) }
+                    }
+                }
+                store.publications.collect { publication ->
+                    transitionMutex.withLock {
+                        ensureActive()
+                        val epoch = store.currentTargetEpoch()
+                        selectTargetEpoch(epoch)
+                        val frame = publication.frame
+                        if (publication.targetEpoch != epoch || retained.containsKey(publication)) return@withLock
+                        val key = normalizeTopic(frame.key)
+                        if (!rules.containsKey(key) && !isCompositeSignal(key)) return@withLock
+                        val identity = RuleIdentity(frame.sessionId, key)
+                        val previous = lastSourceOrders[identity]
+                        if (previous != null && (frame.timestampUs < previous.timestampUs ||
+                            (frame.timestampUs == previous.timestampUs && frame.sampleOrder <= previous.sampleOrder))) return@withLock
+                        lastSourceOrders[identity] = SourceOrder(frame.timestampUs, frame.sampleOrder)
+                        if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
+                        recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[key] = frame.value
+                        evaluateFrame(frame)
+                        evaluateCompositeRules(frame, key)
+                    }
+                }
             }
         }
+    }
+
+    /** Called while holding transitionMutex. Old persisted evidence remains in the database. */
+    private fun selectTargetEpoch(epoch: Long) {
+        if (evaluationTargetEpoch == epoch) return
+        evaluationTargetEpoch = epoch
+        recentValues.clear()
+        currentBuffers.clear()
+        loopTimeBuffers.clear()
+        lastEvaluationTimes.clear()
+        lastSourceOrders.clear()
+        _alerts.value = emptyMap()
     }
 
     /** Selects platform-correct live safety thresholds without rewriting saved user rules. */
@@ -328,7 +367,7 @@ class AlertEngineService(
             key in TelemetryMetricCatalog.LOOP_TIME.keys
 
     /**
-     * Pure zero-nested helper to transition custom alert state. Lookup + update are atomic.
+     * Transition one rule while the source collector holds transitionMutex, including persistence.
      */
     private suspend fun evaluateRuleState(
         key: String,
@@ -338,18 +377,19 @@ class AlertEngineService(
         sessionId: String,
         rule: ThresholdRule
     ) {
-        transitionMutex.withLock {
-            if (!value.isFinite() || ts < 0L) return
-            val identity = RuleIdentity(sessionId, normalizeTopic(key))
-            val previousTime = lastEvaluationTimes[identity]
-            if (previousTime != null && ts < previousTime) return
-            lastEvaluationTimes[identity] = ts
-            val outcome = commitAlertTransition(_alerts) { current ->
-                alertTransition(current, rule, key, sessionId, ts, value, isViolating)
-            } ?: return
-            persistAlert(outcome.alert)
-            if (outcome.shouldBeep) triggerAudibleAlert()
-        }
+        currentCoroutineContext().ensureActive()
+        if (evaluationTargetEpoch != nt4ClientService.telemetryStore.currentTargetEpoch()) return
+        if (!value.isFinite() || ts < 0L) return
+        val identity = RuleIdentity(sessionId, normalizeTopic(key))
+        val previousTime = lastEvaluationTimes[identity]
+        if (previousTime != null && ts < previousTime) return
+        lastEvaluationTimes[identity] = ts
+        val outcome = commitAlertTransition(_alerts) { current ->
+            alertTransition(current, rule, key, sessionId, ts, value, isViolating)
+        } ?: return
+        persistAlert(outcome.alert)
+        currentCoroutineContext().ensureActive()
+        if (outcome.shouldBeep && evaluationTargetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()) triggerAudibleAlert()
     }
 
     private data class TimedCurrentSample(val timestampMs: Long, val amps: Double)

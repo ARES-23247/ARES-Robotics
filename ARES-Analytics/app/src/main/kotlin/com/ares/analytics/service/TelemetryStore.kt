@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.filter
 import java.util.ArrayDeque
 import java.util.LinkedHashSet
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Single fan-out point for live and replay telemetry.
@@ -34,7 +33,7 @@ class TelemetryStore(
         require(maxTrackedTopics > 0) { "maxTrackedTopics must be positive" }
     }
 
-    private val mutableUpdates = MutableSharedFlow<TelemetryFrame>(
+    private val mutablePublications = MutableSharedFlow<TelemetryPublication>(
         replay = 100,
         extraBufferCapacity = 4_096,
         // This is a live UI fan-out bus, not the durable recording queue. A slow or paused
@@ -43,7 +42,8 @@ class TelemetryStore(
         // catch up from latestFrames/history instead of suspending the producer indefinitely.
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    val updates: SharedFlow<TelemetryFrame> = mutableUpdates.asSharedFlow()
+    internal val publications: SharedFlow<TelemetryPublication> = mutablePublications.asSharedFlow()
+    val updates: SharedFlow<TelemetryFrame> = TelemetryFrameFlow(publications)
 
     private val topicFlows = ConcurrentHashMap<String, MutableStateFlow<TelemetryFrame?>>()
     internal val latestFrames = ConcurrentHashMap<String, TelemetryFrame>()
@@ -57,14 +57,17 @@ class TelemetryStore(
     internal val topicObserverCount: Int
         get() = topicFlows.size
 
-    private val acceptedFrameCount = AtomicLong()
-    private val lastAcceptedAtMs = AtomicLong()
-    private val targetEpoch = AtomicLong()
+    private var acceptedFrameCount = 0L
+    private var lastAcceptedAtMs = 0L
+    @Volatile private var targetEpoch = 0L
+    private val mutableTargetEpochs = MutableStateFlow(0L)
+    internal val targetEpochs: StateFlow<Long> = mutableTargetEpochs.asStateFlow()
 
     suspend fun accept(frame: TelemetryFrame, notifyConsumers: Boolean = true): TelemetryFrame {
         val canonicalKey = canonical(frame.key)
         val canonicalFrame = if (canonicalKey == frame.key) frame else frame.copy(key = canonicalKey)
-        val observedTopicFlow = synchronized(topicIndexLock) {
+        synchronized(topicIndexLock) {
+            val observedEpoch = targetEpoch
             if (!latestFrames.containsKey(canonicalFrame.key)) {
                 while (trackedTopicOrder.size >= maxTrackedTopics) {
                     val oldest = trackedTopicOrder.iterator()
@@ -98,19 +101,17 @@ class TelemetryStore(
                     history.removeFirst()
                 }
             }
+            acceptedFrameCount++
+            lastAcceptedAtMs = canonicalFrame.timestampMs
             if (notifyConsumers) {
                 lastNotifiedFrames[canonicalFrame.key] = canonicalFrame
-                topicFlows[canonicalFrame.key]
-            } else {
-                null
+                // Capture the identity before observable callbacks. A synchronous collector may
+                // reenter clear/accept on this thread even while the index lock is held.
+                mutablePublications.tryEmit(TelemetryPublication(canonicalFrame, observedEpoch))
+                if (targetEpoch == observedEpoch && lastNotifiedFrames[canonicalFrame.key] === canonicalFrame) {
+                    topicFlows[canonicalFrame.key]?.value = canonicalFrame
+                }
             }
-        }
-
-        acceptedFrameCount.incrementAndGet()
-        lastAcceptedAtMs.set(canonicalFrame.timestampMs)
-        if (notifyConsumers) {
-            observedTopicFlow?.value = canonicalFrame
-            mutableUpdates.emit(canonicalFrame)
         }
         return canonicalFrame
     }
@@ -121,7 +122,7 @@ class TelemetryStore(
      * UI fan-out tags pending work with this value so a frame already queued by the previous
      * robot or simulator cannot be rendered after a target switch.
      */
-    internal fun currentTargetEpoch(): Long = targetEpoch.get()
+    internal fun currentTargetEpoch(): Long = targetEpoch
 
     /** True only while [frame] is still the newest consumer-visible value for this target. */
     internal fun isCurrentNotifiedFrame(frame: TelemetryFrame): Boolean =
@@ -134,38 +135,37 @@ class TelemetryStore(
         return synchronized(history) { history.toList() }
     }
 
-    fun observe(topic: String): StateFlow<TelemetryFrame?> =
+    fun observe(topic: String): StateFlow<TelemetryFrame?> = synchronized(topicIndexLock) {
         topicFlows.computeIfAbsent(canonical(topic)) { key -> MutableStateFlow(lastNotifiedFrames[key]) }.asStateFlow()
+    }
 
     fun observe(topics: Set<String>): Flow<TelemetryFrame> {
         val canonicalTopics = topics.mapTo(HashSet(topics.size)) { canonical(it) }
         return updates.filter { it.key in canonicalTopics }
     }
 
-    fun snapshotMetrics(): TelemetryStoreMetrics = TelemetryStoreMetrics(
-        acceptedFrames = acceptedFrameCount.get(),
+    fun snapshotMetrics(): TelemetryStoreMetrics = synchronized(topicIndexLock) { TelemetryStoreMetrics(
+        acceptedFrames = acceptedFrameCount,
         activeTopics = latestFrames.size,
         bufferedFrames = frameHistory.values.sumOf { history -> synchronized(history) { history.size.toLong() } },
-        lastAcceptedAtMs = lastAcceptedAtMs.get()
-    )
+        lastAcceptedAtMs = lastAcceptedAtMs
+    ) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun clear(): Long {
-        val nextEpoch: Long
-        synchronized(topicIndexLock) {
-            nextEpoch = targetEpoch.incrementAndGet()
-            latestFrames.clear()
-            frameHistory.clear()
-            lastNotifiedFrames.clear()
-            trackedTopicOrder.clear()
-            // Explicit observers survive a session reset so existing UI collectors remain wired.
-            topicFlows.values.forEach { it.value = null }
-        }
-        // A new collector must never receive frames retained for the previous live target.
-        mutableUpdates.resetReplayCache()
-        acceptedFrameCount.set(0)
-        lastAcceptedAtMs.set(0)
-        return nextEpoch
+    fun clear(): Long = synchronized(topicIndexLock) {
+        targetEpoch++
+        latestFrames.clear()
+        frameHistory.clear()
+        lastNotifiedFrames.clear()
+        trackedTopicOrder.clear()
+        mutablePublications.resetReplayCache()
+        acceptedFrameCount = 0L
+        lastAcceptedAtMs = 0L
+        // Observers survive reset. A callback may synchronously accept new-target data;
+        // do not overwrite that newer value or its replay/metrics during this reset.
+        topicFlows.forEach { (key, flow) -> if (lastNotifiedFrames[key] == null) flow.value = null }
+        mutableTargetEpochs.value = targetEpoch
+        targetEpoch
     }
 
     private fun canonical(topic: String): String = TelemetryMetricCatalog.normalizeTopic(topic)

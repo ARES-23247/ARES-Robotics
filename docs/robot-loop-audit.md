@@ -434,3 +434,11 @@ The [alert lifecycle audit](audits/alert-lifecycle-audit.md) fixes acknowledgmen
 resolution, recurring faults losing historical intervals, divergent scalar/composite peaks,
 and redundant persistence. Shared CAS transitions discard abandoned retry outcomes. Numeric
 and database regressions cover these changes; window/source/failure lifecycle remains open.
+
+## Thirtieth pass: alert source identity and telemetry publication
+
+The [source publication audit](audits/alert-source-publication-audit.md) tags queued telemetry
+with target epochs, clears alert caches/windows at reset, and uses source microseconds/order
+to reject old or duplicate samples. Callback regressions cover resets during publication and
+new samples during reset. Raw and tagged consumers share one bounded fan-out buffer. Upstream
+connection ownership, composite window math, freshness and failure recovery remain open.

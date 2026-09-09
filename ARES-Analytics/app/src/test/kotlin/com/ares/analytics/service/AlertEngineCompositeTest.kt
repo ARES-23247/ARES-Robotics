@@ -4,6 +4,7 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -13,16 +14,26 @@ class AlertEngineCompositeTest {
     private lateinit var alertService: AlertEngineService
     private lateinit var mockNt4Service: Nt4ClientService
     private lateinit var mockDbService: DatabaseService
+    private lateinit var tempDbFile: File
+    private lateinit var tempThresholds: File
 
     @Before
     fun setUp() {
-        val tempDbFile = File.createTempFile("test_alerts_db", ".sqlite")
+        tempDbFile = File.createTempFile("test_alerts_db", ".sqlite")
         mockDbService = DatabaseService(tempDbFile.absolutePath)
         mockNt4Service = Nt4ClientService(mockDbService)
 
-        val tempThresholds = File.createTempFile("thresholds_test", ".json")
+        tempThresholds = File.createTempFile("thresholds_test", ".json")
         alertService = AlertEngineService(mockDbService, mockNt4Service, tempThresholds.absolutePath)
     }
+
+    @After fun tearDown() { runBlocking {
+        alertService.dispose()
+        mockNt4Service.disposeAndJoin()
+        mockDbService.close()
+        tempThresholds.delete()
+        tempDbFile.delete()
+    } }
 
     @Test
     fun testMotorStallAlertTriggering() {

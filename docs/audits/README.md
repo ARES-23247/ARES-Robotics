@@ -98,7 +98,11 @@ dismissal lifecycle, bounded popup rendering and honest diagnostic units.
 Pass 29 covers [alert occurrence transitions](alert-lifecycle-audit.md): acknowledgment and
 resolution, separate recurrence intervals, stable peak excursions, invalid inputs, chronology,
 CAS retries and unchanged-write suppression.
-Next are alert-engine windows/source lifecycle and persistence failure recovery, replay timeline readiness, diagnostics/evidence
+Pass 30 covers [alert source identity and telemetry publication](alert-source-publication-audit.md):
+queued target epochs, reset caches, source microseconds/order, duplicate suppression, one-buffer
+fan-out and reentrant publication/reset ordering.
+Next are alert-engine moving windows, signal freshness/units and persistence failure recovery,
+upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining

@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "7e078881685bb607534a3983404d59ddaceae3144590387ce2dff6aa8565bbfe",
+      "sha256": "f7d4660735fc9c92f5ec6f5b8649a7dec899da3ee567260ffa164eac03295267",
       "review": "reviewed",
-      "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open.",
+      "validation": "passed",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -474,7 +474,10 @@
         "docs/audits/dashboard-health-audit.md",
         "docs/audits/controller-health-audit.md",
         "docs/audits/dashboard-mission-audit.md",
-        "docs/audits/alert-lifecycle-audit.md"
+        "docs/audits/alert-lifecycle-audit.md",
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2102,27 +2105,33 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "c56861345ff56bfdddbc0ac87966fad8c0e426abc5944c7dfb7e3457afe2dabc",
+      "sha256": "016a295d571eb553278bc054cd6809879c98d31ec5d0b819005bfa58b47d2179",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open.",
+      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass29-studio.log",
-        "ARESLib-Kotlin/build/audit-pass29-policy.log"
+        "ARESLib-Kotlin/build/audit-pass29-policy.log",
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
-      "sha256": "cc3e8461bde9e1ebbe7d6f17a73b8a17569ad10edfe1513d28c93e46845de018",
+      "sha256": "2314d7d065c653f3326c4bc78ee4839a6db74fd399a6c3502865b3ac88bf1887",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Entire 14-method controlled-dispatcher fixture and real DuckDB recurrence test reviewed. Nine baseline behavior failures; invalid timestamp fixture corrected to actual TelemetryFrame domain and nonfinite assertions strengthened per sample.",
+      "scope": "Entire 14-method controlled-dispatcher fixture and real DuckDB recurrence test reviewed. Nine baseline behavior failures; invalid timestamp fixture corrected to actual TelemetryFrame domain and nonfinite assertions strengthened per sample. Pass 30 fixture uses actual telemetry publication, distinct invalid-sample identities and awaited persisted database rows rather than treating fan-out acceptance as a write barrier.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass29-studio.log",
-        "ARESLib-Kotlin/build/audit-pass29-policy.log"
+        "ARESLib-Kotlin/build/audit-pass29-policy.log",
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertTransitionsTest.kt": {
@@ -2147,6 +2156,102 @@
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass29-studio.log",
         "ARESLib-Kotlin/build/audit-pass29-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/TelemetryPublication.kt": {
+      "sha256": "1d961d15b4993a685b48248e746565519c6f7bf40404092a01f9bf1639689295",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire target envelope and raw SharedFlow view reviewed; one underlying buffer, preserved reference/replay ordering, cancellation and bounded slow-collector behavior tested. Coroutine inheritance opt-in explicitly recorded.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/TelemetryStore.kt": {
+      "sha256": "519960d2a699b49332d5167d62a62e4bf601e69b04530ccd0ad134761129ebbf",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 30 publication/index/reset/observer ordering and coherent counter snapshots reviewed, including reentrant callback regressions. History chronology, explicit observer retention, external map ownership and broader memory accounting remain open.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertSourceAuditTest.kt": {
+      "sha256": "6de3ab65660668b4b09e3ea942e78bfee5e8af59e27bb94fb2f6278186eb2744",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 11-method controlled-dispatcher source suite reviewed: epoch reset, queued old frames, restarted clocks, motor/loop caches, timestampUs/sampleOrder, duplicate samples, retained publication identity and intermediate raw evidence.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/TelemetryPublicationTest.kt": {
+      "sha256": "d2d1913aa28432b13868f3641c4a332974abe277d3a9bf413ac2bc934a4ab5a5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method publication suite reviewed: raw/tagged views, replay/cancellation, epochs, synchronous clear/accept callbacks, coherent reset metrics, silent indexing and nonblocking bounded fan-out.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertEngineServiceTest.kt": {
+      "sha256": "53f222f7695a1d5fa47318126735e762974a5dff0bbc3d9e1e901bdebab3280c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 30 replaces synthetic untagged flow with actual store publication and adds available NT4 terminal/database cleanup, including finally for the older scalar fixture. Existing sleep-based assertions and broader failure-path fixture ownership remain open.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertEngineCompositeTest.kt": {
+      "sha256": "a90eab2406e02feceee923fe46c270a11a08a5c13e54ab07081ee51f53dd1e9c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 30 preserves actual replay/store publication and adds teardown for owned engine, NT4 terminal API, database and temporary files. Broader fixture setup/cleanup failures, timing and composite-domain coverage remain open.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "docs/robot-loop-audit.md": {
+      "sha256": "03e34294feae73a01a55b128d4bee83617b443783e6264c73651b70a795b3b07",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "docs/audits/alert-source-publication-audit.md": {
+      "sha256": "ff9deac0bb81834c423408907e45f316f0e43a2a8d4ceef3a65e5134d67d6389",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 30 report records source baseline, callback race reproductions, shared-buffer tradeoffs and explicit remaining window/transport/lifecycle limitations. Final tests, Kover and policy evidence recorded from observed results.",
+      "evidence": [
+        "docs/audits/alert-source-publication-audit.md",
+        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass30-studio.log",
+        "ARESLib-Kotlin/build/audit-pass30-policy.log"
       ]
     }
   }

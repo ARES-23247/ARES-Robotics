@@ -5,9 +5,6 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.shared.models.ThresholdRule
 import com.ares.analytics.shared.models.League
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
@@ -23,8 +20,7 @@ import kotlin.test.assertFalse
  * MockNt4ClientService class.
  */
 class MockNt4ClientService(databaseService: DatabaseService) : Nt4ClientService(databaseService) {
-    val mockTelemetryFlow = MutableSharedFlow<TelemetryFrame>(replay = 100)
-    override val telemetryFlow: SharedFlow<TelemetryFrame> = mockTelemetryFlow.asSharedFlow()
+    suspend fun emit(frame: TelemetryFrame) { telemetryStore.accept(frame) }
 }
 
 /**
@@ -42,11 +38,11 @@ class AlertEngineServiceTest {
         try {
             alertService.configureRobotContext(League.XRP, xrpBrownoutThresholdVolts = 4.3)
             delay(100)
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_000L, "xrp-session", "Robot/BatteryVoltage", 6.0))
+            nt4Service.emit(TelemetryFrame(1_000L, "xrp-session", "Robot/BatteryVoltage", 6.0))
             delay(100)
             assertTrue(alertService.alerts.value.isEmpty())
 
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_020L, "xrp-session", "Robot/BatteryVoltage", 4.2))
+            nt4Service.emit(TelemetryFrame(1_020L, "xrp-session", "Robot/BatteryVoltage", 4.2))
             val alert = kotlinx.coroutines.withTimeout(2_000) {
                 alertService.alerts.first { it.any { record -> record.sessionId == "xrp-session" } }
             }.single()
@@ -54,6 +50,7 @@ class AlertEngineServiceTest {
             assertEquals("Low XRP Battery Voltage (<4.30V)", alertService.getRuleDisplayName(alert.ruleKey))
         } finally {
             alertService.dispose()
+            nt4Service.disposeAndJoin()
             databaseService.close()
             thresholds.delete()
             tempDb.delete()
@@ -69,12 +66,12 @@ class AlertEngineServiceTest {
         val alertService = AlertEngineService(databaseService, nt4Service, thresholds.absolutePath)
         try {
             delay(100)
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_000L, "loop-session", "Robot/LoopTimeMs", 40.0))
+            nt4Service.emit(TelemetryFrame(1_000L, "loop-session", "Robot/LoopTimeMs", 40.0))
             delay(100)
             assertFalse(alertService.alerts.value.any { it.ruleKey == TelemetryMetricCatalog.LOOP_TIME.canonicalKey })
 
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_020L, "loop-session", "Robot/LoopTimeMs", 30.0))
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_040L, "loop-session", "Robot/LoopTimeMs", 28.0))
+            nt4Service.emit(TelemetryFrame(1_020L, "loop-session", "Robot/LoopTimeMs", 30.0))
+            nt4Service.emit(TelemetryFrame(1_040L, "loop-session", "Robot/LoopTimeMs", 28.0))
             val alerts = kotlinx.coroutines.withTimeout(2_000) {
                 alertService.alerts.first { list ->
                     list.any { it.ruleKey == TelemetryMetricCatalog.LOOP_TIME.canonicalKey && it.resolveTimestampMs == null }
@@ -83,6 +80,7 @@ class AlertEngineServiceTest {
             assertEquals(40.0, alerts.first { it.ruleKey == TelemetryMetricCatalog.LOOP_TIME.canonicalKey }.peakValue)
         } finally {
             alertService.dispose()
+            nt4Service.disposeAndJoin()
             databaseService.close()
             thresholds.delete()
             tempDb.delete()
@@ -98,13 +96,13 @@ class AlertEngineServiceTest {
         val alertService = AlertEngineService(databaseService, nt4Service, thresholds.absolutePath)
         try {
             delay(100)
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(2_000L, "severe-session", "Robot/LoopTimeMs", 120.0))
+            nt4Service.emit(TelemetryFrame(2_000L, "severe-session", "Robot/LoopTimeMs", 120.0))
             kotlinx.coroutines.withTimeout(2_000) {
                 alertService.alerts.first { list ->
                     list.any { it.ruleKey == TelemetryMetricCatalog.LOOP_TIME.canonicalKey && it.resolveTimestampMs == null }
                 }
             }
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(3_100L, "severe-session", "Robot/LoopTimeMs", 20.0))
+            nt4Service.emit(TelemetryFrame(3_100L, "severe-session", "Robot/LoopTimeMs", 20.0))
             val resolved = kotlinx.coroutines.withTimeout(2_000) {
                 alertService.alerts.first { list ->
                     list.any { it.ruleKey == TelemetryMetricCatalog.LOOP_TIME.canonicalKey && it.resolveTimestampMs != null }
@@ -113,6 +111,7 @@ class AlertEngineServiceTest {
             assertTrue(resolved.first { it.ruleKey == TelemetryMetricCatalog.LOOP_TIME.canonicalKey }.resolveTimestampMs != null)
         } finally {
             alertService.dispose()
+            nt4Service.disposeAndJoin()
             databaseService.close()
             thresholds.delete()
             tempDb.delete()
@@ -139,43 +138,47 @@ class AlertEngineServiceTest {
             tempFile.writeText(Json.encodeToString(rulesList))
             val alertService = AlertEngineService(databaseService, nt4Service, tempFile.absolutePath)
 
-            // Give coroutines a moment to initialize subscription
-            delay(200)
+            try {
+                // Give coroutines a moment to initialize subscription
+                delay(200)
 
-            // Emit telemetry violating /Drive/Voltage (< 11.5)
-            val frame1 = TelemetryFrame(1000L, "session-123", "/Drive/Voltage", 11.0)
-            nt4Service.mockTelemetryFlow.emit(frame1)
+                // Emit telemetry violating /Drive/Voltage (< 11.5)
+                val frame1 = TelemetryFrame(1000L, "session-123", "/Drive/Voltage", 11.0)
+                nt4Service.emit(frame1)
 
-            delay(200)
-            val activeAlerts = alertService.alerts.value
-            assertEquals(1, activeAlerts.size)
-            val alert = activeAlerts[0]
-            assertEquals("/Drive/Voltage", alert.ruleKey)
-            assertEquals("session-123", alert.sessionId)
-            assertEquals(11.0, alert.peakValue)
-            kotlin.test.assertFalse(alert.triaged)
+                delay(200)
+                val activeAlerts = alertService.alerts.value
+                assertEquals(1, activeAlerts.size)
+                val alert = activeAlerts[0]
+                assertEquals("/Drive/Voltage", alert.ruleKey)
+                assertEquals("session-123", alert.sessionId)
+                assertEquals(11.0, alert.peakValue)
+                kotlin.test.assertFalse(alert.triaged)
 
-            // Emit telemetry restoring normal voltage
-            val frame2 = TelemetryFrame(1020L, "session-123", "/Drive/Voltage", 12.0)
-            nt4Service.mockTelemetryFlow.emit(frame2)
+                // Emit telemetry restoring normal voltage
+                val frame2 = TelemetryFrame(1020L, "session-123", "/Drive/Voltage", 12.0)
+                nt4Service.emit(frame2)
 
-            delay(200)
+                delay(200)
 
-            // Should resolve the alert (resolveTimestampMs set)
-            val resolvedAlerts = alertService.alerts.value
-            assertEquals(1, resolvedAlerts.size)
-            val resolved = resolvedAlerts[0]
-            assertTrue(resolved.resolveTimestampMs != null)
-            assertEquals(20L, resolved.durationMs)
+                // Should resolve the alert (resolveTimestampMs set)
+                val resolvedAlerts = alertService.alerts.value
+                assertEquals(1, resolvedAlerts.size)
+                val resolved = resolvedAlerts[0]
+                assertTrue(resolved.resolveTimestampMs != null)
+                assertEquals(20L, resolved.durationMs)
 
-            // Triage the alert
-            alertService.triageAlert(resolved.alertId)
-            delay(200)
-            assertTrue(alertService.alerts.value[0].triaged)
-
-            alertService.stop()
-            tempFile.delete()
-            tempDb.delete()
+                // Triage the alert
+                alertService.triageAlert(resolved.alertId)
+                delay(200)
+                assertTrue(alertService.alerts.value[0].triaged)
+            } finally {
+                alertService.dispose()
+                nt4Service.disposeAndJoin()
+                databaseService.close()
+                tempFile.delete()
+                tempDb.delete()
+            }
         }
     }
 
@@ -194,8 +197,8 @@ class AlertEngineServiceTest {
         val alertService = AlertEngineService(databaseService, nt4Service, thresholds.absolutePath)
         try {
             delay(100)
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(1_000L, "session-a", "Robot/BatteryVoltage", 10.0))
-            nt4Service.mockTelemetryFlow.emit(TelemetryFrame(2_000L, "session-b", "/Robot/BatteryVoltage", 9.8))
+            nt4Service.emit(TelemetryFrame(1_000L, "session-a", "Robot/BatteryVoltage", 10.0))
+            nt4Service.emit(TelemetryFrame(2_000L, "session-b", "/Robot/BatteryVoltage", 9.8))
             val alerts = kotlinx.coroutines.withTimeout(2_000) {
                 alertService.alerts.first { records ->
                     records
@@ -207,6 +210,7 @@ class AlertEngineServiceTest {
             assertEquals(setOf("session-a", "session-b"), alerts.map { it.sessionId }.toSet())
         } finally {
             alertService.dispose()
+            nt4Service.disposeAndJoin()
             databaseService.close()
             thresholds.delete()
             tempDb.delete()

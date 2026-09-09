@@ -1,7 +1,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.*
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -16,11 +16,12 @@ class AlertLifecycleAuditTest {
         realDatabase: Boolean = false,
         block: suspend Fixture.() -> Unit,
     ) {
-        val flow=MutableSharedFlow<TelemetryFrame>()
+        val flow=TelemetryStore()
         val databasePath = if (realDatabase) Files.createTempFile("alert-records", ".duckdb") else null
         val db = databasePath?.let { DatabaseService(it.toString()) } ?: mock(DatabaseService::class.java)
         val nt=mock(Nt4ClientService::class.java)
-        `when`(nt.telemetryFlow).thenReturn(flow)
+        `when`(nt.telemetryFlow).thenReturn(flow.updates)
+        `when`(nt.telemetryStore).thenReturn(flow)
         val path=Files.createTempFile("alert-lifecycle", ".json")
         Files.writeString(path,Json.encodeToString(listOf(rule)))
         val engine=AlertEngineService(db,nt,path.toString(),StandardTestDispatcher(testScheduler))
@@ -31,9 +32,9 @@ class AlertLifecycleAuditTest {
             Files.deleteIfExists(path)
         }
     }
-    private class Fixture(val scope:TestScope,val engine:AlertEngineService,val flow:MutableSharedFlow<TelemetryFrame>,val db:DatabaseService) {
+    private class Fixture(val scope:TestScope,val engine:AlertEngineService,val flow:TelemetryStore,val db:DatabaseService) {
         suspend fun send(time:Long,value:Double,key:String="Audit/Value") {
-            flow.emit(TelemetryFrame(time,"recording",key,value)); scope.runCurrent()
+            flow.accept(TelemetryFrame(time,"recording",key,value)); scope.runCurrent()
         }
         suspend fun triage() { engine.triageAlert(engine.alerts.value.single().alertId); scope.runCurrent() }
         val records get()=engine.alerts.value
@@ -62,8 +63,8 @@ class AlertLifecycleAuditTest {
     } }
     @Test fun `invalid samples neither resolve nor poison peaks`()=runTest { withEngine {
         send(100,9.0)
-        for(v in listOf(Double.NaN,Double.POSITIVE_INFINITY,Double.NEGATIVE_INFINITY)) {
-            send(110,v)
+        for((index,v) in listOf(Double.NaN,Double.POSITIVE_INFINITY,Double.NEGATIVE_INFINITY).withIndex()) {
+            send(110L+index,v)
             assertNull(records.single().resolveTimestampMs, "$v must not resolve a fault")
             assertEquals(9.0,records.single().peakValue, "$v must not poison the peak")
         }
@@ -99,15 +100,22 @@ class AlertLifecycleAuditTest {
         assertEquals(1,records.size); assertNull(records.single().resolveTimestampMs)
     } }
     @Test fun `text placeholders do not become numerical fault evidence`()=runTest { withEngine {
-        flow.emit(TelemetryFrame(100,"recording","Audit/Value",0.0,stringValue="unavailable"))
+        flow.accept(TelemetryFrame(100,"recording","Audit/Value",0.0,stringValue="unavailable"))
         scope.runCurrent(); assertTrue(records.isEmpty())
     } }
     @Test fun `database preserves separate recurring intervals and acknowledgment`()=runTest {
         withEngine(realDatabase=true) {
             send(100,9.0); triage(); send(120,11.0); send(200,8.0); send(210,12.0)
-            // Acceptance of the next frame proves the collector finished the prior persistence.
-            send(220,12.0)
-            val stored=db.getAlerts("recording")
+            val stored = withContext(Dispatchers.IO) {
+                withTimeout(5_000) {
+                    var rows = db.getAlerts("recording")
+                    while (rows.size != 2 || rows.any { it.resolveTimestampMs == null }) {
+                        delay(5)
+                        rows = db.getAlerts("recording")
+                    }
+                    rows
+                }
+            }
             assertEquals(listOf(100L,200L),stored.map { it.triggerTimestampMs })
             assertEquals(listOf(20L,10L),stored.map { it.durationMs })
             assertEquals(listOf(true,false),stored.map { it.triaged })
