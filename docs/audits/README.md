@@ -72,9 +72,12 @@ mappings and approval revalidation. Pass 19 covers [step-response and PI math](s
 estimates, constant-input plateaus, moving initial states, stable residuals, linear settling
 analysis and consistent SIMC PI gains. Pass 20 covers [proposal eligibility and delivery](tuning-proposal-delivery-audit.md):
 feedforward-only eligibility, bounded queued delivery, immutable snapshots, atomic board
-staging and failed-load isolation. Next are replay performance, stale approval, legacy states and verified
-project/evidence identity, simulation provenance, logging/transport, advanced descriptor
-safety and remaining Studio math.
+staging and failed-load isolation. Pass 21 covers [replay windows and seeking](replay-window-audit.md):
+coalesced reads, in-flight prefetch reuse, stale request rejection, truthful seek completion,
+error recovery, joined cleanup and database baseline/paging boundaries. Next are replay
+clock/loop math and lifecycle, stale approval, legacy states, verified project/evidence
+identity, simulation provenance, logging/transport, advanced descriptor safety and remaining
+Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.

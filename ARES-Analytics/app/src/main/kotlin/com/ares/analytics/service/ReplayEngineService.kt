@@ -7,9 +7,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,29 +65,6 @@ object SystemReplayClock : ReplayClock {
     override fun nowMs(): Long = System.nanoTime() / 1_000_000L
 }
 
-internal suspend fun loadTelemetryWindowPages(
-    databaseService: DatabaseService,
-    sessionId: String,
-    startMs: Long,
-    endMs: Long,
-    pageSize: Int,
-): List<TelemetryFrame> {
-    require(pageSize > 0)
-    val frames = ArrayList<TelemetryFrame>()
-    var offset = 0L
-    do {
-        val page = databaseService.getTelemetryRangeBatched(
-            sessionId = sessionId,
-            startMs = startMs,
-            endMs = endMs,
-            limit = pageSize.toLong(),
-            offset = offset,
-        )
-        frames.addAll(page)
-        offset += page.size
-    } while (page.size == pageSize)
-    return frames
-}
 
 data class ReplayCacheMetrics(
     val windowStartMs: Long = -1,
@@ -105,13 +83,19 @@ data class ReplayCacheMetrics(
  * engine publishes one immutable [ReplayFrame] per logical commit. It does not write to NT4,
  * mutate the live telemetry store, infer one localization source from another, or broadcast UDP.
  */
-class ReplayEngineService(
+class ReplayEngineService internal constructor(
     private val databaseService: DatabaseService,
-    private val nt4ClientService: Nt4ClientService? = null,
-    private val clock: ReplayClock = SystemReplayClock,
-    replayDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val nt4ClientService: Nt4ClientService?,
+    private val clock: ReplayClock,
+    replayDispatcher: CoroutineDispatcher,
+    private val windowSource: ReplayWindowSource,
+    private val windowDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    private val serviceScope = CoroutineScope(replayDispatcher + SupervisorJob())
+    constructor(databaseService: DatabaseService, nt4ClientService: Nt4ClientService? = null,
+        clock: ReplayClock = SystemReplayClock, replayDispatcher: CoroutineDispatcher = Dispatchers.Default
+    ) : this(databaseService, nt4ClientService, clock, replayDispatcher, DatabaseReplayWindowSource(databaseService))
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(replayDispatcher + serviceJob)
     private val lock = Any()
 
     private val _state = MutableStateFlow(ReplayState.STOPPED)
@@ -148,9 +132,12 @@ class ReplayEngineService(
     val cacheMetrics: StateFlow<ReplayCacheMetrics> = _cacheMetrics.asStateFlow()
 
     private var replayJob: Job? = null
-    private var prefetchJob: Job? = null
+    private var prefetchJob: Deferred<ReplayWindow>? = null
+    private var prefetchRange: LongRange? = null
+    private var pendingRange: LongRange? = null
     private var windowLoadJob: Job? = null
     private var generation = 0L
+    private var prefetchRequest = 0L
     private var windowRequest = 0L
     private var commitSequence = 0L
     private var currentSessionId = ""
@@ -205,7 +192,7 @@ class ReplayEngineService(
                         density = density,
                         topicCount = topicCount,
                         session = session,
-                        initialWindow = loadWindow(
+                        initialWindow = windowSource.load(
                             sessionId = sessionId,
                             startMs = first,
                             endMs = (first + WINDOW_LOOKAHEAD_MS).coerceAtMost(last),
@@ -385,14 +372,15 @@ class ReplayEngineService(
     fun dispose() = runBlocking { disposeAndJoin() }
 
     suspend fun disposeAndJoin() {
-        val jobs = synchronized(lock) {
-            val activeJobs = listOfNotNull(replayJob, prefetchJob, windowLoadJob)
+        synchronized(lock) {
             stopLocked(resetToStart = false)
             generation += 1L
-            activeJobs
+            cancelWindowRequestLocked()
+            prefetchJob?.cancel()
+            _isSeeking.value = false
         }
-        jobs.forEach { it.cancelAndJoin() }
-        serviceScope.cancel()
+        // Includes superseded jobs still unwinding non-interruptible database work.
+        serviceJob.cancelAndJoin()
     }
 
     private fun stopLocked(resetToStart: Boolean) {
@@ -416,6 +404,8 @@ class ReplayEngineService(
         prefetchJob?.cancel()
         windowLoadJob?.cancel()
         prefetchJob = null
+        prefetchRange = null
+        pendingRange = null
         windowLoadJob = null
         currentSessionId = sessionId
         timestamps = emptyList()
@@ -448,14 +438,23 @@ class ReplayEngineService(
     private fun commitOrLoadLocked() {
         val window = activeWindow
         if (window != null && currentPlayheadMs in window.startMs..window.endMs) {
+            cancelWindowRequestLocked()
             commitAtPlayheadLocked()
         } else {
             requestWindowLocked(currentPlayheadMs)
         }
     }
 
+    private fun cancelWindowRequestLocked() {
+        windowRequest += 1L
+        windowLoadJob?.cancel()
+        windowLoadJob = null
+        pendingRange = null
+    }
+
     private fun requestWindowLocked(playheadMs: Long) {
         prefetchedWindow?.takeIf { playheadMs in it.startMs..it.endMs }?.let { ready ->
+            cancelWindowRequestLocked()
             prefetchedWindow = null
             prefetchHitCount += 1L
             applyWindowLocked(ready)
@@ -463,49 +462,58 @@ class ReplayEngineService(
             scheduleForwardPrefetchLocked(ready, generation)
             return
         }
-        windowLoadJob?.cancel()
-        windowRequest += 1L
+        // Playback may advance while IO runs. One window serves every target inside its bounds.
+        if (windowLoadJob?.isActive == true && pendingRange?.contains(playheadMs) == true) return
+        cancelWindowRequestLocked()
         val requestId = windowRequest
         val requestedGeneration = generation
         val requestedSession = currentSessionId
-        val requestedStart = (playheadMs - WINDOW_HISTORY_MS).coerceAtLeast(startTimestampMs)
-        val requestedEnd = (playheadMs + WINDOW_LOOKAHEAD_MS).coerceAtMost(endTimestampMs)
         val requestedSessionStart = startTimestampMs
+        val sharedPrefetch = prefetchJob?.takeIf { !it.isCancelled && prefetchRange?.contains(playheadMs) == true }
+        val requestedRange = if (sharedPrefetch != null) requireNotNull(prefetchRange) else {
+            prefetchJob?.cancel()
+            prefetchJob = null
+            prefetchRange = null
+            (playheadMs - WINDOW_HISTORY_MS).coerceAtLeast(startTimestampMs)..
+                (playheadMs + WINDOW_LOOKAHEAD_MS).coerceAtMost(endTimestampMs)
+        }
+        pendingRange = requestedRange
         _isSeeking.value = true
         windowLoadJob = serviceScope.launch {
-            val loaded = withContext(Dispatchers.IO) {
-                loadWindow(requestedSession, requestedStart, requestedEnd, requestedSessionStart)
-            }
-            synchronized(lock) {
-                if (requestedGeneration != generation || requestId != windowRequest || requestedSession != currentSessionId) {
-                    return@launch
+            try {
+                val loaded = sharedPrefetch?.await() ?: withContext(windowDispatcher) {
+                    windowSource.load(requestedSession, requestedRange.first, requestedRange.last, requestedSessionStart)
                 }
-                applyWindowLocked(loaded)
-                _isSeeking.value = false
-                windowLoadJob = null
-                if (currentPlayheadMs in loaded.startMs..loaded.endMs) {
+                synchronized(lock) {
+                    if (requestedGeneration != generation || requestId != windowRequest || requestedSession != currentSessionId) return@launch
+                    windowLoadJob = null
+                    pendingRange = null
+                    if (sharedPrefetch != null) { prefetchedWindow = null; prefetchHitCount += 1L }
+                    applyWindowLocked(loaded)
                     commitAtPlayheadLocked()
                     scheduleForwardPrefetchLocked(loaded, requestedGeneration)
-                } else {
-                    requestWindowLocked(currentPlayheadMs)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                synchronized(lock) {
+                    if (requestedGeneration == generation && requestId == windowRequest && requestedSession == currentSessionId) {
+                        windowLoadJob = null; pendingRange = null
+                        pauseLockedForNavigation()
+                        _state.value = ReplayState.PAUSED
+                        _loadError.value = error.message ?: "Replay seek failed"
+                        _loadState.value = ReplayLoadState.ERROR
+                        _isSeeking.value = false
+                    }
                 }
             }
         }
-    }
-
-    private suspend fun loadWindow(sessionId: String, startMs: Long, endMs: Long, sessionStartMs: Long): ReplayWindow {
-        val baseline = if (startMs > sessionStartMs) databaseService.getLatestTelemetryBefore(sessionId, startMs) else emptyList()
-        val frames = loadTelemetryWindowPages(databaseService, sessionId, startMs, endMs, REPLAY_PAGE_SIZE)
-        return ReplayWindow(sessionId, startMs, endMs, baseline, frames)
     }
 
     private fun applyWindowLocked(window: ReplayWindow) {
         activeWindow = window
         lastTargetTimestamp = Long.MIN_VALUE
         lastFrameIndex = 0
-        numericValues.clear()
-        stringValues.clear()
-        window.baseline.forEach(::applyFrameLocked)
         windowLoadCount += 1L
         publishCacheMetricsLocked()
     }
@@ -546,6 +554,10 @@ class ReplayEngineService(
             (currentPlayheadMs - startTimestampMs).toDouble() / duration.toDouble()
         }.coerceIn(0.0, 1.0)
         publishCacheMetricsLocked()
+        _loadError.value = null
+        _loadState.value = ReplayLoadState.READY
+        // Completion follows the committed snapshot and its playhead/progress metadata.
+        _isSeeking.value = false
     }
 
     private fun applyFrameLocked(frame: TelemetryFrame) {
@@ -556,25 +568,37 @@ class ReplayEngineService(
     }
 
     private fun scheduleForwardPrefetchLocked(window: ReplayWindow, requestedGeneration: Long) {
-        if (window.endMs >= endTimestampMs) return
+        val prefetchId = ++prefetchRequest
         prefetchJob?.cancel()
+        prefetchJob = null
+        prefetchRange = null
+        prefetchedWindow = null
+        publishCacheMetricsLocked()
+        if (window.endMs >= endTimestampMs) return
         val nextStart = window.endMs + 1L
         val nextEnd = (nextStart + WINDOW_HISTORY_MS + WINDOW_LOOKAHEAD_MS).coerceAtMost(endTimestampMs)
         val session = currentSessionId
         val sessionStart = startTimestampMs
-        prefetchJob = serviceScope.launch {
-            val loaded = withContext(Dispatchers.IO) { loadWindow(session, nextStart, nextEnd, sessionStart) }
+        prefetchRange = nextStart..nextEnd
+        prefetchJob = serviceScope.async {
+            val loaded = withContext(windowDispatcher) { windowSource.load(session, nextStart, nextEnd, sessionStart) }
             synchronized(lock) {
-                if (requestedGeneration == generation && session == currentSessionId) {
+                if (requestedGeneration == generation && prefetchId == prefetchRequest &&
+                    session == currentSessionId && prefetchRange == nextStart..nextEnd) {
                     prefetchedWindow = loaded
                     publishCacheMetricsLocked()
                 }
             }
+            loaded
         }
     }
 
     private fun publishCacheMetricsLocked() {
         val window = activeWindow
+        val previous = _cacheMetrics.value
+        if (previous.windowStartMs == (window?.startMs ?: -1L) && previous.windowEndMs == (window?.endMs ?: -1L) &&
+            previous.cachedFrames == (window?.frames?.size ?: 0) && previous.hasPrefetchedWindow == (prefetchedWindow != null) &&
+            previous.windowLoads == windowLoadCount && previous.prefetchHits == prefetchHitCount) return
         _cacheMetrics.value = ReplayCacheMetrics(
             windowStartMs = window?.startMs ?: -1L,
             windowEndMs = window?.endMs ?: -1L,
@@ -595,18 +619,10 @@ class ReplayEngineService(
         val initialWindow: ReplayWindow?,
     )
 
-    private data class ReplayWindow(
-        val sessionId: String,
-        val startMs: Long,
-        val endMs: Long,
-        val baseline: List<TelemetryFrame>,
-        val frames: List<TelemetryFrame>,
-    )
 
     private companion object {
         const val WINDOW_HISTORY_MS = 2_500L
         const val WINDOW_LOOKAHEAD_MS = 5_000L
-        const val REPLAY_PAGE_SIZE = 50_000
         const val DENSITY_BUCKETS = 100
         const val PLAYBACK_TICK_MS = 20L
         const val MIN_SPEED = 0.25

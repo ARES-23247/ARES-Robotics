@@ -17,6 +17,7 @@ import java.nio.file.Files
 import java.time.Instant
 import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -157,6 +158,12 @@ class DashboardValidationTest {
                     replayEngine.scrubTo(step / 10.0)
                     awaitReplaySeek(replayEngine)
                 }
+                val expected = replayEngine.sessionStartTimestampMs.value +
+                    (replayEngine.sessionDurationMs.value * (step / 10.0)).toLong()
+                assertEquals(com.ares.analytics.service.ReplayLoadState.READY, replayEngine.loadState.value,
+                    "Replay seek failed: ${replayEngine.loadError.value}")
+                assertEquals(expected, replayEngine.currentFrame.value?.playheadMs,
+                    "Replay timing must measure a completed seek to the requested playhead")
             }
             metrics["replay_scrub_p95_ms"] = percentile95(scrubTimesMs)
             assertTrue(replayEngine.currentFrame.value != null, "Replay did not produce a current frame")

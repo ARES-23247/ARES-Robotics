@@ -363,3 +363,11 @@ eligibility, bounded local queue delivery, atomic typed proposal staging, preser
 student edits and isolation from failed project loads. It distinguishes queue acceptance
 from profile review, robot application and evidence identity. Provenance, stale approvals
 and the remaining board/live-tuning lifecycle are still open.
+
+## Twenty-first pass: replay windows and seek completion
+
+The [twenty-first-pass report](audits/replay-window-audit.md) records request coalescing,
+in-flight prefetch reuse, stale foreground/prefetch rejection, truthful completion, read
+failure recovery, disposal joins and database window boundaries. It also tightens seek
+benchmark assertions and controls the lifecycle fixture's clock. The earlier replay timing
+failure remains unproven; playback arithmetic and the rest of the replay lifecycle remain open.

@@ -458,15 +458,15 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "19631ec4c115ba011387c18d769371634f15e86084e7e30ff92239297f3f9e12",
+      "sha256": "df8ae04b21a8e0b12df20ef31ca91c45e1861fa7074409bfcd855603d6e3e45f",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full accounting/work-queue document reviewed through pass 20. Tracks bounded queue and atomic staging evidence separately from stale approval, project/evidence identity, simulation provenance, broader control/transport and physical work. Prior timing-sensitive failures and the new replay performance-baseline failure remain open.",
+      "scope": "Full work-queue/accounting document reviewed through pass 21. Records replay request fixes separately from clock/loop/lifecycle work, stale approvals, evidence identity, broader transport/control and physical validation. Prior timing-sensitive failures remain open.",
       "evidence": [
-        "docs/audits/tuning-proposal-delivery-audit.md",
-        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
-        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1243,6 +1243,114 @@
         "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
         "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayWindowSource.kt": {
+      "sha256": "8bd5ca55133fa6993bfac8f1de3aa321597596349cda2e3e1a22bae53d0f029b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full database-window/pagination facade review: strict-before per-key baseline, inclusive window bounds, complete positive-size pagination and authoritative microsecond/sample ordering. Real database boundary, empty-window, duplicate and exact-multiple tests pass; 23/23 lines, 8/8 branches. Time bounds do not cap retained rows; concurrent recording mutation and database snapshot/query contracts remain separate review scopes.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayEngineService.kt": {
+      "sha256": "feaf907a24a5a51d1afe48eabb0835d3f7b15b89bff1f50498267cff1b1c9299",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped window/seek review: coalesced pending reads, shared in-flight and completed prefetch, foreground/prefetch request identities, required failure/retry, optional failure, completion after snapshot/metadata, one baseline application, scalar cache-metric deduplication and joining superseded owned readers. Ten controlled regressions and full Studio gate pass; 400/421 lines, 158/236 branches. Playback clock/scaling/overflow, looping, metadata and initial-load/terminal lifecycle remain open.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayWindowAuditTest.kt": {
+      "sha256": "d1b844c15862983b3b19e72142a6edb23b9c637605a13355043e3dad6d0b7b37",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ten-method review/execution with controlled source completions and test dispatchers: read coalescing, shared prefetch, active/completed cache supersession, required/optional failure and retry, synchronous completion observers, same-bound obsolete prefetch, end metrics and disposal waiting for superseded non-cancellable readers. Owned database, jobs and temp directory are cleaned.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayWindowSourceAuditTest.kt": {
+      "sha256": "2517c3322cde2f63b49a19af8bdde68a1db30a21f27b7ee841fa414db2b66290",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method review/execution against local DuckDB: strict baseline boundaries and string updates, exact page multiples and duplicate-millisecond ordering, empty windows with latched values and positive-page-size enforcement. Fixtures explicitly preserve sample order and close owned resources.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayEngineServiceTest.kt": {
+      "sha256": "d6ea86bae892eab00b6b13ae0284c0d0bfe3bcffc896d28fa5087fe7bc26ed94",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method review/execution: lifecycle, window baseline latching, session isolation, strings, stop, speed settings and empty sessions. The lifecycle fixture now owns engine/database cleanup and drives an injected clock/dispatcher for an exact 40 ms advance. All pass in final Studio gate; no physical timing claim.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayCacheAndClockTest.kt": {
+      "sha256": "71c11b225f39c5cd20375f104bc2b498515c3ad55d5d73b1a3737ef7142a3f88",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method review and execution: injected monotonic elapsed-time source, adjacent prefetch reuse and multi-page retrieval. Fixtures clean owned replay/database/temp resources. The small prefetch fixture frame-count assertion is not a general memory bound.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayDeterminismTest.kt": {
+      "sha256": "716bbfcba0dda4fb93006fb6eab41b240be7bec9c4fcbb8229a331841103f1c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method review/execution: golden imported dashboard evidence, stable duplicate ordering, actions not synthesizing localization, newest rapid seek, live-store isolation and empty/single-instant sessions. Owned replay/client/database fixtures cleaned. No physical robot or mutable-recording snapshot guarantee.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/validation/DashboardValidationTest.kt": {
+      "sha256": "4c6392dccd12fa7ee49df105c99bb13677d8f0bde3aa8c280bfac9f7e25699da",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped replay scrub, rapid-burst, completion polling and nearest-rank p95 review. Each timed scrub now also requires READY and exact committed playhead, asserted outside its timing interval. Full smoke passes with scrub p95 18.4098 ms against unchanged 100 ms baseline gate. Prior 105.8996 ms failure remains unproven. Other benchmark methodology, ingestion/query/export/memory paths remain open.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "docs/audits/replay-window-audit.md": {
+      "sha256": "6b1af38a685cc6ff95f3513e07428b786f07a61a6160e6fd9628429e2ee5f9ab",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass 21 report checked against source, 30 focused methods, full Studio gate, Kover and preserved measured dashboard report. Records 14 new methods, scoped request/read-count guarantees, uncovered engine behavior, memory/concurrency limits and unresolved prior timing failure.",
+      "evidence": [
+        "docs/audits/replay-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass21-studio.log",
+        "ARESLib-Kotlin/build/audit-pass21-policy.log"
       ]
     }
   }
