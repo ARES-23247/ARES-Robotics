@@ -185,3 +185,67 @@ Third-pass robot consumer validation against that same candidate passed: FTC rob
 Studio shared/gateway/app validation passed 1,244 tests, with six opt-in checks skipped;
 release version/archive preflight passed. Total passing library and consumer tests: 2,624.
 Physical hardware timing and electrical measurements were not performed.
+
+## Fourth pass: XRP field geometry and coverage accounting
+
+The continuing repository-wide goal now has a [file-level ledger](audits/README.md).
+It starts from every tracked file and separates full review, partial review, validation,
+and stale evidence. The earlier 29 edited library runtime/test files are conservatively
+seeded as partial review. Passing a module suite is not evidence that every file or branch
+has been exercised. The goal remains active.
+
+This pass changes the XRP starter's `simulator/field_collision.py` and adds 15 focused
+tests. The complete file was inspected, including field reload, shape compilation,
+intersection predicates, coordinate units, and motion constraints.
+
+| Finding | Correction and evidence |
+| --- | --- |
+| Invalid live field edits | Non-finite dimensions, malformed obstacle geometry, and invalid receipt lists could install unusable state or throw after partially changing the field. Validate and compile everything before committing the field and its receipt. Invalid disk reloads retain the prior usable field. |
+| Repeated shape work | Static rectangles and polygons were rebuilt during each query. Precompute immutable obstacle geometry when a field is installed. Ten point queries construct ten moving footprints instead of twenty robot-plus-obstacle rectangles in the one-obstacle regression. |
+| Invalid geometry inputs | Reject invalid robot dimensions, unsupported or degenerate blocking shapes, non-finite coordinates, and crossing polygon edges. Non-finite proposed poses cannot advance the simulation. Preserve canonical circle radius in meters and rectangle rotation in degrees. |
+| Translation tunneling | A clear endpoint could cross a thin rectangle, circle, or polygon. Check the swept footprint and accept only a proven clear prefix. All three shapes reproduced the defect before correction. |
+| Rotational tunneling | A long robot could rotate through an obstacle or field boundary with both endpoints clear. The swept bound includes rotating corners. Both cases reproduced before correction. |
+| Unbounded collision work | Sweep subdivision stops at 16 levels or 256 interval queries, whichever comes first. Unresolved contact returns the last proven clear pose. Clear translation in an obstacle-free rectangular field bypasses hull construction. |
+
+The sweep encloses endpoint footprints in a convex hull and expands it by a conservative
+rotation interpolation bound. A corner at radius `r` has second derivative magnitude
+`r * deltaHeading^2` over a normalized interval; its distance from linear interpolation is
+bounded by `r * deltaHeading^2 / 8`. Square expansion encloses that error disk. Refining
+suspect intervals in time order avoids incorrectly rejecting an entire clear rotation
+because of a coarse hull. Tests include a clear near-obstacle rotation, short heading
+wrap, concave polygon notches, and sampled accepted prefixes of 100 seeded random combined
+translation/rotation requests. These samples supplement the conservative bound; they are
+not an exhaustive geometric proof or a floating-point formal verification.
+
+Initial validation/geometry tests had five failing test methods (15 failing subcases and
+one error); the additional sweep tests had three failing methods (five subcases). All
+15 final field-audit tests pass. The initial sandboxed attempt could not access temporary
+fixtures; the reproduced baseline and final runs used normal local temporary-file access.
+
+Local validation: XRP source plus generated safety tests **65 passed**, exported
+standalone XRP archive **65 passed**, repository Python tooling **44 passed**. The tooling
+suite includes new regressions for new/changed/missing/deleted coverage records, evidence
+requirements, and text/binary fingerprints. Studio app/archive-consumer validation:
+**1,209 passed, six opt-in tests skipped**. Release preflight initially caught the stale
+workflow copy of the XRP checksum; synchronizing it restored the check. Source/release
+policy, guidance integrity, archive integrity, and links in 165 current documents passed.
+
+An additional standard-library `trace` run of XRP verification passed all 65 tests and
+measured **93.8% executable-line coverage** for `field_collision.py`. It is not branch
+coverage. Some malformed-geometry/error branches, degenerate segment helpers, and the
+work-budget fallback did not execute. Their code was inspected, but more boundary tests
+remain possible. The same trace measured 50.2% for XRP hardware adapters and 20.8% for
+MicroPython telemetry; these are explicitly open priorities, not covered-file claims.
+Trace evidence is under `ARES-XRP-Starter/build/audit-pass4-trace` and its adjacent log.
+
+Only the unpublished XRP 3.0.3 archive changes; its new SHA-256 is
+`26c7da103b24ab4cd22a9fdc8c47d94c54f64cb4306b244e448b4b2343c95b74`.
+The other three deterministic starter/example archives reproduced their previous hashes.
+Library source is unchanged; Studio validation uses the existing isolated candidate
+`17.0.3-rc.343862ce3c59`. Nothing was published or deployed.
+
+This constraint models a rectangular kinematic footprint along linearly interpolated
+translation and the shortest heading arc. It may stop conservatively near contact at the
+subdivision/work limit. It does not model contact forces, tire slip, or the full physical
+motion between encoder samples. Physical XRP validation and simulator process-lifecycle
+review remain separate work.

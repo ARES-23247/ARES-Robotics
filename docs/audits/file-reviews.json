@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "files": {
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/RobotAction.kt": {
+      "sha256": "e82fa4c48595ab0cb2f66f75df23af840124bf112cb2f5426bcb684bb838f288",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/drivetrain/HolonomicDriveController.kt": {
+      "sha256": "5c63a72574baea1c9461d0e8aa463626f0c08ae232220640ae63a991dd04c3e9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/filters/Debouncer.kt": {
+      "sha256": "541677dd1e1faab0f031be60f843b8e0a132dab2dbd1f2da38fb4ca945f6a48b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/filters/EMAFilter.kt": {
+      "sha256": "f0ae9bfee179e068efc941d2f934c79ea300ac7c84fb7811f66bee964f98279b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/BrownoutGuard.kt": {
+      "sha256": "1c22171698d7ceb0f4dc580506ca3030ebd418c60956f7a2792b97a0b4edcd6c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/CurrentBudgetManager.kt": {
+      "sha256": "cd183e41e477e25b09183ca13e1bd4c35e1cb7f4adb15de8987c867b4be6173c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt": {
+      "sha256": "50f15f4b7105a140da81b0370e409292461402aef67152b49b6a59493b5621be",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/ChassisSpeeds.kt": {
+      "sha256": "400397c85f034236801c2882853c6fb2d8e843f5aeeecfba5d3027cac5f49d95",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/HolonomicPathFollower.kt": {
+      "sha256": "a0f0686b31b2bd5356cb8e359b563b82924e0df616472624b422f13acd2cf954",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/SplineMotionProfiler.kt": {
+      "sha256": "4023ab5d34eadd9fcdd4bf75ca9f150a96ee85a95325284e8d7953210887d55d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/ThetaStarPlanner.kt": {
+      "sha256": "d372e7fafdcdc4a7ec15f11a7dec1018f77dcbbc773346e7766b0523be162392",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/DriveReducer.kt": {
+      "sha256": "989eca281be01a0782e63c7d92f1711d175d5802fd851ec3a98c45046891e999",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/PathfindToPoseTask.kt": {
+      "sha256": "81316cb44cf2dcb03a4e9c03920346d931f9dbd8bacb17fe5d852e6b5fa812b5",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/FilterRecoveryAuditTest.kt": {
+      "sha256": "b24389a0d256a82bf55766c53c647455cb6e8a54a30f59e89af501f585b16615",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/RobotLoopMathTest.kt": {
+      "sha256": "a66c98e0bb333c8114a06d3cd3741a3074d4ce3f01d105fccbf5b644787850ef",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/safety/CurrentBudgetManagerTest.kt": {
+      "sha256": "6e041f2134e17e5ad0d20fa0b1f210d4c2fc8d861f9a5ceb37b4cff04117ba91",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/safety/PowerSafetyAuditTest.kt": {
+      "sha256": "b9f455b4aac415fc62c3a5d4c6b3e21b674d54820fb6c6218c4b7d6940e340f8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/SplineProfileAuditTest.kt": {
+      "sha256": "530bb6ad6951029e5b9c12f367762eb81b8140595d1f5a84df701c6f31fd61bc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/ThetaStarPlannerTest.kt": {
+      "sha256": "824507a9ecb61c6206c79ddc14165d6a516d23c497df52c22fe1f95d08fd6d96",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/DriveDeltaFrameAuditTest.kt": {
+      "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/DriveReducerTest.kt": {
+      "sha256": "3cea5218dba2896f8a4b1260501c7db80cc8d5c5d36f39242583bcabde6a8dd9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/PathfindToPoseTaskLifecycleTest.kt": {
+      "sha256": "b4e7d13f9d26f2eb54d95a57ac44e9236241dc9f2a43d288d215be21e0010660",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcSwerveRobot.kt": {
+      "sha256": "29067cfb7c04435dfc2e3e633d268eac32dce69b9036e01b51eafcdaad64e70c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt": {
+      "sha256": "b3384f90a250d8e546b0f7cbd447a8b83019e0d329c903b502a2339103c61db6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/EstimateMotorIO.kt": {
+      "sha256": "b282f9deebe1816118cc34ee9a6ce114e094a93bed6a3914355618c7859f7b02",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt": {
+      "sha256": "8a296985534ee6a76eddf2827f938d73c966ba42ea2835566c96525cd6b741f6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcLoopTimingTest.kt": {
+      "sha256": "8a3f809af3f334a5bd006f818d851195d4d7ac959c127edfe243a9cfba0cc88e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/EstimateMotorTimingTest.kt": {
+      "sha256": "4fa1fa16ab793c468fcb59cd1ce05f2c5bf3c249090e9a3fdca79a0807af661f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedHardwareContractTest.kt": {
+      "sha256": "c97a932ec89d8bb4a38edc914a275aadb13066cf5302f45f9463f0431835f347",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "evidence": [
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+      ]
+    },
+    "ARES-XRP-Starter/simulator/field_collision.py": {
+      "sha256": "f1851b35f9b16df5a2788d27cccafc9e103e2ad98adc50cc62f181684d458058",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file inspection; canonical units, atomic field validation/cache, concave geometry, bounded continuous translation/rotation collision checks. XRP verify: 65 tests pass, including 15 field audit tests. Desktop constraint only. Standard-library trace measured 93.8% executable-line coverage; remaining unexecuted boundary/error paths are listed in the report. No branch-coverage claim.",
+      "evidence": [
+        "docs/robot-loop-audit.md: pass 4",
+        "ARES-XRP-Starter/build/audit-pass4-xrp.log",
+        "ARES-XRP-Starter/build/audit-pass4-trace/field_collision.cover"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_field_collision_audit.py": {
+      "sha256": "a5ce2908e4d57d43ef0866fa57145c2aea702fad25d9fbb095c745dfc6225bc9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file inspection; canonical units, atomic field validation/cache, concave geometry, bounded continuous translation/rotation collision checks. XRP verify: 65 tests pass, including 15 field audit tests. Desktop constraint only.",
+      "evidence": [
+        "docs/robot-loop-audit.md: pass 4",
+        "ARES-XRP-Starter/build/audit-pass4-xrp.log"
+      ]
+    },
+    "scripts/audit_inventory.py": {
+      "sha256": "7728858107279066b591b2b146a711630523f2ff64ce6308a6ef39e7cda9b035",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file inspection; inventory pending/stale evidence, text/binary fingerprints. Repository tooling suite: 44 tests pass. CLI inventory includes 2354 tracked files, reports 29 partial prior reviews, and excludes untracked/build outputs.",
+      "evidence": [
+        "docs/audits/README.md",
+        "ARESLib-Kotlin/build/audit-pass4-scripts.log",
+        ".codex-validation/audit-inventory.json"
+      ]
+    },
+    "scripts/tests/test_audit_inventory.py": {
+      "sha256": "83e467194542ea9b85a867ac4d760815933b0277dc18c82ed24f4cb0bef964ac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file inspection; inventory pending/stale evidence, text/binary fingerprints. Repository tooling suite: 44 tests pass. CLI inventory includes 2354 tracked files, reports 29 partial prior reviews, and excludes untracked/build outputs.",
+      "evidence": [
+        "docs/audits/README.md",
+        "ARESLib-Kotlin/build/audit-pass4-scripts.log",
+        ".codex-validation/audit-inventory.json"
+      ]
+    }
+  }
+}
