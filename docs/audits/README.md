@@ -122,8 +122,11 @@ one pending/active playback attempt, cancellation ownership, cached PCM and Java
 Pass 39 covers [primitive filter math and repeated work](primitive-filter-audit.md): stable
 finite weighting and slew steps, invalid-time/reset boundaries, a cached incremental median,
 independent numerical oracles and measured hot-path allocation.
-Next is joystick conditioning and adapter allocation, followed by calibrated interpolation
-and remaining kinematics/estimation.
+Pass 40 covers [joystick conditioning and adapter allocation](joystick-conditioning-audit.md):
+validated scalar/vector domains, narrow deadbands, positive curve powers, a reusable output API,
+trigger isolation and immutable snapshot ownership with measured intermediate allocation.
+Next is calibrated interpolation and remaining kinematics/estimation; the AresGamepad DSL
+and remaining controller connection/age ownership also need separate full reviews.
 Studio follow-ups include cross-policy consistency, remaining lifecycle and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy

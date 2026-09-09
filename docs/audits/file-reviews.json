@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "f687be0ba1e5f54c7e1284856dc595b96e9c1a468a10ba0458c36938a780914c",
+      "sha256": "76c4c274d2821cb4e8d2c905541a78491584990a08aeb1f83730dbd224418058",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -522,7 +522,14 @@
         "ARESLib-Kotlin/build/audit-pass39-library.log",
         "ARESLib-Kotlin/build/audit-pass39-studio.log",
         "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+        "ARESLib-Kotlin/build/audit-pass39-policy.log",
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2314,10 +2321,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "54846dc419f5004915b302caabdf9b0cb8d5a04290dde5775572e9266fc2e31d",
+      "sha256": "cf7d82202c50b0b7c0cd708b9f3faa0098ced4dbbb158df9c0120d688b59f174",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2367,7 +2374,14 @@
         "ARESLib-Kotlin/build/audit-pass39-library.log",
         "ARESLib-Kotlin/build/audit-pass39-studio.log",
         "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+        "ARESLib-Kotlin/build/audit-pass39-policy.log",
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3029,10 +3043,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "29544bfd80ed63b078b81d5d99257a43a591cccff93e8ebc3fdce3e140b4dcc3",
+      "sha256": "8e9aeb21c48480dc48e510b54dee26f20ab07e782336ec0bf14f27ffa39416d5",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry.",
+      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3040,14 +3054,21 @@
         "ARESLib-Kotlin/build/audit-pass39-library.log",
         "ARESLib-Kotlin/build/audit-pass39-studio.log",
         "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+        "ARESLib-Kotlin/build/audit-pass39-policy.log",
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "d657343599d07ce0dc1bb9da54fb48d03e22ac1dedfe77e2c0c5bcc7950e281b",
+      "sha256": "755dd5304482ac84662f1e8c62009d614f4c248fa0cf56ef0d996ee51e7b79fa",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 39 complete source-identity file reviewed: exact HEAD library subtree f252cc83428a90552c129f0a28269a4b152b3302 matches candidate 17.0.3-rc.f252cc83428a and dependency-ordered validation.",
+      "scope": "Pass 39 complete source-identity file reviewed: exact HEAD library subtree f252cc83428a90552c129f0a28269a4b152b3302 matches candidate 17.0.3-rc.f252cc83428a and dependency-ordered validation. Pass 40 exact HEAD library subtree 0d599b7bafbba3ab6c8fd1a887c4790f42352075 matches candidate 17.0.3-rc.0d599b7bafbb; policy and dependency-ordered library/robot checks passed. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3055,7 +3076,14 @@
         "ARESLib-Kotlin/build/audit-pass39-library.log",
         "ARESLib-Kotlin/build/audit-pass39-studio.log",
         "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+        "ARESLib-Kotlin/build/audit-pass39-policy.log",
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3070,6 +3098,156 @@
         "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass39-studio.log",
         "ARESLib-Kotlin/build/audit-pass39-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/InputMath.kt": {
+      "sha256": "7d0196c061b285e69023778e3bd1b1572060ad981d0b0676a00b359c357b9746",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full-file review: finite scalar/vector domains, deadband endpoints, positive powers including fractional curves, radial direction/desaturation, primitive buffer ownership and allocating convenience API. Boundary/property tests and allocation measurements plus full library/API and robot candidate checks passed. Physical timing and caller connection/age checks are separate. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcGamepadAdapter.kt": {
+      "sha256": "16166f93409ba71eb5015374253bdeee757710cd118b2e255d203b61b77900a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full-file review: each SDK field sampled once, Y inversion, all button/axis mappings, trigger/vector invalidity isolation, one scratch buffer and immutable snapshot ownership. Contract and allocation tests, full library and robot candidate checks passed. Single-owner polling does not establish atomic SDK state, connection or age. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/input/ControllerState.kt": {
+      "sha256": "5cf165552e30989ea7c9839b82a8a680d161b587e0abe9b53650acb64b561925",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full-file review: immutable primitive controller fields, default neutral values and independently owned data snapshots. Adapter integration verifies default state, all declared button/axis fields and preservation of an older snapshot; snapshot allocation is explicitly retained. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InputMathTest.kt": {
+      "sha256": "d176e29a6928f89323ce57de284e3b380bb61270644c5c9716160c970dc76491",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full test-file review: fixtures, numeric/domain/ownership assertions or warmed allocation accounting inspected and executed in focused and full library suites without skips. Independent oracle/sweep and per-runtime allocation limits are documented. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InputConditioningAuditTest.kt": {
+      "sha256": "14e5dcc20cb2aeedce591f78fbc3e75c35f6b0803270799bf2bb8ed8421ce4d7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full test-file review: fixtures, numeric/domain/ownership assertions or warmed allocation accounting inspected and executed in focused and full library suites without skips. Independent oracle/sweep and per-runtime allocation limits are documented. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InputConditioningAllocationTest.kt": {
+      "sha256": "eefaba7425107a45d6d861eed609c6a6aa3b7fb027ff6f820daaf4811d4482df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full test-file review: fixtures, numeric/domain/ownership assertions or warmed allocation accounting inspected and executed in focused and full library suites without skips. Independent oracle/sweep and per-runtime allocation limits are documented. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/FtcGamepadAdapterAuditTest.kt": {
+      "sha256": "f2775566394bd9a46bd198f072355a11d46f0ebb81d2aefed915fbc7439d9702",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full test-file review: fixtures, numeric/domain/ownership assertions or warmed allocation accounting inspected and executed in focused and full library suites without skips. Independent oracle/sweep and per-runtime allocation limits are documented. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/FtcGamepadAdapterAllocationTest.kt": {
+      "sha256": "766d2aea18c810919384e580ea0cdbb781a34460fe0b1cee0b013a66d4853de9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full test-file review: fixtures, numeric/domain/ownership assertions or warmed allocation accounting inspected and executed in focused and full library suites without skips. Independent oracle/sweep and per-runtime allocation limits are documented. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/api/core.api": {
+      "sha256": "0e879b94d73331fac00961b11ba276e8ec499b952f31cd7acf769f9394679e0c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "evidence": [
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+      ]
+    },
+    "docs/audits/joystick-conditioning-audit.md": {
+      "sha256": "ea3a2895c5fdcb074dc2c91042f41f5b5d69c12d9782e6a17e50f11321e6c217",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 40 full report reviewed against baseline/probe and focused regressions, measured allocation, API diff, exact source/candidate identity, full dependency-ordered validation, Kover, explicit XML manifest, policy and inventory. Caller/device and remaining-file limitations are explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-zero-exponent-probe-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log"
       ]
     }
   }

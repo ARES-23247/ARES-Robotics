@@ -514,3 +514,11 @@ low-pass contributions and invalid-time/reset state changes. A maintained sorted
 replaces full median sorting and gives constant-time getters; slew magnitudes are cached.
 Independent numerical oracles and measured JVM allocation support these changes. Robot
 loop jitter, device heap behavior and physical response remain unmeasured.
+
+## Fortieth pass: joystick conditioning and gamepad snapshots
+
+The [joystick audit](audits/joystick-conditioning-audit.md) neutralizes invalid scalar/vector
+inputs and triggers, preserves full travel for valid narrow deadbands and rejects zero curve
+exponents. A reusable output API removes intermediate vector allocation from FTC polling while
+preserving independently owned immutable snapshots. Domain checks do not establish controller
+freshness or replace connection, enable and lease checks.
