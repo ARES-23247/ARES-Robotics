@@ -24,7 +24,7 @@ class SlewRateLimiterTest {
         // Limit to 2.0 units per second
         val limiter = SlewRateLimiter(2.0)
 
-        // First call should snap to input directly
+        // The initial zero baseline already equals this first input.
         assertEquals(0.0, limiter.calculate(0.0, 0.02), 1e-6)
 
         // Big step change from 0 to 10 with dt = 0.5 seconds

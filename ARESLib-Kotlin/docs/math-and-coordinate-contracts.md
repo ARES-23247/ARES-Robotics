@@ -104,6 +104,25 @@ ARES Robotics Studio converts field coordinates to canvas coordinates with swapp
 
 Alliance mirroring is a field transform, not a heading-sign change. Apply it at one explicit boundary. Field-centric joystick transforms, path mirroring, vision field poses, and simulator spawn selection must agree on the active alliance. A second mirror or heading negation can look correct on one half of the field and fail on the other.
 
+## Primitive filter state and time
+
+`LowPassFilter` uses the backward-Euler RC recurrence, not the exact continuous exponential;
+timestep partitioning changes its discretization error. Finite nonpositive RC selects bypass.
+Both low-pass and slew calculations hold state for invalid input/configuration or nonpositive
+or nonfinite elapsed time, including after clear and in bypass mode. Their first sample after
+clear must have positive finite elapsed time before it can establish a fresh baseline.
+
+Invalid low-pass or median reset values clear their sample history. A slew reset uses its
+existing finite-zero fallback and remains initialized. These filters' retained outputs do not
+establish sensor freshness or validity; callers must retain that separate feedback evidence.
+
+Median updates maintain a fixed-capacity sorted window in O(N) worst-case time, and getters
+read a cached result in O(1). The median rejects some isolated outliers but can delay steps and
+cannot guarantee rejection of arbitrary bursts. Slew limits use cached rate magnitudes;
+either sign is accepted and a zero magnitude freezes that direction. Rescaled arithmetic keeps
+accepted finite filter outputs inside their endpoint interval even when direct sums, differences
+or products overflow. Hot-path tests measure allocation separately from on-device timing.
+
 ## Numerical review checklist
 
 For every estimator, controller, profile, or trajectory change, verify:

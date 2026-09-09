@@ -19,18 +19,21 @@ package com.areslib.math.filter
  * ### Zero-GC Guarantee:
  * Operates in $O(1)$ time using primitive scalar arithmetic with zero dynamic memory allocation.
  *
- * @param positiveRateLimit Maximum allowed rate of increase per second ($r_{\text{pos}} > 0$).
- * @param negativeRateLimit Maximum allowed rate of decrease per second ($r_{\text{neg}} < 0$). Defaults to $-positiveRateLimit$.
+ * @param positiveRateLimit Rate-of-increase magnitude per second. Signs are normalized; zero freezes increases.
+ * @param negativeRateLimit Rate-of-decrease magnitude per second. Signs are normalized; zero freezes decreases.
+ * Defaults to $-positiveRateLimit$. Nonfinite rates hold output until repaired.
  * @param initialValue Starting output signal value before first update (default: 0.0).
  */
 class SlewRateLimiter(
-    private var positiveRateLimit: Double,
-    private var negativeRateLimit: Double = -positiveRateLimit,
+    positiveRateLimit: Double,
+    negativeRateLimit: Double = -positiveRateLimit,
     initialValue: Double = 0.0
 ) {
 
     private var lastValue = if (initialValue.isFinite()) initialValue else 0.0
-    private var hasBeenCalled = true
+    private var hasBaseline = true
+    private var positiveMagnitude = kotlin.math.abs(positiveRateLimit)
+    private var negativeMagnitude = kotlin.math.abs(negativeRateLimit)
 
     /** Current output value of the rate limiter. */
     val value: Double get() = lastValue
@@ -43,25 +46,30 @@ class SlewRateLimiter(
      * @return Rate-limited output signal value.
      */
     fun calculate(input: Double, dtSeconds: Double): Double {
-        if (!input.isFinite() || !dtSeconds.isFinite() ||
-            !positiveRateLimit.isFinite() || !negativeRateLimit.isFinite()
+        if (!input.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !positiveMagnitude.isFinite() || !negativeMagnitude.isFinite()
         ) return lastValue
 
-        if (!hasBeenCalled) {
+        if (!hasBaseline) {
             lastValue = input
-            hasBeenCalled = true
+            hasBaseline = true
             return input
         }
 
-        val dt = if (dtSeconds > 0.0) dtSeconds else 0.0
-        if (dt == 0.0) return lastValue
-
-        val change = input - lastValue
-        val posLimit = kotlin.math.abs(positiveRateLimit)
-        val negLimit = -kotlin.math.abs(negativeRateLimit)
-
-        val clampedChange = change.coerceIn(negLimit * dt, posLimit * dt)
-        lastValue += clampedChange
+        if (input == lastValue) return lastValue
+        val increasing = input > lastValue
+        val magnitude = if (increasing) positiveMagnitude else negativeMagnitude
+        val allowance = magnitude * dtSeconds
+        val gap = if (increasing) input - lastValue else lastValue - input
+        val next = if (gap.isInfinite() && allowance.isInfinite()) {
+            // Both can exceed MAX_VALUE without the permitted endpoint being nonfinite.
+            val halfGap = if (increasing) input * 0.5 - lastValue * 0.5 else lastValue * 0.5 - input * 0.5
+            val halfAllowance = (magnitude * 0.5) * dtSeconds
+            if (halfAllowance >= halfGap) input
+            else (lastValue * 0.5 + if (increasing) halfAllowance else -halfAllowance) * 2.0
+        } else if (allowance >= gap) input
+        else lastValue + if (increasing) allowance else -allowance
+        lastValue = next.coerceIn(minOf(lastValue, input), maxOf(lastValue, input))
         return lastValue
     }
 
@@ -72,14 +80,14 @@ class SlewRateLimiter(
      */
     fun reset(value: Double = 0.0) {
         lastValue = if (value.isFinite()) value else 0.0
-        hasBeenCalled = true
+        hasBaseline = true
     }
 
     /**
-     * Clears internal state so the next input sample snaps directly without rate limiting.
+     * Clears state so the next finite input with positive finite time snaps without rate limiting.
      */
     fun clear() {
-        hasBeenCalled = false
+        hasBaseline = false
         lastValue = 0.0
     }
 
@@ -90,7 +98,7 @@ class SlewRateLimiter(
      * @param negative Maximum rate of decrease per second.
      */
     fun setRateLimits(positive: Double, negative: Double = -positive) {
-        positiveRateLimit = positive
-        negativeRateLimit = negative
+        positiveMagnitude = kotlin.math.abs(positive)
+        negativeMagnitude = kotlin.math.abs(negative)
     }
 }

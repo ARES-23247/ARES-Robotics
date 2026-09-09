@@ -4,7 +4,8 @@ package com.areslib.math.filter
  * Single-pole Discrete Infinite Impulse Response (IIR) Low-Pass Filter.
  *
  * Implements a time-constant parameterized exponential moving average filter. Smooths high-frequency electrical
- * noise, analog sensor jitter, and battery voltage fluctuations while maintaining loop-time independence ($\Delta t$).
+ * noise, analog sensor jitter, and battery voltage fluctuations using the actual timestep ($\Delta t$).
+ * This is backward-Euler RC discretization; changing timestep partitioning changes its approximation error.
  *
  * ### Mathematical Formulation:
  * Filter smoothing factor $\alpha$:
@@ -38,9 +39,11 @@ class LowPassFilter(
      * @param measurement Noisy raw input value ($x_k$).
      * @param dtSeconds Time elapsed since last call in seconds ($\Delta t$).
      * @return Filtered output estimate ($y_k$).
+     * Nonfinite input/configuration or a nonpositive/nonfinite timestep holds the current estimate,
+     * including before the first sample and in bypass mode. Finite nonpositive RC selects bypass.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
-        if (!measurement.isFinite() || !timeConstantSeconds.isFinite() || !dtSeconds.isFinite()) {
+        if (!measurement.isFinite() || !timeConstantSeconds.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0) {
             return lastEstimate
         }
 
@@ -55,25 +58,50 @@ class LowPassFilter(
             return measurement
         }
 
-        val dt = if (dtSeconds > 0.0) dtSeconds else 0.0
-
-        val alpha = dt / (timeConstantSeconds + dt)
-        lastEstimate = alpha * measurement + (1.0 - alpha) * lastEstimate
+        if (measurement == lastEstimate) return lastEstimate
+        val previousIsMajor = timeConstantSeconds >= dtSeconds
+        val small = if (previousIsMajor) dtSeconds else timeConstantSeconds
+        val large = if (previousIsMajor) timeConstantSeconds else dtSeconds
+        val ratio = small / large
+        val divisor = 1.0 + ratio
+        var major = if (previousIsMajor) lastEstimate else measurement
+        var minor = if (previousIsMajor) measurement else lastEstimate
+        // Raise subnormal signals before weighting so their partial products do not round away.
+        val scaled = maxOf(kotlin.math.abs(major), kotlin.math.abs(minor)) < java.lang.Double.MIN_NORMAL
+        if (scaled) { major = Math.scalb(major, 54); minor = Math.scalb(minor, 54) }
+        val minorPart = if (ratio < java.lang.Double.MIN_NORMAL) scaledProductRatio(minor, small, large) / divisor
+            else minor * (ratio / divisor)
+        var estimate = major / divisor + minorPart
+        if (scaled) estimate = Math.scalb(estimate, -54)
+        // Rounding of two same-sign weighted terms must not overflow or leave their convex interval.
+        lastEstimate = estimate.coerceIn(minOf(lastEstimate, measurement), maxOf(lastEstimate, measurement))
         return lastEstimate
+    }
+
+    /** Preserve a representable value*small/large even when small/large itself underflows. */
+    private fun scaledProductRatio(value: Double, small: Double, large: Double): Double {
+        if (value == 0.0) return value
+        val valueExponent = Math.getExponent(value)
+        val smallExponent = Math.getExponent(small)
+        val largeExponent = Math.getExponent(large)
+        val fraction = Math.scalb(value, -valueExponent) * Math.scalb(small, -smallExponent) /
+            Math.scalb(large, -largeExponent)
+        return Math.scalb(fraction, valueExponent + smallExponent - largeExponent)
     }
 
     /**
      * Resets internal filter memory to a specified baseline value.
      *
-     * @param value Baseline value to seed the filter memory.
+     * @param value Baseline value to seed the filter memory. Nonfinite baselines clear history.
      */
     fun reset(value: Double = 0.0) {
+        if (!value.isFinite()) { clear(); return }
         lastEstimate = value
         hasFirstValue = true
     }
 
     /**
-     * Clears internal filter state so the next input sample snaps directly without filtering.
+     * Clears internal filter state so the next finite input with positive finite time snaps directly.
      */
     fun clear() {
         hasFirstValue = false
