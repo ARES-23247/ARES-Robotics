@@ -62,8 +62,10 @@ Pass 14 covers [Studio geometric calibration](studio-calibration-audit.md), incl
 identifiability, finite recommendations, sample chronology and stable vision deviations.
 Pass 15 covers [SysId log imports](sysid-log-import-audit.md): stable column positions,
 explicit timing, missing acceleration, duplicate handling and chronological samples.
-The next pass addresses live SysId sample assembly and bounded collection, followed by
-remaining regression, logging/transport, advanced descriptor safety and Studio analytics math.
+Pass 16 covers [live SysId collection](sysid-live-collection-audit.md): complete rows,
+microsecond identities, bounded history, immutable snapshots and stop/restart boundaries.
+The next pass addresses analysis-service math, duplicate fitting and result publication,
+followed by logging/transport, advanced descriptor safety and remaining Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.

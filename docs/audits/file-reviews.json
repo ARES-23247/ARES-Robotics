@@ -458,13 +458,13 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "c45d135417ac25940ad49aecc148c7b88b99536eb1b04564456ba34e8a312ca7",
+      "sha256": "816c5435d1f04314481fef01f5475764aa5f4730d043a479d5bfcd55122d5691",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full coverage-accounting and work-queue documentation reviewed through pass 15. Shared guidance and links pass, with live sample assembly/capacity next and physical/repository coverage still open.",
+      "scope": "Full accounting/work-queue document reviewed through pass 16. Records remaining analysis-service, transport and physical work. Shared guidance and links pass; no repository-wide or hardware completion claim.",
       "evidence": [
-        "docs/audits/sysid-log-import-audit.md",
-        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
+        "docs/audits/sysid-live-collection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -853,13 +853,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
-      "sha256": "924e90c652dff1a9a2fb9bd1ec9ed1a82a5e2c3a2291e7cfa2c724bfe7e9ac38",
+      "sha256": "70b8d84b4be3e8bc8fbb8cb95769a35adba9735953e99d61752d9e4d990e6970",
       "review": "partial",
-      "validation": "pending",
-      "scope": "Pass 15 extracts strict log parsing and verifies public import delegation. Live collection still has incomplete indexed rows, millisecond source-key collisions, string column compaction, incomplete-row capacity gaps and repeated growing history copies. Live lifecycle/capacity fixes and focused tests remain pending.",
+      "validation": "passed",
+      "scope": "Passes 15-16 cover import delegation, complete live rows, bounded capture/previews, snapshot ownership, source/mechanism/replay/status isolation and stop-generation guards. 105/109 lines and 100/122 branches exercised. Analysis service computes a duplicate fit and publishes mutable recommendation state; coordinated math/publication and stronger request/acknowledgement provenance remain open before full completion.",
       "evidence": [
-        "docs/audits/sysid-log-import-audit.md",
-        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
+        "docs/audits/sysid-live-collection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
       ]
     },
     "docs/audits/studio-calibration-audit.md": {
@@ -900,6 +900,46 @@
       "evidence": [
         "docs/audits/sysid-log-import-audit.md",
         "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSampleAssembler.kt": {
+      "sha256": "1e187cc82f7313243431e0d325bd981a2b704943c63754cdd3e241bc10bf7d26",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full assembler and geometric-kind helper review. Bounded pending/completed identities, microsecond/session keys, complete channel masks, duplicate conflicts, numeric/time validation and bounded packed strings tested. 53/53 executable lines and 55/72 branches exercised within 32 new methods. Does not prove lossless transport or request-nonce provenance.",
+      "evidence": [
+        "docs/audits/sysid-live-collection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLiveCollectionAuditTest.kt": {
+      "sha256": "30bd5f800470bcbebbeee716a9ab2887f59a7be766bd3508a120d0da423e0095",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution in the final Studio gate: 26 collector plus six assembler methods. Owned fake telemetry flow and resource cleanup; analytic row expectations, capacity, lifecycle and snapshot isolation. No robot command or physical stop acknowledgement measured.",
+      "evidence": [
+        "docs/audits/sysid-live-collection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSampleAssemblerTest.kt": {
+      "sha256": "663dd2bc9e883034ea736620bece142ef916a24bd26b2538d0f739b1e563e342",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution in the final Studio gate: 26 collector plus six assembler methods. Owned fake telemetry flow and resource cleanup; analytic row expectations, capacity, lifecycle and snapshot isolation. No robot command or physical stop acknowledgement measured.",
+      "evidence": [
+        "docs/audits/sysid-live-collection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+      ]
+    },
+    "docs/audits/sysid-live-collection-audit.md": {
+      "sha256": "cf2eb6c40d8c85027c2d3365c75e6597009e5cbb68b097c7452374d699f80777",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report checked against baseline/final test XML, Kover counters, source behavior and policy logs. Explicit capacity/preview contracts, stop-request versus acknowledgement, packet-loss and serial analysis limitations are recorded.",
+      "evidence": [
+        "docs/audits/sysid-live-collection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
       ]
     }
   }

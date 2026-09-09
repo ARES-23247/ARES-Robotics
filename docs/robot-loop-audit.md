@@ -326,3 +326,10 @@ heading array. Collector completeness/import and physical calibration remain ope
 The [fifteenth-pass report](audits/sysid-log-import-audit.md) records column-shift corruption,
 invented CSV timestamps, explicit-zero acceleration replacement, duplicate timestamps,
 chronology, numeric validation and quoted fields. Live assembly and capacity work remain open.
+
+## Sixteenth pass: live SysId collection
+
+The [sixteenth-pass report](audits/sysid-live-collection-audit.md) records complete channel
+assembly, microsecond sample identities, bounded pending rows/history, preview throttling,
+separate geometric rows and snapshot ownership. Stop-generation, session, replay and
+mechanism boundaries are tested. Analysis-service work and physical validation remain open.
