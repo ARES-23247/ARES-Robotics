@@ -458,13 +458,13 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "e606eca559a423bd62b192d93ad0f488d6ad9c77a9ba14705667708b0cc27d45",
+      "sha256": "c45d135417ac25940ad49aecc148c7b88b99536eb1b04564456ba34e8a312ca7",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full coverage-accounting/work-queue document reviewed through pass 14, with collector work explicitly next. Shared guidance and local links pass; no universal test or hardware claim.",
+      "scope": "Full coverage-accounting and work-queue documentation reviewed through pass 15. Shared guidance and links pass, with live sample assembly/capacity next and physical/repository coverage still open.",
       "evidence": [
-        "docs/audits/studio-calibration-audit.md",
-        "ARESLib-Kotlin/build/audit-pass14-studio.log"
+        "docs/audits/sysid-log-import-audit.md",
+        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -853,13 +853,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
-      "sha256": "93a7583c92709ce8b1fdd2129f9642ff6644997a8e69f19b7912f842ac15278f",
+      "sha256": "924e90c652dff1a9a2fb9bd1ec9ed1a82a5e2c3a2291e7cfa2c724bfe7e9ac38",
       "review": "partial",
       "validation": "pending",
-      "scope": "Inspected sample assembly and import paths. Confirmed open incomplete-row acceptance, mapNotNull column shifting, zero-versus-missing acceleration ambiguity and growing collection costs. Requires dedicated fixes/tests; no completion credit from the general Studio suite.",
+      "scope": "Pass 15 extracts strict log parsing and verifies public import delegation. Live collection still has incomplete indexed rows, millisecond source-key collisions, string column compaction, incomplete-row capacity gaps and repeated growing history copies. Live lifecycle/capacity fixes and focused tests remain pending.",
       "evidence": [
-        "docs/audits/studio-calibration-audit.md",
-        "ARESLib-Kotlin/build/audit-pass14-studio.log"
+        "docs/audits/sysid-log-import-audit.md",
+        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
       ]
     },
     "docs/audits/studio-calibration-audit.md": {
@@ -870,6 +870,36 @@
       "evidence": [
         "docs/audits/studio-calibration-audit.md",
         "ARESLib-Kotlin/build/audit-pass14-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogParser.kt": {
+      "sha256": "b368dd82efb45fca1f6fc3aed5a9fc0f25170513c2cb929742644dc38ef3daa0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full JSONL/CSV parser review. 21 import methods pass; 97/97 executable lines and 151/204 branches exercised. Explicit units/timestamps, finite numeric fields, positional packed data, quoted CSV, missing versus zero acceleration, chronological output and duplicate handling covered. Integer-millisecond model and single-record CSV limitations are documented; no every-input claim.",
+      "evidence": [
+        "docs/audits/sysid-log-import-audit.md",
+        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogImportAuditTest.kt": {
+      "sha256": "fc22a0de2eb09c10aa4f31e2a935784fba29dada65e48e39d0d7a218e677dd9f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and all 21 methods executed in the final Studio suite. Tests use analytic derivative expectations, malformed-data rejection and format boundaries, with one existing collector API integration test and owned resource cleanup. Initial fixture compilation error and correction are recorded.",
+      "evidence": [
+        "docs/audits/sysid-log-import-audit.md",
+        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
+      ]
+    },
+    "docs/audits/sysid-log-import-audit.md": {
+      "sha256": "a3b9e72acb8a882fab611060a7f19cc02870f203879bb0cc71f0e90b837e50b5",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report checked against baseline and final test XML, source changes, Kover counters and policy logs. Documents import units and omissions, initial test-fixture compile failure, final BOM test, up-to-date reuse and remaining live collector defects.",
+      "evidence": [
+        "docs/audits/sysid-log-import-audit.md",
+        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
       ]
     }
   }

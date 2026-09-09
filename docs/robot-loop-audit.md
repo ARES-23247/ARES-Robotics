@@ -320,3 +320,9 @@ The [fourteenth-pass report](audits/studio-calibration-audit.md) records stale-r
 cleanup, identifiable Pinpoint fitting without its large matrix, chronological samples,
 finite calibration recommendations, stable vision deviations and removal of the track
 heading array. Collector completeness/import and physical calibration remain open.
+
+## Fifteenth pass: SysId log import
+
+The [fifteenth-pass report](audits/sysid-log-import-audit.md) records column-shift corruption,
+invented CSV timestamps, explicit-zero acceleration replacement, duplicate timestamps,
+chronology, numeric validation and quoted fields. Live assembly and capacity work remain open.

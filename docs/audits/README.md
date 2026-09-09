@@ -60,8 +60,10 @@ Pass 13 covers [MicroPython profiles and feedforward](xrp-profile-feedforward-au
 including continuous braking, gravity models, sensor dependencies and finite output.
 Pass 14 covers [Studio geometric calibration](studio-calibration-audit.md), including
 identifiability, finite recommendations, sample chronology and stable vision deviations.
-The next pass addresses SysId sample assembly/import, followed by remaining regression,
-logging/transport, advanced descriptor safety and Studio analytics math.
+Pass 15 covers [SysId log imports](sysid-log-import-audit.md): stable column positions,
+explicit timing, missing acceleration, duplicate handling and chronological samples.
+The next pass addresses live SysId sample assembly and bounded collection, followed by
+remaining regression, logging/transport, advanced descriptor safety and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.
