@@ -215,10 +215,11 @@ class AlertEngineService(
         _alerts.value = emptyMap()
     }
 
-    /** Selects platform-correct live safety thresholds without rewriting saved user rules. */
-    fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
-        platformThresholds.configure(league, xrpBrownoutThresholdVolts)
-        _alerts.update { it.filterValues { alert -> normalizeTopic(alert.ruleKey) != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey } }
+    /** Serialize policy changes with evaluation; only fresh observations or target resets change evidence. */
+    suspend fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
+        transitionMutex.withLock {
+            if (!disposed) platformThresholds.configure(league, xrpBrownoutThresholdVolts)
+        }
     }
 
     /**
@@ -263,8 +264,9 @@ class AlertEngineService(
         if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys ||
             frame.key.trimStart('/') in TelemetryMetricCatalog.LOOP_TIME.keys
         ) return
-        val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
         val value = frame.value
+        if (normalizedKey in TelemetryMetricCatalog.BATTERY_VOLTAGE.keys && value < 0.0) return
+        val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
 
         val minVal = rule.minValue
         val maxVal = rule.maxValue

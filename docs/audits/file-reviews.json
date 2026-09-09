@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "2d03478d2241b0b2e5b7feb248a61f86e0dd452baa9b012107a3c77df6c4e3f9",
+      "sha256": "054b62a847a2a2cae2085f451b8de963d1df49ccdd8add7fc0e94f56ec4e8132",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -492,7 +492,13 @@
         "ARESLib-Kotlin/build/audit-pass34-before.log",
         "ARESLib-Kotlin/build/audit-pass34-focused.log",
         "ARESLib-Kotlin/build/audit-pass34-studio.log",
-        "ARESLib-Kotlin/build/audit-pass34-policy.log"
+        "ARESLib-Kotlin/build/audit-pass34-policy.log",
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2120,10 +2126,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "792a35039327764ec6f062b7fe54e47569e12befbdb7dc4a5e0cd606a6974f94",
+      "sha256": "1408fd2466769fef452ce792e8f3be6f1d396ab80d2078b4449b8a6675cf497f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed scopes through pass 34: occurrence/peak/CAS transitions, source epochs/order, bounded loop and motor evidence, field freshness/units, persistence retry/drain integration, and independent valid CAN/I2C/vision scalar evaluation. Pass 34 removes duplicate hard-coded evaluations, value-based percentage guessing and the entire recent-value cache/scans while preserving configured keys and custom topics. Remaining scopes: loop/motor configuration semantics, platform thresholds, concurrent lifecycle, global retention, crash durability and full-file contract review.",
+      "scope": "Reviewed scopes through pass 34: occurrence/peak/CAS transitions, source epochs/order, bounded loop and motor evidence, field freshness/units, persistence retry/drain integration, and independent valid CAN/I2C/vision scalar evaluation. Pass 34 removes duplicate hard-coded evaluations, value-based percentage guessing and the entire recent-value cache/scans while preserving configured keys and custom topics. Remaining scopes: loop/motor configuration semantics, platform thresholds, concurrent lifecycle, global retention, crash durability and full-file contract review. Pass 35 serializes suspending platform configuration with evaluation, preserves alert evidence, ignores terminal configuration and rejects negative battery samples while keeping zero valid. Remaining platform work concerns transport/session context and immutable historical policy identity; loop/motor overrides and general rule validation remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
@@ -2146,7 +2152,13 @@
         "ARESLib-Kotlin/build/audit-pass34-before.log",
         "ARESLib-Kotlin/build/audit-pass34-focused.log",
         "ARESLib-Kotlin/build/audit-pass34-studio.log",
-        "ARESLib-Kotlin/build/audit-pass34-policy.log"
+        "ARESLib-Kotlin/build/audit-pass34-policy.log",
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
@@ -2261,10 +2273,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "78b6226ff29da0a4f9e9125ab61d432a1661020728de626970e7be33f1cc6a13",
+      "sha256": "bc5fad2d3d72db34460f8e4ae1333b775b549fe9bd677bc4edafe1c2fd6292e4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2284,7 +2296,13 @@
         "ARESLib-Kotlin/build/audit-pass34-before.log",
         "ARESLib-Kotlin/build/audit-pass34-focused.log",
         "ARESLib-Kotlin/build/audit-pass34-studio.log",
-        "ARESLib-Kotlin/build/audit-pass34-policy.log"
+        "ARESLib-Kotlin/build/audit-pass34-policy.log",
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2547,6 +2565,62 @@
         "ARESLib-Kotlin/build/audit-pass34-focused.log",
         "ARESLib-Kotlin/build/audit-pass34-studio.log",
         "ARESLib-Kotlin/build/audit-pass34-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/PlatformAlertThresholds.kt": {
+      "sha256": "64f43cea945f227de1d1ad775d113e037c429e364a0cab19bd2c8e7946e831b8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire policy reviewed: coherent context publication, domain fallback, bounded per-battery-key cache, identity replacement, immutable configured fields and two-sided names. All executable lines covered; concurrent context/name consistency and zero-allocation stable lookups exercised. General rule validation and session/context ownership remain outside this helper.",
+      "evidence": [
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/PlatformAlertThresholdsTest.kt": {
+      "sha256": "2c7c2ab34d72dcdeef33f8716058d249ac69d09b8e3f12f7608086a701ca986b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method fixture reviewed and executed: bounds/fallbacks, immutability, per-alias cache identity/invalidation, non-XRP passthrough, two-thread context/read stress and two allocation windows.",
+      "evidence": [
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/PlatformAlertAuditTest.kt": {
+      "sha256": "d7c2ff5bb55f30e8e3f8270f3808746f653c22c6fffdb3dea26a583cdd528b89",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 11-method fixture reviewed and executed with actual TelemetryStore. Reproduces lost evidence, cache/alias/name behavior and negative voltage, and verifies configured aliases, fresh resolution, target reset and terminal configuration.",
+      "evidence": [
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
+      ]
+    },
+    "docs/audits/platform-alert-audit.md": {
+      "sha256": "0912d626cfe165fe3b1131af816539341eaa76e058094cbd3a2031a68d88de3b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 35 report reviewed against baseline/focused/full evidence, coverage, allocation and concurrency tests, and policy/inventory. No physical timing or universal concurrent-interleaving claim.",
+      "evidence": [
+        "docs/audits/platform-alert-audit.md",
+        "ARESLib-Kotlin/build/audit-pass35-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+        "ARESLib-Kotlin/build/audit-pass35-focused.log",
+        "ARESLib-Kotlin/build/audit-pass35-studio.log",
+        "ARESLib-Kotlin/build/audit-pass35-policy.log"
       ]
     }
   }

@@ -474,3 +474,11 @@ The [scalar diagnostic audit](audits/scalar-diagnostic-audit.md) isolates each C
 fixes ratio units, rejects invalid counts/rates and honors configured limits in one evaluation.
 Per-session cached values and cross-bus filter/max scans are removed. Legacy percentage feeds
 need explicit conversion. Temporal loop/motor configuration and platform policies remain open.
+
+## Thirty-fifth pass: platform battery alert policy
+
+The [platform battery audit](audits/platform-alert-audit.md) preserves evidence across context
+refreshes, serializes policy changes, applies XRP minimums to configured battery aliases and
+caches coherent rules. Two-sided descriptions retain both bounds; negative feedback is unknown
+while measured zero still alerts. Threshold-file validation and transport/context ownership
+remain open alongside temporal loop/motor policy semantics.

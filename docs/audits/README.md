@@ -111,7 +111,9 @@ Pass 33 covers [alert persistence and shutdown](alert-persistence-audit.md): fai
 initial/latest occurrence retention, autonomous fair retries, saving status and joined drains.
 Pass 34 covers [CAN, I2C and vision scalar diagnostics](scalar-diagnostic-audit.md): independent
 sources, fixed units, valid domains, configured limits and removal of duplicate/cache scans.
-Next are loop/motor configuration semantics, platform rules and global retention,
+Pass 35 covers [platform battery alert policy](platform-alert-audit.md): retained evidence,
+serialized context changes, coherent cached rules, battery aliases and voltage domains.
+Next are loop/motor configuration semantics, threshold-file validation and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
