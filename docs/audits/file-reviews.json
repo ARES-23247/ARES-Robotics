@@ -458,13 +458,14 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "4493d328c53b2c030a382680ea691340b1b015a5b3dbd2b4a0777e2a177f5246",
+      "sha256": "e94122e77f2e1f3f807b814022f9b37344e25178d0db396ead542a6724ced66b",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full audit-accounting contract/work-queue review with pass-8 link update. Guidance and links in 169 current documents passed. Documentation only.",
+      "scope": "Audit accounting and work-queue documentation reviewed with the ninth-pass update. Links in 170 current documents and guidance verification passed. Documentation disposition only.",
       "evidence": [
-        "docs/audits/xrp-robot-autonomous-audit.md",
-        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+        "docs/audits/xrp-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass9-micro.log",
+        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -519,13 +520,14 @@
       ]
     },
     "ARESLib-Kotlin/ares-micro/README.md": {
-      "sha256": "0dab3d71ab9f4a232dbade34b02ff0907441f87c84c8f104807eb2e533b6608d",
+      "sha256": "81b6d8ea78e623626862ae55e3aa62bfeb39f5cd0e42640eb56066b1aa6becd0",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full documentation review against runtime and starter integration. Corrects follower/offset/allocation claims and describes explicit lifecycle, waypoint and lease contracts. Manual device-copy instructions were reviewed but not executed on hardware.",
+      "scope": "Full runtime documentation review with basic mechanism control, fixed topology and advanced-feature limits added. Statements checked against source, canonical descriptor defaults and passing Python tests. Manual device copy remains unexecuted on hardware.",
       "evidence": [
-        "docs/audits/xrp-robot-autonomous-audit.md",
-        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+        "docs/audits/xrp-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass9-micro.log",
+        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
       ]
     },
     "ARESLib-Kotlin/ares-micro/ares_micro/__init__.py": {
@@ -539,13 +541,14 @@
       ]
     },
     "ARESLib-Kotlin/ares-micro/ares_micro/subsystem.py": {
-      "sha256": "d346c285b4f41ebaaff73379f922270491a88f363a3fd373fd7a701acae43061",
+      "sha256": "08834c2f3ac8969485ac97adfa137ff4441e343c8bd582c0c8c2cf99a4a917c1",
       "review": "partial",
-      "validation": "pending",
-      "scope": "Initial full source read identified PID-history reset, bang-bang direction/hysteresis, derivative wrapping/filtering and descriptor feature parity as the next dedicated audit. Existing passing tests do not validate these findings; regression/fix work is pending.",
+      "validation": "passed",
+      "scope": "Pass 9 audits basic PID/bang-bang math, stop/reset, target types, output validation and source-read grouping. 101 shared Python tests pass, including 16 new regressions; 94.9% source line execution. Profiles, feedforward, advanced safety, typed/fresh/disabled feedback, followers and structural validation remain open; this is not full feature coverage.",
       "evidence": [
-        "docs/audits/xrp-robot-autonomous-audit.md",
-        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+        "docs/audits/xrp-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass9-micro.log",
+        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
       ]
     },
     "docs/audits/xrp-robot-autonomous-audit.md": {
@@ -557,6 +560,39 @@
         "ARESLib-Kotlin/build/audit-pass8-micro.log",
         "ARESLib-Kotlin/build/audit-pass8-final-studio.log",
         "ARESLib-Kotlin/build/audit-pass8-final-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_subsystem_control_audit.py": {
+      "sha256": "7d4a6c87102d0ea128afaf97b3615a640d292890777466cb7ab6df29ac9cf6be",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full regression-file review and execution: 16 methods pass in the 101-test suite; the same final methods produce 41 failing assertions against pre-fix source 4026ab29. Fake device counts and output histories verify sampling and prepare-before-write behavior. No physical hardware claim.",
+      "evidence": [
+        "docs/audits/xrp-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass9-micro.log",
+        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemControllerRenderer.kt": {
+      "sha256": "59ef66f5d6f09b21a90949a4759b531bb4a37d74a853de61917fe7fa2be6413a",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Compared emitted basic controller math around lines 300-415 for canonical wrapping/filtering/defaults and bang-bang behavior. Negative-integral-gain and one-sided bang-bang counterparts need direct regressions/fixes; remaining renderer and advanced profile/feedforward sections are not audited.",
+      "evidence": [
+        "docs/audits/xrp-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass9-micro.log",
+        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
+      ]
+    },
+    "docs/audits/xrp-subsystem-control-audit.md": {
+      "sha256": "37a178881dd7007fce894e314017bdac70e235064e437669ee3caa6c9dfd4427",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full authored report checked against source changes, final before/after regressions, trace, candidate/archive identities and observed consumer gate results. Explicitly preserves advanced-feature, Kotlin counterpart and hardware gaps; links verified.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass9-micro.log",
+        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log",
+        "ARESLib-Kotlin/build/audit-pass9-studio.log"
       ]
     }
   }

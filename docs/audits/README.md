@@ -46,7 +46,9 @@ Pass 5 covers [XRP lifecycle, timing, and hardware adapters](xrp-lifecycle-audit
 24 additional tests. Pass 6 covers [deployment and boot recovery](xrp-deployment-audit.md)
 with 18 additional tests. Pass 7 covers [transport and control leases](xrp-transport-audit.md)
 with 18 additional tests. Pass 8 covers [robot lifecycle and autonomous control](xrp-robot-autonomous-audit.md)
-with 23 additional tests. The next passes should cover the remaining MicroPython runtime,
+with 23 additional tests. Pass 9 covers [subsystem control math and sampling](xrp-subsystem-control-audit.md)
+with 16 additional tests; advanced descriptor behavior keeps that source partially reviewed.
+The next passes should cover the remaining MicroPython runtime,
 then logging/transport and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory

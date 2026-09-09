@@ -278,3 +278,10 @@ The [eighth-pass report](audits/xrp-robot-autonomous-audit.md) records final-hea
 waypoint-speed fixes, terminal shutdown, invalid-period/pose rejection, and reduced loop
 work. Finished routines retain leased autonomous mechanism control without silently
 entering teleop. Twenty-three new regressions pass; physical tracking and timing remain open.
+
+## Ninth pass: XRP subsystem control math and sampling
+
+The [ninth-pass report](audits/xrp-subsystem-control-audit.md) records PID stop/reset and
+anti-windup fixes, wrapped/filtered derivatives, signed bang-bang hysteresis, typed target
+validation, and shared raw sensor reads. Sixteen new regressions pass. Advanced profiles,
+feedforward, and descriptor safety contracts remain open; the source is partially reviewed.
