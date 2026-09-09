@@ -104,6 +104,26 @@ ARES Robotics Studio converts field coordinates to canvas coordinates with swapp
 
 Alliance mirroring is a field transform, not a heading-sign change. Apply it at one explicit boundary. Field-centric joystick transforms, path mirroring, vision field poses, and simulator spawn selection must agree on the active alliance. A second mirror or heading negation can look correct on one half of the field and fail on the other.
 
+## Calibrated interpolation keys and work
+
+`InterpolatingTable` accepts finite Double/Float, Byte/Short/Int/Long, BigInteger and
+BigDecimal keys. Invalid calibration keys fail before mutation; invalid or unsupported
+queries return null rather than selecting a potentially active endpoint. Valid out-of-range
+queries clamp to the nearest stored value. Natural ordering defines exact identity:
+Double signed zeros remain distinct and differently scaled, numerically equal decimals
+replace the same entry. Value interpolation and its output validity belong to `Interpolatable`.
+
+Integer differences are formed before floating conversion; unsigned distances cover the full
+signed Long range. Overflowing floating spans are rescaled, and big-number differences use
+decimal division before converting the final ratio to Double. Big-number arithmetic allocates
+and its cost grows with operand precision; it is not a fixed-cost robot-loop primitive.
+
+Ordered calibration entries trade O(N) insertion for one O(log N) query search and avoid
+temporary map entries. Primitive-key arithmetic uses no internal scratch allocation; boxing
+at a caller and construction of interpolated values can still allocate. Calibration mutation
+and reads require one owner, with immutable keys. This table does not validate sensor freshness
+or authorize output merely because a calibrated value exists.
+
 ## Joystick conditioning and snapshot ownership
 
 `InputMath` accepts finite axis observations in [-1, 1], deadbands in [0, 1), and positive
