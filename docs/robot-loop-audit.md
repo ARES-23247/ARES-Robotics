@@ -459,3 +459,11 @@ unknown current before reuse. Primitive bounded storage and stable weighted mean
 sample objects and repeated full sums. Exact microsecond windows, configured temperature
 thresholds, a full-sample oracle and helper allocation measurements cover these changes.
 Persistence recovery, other composite configuration and global retention remain open.
+
+## Thirty-third pass: alert persistence and shutdown
+
+The [alert persistence audit](audits/alert-persistence-audit.md) isolates diagnostics from
+slow/failed storage, preserves initial and latest unsaved occurrence records, retries with
+bounded backoff and reports unsaved alerts. Normal disposal drains and joins accepted writes
+before database closure; failed drains retain retryable state. Global retention, crash
+durability, remaining composite policy and whole-application shutdown remain open.

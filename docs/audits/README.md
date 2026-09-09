@@ -107,7 +107,9 @@ occurrence peaks, an independent oracle and measured detector allocations.
 Pass 32 covers [motor diagnostic evidence and current windows](motor-diagnostic-window-audit.md):
 complete fresh feedback, exact units/time, independent motor updates, bounded stable averaging,
 invalid-input recovery and removal of duplicate temperature evaluation.
-Next are persistence failure recovery and remaining composite configuration semantics,
+Pass 33 covers [alert persistence and shutdown](alert-persistence-audit.md): failure isolation,
+initial/latest occurrence retention, autonomous fair retries, saving status and joined drains.
+Next are remaining composite configuration semantics, CAN/vision domains and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence

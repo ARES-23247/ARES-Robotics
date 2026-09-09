@@ -86,6 +86,9 @@ class AlertEngineService(
 
     private val serviceScope = CoroutineScope(dispatcher + SupervisorJob())
     private val audioNotifier = AlertAudioNotifier()
+    private val persistence = AlertPersistenceWriter(serviceScope, databaseService::insertAlert)
+    val persistenceStatus: StateFlow<AlertPersistenceStatus> = persistence.status
+    @Volatile private var disposed = false
 
     // Active alert state: AlertId -> AlertRecord
     private val _alerts = MutableStateFlow<Map<String, AlertRecord>>(emptyMap())
@@ -158,6 +161,7 @@ class AlertEngineService(
      * Starts the non-blocking telemetry evaluation coroutine collector.
      */
     fun startEngine() {
+        if (disposed) return
         engineJob?.cancel()
 
         val store = nt4ClientService.telemetryStore
@@ -224,14 +228,26 @@ class AlertEngineService(
     }
 
     /**
-     * Final teardown — cancels the process-lifetime [serviceScope] (which also cancels
-     * [engineJob] and any in-flight audible-alert coroutines). Use from
-     * [com.ares.analytics.di.ServiceRegistry] shutdown; [stop] is for pause/restart since
+     * Immediate teardown — cancels [serviceScope], queued writes, [engineJob] and audio.
+     * Normal application owners must use [disposeAndJoin] before closing storage.
+     * This method is for emergency/disposable owners; [stop] supports pause/restart since
      * it leaves [serviceScope] reusable.
      */
     fun dispose() {
+        disposed = true
         engineJob?.cancel()
+        persistence.close()
         serviceScope.cancel()
+    }
+
+    /** Stop evaluation, drain accepted alert updates, then join before the database closes. */
+    suspend fun disposeAndJoin(timeoutMs: Long = 5_000L): Boolean {
+        require(timeoutMs > 0)
+        transitionMutex.withLock { disposed = true }
+        engineJob?.cancelAndJoin()
+        if (!persistence.finish(timeoutMs)) return false
+        serviceScope.coroutineContext[Job]?.cancelAndJoin()
+        return true
     }
 
     /**
@@ -350,7 +366,7 @@ class AlertEngineService(
             key in TelemetryMetricCatalog.LOOP_TIME.keys
 
     /**
-     * Transition one rule while the source collector holds transitionMutex, including persistence.
+     * Transition one rule under transitionMutex, then enqueue persistence without waiting for IO.
      */
     private suspend fun evaluateRuleState(
         key: String,
@@ -375,11 +391,7 @@ class AlertEngineService(
         if (outcome.shouldBeep && evaluationTargetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()) triggerAudibleAlert()
     }
 
-    private suspend fun persistAlert(alert: AlertRecord) {
-        if (alert.sessionId != "live-telemetry") {
-            databaseService.insertAlert(alert)
-        }
-    }
+    private fun persistAlert(alert: AlertRecord) = persistence.submit(alert)
 
     /**
      * Marks an active alert as triaged/acknowledged by the driver or pit crew.
@@ -388,6 +400,7 @@ class AlertEngineService(
      */
     suspend fun triageAlert(alertId: String) {
         transitionMutex.withLock {
+            if (disposed) return@withLock
             val triaged = commitAlertTransition(_alerts) { current ->
                 val alert = current[alertId] ?: return@commitAlertTransition null
                 AlertOutcome(alert = alert.copy(triaged = true), shouldBeep = false)

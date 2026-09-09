@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "c2feda1a41d9631bea3ad9398a0e0ba3f9de14ad055a1c86f86426f34938e001",
+      "sha256": "ca855d2e940b4774bbf45dba143fb8e1baed7af796ed1e29ed914d3282b50730",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -483,7 +483,11 @@
         "ARESLib-Kotlin/build/audit-pass31-policy.log",
         "docs/audits/motor-diagnostic-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass32-studio.log",
-        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+        "ARESLib-Kotlin/build/audit-pass32-policy.log",
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2111,10 +2115,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "f468f5c8d247bfa4c30628c8be389b7d6d0f6f4080955257f9272e3000167ae7",
+      "sha256": "864461095e00d29842abaaed806248d4037294c52d35d83167393f4a704635a8",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open. Pass 31 replaces unbounded/rescanned loop queues with fixed-state per-recording/per-source detectors, preserves actual alias rule keys, rejects invalid periods and reuses the existing source identity. Configured temporal-policy/peak semantics, other composites and persistence remain open. Pass 32 motor routes require complete fresh valid evidence, preserve unknown faults, use bounded primitive averaging and evaluate configured temperature only on its source update. Synthetic motor policy configuration, other composites, failure recovery and global retention remain open.",
+      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open. Pass 31 replaces unbounded/rescanned loop queues with fixed-state per-recording/per-source detectors, preserves actual alias rule keys, rejects invalid periods and reuses the existing source identity. Configured temporal-policy/peak semantics, other composites and persistence remain open. Pass 32 motor routes require complete fresh valid evidence, preserve unknown faults, use bounded primitive averaging and evaluate configured temperature only on its source update. Synthetic motor policy configuration, other composites, failure recovery and global retention remain open. Pass 33 separates failure-prone persistence from diagnostic transitions, exposes pending/failure status, queues initial/latest records and supports joined/failed disposal with terminal restart rejection. Remaining composites/configuration, concurrent broader lifecycle, global retention and crash durability remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
@@ -2128,7 +2132,11 @@
         "ARESLib-Kotlin/build/audit-pass31-policy.log",
         "docs/audits/motor-diagnostic-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass32-studio.log",
-        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+        "ARESLib-Kotlin/build/audit-pass32-policy.log",
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
@@ -2243,10 +2251,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "6ba8ecd8531a8db2f4aa07b5aad5b8137a9150c5c2bb90a46e87108ed46339d4",
+      "sha256": "1a965a5115017ad926b95875f4cf37c53e6c1409cdd39bacb60eaa0c4b73a822",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2257,7 +2265,11 @@
         "ARESLib-Kotlin/build/audit-pass31-policy.log",
         "docs/audits/motor-diagnostic-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass32-studio.log",
-        "ARESLib-Kotlin/build/audit-pass32-policy.log"
+        "ARESLib-Kotlin/build/audit-pass32-policy.log",
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2384,6 +2396,90 @@
         "docs/audits/motor-diagnostic-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass32-studio.log",
         "ARESLib-Kotlin/build/audit-pass32-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertPersistenceWriter.kt": {
+      "sha256": "df565cba99f2b00676b9c404622b7753f17d8f54ab6fa1c40c8b16fb4f825c2a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire writer/status reviewed: single coroutine, initial/latest occurrence snapshots, in-flight completion identity, coalesced wakeups, fair retries with capped backoff, cancellation, failed drains and unsaved shutdown state. All new writer methods and full gate passed; memory is not crash durable or globally bounded.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertPersistenceWriterTest.kt": {
+      "sha256": "1ddba7d2498ad174af4c3fdff8b167cbc27140e03626126de71c2e72584bc019",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 12-method virtual-time fixture reviewed and executed: suspended IO, coalescing, autonomous retry/backoff/fairness, cancellation, drain/close recovery and idle wakeup.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertPersistenceAuditTest.kt": {
+      "sha256": "5ec1f7c9f02b4fbe1ca54bfe09acdc52ea1d1164f05707604307d78054886854",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method integration fixture reviewed and executed. Actual TelemetryStore, injected database failures and cancellable suspended Mockito IO verify continued diagnostics, latest state, target resets, pause and joined/failed disposal.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/AlertPersistenceRenderTest.kt": {
+      "sha256": "8978f359cd229b5b8e11c75129c7637bc83d63dc303275b92f9b4ff05a5f8705",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire headless render fixture reviewed and executed. Four opaque actual AlertPanel scenes rendered and inspected for saving/retrying/stopped/saved states. This is not a visible app/window assertion.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt": {
+      "sha256": "cf022b601ceb78e8eb5a0bcea28367c5070ababd06ff3288db16c6af0b9503ff",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Only alert drain integration and conditional DuckDB closure reviewed. Full registry shutdown was not executed (0/66 covered branches); changed code compiled and corresponding engine drain behavior has direct integration tests. Other lifecycle/dependency paths remain open.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/AlertPanel.kt": {
+      "sha256": "d73f2eefc61a3861cafb95ce08b16baa33f981fd665d308bc7c59a1da49ce5c0",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Only persistence status collection/warnings and honest empty-alert message reviewed and rendered. Active/resolved item rendering, pulse behavior, sorting and controls remain open.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
+      ]
+    },
+    "docs/audits/alert-persistence-audit.md": {
+      "sha256": "b49c44d0ecb2debf23fbdcb7997aa6895249723fa2abb9e480f1191b15a12c40",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 33 report reviewed against reproduced baseline, focused/full tests, coverage, inspected headless snapshots and policy/inventory. Registry runtime coverage, global retention and crash durability are explicitly limited.",
+      "evidence": [
+        "docs/audits/alert-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass33-studio.log",
+        "ARESLib-Kotlin/build/audit-pass33-policy.log"
       ]
     }
   }
