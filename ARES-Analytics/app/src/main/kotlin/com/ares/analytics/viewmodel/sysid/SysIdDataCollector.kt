@@ -1,5 +1,6 @@
 package com.ares.analytics.viewmodel.sysid
 
+import com.ares.analytics.service.SysIdLogParser
 import com.ares.analytics.service.AlignedDataRow
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.AutoTunerService

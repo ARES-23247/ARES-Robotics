@@ -340,3 +340,10 @@ The [seventeenth-pass report](audits/sysid-analysis-audit.md) records identifiab
 regression, finite gain/R-squared arithmetic, microsecond channel matching, negative steps,
 Nyquist and spectral scaling, and one background fit with guarded publication. Twenty-one
 new regression methods pass. The full AutoTuner model/proposal workflow remains open.
+
+## Eighteenth pass: AutoTuner inputs and proposal contracts
+
+The [eighteenth-pass report](audits/autotuner-input-audit.md) records shared sample
+preparation/import parsing, timestamp/median/range checks, removal of incompatible
+position-controller mappings and unbound gravity/custom proposals, and canonical approval
+revalidation. Step-response models, proposal delivery and simulation fidelity remain open.

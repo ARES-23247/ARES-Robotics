@@ -1,6 +1,5 @@
-package com.ares.analytics.viewmodel.sysid
+package com.ares.analytics.service
 
-import com.ares.analytics.service.AlignedDataRow
 import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import kotlinx.serialization.json.*
 import java.util.TreeMap
@@ -88,10 +87,10 @@ internal object SysIdLogParser {
                 else finite(accelerationValue.jsonPrimitive.doubleOrNull) ?: return null
             return Sample(time, voltage, velocity, acceleration)
         }
-        val time = timestamp((element["TimestampMs"] ?: element["timestamp"] ?: element["time"])?.jsonPrimitive?.doubleOrNull) ?: return null
+        val time = timestamp((element["timestampMs"] ?: element["TimestampMs"] ?: element["timestamp"] ?: element["time"])?.jsonPrimitive?.doubleOrNull) ?: return null
         val voltage = finite((element["voltage"] ?: element["Voltage"] ?: element["Drive/Voltage"])?.jsonPrimitive?.doubleOrNull) ?: return null
-        val velocity = finite((element["velocity"] ?: element["Velocity"] ?: element["Drive/Velocity"])?.jsonPrimitive?.doubleOrNull) ?: return null
-        val accelerationValue = element["acceleration"] ?: element["Acceleration"] ?: element["Drive/Acceleration"]
+        val velocity = finite((element["velocity"] ?: element["Velocity"] ?: element["speed"] ?: element["Drive/Velocity"])?.jsonPrimitive?.doubleOrNull) ?: return null
+        val accelerationValue = element["accel"] ?: element["acceleration"] ?: element["Acceleration"] ?: element["Drive/Acceleration"]
         val acceleration = if (accelerationValue == null || accelerationValue is JsonNull) null
             else finite(accelerationValue.jsonPrimitive.doubleOrNull) ?: return null
         return Sample(time, voltage, velocity, acceleration)

@@ -458,13 +458,14 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "7af2aec416a039e9a93c4e46374fc1518082a93ffbf69282169defe6aa794b13",
+      "sha256": "c84f01077d111973bbf87e15fdc8638ceb437e34eb6a6479f68c441c4787cada",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full accounting/work-queue document reviewed through pass 17. Records remaining AutoTuner model/import/proposal, transport and physical work. Shared guidance and links pass; no repository-wide or hardware completion claim.",
+      "scope": "Full accounting and work-queue document reviewed through pass 18. Records model, proposal delivery, simulation, transport and physical work still open; no repository-wide completion claim.",
       "evidence": [
-        "docs/audits/sysid-analysis-audit.md",
-        "ARESLib-Kotlin/build/audit-pass17-policy.log"
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass18-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -853,14 +854,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
-      "sha256": "15f7895e3b75962ebcbb0bcc12156c309a27571fa75699b33492a399c7edaded",
+      "sha256": "b7c3c24243d8fe15d5c6fadf6f795f1e4a88d511cd8bfb13f763ae7d52d20a17",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 15-17 cover imports, complete bounded live rows and previews, snapshot ownership, source/mechanism/status/stop isolation, one background motor fit and cancellation/generation-checked publication. Four new deterministic queued/computed-result boundaries pass. Geometric dispatch and stronger request/acknowledgement provenance over lossy transport remain open. Final Studio gate: 118/121 executable lines and 111/132 branches exercised.",
+      "scope": "Passes 15-17 complete bounded collector, snapshot, stop and background-result checks; pass 18 only updates the shared parser import. Geometric dispatch and request/acknowledgement provenance over lossy transport remain open.",
       "evidence": [
-        "docs/audits/sysid-analysis-audit.md",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
       ]
     },
     "docs/audits/studio-calibration-audit.md": {
@@ -873,25 +874,15 @@
         "ARESLib-Kotlin/build/audit-pass14-studio.log"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogParser.kt": {
-      "sha256": "b368dd82efb45fca1f6fc3aed5a9fc0f25170513c2cb929742644dc38ef3daa0",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Full JSONL/CSV parser review. 21 import methods pass; 97/97 executable lines and 151/204 branches exercised. Explicit units/timestamps, finite numeric fields, positional packed data, quoted CSV, missing versus zero acceleration, chronological output and duplicate handling covered. Integer-millisecond model and single-record CSV limitations are documented; no every-input claim.",
-      "evidence": [
-        "docs/audits/sysid-log-import-audit.md",
-        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
-      ]
-    },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogImportAuditTest.kt": {
-      "sha256": "7f8186482ada9547df863bec7760f4a6f100650c3a4003492c78db278cf2ef42",
+      "sha256": "112dce863bf93b47e2b78b7d4155a358bded604e2df1c3a267dfedea44796776",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Previously fully reviewed 21-method parser suite; pass 17 only removes the redundant collector constructor argument. Existing import validation and owned resource boundaries remain applicable; full Studio execution is required after this integration change. All 21 methods passed in the final Studio gate.",
+      "scope": "Full prior 21-method parser suite retained, with an import change for the shared service parser. All 21 methods pass in focused integration validation; no timing, unit or malformed-input assertions removed.",
       "evidence": [
-        "docs/audits/sysid-analysis-audit.md",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
       ]
     },
     "docs/audits/sysid-log-import-audit.md": {
@@ -946,25 +937,25 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdService.kt": {
-      "sha256": "6dfda5215b869756372c58062bbafadf4c6925e9fd5c0a23041fe9f80034fc48",
+      "sha256": "f6909e107ab9cb91d5742932920d7f0f22e6364e9c57ed6b975f5596c5f7d176",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full service review: normalized compact SVD and rank rejection, finite physical gain and R-squared arithmetic, microsecond nearest-neighbor alignment, chronological signed step heuristic, normalized Hann FFT with DC/Nyquist endpoints and peak selection. Analytic extreme/ordinary/rank-deficient fits, paired sub-millisecond database samples, inclusive 50 ms bounds, negative steps and FFT boundary tests pass. Sampling uniformity and physical damping interpretation remain caller/model limitations. Final Studio gate: 179/183 executable lines and 148/202 branches exercised.",
+      "scope": "Full service review from pass 17 retained; pass 18 delegates input normalization to the shared owned snapshot and exposes an internal prepared-analysis path. Analytic regression/FFT/alignment tests pass after integration. Rank/numeric behavior is unchanged; caller sampling and transient-heuristic limitations remain explicit.",
       "evidence": [
-        "docs/audits/sysid-analysis-audit.md",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoTunerService.kt": {
-      "sha256": "78514289fe78d697dcc587b64dd1caa9f6d5e98ffb8671729cced177e76c8df6",
+      "sha256": "0f8f5005eabcee187d61039fce29abfe2ea0dd496e9e2ecc2bc382e2936f781d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 17 separates pure single-fit computation from recommendation publication, clears stale recommendations for insufficient samples, and preserves the public synchronous wrapper. Step-response estimation, quadratic settling search, repeated data preparation, separate log parser, safety-quality arithmetic and proposal/topic semantics need further audit before completion.",
+      "scope": "Passes 17-18 cover one pure fit, shared preparation/parsing, stale-file recommendation clearing, dimensionally correct feedforward-only drivetrain proposals, supported flywheel mapping, unsupported gravity/custom rejection and canonical proposal value/envelope revalidation. Duplicate direction checks removed. Step-response/IMC math, model confidence, inbox delivery and simulation/import provenance remain open.",
       "evidence": [
-        "docs/audits/sysid-analysis-audit.md",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
@@ -1008,6 +999,106 @@
       "evidence": [
         "docs/audits/sysid-analysis-audit.md",
         "ARESLib-Kotlin/build/audit-pass17-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdLogParser.kt": {
+      "sha256": "0c2444b29e592dcb994344c14a56498089ce54e0642e4b214a9a6c6e56bb6c32",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Previously fully reviewed parser moved from viewmodel to service to serve both public import paths. Adds former AutoTuner timestampMs/accel/speed aliases. All 21 import regressions plus public AutoTuner unit/timing/alias tests pass; explicit zero and missing acceleration remain distinct. Single-record CSV and integer-millisecond limitations remain. Final Studio gate exercised 97/97 executable lines and 159/210 branches.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/PreparedSysIdData.kt": {
+      "sha256": "947ed384e0273ddfc82ef3b2595d574f486fa09df1011557a28dade53272715d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full preparation/snapshot review. Finite numeric fields, supported timestamp domain and rejected-input counts share one owned chronological list across fitter and quality policy. Already ordered data avoids sorting; reversed input, caller ownership, empty data and timestamp boundaries tested. Final Studio gate exercised 21/21 executable lines and 28/28 branches.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoTuningSafetyPolicy.kt": {
+      "sha256": "34fbb11c64f60f1788d25a343536e28be40c9957c586041825fdecdfb1c91103",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full quality/envelope review. Finite prepared inputs, invalid timestamp rejection, even/odd interval median, duplicate detection, range overflow, duration/gap/direction thresholds and bounded scores assessed. Primitive interval storage and one extrema pass remove repeated work. Canonical envelopes govern proposal revalidation, not measured physical robot safety; gravity/custom mappings remain unsupported by AutoTuner. Final Studio gate exercised 104/105 executable lines and 113/140 branches.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTunerInputAuditTest.kt": {
+      "sha256": "b0457dd92618825bddb803cd41971badf305d51b960448f4ef3dd134e71cf5d5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full 19-method audit test review and execution, including direct invalid numeric/time contamination and reverse-only flywheel cases. Analytic plant fixture; timestamp/range/median/finite-ratio boundaries, snapshot ownership, imports, stale state, declaration dimensionality and canonical approval validation. Owns temporary DB/client/import resources; no robot output or physical timing claimed.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-process-focused.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoldenAutoTuningRegressionTest.kt": {
+      "sha256": "b109bbd7a87d076a72a9ea98aee49d05f15a8786d309576545d0e482bec3c7ab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-method test review and execution. Both known-plant golden gains and quality checks remain; LINEAR now expects three dimensionally valid feedforward keys, FLYWHEEL keeps six keys. Adds owned client/database/import cleanup.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTuningDigitalTwinTest.kt": {
+      "sha256": "f9da8baf27cdf2abf474295672c6d600f0ceca097de0eb2a7eff237a3904d0db",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-method test review and execution. All 36 Monte Carlo scenarios still run with unchanged recovery/stability thresholds. Eighteen unsupported mechanism cases must reject proposals; the prior 28/36 acceptance fraction applies to the eighteen supported cases. Determinism, envelope recheck and sparse/gapped inputs remain tested. Adds owned client/database cleanup; does not establish physical simulation fidelity.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/BoundedProcess.kt": {
+      "sha256": "3f5d3ba1971ceea2c33f57cd0444f54a013c09210bdd3d347f379dacce28bbfe",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped ownership review after a failing Windows timeout test: observer receives the owned OS process after launch and inside cleanup protection; timeout duration is unchanged. Deadline, cancellation and observer-exception cleanup pass. Process-tree handling, start/join deadlines and bounded output capture still need a full independent audit.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-process-focused.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/WindowsProcessAdapterTest.kt": {
+      "sha256": "db7699c9cef99a7f85e53119346f104f03aa7b85677c9478ddc642444fb955a6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method Windows integration test review and execution. Replaces startup-dependent PID-file polling with the actual launched Process handle for deadline/cancellation termination assertions. Adds observer-exception cleanup. Preserves literal Authenticode filename/signature validation and owned temporary directory cleanup.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-process-focused.log",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+      ]
+    },
+    "docs/audits/autotuner-input-audit.md": {
+      "sha256": "1a90e2d90b7e2a999d2492bce7a1cf992e13101d4cb7e1edf9dddef948b1fb54",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report checked against initial/final XML, Kover counters, source/consumer contracts and policy logs. Records corrected unit mappings, unsupported models, preserved Monte Carlo recovery gates, Windows PID-file failure and handle-based correction, and remaining model/process/physical limitations.",
+      "evidence": [
+        "docs/audits/autotuner-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass18-policy.log"
       ]
     }
   }

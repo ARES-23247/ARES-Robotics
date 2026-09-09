@@ -1,5 +1,7 @@
 package com.ares.analytics.viewmodel.sysid
 
+import com.ares.analytics.service.SysIdLogParser
+
 import com.ares.analytics.service.*
 import com.ares.analytics.viewmodel.SysIdState
 import kotlinx.coroutines.flow.MutableStateFlow

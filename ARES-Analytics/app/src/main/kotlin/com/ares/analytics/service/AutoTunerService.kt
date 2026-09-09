@@ -3,13 +3,8 @@ package com.ares.analytics.service
 import com.areslib.control.assist.SysIdMechanism
 import com.ares.analytics.service.tuning.TuningParameterKeys
 import com.ares.analytics.shared.models.CalculatedSummary
-import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import com.ares.analytics.service.tuning.ExternalTuningProposal
 import com.ares.analytics.service.tuning.TuningProposalInbox
@@ -111,43 +106,38 @@ class AutoTunerService(
         samples: List<AlignedDataRow>,
         source: String = "live-nt4"
     ): SampleAnalysis {
-        val dataQuality = AutoTuningSafetyPolicy.assessData(mechanism, samples)
-        val finite = samples.asSequence()
-            .filter { it.timestampMs in 0L..MAX_SUPPORTED_TIMESTAMP_MS &&
-                it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite() }
-            .sortedBy { it.timestampMs }
-            .toList()
-        val summary = sysIdService.analyzeRawData(finite)
+        val prepared = PreparedSysIdData.from(samples)
+        val dataQuality = AutoTuningSafetyPolicy.assessPreparedData(mechanism, prepared)
+        val finite = prepared.rows
+        val summary = sysIdService.analyzePreparedData(prepared)
         if (finite.size < MIN_RECOMMENDATION_SAMPLES) return SampleAnalysis(summary, null)
         val metrics = identifyStepResponse(finite)
         val gains = calculateImcGains(metrics)
         val envelope = AutoTuningSafetyPolicy.envelopeFor(mechanism)
         val envelopeViolations = envelope.violations(summary.kS, summary.kV, summary.kA, gains)
+        val topicValues = buildTopicValues(mechanism, summary.kS, summary.kV, summary.kA, gains)
         val warnings = dataQuality.warnings.toMutableList()
+        if (topicValues.isEmpty()) warnings += "This mechanism requires a dedicated model and declaration mapping; gravity or custom mechanism gains cannot target drive/flywheel parameters."
+        if (mechanism == SysIdMechanism.LINEAR || mechanism == SysIdMechanism.ANGULAR) {
+            warnings += "Feedback gains model voltage-to-velocity control; drivetrain proposals contain only feedforward coefficients."
+        }
         warnings += dataQuality.blockers
 
         if (summary.rSquared < MIN_REVIEW_R2) warnings += "Feedforward fit is below the minimum R² of $MIN_REVIEW_R2."
         if (!metrics.isUsable) warnings += "No clean step response was found; feedback gains were not recommended."
         if (summary.kV <= 0.0 || summary.kA < 0.0) warnings += "Identified kV/kA signs are physically implausible."
-        val hasBothDirections = finite.any { it.velocity > MIN_DIRECTION_VELOCITY } &&
-            finite.any { it.velocity < -MIN_DIRECTION_VELOCITY }
-        if (mechanism != SysIdMechanism.FLYWHEEL && !hasBothDirections) {
-            warnings += "The dataset does not cover both directions."
-        }
-
         warnings += envelopeViolations
         val confidence = (0.60 * summary.rSquared.coerceIn(0.0, 1.0) +
             0.20 * metrics.modelFit.coerceIn(0.0, 1.0) + 0.20 * dataQuality.score).coerceIn(0.0, 1.0)
         val physicallyValid = summary.kS.isFinite() && summary.kV.isFinite() && summary.kA.isFinite() &&
             summary.kV > 0.0 && summary.kA >= 0.0
         val quality = when {
-            !dataQuality.passed || envelopeViolations.isNotEmpty() || !metrics.isUsable ||
+            topicValues.isEmpty() || !dataQuality.passed || envelopeViolations.isNotEmpty() || !metrics.isUsable ||
                 !physicallyValid || summary.rSquared < MIN_REJECT_R2 -> RecommendationQuality.REJECTED
             confidence >= READY_CONFIDENCE && metrics.isUsable -> RecommendationQuality.READY
             else -> RecommendationQuality.REVIEW_REQUIRED
         }
 
-        val topicValues = buildTopicValues(mechanism, summary.kS, summary.kV, summary.kA, gains)
         val recommendation = TuningRecommendation(
             mechanism = mechanism,
             mechanismName = mechanism.name.lowercase(),
@@ -183,8 +173,9 @@ class AutoTunerService(
 
     /** Parses structured JSONL or CSV exports. Binary WPILOG files must first use the existing decoder. */
     fun analyzeLogFile(logFile: File, mechanism: SysIdMechanism = SysIdMechanism.LINEAR): TuningRecommendation? {
+        publishRecommendation(null)
         if (!logFile.isFile || logFile.length() <= 0L || logFile.extension.equals("wpilog", true)) return null
-        val rows = parseStructuredLog(logFile.readLines())
+        val rows = SysIdLogParser.parse(logFile.readText())
         return analyzeSamples(mechanism, rows, logFile.name)
     }
 
@@ -196,11 +187,13 @@ class AutoTunerService(
             )
             return
         }
-        val envelopeViolations = rec.safetyEnvelope.violations(
+        val envelopeViolations = AutoTuningSafetyPolicy.envelopeFor(rec.mechanism).violations(
             rec.recommendedkS, rec.recommendedkV, rec.recommendedkA, rec.recommendedGains
         )
         if (rec.quality == RecommendationQuality.REJECTED || !rec.dataQuality.passed ||
-            envelopeViolations.isNotEmpty() || rec.topicValues.isEmpty()
+            envelopeViolations.isNotEmpty() || rec.topicValues.isEmpty() ||
+            rec.topicValues != buildTopicValues(rec.mechanism, rec.recommendedkS, rec.recommendedkV, rec.recommendedkA, rec.recommendedGains) ||
+            rec.confidence !in 0.0..1.0 || rec.rSquared !in MIN_REJECT_R2..1.0 || !rec.stepMetrics.isUsable
         ) {
             _applyState.value = TuningApplyState(TuningApplyPhase.FAILED, "Rejected recommendations cannot be applied.")
             return
@@ -255,23 +248,17 @@ class AutoTunerService(
         kA: Double,
         gains: AutoTunerPIDFGains
     ): Map<String, Double> = when (mechanism) {
-        SysIdMechanism.LINEAR, SysIdMechanism.ELEVATOR -> linkedMapOf(
+        SysIdMechanism.LINEAR -> linkedMapOf(
             TuningParameterKeys.DRIVE_FEEDFORWARD_KS to kS,
             TuningParameterKeys.DRIVE_FEEDFORWARD_KV to kV,
             TuningParameterKeys.DRIVE_FEEDFORWARD_KA to kA,
-            TuningParameterKeys.DRIVE_TRANSLATION_KP to gains.kP,
-            TuningParameterKeys.DRIVE_TRANSLATION_KI to gains.kI,
-            TuningParameterKeys.DRIVE_TRANSLATION_KD to gains.kD
         )
-        SysIdMechanism.ANGULAR, SysIdMechanism.ARM -> linkedMapOf(
+        SysIdMechanism.ANGULAR -> linkedMapOf(
             TuningParameterKeys.DRIVE_ANGULAR_FEEDFORWARD_KS to kS,
             TuningParameterKeys.DRIVE_ANGULAR_FEEDFORWARD_KV to kV,
             TuningParameterKeys.DRIVE_ANGULAR_FEEDFORWARD_KA to kA,
-            TuningParameterKeys.DRIVE_ROTATION_KP to gains.kP,
-            TuningParameterKeys.DRIVE_ROTATION_KI to gains.kI,
-            TuningParameterKeys.DRIVE_ROTATION_KD to gains.kD
         )
-        SysIdMechanism.FLYWHEEL, SysIdMechanism.CUSTOM -> linkedMapOf(
+        SysIdMechanism.FLYWHEEL -> linkedMapOf(
             TuningParameterKeys.FLYWHEEL_FEEDFORWARD_KS to kS,
             TuningParameterKeys.FLYWHEEL_FEEDFORWARD_KV to kV,
             TuningParameterKeys.FLYWHEEL_FEEDFORWARD_KA to kA,
@@ -279,6 +266,7 @@ class AutoTunerService(
             TuningParameterKeys.FLYWHEEL_VELOCITY_KI to gains.kI,
             TuningParameterKeys.FLYWHEEL_VELOCITY_KD to gains.kD
         )
+        SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM -> emptyMap()
     }
 
     private fun calculateImcGains(metrics: StepResponseMetrics): AutoTunerPIDFGains {
@@ -371,44 +359,8 @@ class AutoTunerService(
         )
     }
 
-    private fun parseStructuredLog(lines: List<String>): List<AlignedDataRow> {
-        val nonBlank = lines.map { it.trim() }.filter { it.isNotEmpty() }
-        if (nonBlank.isEmpty()) return emptyList()
-        if (nonBlank.first().startsWith("{")) {
-            return nonBlank.mapNotNull { line ->
-                runCatching {
-                    val obj = Json.parseToJsonElement(line).jsonObject
-                    val timestamp = sequenceOf("timestampMs", "TimestampMs", "timestamp", "time")
-                        .mapNotNull { obj[it]?.jsonPrimitive?.doubleOrNull }.firstOrNull()?.toLong() ?: return@runCatching null
-                    val voltage = sequenceOf("voltage", "Voltage", "Drive/Voltage")
-                        .mapNotNull { obj[it]?.jsonPrimitive?.doubleOrNull }.firstOrNull() ?: return@runCatching null
-                    val velocity = sequenceOf("velocity", "Velocity", "speed", "Drive/Velocity")
-                        .mapNotNull { obj[it]?.jsonPrimitive?.doubleOrNull }.firstOrNull() ?: return@runCatching null
-                    val accel = sequenceOf("accel", "acceleration", "Acceleration", "Drive/Acceleration")
-                        .mapNotNull { obj[it]?.jsonPrimitive?.doubleOrNull }.firstOrNull() ?: 0.0
-                    AlignedDataRow(timestamp, voltage, velocity, accel)
-                }.getOrNull()
-            }
-        }
-        val header = nonBlank.first().split(',').map { it.trim().lowercase() }
-        val timeIdx = header.indexOfFirst { it.contains("time") }
-        val voltageIdx = header.indexOfFirst { it.contains("volt") }
-        val velocityIdx = header.indexOfFirst { it.contains("vel") || it.contains("speed") }
-        val accelIdx = header.indexOfFirst { it.contains("accel") }
-        if (voltageIdx < 0 || velocityIdx < 0) return emptyList()
-        return nonBlank.drop(1).mapIndexedNotNull { index, line ->
-            val values = line.split(',').map { it.trim().removeSurrounding("\"") }
-            val voltage = values.getOrNull(voltageIdx)?.toDoubleOrNull() ?: return@mapIndexedNotNull null
-            val velocity = values.getOrNull(velocityIdx)?.toDoubleOrNull() ?: return@mapIndexedNotNull null
-            val accel = values.getOrNull(accelIdx)?.toDoubleOrNull() ?: 0.0
-            val timestamp = values.getOrNull(timeIdx)?.toDoubleOrNull()?.toLong() ?: index.toLong()
-            AlignedDataRow(timestamp, voltage, velocity, accel)
-        }
-    }
-
     companion object {
         private const val MIN_RECOMMENDATION_SAMPLES = 20
-        private const val MIN_DIRECTION_VELOCITY = 0.05
         private const val MIN_STEP_VOLTS = 1.0
         private const val MIN_REVIEW_R2 = 0.70
         private const val MIN_REJECT_R2 = 0.45

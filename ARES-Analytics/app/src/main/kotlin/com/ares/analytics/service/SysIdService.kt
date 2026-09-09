@@ -1,7 +1,6 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.CalculatedSummary
-import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import com.ares.analytics.shared.models.TransientClassification
 import org.apache.commons.math3.transform.DftNormalization
 import org.apache.commons.math3.transform.FastFourierTransformer
@@ -125,10 +124,11 @@ class SysIdService(private val databaseService: DatabaseService) {
         return analyzeRawData(alignedData)
     }
 
-    fun analyzeRawData(alignedData: List<AlignedDataRow>): CalculatedSummary {
-        val finiteData = alignedData.filter {
-            it.timestampMs in 0L..MAX_SUPPORTED_TIMESTAMP_MS && it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite()
-        }.sortedBy { it.timestampMs }
+    fun analyzeRawData(alignedData: List<AlignedDataRow>): CalculatedSummary =
+        analyzePreparedData(PreparedSysIdData.from(alignedData))
+
+    internal fun analyzePreparedData(prepared: PreparedSysIdData): CalculatedSummary {
+        val finiteData = prepared.rows
         val validData = finiteData.filter { abs(it.velocity) > MIN_SYSID_VELOCITY }
         if (validData.size < 10) {
             return CalculatedSummary()
