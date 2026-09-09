@@ -93,6 +93,7 @@ internal object AlertRuleConfiguration {
                 throw InvalidRules("Rule $row has a nonfinite bound.")
             if (minimum != null && maximum != null && minimum > maximum) throw InvalidRules("Rule $row has reversed bounds.")
             if (!keys.add(key)) throw InvalidRules("Rule $row duplicates a normalized topic key.")
+            AlertRuleSemantics.configurationProblem(key, rule)?.let { throw InvalidRules("Rule $row: $it") }
         }
         return rules
     }

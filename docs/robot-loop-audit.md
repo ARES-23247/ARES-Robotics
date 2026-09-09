@@ -490,3 +490,11 @@ misspelled threshold files before registration, bounds reads and rule counts, pr
 files during initialization races and reports fallback to built-in rules. Filesystem failures
 no longer abort engine startup. Specialized loop/motor policy, cross-policy consistency and
 crash durability remain open; headless warning rendering does not establish a visible window.
+
+## Thirty-seventh pass: diagnostic rule policy
+
+The [diagnostic policy audit](audits/diagnostic-rule-policy-audit.md) aligns derived motor
+decisions with configured bounds, honors disabled loop sources, rejects unsupported temporal
+settings visibly and separates locally derived diagnoses from raw telemetry. Loop records retain
+configured source keys, and ordinary evaluation reuses topic normalization. The fixed detector
+parameters are unchanged; arbitrary temporal customization requires a separate policy contract.

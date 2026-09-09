@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "6a2fa823c9841c6bd19680b41a9e105c039959bf8fee9e98f396222e1fce463f",
+      "sha256": "f677e9647ccfad106d12671383f1a74568f0e878bb6e115bc4ee3d2ff13dd74c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -503,7 +503,12 @@
         "ARESLib-Kotlin/build/audit-pass36-before.log",
         "ARESLib-Kotlin/build/audit-pass36-focused.log",
         "ARESLib-Kotlin/build/audit-pass36-studio.log",
-        "ARESLib-Kotlin/build/audit-pass36-policy.log"
+        "ARESLib-Kotlin/build/audit-pass36-policy.log",
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2131,10 +2136,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "c01acee6f40814493997610b9b4eb4e77cf439bcdd077fd18ef805679e871fca",
+      "sha256": "fe9aae04bacbdf4768b95bd223c276ae50ffe3f6424eda88f8ce622d1f826422",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed scopes through pass 34: occurrence/peak/CAS transitions, source epochs/order, bounded loop and motor evidence, field freshness/units, persistence retry/drain integration, and independent valid CAN/I2C/vision scalar evaluation. Pass 34 removes duplicate hard-coded evaluations, value-based percentage guessing and the entire recent-value cache/scans while preserving configured keys and custom topics. Remaining scopes: loop/motor configuration semantics, platform thresholds, concurrent lifecycle, global retention, crash durability and full-file contract review. Pass 35 serializes suspending platform configuration with evaluation, preserves alert evidence, ignores terminal configuration and rejects negative battery samples while keeping zero valid. Remaining platform work concerns transport/session context and immutable historical policy identity; loop/motor overrides and general rule validation remain open. Pass 36 replaces ad hoc file IO with validated all-or-default loading and exposes an immutable startup warning. Specialized configuration, context ownership, concurrent lifecycle and global retention remain open.",
+      "scope": "Reviewed scopes through pass 34: occurrence/peak/CAS transitions, source epochs/order, bounded loop and motor evidence, field freshness/units, persistence retry/drain integration, and independent valid CAN/I2C/vision scalar evaluation. Pass 34 removes duplicate hard-coded evaluations, value-based percentage guessing and the entire recent-value cache/scans while preserving configured keys and custom topics. Remaining scopes: loop/motor configuration semantics, platform thresholds, concurrent lifecycle, global retention, crash durability and full-file contract review. Pass 35 serializes suspending platform configuration with evaluation, preserves alert evidence, ignores terminal configuration and rejects negative battery samples while keeping zero valid. Remaining platform work concerns transport/session context and immutable historical policy identity; loop/motor overrides and general rule validation remain open. Pass 36 replaces ad hoc file IO with validated all-or-default loading and exposes an immutable startup warning. Specialized configuration, context ownership, concurrent lifecycle and global retention remain open. Pass 37 shares scalar comparison with derived motor values, excludes raw telemetry from twelve locally derived keys, honors loop disabling/alias precedence and configured keys, and reuses normalized topics. Temporal/motor detector parameters remain fixed; platform consistency, lifecycle, retention, audio and transport ownership remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
@@ -2168,7 +2173,12 @@
         "ARESLib-Kotlin/build/audit-pass36-before.log",
         "ARESLib-Kotlin/build/audit-pass36-focused.log",
         "ARESLib-Kotlin/build/audit-pass36-studio.log",
-        "ARESLib-Kotlin/build/audit-pass36-policy.log"
+        "ARESLib-Kotlin/build/audit-pass36-policy.log",
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
@@ -2283,10 +2293,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "b9d0332153e6ff349fcded3b51e73fec0bb9cee02054f204c61b13845adae676",
+      "sha256": "92dace19e4c15dab5cb5138e0c0f693e13db34d3cc68a8b3352fd3307f27dec3",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2317,7 +2327,12 @@
         "ARESLib-Kotlin/build/audit-pass36-before.log",
         "ARESLib-Kotlin/build/audit-pass36-focused.log",
         "ARESLib-Kotlin/build/audit-pass36-studio.log",
-        "ARESLib-Kotlin/build/audit-pass36-policy.log"
+        "ARESLib-Kotlin/build/audit-pass36-policy.log",
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2483,10 +2498,10 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/AlertPersistenceRenderTest.kt": {
-      "sha256": "a683d2f3030349d4c204584abdd59eba2c7d66eb5045bb3ef733fe0464a468b0",
+      "sha256": "d73964bccd1ac344b54ec1ed4e8b2f9a3c717120cffbd23f9e3016bd07e31040",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Entire headless render fixture reviewed and executed. Four opaque actual AlertPanel scenes rendered and inspected for saving/retrying/stopped/saved states. This is not a visible app/window assertion. Pass 36 adds and inspects a fifth opaque scene for configuration fallback; entire fixture reviewed and executed.",
+      "scope": "Entire headless render fixture reviewed and executed. Four opaque actual AlertPanel scenes rendered and inspected for saving/retrying/stopped/saved states. This is not a visible app/window assertion. Pass 36 adds and inspects a fifth opaque scene for configuration fallback; entire fixture reviewed and executed. Pass 37 adds a sixth opaque scene using the actual longer loop-policy warning. Entire fixture reviewed and executed; image inspected without clipping.",
       "evidence": [
         "docs/audits/alert-persistence-audit.md",
         "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
@@ -2496,7 +2511,12 @@
         "ARESLib-Kotlin/build/audit-pass36-before.log",
         "ARESLib-Kotlin/build/audit-pass36-focused.log",
         "ARESLib-Kotlin/build/audit-pass36-studio.log",
-        "ARESLib-Kotlin/build/audit-pass36-policy.log"
+        "ARESLib-Kotlin/build/audit-pass36-policy.log",
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt": {
@@ -2651,15 +2671,20 @@
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertRuleConfiguration.kt": {
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Entire loader, NIO adapter and result type reviewed: bounded UTF-8 snapshot, strict structural validation, whole-file fallback, exclusive creation, one concurrent reread and expected failure handling. Synchronous startup IO and non-atomic new-file writes are explicit limits.",
+      "scope": "Entire loader, NIO adapter and result type reviewed: bounded UTF-8 snapshot, strict structural validation, whole-file fallback, exclusive creation, one concurrent reread and expected failure handling. Synchronous startup IO and non-atomic new-file writes are explicit limits. Pass 37 validates specialized loop rules before registration; only fixed max25/no minimum or explicitly boundless policy is accepted. Entire loader remains reviewed with prior IO/durability limits.",
       "evidence": [
         "docs/audits/alert-rule-configuration-audit.md",
         "ARESLib-Kotlin/build/audit-pass36-before.log",
         "ARESLib-Kotlin/build/audit-pass36-focused.log",
         "ARESLib-Kotlin/build/audit-pass36-studio.log",
-        "ARESLib-Kotlin/build/audit-pass36-policy.log"
+        "ARESLib-Kotlin/build/audit-pass36-policy.log",
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ],
-      "sha256": "75acf8ecc99f5813d4f99573521bec5d2c4eea50355f2896891af159778b5576"
+      "sha256": "3f4ff4972d020126b2761d327df66adcba82c862b22f9a353d97b95b969641ed"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertRuleConfigurationTest.kt": {
       "review": "reviewed",
@@ -2699,6 +2724,58 @@
         "ARESLib-Kotlin/build/audit-pass36-policy.log"
       ],
       "sha256": "95bdf5bd542bae5c88b61999d5cc280d39f552c497a1b25caa3ee1faf4a0af82"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertRuleSemantics.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire helper reviewed and executed: finite scalar/binary comparisons with inclusive allowed bounds, fixed or disabled loop contract, all catalog aliases and ordinary custom topics. No arbitrary temporal-parameter support claimed.",
+      "evidence": [
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+      ],
+      "sha256": "b87094930c98e9ae038b0c1dbbf39091756292499c7d4c9c83751efcac54b252"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertRuleSemanticsTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire four-method fixture reviewed and executed: inclusive endpoints, disabled/nonfinite observations, all fixed/disabled/invalid loop aliases and unrelated custom topics.",
+      "evidence": [
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+      ],
+      "sha256": "9e0c5114d9f8122b698732bd15d259739e869abe32e9477be1f6f18e999811c3"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DiagnosticConfigurationAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire twelve-method engine fixture reviewed and executed: motor derived-value configuration, source ownership, disabling, alias precedence, unsupported loop bounds, unknown feedback, configured keys and occurrence peaks. Initial nine-method baseline had eight failures; raw fabrication fixture strengthened after its rule-absent case passed.",
+      "evidence": [
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+      ],
+      "sha256": "03b057aff5eff6cc99a331d4d2b4b8a70344c133bd68d033a576aff46c148870"
+    },
+    "docs/audits/diagnostic-rule-policy-audit.md": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 37 report reviewed against baseline, focused/full XML, headless long-warning image, Kover, policy and inventory. Compatibility changes and fixed-policy limits are explicit; no live audio, visible-window or hardware timing claim.",
+      "evidence": [
+        "docs/audits/diagnostic-rule-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass37-before.log",
+        "ARESLib-Kotlin/build/audit-pass37-focused.log",
+        "ARESLib-Kotlin/build/audit-pass37-studio.log",
+        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+      ],
+      "sha256": "5d9660fca540d5d5cc406271851d0590ad16696e49cfc70355a4d85c377fe346"
     }
   }
 }

@@ -115,7 +115,9 @@ Pass 35 covers [platform battery alert policy](platform-alert-audit.md): retaine
 serialized context changes, coherent cached rules, battery aliases and voltage domains.
 Pass 36 covers [alert rule configuration](alert-rule-configuration-audit.md): whole-file
 validation, bounded UTF-8 reads, visible fallback and exclusive default-file creation.
-Next are loop/motor configuration semantics, cross-policy consistency and global retention,
+Pass 37 covers [diagnostic rule policy](diagnostic-rule-policy-audit.md): binary motor bounds,
+explicit fixed/disabled loop policy, derived-source ownership and configured loop keys.
+Next are cross-policy consistency, audio resources, lifecycle and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence

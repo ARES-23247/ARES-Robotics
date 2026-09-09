@@ -75,6 +75,13 @@ class AlertEngineService(
         }
     }
     private val motorTemperatureKeys = motorNames.mapTo(HashSet()) { "Hardware/Motors/$it/TempC" }
+    // These keys belong to locally derived diagnoses, never independent incoming measurements.
+    private val motorDiagnosticKeys = buildSet {
+        motorNames.forEach { motor ->
+            add("Hardware/Motors/$motor/Stall")
+            add("Hardware/Motors/$motor/Disconnected")
+        }
+    }
     private data class MotorBinding(val state: MotorDiagnosticState, val stall: ThresholdRule, val disconnected: ThresholdRule)
     private val motorDiagnostics = HashMap<RuleIdentity, MotorBinding>()
 
@@ -165,6 +172,7 @@ class AlertEngineService(
                         val frame = publication.frame
                         if (publication.targetEpoch != epoch || retained.containsKey(publication)) return@withLock
                         val key = normalizeTopic(frame.key)
+                        if (key in motorDiagnosticKeys) return@withLock
                         val scalarKind = ScalarDiagnosticRules.kind(key)
                         if (!rules.containsKey(key) && !isDiagnosticSignal(key, scalarKind)) return@withLock
                         val identity = RuleIdentity(frame.sessionId, key)
@@ -181,7 +189,7 @@ class AlertEngineService(
                             if (!ScalarDiagnosticRules.accepts(scalarKind, frame.value)) return@withLock
                             rules.getOrPut(key) { ScalarDiagnosticRules.defaultRule(scalarKind, key) }
                         }
-                        evaluateFrame(frame)
+                        evaluateFrame(frame, key)
                         evaluateLoopFrame(frame, key, identity)
                     }
                 }
@@ -242,24 +250,15 @@ class AlertEngineService(
      *
      * @param frame Incoming telemetry frame containing topic key and double value.
      */
-    private suspend fun evaluateFrame(frame: TelemetryFrame) {
-        val normalizedKey = normalizeTopic(frame.key)
+    private suspend fun evaluateFrame(frame: TelemetryFrame, normalizedKey: String) {
         // Loop timing needs temporal evidence; evaluating its ordinary max rule here would create
         // an intrusive banner for a single harmless scheduler/GC sample.
-        if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys ||
-            frame.key.trimStart('/') in TelemetryMetricCatalog.LOOP_TIME.keys
-        ) return
+        if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys) return
         val value = frame.value
         if (normalizedKey in TelemetryMetricCatalog.BATTERY_VOLTAGE.keys && value < 0.0) return
         val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
 
-        val minVal = rule.minValue
-        val maxVal = rule.maxValue
-        val violatesMin = minVal != null && value < minVal
-        val violatesMax = maxVal != null && value > maxVal
-        val isViolating = violatesMin || violatesMax
-
-        evaluateRuleState(rule.key, isViolating, value, frame.timestampMs, frame.sessionId, rule)
+        evaluateRuleState(rule.key, AlertRuleSemantics.violates(value, rule), value, frame.timestampMs, frame.sessionId, rule)
     }
 
     /** Loop diagnostics require temporal evidence; scalar source rules have already run once. */
@@ -269,8 +268,6 @@ class AlertEngineService(
         // Loop aliases retain source provenance and cannot resolve or count for one another.
         if (normalizedFrameKey in TelemetryMetricCatalog.LOOP_TIME.keys) {
             val loopKey = normalizedFrameKey
-            val window = loopTimeBuffers.getOrPut(sourceIdentity) { LoopOverrunWindow() }
-            if (!window.accept(frame.timestampUs, frame.value)) return
             val loopRule = rules.getOrPut(loopKey) {
                 rules[TelemetryMetricCatalog.LOOP_TIME.canonicalKey]?.copy(key = loopKey)
                     ?: ThresholdRule(
@@ -280,7 +277,11 @@ class AlertEngineService(
                         audibleAlert = false,
                     )
             }
-            evaluateRuleState(loopKey, window.isSlow, window.peakMs, ts, sessionId, loopRule)
+            // Accepted loop configurations are the fixed policy or explicitly boundless/disabled.
+            if (loopRule.maxValue == null) return
+            val window = loopTimeBuffers.getOrPut(sourceIdentity) { LoopOverrunWindow() }
+            if (!window.accept(frame.timestampUs, frame.value)) return
+            evaluateRuleState(loopRule.key, window.isSlow, window.peakMs, ts, sessionId, loopRule)
         }
     }
 
@@ -295,9 +296,11 @@ class AlertEngineService(
         val value = if (frame.stringValue == null) frame.value else Double.NaN
         if (!binding.state.accept(route.second, frame.timestampUs, value) || !binding.state.hasEvidence) return
         val state = binding.state
-        evaluateRuleState(binding.stall.key, state.isStalled, if (state.isStalled) 1.0 else 0.0,
+        val stallValue = if (state.isStalled) 1.0 else 0.0
+        val disconnectedValue = if (state.isDisconnected) 1.0 else 0.0
+        evaluateRuleState(binding.stall.key, AlertRuleSemantics.violates(stallValue, binding.stall), stallValue,
             state.timestampUs / 1_000L, frame.sessionId, binding.stall)
-        evaluateRuleState(binding.disconnected.key, state.isDisconnected, if (state.isDisconnected) 1.0 else 0.0,
+        evaluateRuleState(binding.disconnected.key, AlertRuleSemantics.violates(disconnectedValue, binding.disconnected), disconnectedValue,
             state.timestampUs / 1_000L, frame.sessionId, binding.disconnected)
     }
 

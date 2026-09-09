@@ -6,7 +6,9 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import com.ares.analytics.service.AlertEngineService
 import com.ares.analytics.service.AlertPersistenceStatus
+import com.ares.analytics.service.AlertRuleSemantics
 import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.ThresholdRule
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresTheme
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ class AlertPersistenceRenderTest {
             "saving" to AlertPersistenceStatus(2),
             "saved" to AlertPersistenceStatus(),
             "configuration" to AlertPersistenceStatus(),
+            "loop-configuration" to AlertPersistenceStatus(),
         )
         val output = File("build/diagnostics/alert-persistence-audit").apply { mkdirs() }
         for ((name, status) in samples) {
@@ -30,7 +33,13 @@ class AlertPersistenceRenderTest {
             `when`(engine.alerts).thenReturn(MutableStateFlow<List<AlertRecord>>(emptyList()))
             `when`(engine.persistenceStatus).thenReturn(MutableStateFlow(status))
             `when`(engine.configurationWarning).thenReturn(
-                if (name == "configuration") "Using built-in alert rules. Rule 2 has reversed bounds." else null,
+                when (name) {
+                    "configuration" -> "Using built-in alert rules. Rule 2 has reversed bounds."
+                    "loop-configuration" -> "Using built-in alert rules. Rule 1: " + AlertRuleSemantics.configurationProblem(
+                        "Robot/LoopTimeMs", ThresholdRule("Robot/LoopTimeMs", "Custom", maxValue = 500.0),
+                    )
+                    else -> null
+                },
             )
             val scene = ImageComposeScene(480, 300)
             try {
