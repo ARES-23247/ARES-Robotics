@@ -74,18 +74,36 @@ class RobotRuntimeAuditTest(unittest.TestCase):
         self.assertTrue(self.robot.faulted)
         self.assertTrue(math.isfinite(self.robot.drivetrain.x))
 
-    def test_autonomous_completion_neutralizes_and_requires_explicit_teleop(self):
+    def test_autonomous_completion_keeps_its_lease_without_entering_teleop(self):
         self.robot.set_autonomous_routines({"route": AutonomousRoutine(steps=[])}, "route")
         self.command("START_AUTO")
         self.robot.step()
-        self.assert_neutral()
-        self.assertFalse(self.robot.telemetry.armed)
+        self.assertEqual("AUTO", self.robot.mode)
+        self.assertEqual([0, 0], [motor.output for motor in self.motors])
+        self.assertGreater(self.mechanism.output, 0)
+        self.assertTrue(self.robot.telemetry.armed)
         self.robot.step()
-        self.assert_neutral()
+        self.assertEqual([0, 0], [motor.output for motor in self.motors])
         self.command(revision=2)
         self.robot.step()
         self.assertGreater(self.motors[1].output, 0)
         self.assertGreater(self.mechanism.output, 0)
+
+    def test_completed_auto_action_holds_mechanism_until_lease_expires(self):
+        calls = []
+        routine = AutonomousRoutine(steps=[dict(kind="ACTION", action_key="arm")],
+                                    action_handler=lambda *args: calls.append(args))
+        routine.update = mock.Mock(wraps=routine.update)
+        self.robot.set_autonomous_routines({"route": routine}, "route")
+        self.command("START_AUTO")
+        self.robot.step()
+        self.robot.step()
+        self.assertEqual(1, len(calls))
+        routine.update.assert_called_once()
+        self.assertGreater(self.mechanism.output, 0)
+        self.robot.telemetry.last_drive_ms -= 1000
+        self.robot.step()
+        self.assert_neutral()
 
     def test_shutdown_is_terminal_even_after_an_initialize_request(self):
         self.command()

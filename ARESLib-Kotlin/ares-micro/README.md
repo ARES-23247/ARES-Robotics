@@ -21,9 +21,10 @@ one cleanup operation fails. Construct a new instance to run again.
 Waypoint speed is a positive ceiling in meters per second. Completion requires both
 position tolerance (default 0.04 m) and heading tolerance (default 0.05 rad, configurable
 as `heading_tolerance_rad`). Translation slows while turning toward the target bearing.
-Autonomous completion neutralizes the drive and mechanisms; a fresh explicit Start
-request is required to enter teleop afterward. WAIT/ACTION sequences advance at most
-one step per cycle.
+Autonomous completion keeps the drive neutral and retains mechanism control under the
+existing autonomous lease. Completion does not switch modes; an explicit Teleop request
+is required to enter teleop. Stop or lease expiry neutralizes every mechanism. Completed
+routines are not repeatedly updated. WAIT/ACTION sequences advance at most one step per cycle.
 
 The link bounds pending input/output to 16,384 bytes each and reads at most 512 bytes
 per poll. Large field payloads exceeding this budget disconnect. A stale, invalid, or

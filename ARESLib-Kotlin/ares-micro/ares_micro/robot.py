@@ -60,6 +60,7 @@ class XrpRobot:
         )
         self.mode = self.STATE_INIT
         self.active_routine = None
+        self._autonomous_complete = False
         self.autonomous_routines = {}
         self.default_autonomous_id = None
         self.faulted = False
@@ -79,6 +80,7 @@ class XrpRobot:
         return self.telemetry.start()
 
     def set_autonomous_routines(self, routines, default_id=None):
+        self._autonomous_complete = False
         self.autonomous_routines = routines or {}
         self.default_autonomous_id = default_id
         self.active_routine = self.autonomous_routines.get(default_id)
@@ -168,6 +170,7 @@ class XrpRobot:
             self.active_routine = self.autonomous_routines.get(selected)
             if self.active_routine and not self.faulted:
                 self.active_routine.reset()
+                self._autonomous_complete = False
                 self.mode = self.STATE_AUTO
             else:
                 self.mode = self.STATE_DISABLED
@@ -191,6 +194,7 @@ class XrpRobot:
                 self.mode = self.STATE_DISABLED
             if self.active_routine:
                 self.active_routine.reset()
+                self._autonomous_complete = False
 
         # A mode request can never clear a live brownout or invalid voltage reading.
         if not math.isfinite(battery_volts) or battery_volts < self.brownout_threshold_volts:
@@ -233,14 +237,17 @@ class XrpRobot:
             if self.mode == self.STATE_AUTO:
                 # Autonomous motion remains leased by Studio. A disconnect or stale heartbeat
                 # stops the robot within the configured deadman interval.
-                if self.active_routine:
+                if self._autonomous_complete:
+                    self.drivetrain.stop()
+                elif self.active_routine:
                     vx, omega, finished = self.active_routine.update(
                         self.drivetrain.x, self.drivetrain.y, self.drivetrain.heading, dt
                     )
                     if finished:
+                        self._autonomous_complete = True
                         self.drivetrain.stop()
-                        self.mode = self.STATE_DISABLED
-                        self.telemetry.neutralize()
+                        # Keep mechanism targets under the existing autonomous
+                        # lease. Completion is not a request to enter teleop.
                     else:
                         if isinstance(self.drivetrain, MecanumDrivetrain):
                             self.drivetrain.drive(vx, 0.0, omega)
