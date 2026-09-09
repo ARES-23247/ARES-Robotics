@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "9f2db213ea5a1fdcd32bb9085d3db720540cad26c87c50274cf9bced12c785cf",
+      "sha256": "93192125016e3aa5b06a87bef9949c6927563bf41c284c232e8fc47abda7fa12",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -472,7 +472,8 @@
         "ARESLib-Kotlin/build/audit-pass24-policy.log",
         "docs/audits/database-coordinator-transactions-audit.md",
         "docs/audits/dashboard-health-audit.md",
-        "docs/audits/controller-health-audit.md"
+        "docs/audits/controller-health-audit.md",
+        "docs/audits/dashboard-mission-audit.md"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1885,13 +1886,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt": {
-      "sha256": "02b6c8065f3ec2e9f004835bbc4cdad4a13039a1f7bb57c8e1dfa60aa886fe16",
+      "sha256": "c2d7a701bf7b256fd3d3055e9fa3b9e06e91580f4ec95e1d3b9faa78f392866e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 27 replaces duplicated mutable health fields, wall-clock listener/timer and replay effect with the shared controller-health hook; mission snapshot and widget host consume the same observation. Full Studio/mission tests passed. Selected-session/frame identity, other mission/source semantics, alerts, navigation and workspace flows remain for focused review.",
+      "scope": "Pass 27 replaces duplicated mutable health fields, wall-clock listener/timer and replay effect with the shared controller-health hook; mission snapshot and widget host consume the same observation. Full Studio/mission tests passed. Selected-session/frame identity, other mission/source semantics, alerts, navigation and workspace flows remain for focused review. Pass 28 gates selected replay frame identity, supplies live-session alert scope and replaces mutable popup copies with the reviewed Compose hook. Remaining timeline metadata/readiness, upstream target epochs, navigation and workspace flows are open.",
       "evidence": [
         "docs/audits/controller-health-audit.md",
-        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log",
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HealthSnapshotAuditTest.kt": {
@@ -1972,6 +1975,117 @@
       "evidence": [
         "docs/audits/controller-health-audit.md",
         "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardMissionModels.kt": {
+      "sha256": "bd944f30aa4d2e7b25cbb62f894d17e8136cb70fba7dc5bac69ecb60bf69672f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire source classification, validated numeric evidence, freshness, alert selection and health summary model reviewed; baseline regressions and full Studio gate passed. Kover alternatives remain as documented.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardMissionHeader.kt": {
+      "sha256": "a83ba5386e151228fd055e4da0f9c746405d089493e61db0b2bc4a979a79ca9c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire compact header, modal/details, status badges, summary and diagnostics rendering reviewed; five headless states inspected. Navigation/modal callbacks and remaining UI branches are explicitly outside executed coverage.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardCriticalAlertStack.kt": {
+      "sha256": "84e929e721055c6a0dcad52d60db7750b54ee35cc819f3b476231bff316295bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire popup component reviewed; bounded lazy layout, stable IDs, source-time details and dismissal callback wiring inspected. Headless 20-alert fixture rendered; scrolling/click interaction remains outside executed coverage.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardAlertPresentation.kt": {
+      "sha256": "8412e10d339eca28921d6075100399c71266b0be3a7abed93ea6e2aae4c8bc0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire category, source/resolution filtering, overflow-safe deterministic priority, derived popup/dismissal lifecycle and source-time formatting reviewed. Six regression methods exercise actual Compose state transitions.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardReplaySelection.kt": {
+      "sha256": "077a9215641e47c7868b7e64e41266db2ac3f133034636c3d9d115f38f1a0c85",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire exact selected-session/live-rewind identity gate reviewed; blank/mismatched identities and live mode boundaries exercised, 3/3 lines and 12/12 branches covered.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardMissionHeaderTest.kt": {
+      "sha256": "151f3edd73b559ad951abd49b779b934f533c334ec9aff2bc916d4df9bd686e1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire nine-method mission contract suite reviewed and executed; explicit observed counters, source labels and matching alert session fixtures updated.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardMissionAuditTest.kt": {
+      "sha256": "8c71bbb2e31a90c95125259d6cb75b3eabade9ddc920f5ab6c0d54af8b254ffe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 19-method boundary suite reviewed and executed; 17 original failures reproduced, including numeric unknowns, replay identity, historical state and current-alert semantics.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardAlertPresentationTest.kt": {
+      "sha256": "976cc3b58b7b31d6a5132d4f4ab1cde08788c79e0512919df755bcef2dc1c0da",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire six-method alert regression suite reviewed and executed; priority Long endpoints, source ownership, resolution/triage, formatting and actual Compose dismissal lifecycle.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardMissionRenderTest.kt": {
+      "sha256": "ba07c26a10f56e6efd94c79caf3db4802393ff6974abf24df6e52454aae98100",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire two-method headless image suite reviewed and executed. Opaque app background fixes transparent-canvas evidence; all six PNGs inspected. This is render evidence, not visible app/modal/physical validation.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
+      ]
+    },
+    "docs/audits/dashboard-mission-audit.md": {
+      "sha256": "541b40712dba336215e39b821c695da578451b36ed341121b05a738200b53175",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 28 report checked against baseline, focused/full tests, Kover, timing and final opaque-background PNGs. Remaining alert source epochs, engine lifecycle, timeline and hardware scope explicitly recorded.",
+      "evidence": [
+        "docs/audits/dashboard-mission-audit.md",
+        "ARESLib-Kotlin/build/audit-pass28-studio.log",
+        "ARESLib-Kotlin/build/audit-pass28-render-final.log",
+        "ARESLib-Kotlin/build/audit-pass28-policy.log"
       ]
     }
   }

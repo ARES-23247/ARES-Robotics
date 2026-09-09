@@ -1,20 +1,11 @@
 package com.ares.analytics.ui.components.dashboard
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,28 +13,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.AltRoute
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.Radio
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Sensors
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WifiOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,9 +46,7 @@ import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
 import com.ares.analytics.ui.theme.AresError
-import com.ares.analytics.ui.theme.AresGold
 import com.ares.analytics.ui.theme.AresGreen
-import com.ares.analytics.ui.theme.AresOnAccent
 import com.ares.analytics.ui.theme.AresSurface
 import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
@@ -90,13 +64,18 @@ fun DashboardMissionHeader(
     modifier: Modifier = Modifier
 ) {
     var detailsOpen by remember { mutableStateOf(false) }
-    val topAlert = snapshot.highestPriorityAlert
+    val summaryColor = when (snapshot.health.tone) {
+        MissionHealthTone.CRITICAL -> AresError
+        MissionHealthTone.WARNING -> AresAmber
+        MissionHealthTone.HEALTHY -> AresGreen
+        MissionHealthTone.NEUTRAL -> AresTextSecondary
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = AresSurface,
         shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, if (topAlert != null) AresAmber.copy(alpha = 0.6f) else AresBorder)
+        border = BorderStroke(1.dp, if (snapshot.health.tone == MissionHealthTone.CRITICAL || snapshot.health.tone == MissionHealthTone.WARNING) summaryColor.copy(alpha = 0.6f) else AresBorder)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 3.dp),
@@ -106,7 +85,7 @@ fun DashboardMissionHeader(
             HealthAndFreshnessRow(snapshot, compact = true)
             Text(
                 text = snapshot.healthSummary,
-                color = if (topAlert != null) AresAmber else AresTextSecondary,
+                color = summaryColor,
                 fontSize = 11.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -126,20 +105,22 @@ fun DashboardMissionHeader(
                 Text("Dashboard status & diagnostics", color = AresTextPrimary, fontWeight = FontWeight.Bold)
             },
             text = {
-                Column(
-                    modifier = Modifier.width(760.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    HealthAndFreshnessRow(snapshot)
-                    HealthSummaryBanner(snapshot, onNavigate)
-                    TechnicalDiagnosticsPanel(snapshot)
-                }
+                DashboardMissionDetails(snapshot, onNavigate)
             },
             confirmButton = {
                 TextButton(onClick = { detailsOpen = false }) { Text("Close") }
             },
             containerColor = AresSurface,
         )
+    }
+}
+
+@Composable
+internal fun DashboardMissionDetails(snapshot: DashboardMissionSnapshot, onNavigate: (NavigationTarget) -> Unit) {
+    Column(modifier = Modifier.width(760.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        HealthAndFreshnessRow(snapshot)
+        HealthSummaryBanner(snapshot, onNavigate)
+        TechnicalDiagnosticsPanel(snapshot)
     }
 }
 
@@ -152,7 +133,7 @@ private fun HealthAndFreshnessRow(snapshot: DashboardMissionSnapshot, compact: B
         // Target & Source Pill
         Surface(
             color = when (snapshot.sourceType) {
-                DashboardDataSourceType.SIMULATION_TRUTH -> AresCyan.copy(alpha = 0.12f)
+                DashboardDataSourceType.LOCAL_SIMULATION -> AresCyan.copy(alpha = 0.12f)
                 DashboardDataSourceType.LIVE_ROBOT_FTC,
                 DashboardDataSourceType.LIVE_ROBOT_FRC,
                 DashboardDataSourceType.LIVE_ROBOT_XRP -> AresGreen.copy(alpha = 0.12f)
@@ -162,7 +143,7 @@ private fun HealthAndFreshnessRow(snapshot: DashboardMissionSnapshot, compact: B
             border = BorderStroke(
                 1.dp,
                 when (snapshot.sourceType) {
-                    DashboardDataSourceType.SIMULATION_TRUTH -> AresCyan.copy(alpha = 0.5f)
+                    DashboardDataSourceType.LOCAL_SIMULATION -> AresCyan.copy(alpha = 0.5f)
                     DashboardDataSourceType.LIVE_ROBOT_FTC,
                     DashboardDataSourceType.LIVE_ROBOT_FRC,
                     DashboardDataSourceType.LIVE_ROBOT_XRP -> AresGreen.copy(alpha = 0.5f)
@@ -182,7 +163,7 @@ private fun HealthAndFreshnessRow(snapshot: DashboardMissionSnapshot, compact: B
                         imageVector = snapshot.sourceType.icon,
                         contentDescription = null,
                         tint = when (snapshot.sourceType) {
-                            DashboardDataSourceType.SIMULATION_TRUTH -> AresCyan
+                            DashboardDataSourceType.LOCAL_SIMULATION -> AresCyan
                             DashboardDataSourceType.LIVE_ROBOT_FTC,
                             DashboardDataSourceType.LIVE_ROBOT_FRC,
                             DashboardDataSourceType.LIVE_ROBOT_XRP -> AresGreen
@@ -219,6 +200,7 @@ private fun HealthAndFreshnessRow(snapshot: DashboardMissionSnapshot, compact: B
                 ) {
                     Icon(
                         imageVector = when (snapshot.freshness) {
+                            TelemetryFreshness.HISTORICAL -> Icons.Default.Replay
                             TelemetryFreshness.FRESH -> Icons.Default.CheckCircle
                             TelemetryFreshness.STALE -> Icons.Default.Warning
                             TelemetryFreshness.INACTIVE -> Icons.Default.WifiOff
@@ -247,26 +229,23 @@ private fun HealthSummaryBanner(
     onNavigate: (NavigationTarget) -> Unit
 ) {
     val topAlert = snapshot.highestPriorityAlert
-    val isCritical = topAlert != null && (
-        topAlert.ruleKey.contains("brownout", ignoreCase = true) ||
-            topAlert.ruleKey.contains("comms", ignoreCase = true) ||
-            topAlert.ruleKey.contains("can", ignoreCase = true) ||
-            topAlert.ruleKey.contains("battery", ignoreCase = true)
-    )
+    val isCritical = snapshot.health.tone == MissionHealthTone.CRITICAL
+    val hasWarning = snapshot.health.tone == MissionHealthTone.WARNING
+    val isOffline = snapshot.sourceType == DashboardDataSourceType.NO_ACTIVE_SOURCE
 
     Surface(
         color = when {
             isCritical -> AresError.copy(alpha = 0.1f)
-            topAlert != null -> AresAmber.copy(alpha = 0.08f)
-            !snapshot.isConnected && snapshot.primarySessionId == null -> AresCyan.copy(alpha = 0.06f)
+            hasWarning -> AresAmber.copy(alpha = 0.08f)
+            isOffline -> AresCyan.copy(alpha = 0.06f)
             else -> AresSurfaceElevated
         },
         border = BorderStroke(
             1.dp,
             when {
                 isCritical -> AresError.copy(alpha = 0.5f)
-                topAlert != null -> AresAmber.copy(alpha = 0.4f)
-                !snapshot.isConnected && snapshot.primarySessionId == null -> AresCyan.copy(alpha = 0.35f)
+                hasWarning -> AresAmber.copy(alpha = 0.4f)
+                isOffline -> AresCyan.copy(alpha = 0.35f)
                 else -> AresBorder
             }
         ),
@@ -280,15 +259,16 @@ private fun HealthSummaryBanner(
             Icon(
                 imageVector = when {
                     isCritical -> Icons.Default.Warning
-                    topAlert != null -> Icons.Default.Info
-                    !snapshot.isConnected && snapshot.primarySessionId == null -> Icons.Default.PlayCircle
+                    isOffline -> Icons.Default.PlayCircle
+                    hasWarning || snapshot.health.tone == MissionHealthTone.NEUTRAL -> Icons.Default.Info
                     else -> Icons.Default.CheckCircle
                 },
                 contentDescription = null,
                 tint = when {
                     isCritical -> AresError
-                    topAlert != null -> AresAmber
-                    !snapshot.isConnected && snapshot.primarySessionId == null -> AresCyan
+                    hasWarning -> AresAmber
+                    isOffline -> AresCyan
+                    snapshot.health.tone == MissionHealthTone.NEUTRAL -> AresTextTertiary
                     else -> AresGreen
                 },
                 modifier = Modifier.size(20.dp)
@@ -311,7 +291,7 @@ private fun HealthSummaryBanner(
                 )
             }
 
-            if (!snapshot.isConnected && snapshot.primarySessionId == null) {
+            if (isOffline) {
                 OutlinedButton(
                     onClick = { onNavigate(NavigationTarget.ACADEMY) },
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
@@ -344,24 +324,31 @@ private fun TechnicalDiagnosticsPanel(snapshot: DashboardMissionSnapshot) {
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("TECHNICAL DIAGNOSTICS & NT4 TELEMETRY SPECIFICATION", color = AresTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text("TELEMETRY DIAGNOSTICS", color = AresTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                DiagnosticItem("Target Host", "${snapshot.hostIp}:5810")
-                DiagnosticItem("Log Server", "${snapshot.hostIp}:5002")
-                DiagnosticItem("Telemetry Rate", if (snapshot.frameRateHz > 0.0) String.format("%.1f Hz", snapshot.frameRateHz) else "--")
-                DiagnosticItem("Control Loop", snapshot.loopTimeMs?.let { String.format("%.1f ms (%.0f Hz)", it, 1000.0 / it) } ?: "--")
-                DiagnosticItem("Battery Voltage", snapshot.batteryVoltage?.let { String.format("%.2f V", it) } ?: "--")
-                DiagnosticItem("Active Alerts", "${snapshot.activeAlerts.size}")
+                if (!snapshot.isHistorical) {
+                    if (snapshot.workspace.league == com.ares.analytics.shared.models.League.XRP) {
+                        DiagnosticItem("Transport", "XRP link")
+                    } else {
+                        DiagnosticItem("Target Host", snapshot.hostIp)
+                        DiagnosticItem("Transport", "NT4")
+                    }
+                }
+                DiagnosticItem("Store Ingest", if (snapshot.frameRateHz.isFinite() && snapshot.frameRateHz >= 0.0) String.format("%.1f frames/s", snapshot.frameRateHz) else "--")
+                DiagnosticItem("Control Loop", snapshot.validLoopTimeMs?.let { String.format("%.1f ms (%.0f Hz)", it, snapshot.validLoopFrequencyHz) } ?: "--")
+                DiagnosticItem("Battery Voltage", snapshot.validBatteryVoltage?.let { String.format("%.2f V", it) } ?: "--")
+                DiagnosticItem("Open Live Alerts", if (snapshot.isHistorical || !snapshot.isConnected) "--" else snapshot.currentAlerts.size.toString())
             }
 
             HorizontalDivider(color = AresBorder.copy(alpha = 0.5f))
 
             Text(
-                "Data classifications: [SIM TRUTH] is deterministic physics simulation; [HARDWARE] represents raw device sensors; [ESTIMATED] is EKF fused state; [REPLAY] is historical DuckDB playback.",
+                "Source labels identify origin: [SIMULATED] is simulator telemetry; [HARDWARE] is robot telemetry; [REPLAY] is recorded playback. Measured, estimated and ground-truth values retain their individual topic identities.",
                 color = AresTextTertiary,
                 fontSize = 10.sp,
                 lineHeight = 13.sp

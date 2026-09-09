@@ -92,7 +92,10 @@ prefetch ratios and unavailable dashboard drop counts.
 Pass 27 covers [controller health sources and presentation](controller-health-audit.md):
 shared live/replay observations, exact aliases, finite domains, unknown states, bounded
 sampling, per-topic freshness, collector lifecycle and platform battery display boundaries.
-Next are dashboard selected-session/frame identity and mission semantics, diagnostics/evidence
+Pass 28 covers [mission summaries and alert presentation](dashboard-mission-audit.md): exact
+selected-frame identity, historical/unknown evidence, current alert filtering and ordering,
+dismissal lifecycle, bounded popup rendering and honest diagnostic units.
+Next are alert-engine windows/source lifecycle, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining

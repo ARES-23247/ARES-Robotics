@@ -419,3 +419,11 @@ summary and card around a bounded observation pipeline. Exact topics, finite dom
 unknowns, per-topic freshness and live/replay/offline selection replace substring matching and
 competing field updates. Parser, flow and actual headless Compose lifecycle regressions cover
 source transitions and cancellation. This does not establish visible app or hardware behavior.
+
+## Twenty-eighth pass: mission summaries and alert presentation
+
+The [mission presentation audit](audits/dashboard-mission-audit.md) gates replay frames by
+selected session, preserves historical and missing evidence, filters resolved/foreign alerts,
+and fixes deterministic priority and dismissal updates. Bounded lazy popups and cached summary
+calculations remove repeated work. Diagnostics retain source-time and transport distinctions.
+Headless tests and the Studio gate passed; alert-engine and timeline internals remain open.

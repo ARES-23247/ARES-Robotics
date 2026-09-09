@@ -22,7 +22,7 @@ class DashboardMissionHeaderTest {
     )
 
     @Test
-    fun `source type correctly identifies local simulator truth`() {
+    fun `source type correctly identifies local simulator telemetry`() {
         val snapshot = DashboardMissionSnapshot(
             workspace = baseWorkspace,
             isConnected = true,
@@ -32,8 +32,8 @@ class DashboardMissionHeaderTest {
             primarySessionId = null
         )
 
-        assertEquals(DashboardDataSourceType.SIMULATION_TRUTH, snapshot.sourceType)
-        assertEquals("SIM TRUTH", snapshot.sourceType.badge)
+        assertEquals(DashboardDataSourceType.LOCAL_SIMULATION, snapshot.sourceType)
+        assertEquals("SIMULATED", snapshot.sourceType.badge)
     }
 
     @Test
@@ -166,9 +166,10 @@ class DashboardMissionHeaderTest {
             loopTimeMs = 20.0,
             batteryVoltage = 12.6,
             brownoutCount = 0,
+            loopOverruns = 0,
             lastUpdateAgeMs = 50L
         )
-        assertTrue(nominal.healthSummary.contains("All systems nominal"))
+        assertTrue(nominal.healthSummary.contains("Observed health metrics are nominal"))
 
         // Low battery
         val lowBattery = DashboardMissionSnapshot(
@@ -188,7 +189,7 @@ class DashboardMissionHeaderTest {
             batteryVoltage = 6.0,
             xrpBrownoutThresholdVolts = 4.3,
         )
-        assertTrue(nominalXrpBattery.healthSummary.contains("All systems nominal"))
+        assertTrue(nominalXrpBattery.healthSummary.contains("Observed health metrics are nominal"))
 
         val lowXrpBattery = nominalXrpBattery.copy(batteryVoltage = 4.5)
         assertTrue(lowXrpBattery.healthSummary.contains("Low battery voltage"))
@@ -225,7 +226,7 @@ class DashboardMissionHeaderTest {
 
         val overruns = nominal.copy(loopOverruns = 3)
         assertTrue(overruns.healthSummary.contains("3 control-loop overruns"))
-        assertFalse(overruns.healthSummary.contains("All systems nominal"))
+        assertFalse(overruns.healthSummary.contains("Observed health metrics are nominal"))
     }
 
     @Test
@@ -252,7 +253,8 @@ class DashboardMissionHeaderTest {
             isSimulatorRunning = false,
             isReplayActive = false,
             primarySessionId = null,
-            activeAlerts = listOf(routineAlert, criticalAlert)
+            activeAlerts = listOf(routineAlert, criticalAlert),
+            liveSessionId = "s1"
         )
 
         val topAlert = snapshot.highestPriorityAlert

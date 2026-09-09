@@ -101,8 +101,10 @@ internal fun DashboardScreen(
     val replayState by replayEngine.state.collectAsState()
     val replayFrame by replayEngine.currentFrame.collectAsState()
     val replaySessionStart by replayEngine.sessionStartTimestampMs.collectAsState()
+    val liveRecording by liveServices.nt4ClientService.currentSession.collectAsState()
+    val liveSessionId = liveRecording?.sessionId ?: Nt4ClientService.LIVE_SESSION_ID
     val isReplayMode = state.primarySessionId != null || isReplayActive
-    val displayedReplayFrame = replayFrame.takeIf { isReplayMode }
+    val displayedReplayFrame = selectDashboardReplayFrame(replayFrame, state.primarySessionId, isReplayActive)
     val tuningDeclarations by produceState<List<TuningParameterDeclaration>>(emptyList(), currentConfig.projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             services.tuningProfiles.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()
@@ -126,31 +128,9 @@ internal fun DashboardScreen(
 
     // Replay integration
     val selectedSessionForDisposal by rememberUpdatedState(state.primarySessionId)
-    val undismissedAlerts = remember { mutableStateListOf<AlertRecord>() }
-
-    LaunchedEffect(state.alerts, isReplayMode) {
-        if (isReplayMode) {
-            // Historical alerts remain available as replay markers and evidence. They must not
-            // appear as live, audible/urgent dashboard alarms.
-            undismissedAlerts.clear()
-            return@LaunchedEffect
-        }
-        undismissedAlerts.removeAll { alert -> state.alerts.any { it.alertId == alert.alertId && it.resolveTimestampMs != null } }
-        state.alerts.forEach { alert ->
-            val isCritical = alert.ruleKey.contains("brownout", ignoreCase = true) ||
-                             alert.ruleKey.contains("comms", ignoreCase = true) ||
-                             alert.ruleKey.contains("can", ignoreCase = true) ||
-                             alert.ruleKey.contains("battery", ignoreCase = true)
-
-            if (isCritical && undismissedAlerts.none { it.alertId == alert.alertId }) {
-                undismissedAlerts.add(alert)
-            }
-        }
-    }
-
-    LaunchedEffect(state.primarySessionId) {
-        undismissedAlerts.clear()
-    }
+    val alertPopups = rememberDashboardAlertPopups(
+        state.alerts, liveSessionId, isRobotLinkConnected && !isReplayMode,
+    )
 
     // Load replay session when primarySessionId changes
     LaunchedEffect(state.primarySessionId, state.replayEvidenceTarget?.requestId) {
@@ -204,6 +184,7 @@ internal fun DashboardScreen(
         loopOverruns = controllerHealth.snapshot.loopOverruns,
         xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
         activeAlerts = state.alerts,
+        liveSessionId = liveSessionId,
         frameRateHz = frameRateHz,
         lastUpdateAgeMs = controllerHealth.lastUpdateAgeMs,
         hostIp = if (isLocalSimulator) "127.0.0.1" else currentConfig.nt4Host?.ifBlank { "127.0.0.1" } ?: "127.0.0.1"
@@ -291,7 +272,6 @@ internal fun DashboardScreen(
         }
 
         // Timeline Scrubber Bar
-        val isReplayActive by liveServices.nt4ClientService.isReplayActive.collectAsState()
 
         if (state.primarySessionId != null || isRobotLinkConnected) {
             ReplayTimelineScrubber(
@@ -349,8 +329,8 @@ internal fun DashboardScreen(
     }
 
     DashboardCriticalAlertStack(
-        alerts = undismissedAlerts,
-        onDismiss = { undismissedAlerts.remove(it) },
+        alerts = alertPopups.alerts,
+        onDismiss = alertPopups.dismiss,
         modifier = Modifier
             .align(Alignment.TopEnd)
             .padding(16.dp),
