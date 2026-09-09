@@ -438,36 +438,33 @@
       ]
     },
     "ARESLib-Kotlin/ares-micro/tests/test_safety_boundaries.py": {
-      "sha256": "8ab8efab115441eb181b48e189fb59980e2695ed0ca3b1edb525af2f568a4461",
+      "sha256": "75e3f6e392927aceac1270707618ab88f3573ab649dcc5acdcaee5d3f38cce98",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full test/fixture review; safety stop aggregation, battery faults, expiry/restart, shutdown and partial-send/backpressure tests all pass in the 62-test Python suite. Private input fixture updated to bytes; no physical hardware claim.",
+      "scope": "Full safety/transport test review carried forward with connected-subscriber setup for injected publish failures. All cases pass within 85 Python tests; stopping, expiry/restart, cleanup and partial-send boundaries remain covered by fake hardware/socket tests.",
       "evidence": [
-        "docs/audits/xrp-transport-audit.md",
-        "ARESLib-Kotlin/build/audit-pass7-micro.log",
-        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
       ]
     },
     "ARESLib-Kotlin/ares-micro/tests/test_xrp_micro.py": {
-      "sha256": "a45f6f6a2233aacedf4576236a32690a5f1f4f5ea36184dc2e4cd4405ab9403e",
+      "sha256": "296722dbdf3314f4f420a678a9af3ace1c1436572dc661b08b808d83bb1f9c7f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Transport/lifecycle cases reviewed and adapted to byte framing plus pending Start cancellation. All file tests pass in the 62-test suite; remaining kinematics, sensor and subsystem test design still needs full review.",
+      "scope": "Transport, lifecycle and autonomous cases reviewed; connected telemetry fixture updated for snapshot gating. All tests pass within the 85-test suite, but remaining sensor/subsystem test design still needs full review.",
       "evidence": [
-        "docs/audits/xrp-transport-audit.md",
-        "ARESLib-Kotlin/build/audit-pass7-micro.log",
-        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "55c3a043348bf06ce78819253db8bae1bde82844115d946dfbf426bfec283020",
+      "sha256": "4493d328c53b2c030a382680ea691340b1b015a5b3dbd2b4a0777e2a177f5246",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full audit-accounting contract and work-queue review, with links verified after the seventh-pass update. Documentation disposition; no executable tests apply.",
+      "scope": "Full audit-accounting contract/work-queue review with pass-8 link update. Guidance and links in 169 current documents passed. Documentation only.",
       "evidence": [
-        "docs/audits/xrp-transport-audit.md",
-        "ARESLib-Kotlin/build/audit-pass7-micro.log",
-        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -479,6 +476,87 @@
         "docs/audits/xrp-transport-audit.md",
         "ARESLib-Kotlin/build/audit-pass7-micro.log",
         "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/robot.py": {
+      "sha256": "81c2f714cae08c22c6701145ef698cdc8e0c1c65732550ba1982dd6151f57bbc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full robot facade review: lifecycle, action routing, leased mode execution, pose constraints, exception cleanup and telemetry work. 85 shared Python tests and 107 source/generated XRP tests pass; final candidate c25aa89f6134. 83.6% unit-suite line execution; scoped desktop/fake hardware evidence, not physical timing or every recovery/action branch.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/opmode.py": {
+      "sha256": "ebc891edc7e901287ac6066111336e4f90991b7cdc30fd7709a4b57ffc4c254a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full waypoint/follower/routine review. Validated speed and final-heading completion, configuration, finite pose/periods, waits, actions/reset and empty steps. 85 shared Python tests pass, including three independent closed-loop integrations. 98.2% line execution; no physical tracking claim.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_autonomous_audit.py": {
+      "sha256": "de4c2b48d9012779fce9d82670625f6e0664f457b6d5076a8b0d401d29c30054",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full review and execution of 12 autonomous regression methods, including independent constant-twist trajectory integration, malformed configuration and failed-action transitions. All pass within the 85-test suite.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_robot_runtime_audit.py": {
+      "sha256": "d29682930e6634973d54cf0a078053dd3537cdc9ee24c6e284e09d82ccd90c7a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full review and execution of 11 robot regression methods: lifecycle, leases, cleanup, invalid input, snapshot/read counts, completed action and mode control. All pass within the 85-test suite; fake hardware only.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/README.md": {
+      "sha256": "0dab3d71ab9f4a232dbade34b02ff0907441f87c84c8f104807eb2e533b6608d",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full documentation review against runtime and starter integration. Corrects follower/offset/allocation claims and describes explicit lifecycle, waypoint and lease contracts. Manual device-copy instructions were reviewed but not executed on hardware.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/__init__.py": {
+      "sha256": "c4ad97467d1484137c41ddc7859f78b6252ed11c52b6d515a8f92f73051358b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full package import/export review. Explicit exports resolve to implemented classes/functions without circular initialization failure; all 85 tests import the package successfully and import-inclusive trace executes every package initializer line. The star-export list names a subset of imported symbols; explicit subsystem imports remain available.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/subsystem.py": {
+      "sha256": "d346c285b4f41ebaaff73379f922270491a88f363a3fd373fd7a701acae43061",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Initial full source read identified PID-history reset, bang-bang direction/hysteresis, derivative wrapping/filtering and descriptor feature parity as the next dedicated audit. Existing passing tests do not validate these findings; regression/fix work is pending.",
+      "evidence": [
+        "docs/audits/xrp-robot-autonomous-audit.md",
+        "ARESLib-Kotlin/build/audit-pass8-micro.log"
+      ]
+    },
+    "docs/audits/xrp-robot-autonomous-audit.md": {
+      "sha256": "e1a6afc2561dc00811e2ff21c17b680a39a42aa4198292a5f4bfbbb2dd489a4d",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full authored report reviewed against final source, regression/trace reports, candidate and archive identities, dependent consumer gates and actual Gradle task reuse. Links passed; physical and remaining subsystem work are explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass8-micro.log",
+        "ARESLib-Kotlin/build/audit-pass8-final-studio.log",
+        "ARESLib-Kotlin/build/audit-pass8-final-policy.log"
       ]
     }
   }

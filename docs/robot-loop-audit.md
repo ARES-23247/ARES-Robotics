@@ -271,3 +271,10 @@ The [seventh-pass report](audits/xrp-transport-audit.md) records a late-heartbea
 expiry race, pending Start cleanup, bounded byte framing, failed socket setup cleanup,
 and field identity validation before mutation. Eighteen new regressions pass, including
 a robot/mechanism stop-and-restart test. Physical radio and loop timing remain untested.
+
+## Eighth pass: XRP robot lifecycle and autonomous control
+
+The [eighth-pass report](audits/xrp-robot-autonomous-audit.md) records final-heading and
+waypoint-speed fixes, terminal shutdown, invalid-period/pose rejection, and reduced loop
+work. Finished routines retain leased autonomous mechanism control without silently
+entering teleop. Twenty-three new regressions pass; physical tracking and timing remain open.
