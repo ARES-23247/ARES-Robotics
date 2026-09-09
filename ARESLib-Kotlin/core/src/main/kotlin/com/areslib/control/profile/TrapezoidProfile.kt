@@ -7,7 +7,8 @@ import kotlin.math.sqrt
  *
  * Computes deterministic position ($x$) and velocity ($v$) trajectory setpoints to transition a physical mechanism from an initial
  * state $(x_0, v_0)$ to a target goal state $(x_{goal}, v_{goal})$ while strictly respecting physical maximum cruise velocity ($v_{max}$)
- * and maximum acceleration ($a_{max}$) limits.
+ * and maximum acceleration ($a_{max}$) limits. An initially excessive speed brakes at the
+ * acceleration limit until it re-enters the permitted velocity range; it is never clipped instantly.
  *
  * ### Kinematic Equations:
  * 1. **Acceleration Phase** ($t \le t_{accel}$):
@@ -103,7 +104,6 @@ class TrapezoidProfile {
         // Solve in a coordinate system where the goal is always in the positive direction.
         // This is the standard cutoff-distance formulation and supports arbitrary finite
         // initial and final velocities rather than assuming both are zero.
-        var direction = if (currentLocal.position > goalLocal.position) -1.0 else 1.0
         val maxV = constraints.maxVelocity
         val maxA = constraints.maxAcceleration
         if (kotlin.math.abs(goalLocal.velocity) > maxV) {
@@ -111,6 +111,32 @@ class TrapezoidProfile {
             return
         }
 
+        // A lowered cruise limit cannot be met instantaneously. Integrate the initial
+        // braking segment first, then solve the remaining profile from its endpoint.
+        var stepSeconds = dtSeconds
+        val initialSpeed = kotlin.math.abs(currentLocal.velocity)
+        if (initialSpeed > maxV) {
+            val brakingTime = (initialSpeed - maxV) / maxA
+            val brakingStep = minOf(stepSeconds, brakingTime)
+            val directionOfMotion = kotlin.math.sign(currentLocal.velocity)
+            val brakingVelocity = if (stepSeconds >= brakingTime) directionOfMotion * maxV
+                else currentLocal.velocity - directionOfMotion * maxA * brakingStep
+            val brakingPosition = currentLocal.position +
+                (currentLocal.velocity * 0.5 + brakingVelocity * 0.5) * brakingStep
+            if (!brakingPosition.isFinite() || !brakingVelocity.isFinite()) {
+                outState.setTo(currentLocal)
+                return
+            }
+            currentLocal.position = brakingPosition
+            currentLocal.velocity = brakingVelocity
+            if (stepSeconds <= brakingTime) {
+                outState.setTo(currentLocal)
+                return
+            }
+            stepSeconds -= brakingTime
+        }
+
+        var direction = if (currentLocal.position > goalLocal.position) -1.0 else 1.0
         val invMaxA = 1.0 / maxA
         val invMaxV = 1.0 / maxV
 
@@ -168,18 +194,18 @@ class TrapezoidProfile {
         val newPosition: Double
         val newVelocity: Double
         when {
-            dtSeconds < endAccel -> {
-                newVelocity = currentVelocity + dtSeconds * maxA
-                newPosition = currentPosition + (currentVelocity + dtSeconds * maxA * 0.5) * dtSeconds
+            stepSeconds < endAccel -> {
+                newVelocity = currentVelocity + stepSeconds * maxA
+                newPosition = currentPosition + (currentVelocity + stepSeconds * maxA * 0.5) * stepSeconds
             }
-            dtSeconds < endFullSpeed -> {
+            stepSeconds < endFullSpeed -> {
                 newVelocity = maxV
                 newPosition = currentPosition +
                     (currentVelocity + endAccel * maxA * 0.5) * endAccel +
-                    maxV * (dtSeconds - endAccel)
+                    maxV * (stepSeconds - endAccel)
             }
-            dtSeconds <= endDecel -> {
-                val timeLeft = endDecel - dtSeconds
+            stepSeconds <= endDecel -> {
+                val timeLeft = endDecel - stepSeconds
                 newVelocity = goalVelocity + timeLeft * maxA
                 newPosition = goalPosition - (goalVelocity + timeLeft * maxA * 0.5) * timeLeft
             }
@@ -189,6 +215,10 @@ class TrapezoidProfile {
             }
         }
 
+        if (!newPosition.isFinite() || !newVelocity.isFinite()) {
+            outState.setTo(currentLocal)
+            return
+        }
         outState.position = newPosition * direction
         outState.velocity = newVelocity * direction
     }

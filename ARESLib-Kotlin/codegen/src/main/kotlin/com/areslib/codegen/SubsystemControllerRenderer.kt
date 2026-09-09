@@ -38,8 +38,10 @@ internal object SubsystemControllerRenderer {
         val profileStateFields = document.controlLoops
             .filter { it.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID }
             .joinToString("\n") { loop ->
-                "    private var ${loop.loopId}ProfilePosition = 0.0\n" +
-                    "    private var ${loop.loopId}ProfileVelocity = 0.0\n" +
+                "    private val ${loop.loopId}Profile = TrapezoidProfile()\n" +
+                    "    private val ${loop.loopId}ProfileState = TrapezoidProfile.State()\n" +
+                    "    private val ${loop.loopId}ProfileGoal = TrapezoidProfile.State()\n" +
+                    "    private val ${loop.loopId}ProfileConstraints = TrapezoidProfile.Constraints()\n" +
                     "    private var ${loop.loopId}ProfileInitialized = false"
             }
         val bangBangStateFields = document.controlLoops
@@ -58,8 +60,8 @@ internal object SubsystemControllerRenderer {
         val profileReset = document.controlLoops
             .filter { it.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID }
             .joinToString("\n") { loop ->
-                "        ${loop.loopId}ProfilePosition = 0.0\n" +
-                    "        ${loop.loopId}ProfileVelocity = 0.0\n" +
+                "        ${loop.loopId}ProfileState.position = 0.0\n" +
+                    "        ${loop.loopId}ProfileState.velocity = 0.0\n" +
                     "        ${loop.loopId}ProfileInitialized = false"
             }
         val bangBangReset = document.controlLoops
@@ -205,6 +207,7 @@ $tuningApplyCases
         return """
             package $pkg
 
+            import com.areslib.control.profile.TrapezoidProfile
             import com.areslib.tuning.TuningValue
             import com.areslib.tuning.TypedTuningConsumer
             import com.areslib.util.RobotClock
@@ -365,35 +368,38 @@ $continuousInputHelper
                     "${loop.loopId}Error - ${loop.loopId}PreviousError"
                 }
                 val targetPreparation = if (loop.strategy == SubsystemControlStrategy.PROFILED_POSITION_PID) {
-                    val remainingExpression = if (loop.continuousInput.enabled) {
-                        "wrapDelta(${loop.loopId}Goal - ${loop.loopId}ProfilePosition, ${continuousPeriod.kotlinDouble()})"
-                    } else {
-                        "${loop.loopId}Goal - ${loop.loopId}ProfilePosition"
-                    }
+                    val goalPositionExpression = if (loop.continuousInput.enabled) {
+                        "${loop.loopId}ProfileState.position + wrapDelta(${loop.loopId}Goal - ${loop.loopId}ProfileState.position, ${continuousPeriod.kotlinDouble()})"
+                    } else "${loop.loopId}Goal"
                     """        val ${loop.loopId}Goal = $target
         val ${loop.loopId}Measurement = $measurement
-        if (!${loop.loopId}ProfileInitialized && ${loop.loopId}Measurement.isFinite()) {
-            ${loop.loopId}ProfilePosition = ${loop.loopId}Measurement
-            ${loop.loopId}ProfileVelocity = 0.0
+        ${loop.loopId}ProfileConstraints.maxVelocity = ${document.controllerTuningExpression(loop, "maxvelocity", loop.motionProfile.maximumVelocity)}
+        ${loop.loopId}ProfileConstraints.maxAcceleration = ${document.controllerTuningExpression(loop, "maxacceleration", loop.motionProfile.maximumAcceleration)}
+        if (!${loop.loopId}Goal.isFinite() || !${loop.loopId}Measurement.isFinite() ||
+            !${loop.loopId}ProfileConstraints.maxVelocity.isFinite() || ${loop.loopId}ProfileConstraints.maxVelocity <= 0.0 ||
+            !${loop.loopId}ProfileConstraints.maxAcceleration.isFinite() || ${loop.loopId}ProfileConstraints.maxAcceleration <= 0.0) {
+            reset()
+            io.safe()
+            return
+        }
+        if (!${loop.loopId}ProfileInitialized) {
+            ${loop.loopId}ProfileState.position = ${loop.loopId}Measurement
+            ${loop.loopId}ProfileState.velocity = 0.0
             ${loop.loopId}ProfileInitialized = true
         }
-        val ${loop.loopId}PreviousProfileVelocity = ${loop.loopId}ProfileVelocity
-        if (${loop.loopId}Goal.isFinite() && ${loop.loopId}Measurement.isFinite()) {
-            val ${loop.loopId}Remaining = $remainingExpression
-            val ${loop.loopId}StoppingVelocity = kotlin.math.sqrt(2.0 * ${document.controllerTuningExpression(loop, "maxacceleration", loop.motionProfile.maximumAcceleration)} * abs(${loop.loopId}Remaining))
-            val ${loop.loopId}DesiredVelocity = sign(${loop.loopId}Remaining) * minOf(${document.controllerTuningExpression(loop, "maxvelocity", loop.motionProfile.maximumVelocity)}, ${loop.loopId}StoppingVelocity)
-            val ${loop.loopId}VelocityStep = ${document.controllerTuningExpression(loop, "maxacceleration", loop.motionProfile.maximumAcceleration)} * dtSeconds
-            ${loop.loopId}ProfileVelocity += (${loop.loopId}DesiredVelocity - ${loop.loopId}ProfileVelocity).coerceIn(-${loop.loopId}VelocityStep, ${loop.loopId}VelocityStep)
-            val ${loop.loopId}PositionStep = ${loop.loopId}ProfileVelocity * dtSeconds
-            if (abs(${loop.loopId}PositionStep) >= abs(${loop.loopId}Remaining)) {
-                ${loop.loopId}ProfilePosition = ${loop.loopId}Goal
-                ${loop.loopId}ProfileVelocity = 0.0
-            } else {
-                ${loop.loopId}ProfilePosition += ${loop.loopId}PositionStep
-            }
+        val ${loop.loopId}PreviousProfileVelocity = ${loop.loopId}ProfileState.velocity
+        ${loop.loopId}ProfileGoal.position = $goalPositionExpression
+        if (!${loop.loopId}ProfileGoal.position.isFinite()) {
+            reset()
+            io.safe()
+            return
         }
+        ${loop.loopId}Profile.calculate(dtSeconds, ${loop.loopId}ProfileState, ${loop.loopId}ProfileGoal,
+            ${loop.loopId}ProfileConstraints, ${loop.loopId}ProfileState)
+        val ${loop.loopId}ProfilePosition = ${loop.loopId}ProfileState.position
+        val ${loop.loopId}ProfileVelocity = ${loop.loopId}ProfileState.velocity
         val ${loop.loopId}ProfileAcceleration = (${loop.loopId}ProfileVelocity - ${loop.loopId}PreviousProfileVelocity) / dtSeconds
-        val ${loop.loopId}Target = if (${loop.loopId}Goal.isFinite()) ${loop.loopId}ProfilePosition else Double.NaN"""
+        val ${loop.loopId}Target = ${loop.loopId}ProfilePosition"""
                 } else {
                     """        val ${loop.loopId}Target = $target
         val ${loop.loopId}Measurement = $measurement

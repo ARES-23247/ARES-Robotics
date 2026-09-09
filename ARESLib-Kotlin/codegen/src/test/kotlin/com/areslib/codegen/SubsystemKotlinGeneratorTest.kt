@@ -183,6 +183,53 @@ class SubsystemKotlinGeneratorTest {
         assertGeneratedBehavior(cases.keys.toList(), cases.entries.associate { it.key.documentId to it.value })
     }
 
+    @Test
+    fun `generated profiles integrate acceleration and brake continuously`() {
+        val base = behaviorDocument(SubsystemControlStrategy.PROFILED_POSITION_PID)
+        val cases = linkedMapOf<SubsystemDocument, String>()
+        fun add(name: String, observeVelocity: Boolean = false, behavior: String) {
+            val document = base.copy(
+                documentId = "profile-${name.lowercase()}", kotlinTypeName = "Profile$name",
+                tuningParameters = emptyList(),
+                controlLoops = listOf(base.controlLoops.single().copy(
+                    kP = if (observeVelocity) 0.0 else 1.0, kI = 0.0, kD = 0.0,
+                    continuousInput = SubsystemContinuousInputDocument(),
+                    motionProfile = SubsystemMotionProfileDocument(maximumVelocity = 1.0, maximumAcceleration = 1.0),
+                    feedforward = if (observeVelocity) SubsystemFeedforwardDocument(kind = SubsystemFeedforwardKind.SIMPLE_MOTOR, kV = 1.0)
+                        else SubsystemFeedforwardDocument(),
+                )),
+            )
+            cases[document] = behavior.trimIndent()
+        }
+        add("FirstStep", behavior = """
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0002)) { "profile position does not integrate constant acceleration" }
+        """)
+        add("Arrival", observeVelocity = true, behavior = """
+            var previousVelocity = 0.0
+            repeat(100) {
+                controller.update(state(0.1), scale = 1.0)
+                require(abs(io.lastCommand - previousVelocity) <= 0.020000001) { "arrival violated maximum acceleration" }
+                previousVelocity = io.lastCommand
+            }
+            require(closeTo(io.lastCommand, 0.0))
+        """)
+        add("Reversal", observeVelocity = true, behavior = """
+            repeat(10) { controller.update(state(1.0), scale = 1.0) }
+            require(closeTo(io.lastCommand, 0.2))
+            controller.update(state(0.021), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.18)) { "nearby goal snapped a moving profile to rest" }
+        """)
+        add("InvalidFeedback", observeVelocity = true, behavior = """
+            repeat(10) { controller.update(state(1.0), scale = 1.0) }
+            controller.update(state(1.0, Double.NaN), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0))
+            controller.update(state(1.0, 1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "invalid feedback retained the old moving profile" }
+        """)
+        assertGeneratedBehavior(cases.keys.toList(), cases.entries.associate { it.key.documentId to it.value })
+    }
+
     private fun assertGeneratedBehavior(documents: List<SubsystemDocument>, customBehavior: Map<String, String> = emptyMap()) {
 
         val root = Files.createTempDirectory("ares-subsystem-controller-behavior")
@@ -352,8 +399,8 @@ class SubsystemKotlinGeneratorTest {
 
         assertTrue(controller.contains("primaryProfilePosition"))
         assertTrue(controller.contains("primaryProfileVelocity"))
-        assertTrue(controller.contains("primaryVelocityStep = primaryMaxacceleration * dtSeconds"))
-        assertTrue(controller.contains("minOf(primaryMaxvelocity, primaryStoppingVelocity)"))
+        assertTrue(controller.contains("primaryProfileConstraints.maxAcceleration = primaryMaxacceleration"))
+        assertTrue(controller.contains("primaryProfile.calculate(dtSeconds, primaryProfileState, primaryProfileGoal,"))
         assertTrue(controller.contains("primaryDesiredAcceleration = primaryProfileAcceleration"))
         assertTrue(controller.contains("+ primaryKg"))
         assertTrue(!controller.contains("mutableListOf"))

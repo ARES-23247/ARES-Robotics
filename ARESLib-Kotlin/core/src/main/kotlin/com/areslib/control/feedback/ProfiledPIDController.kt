@@ -6,7 +6,7 @@ import com.areslib.control.profile.TrapezoidProfile
  * Closed-Loop Profiled Feedback Controller Coupling [PIDController] and 1D [TrapezoidProfile].
  *
  * Enforces smooth velocity ($v_{max}$) and acceleration ($a_{max}$) kinematic constraints on mechanism setpoint motion
- * to minimize mechanical jerk, motor current spikes, and trajectory overshoots.
+ * on the reference. These are not jerk limits or guarantees on the physical mechanism response.
  *
  * ### Control Theory & Mathematics:
  * 1. **Trapezoidal Profile Reference Step**:
@@ -124,6 +124,19 @@ class ProfiledPIDController(
      * @return Computed control effort output $u(k)$ driving towards the profiled setpoint.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
+        // Invalid feedback/configuration must not advance the reference or reuse prior PID effort.
+        if (!measurement.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !constraints.maxVelocity.isFinite() || constraints.maxVelocity <= 0.0 ||
+            !constraints.maxAcceleration.isFinite() || constraints.maxAcceleration <= 0.0 ||
+            !currentState.position.isFinite() || !currentState.velocity.isFinite() ||
+            !targetState.position.isFinite() || !targetState.velocity.isFinite() ||
+            kotlin.math.abs(targetState.velocity) > constraints.maxVelocity ||
+            !pidController.p.isFinite() || !pidController.i.isFinite() || !pidController.d.isFinite()
+        ) {
+            pidController.reset()
+            return 0.0
+        }
+
         // Calculate the next step of the profile reference towards the targetState
         profile.calculate(dtSeconds, currentState, targetState, constraints, nextTargetState)
         
@@ -133,6 +146,11 @@ class ProfiledPIDController(
         // Run the feedback controller relative to the profiled reference position
         pidController.setSetpoint(currentState.position)
         
-        return pidController.calculate(measurement, dtSeconds)
+        val output = pidController.calculate(measurement, dtSeconds)
+        if (!output.isFinite()) {
+            pidController.reset()
+            return 0.0
+        }
+        return output
     }
 }
