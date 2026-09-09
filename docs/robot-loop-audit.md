@@ -403,3 +403,11 @@ caller-owned transactions committed by repository wrappers, fatal import rollbac
 pending console rows leaked across calls, native staging/upsert and redundant write timing.
 The large console fixture now completes without its prior timeout. Remaining diagnostics,
 schema/backup, sampling and physical timing scopes stay open.
+
+## Twenty-sixth pass: dashboard health arithmetic
+
+The [dashboard health audit](audits/dashboard-health-audit.md) covers startup and target-reset
+rate baselines, invalid clock intervals, exact byte differences, the replay prefetch ratio
+and unavailable dashboard drop counts. Controlled virtual-time regressions distinguish
+source counter history from measured interval traffic. This is desktop/headless evidence;
+physical loop timing and remaining health-card source/staleness behavior are still open.

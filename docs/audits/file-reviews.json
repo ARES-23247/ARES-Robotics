@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "106aadb337b9b7f67a5d3d172fb0ff1b87b9fb0d0255482b43b751b1ebdcd150",
+      "sha256": "43ed55e7135361c15f613172c9d71fbf305ad55c2f0319957a003a45a07d8711",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -470,7 +470,8 @@
         "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
         "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
         "ARESLib-Kotlin/build/audit-pass24-policy.log",
-        "docs/audits/database-coordinator-transactions-audit.md"
+        "docs/audits/database-coordinator-transactions-audit.md",
+        "docs/audits/dashboard-health-audit.md"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1760,6 +1761,66 @@
       "evidence": [
         "docs/audits/database-coordinator-transactions-audit.md",
         "ARESLib-Kotlin/build/audit-pass25-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DashboardHealthService.kt": {
+      "sha256": "44fe31e09abe148bed53b6f39000411b3e9467b51fdabf9fd1a199679c8026aa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire sampler, snapshot models and logging conversion reviewed. Observed rate baselines, target epoch/counter resets, finite byte availability, unsigned totals, correct subset prefetch ratio, status thresholds, nullable unmeasured dashboard drops and scope-owned disposal. 18 new virtual-time tests and full Studio gate passed; Kover 105/106 lines, 51/56 branches. Source snapshots/freshness are not atomic; rendering/hardware and explicit coverage gaps are documented.",
+      "evidence": [
+        "docs/audits/dashboard-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DashboardCounterRate.kt": {
+      "sha256": "58995a895a7b31482ba59dc2c10d6c1d0dde735cd0e23dd0811f110233c55e7f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire primitive unsigned rate helper reviewed: initial/explicit/epoch/decreasing-counter baselines, signed nanoTime wrap within half-range, nonpositive interval retention and precise unsigned delta before Double conversion. Integration tests exercise 14/14 lines, 8/8 branches; multi-century intervals/source Double precision limitations documented.",
+      "evidence": [
+        "docs/audits/dashboard-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DashboardHealthAuditTest.kt": {
+      "sha256": "8cb896e6392a97a982496c9e23c53d2803b3e2969c35af9dd7ea7addc9d80e47",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 18-method virtual-time suite reviewed and executed: owned sampler cancellation, mocked metric providers with real telemetry store/database metrics, baselines, resets, wrap, overflow, precision, ratios, status and unavailable drops. Final full gate passed; corrected 1e-6 absolute rounding tolerance at 1e9 fps retains original clamp reproduction.",
+      "evidence": [
+        "docs/audits/dashboard-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DashboardHealthServiceTest.kt": {
+      "sha256": "603a75fc7aacdda9d186d9fc5985b18c6d04786913f5328d9798607624fd9ffb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire existing one-method logging mapping fixture reviewed and executed. Confirms all robot log fields and separation from dashboard metrics; finite/missing/bounded cases added in the pass 26 suite.",
+      "evidence": [
+        "docs/audits/dashboard-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SystemHealthCard.kt": {
+      "sha256": "0618c409cdb1bc980824b8ae8fce91c0be8f11cca2ae661bd7c0bc8c4328e76a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 26 traces dashboard drop display and replaces a hard-coded measured zero with nullable unavailable N/A. Compiled and full Studio tests passed, without rendered-window evidence. Other live/replay source arbitration, lifetime/stale values, missing robot counts, numeric validation, topic matching and runtime presentation remain for focused review.",
+      "evidence": [
+        "docs/audits/dashboard-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+      ]
+    },
+    "docs/audits/dashboard-health-audit.md": {
+      "sha256": "84867d301cb0ba2b18374b3e7d25a23d5392d5db7bf8bbfa028d5276cdb3ae12",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 26 report checked against eight baseline reproductions, numerical-tolerance correction, final 18-method suite/full Studio gate, Kover and headless dashboard metrics. Source precision/coherence and hardware/rendering limitations explicitly documented.",
+      "evidence": [
+        "docs/audits/dashboard-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
       ]
     }
   }

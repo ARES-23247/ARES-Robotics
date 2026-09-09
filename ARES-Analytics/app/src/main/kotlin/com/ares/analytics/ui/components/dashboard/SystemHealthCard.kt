@@ -205,7 +205,7 @@ fun SystemHealthCard(
                     RuntimeMetric("DB P95", "%.1f ms".format(runtimeHealth.databaseP95Ms))
                     RuntimeMetric("CACHE HIT", "%.0f%%".format(runtimeHealth.replayCacheHitRatio * 100.0))
                     RuntimeMetric("RECONNECTS", runtimeHealth.reconnects.toString())
-                    RuntimeMetric("DROPS", runtimeHealth.droppedFrames.toString())
+                    RuntimeMetric("DROPS", runtimeHealth.droppedFrames?.toString() ?: "N/A")
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(

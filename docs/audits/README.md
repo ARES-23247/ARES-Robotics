@@ -86,8 +86,12 @@ transaction activation for actions/telemetry, input domains and deterministic ac
 Pass 25 covers [database coordination and repository transactions](database-coordinator-transactions-audit.md):
 caller-owned transaction preservation, shared cleanup across metadata/evidence/imports,
 set-based console writes and cancelled/failed coordinator attempts.
-Next are diagnostics/evidence reads, remaining schema/backup behavior, dashboard health
-sampling and recording-memory costs, stale approval, legacy states, verified project/evidence
+Pass 26 covers [dashboard health calculations](dashboard-health-audit.md): observed counter
+baselines, target epochs, invalid/precise clock intervals, unsigned log-byte differences,
+prefetch ratios and unavailable dashboard drop counts.
+Next are health-card live/replay selection and stale/missing metrics, diagnostics/evidence
+reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
+states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining
 Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
