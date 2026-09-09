@@ -55,9 +55,18 @@ internal class SessionMetadataRepository(
         upsertSession(session, IMPORT_STATE_COMPLETE)
     }
 
-    suspend fun getSessions(): List<Session> = withDbLock {
+    /** Returns one completed session without decoding unrelated recordings. */
+    suspend fun getSession(sessionId: String): Session? = withReadLock {
+        readConn.prepareStatement("SELECT * FROM sessions WHERE session_id = ? AND import_state = ?").use { statement ->
+            statement.setString(1, sessionId)
+            statement.setString(2, IMPORT_STATE_COMPLETE)
+            statement.executeQuery().use { rows -> if (rows.next()) rows.toSession() else null }
+        }
+    }
+
+    suspend fun getSessions(): List<Session> = withReadLock {
         val list = mutableListOf<Session>()
-        conn.createStatement().use { st ->
+        readConn.createStatement().use { st ->
             st.executeQuery("SELECT * FROM sessions WHERE import_state = '$IMPORT_STATE_COMPLETE' ORDER BY created_at DESC").use { rs ->
                 while (rs.next()) list.add(rs.toSession())
             }
@@ -193,9 +202,9 @@ internal class SessionMetadataRepository(
         }
     }
 
-    suspend fun getAllSessionSummaries(): List<SessionSummary> = withDbLock {
+    suspend fun getAllSessionSummaries(): List<SessionSummary> = withReadLock {
         val list = mutableListOf<SessionSummary>()
-        conn.createStatement().use { st ->
+        readConn.createStatement().use { st ->
             st.executeQuery(
                 """
                 SELECT ss.* FROM session_summaries ss
@@ -221,9 +230,9 @@ internal class SessionMetadataRepository(
         }
     }
 
-    suspend fun getAnnotations(sessionId: String): List<SessionAnnotation> = withDbLock {
+    suspend fun getAnnotations(sessionId: String): List<SessionAnnotation> = withReadLock {
         val list = mutableListOf<SessionAnnotation>()
-        conn.prepareStatement("SELECT * FROM session_annotations WHERE session_id = ? ORDER BY created_at ASC, annotation_id ASC").use { ps ->
+        readConn.prepareStatement("SELECT * FROM session_annotations WHERE session_id = ? ORDER BY created_at ASC, annotation_id ASC").use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
                 while (rs.next()) list.add(rs.toSessionAnnotation())
@@ -233,30 +242,38 @@ internal class SessionMetadataRepository(
     }
 
     suspend fun updateSessionTags(sessionId: String, tags: List<String>) = withDbLock {
-        conn.prepareStatement("UPDATE sessions SET tags = ? WHERE session_id = ?").use { ps ->
-            ps.setString(1, Json.encodeToString(tags))
-            ps.setString(2, sessionId)
-            ps.executeUpdate()
-        }
-        conn.prepareStatement("UPDATE session_summaries SET tags = ? WHERE session_id = ?").use { ps ->
-            ps.setString(1, Json.encodeToString(tags))
-            ps.setString(2, sessionId)
-            ps.executeUpdate()
+        val encodedTags = Json.encodeToString(tags)
+        updateSessionAndSummary("tags = ?") { statement ->
+            statement.setString(1, encodedTags)
+            statement.setString(2, sessionId)
         }
     }
 
     suspend fun updateSessionMatchDetails(sessionId: String, matchNumber: Int?, allianceColor: String?) = withDbLock {
-        conn.prepareStatement("UPDATE sessions SET match_number = ?, alliance_color = ? WHERE session_id = ?").use { ps ->
-            if (matchNumber != null) ps.setLong(1, matchNumber.toLong()) else ps.setNull(1, java.sql.Types.BIGINT)
-            ps.setString(2, allianceColor)
-            ps.setString(3, sessionId)
-            ps.executeUpdate()
+        updateSessionAndSummary("match_number = ?, alliance_color = ?") { statement ->
+            if (matchNumber != null) statement.setLong(1, matchNumber.toLong()) else statement.setNull(1, java.sql.Types.BIGINT)
+            statement.setString(2, allianceColor)
+            statement.setString(3, sessionId)
         }
-        conn.prepareStatement("UPDATE session_summaries SET match_number = ?, alliance_color = ? WHERE session_id = ?").use { ps ->
-            if (matchNumber != null) ps.setLong(1, matchNumber.toLong()) else ps.setNull(1, java.sql.Types.BIGINT)
-            ps.setString(2, allianceColor)
-            ps.setString(3, sessionId)
-            ps.executeUpdate()
+    }
+
+    /** Both copies become visible together; a failed summary update cannot leave a partial edit. */
+    private fun updateSessionAndSummary(assignments: String, bind: (java.sql.PreparedStatement) -> Unit) {
+        val ownsTransaction = conn.autoCommit
+        if (ownsTransaction) conn.autoCommit = false
+        try {
+            for (table in arrayOf("sessions", "session_summaries")) {
+                conn.prepareStatement("UPDATE $table SET $assignments WHERE session_id = ?").use { statement ->
+                    bind(statement)
+                    statement.executeUpdate()
+                }
+            }
+            if (ownsTransaction) conn.commit()
+        } catch (error: Exception) {
+            if (ownsTransaction) runCatching { conn.rollback() }.exceptionOrNull()?.let(error::addSuppressed)
+            throw error
+        } finally {
+            if (ownsTransaction) conn.autoCommit = true
         }
     }
 
@@ -279,9 +296,9 @@ internal class SessionMetadataRepository(
         }
     }
 
-    suspend fun getAlerts(sessionId: String): List<AlertRecord> = withDbLock {
+    suspend fun getAlerts(sessionId: String): List<AlertRecord> = withReadLock {
         val list = mutableListOf<AlertRecord>()
-        conn.prepareStatement("SELECT * FROM alerts WHERE session_id = ? ORDER BY trigger_timestamp_ms ASC").use { ps ->
+        readConn.prepareStatement("SELECT * FROM alerts WHERE session_id = ? ORDER BY trigger_timestamp_ms ASC").use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
                 while (rs.next()) list.add(rs.toAlertRecord())
@@ -298,8 +315,8 @@ internal class SessionMetadataRepository(
         }
     }
 
-    suspend fun getTopology(robotId: String): HardwareTopology? = withDbLock {
-        conn.prepareStatement("SELECT topology_json FROM cached_topologies WHERE robot_id = ?").use { ps ->
+    suspend fun getTopology(robotId: String): HardwareTopology? = withReadLock {
+        readConn.prepareStatement("SELECT topology_json FROM cached_topologies WHERE robot_id = ?").use { ps ->
             ps.setString(1, robotId)
             ps.executeQuery().use { rs ->
                 if (rs.next()) Json.decodeFromString(rs.getString("topology_json")) else null
@@ -343,9 +360,9 @@ internal class SessionMetadataRepository(
         }
     }
 
-    suspend fun getConsoleMessages(sessionId: String): List<ConsoleMessage> = withDbLock {
+    suspend fun getConsoleMessages(sessionId: String): List<ConsoleMessage> = withReadLock {
         val list = mutableListOf<ConsoleMessage>()
-        conn.prepareStatement("SELECT * FROM console_messages WHERE session_id = ? ORDER BY timestamp_ms ASC").use { ps ->
+        readConn.prepareStatement("SELECT * FROM console_messages WHERE session_id = ? ORDER BY timestamp_ms ASC").use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
                 while (rs.next()) list.add(rs.toConsoleMessage())

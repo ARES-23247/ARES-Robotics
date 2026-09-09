@@ -125,7 +125,7 @@ class ReplayEngineService internal constructor(
                 }
                 val frameTimestamps = databaseService.getDistinctTimestamps(sessionId)
                 val topicCount = databaseService.getDistinctTelemetryKeys(sessionId).size
-                val session = databaseService.getSessions().firstOrNull { it.sessionId == sessionId }
+                val session = databaseService.getSession(sessionId)
                 val actions = databaseService.getActionsForSession(sessionId)
                 val annotations = databaseService.getAnnotations(sessionId)
                 val density = if (frameTimestamps.isEmpty()) emptyList() else {

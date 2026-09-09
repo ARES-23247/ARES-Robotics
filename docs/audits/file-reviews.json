@@ -458,15 +458,16 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "e1c86f051eaebe478920c2e49e9c861be0534971dcefe6f8bc9bf3b018ba0d2c",
+      "sha256": "a9bec9e6f456676141002336bab346cec680984b1ab814f22d6cac7e700aceae",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work-queue/accounting document reviewed through pass 22. Records playback/time and initial-load fixes separately from remaining metadata, recording memory/concurrency, stale approvals, identity, transport/control and physical validation. Prior intermittent failures remain open.",
+      "scope": "Full work queue reviewed through pass 23: density/query and paired metadata edits recorded separately from remaining database mutation/metrics/memory, identity/cloud, robot and hardware work. Prior intermittent failures and opt-in checks remain open.",
       "evidence": [
-        "docs/audits/replay-playback-audit.md",
-        "ARESLib-Kotlin/build/audit-pass22-focused.log",
-        "ARESLib-Kotlin/build/audit-pass22-studio.log",
-        "ARESLib-Kotlin/build/audit-pass22-policy.log"
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1258,15 +1259,16 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayEngineService.kt": {
-      "sha256": "dd47a23f4b54a611e4e02a84357aef31884e07f5ff28899b59a95945c0efde37",
+      "sha256": "13e8ffd60d3d8223b709690e61f91ac6cebaeddf68152e502803b6d85431f7b6",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 21-22 cover window/read identities, coalescing/prefetch/failure/commit ordering and elapsed-time integration, rate/loop/pause/seek boundaries, initial-load ownership, caller cancellation, supersession and terminal disposal. Ten new lifecycle methods and 52 focused replay tests pass; full gate 410/422 lines, 197/288 branches. Metadata query complexity/domain checks, concurrent recording mutation, retained timestamp/window memory and broader UI/source shutdown contracts remain open; blocking dispose on a caller-confined dispatcher must be avoided.",
+      "scope": "Passes 21-22 cover window/read identities, coalescing/prefetch/failure/commit ordering and elapsed-time integration, rate/loop/pause/seek boundaries, initial-load ownership, caller cancellation, supersession and terminal disposal. Ten new lifecycle methods and 52 focused replay tests pass; full gate 410/422 lines, 197/288 branches. Metadata query complexity/domain checks, concurrent recording mutation, retained timestamp/window memory and broader UI/source shutdown contracts remain open; blocking dispose on a caller-confined dispatcher must be avoided. Pass 23 replaces full session enumeration with a direct completed-session lookup; replay regressions pass. Remaining metadata/domain/memory/concurrency concerns are not closed.",
       "evidence": [
-        "docs/audits/replay-playback-audit.md",
-        "ARESLib-Kotlin/build/audit-pass22-focused.log",
-        "ARESLib-Kotlin/build/audit-pass22-studio.log",
-        "ARESLib-Kotlin/build/audit-pass22-policy.log"
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayWindowAuditTest.kt": {
@@ -1411,6 +1413,136 @@
         "ARESLib-Kotlin/build/audit-pass22-focused.log",
         "ARESLib-Kotlin/build/audit-pass22-studio.log",
         "ARESLib-Kotlin/build/audit-pass22-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryDensityQuery.kt": {
+      "sha256": "2e29e619655fac7b5a535bee30a8079271220b4eb6e5f57ff2926ab268a5ba26",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full histogram query review: one statement snapshot, session binding, equal-width integer bins with widened intermediates, closed final endpoint, single-instant/empty behavior, bounded 1..10000 output and peak normalization. Eight actual JDBC regressions include twelve BigInteger oracle histograms across supported timestamp bounds. Only aggregated bins enter JVM memory; SQL work/memory is not constant. Full Studio gate passes; 14/14 JVM lines, 12/12 branches.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": {
+      "sha256": "58391fcb24eac6c229b1419daf775abebdbed65becb6cbd782f01d84f8e1679c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Density path reviewed and extracted: routes through read coordinator and session-specific persistent/ephemeral read connection. Numerical, routing and coordinator tests pass. Ingestion/export/cursors/pruning, timestamp-domain query boundaries and broader retention/lifecycle remain open. Full Studio gate passes; 320/332 lines, 93/138 branches do not close the remaining review.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt": {
+      "sha256": "68882c56cd8c084d71c571dbdf5e432b46e7500abcd874de6e31088fd0350b7a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Completed-session lookup, workspace filtering/order, six existing metadata read-connection paths and atomic paired tag/match edits reviewed. Eight regressions cover identity/import visibility, SQL binding, unrelated malformed JSON, read coordination, nullable details, missing summaries and rollback on failed second-table updates. Other CRUD/batching, import-deduplication, JSON/domain validation and lifecycle remain open. Full Studio gate passes; 281/289 lines, 52/68 branches do not close the remaining review.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": {
+      "sha256": "8da3dc3f6478e721e64b364ada3bd553f8c68d49735ace91424ba4cee7a48129",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Selected-session facade and alert identity lookup reviewed; reader delegation and paired metadata mutations exercised by integration tests. Alert policy predicate remains unchanged. The broader facade, constructor, backup/import, integration event and shutdown behavior remain open.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GuidedRunAnalysisService.kt": {
+      "sha256": "01987692e79f1c713cf5a73db526b1e10799c94ea8ba316a7330940bd8f12d5b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Session selection paths reviewed: workspace query replaces all-session filtering/re-sort; selected ID uses direct completed-session lookup before existing exact workspace predicate. Affected guided-analysis tests pass. Remaining evidence, analysis, errors, reporting and lifecycle remain open.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SessionBundleService.kt": {
+      "sha256": "277ba45f9e338a9fbfc9016470f55f182166b67ce8e3821a3d793a79e1d402ef",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Bundle selected-session lookup changed to direct completed primary-key query; existing missing-session and exact workspace checks preserved. Bundle regressions pass. Broader archive, import, identity and resource behavior remain open.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SyncEngineService.kt": {
+      "sha256": "d75b9ec6492ea97c397a6f5cd1ad84ec94cfb9fd651bb76a26bbd87757431acf",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Missing-summary selected-session fallback uses direct completed-session lookup with existing not-found handling. Local compilation/integration validation only; cloud account actions were not run. Broader upload/index/conflict/cancellation behavior remains open.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/TelemetryDensityAuditTest.kt": {
+      "sha256": "2432e4e4d06021e10e89ece7a10f9c632e889b9e295c17fe7636ebd22e0bc5ea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eight-method review/execution: floor/end bins, zero-duration/empty/one-bin cases, bounded input, live isolation and read coordination; twelve sparse histograms with independent BigInteger oracle, including 10000 bins. Five methods failed on original implementation and pass after fixes. Owned DB/temp fixture cleanup verified.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SessionMetadataReadAuditTest.kt": {
+      "sha256": "51987716017533d8b655dd2ac165781366e1d7d2e2c536cc1900ebb1502c5afa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eight-method review/execution: completed/importing/missing session identity, bound IDs, unrelated malformed JSON, seven read coordinator calls, exact workspace fields/order, paired tag/match success/nulls/missing summaries, rollback after failed second-table update and later write recovery. Schema failure injection affects only isolated test databases.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "docs/audits/telemetry-density-metadata-audit.md": {
+      "sha256": "128ae371065e92cc989bc6b99f803568289d5852c8d28eccc3c3d1a9ce6d14da",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass 23 report checked against source, original five density failures, 94 focused methods, final Studio gate/Kover and preserved dashboard measurements. Separates JVM and SQL evidence, completed histogram behavior, scoped query/transaction work and broader repository/consumer limitations.",
+      "evidence": [
+        "docs/audits/telemetry-density-metadata-audit.md",
+        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass23-studio.log",
+        "ARESLib-Kotlin/build/audit-pass23-policy.log"
       ]
     }
   }

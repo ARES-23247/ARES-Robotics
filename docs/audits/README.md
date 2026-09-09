@@ -77,7 +77,10 @@ coalesced reads, in-flight prefetch reuse, stale request rejection, truthful see
 error recovery, joined cleanup and database baseline/paging boundaries. Pass 22 covers
 [replay playback time and load ownership](replay-playback-audit.md): overflow-safe clock
 scaling, loop endpoints, command timing, initial-load cancellation and terminal disposal.
-Next are replay metadata and recording-memory costs, stale approval, legacy states, verified project/evidence
+Pass 23 covers [telemetry density and metadata queries](telemetry-density-metadata-audit.md):
+exact interval bins, single-instant density, one-statement snapshots, bounded output,
+direct/workspace session lookups, read coordination and atomic paired metadata edits.
+Next are remaining database mutations/metrics and recording-memory costs, stale approval, legacy states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining
 Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,

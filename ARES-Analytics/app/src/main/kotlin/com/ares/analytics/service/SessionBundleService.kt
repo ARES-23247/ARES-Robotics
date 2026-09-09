@@ -81,7 +81,7 @@ internal class SessionBundleService(
         summary: SessionSummary,
         destination: File,
     ): SessionBundleManifest = withContext(Dispatchers.IO) {
-        val session = databaseService.getSessions().singleOrNull { it.sessionId == sessionId }
+        val session = databaseService.getSession(sessionId)
             ?: throw IllegalArgumentException("Session not found for $sessionId")
         val workspace = requireNotNull(environmentService.loadConfig()) {
             "Choose an active workspace before uploading a session"

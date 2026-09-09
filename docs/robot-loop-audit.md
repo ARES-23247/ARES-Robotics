@@ -379,3 +379,11 @@ recovery, overflow-safe scaling and loop arithmetic, rate/pause/navigation bound
 initial-load ownership, supersession and terminal disposal. Twenty-two new regression
 methods include a randomized integer oracle and ordinary-tick allocation measurement.
 Recording metadata, database concurrency and physical timing remain open.
+
+## Twenty-third pass: telemetry density and metadata queries
+
+The [twenty-third-pass report](audits/telemetry-density-metadata-audit.md) records rounded
+histogram boundaries, empty-looking single-instant recordings, bounded density output,
+read-side query snapshots, targeted session lookup and atomic session/summary metadata
+updates. Real database tests include an independent integer histogram oracle and rollback
+failure injection. Remaining database mutation/lifecycle and physical timing work stays open.

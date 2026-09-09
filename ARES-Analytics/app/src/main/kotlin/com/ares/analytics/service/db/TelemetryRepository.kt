@@ -637,49 +637,8 @@ internal class TelemetryRepository(
         )
     }
 
-    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = withDbLock {
-        val activeConn = if (sessionId == "live-telemetry") ephemeralConn else conn
-        var minTime = 0L
-        var maxTime = 0L
-        activeConn.prepareStatement("SELECT MIN(timestamp_ms), MAX(timestamp_ms) FROM telemetry_frames WHERE session_id = ?").use { ps ->
-            ps.setString(1, sessionId)
-            ps.executeQuery().use { rs ->
-                if (rs.next()) {
-                    minTime = rs.getLong(1)
-                    maxTime = rs.getLong(2)
-                }
-            }
-        }
-
-        if (minTime == maxTime || maxTime == 0L) {
-            return@withDbLock List(buckets) { 0f }
-        }
-        val duration = maxTime - minTime
-        val bucketSize = duration.toDouble() / buckets
-        val bucketCounts = LongArray(buckets)
-        activeConn.prepareStatement("""
-            SELECT CAST((timestamp_ms - ?) / ? AS INTEGER) as bucket_idx, COUNT(*) as cnt
-            FROM telemetry_frames
-            WHERE session_id = ?
-            GROUP BY bucket_idx
-        """.trimIndent()).use { ps ->
-            ps.setLong(1, minTime)
-            ps.setDouble(2, bucketSize)
-            ps.setString(3, sessionId)
-            ps.executeQuery().use { rs ->
-                while (rs.next()) {
-                    val idx = rs.getInt(1).coerceIn(0, buckets - 1)
-                    val cnt = rs.getLong(2)
-                    bucketCounts[idx] += cnt
-                }
-            }
-        }
-        val maxCount = bucketCounts.maxOrNull() ?: 1L
-        if (maxCount == 0L) {
-             return@withDbLock List(buckets) { 0f }
-        }
-
-        bucketCounts.map { it.toFloat() / maxCount }
+    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = withReadLock {
+        loadTelemetryDensity(readConnectionFor(sessionId), sessionId, buckets)
     }
 
 }

@@ -197,6 +197,7 @@ class DatabaseService(
         transactionCoordinator.readOnlyQueries.executeWithParams(sql, params)
     suspend fun insertSession(session: Session) = sessionMetadataRepo.insertSession(session)
     internal suspend fun insertImportSession(session: Session) = sessionMetadataRepo.insertImportSession(session)
+    suspend fun getSession(sessionId: String): Session? = sessionMetadataRepo.getSession(sessionId)
     suspend fun getSessions(): List<Session> = sessionMetadataRepo.getSessions()
     suspend fun getSessionsForWorkspace(teamId: String, seasonId: String, robotId: String): List<Session> =
         sessionMetadataRepo.getSessionsForWorkspace(teamId, seasonId, robotId)
@@ -306,7 +307,7 @@ class DatabaseService(
     suspend fun associateSessionWithMatch(sessionId: String, matchNumber: Int, allianceColor: String, opponentTeams: List<String>) = sessionMetadataRepo.associateSessionWithMatch(sessionId, matchNumber, allianceColor, opponentTeams)
     suspend fun insertAlert(alert: AlertRecord) {
         sessionMetadataRepo.insertAlert(alert)
-        val session = sessionMetadataRepo.getSessions().firstOrNull { it.sessionId == alert.sessionId }
+        val session = sessionMetadataRepo.getSession(alert.sessionId)
         if (session != null) {
             integrationEvents.alertPersisted(
                 alert,
