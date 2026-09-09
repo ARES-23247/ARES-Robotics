@@ -458,15 +458,15 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "df8ae04b21a8e0b12df20ef31ca91c45e1861fa7074409bfcd855603d6e3e45f",
+      "sha256": "e1c86f051eaebe478920c2e49e9c861be0534971dcefe6f8bc9bf3b018ba0d2c",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work-queue/accounting document reviewed through pass 21. Records replay request fixes separately from clock/loop/lifecycle work, stale approvals, evidence identity, broader transport/control and physical validation. Prior timing-sensitive failures remain open.",
+      "scope": "Full work-queue/accounting document reviewed through pass 22. Records playback/time and initial-load fixes separately from remaining metadata, recording memory/concurrency, stale approvals, identity, transport/control and physical validation. Prior intermittent failures remain open.",
       "evidence": [
-        "docs/audits/replay-window-audit.md",
-        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass21-studio.log",
-        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1258,15 +1258,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayEngineService.kt": {
-      "sha256": "feaf907a24a5a51d1afe48eabb0835d3f7b15b89bff1f50498267cff1b1c9299",
+      "sha256": "dd47a23f4b54a611e4e02a84357aef31884e07f5ff28899b59a95945c0efde37",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scoped window/seek review: coalesced pending reads, shared in-flight and completed prefetch, foreground/prefetch request identities, required failure/retry, optional failure, completion after snapshot/metadata, one baseline application, scalar cache-metric deduplication and joining superseded owned readers. Ten controlled regressions and full Studio gate pass; 400/421 lines, 158/236 branches. Playback clock/scaling/overflow, looping, metadata and initial-load/terminal lifecycle remain open.",
+      "scope": "Passes 21-22 cover window/read identities, coalescing/prefetch/failure/commit ordering and elapsed-time integration, rate/loop/pause/seek boundaries, initial-load ownership, caller cancellation, supersession and terminal disposal. Ten new lifecycle methods and 52 focused replay tests pass; full gate 410/422 lines, 197/288 branches. Metadata query complexity/domain checks, concurrent recording mutation, retained timestamp/window memory and broader UI/source shutdown contracts remain open; blocking dispose on a caller-confined dispatcher must be avoided.",
       "evidence": [
-        "docs/audits/replay-window-audit.md",
-        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass21-studio.log",
-        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayWindowAuditTest.kt": {
@@ -1306,15 +1306,15 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayCacheAndClockTest.kt": {
-      "sha256": "71c11b225f39c5cd20375f104bc2b498515c3ad55d5d73b1a3737ef7142a3f88",
+      "sha256": "2dde491979ddce988e1d7f3deb47a64fa84c918d7de99d81eb38e39eeea57f87",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full three-method review and execution: injected monotonic elapsed-time source, adjacent prefetch reuse and multi-page retrieval. Fixtures clean owned replay/database/temp resources. The small prefetch fixture frame-count assertion is not a general memory bound.",
+      "scope": "Full three-method review and execution: explicit mutable clock establishes elapsed time independently of clock-read count; adjacent prefetch reuse and multi-page retrieval. Fixtures clean owned resources. The small fixture frame-count assertion is not a general memory bound.",
       "evidence": [
-        "docs/audits/replay-window-audit.md",
-        "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass21-studio.log",
-        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayDeterminismTest.kt": {
@@ -1351,6 +1351,66 @@
         "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
         "ARESLib-Kotlin/build/audit-pass21-studio.log",
         "ARESLib-Kotlin/build/audit-pass21-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayPlaybackTime.kt": {
+      "sha256": "6e04e054467fd8e2a6bc0a1f78f070265f0535d5d870b9cfe412a9f74e4f7530",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full elapsed-time helper review: fractional accumulation, backward/duplicate high-water clock, bounded addition and looping, exact exceptional-span arithmetic, zero duration, validation and reset. Twelve tests include 500 independent rational oracle spans and an ordinary-tick allocation assertion. 37/38 lines, 43/46 branches; the exceptional below-remaining path for durations beyond supported recordings is not executed. Millisecond playback uses binary Double rates, not arbitrary-precision fractional time.",
+      "evidence": [
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayModels.kt": {
+      "sha256": "e3ed049c6ba3e707edb3518fd3b28321444d32b75bbe21c055e1b017a7207cf8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full extracted replay DTO/enumeration/clock review. Existing public package/type/constructor contracts preserved; snapshots remain read-only map interfaces with engine-owned copies. Integrated replay tests and full Studio gate pass, 25/25 lines; clock uses monotonic nanoTime converted to milliseconds. No hardware timing or transitive deep-immutability claim.",
+      "evidence": [
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayPlaybackTimeAuditTest.kt": {
+      "sha256": "5aa7df986b66fde64cb8e247c5ece8a3b50c048c3c537c9102d786271d8577fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full twelve-method review/execution: independent arithmetic assertions, 500 deterministic BigInteger rational oracle cases, invalid input recovery, reset/end/loop/overflow and measured allocation after warmup (100,000 ticks, <=8192 bytes; passed without skip). Broad Long helper-domain tests do not expand the supported database timestamp domain.",
+      "evidence": [
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ReplayLifecycleAuditTest.kt": {
+      "sha256": "5c5015ab232c2ce01243eb40eeedda22d889ee64b2063e601b5c53c1ec6c86ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ten-method review/execution with controlled clocks, dispatchers and source gates: old-rate/policy settlement, pause/resume/seek/scrub, huge intervals, clock errors, terminal commands, caller cancellation and initial-load supersession/disposal. Real local metadata database; owned gates/jobs/database/temp files cleaned. Does not prove every scheduler interleaving.",
+      "evidence": [
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
+      ]
+    },
+    "docs/audits/replay-playback-audit.md": {
+      "sha256": "3a35d6e4bc9c9d8d7dcf4e16694ee7dd550245a40f6dacb7c4745734ee0968c7",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass 22 report reviewed against source, 52 focused tests, full Studio gate, Kover and preserved dashboard measurements. Distinguishes helper allocation measurement, unexecuted branches, metadata/memory/concurrency gaps, blocking-wrapper limitation and prior unresolved intermittent failures.",
+      "evidence": [
+        "docs/audits/replay-playback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass22-focused.log",
+        "ARESLib-Kotlin/build/audit-pass22-studio.log",
+        "ARESLib-Kotlin/build/audit-pass22-policy.log"
       ]
     }
   }

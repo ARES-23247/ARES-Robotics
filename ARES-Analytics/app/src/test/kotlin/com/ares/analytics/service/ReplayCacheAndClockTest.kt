@@ -24,7 +24,7 @@ class ReplayCacheAndClockTest {
                     frame("clock", 1_100, 2.0)
                 )
             )
-            val clock = IncrementingClock(stepMs = 25)
+            val clock = MutableClock()
             val replay = ReplayEngineService(
                 database,
                 clock = clock,
@@ -33,6 +33,7 @@ class ReplayCacheAndClockTest {
             try {
                 replay.loadSession("clock")
                 replay.play()
+                clock.now = 25L
                 runCurrent()
                 replay.pause()
 
@@ -97,11 +98,7 @@ class ReplayCacheAndClockTest {
         value = value
     )
 
-    private class IncrementingClock(private val stepMs: Long) : ReplayClock {
-        private var now = -stepMs
-        override fun nowMs(): Long {
-            now += stepMs
-            return now
-        }
+    private class MutableClock(var now: Long = 0L) : ReplayClock {
+        override fun nowMs(): Long = now
     }
 }

@@ -371,3 +371,11 @@ in-flight prefetch reuse, stale foreground/prefetch rejection, truthful completi
 failure recovery, disposal joins and database window boundaries. It also tightens seek
 benchmark assertions and controls the lifecycle fixture's clock. The earlier replay timing
 failure remains unproven; playback arithmetic and the rest of the replay lifecycle remain open.
+
+## Twenty-second pass: replay playback time and load ownership
+
+The [twenty-second-pass report](audits/replay-playback-audit.md) records backward-clock
+recovery, overflow-safe scaling and loop arithmetic, rate/pause/navigation boundaries,
+initial-load ownership, supersession and terminal disposal. Twenty-two new regression
+methods include a randomized integer oracle and ordinary-tick allocation measurement.
+Recording metadata, database concurrency and physical timing remain open.
