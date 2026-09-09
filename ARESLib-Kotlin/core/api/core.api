@@ -2331,6 +2331,8 @@ public final class com/areslib/math/InputMath {
 	public final fun applyDeadband (DD)D
 	public final fun processJoystickVector (DDDD)Lkotlin/Pair;
 	public static synthetic fun processJoystickVector$default (Lcom/areslib/math/InputMath;DDDDILjava/lang/Object;)Lkotlin/Pair;
+	public final fun processJoystickVectorInto (DD[DDD)V
+	public static synthetic fun processJoystickVectorInto$default (Lcom/areslib/math/InputMath;DD[DDDILjava/lang/Object;)V
 }
 
 public abstract interface class com/areslib/math/Interpolatable {

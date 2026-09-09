@@ -16,7 +16,8 @@ import kotlin.math.pow
  *    $$y = \begin{cases} 0 & \text{if } |x| < d \\ \frac{x - \text{sgn}(x) \cdot d}{1 - d} & \text{if } |x| \ge d \end{cases}$$
  * 2. **Exponential Driver Control Curve**:
  *    Provides fine precision near origin while maintaining maximum top speed output:
- *    $$y = \text{sgn}(x) \cdot |x|^p \quad (p \ge 1.0)$$
+ *    $$y = \text{sgn}(x) \cdot |x|^p \quad (p > 0.0)$$
+ *    Exponents below one amplify small inputs; exponents above one reduce them.
  * 3. **Radial Joystick Vector Processing**:
  *    Calculates polar magnitude $r = \sqrt{x_{\text{raw}}^2 + y_{\text{raw}}^2}$, applies deadband and curve to $r$,
  *    and projects back onto normalized direction vector $\hat{\mathbf{u}} = \frac{\mathbf{v}_{\text{raw}}}{r}$:
@@ -26,8 +27,10 @@ import kotlin.math.pow
  * - Input/Output Signal Ranges: Normalized joystick duty cycle $[-1.0, 1.0]$
  * - Vector Direction Angle ($\theta$): Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
  *
- * ### Zero-GC Guarantee:
- * Uses primitive arithmetic for scalar methods. `processJoystickVector` operates on primitive stack variables.
+ * ### Allocation and validity:
+ * Scalar methods and [processJoystickVectorInto] use primitive arithmetic without per-call allocation.
+ * [processJoystickVector] allocates a Pair and boxed components for convenience. Invalid observations
+ * or configuration neutralize the affected scalar/vector; this does not establish controller freshness.
  */
 object InputMath {
     /**
@@ -35,26 +38,23 @@ object InputMath {
      *
      * @param value Raw scalar input value in range $[-1.0, 1.0]$.
      * @param deadband Symmetric deadband threshold $d \in [0.0, 1.0)$.
-     * @return Scaled value guaranteed to be $0.0$ within deadband and smooth up to $\pm 1.0$.
+     * @return Zero for invalid input/configuration or within deadband; otherwise rescaled travel.
      */
     fun applyDeadband(value: Double, deadband: Double): Double {
-        val denominator = 1.0 - deadband
-        return when {
-            abs(value) < deadband -> 0.0
-            abs(denominator) < 1e-6 -> 0.0 // Guard against division by zero
-            else -> (value - sign(value) * deadband) / denominator
-        }
+        if (!validAxis(value) || !validDeadband(deadband) || abs(value) <= deadband) return 0.0
+        return sign(value) * ((abs(value) - deadband) / (1.0 - deadband))
     }
 
     /**
      * Applies an exponential power curve to a scalar input value while preserving sign.
      *
      * @param value Input value in range $[-1.0, 1.0]$.
-     * @param exponent Power exponent curve factor $p$ (default $2.0$).
-     * @return Curved signal output maintaining $\text{sgn}(\text{value})$.
+     * @param exponent Positive finite power exponent (default $2.0$); values below one are supported.
+     * @return Sign-preserving curved signal; zero for invalid input/configuration.
      */
     fun applyCurve(value: Double, exponent: Double = 2.0): Double {
-        return sign(value) * abs(value).pow(exponent)
+        if (!validAxis(value) || !validExponent(exponent) || value == 0.0) return 0.0
+        return sign(value) * curveMagnitude(abs(value), exponent)
     }
 
     /**
@@ -64,20 +64,40 @@ object InputMath {
      * @param rawX Raw X-axis joystick input $[-1.0, 1.0]$.
      * @param rawY Raw Y-axis joystick input $[-1.0, 1.0]$.
      * @param deadband Radial deadband threshold $d \in [0.0, 1.0)$ (default $0.05$).
-     * @param exponent Exponential power curve factor $p \ge 1.0$ (default $1.0$).
+     * @param exponent Positive finite power curve factor (default $1.0$).
      * @return Pair of scaled $[x, y]$ vector components bounded to unit circle magnitude $[0.0, 1.0]$.
      */
     fun processJoystickVector(rawX: Double, rawY: Double, deadband: Double = 0.05, exponent: Double = 1.0): Pair<Double, Double> {
+        return withProcessedVector(rawX, rawY, deadband, exponent) { x, y -> Pair(x, y) }
+    }
+
+    /**
+     * Writes conditioned X/Y into [output] indices 0/1 using the same law as [processJoystickVector].
+     * The caller owns and reuses the array; extra entries are untouched. Invalid input/configuration
+     * writes two zeros. Requires at least two entries, checked before any write. No shared scratch state.
+     */
+    fun processJoystickVectorInto(rawX: Double, rawY: Double, output: DoubleArray, deadband: Double = 0.05, exponent: Double = 1.0) {
+        require(output.size >= 2) { "Joystick output needs at least two entries" }
+        withProcessedVector(rawX, rawY, deadband, exponent) { x, y -> output[0] = x; output[1] = y }
+    }
+
+    private fun validAxis(value: Double) = value.isFinite() && value >= -1.0 && value <= 1.0
+    private fun validDeadband(value: Double) = value.isFinite() && value >= 0.0 && value < 1.0
+    private fun validExponent(value: Double) = value.isFinite() && value > 0.0
+    private fun curveMagnitude(value: Double, exponent: Double) = when (exponent) {
+        1.0 -> value
+        2.0 -> value * value
+        else -> value.pow(exponent)
+    }
+
+    // Inline result delivery avoids lambda objects, boxed components and temporary arrays on the Into path.
+    private inline fun <T> withProcessedVector(rawX: Double, rawY: Double, deadband: Double, exponent: Double, result: (Double, Double) -> T): T {
+        if (!validAxis(rawX) || !validAxis(rawY) || !validDeadband(deadband) || !validExponent(exponent)) return result(0.0, 0.0)
         val mag = kotlin.math.hypot(rawX, rawY)
-        if (mag == 0.0 || !mag.isFinite() || !deadband.isFinite() || deadband < 0.0 || deadband >= 1.0 ||
-            !exponent.isFinite() || exponent < 0.0 || mag < deadband) return Pair(0.0, 0.0)
-
-        val normMag = ((mag - deadband) / (1.0 - deadband)).coerceIn(0.0, 1.0)
-        val curvedMag = applyCurve(normMag, exponent)
-
-        val scaledX = (rawX / mag) * curvedMag
-        val scaledY = (rawY / mag) * curvedMag
-        return Pair(scaledX, scaledY)
+        if (mag <= deadband) return result(0.0, 0.0)
+        val normMag = if (mag >= 1.0) 1.0 else (mag - deadband) / (1.0 - deadband)
+        val curvedMag = curveMagnitude(normMag, exponent)
+        return result((rawX / mag) * curvedMag, (rawY / mag) * curvedMag)
     }
 }
 

@@ -104,6 +104,23 @@ ARES Robotics Studio converts field coordinates to canvas coordinates with swapp
 
 Alliance mirroring is a field transform, not a heading-sign change. Apply it at one explicit boundary. Field-centric joystick transforms, path mirroring, vision field poses, and simulator spawn selection must agree on the active alliance. A second mirror or heading negation can look correct on one half of the field and fail on the other.
 
+## Joystick conditioning and snapshot ownership
+
+`InputMath` accepts finite axis observations in [-1, 1], deadbands in [0, 1), and positive
+finite curve exponents. Invalid observations/configuration produce neutral output; one bad
+vector coordinate neutralizes that whole vector. Exponents below one remain supported and
+amplify small inputs. Zero is rejected because it makes arbitrarily small active travel jump
+to full output. Every valid deadband, including the representable value immediately below
+one, preserves full travel. Radial processing clamps magnitude at one and preserves direction
+to floating-point precision, including square-stick corners.
+
+The Pair-returning vector convenience API allocates. Hot paths should reuse a caller-owned
+two-entry array with `processJoystickVectorInto`; entries beyond the first two are untouched.
+The FTC adapter reuses one buffer and returns a new immutable `ControllerState` each poll.
+It reads each SDK field once, flips FTC Y once, and neutralizes invalid triggers individually.
+Snapshots must not be mutated/reused after publication. Values alone do not prove connection
+or freshness, and these helpers do not replace the robot's enable/lease checks.
+
 ## Primitive filter state and time
 
 `LowPassFilter` uses the backward-Euler RC recurrence, not the exact continuous exponential;
