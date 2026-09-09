@@ -333,3 +333,10 @@ The [sixteenth-pass report](audits/sysid-live-collection-audit.md) records compl
 assembly, microsecond sample identities, bounded pending rows/history, preview throttling,
 separate geometric rows and snapshot ownership. Stop-generation, session, replay and
 mechanism boundaries are tested. Analysis-service work and physical validation remain open.
+
+## Seventeenth pass: SysId analysis
+
+The [seventeenth-pass report](audits/sysid-analysis-audit.md) records identifiable scaled
+regression, finite gain/R-squared arithmetic, microsecond channel matching, negative steps,
+Nyquist and spectral scaling, and one background fit with guarded publication. Twenty-one
+new regression methods pass. The full AutoTuner model/proposal workflow remains open.

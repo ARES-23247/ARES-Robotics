@@ -19,7 +19,7 @@ class SysIdLogImportAuditTest {
             try {
                 val state = MutableStateFlow(SysIdState())
                 val service = SysIdService(database)
-                result = SysIdDataCollector(nt4, service, AutoTunerService(nt4, service), state,
+                result = SysIdDataCollector(nt4, AutoTunerService(nt4, service), state,
                     backgroundScope, SysIdRegressionSolver(state)).parseLogFile(content)
             } finally {
                 nt4.stop()

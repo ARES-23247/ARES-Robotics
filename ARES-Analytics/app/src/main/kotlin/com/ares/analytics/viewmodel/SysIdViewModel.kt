@@ -143,7 +143,6 @@ class SysIdViewModel(
     private val signalGenerator = SysIdSignalGenerator(nt4ClientService, _state, scope, tuningProposalInbox = tuningProposalInbox)
     private val dataCollector = SysIdDataCollector(
         nt4ClientService,
-        sysIdService,
         autoTunerService,
         _state,
         scope,

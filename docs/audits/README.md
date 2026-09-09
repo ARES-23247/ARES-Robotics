@@ -64,8 +64,11 @@ Pass 15 covers [SysId log imports](sysid-log-import-audit.md): stable column pos
 explicit timing, missing acceleration, duplicate handling and chronological samples.
 Pass 16 covers [live SysId collection](sysid-live-collection-audit.md): complete rows,
 microsecond identities, bounded history, immutable snapshots and stop/restart boundaries.
-The next pass addresses analysis-service math, duplicate fitting and result publication,
-followed by logging/transport, advanced descriptor safety and remaining Studio math.
+Pass 17 covers [SysId analysis](sysid-analysis-audit.md): identifiable scaled regression,
+microsecond alignment, FFT endpoints and stable arithmetic, one background fit per motor
+run, and generation-checked result publication. Next are AutoTuner step-response/quality
+math and import/proposal consistency, then logging/transport, advanced descriptor safety
+and remaining Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.

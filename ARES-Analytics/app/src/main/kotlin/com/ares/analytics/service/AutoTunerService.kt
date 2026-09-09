@@ -2,6 +2,8 @@ package com.ares.analytics.service
 
 import com.areslib.control.assist.SysIdMechanism
 import com.ares.analytics.service.tuning.TuningParameterKeys
+import com.ares.analytics.shared.models.CalculatedSummary
+import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
@@ -96,14 +98,27 @@ class AutoTunerService(
         samples: List<AlignedDataRow>,
         source: String = "live-nt4"
     ): TuningRecommendation? {
+        val analysis = computeSampleAnalysis(mechanism, samples, source)
+        publishRecommendation(analysis.recommendation)
+        return analysis.recommendation
+    }
+
+    internal data class SampleAnalysis(val summary: CalculatedSummary, val recommendation: TuningRecommendation?)
+
+    /** Computes one fit without publishing state; callers may discard obsolete run results. */
+    internal fun computeSampleAnalysis(
+        mechanism: SysIdMechanism,
+        samples: List<AlignedDataRow>,
+        source: String = "live-nt4"
+    ): SampleAnalysis {
         val dataQuality = AutoTuningSafetyPolicy.assessData(mechanism, samples)
         val finite = samples.asSequence()
-            .filter { it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite() }
+            .filter { it.timestampMs in 0L..MAX_SUPPORTED_TIMESTAMP_MS &&
+                it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite() }
             .sortedBy { it.timestampMs }
             .toList()
-        if (finite.size < MIN_RECOMMENDATION_SAMPLES) return null
-
         val summary = sysIdService.analyzeRawData(finite)
+        if (finite.size < MIN_RECOMMENDATION_SAMPLES) return SampleAnalysis(summary, null)
         val metrics = identifyStepResponse(finite)
         val gains = calculateImcGains(metrics)
         val envelope = AutoTuningSafetyPolicy.envelopeFor(mechanism)
@@ -153,14 +168,17 @@ class AutoTunerService(
             safetyEnvelope = envelope,
             topicValues = topicValues
         )
+        return SampleAnalysis(summary, recommendation)
+    }
+
+    internal fun publishRecommendation(recommendation: TuningRecommendation?) {
         _currentRecommendation.value = recommendation
         if (_applyState.value.phase != TuningApplyPhase.APPLIED_AWAITING_VALIDATION) {
             _applyState.value = TuningApplyState(
-                phase = TuningApplyPhase.RECOMMENDED,
-                message = "Recommendation ready for review."
+                phase = if (recommendation == null) TuningApplyPhase.IDLE else TuningApplyPhase.RECOMMENDED,
+                message = if (recommendation == null) "" else "Recommendation ready for review."
             )
         }
-        return recommendation
     }
 
     /** Parses structured JSONL or CSV exports. Binary WPILOG files must first use the existing decoder. */

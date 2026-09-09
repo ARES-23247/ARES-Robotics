@@ -2,7 +2,6 @@ package com.ares.analytics.viewmodel.sysid
 
 import com.ares.analytics.service.AlignedDataRow
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.SysIdService
 import com.ares.analytics.service.AutoTunerService
 import com.ares.analytics.service.TuningApplyPhase
 import com.ares.analytics.shared.models.TelemetryFrame
@@ -10,22 +9,25 @@ import com.ares.analytics.viewmodel.SysIdState
 import com.areslib.control.assist.SysIdMechanism
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.TreeMap
 
 /** Collects complete live samples; publishes bounded previews and a full snapshot at completion. */
 class SysIdDataCollector(
     private val nt4ClientService: Nt4ClientService,
-    private val sysIdService: SysIdService,
     private val autoTunerService: AutoTunerService,
     private val _state: MutableStateFlow<SysIdState>,
     private val scope: CoroutineScope,
     private val regressionSolver: SysIdRegressionSolver,
     private val maxSamples: Int = 20_000,
     private val previewLimit: Int = 1_000,
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val onRoutineCompleted: suspend () -> Unit = {}
 ) {
     init { require(maxSamples > 0 && previewLimit > 0 && previewLimit <= maxSamples) }
@@ -33,6 +35,7 @@ class SysIdDataCollector(
     private val assembler = SysIdSampleAssembler()
     private val rows = TreeMap<Long, DoubleArray>()
     private var collectorJob: Job? = null
+    private var analysisJob: Job? = null
     private var runKind: String? = null
     private var runSession: String? = null
     private var runMechanism: SysIdMechanism? = null
@@ -60,6 +63,8 @@ class SysIdDataCollector(
     /** Called before requesting a new routine; invalidates analysis awaiting a stop callback. */
     fun clearBuffer() = synchronized(lock) {
         generation++
+        analysisJob?.cancel(); analysisJob = null
+        autoTunerService.publishRecommendation(null)
         assembler.clear(); rows.clear()
         runKind = null; runSession = null; runMechanism = null; failed = false; lastPreviewMs = null
         _state.update { it.copy(liveSamples=emptyList(), liveCalibrationData=emptyList(), summary=null, tuningRecommendation=null) }
@@ -95,6 +100,8 @@ class SysIdDataCollector(
 
     private fun fail(message: String): Boolean {
         failed = true
+        analysisJob?.cancel(); analysisJob = null
+        autoTunerService.publishRecommendation(null)
         assembler.clear()
         _state.update { it.copy(errorMessage=message, isRoutineRunning=false, isLoading=false,
             summary=null, tuningRecommendation=null, recommendedPinpointXOffsetMm=null,
@@ -135,18 +142,30 @@ class SysIdDataCollector(
             if (isGeometricCalibration(completed.kind)) {
                 regressionSolver.runCalibrationAnalysis(completed.kind, completed.rows)
             } else if (completed.rows.isNotEmpty()) {
-                val samples = completed.samples
-                val summary = sysIdService.analyzeRawData(samples)
-                val recommendation = autoTunerService.analyzeSamples(completed.mechanism, samples, "live-nt4")
-                _state.update { it.copy(summary=summary, tuningRecommendation=recommendation) }
+                analysisJob?.cancel()
+                analysisJob = scope.launch {
+                    val analysis = withContext(analysisDispatcher) {
+                        autoTunerService.computeSampleAnalysis(completed.mechanism, completed.samples, "live-nt4")
+                    }
+                    val published = synchronized(lock) {
+                        if (completed.generation != generation || completed.mechanism != _state.value.selectedMechanism) {
+                            false
+                        } else {
+                            autoTunerService.publishRecommendation(analysis.recommendation)
+                            _state.update { it.copy(summary=analysis.summary, tuningRecommendation=analysis.recommendation) }
+                            true
+                        }
+                    }
+                    val recommendation = analysis.recommendation
+                    if (published && recommendation != null &&
+                        autoTunerService.applyState.value.phase == TuningApplyPhase.APPLIED_AWAITING_VALIDATION) {
+                        autoTunerService.validateOrRollback(recommendation)
+                    }
+                }
             } else {
+                autoTunerService.publishRecommendation(null)
                 _state.update { it.copy(errorMessage="No complete SysId samples were collected", summary=null, tuningRecommendation=null) }
             }
-        }
-        val recommendation = _state.value.tuningRecommendation
-        if (recommendation != null && completed.generation == synchronized(lock) { generation } &&
-            autoTunerService.applyState.value.phase == TuningApplyPhase.APPLIED_AWAITING_VALIDATION) {
-            autoTunerService.validateOrRollback(recommendation)
         }
     }
 

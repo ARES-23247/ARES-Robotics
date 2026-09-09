@@ -458,13 +458,13 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "816c5435d1f04314481fef01f5475764aa5f4730d043a479d5bfcd55122d5691",
+      "sha256": "7af2aec416a039e9a93c4e46374fc1518082a93ffbf69282169defe6aa794b13",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full accounting/work-queue document reviewed through pass 16. Records remaining analysis-service, transport and physical work. Shared guidance and links pass; no repository-wide or hardware completion claim.",
+      "scope": "Full accounting/work-queue document reviewed through pass 17. Records remaining AutoTuner model/import/proposal, transport and physical work. Shared guidance and links pass; no repository-wide or hardware completion claim.",
       "evidence": [
-        "docs/audits/sysid-live-collection-audit.md",
-        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -853,13 +853,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
-      "sha256": "70b8d84b4be3e8bc8fbb8cb95769a35adba9735953e99d61752d9e4d990e6970",
+      "sha256": "15f7895e3b75962ebcbb0bcc12156c309a27571fa75699b33492a399c7edaded",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 15-16 cover import delegation, complete live rows, bounded capture/previews, snapshot ownership, source/mechanism/replay/status isolation and stop-generation guards. 105/109 lines and 100/122 branches exercised. Analysis service computes a duplicate fit and publishes mutable recommendation state; coordinated math/publication and stronger request/acknowledgement provenance remain open before full completion.",
+      "scope": "Passes 15-17 cover imports, complete bounded live rows and previews, snapshot ownership, source/mechanism/status/stop isolation, one background motor fit and cancellation/generation-checked publication. Four new deterministic queued/computed-result boundaries pass. Geometric dispatch and stronger request/acknowledgement provenance over lossy transport remain open. Final Studio gate: 118/121 executable lines and 111/132 branches exercised.",
       "evidence": [
-        "docs/audits/sysid-live-collection-audit.md",
-        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
       ]
     },
     "docs/audits/studio-calibration-audit.md": {
@@ -883,13 +884,14 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogImportAuditTest.kt": {
-      "sha256": "fc22a0de2eb09c10aa4f31e2a935784fba29dada65e48e39d0d7a218e677dd9f",
+      "sha256": "7f8186482ada9547df863bec7760f4a6f100650c3a4003492c78db278cf2ef42",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full test-file review and all 21 methods executed in the final Studio suite. Tests use analytic derivative expectations, malformed-data rejection and format boundaries, with one existing collector API integration test and owned resource cleanup. Initial fixture compilation error and correction are recorded.",
+      "scope": "Previously fully reviewed 21-method parser suite; pass 17 only removes the redundant collector constructor argument. Existing import validation and owned resource boundaries remain applicable; full Studio execution is required after this integration change. All 21 methods passed in the final Studio gate.",
       "evidence": [
-        "docs/audits/sysid-log-import-audit.md",
-        "ARESLib-Kotlin/build/audit-pass15-studio-final.log"
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
       ]
     },
     "docs/audits/sysid-log-import-audit.md": {
@@ -913,13 +915,14 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLiveCollectionAuditTest.kt": {
-      "sha256": "30bd5f800470bcbebbeee716a9ab2887f59a7be766bd3508a120d0da423e0095",
+      "sha256": "b32e087748ea6589077cfa1c5ca47f4ab5b1acf9ace92041ddd5577463d7b604",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full test-file review and execution in the final Studio gate: 26 collector plus six assembler methods. Owned fake telemetry flow and resource cleanup; analytic row expectations, capacity, lifecycle and snapshot isolation. No robot command or physical stop acknowledgement measured.",
+      "scope": "Full 30-method collector test review and focused execution. Four additional controlled-queue cases cover deferred publication, queued cancellation, completed-but-unpublished cancellation and mechanism changes. Prior bounded/live ownership scenarios remain passing. Uses one coroutine scheduler with an explicit dispatcher queue, no timing sleeps.",
       "evidence": [
-        "docs/audits/sysid-live-collection-audit.md",
-        "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSampleAssemblerTest.kt": {
@@ -940,6 +943,71 @@
       "evidence": [
         "docs/audits/sysid-live-collection-audit.md",
         "ARESLib-Kotlin/build/audit-pass16-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdService.kt": {
+      "sha256": "6dfda5215b869756372c58062bbafadf4c6925e9fd5c0a23041fe9f80034fc48",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full service review: normalized compact SVD and rank rejection, finite physical gain and R-squared arithmetic, microsecond nearest-neighbor alignment, chronological signed step heuristic, normalized Hann FFT with DC/Nyquist endpoints and peak selection. Analytic extreme/ordinary/rank-deficient fits, paired sub-millisecond database samples, inclusive 50 ms bounds, negative steps and FFT boundary tests pass. Sampling uniformity and physical damping interpretation remain caller/model limitations. Final Studio gate: 179/183 executable lines and 148/202 branches exercised.",
+      "evidence": [
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoTunerService.kt": {
+      "sha256": "78514289fe78d697dcc587b64dd1caa9f6d5e98ffb8671729cced177e76c8df6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 17 separates pure single-fit computation from recommendation publication, clears stale recommendations for insufficient samples, and preserves the public synchronous wrapper. Step-response estimation, quadratic settling search, repeated data preparation, separate log parser, safety-quality arithmetic and proposal/topic semantics need further audit before completion.",
+      "evidence": [
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
+      "sha256": "ce743ccf1c3b205965101c8bfb08feb871dbe6a56833f676ec2d24555fbff60d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 17 removes the collector dependency made redundant by shared AutoTuner fitting. Reviewed collector construction and related live/simulation call sites; the remaining intent workflow, imported/simulation result provenance, publication and proposal lifecycle remain open.",
+      "evidence": [
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SysIdAnalysisMathAuditTest.kt": {
+      "sha256": "56c52b57531e8965b458d165a28abd0021ba4315b5f5d5f21b647c301d4608bb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full 17-method test-file review and focused execution. Analytic identifiable/rank-deficient gain models, numeric scaling, chronological/signed transients, DC/Nyquist/extreme FFT inputs, database microsecond matching and shared pure analysis/publication. Owned DuckDB/client cleanup; no physical-device or wall-clock timing assertion.",
+      "evidence": [
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTunerServiceTest.kt": {
+      "sha256": "ef64dc9b5bc6573293a228eb34af747c7247e37be46e07c46cfcffac26c12eda",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method test review and focused execution. Replaced rank-deficient single-exponential fixture with a known motor plant driven at multiple voltage levels. Gain recovery, JSONL names, proposal-only approval and teaching-model rejection pass. Owned database/client teardown replaces leaked extra fixtures.",
+      "evidence": [
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+      ]
+    },
+    "docs/audits/sysid-analysis-audit.md": {
+      "sha256": "4c6b5066be0e1e7d5f102b91cc5340debbf215b3fefbac048161a9f8370f8bca",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report checked against initial/final test XML, Kover metrics, source changes and execution logs. Documents invalid old fixture and test harness corrections, limited transient heuristic, caller sampling assumptions, pending AutoTuner/provenance work and lack of hardware timing evidence.",
+      "evidence": [
+        "docs/audits/sysid-analysis-audit.md",
+        "ARESLib-Kotlin/build/audit-pass17-studio.log"
       ]
     }
   }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -27,8 +28,18 @@ class SysIdLiveCollectionAuditTest {
         var completions = 0
         var whenStopped: suspend () -> Unit = {}
         private val service = SysIdService(db)
-        val collector = SysIdDataCollector(client, service, AutoTunerService(client,service), state,
-            scope.backgroundScope, SysIdRegressionSolver(state), maxSamples=maxSamples, previewLimit=previewLimit,
+        val tuner = AutoTunerService(client,service)
+        private val analysisQueue = ArrayDeque<Runnable>()
+        fun runAnalysis() { while (analysisQueue.isNotEmpty()) analysisQueue.removeFirst().run() }
+        var deferAnalysis = false
+        private val dispatcher = object : kotlinx.coroutines.CoroutineDispatcher() {
+            override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
+                if (deferAnalysis) analysisQueue.addLast(block)
+                else StandardTestDispatcher(scope.testScheduler).dispatch(context, block)
+            }
+        }
+        val collector = SysIdDataCollector(client, tuner, state,
+            scope.backgroundScope, SysIdRegressionSolver(state), maxSamples=maxSamples, previewLimit=previewLimit, analysisDispatcher=dispatcher,
             onRoutineCompleted={ completions++; whenStopped() })
         suspend fun send(index: Int, value: Double, us: Long=1000, session: String="run") {
             client.frames.emit(TelemetryFrame(us/1000,session,"SysId/Data/$index",value,timestampUs=us))
@@ -49,6 +60,61 @@ class SysIdLiveCollectionAuditTest {
             runCurrent()
             f.block()
         } finally { f.client.stop(); f.db.close(); f.file.delete() }
+    }
+
+    @Test fun `analysis waits off the collector and publishes one consistent result`() = test {
+        deferAnalysis = true
+        repeat(30) { i ->
+            val v = 1.0 + i * 0.03
+            val a = kotlin.math.sin(i * 0.7)
+            doubleArrayOf(i * 20.0, 0.4 + 1.6 * v + 0.32 * a, 0.0, v, a)
+                .forEachIndexed { column, value -> send(column, value, (i + 1) * 1000L) }
+        }
+        finish()
+        assertEquals(1, completions)
+        assertEquals(30, state.value.liveSamples.size)
+        assertNull(state.value.summary)
+        assertNull(tuner.currentRecommendation.value)
+        runAnalysis(); scope.runCurrent()
+        val summary = assertNotNull(state.value.summary)
+        val recommendation = assertNotNull(state.value.tuningRecommendation)
+        assertEquals(1.6, summary.kV, 1e-10)
+        assertEquals(summary.kV, recommendation.recommendedkV)
+        assertEquals(recommendation, tuner.currentRecommendation.value)
+    }
+
+    @Test fun `starting a new run discards queued old analysis`() = test {
+        deferAnalysis = true
+        row(); finish()
+        collector.clearBuffer()
+        state.value = state.value.copy(isRoutineRunning=true, isLoading=true)
+        row(40.0, 2000)
+        runAnalysis(); scope.runCurrent()
+        assertNull(state.value.summary)
+        assertNull(tuner.currentRecommendation.value)
+        assertTrue(state.value.isRoutineRunning)
+        assertEquals(40L, state.value.liveSamples.single().timestampMs)
+    }
+
+    @Test fun `a new run discards a computed result waiting to publish`() = test {
+        deferAnalysis = true
+        row(); finish(); runAnalysis()
+        collector.clearBuffer()
+        state.value = state.value.copy(isRoutineRunning=true, isLoading=true)
+        scope.runCurrent()
+        assertNull(state.value.summary)
+        assertNull(tuner.currentRecommendation.value)
+        assertTrue(state.value.isRoutineRunning)
+    }
+
+    @Test fun `mechanism change discards a computed result waiting to publish`() = test {
+        deferAnalysis = true
+        row(); finish()
+        runAnalysis()
+        state.value = state.value.copy(selectedMechanism=com.areslib.control.assist.SysIdMechanism.ANGULAR)
+        scope.runCurrent()
+        assertNull(state.value.summary)
+        assertNull(tuner.currentRecommendation.value)
     }
 
     @Test fun `last channel alone never makes a complete sample`() = test {
