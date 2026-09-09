@@ -54,7 +54,9 @@ advanced safety state machines remain open.
 Pass 11 covers [motion profiles](motion-profile-audit.md), including initial overspeed,
 continuous braking and generated-profile parity. The remaining MicroPython profile and
 feedforward contracts still need implementation and verification.
-The next passes should cover the basic PID controller and remaining MicroPython runtime,
+Pass 12 covers the [basic PID controller](pid-controller-audit.md), including signed
+anti-windup, invalid-state recovery, overflow, periodic differences, and measured allocations.
+The next passes should cover the remaining MicroPython profile/feedforward runtime,
 then logging/transport and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory

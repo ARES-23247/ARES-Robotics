@@ -299,3 +299,10 @@ The [eleventh-pass report](audits/motion-profile-audit.md) records continuous ov
 braking, shared generated-profile integration, reference reset on invalid feedback, and
 finite control-output checks. It includes compiled generated behavior, core trajectory
 invariants, allocation measurements and explicit line/branch coverage limitations.
+
+## Twelfth pass: basic PID controller
+
+The [twelfth-pass report](audits/pid-controller-audit.md) records sign-aware integral
+saturation, disabled-state cleanup, finite arithmetic and periodic differences, invalid
+configuration recovery, and removal of repeated work and console IO. It includes
+before/after regressions, per-thread allocation evidence and explicit coverage limits.

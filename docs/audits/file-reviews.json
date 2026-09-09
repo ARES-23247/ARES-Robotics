@@ -458,15 +458,15 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "380ab02b584408a76e5b35bb23a3c790678af4373c5c8a877cbf542b828f6622",
+      "sha256": "8895dca1ddd8d5316a9e6a0e4a495cb0d256533566de636ef9d4df0da281e9c4",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full audit accounting/work queue documentation reviewed through pass 11. Guidance and links in 172 current documents passed. Records remaining PID, MicroPython, repository-wide and hardware work; documentation disposition only.",
+      "scope": "Full audit accounting and work-queue documentation reviewed through pass 12. Guidance and links in 173 current documents passed. Records remaining MicroPython, controller, repository-wide and hardware work; documentation disposition only.",
       "evidence": [
-        "docs/audits/motion-profile-audit.md",
-        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
-        "ARESLib-Kotlin/build/audit-pass11-studio.log",
-        "ARESLib-Kotlin/build/audit-pass11-policy.log"
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-studio.log",
+        "ARESLib-Kotlin/build/audit-pass12-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -695,6 +695,90 @@
         "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
         "ARESLib-Kotlin/build/audit-pass11-studio.log",
         "ARESLib-Kotlin/build/audit-pass11-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt": {
+      "sha256": "f76fb9d06e92552a9f98e74f92eb42eb19e8cb2af493fd85101cf4fbc3f28e74",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source reviewed: P/I/D law and units, retained-integral saturation behavior, sign-aware anti-windup, disabled terms, history reset, interval validation, periodic difference arithmetic and hot-path work. All 763 core tests pass; PID coverage 90/90 executable lines and 129/140 branches. Missing branches and physical limits remain explicit.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerBoundaryTest.kt": {
+      "sha256": "4b493df2efc91ed350532ddc77c7dadda12054eb01ede1e912ed2b70889f9fe0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full nineteen-method regression file reviewed: negative gain saturation/unwinding, disabled term state, invalid recovery, overflow before clamping, output/integral/domain bounds, large periodic operands and derivative behavior. Initial fifteen methods had thirteen failures; final nineteen pass. Signed-zero neutrality uses numeric equality.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerAllocationTest.kt": {
+      "sha256": "69b501ac2e57278cf2536cac8f2b4d964effa18ec63b66a84fcd0cb6d7e79b02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full per-thread allocation test reviewed. JVM capability is an explicit assumption; setup precedes warmup and byte windows. Valid periodic/gain-change and rejected-input paths passed two consecutive zero-byte 10000-update windows without skipping. Output is consumed. Not physical latency or device-heap evidence.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/PIDControllerTest.kt": {
+      "sha256": "a626a9d5b7c6255f44feded62da9cc6fe29fda8af6aebd493e8f82bd71389087",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full existing unit-test file reviewed: proportional/integral/derivative behavior, fixed filter coefficient, deadzone, resets, output bounds, angular wrapping and retained-integral saturation expectations. Removed unused import. All tests pass in the complete core suite.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerTest.kt": {
+      "sha256": "1c26f9b9f527336d4c8fd4593961c80827b869fa0926ce3518202142499ff203",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Both existing derivative filter/reset tests reviewed in full and passed. Their behavior is supplemented by precise amplitudes, setpoint-step and invalid-history regressions in the boundary suite.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt": {
+      "sha256": "78fde3287f3ad564c89dd3286215613c3b968849bc1dbf8bbf9a0311d08cb60c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full tier-one smoke file reviewed: output/integral bounds, angular domain, primitive calculation and invalid inputs. Renamed the primitive smoke method to avoid claiming allocation measurement. All five methods pass; allocation evidence comes from the dedicated new test.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "docs/audits/pid-controller-audit.md": {
+      "sha256": "17aff79b47ffbfdde82874655554635edce07a956f44617c1300742cca1a71e9",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full authored report reviewed against saved failing baseline XML, final core tests, allocation execution, Kover counters, exact candidate identity and completed consumer gates. Preserved API semantics and physical limits are explicit. Guidance and documentation links passed.",
+      "evidence": [
+        "docs/audits/pid-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass12-library.log",
+        "ARESLib-Kotlin/build/audit-pass12-studio.log",
+        "ARESLib-Kotlin/build/audit-pass12-policy.log"
       ]
     }
   }
