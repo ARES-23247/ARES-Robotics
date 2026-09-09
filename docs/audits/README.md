@@ -51,7 +51,10 @@ with 16 additional tests; advanced descriptor behavior keeps that source partial
 Pass 10 covers [generated Kotlin controller boundaries](kotlin-subsystem-control-audit.md):
 PID timing, feedback age, output limits, and finite arithmetic. Profile generation and
 advanced safety state machines remain open.
-The next passes should cover profiles and the remaining MicroPython runtime,
+Pass 11 covers [motion profiles](motion-profile-audit.md), including initial overspeed,
+continuous braking and generated-profile parity. The remaining MicroPython profile and
+feedforward contracts still need implementation and verification.
+The next passes should cover the basic PID controller and remaining MicroPython runtime,
 then logging/transport and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory

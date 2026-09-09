@@ -458,15 +458,15 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "30da1d2a272ac3a09a4174a8a09119c5bbd4b96afc226a71b29f4dbf27d10fa8",
+      "sha256": "380ab02b584408a76e5b35bb23a3c790678af4373c5c8a877cbf542b828f6622",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full audit accounting/work queue documentation reviewed with pass 10; preserves remaining profile, MicroPython, repository-wide and hardware coverage. Documentation disposition only; guidance and links in 171 current documents passed.",
+      "scope": "Full audit accounting/work queue documentation reviewed through pass 11. Guidance and links in 172 current documents passed. Records remaining PID, MicroPython, repository-wide and hardware work; documentation disposition only.",
       "evidence": [
-        "docs/audits/kotlin-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
-        "ARESLib-Kotlin/build/audit-pass10-studio.log",
-        "ARESLib-Kotlin/build/audit-pass10-policy.log"
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/build/audit-pass11-studio.log",
+        "ARESLib-Kotlin/build/audit-pass11-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -575,14 +575,14 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemControllerRenderer.kt": {
-      "sha256": "329f320c958edd796b30a687667e220019a6591fe60650c61956490fad9055ec",
+      "sha256": "4ae5c1cc877d8cda16572384fbe513d53c4be8d88761d860f4e6080e8e7c64e3",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed ordinary timing/freshness gates and basic PID/bang-bang arithmetic. Sixteen compiled boundary scenarios pass; the original eleven failed before fixes. Full generator suite passes 75 tests. Profile/feedforward, advanced safety state machines, bounded invalid targets and multi-loop output preparation remain open.",
+      "scope": "Passes 10-11 cover basic numerical/timing/freshness gates and profiled setpoint generation. Shared analytic profiles replace semi-implicit stepping/snap behavior; invalid profile state resets. All 76 codegen tests pass including compiled boundaries. Feedforward families, homing/recovery, invalid bounded targets and multi-loop preparation remain open.",
       "evidence": [
-        "docs/audits/kotlin-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
-        "ARESLib-Kotlin/build/audit-pass10-baseline-all.log"
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
       ]
     },
     "docs/audits/xrp-subsystem-control-audit.md": {
@@ -597,25 +597,25 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/SubsystemKotlinGeneratorTest.kt": {
-      "sha256": "8f92bf829dfda7b8f6d930fa85ddea93715e645b8906da5918f657062acc35e6",
+      "sha256": "1bb56bef3179f082bf62ef72fff59d445976a00d70946c1e1aa8def5315e0ded",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed compiled behavioral harness extraction and sixteen numerical/timing/freshness scenarios added in pass 10. Test fixture advances RobotClock and stamps fresh immutable state. Remaining large test file has not received full review. All 75 codegen tests pass.",
+      "scope": "Reviewed compiled harness and sixteen basic boundaries from pass 10 plus four generated-profile behavior scenarios in pass 11. Updated source checks require reusable shared profile constraints/calculate call. All 76 codegen tests pass. Remaining portions of the large test file have not received full review.",
       "evidence": [
-        "docs/audits/kotlin-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
-        "ARESLib-Kotlin/build/audit-pass10-baseline-all.log"
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/SubsystemGeneratorCharacterizationTest.kt": {
-      "sha256": "a27212913a977f8be8fdd83081c1a6d63ad8ed2cc931214cbbac08492d9275c2",
+      "sha256": "5847a5a969603f52983e9b468f3a0fa6ded3c5426aca6429bd1498769bafec55",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full file reviewed: deterministic traversal, artifact ownership/path/content delimiters, UTF-8 SHA-256 and registry inclusion. Both platform manifests updated after reviewed controller changes and passing behavioral tests; final 75-test generator suite passes. Hash checks supplement behavioral coverage.",
+      "scope": "Full deterministic manifest test reviewed in pass 10. Both fingerprints updated after reviewing shared-profile emitted changes and passing behavioral tests. Final 76-test codegen suite passes. Hash checks supplement compiled behavior.",
       "evidence": [
-        "docs/audits/kotlin-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
-        "ARESLib-Kotlin/build/audit-pass10-baseline-all.log"
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
       ]
     },
     "docs/audits/kotlin-subsystem-control-audit.md": {
@@ -628,6 +628,73 @@
         "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
         "ARESLib-Kotlin/build/audit-pass10-studio.log",
         "ARESLib-Kotlin/build/audit-pass10-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/profile/TrapezoidProfile.kt": {
+      "sha256": "219d820d35262efe20797d4964eac27a4e01df428355b087cc6652563756262f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source reviewed for cutoff-distance phases, overspeed braking, reversals, aliased buffers, numeric fallbacks and input limits. Existing and new boundary tests plus allocation checks pass in the 743-test core suite. Coverage: 95/101 lines, 59/94 branches; unexecuted defensive/invalid-input branches remain explicit, not asserted covered.",
+      "evidence": [
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/ProfiledPIDController.kt": {
+      "sha256": "c28729f0b7d857770979e92e54848ca4668f2bb284ea31f53894583ed3e26bfa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full wrapper reviewed: reusable profile states, resets, delegated gains/limits, reference advancement and input/output validation. Invalid inputs now preserve the reference and neutralize. Core 743-test suite passes; coverage 42/44 lines, 41/56 branches. Underlying basic PID arithmetic and physical behavior remain separate audit scope.",
+      "evidence": [
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/profile/TrapezoidProfileTest.kt": {
+      "sha256": "4a54107457bf277c1135c7864b483253c0e2807a0e99a2a4e42a19b2bc9d06bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All thirteen existing tests reviewed: acceleration/cruise/deceleration, forward/reverse convergence, nonzero boundary velocities, residual-velocity braking, invalid constraints and profiled gain forwarding. Passed with the new boundary suite; these sampled cases are not exhaustive trajectory proofs.",
+      "evidence": [
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/profile/TrapezoidProfileBoundaryTest.kt": {
+      "sha256": "806c5e06c8191e939d3f56ea5a832edd909b57a80e112d16b36675a9dd4f1cfb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eight-method regression file reviewed. Tests analytic overspeed first/spanning steps, acceleration/displacement bounds through ten zero-velocity-goal trajectories, step partition/aliases, changed constraints, unrepresentable overshoot, invalid profiled input and overflowing effort. All passed; four initial and three later methods failed before their corresponding fixes.",
+      "evidence": [
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/profile/TrapezoidProfileAllocationTest.kt": {
+      "sha256": "ec96ae1f23defafb06974d6280ef5454e88f2767a93121e39385bdcc2a6f0afd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full allocation test reviewed: explicit JVM capability assumption, buffers allocated before warmup, per-thread byte accounting, two consecutive zero-byte windows and output consumption. Executed without skipping on this JVM; zero bytes in two 10000-update windows. Not emitted-controller or hardware timing evidence.",
+      "evidence": [
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+      ]
+    },
+    "docs/audits/motion-profile-audit.md": {
+      "sha256": "60f165576e9921e6606798c2dbc7a99d5684ed83928a74813808bd9b62125bb2",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full authored report reviewed against initial failing tests, final core/generated behavior, allocation execution, Kover counters, candidate identity, actual task reuse and completed consumer gates. Primary profile source linked; physical and remaining math/feature limitations explicit. Guidance and links passed.",
+      "evidence": [
+        "docs/audits/motion-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
+        "ARESLib-Kotlin/build/audit-pass11-studio.log",
+        "ARESLib-Kotlin/build/audit-pass11-policy.log"
       ]
     }
   }

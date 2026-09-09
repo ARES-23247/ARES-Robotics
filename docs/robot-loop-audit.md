@@ -292,3 +292,10 @@ The [tenth-pass report](audits/kotlin-subsystem-control-audit.md) records negati
 anti-windup, one-sided bang-bang limits, unused PID state, timestamp/freshness validation,
 and arithmetic-overflow handling. Compiled scenarios exercise emitted controller code.
 Profile generation and advanced safety behavior remain open.
+
+## Eleventh pass: motion profiles
+
+The [eleventh-pass report](audits/motion-profile-audit.md) records continuous overspeed
+braking, shared generated-profile integration, reference reset on invalid feedback, and
+finite control-output checks. It includes compiled generated behavior, core trajectory
+invariants, allocation measurements and explicit line/branch coverage limitations.
