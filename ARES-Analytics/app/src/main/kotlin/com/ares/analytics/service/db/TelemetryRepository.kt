@@ -90,20 +90,8 @@ internal class TelemetryRepository(
     }
 
     private fun insertTelemetryFrames(targetConn: Connection, frames: List<TelemetryFrame>) {
-        val previousAutoCommit = targetConn.autoCommit
-        if (previousAutoCommit) targetConn.autoCommit = false
-        try {
-            // Both persistent imports and the ephemeral live timeline are append-only. The schema
-            // includes sample_order in its identity, so repeated source timestamps remain distinct
-            // without INSERT OR REPLACE. Using the native Appender avoids thousands of parsed JDBC
-            // transactions during dense simulator sessions.
+        withDuckDbAppenderTransaction(targetConn) {
             insertTelemetryFramesAppender(targetConn, frames)
-            if (previousAutoCommit) targetConn.commit()
-        } catch (e: Exception) {
-            if (previousAutoCommit) runCatching { targetConn.rollback() }
-            throw e
-        } finally {
-            if (previousAutoCommit) targetConn.autoCommit = true
         }
     }
 
@@ -117,8 +105,7 @@ internal class TelemetryRepository(
      */
     private fun insertTelemetryFramesAppender(targetConn: Connection, frames: List<TelemetryFrame>) {
         val duckConn = targetConn.unwrap(DuckDBConnection::class.java)
-        val appender = duckConn.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "telemetry_frames")
-        try {
+        duckConn.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "telemetry_frames").use { appender ->
             for (frame in frames) {
                 appender.beginRow()
                 appender.append(frame.timestampMs)
@@ -133,8 +120,6 @@ internal class TelemetryRepository(
                 appender.endRow()
             }
             appender.flush()
-        } finally {
-            appender.close()
             // CHECKPOINT intentionally NOT run per batch — a per-batch WAL fsync dominated
             // import time. Checkpointing is now caller/timer-controlled by
             // [DatabaseTransactionCoordinator.checkpoint]

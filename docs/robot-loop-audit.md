@@ -387,3 +387,11 @@ histogram boundaries, empty-looking single-instant recordings, bounded density o
 read-side query snapshots, targeted session lookup and atomic session/summary metadata
 updates. Real database tests include an independent integer histogram oracle and rollback
 failure injection. Remaining database mutation/lifecycle and physical timing work stays open.
+
+## Twenty-fourth pass: database metrics and native action storage
+
+The [twenty-fourth-pass report](audits/database-metrics-actions-audit.md) records overflowed
+and incoherent latency means, primitive sample recording, explicit nearest-rank p95,
+partial native action batches, lazy JDBC transaction activation, persistent/live telemetry
+transaction ownership and deterministic action ties. Failure injection and separate readers
+verify actual rollback/visibility. Broader database and physical timing work remains open.

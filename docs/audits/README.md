@@ -80,7 +80,11 @@ scaling, loop endpoints, command timing, initial-load cancellation and terminal 
 Pass 23 covers [telemetry density and metadata queries](telemetry-density-metadata-audit.md):
 exact interval bins, single-instant density, one-statement snapshots, bounded output,
 direct/workspace session lookups, read coordination and atomic paired metadata edits.
-Next are remaining database mutations/metrics and recording-memory costs, stale approval, legacy states, verified project/evidence
+Pass 24 covers [database metrics and action storage](database-metrics-actions-audit.md):
+coherent primitive latency tracking, stable means, nearest-rank p95, native appender
+transaction activation for actions/telemetry, input domains and deterministic action ties.
+Next are the database coordinator, remaining mutations, dashboard health sampling and
+recording-memory costs, stale approval, legacy states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining
 Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,

@@ -17,6 +17,6 @@ class DatabaseMetricsTest {
         assertEquals(3, snapshot.queryCount)
         assertEquals(1, snapshot.writeCount)
         assertEquals(10.0, snapshot.maxQueryMs)
-        assertEquals(5.0, snapshot.p95QueryMs)
+        assertEquals(10.0, snapshot.p95QueryMs)
     }
 }

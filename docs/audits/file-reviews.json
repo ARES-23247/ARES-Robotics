@@ -458,16 +458,18 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "a9bec9e6f456676141002336bab346cec680984b1ab814f22d6cac7e700aceae",
+      "sha256": "9b0b6a46cf698b546269461dac4932aaec15dbc143bc7596cccfb6bb080bc134",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 23: density/query and paired metadata edits recorded separately from remaining database mutation/metrics/memory, identity/cloud, robot and hardware work. Prior intermittent failures and opt-in checks remain open.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open.",
       "evidence": [
-        "docs/audits/telemetry-density-metadata-audit.md",
-        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
-        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1429,16 +1431,18 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": {
-      "sha256": "58391fcb24eac6c229b1419daf775abebdbed65becb6cbd782f01d84f8e1679c",
+      "sha256": "610149c4f87a48ffa52046e5593cb4a4b4fdd6cd7cba81a5550d4723bd2f51e1",
       "review": "partial",
       "validation": "passed",
-      "scope": "Density path reviewed and extracted: routes through read coordinator and session-specific persistent/ephemeral read connection. Numerical, routing and coordinator tests pass. Ingestion/export/cursors/pruning, timestamp-domain query boundaries and broader retention/lifecycle remain open. Full Studio gate passes; 320/332 lines, 93/138 branches do not close the remaining review.",
+      "scope": "Pass 23 density path reviewed/extracted with exact histogram and read routing. Pass 24 activates native appender transactions, suppresses close errors behind original failures and validates persistent/live caller commit and rollback. Final Studio gate passes: 318/329 lines, 90/128 branches. Mixed storage routes still use separate transactions. Other ingestion/export/cursor/prune/lifecycle and older manual cleanup paths remain open.",
       "evidence": [
-        "docs/audits/telemetry-density-metadata-audit.md",
-        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
-        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt": {
@@ -1543,6 +1547,141 @@
         "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass23-studio.log",
         "ARESLib-Kotlin/build/audit-pass23-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseMetrics.kt": {
+      "sha256": "3acc80e92559d967e53ece23ed6b7a11aa71393d847ebd70c3022204bfafcb71",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full tracker/snapshot review: primitive 512-sample ring, coherent state capture with sorting outside lock, stable lifetime mean/max, saturated lifetime counts, explicit nearest-rank rolling p95 and injected clock. Nine new tests and legacy fixture pass; concurrent snapshot and warm allocation assertions replace reproduced incoherence, overflow and boxing. Snapshot allocations remain intentional; saturated counts are not unbounded exact counters. Final gate: 39/39 lines, 6/8 branches; counter-saturation guards not executed.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/RobotActionRepository.kt": {
+      "sha256": "cba6eb44fad2fe78234f78fe660e1b763589fa118b576ef03e7f5e838e54dfc0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full action storage review: atomic native append/flush/close through shared transaction activation, persistent read coordinator, timestamp/session validation on writes and reads, sparse run/robot compatibility, all differing-field order ties and duplicate preservation. Seven storage methods plus caller transaction/cleanup tests pass. Retrieval is session-wide and deterministic storage order does not recover submillisecond physical event order. Payload interpretation/import validation belongs to adjacent components. Final gate: 46/46 lines, 14/14 branches.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DuckDbAppenderTransaction.kt": {
+      "sha256": "1718605a60104cf8803fb2832f30605127f50ddc08792d4c3492fde84a7ba162",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full native transaction helper review: starts actual JDBC transaction with a small statement, joins caller-owned transactions, commits only after block/native closure, rolls back Exception/Error/cancellation, suppresses cleanup faults and closes uncertain writers after failed rollback/reset instead of committing during auto-commit restoration. Actual driver visibility/rollback tests and injected JDBC cleanup faults pass. Underlying close failures and post-commit acknowledgement/retry uncertainty are not claimed recoverable. Final gate: 23/23 lines, 14/22 branches; secondary cleanup combinations remain unexecuted.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseMetricsTest.kt": {
+      "sha256": "8080cb7c547e433f132bd55e7d652ef71d82cd461059fcfaa80b98a803a5c17b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full one-method legacy fixture review/execution; read/write counts and lifetime max retained, three-sample p95 expectation changed explicitly to nearest-rank maximum. Broader arithmetic/concurrency/allocation cases live in DatabaseMetricsAuditTest.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseMetricsAuditTest.kt": {
+      "sha256": "4848f94a83d152d1bff9d1917d8a2c459b845392c00e41342070178f1ae43b89",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full nine-method review/execution: empty/negative, nearest-rank guarantees, huge durations, subnanosecond mean, window eviction/lifetime distinction, clock delegation, coherent concurrent samples and <=8192 bytes for 100000 warm read/write pairs. Seven reproduced old failures include 2400000 allocated bytes and incoherent mean. Worker pool cleanup is owned and awaited.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RobotActionStorageAuditTest.kt": {
+      "sha256": "525744099571dd459d9190f278c2e6969c4e3bcee7fa1f8a021c4be08b765122",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method review/execution using owned temporary databases: read coordinator, failed enumeration atomicity/recovery, invalid domain rollback, complete field and duplicate round trips with sparse IDs, deterministic ties, malformed stored timestamp rejection and empty batches. Five failures reproduced before fixes.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/db/DuckDbAppenderTransactionAuditTest.kt": {
+      "sha256": "0352d53b0d73e46d8d63d60014091e1ad552430f8af1a2d7b6152e7910cb5695",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method review/execution with production schema initialization and independent JDBC readers: action/telemetry transaction visibility and caller rollback for persistent/live storage; already flushed native row rollback on Exception/Error/cancellation; failure in a caller-owned transaction. Owned connections are closed; no cross-database atomicity claim.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/db/DuckDbAppenderCleanupAuditTest.kt": {
+      "sha256": "ea858603033b93ceb3f69f22d8f970a7749e3ab7662db3f48a5f9338a3cefe65",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method review/execution: JDBC proxy injects rollback/reset/commit failures while real native rows and a separate reader prove visibility. Checks no partial commit after failed rollback, preserved primary error on reset failure, uncertain writer closure and recovery after a successfully cleaned commit failure. Two original cleanup defects reproduced before correction.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
+      ]
+    },
+    "docs/audits/database-metrics-actions-audit.md": {
+      "sha256": "6379614c5de81686302b8e9c3e32a40d5b513b2851024766ddc6598291ff2933",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass 24 report checked against source, original/intermediate/cleanup failures, exact driver source, 111 final focused methods, final Studio/Kover/policy gate and preserved dashboard measurements. Distinguishes percentile convention, recording allocation bounds, native activation/rollback, unexecuted guards and remaining older mutation/hardware work.",
+      "evidence": [
+        "docs/audits/database-metrics-actions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass24-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused.log",
+        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass24-policy.log"
       ]
     }
   }
