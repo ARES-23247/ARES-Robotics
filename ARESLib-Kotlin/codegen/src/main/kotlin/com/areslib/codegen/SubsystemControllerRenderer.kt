@@ -11,6 +11,20 @@ import com.areslib.subsystem.SubsystemStateFieldDocument
 /** Renders the allocation-free controller and its stateful safety/control policies. */
 internal object SubsystemControllerRenderer {
     fun render(document: SubsystemDocument, pkg: String): String {
+        val timingStep = if (document.controlLoops.any { it.strategy in PID_STRATEGIES }) {
+            """        val elapsedMs = now - lastTimestampMs
+        if (hasTimestamp && (now <= lastTimestampMs || elapsedMs <= 0L)) {
+            reset()
+            // Keep the rejected timestamp as the anchor: repeated calls cannot re-arm the first step.
+            lastTimestampMs = now
+            hasTimestamp = true
+            io.safe()
+            return
+        }
+        val dtSeconds = if (hasTimestamp) elapsedMs / 1000.0 else 0.02
+        lastTimestampMs = now
+        hasTimestamp = true"""
+        } else ""
         val tuningBindings = document.controllerTuningBindings()
         val tuningStateFields = tuningBindings.joinToString("\n") { binding ->
             "    private var ${binding.variableName} = ${binding.initialValue.kotlinDouble()}"
@@ -148,19 +162,13 @@ ${if (document.safety.faultRecovery.enabled) "                            resetA
         val safetyRequestHelper = if (
             document.hasSafetyRequestHandshake()
         ) {
-            val feedbackTimeoutMs = document.safety.feedbackTimeoutMs ?: Long.MAX_VALUE
             """
 
                 private fun safetyRequestPermitted(
                     state: ${document.kotlinTypeName}State,
                     now: Long,
                 ): Boolean {
-                    val feedbackAgeMs = if (now >= state.feedbackTimestampMs) {
-                        now - state.feedbackTimestampMs
-                    } else {
-                        Long.MAX_VALUE
-                    }
-                    return state.feedbackValid && feedbackAgeMs <= ${feedbackTimeoutMs}L &&
+                    return feedbackFresh(state, now) &&
                         state.configurationHealthy && state.currentReadingValid
                 }
             """.trimEnd()
@@ -206,6 +214,7 @@ $tuningApplyCases
             /** Allocation-free controller generated from the visual/hand-authored subsystem DSL. */
             class ${document.kotlinTypeName}Controller(private val io: ${document.kotlinTypeName}IO) : TypedTuningConsumer {
                 private var lastTimestampMs = 0L
+                private var hasTimestamp = false
                 private var homingStartedAtMs = Long.MIN_VALUE
                 private var homingEvidenceSinceMs = Long.MIN_VALUE
             $requestState
@@ -223,6 +232,11 @@ $tuningApplyCases
                     val now = RobotClock.currentTimeMillis()
             $requestHandling
             $neutralHoldHandling
+                    if (!interlocksPermitted || !scale.isFinite() || scale <= 0.0 || scale > 1.0 || !feedbackFresh(state, now)) {
+                        reset()
+                        io.safe()
+                        return
+                    }
                     if (${document.requiresHoming()} && !state.homed) {
                         updateHoming(state, scale, now)
                         return
@@ -231,13 +245,12 @@ $tuningApplyCases
 $automaticRecoveryHandling
                     val safetyPermit = interlocksPermitted && state.feedbackValid && state.configurationHealthy && state.homed &&
                         state.calibrated && state.currentReadingValid && !state.outputFaultLatched
-                    if (!scale.isFinite() || scale <= 0.0 || !safetyPermit) {
+                    if (!safetyPermit) {
                         reset()
                         io.safe()
                         return
                     }
-                    val dtSeconds = if (lastTimestampMs == 0L) 0.02 else ((now - lastTimestampMs) / 1000.0).coerceIn(0.001, 0.1)
-                    lastTimestampMs = now
+$timingStep
 
             $loopBodies
                 }
@@ -245,6 +258,7 @@ $automaticRecoveryHandling
                 /** Clears controller history; callers must still command IO neutral. */
                 fun reset() {
                     lastTimestampMs = 0L
+                    hasTimestamp = false
                     resetHomingAttempt()
 ${if (document.safety.faultRecovery.enabled) "                    resetAutomaticRecovery()" else ""}
             $reset
@@ -254,6 +268,12 @@ ${if (document.safety.faultRecovery.enabled) "                    resetAutomatic
 
             $tuningApply
 $continuousInputHelper
+
+                private fun feedbackFresh(state: ${document.kotlinTypeName}State, now: Long): Boolean {
+                    val feedbackAgeMs = now - state.feedbackTimestampMs
+                    return state.feedbackValid && now >= state.feedbackTimestampMs && feedbackAgeMs >= 0L &&
+                        feedbackAgeMs <= ${document.safety.feedbackTimeoutMs ?: Long.MAX_VALUE}L
+                }
 
                 private fun updateHoming(state: ${document.kotlinTypeName}State, scale: Double, now: Long) {
                     val permitted = state.homingRequested && !state.homingFaultLatched &&
@@ -319,11 +339,11 @@ $continuousInputHelper
         val ${loop.loopId}Measurement = $measurement
         val ${loop.loopId}Error = ${loop.loopId}Target - ${loop.loopId}Measurement
         ${loop.loopId}BangBangOutput = when {
-            !${loop.loopId}Target.isFinite() || !${loop.loopId}Measurement.isFinite() -> 0.0
+            !${loop.loopId}Target.isFinite() || !${loop.loopId}Measurement.isFinite() || !${loop.loopId}Error.isFinite() -> 0.0
             ${loop.loopId}BangBangOutput > 0.0 && ${loop.loopId}Error <= ${loop.tolerance.kotlinDouble()} -> 0.0
             ${loop.loopId}BangBangOutput < 0.0 && ${loop.loopId}Error >= -${loop.tolerance.kotlinDouble()} -> 0.0
-            ${loop.loopId}BangBangOutput == 0.0 && ${loop.loopId}Error > ${(loop.tolerance + loop.hysteresis).kotlinDouble()} -> ${loop.maximumOutput.kotlinDouble()}
-            ${loop.loopId}BangBangOutput == 0.0 && ${loop.loopId}Error < -${(loop.tolerance + loop.hysteresis).kotlinDouble()} -> ${loop.minimumOutput.kotlinDouble()}
+            ${loop.loopId}BangBangOutput == 0.0 && ${loop.loopId}Error > ${(loop.tolerance + loop.hysteresis).kotlinDouble()} -> ${maxOf(0.0, loop.maximumOutput).kotlinDouble()}
+            ${loop.loopId}BangBangOutput == 0.0 && ${loop.loopId}Error < -${(loop.tolerance + loop.hysteresis).kotlinDouble()} -> ${minOf(0.0, loop.minimumOutput).kotlinDouble()}
             else -> ${loop.loopId}BangBangOutput
         }
         $command(${loop.loopId}BangBangOutput * scale)"""
@@ -387,20 +407,28 @@ $continuousInputHelper
             $command(0.0)
         } else {
             val ${loop.loopId}Error = $errorExpression
-            val ${loop.loopId}RawDerivative = if (${loop.loopId}HasPreviousError) {
-                ($derivativeDeltaExpression) / dtSeconds
+            val ${loop.loopId}IntegralGain = ${document.controllerTuningExpression(loop, "ki", loop.kI)}
+            val ${loop.loopId}DerivativeGain = ${document.controllerTuningExpression(loop, "kd", loop.kD)}
+            if (${loop.loopId}DerivativeGain != 0.0) {
+                val ${loop.loopId}RawDerivative = if (${loop.loopId}HasPreviousError) ($derivativeDeltaExpression) / dtSeconds else 0.0
+                val ${loop.loopId}DerivativeAlpha = dtSeconds / (${loop.derivativeFilterTimeConstantSeconds.kotlinDouble()} + dtSeconds)
+                ${loop.loopId}Derivative += ${loop.loopId}DerivativeAlpha * (${loop.loopId}RawDerivative - ${loop.loopId}Derivative)
             } else {
-                0.0
+                ${loop.loopId}Derivative = 0.0
             }
-            val ${loop.loopId}DerivativeAlpha = dtSeconds / (${loop.derivativeFilterTimeConstantSeconds.kotlinDouble()} + dtSeconds)
-            ${loop.loopId}Derivative += ${loop.loopId}DerivativeAlpha * (${loop.loopId}RawDerivative - ${loop.loopId}Derivative)
             ${loop.loopId}PreviousError = ${loop.loopId}Error
             ${loop.loopId}HasPreviousError = true
-            val ${loop.loopId}CandidateIntegral = ${loop.loopId}Integral + ${loop.loopId}Error * dtSeconds
+            val ${loop.loopId}CandidateIntegral = if (${loop.loopId}IntegralGain != 0.0) ${loop.loopId}Integral + ${loop.loopId}Error * dtSeconds else 0.0
 $feedforward
-            val ${loop.loopId}Unclamped = ${document.controllerTuningExpression(loop, "kp", loop.kP)} * ${loop.loopId}Error + ${document.controllerTuningExpression(loop, "ki", loop.kI)} * ${loop.loopId}CandidateIntegral + ${document.controllerTuningExpression(loop, "kd", loop.kD)} * ${loop.loopId}Derivative + ${loop.loopId}Feedforward
+            val ${loop.loopId}Unclamped = ${document.controllerTuningExpression(loop, "kp", loop.kP)} * ${loop.loopId}Error + ${loop.loopId}IntegralGain * ${loop.loopId}CandidateIntegral + ${loop.loopId}DerivativeGain * ${loop.loopId}Derivative + ${loop.loopId}Feedforward
+            if (!${loop.loopId}Error.isFinite() || !${loop.loopId}CandidateIntegral.isFinite() ||
+                !${loop.loopId}Derivative.isFinite() || !${loop.loopId}Unclamped.isFinite()) {
+                reset()
+                io.safe()
+                return
+            }
             val ${loop.loopId}Output = ${loop.loopId}Unclamped.coerceIn(${loop.minimumOutput.kotlinDouble()}, ${loop.maximumOutput.kotlinDouble()})
-            if (${loop.loopId}Unclamped == ${loop.loopId}Output || sign(${loop.loopId}Error) != sign(${loop.loopId}Unclamped - ${loop.loopId}Output)) {
+            if (${loop.loopId}Unclamped == ${loop.loopId}Output || sign(${loop.loopId}IntegralGain) * sign(${loop.loopId}Error) != sign(${loop.loopId}Unclamped - ${loop.loopId}Output)) {
                 ${loop.loopId}Integral = ${loop.loopId}CandidateIntegral
             }
             $command(${loop.loopId}Output * scale)

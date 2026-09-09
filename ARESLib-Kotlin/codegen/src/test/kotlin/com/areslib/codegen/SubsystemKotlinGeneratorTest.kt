@@ -35,6 +35,8 @@ import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.areslib.tuning.TuningValue
+import org.junit.jupiter.api.Assertions.assertAll
+import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
@@ -54,6 +56,134 @@ class SubsystemKotlinGeneratorTest {
     fun `every selectable controller strategy compiles and executes its generated behavior`() {
         val documents = SubsystemControlStrategy.entries.map(::behaviorDocument)
         assertEquals(SubsystemControlStrategy.entries.toSet(), documents.map { it.controlLoops.single().strategy }.toSet())
+        assertGeneratedBehavior(documents)
+    }
+
+    @Test
+    fun `generated controllers enforce numerical timing and feedback boundaries`() {
+        val cases = linkedMapOf<SubsystemDocument, String>()
+        fun add(name: String, strategy: SubsystemControlStrategy = SubsystemControlStrategy.POSITION_PID,
+                kp: Double = 0.0, ki: Double = 0.0, kd: Double = 0.0, minimum: Double = -1.0, maximum: Double = 1.0,
+                behavior: String) {
+            val base = behaviorDocument(strategy)
+            val document = base.copy(
+                documentId = "audit-${name.lowercase()}", kotlinTypeName = "Audit$name", tuningParameters = emptyList(),
+                stateFields = base.stateFields.map { field ->
+                    if (field.role == SubsystemFieldRole.TARGET) field.copy(minimum = null, maximum = null) else field
+                },
+                controlLoops = listOf(base.controlLoops.single().copy(
+                    kP = kp, kI = ki, kD = kd, continuousInput = SubsystemContinuousInputDocument(),
+                    minimumOutput = minimum, maximumOutput = maximum,
+                )),
+            )
+            cases[document] = behavior.trimIndent()
+        }
+        add("NegativeIntegral", kp = -1.0, ki = -1.0, behavior = """
+            repeat(100) { controller.update(state(10.0), scale = 1.0) }
+            controller.update(state(0.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "negative kI accumulated through saturation" }
+        """)
+        add("ForwardOnly", SubsystemControlStrategy.BANG_BANG, minimum = 0.2, maximum = 0.8, behavior = """
+            controller.update(state(-1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "forward-only interval commanded against error" }
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.8))
+        """)
+        add("ReverseOnly", SubsystemControlStrategy.BANG_BANG, minimum = -0.8, maximum = -0.2, behavior = """
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "reverse-only interval commanded against error" }
+            controller.update(state(-1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, -0.8))
+        """)
+        add("FrozenClock", ki = 1.0, behavior = """
+            val sample = state(1.0)
+            controller.update(sample, scale = 1.0)
+            require(closeTo(io.lastCommand, 0.02))
+            repeat(10) {
+                controller.update(sample, scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "repeated timestamp invented elapsed time" }
+            }
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.02)) { "invalid timing retained integral history" }
+        """)
+        add("RewoundClock", ki = 1.0, behavior = """
+            controller.update(state(1.0), scale = 1.0)
+            RobotClock.useMockTime(500L)
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "rewound timestamp invented elapsed time" }
+        """)
+        add("ZeroOrigin", ki = 1.0, behavior = """
+            RobotClock.useMockTime(-20L)
+            controller.update(state(1.0), scale = 1.0)
+            RobotClock.useMockTime(80L)
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.12)) { "zero timestamp was treated as uninitialized" }
+        """)
+        add("LongPeriod", ki = 1.0, behavior = """
+            controller.update(state(1.0), scale = 1.0)
+            RobotClock.useMockTime(RobotClock.currentTimeMillis() + 230L)
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.27)) { "valid elapsed time was silently capped" }
+        """)
+        add("StaleFeedback", kp = 1.0, behavior = """
+            val sample = state(1.0)
+            controller.update(sample, scale = 1.0)
+            RobotClock.useMockTime(RobotClock.currentTimeMillis() + 10001L)
+            controller.update(sample, scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "stale feedback remained enabled" }
+            val future = state(1.0).copy(feedbackTimestampMs = RobotClock.currentTimeMillis() + 1L)
+            controller.update(future, scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "future feedback remained enabled" }
+        """)
+        add("AmplifiedScale", SubsystemControlStrategy.DIRECT, behavior = """
+            controller.update(state(1.0), scale = 2.0)
+            require(closeTo(io.lastCommand, 0.0)) { "budget scale amplified output beyond its ceiling" }
+        """)
+        add("UnusedDerivative", kp = 1.0, behavior = """
+            repeat(600) {
+                controller.update(state(1e308), scale = 1.0)
+                require(io.lastCommand.isFinite()) { "zero derivative gain poisoned output" }
+            }
+            controller.update(state(0.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0))
+        """)
+        add("UnusedIntegral", behavior = """
+            repeat(600) {
+                controller.update(state(1e308), scale = 1.0)
+                require(closeTo(io.lastCommand, 0.0)) { "zero integral gain accumulated invalid history" }
+            }
+        """)
+        add("Overflow", kp = Double.MAX_VALUE, behavior = """
+            controller.update(state(2.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "overflow was masked by saturation" }
+        """)
+        add("BangErrorOverflow", SubsystemControlStrategy.BANG_BANG, behavior = """
+            controller.update(state(Double.MAX_VALUE, -Double.MAX_VALUE), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "bang-bang accepted overflowing error" }
+        """)
+        add("DerivativeOverflow", kd = 1.0, behavior = """
+            controller.update(state(0.0), scale = 1.0)
+            controller.update(state(1e308), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "derivative overflow was masked by saturation" }
+            controller.update(state(0.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "invalid derivative history was retained" }
+        """)
+        add("FeedbackAgeOverflow", kp = 1.0, behavior = """
+            val sample = state(1.0).copy(feedbackTimestampMs = Long.MIN_VALUE)
+            controller.update(sample, scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "overflowing feedback age appeared fresh" }
+        """)
+        add("TimingOverflow", ki = 1.0, behavior = """
+            RobotClock.useMockTime(Long.MIN_VALUE)
+            controller.update(state(1.0), scale = 1.0)
+            RobotClock.useMockTime(Long.MAX_VALUE - 20L)
+            controller.update(state(1.0), scale = 1.0)
+            require(closeTo(io.lastCommand, 0.0)) { "overflowing elapsed time appeared positive" }
+        """)
+        assertGeneratedBehavior(cases.keys.toList(), cases.entries.associate { it.key.documentId to it.value })
+    }
+
+    private fun assertGeneratedBehavior(documents: List<SubsystemDocument>, customBehavior: Map<String, String> = emptyMap()) {
 
         val root = Files.createTempDirectory("ares-subsystem-controller-behavior")
         try {
@@ -71,7 +201,7 @@ class SubsystemKotlinGeneratorTest {
                 }
                 val ioSource = selected.single { it.artifact == SubsystemArtifact.IO_CONTRACT }.content
                 files + root.resolve("${document.kotlinTypeName}BehaviorHarness.kt").toFile().apply {
-                    writeText(controllerBehaviorHarness(document, packageName, ioSource))
+                    writeText(controllerBehaviorHarness(document, packageName, ioSource, customBehavior[document.documentId]))
                 }
             }
             val classes = root.resolve("classes")
@@ -99,7 +229,7 @@ class SubsystemKotlinGeneratorTest {
             assertEquals(ExitCode.OK, result, messages.joinToString("\n"))
 
             URLClassLoader(arrayOf(classes.toUri().toURL()), javaClass.classLoader).use { loader ->
-                documents.forEach { document ->
+                assertAll(documents.map { document -> Executable {
                     val packageName = "org.example.behavior.${document.documentId.replace('-', '_')}"
                     val harness = loader.loadClass("$packageName.${document.kotlinTypeName}BehaviorHarness")
                     val outcome = try {
@@ -107,8 +237,8 @@ class SubsystemKotlinGeneratorTest {
                     } catch (failure: java.lang.reflect.InvocationTargetException) {
                         throw failure.targetException
                     }
-                    assertEquals("ok", outcome, document.controlLoops.single().strategy.name)
-                }
+                    assertEquals("ok", outcome, document.documentId)
+                } })
             }
         } finally {
             root.toFile().deleteRecursively()
@@ -1126,6 +1256,7 @@ class SubsystemKotlinGeneratorTest {
         document: SubsystemDocument,
         packageName: String,
         ioSource: String,
+        customBehavior: String? = null,
     ): String {
         val loop = document.controlLoops.single()
         val typeName = document.kotlinTypeName
@@ -1151,7 +1282,7 @@ class SubsystemKotlinGeneratorTest {
             "    override fun $method(value: Double) { lastCommand = value }"
         }
         val measurementArgument = loop.measurementFieldId?.let { "        $it = measurement,\n" }.orEmpty()
-        val behavior = when (loop.strategy) {
+        val behavior = customBehavior ?: when (loop.strategy) {
             SubsystemControlStrategy.DIRECT -> """
                 controller.update(state(2.0), scale = 0.5)
                 require(closeTo(io.lastCommand, 0.5)) { "direct clamp/scale: ${'$'}{io.lastCommand}" }
@@ -1253,16 +1384,19 @@ $commandOverrides
             }
 
             object ${typeName}BehaviorHarness {
-                private fun state(target: Double, measurement: Double = 0.0) = ${typeName}State(
+                private fun state(target: Double, measurement: Double = 0.0): ${typeName}State {
+                    RobotClock.useMockTime(RobotClock.currentTimeMillis() + 20L)
+                    return ${typeName}State(
                     ${loop.targetFieldId} = target,
 $measurementArgument                    feedbackValid = true,
-                    feedbackTimestampMs = 1_000L,
+                    feedbackTimestampMs = RobotClock.currentTimeMillis(),
                     configurationHealthy = true,
                     homed = true,
                     calibrated = true,
                     currentReadingValid = true,
                     outputFaultLatched = false,
                 )
+                }
 
                 private fun closeTo(actual: Double, expected: Double, tolerance: Double = 1e-9): Boolean =
                     abs(actual - expected) <= tolerance
