@@ -359,6 +359,61 @@
         "ARES-XRP-Starter/build/audit-pass5-path-trace.log",
         "ARESLib-Kotlin/build/audit-pass5-standalone.log"
       ]
+    },
+    "ARES-XRP-Starter/deploy/xrp_device.py": {
+      "sha256": "4584ab43d14085761503df97181c6d7be157230f0c4b2d66a51bbbd9c03715de",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source inspection: manifests, native preflight generator, pinned downloads, capability/port requirements, staging, sealing, validation/activation scripts, deployment/rollback, CLI. 107 source and standalone tests pass. Line execution 77.6%; CLI/native mpremote and metadata branches remain unexecuted; no real device/download evidence.",
+      "evidence": [
+        "docs/audits/xrp-deployment-audit.md",
+        "ARES-XRP-Starter/build/audit-pass6-trace.log",
+        "ARESLib-Kotlin/build/audit-pass6-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/deploy/ares_boot.py": {
+      "sha256": "047de1b238f626827f58bebf1a37cd21af97438b245daa390e69d4ae169999bb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source inspection: marker validation, decoding/syntax fallback before execution, import precedence, single read/compile, no fallback after execution begins. Executable-line coverage 92.3%. Fake-device interruption checks; no physical flash durability evidence.",
+      "evidence": [
+        "docs/audits/xrp-deployment-audit.md",
+        "ARES-XRP-Starter/build/audit-pass6-trace.log",
+        "ARESLib-Kotlin/build/audit-pass6-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_deployment_audit.py": {
+      "sha256": "3177aefd06214a07f7e69aced25c5b2e56f60e3d073397c4d8ac6d8b39dee1df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file inspection. 18 new tests cover preflight evidence, native API probing via fake modules, staging/cache exclusion, download bounds/cleanup, payload hashes, boot recovery/import priority, and every modeled deployment mutation.",
+      "evidence": [
+        "docs/audits/xrp-deployment-audit.md",
+        "ARES-XRP-Starter/build/audit-pass6-trace.log",
+        "ARESLib-Kotlin/build/audit-pass6-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_deployment_recovery.py": {
+      "sha256": "38e3b3c510a19173e4baeaa96f8ac0a2b66aa036fcf24b3b85c83da76a8b8f4f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file inspection and passing source/standalone suites. In-memory filesystem models completed mutations and atomic rename only; it is not physical power-loss evidence. Source filenames now retained when executing the actual boot file for tracing.",
+      "evidence": [
+        "docs/audits/xrp-deployment-audit.md",
+        "ARES-XRP-Starter/build/audit-pass6-trace.log",
+        "ARESLib-Kotlin/build/audit-pass6-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_xrp_device.py": {
+      "sha256": "c11d92bfa91e8abde3b4f25c2f50505cf1b6f4b3971beea5a036d6299655f8c8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file inspection and passing source/standalone suites: manifest pins, selected board, download identity/cache, preflight policy, staged identity and read-only plan. Native calls are mocked; source-string assertions supplemented by execution tests in test_deployment_audit.",
+      "evidence": [
+        "docs/audits/xrp-deployment-audit.md",
+        "ARES-XRP-Starter/build/audit-pass6-trace.log",
+        "ARESLib-Kotlin/build/audit-pass6-standalone.log"
+      ]
     }
   }
 }

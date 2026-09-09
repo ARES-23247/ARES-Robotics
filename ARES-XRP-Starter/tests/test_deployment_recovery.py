@@ -45,14 +45,17 @@ class Device:
             def flush(self): device.mutation()
         data = self.files[path]
         return Stream(data if binary else data.decode())
-    def execute(self, code):
+    def execute(self, code, filename="<device>"):
         def importer(name, *args):
             return self.os if name == "os" else builtins.__import__(name, *args)
         namespace = {"__builtins__": dict(vars(builtins), open=self.open, __import__=importer), "__name__": "test"}
-        exec(code, namespace)
+        if filename != "<device>":
+            namespace["__file__"] = filename
+        exec(compile(code, filename, "exec"), namespace)
         return namespace
     def boot_slot(self):
-        module = self.execute((ROOT / "deploy/ares_boot.py").read_text())
+        source = ROOT / "deploy/ares_boot.py"
+        module = self.execute(source.read_text(), str(source))
         return module["_active_slot"]()
     def mpremote(self, args, capture=False):
         if args[0] == "exec":

@@ -43,8 +43,9 @@ and 16 subdivision levels; uncertainty stops at the last proven safe pose. This 
 desktop kinematic constraint, not contact dynamics or a physical safety sensor.
 
 Pass 5 covers [XRP lifecycle, timing, and hardware adapters](xrp-lifecycle-audit.md), with
-24 additional tests. The next passes should cover device deployment/recovery, the
-remaining MicroPython runtime, then logging/transport and Studio analytics math.
+24 additional tests. Pass 6 covers [deployment and boot recovery](xrp-deployment-audit.md)
+with 18 additional tests. The next passes should cover the remaining MicroPython runtime,
+then logging/transport and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.

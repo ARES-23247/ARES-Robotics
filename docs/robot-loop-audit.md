@@ -257,3 +257,10 @@ periods, wrap-safe scheduling, startup/shutdown fixes, output validation, buzzer
 independent optional hardware channels, and per-board RGB state. It includes 24 new
 tests, source references for device units, line-execution measurements, and the remaining
 physical-validation boundaries. The file-level audit goal continues beyond this pass.
+
+## Sixth pass: XRP deployment and boot recovery
+
+The [sixth-pass report](audits/xrp-deployment-audit.md) records stricter API/capability
+preflight, deterministic payload staging, bounded downloads, boot/activation fallback,
+and plan/deployment digest parity. Eighteen new tests extend the interruption model
+through every deployment filesystem mutation. Physical flash durability remains untested.

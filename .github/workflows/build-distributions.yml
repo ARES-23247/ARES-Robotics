@@ -17,7 +17,7 @@ env:
   FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.4/ARES-FRC-Starter-17.0.3.zip
   FRC_STARTER_SHA256: 2d6abce4fcf45e773bc176fee4e93b50788a3c4e33205d4b6fb5bb84991849d1
   XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.4/ARES-XRP-Starter-3.0.3.zip
-  XRP_STARTER_SHA256: 848f6c05810513da7f3973a357752d439bad5c99570f5546299b226ecb7c8f78
+  XRP_STARTER_SHA256: ee746bed6041acbb77ceebda15716f9bc608160b98e5da960d0e2dac1c21a2aa
   LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.4/ARES-Lightbot-Example-3.0.3.zip
   LIGHTBOT_EXAMPLE_SHA256: eeb221d650a2d0de6bb27da9f6fca73ae5738c8f7444c634276b5b4efcf5ca15
 
