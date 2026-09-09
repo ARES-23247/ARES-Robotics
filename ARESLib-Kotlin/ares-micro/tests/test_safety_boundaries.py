@@ -106,6 +106,7 @@ class SafetyBoundariesTest(unittest.TestCase):
                 self.robot.faulted = False
                 self.control(5, 4)
                 self.robot.mode = "TELEOP"
+                self.robot.telemetry.is_connected = True
                 with mock.patch.object(self.robot.telemetry, method, side_effect=RuntimeError("fault")):
                     self.robot.step()
                 self.assert_neutral()

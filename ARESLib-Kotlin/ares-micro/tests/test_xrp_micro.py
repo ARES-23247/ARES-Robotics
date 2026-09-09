@@ -547,6 +547,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
         )
         robot.drivetrain.update_odometry = lambda dt: setattr(robot.drivetrain, "x", 0.5)
         published = {}
+        robot.telemetry.is_connected = True
         robot.telemetry.publish_pose_frame = lambda **values: published.update(values)
 
         robot.step()
