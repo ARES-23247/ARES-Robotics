@@ -146,7 +146,7 @@ and `CachedHardware`; these were outside both earlier passes.
 | Cached motor commands | NaN was silently ignored, retaining previous nonzero effort. Non-finite requests now become neutral commands. Finite requests are clipped before caching so cache values match accepted duty. |
 | Device configuration | A device reset or motor mode change could clear hardware effort while the cache suppressed the next identical explicit command. Reset, mode, and direction operations invalidate the motor cache; servo device reset invalidates its cache. |
 | Cache tolerance | Zero epsilon sent every identical command; NaN epsilon suppressed ordinary writes. Validate tolerances and explicitly suppress equality. Ten identical commands now produce one write even at zero tolerance. |
-| Servo positions | Invalid first positions could poison a cache if forwarded, while non-finite later positions were silently ignored. Reject non-finite positions explicitly and clip finite positions to [0, 1]. There is no invented universal servo neutral position. |
+| Servo positions | Non-finite positions were inconsistently ignored or forwarded and cached. Reject non-finite positions explicitly and clip finite positions to [0, 1]. There is no invented universal servo neutral position. |
 | Safety configuration | Invalid threshold ordering, scales, or hysteresis could bypass limiting or return NaN. Reject invalid constructor configuration for both safety managers. |
 | Unknown current | Invalid additional measured current became zero and could release limiting. Unknown or non-finite computed totals now report NaN and disable effort; finite subsequent updates follow the existing recovery state machine. |
 | Calibration | Repeated power/scale/velocity reads and a second full sum were unnecessary. Capture the model once per motor and adjust the total by the calibrated slot's change. Respect the source's cached-reading validity check, and bound the round-robin index instead of letting it overflow. |
@@ -169,3 +169,19 @@ owns writes; out-of-band writes through the underlying device cannot be inferred
 
 Third-pass isolated candidate: `17.0.3-rc.343862ce3c59`, under the existing unpublished final
 version. This audit does not publish or replace any released artifact.
+
+Third-pass library validation: all 1,089 tests passed on the completed gate, with no skips;
+API compatibility and isolated publication passed. Source/release policy, guidance integrity,
+and current documentation links passed.
+
+The initial full run failed `TelemetryUpdateE2ETest` with a 0.359 m raw-odometry/truth mismatch
+after approximately 250 seconds and logged stale Pinpoint feedback. The unchanged test passed
+in isolation, then passed in the complete gate rerun (5.206 seconds for that test). This suggests
+timing sensitivity but does not establish the failure's root cause. No pose thresholds were
+relaxed and no simulator truth was substituted for odometry or the estimator.
+
+Third-pass robot consumer validation against that same candidate passed: FTC robot/simulator
+109 tests, FRC robot 134 tests, FTC starter 14 tests, and FRC starter 34 tests, with no skips.
+Studio shared/gateway/app validation passed 1,244 tests, with six opt-in checks skipped;
+release version/archive preflight passed. Total passing library and consumer tests: 2,624.
+Physical hardware timing and electrical measurements were not performed.
