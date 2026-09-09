@@ -285,3 +285,10 @@ The [ninth-pass report](audits/xrp-subsystem-control-audit.md) records PID stop/
 anti-windup fixes, wrapped/filtered derivatives, signed bang-bang hysteresis, typed target
 validation, and shared raw sensor reads. Sixteen new regressions pass. Advanced profiles,
 feedforward, and descriptor safety contracts remain open; the source is partially reviewed.
+
+## Tenth pass: generated Kotlin controller boundaries
+
+The [tenth-pass report](audits/kotlin-subsystem-control-audit.md) records negative-gain
+anti-windup, one-sided bang-bang limits, unused PID state, timestamp/freshness validation,
+and arithmetic-overflow handling. Compiled scenarios exercise emitted controller code.
+Profile generation and advanced safety behavior remain open.

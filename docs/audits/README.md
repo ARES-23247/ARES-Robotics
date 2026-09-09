@@ -48,7 +48,10 @@ with 18 additional tests. Pass 7 covers [transport and control leases](xrp-trans
 with 18 additional tests. Pass 8 covers [robot lifecycle and autonomous control](xrp-robot-autonomous-audit.md)
 with 23 additional tests. Pass 9 covers [subsystem control math and sampling](xrp-subsystem-control-audit.md)
 with 16 additional tests; advanced descriptor behavior keeps that source partially reviewed.
-The next passes should cover the remaining MicroPython runtime,
+Pass 10 covers [generated Kotlin controller boundaries](kotlin-subsystem-control-audit.md):
+PID timing, feedback age, output limits, and finite arithmetic. Profile generation and
+advanced safety state machines remain open.
+The next passes should cover profiles and the remaining MicroPython runtime,
 then logging/transport and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory

@@ -458,14 +458,15 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "e94122e77f2e1f3f807b814022f9b37344e25178d0db396ead542a6724ced66b",
+      "sha256": "30da1d2a272ac3a09a4174a8a09119c5bbd4b96afc226a71b29f4dbf27d10fa8",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Audit accounting and work-queue documentation reviewed with the ninth-pass update. Links in 170 current documents and guidance verification passed. Documentation disposition only.",
+      "scope": "Full audit accounting/work queue documentation reviewed with pass 10; preserves remaining profile, MicroPython, repository-wide and hardware coverage. Documentation disposition only; guidance and links in 171 current documents passed.",
       "evidence": [
-        "docs/audits/xrp-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass9-micro.log",
-        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
+        "docs/audits/kotlin-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
+        "ARESLib-Kotlin/build/audit-pass10-studio.log",
+        "ARESLib-Kotlin/build/audit-pass10-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -574,14 +575,14 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemControllerRenderer.kt": {
-      "sha256": "59ef66f5d6f09b21a90949a4759b531bb4a37d74a853de61917fe7fa2be6413a",
+      "sha256": "329f320c958edd796b30a687667e220019a6591fe60650c61956490fad9055ec",
       "review": "partial",
-      "validation": "pending",
-      "scope": "Compared emitted basic controller math around lines 300-415 for canonical wrapping/filtering/defaults and bang-bang behavior. Negative-integral-gain and one-sided bang-bang counterparts need direct regressions/fixes; remaining renderer and advanced profile/feedforward sections are not audited.",
+      "validation": "passed",
+      "scope": "Reviewed ordinary timing/freshness gates and basic PID/bang-bang arithmetic. Sixteen compiled boundary scenarios pass; the original eleven failed before fixes. Full generator suite passes 75 tests. Profile/feedforward, advanced safety state machines, bounded invalid targets and multi-loop output preparation remain open.",
       "evidence": [
-        "docs/audits/xrp-subsystem-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass9-micro.log",
-        "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log"
+        "docs/audits/kotlin-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
+        "ARESLib-Kotlin/build/audit-pass10-baseline-all.log"
       ]
     },
     "docs/audits/xrp-subsystem-control-audit.md": {
@@ -593,6 +594,40 @@
         "ARESLib-Kotlin/build/audit-pass9-micro.log",
         "ARESLib-Kotlin/build/audit-pass9-baseline-current-tests.log",
         "ARESLib-Kotlin/build/audit-pass9-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/SubsystemKotlinGeneratorTest.kt": {
+      "sha256": "8f92bf829dfda7b8f6d930fa85ddea93715e645b8906da5918f657062acc35e6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed compiled behavioral harness extraction and sixteen numerical/timing/freshness scenarios added in pass 10. Test fixture advances RobotClock and stamps fresh immutable state. Remaining large test file has not received full review. All 75 codegen tests pass.",
+      "evidence": [
+        "docs/audits/kotlin-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
+        "ARESLib-Kotlin/build/audit-pass10-baseline-all.log"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/SubsystemGeneratorCharacterizationTest.kt": {
+      "sha256": "a27212913a977f8be8fdd83081c1a6d63ad8ed2cc931214cbbac08492d9275c2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file reviewed: deterministic traversal, artifact ownership/path/content delimiters, UTF-8 SHA-256 and registry inclusion. Both platform manifests updated after reviewed controller changes and passing behavioral tests; final 75-test generator suite passes. Hash checks supplement behavioral coverage.",
+      "evidence": [
+        "docs/audits/kotlin-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
+        "ARESLib-Kotlin/build/audit-pass10-baseline-all.log"
+      ]
+    },
+    "docs/audits/kotlin-subsystem-control-audit.md": {
+      "sha256": "45d72e11878fc583e132a3228fc04a216a0cb5618b55a3a87a7ded7af40cdec6",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full authored report reviewed against source changes, original failing scenarios, final compiled behavior, actual task reuse, candidate identity and completed consumer gates. Reports physical and advanced-feature limitations explicitly. Guidance and document links passed.",
+      "evidence": [
+        "docs/audits/kotlin-subsystem-control-audit.md",
+        "ARESLib-Kotlin/build/audit-pass10-codegen-final.log",
+        "ARESLib-Kotlin/build/audit-pass10-studio.log",
+        "ARESLib-Kotlin/build/audit-pass10-policy.log"
       ]
     }
   }
