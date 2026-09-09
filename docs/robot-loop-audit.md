@@ -442,3 +442,11 @@ with target epochs, clears alert caches/windows at reset, and uses source micros
 to reject old or duplicate samples. Callback regressions cover resets during publication and
 new samples during reset. Raw and tagged consumers share one bounded fan-out buffer. Upstream
 connection ownership, composite window math, freshness and failure recovery remain open.
+
+## Thirty-first pass: bounded loop-overrun windows
+
+The [loop-window audit](audits/loop-overrun-window-audit.md) fixes rounded time boundaries,
+invalid-period recovery and cross-source alias mixing. Three primitive sample slots and an
+occurrence peak replace per-sample allocation and full-window rescanning. An independent
+50,000-sample oracle verifies decisions/peaks; detector updates measured zero allocations.
+Motor windows, configuration semantics, freshness and persistence failure recovery remain open.

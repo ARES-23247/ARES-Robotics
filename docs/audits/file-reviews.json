@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "f7d4660735fc9c92f5ec6f5b8649a7dec899da3ee567260ffa164eac03295267",
+      "sha256": "6f53cf237681d375af24c350157c8a96e90b3b2e27d4562aa5361cb72302a34b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -477,7 +477,10 @@
         "docs/audits/alert-lifecycle-audit.md",
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-studio.log",
-        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+        "ARESLib-Kotlin/build/audit-pass30-policy.log",
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2105,10 +2108,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "016a295d571eb553278bc054cd6809879c98d31ec5d0b819005bfa58b47d2179",
+      "sha256": "97c14afe8226cb690c0d899820019479a40a32868418fce2503658a3464dca47",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open.",
+      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open. Pass 30 consumes target-tagged events and epoch reset notifications, clears derived state, gates source microseconds/order before caching, preserves raw intermediate samples and skips retained publication identities. Moving-window math, source units/freshness, upstream ownership and failure recovery remain open. Pass 31 replaces unbounded/rescanned loop queues with fixed-state per-recording/per-source detectors, preserves actual alias rule keys, rejects invalid periods and reuses the existing source identity. Configured temporal-policy/peak semantics, other composites and persistence remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
@@ -2116,7 +2119,10 @@
         "ARESLib-Kotlin/build/audit-pass29-policy.log",
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-studio.log",
-        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+        "ARESLib-Kotlin/build/audit-pass30-policy.log",
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
@@ -2231,15 +2237,18 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "03e34294feae73a01a55b128d4bee83617b443783e6264c73651b70a795b3b07",
+      "sha256": "c8e08e73b295e3b85581b50859cf6a53d798fb66285fe525df33b23e253514d9",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass30-studio.log",
-        "ARESLib-Kotlin/build/audit-pass30-policy.log"
+        "ARESLib-Kotlin/build/audit-pass30-policy.log",
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2252,6 +2261,54 @@
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass30-studio.log",
         "ARESLib-Kotlin/build/audit-pass30-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/LoopOverrunWindow.kt": {
+      "sha256": "390a6f4da621d68f314a4b244acd448e577969dd72f059e065a292e184da646b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire fixed-policy detector reviewed: finite/ordered inputs, inclusive microsecond aging, bounded three-slot count evidence and active-occurrence peak preservation. Independent full-window oracle and detector allocation checks passed; final full gate passed.",
+      "evidence": [
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-focused.log",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/LoopOverrunWindowTest.kt": {
+      "sha256": "ecdb9bc349c2c109ea43fc699247e15b4c8d6e1875d24cb87fa6bfb45dc90b79",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire ten-method detector suite reviewed: time/value endpoints, invalid input, aging, source-order caller contract, peak recurrence, independent 50,000-sample oracle and two zero-allocation windows after warmup.",
+      "evidence": [
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-focused.log",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/LoopAlertWindowAuditTest.kt": {
+      "sha256": "ac74d6a277d29384f23ee90f9ffba353d6ebf54db96911490c4bde5cece63581",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire seven-method actual-engine suite reviewed: five baseline failures, exact microsecond boundary, invalid-period recovery, per-alias source/count/resolve ownership and older peak preservation.",
+      "evidence": [
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-focused.log",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
+      ]
+    },
+    "docs/audits/loop-overrun-window-audit.md": {
+      "sha256": "49ed736f3f81b72bf214d9b9ff039216315d4f3f0d1a4ef11d71c284894aadbc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 31 report records baseline, constant-state proof, focused/oracle/allocation evidence and explicit configured-policy, memory, freshness and physical validation limits. Final product gate, coverage and policy evidence recorded from observed results.",
+      "evidence": [
+        "docs/audits/loop-overrun-window-audit.md",
+        "ARESLib-Kotlin/build/audit-pass31-focused.log",
+        "ARESLib-Kotlin/build/audit-pass31-studio.log",
+        "ARESLib-Kotlin/build/audit-pass31-policy.log"
       ]
     }
   }

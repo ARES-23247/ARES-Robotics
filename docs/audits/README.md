@@ -101,7 +101,10 @@ CAS retries and unchanged-write suppression.
 Pass 30 covers [alert source identity and telemetry publication](alert-source-publication-audit.md):
 queued target epochs, reset caches, source microseconds/order, duplicate suppression, one-buffer
 fan-out and reentrant publication/reset ordering.
-Next are alert-engine moving windows, signal freshness/units and persistence failure recovery,
+Pass 31 covers [loop-overrun windows](loop-overrun-window-audit.md): source microsecond
+boundaries, independent aliases, valid periods, constant three-slot evidence, preserved
+occurrence peaks, an independent oracle and measured detector allocations.
+Next are motor-current moving windows, signal freshness/units and persistence failure recovery,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence

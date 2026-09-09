@@ -73,8 +73,8 @@ class AlertEngineService(
     private val recentValues = ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>()
     /** One-second current windows, isolated by session and motor. */
     private val currentBuffers = ConcurrentHashMap<String, ArrayDeque<TimedCurrentSample>>()
-    /** One-second loop-overrun windows, isolated by recording session. */
-    private val loopTimeBuffers = ConcurrentHashMap<String, ArrayDeque<TimedLoopSample>>()
+    /** Fixed-size loop evidence, isolated by recording and actual source key. */
+    private val loopTimeBuffers = ConcurrentHashMap<RuleIdentity, LoopOverrunWindow>()
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
 
     private val serviceScope = CoroutineScope(dispatcher + SupervisorJob())
@@ -117,7 +117,7 @@ class AlertEngineService(
             ThresholdRule(TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey, "Low Battery Voltage (<10.5V)", minValue = 10.5, audibleAlert = true),
             ThresholdRule("Drive/EKF_Drift_X", "High EKF X Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
             ThresholdRule("Drive/EKF_Drift_Y", "High EKF Y Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
-            ThresholdRule(TelemetryMetricCatalog.LOOP_TIME.canonicalKey, "Robot Loop Time Spike (>25ms)", maxValue = 25.0, audibleAlert = false),
+            ThresholdRule(TelemetryMetricCatalog.LOOP_TIME.canonicalKey, "Robot Loop Time Spike (>25ms)", maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS, audibleAlert = false),
             ThresholdRule("Hardware/I2C/Timeouts", "WARNING: FTC I2C / Lynx Bus Timeout!", maxValue = 0.5, audibleAlert = true)
         )
 
@@ -180,7 +180,7 @@ class AlertEngineService(
                         if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
                         recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[key] = frame.value
                         evaluateFrame(frame)
-                        evaluateCompositeRules(frame, key)
+                        evaluateCompositeRules(frame, key, identity)
                     }
                 }
             }
@@ -252,7 +252,7 @@ class AlertEngineService(
      *
      * @param frame Current telemetry frame being processed.
      */
-    private suspend fun evaluateCompositeRules(frame: TelemetryFrame, normalizedFrameKey: String) {
+    private suspend fun evaluateCompositeRules(frame: TelemetryFrame, normalizedFrameKey: String, sourceIdentity: RuleIdentity) {
         if (!isCompositeSignal(normalizedFrameKey)) return
         val ts = frame.timestampMs
         val sessionId = frame.sessionId
@@ -333,27 +333,21 @@ class AlertEngineService(
         evaluateRuleState("Vision/Limelight/FPS", isVisionStale, limelightFps, ts, sessionId, visionRule)
         }
 
-        // 6. Control Loop Latency Alert (>25ms)
+        // Loop aliases retain source provenance and cannot resolve or count for one another.
         if (normalizedFrameKey in TelemetryMetricCatalog.LOOP_TIME.keys) {
-        val loopMs = frame.value
-        val loopBuffer = loopTimeBuffers.getOrPut(sessionId) { ArrayDeque() }
-        loopBuffer.addLast(TimedLoopSample(ts, loopMs))
-        while (loopBuffer.isNotEmpty() && ts - loopBuffer.first().timestampMs > LOOP_OVERRUN_WINDOW_MS) {
-            loopBuffer.removeFirst()
-        }
-        val overrunCount = loopBuffer.count { it.durationMs > LOOP_OVERRUN_THRESHOLD_MS }
-        val peakLoopMs = loopBuffer.maxOfOrNull { it.durationMs } ?: loopMs
-        val isLoopSlow = loopMs >= LOOP_SEVERE_THRESHOLD_MS || overrunCount >= LOOP_OVERRUN_SAMPLE_COUNT
-        val loopKey = TelemetryMetricCatalog.LOOP_TIME.canonicalKey
-        val loopRule = rules.getOrPut(loopKey) {
-            ThresholdRule(
-                loopKey,
-                "WARNING: Repeated Control Loop Overruns (3 samples >25ms in 1s)!",
-                maxValue = LOOP_OVERRUN_THRESHOLD_MS,
-                audibleAlert = false,
-            )
-        }
-        evaluateRuleState(loopKey, isLoopSlow, if (isLoopSlow) peakLoopMs else loopMs, ts, sessionId, loopRule)
+            val loopKey = normalizedFrameKey
+            val window = loopTimeBuffers.getOrPut(sourceIdentity) { LoopOverrunWindow() }
+            if (!window.accept(frame.timestampUs, frame.value)) return
+            val loopRule = rules.getOrPut(loopKey) {
+                rules[TelemetryMetricCatalog.LOOP_TIME.canonicalKey]?.copy(key = loopKey)
+                    ?: ThresholdRule(
+                        loopKey,
+                        "WARNING: Repeated Control Loop Overruns (3 samples >25ms in 1s)!",
+                        maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS,
+                        audibleAlert = false,
+                    )
+            }
+            evaluateRuleState(loopKey, window.isSlow, window.peakMs, ts, sessionId, loopRule)
         }
     }
 
@@ -393,7 +387,6 @@ class AlertEngineService(
     }
 
     private data class TimedCurrentSample(val timestampMs: Long, val amps: Double)
-    private data class TimedLoopSample(val timestampMs: Long, val durationMs: Double)
 
     private suspend fun persistAlert(alert: AlertRecord) {
         if (alert.sessionId != "live-telemetry") {
@@ -448,9 +441,5 @@ class AlertEngineService(
 
     private companion object {
         const val CURRENT_WINDOW_MS = 1_000L
-        const val LOOP_OVERRUN_WINDOW_MS = 1_000L
-        const val LOOP_OVERRUN_THRESHOLD_MS = 25.0
-        const val LOOP_SEVERE_THRESHOLD_MS = 100.0
-        const val LOOP_OVERRUN_SAMPLE_COUNT = 3
     }
 }
