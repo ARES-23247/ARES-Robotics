@@ -56,7 +56,7 @@ On hardware, record complete frame period and phase durations under representati
 vision, telemetry, and CAN loads; inspect p50/p95/p99/max, overruns, dropped logs, and freshness.
 Encoder scale, slip, sensor noise, and actuator timing require physical validation.
 
-## Validation evidence
+## First-pass validation evidence
 
 Validation uses isolated candidate `17.0.3-rc.dab0a3a9cfdc` from the reviewed library tree.
 
@@ -120,3 +120,15 @@ bounded source audit; existing regression coverage does not prove absence of all
 Second-pass candidate: `17.0.3-rc.3f8b883fac92`. The final 17.0.3 identity remains the unpublished
 version already prepared in this open PR; its source-tree binding and isolated candidate are new.
 No published artifact is overwritten.
+
+Second-pass local validation:
+
+| Scope | Result |
+| --- | --- |
+| All ARESLib modules | 1,075 tests passed with no skips; API checks and isolated publication passed. |
+| FTC robot and simulator | 109 tests passed. |
+| FRC robot | 134 tests passed. |
+| FTC starter | 14 tests passed. |
+| FRC starter | 34 tests passed. |
+| Studio shared, gateway, and app | 1,244 tests passed; six opt-in checks skipped. Release version/archive preflight passed. |
+| Repository checks | Source/release policy, guidance integrity, and current documentation links passed. |
