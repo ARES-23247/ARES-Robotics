@@ -1,52 +1,56 @@
 package com.ares.analytics.service
 
-import javax.sound.sampled.AudioFormat
-import javax.sound.sampled.AudioSystem
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.*
+import javax.sound.sampled.LineUnavailableException
 
-/** Serializes and rate-limits non-blocking desktop alert tones. */
-internal class AlertAudioNotifier {
-    private val mutex = Mutex()
-    private var lastBeepTime = 0L
+/** At most one queued/running attempt; cooldown is measured from worker start on a monotonic clock. */
+internal class AlertAudioNotifier(
+    private val clockNanos: () -> Long = System::nanoTime,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val play: suspend () -> Unit = JavaSoundAlertTone()::play,
+) {
+    private val lock = Any()
+    private var active: Job? = null
+    private var closed = false
+    private var hasStarted = false
+    private var lastStartNanos = 0L
 
     fun trigger(scope: CoroutineScope) {
-        val now = System.currentTimeMillis()
-        if (now - lastBeepTime <= MINIMUM_INTERVAL_MS) return
-        lastBeepTime = now
-        scope.launch(Dispatchers.IO) {
-            if (!mutex.tryLock()) return@launch
-            try {
-                runCatching {
-                    playBeepTone(1000f, 100)
-                    delay(50)
-                    playBeepTone(1200f, 150)
+        val job = synchronized(lock) {
+            if (closed || active != null || !scope.isActive) return
+            // Signed subtraction intentionally supports nanoTime's wraparound for ordinary intervals.
+            if (hasStarted && clockNanos() - lastStartNanos < MINIMUM_INTERVAL_NS) return
+            scope.launch(dispatcher, start = CoroutineStart.LAZY) {
+                synchronized(lock) {
+                    if (closed || !isActive) return@launch
+                    lastStartNanos = clockNanos()
+                    hasStarted = true
                 }
-            } finally {
-                mutex.unlock()
+                ensureActive()
+                try { play() }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: LineUnavailableException) { /* Audio is optional; a later alert may retry. */ }
+                catch (_: IllegalArgumentException) { /* No compatible device/format. */ }
+                catch (_: SecurityException) { /* Audio access denied. */ }
+            }.also { reserved ->
+                active = reserved
+                reserved.invokeOnCompletion {
+                    synchronized(lock) { if (active === reserved) active = null }
+                }
             }
         }
+        // Playback and its cleanup must never run under the admission lock.
+        job.start()
     }
 
-    private fun playBeepTone(frequency: Float, durationMs: Int) {
-        val sampleRate = 8000f
-        val buffer = ByteArray((durationMs * sampleRate / 1000).toInt()) { index ->
-            val angle = index / (sampleRate / frequency) * 2.0 * Math.PI
-            (Math.sin(angle) * 127.0).toInt().toByte()
-        }
-        val format = AudioFormat(sampleRate, 8, 1, true, true)
-        AudioSystem.getSourceDataLine(format).use { line ->
-            line.open(format)
-            line.start()
-            line.write(buffer, 0, buffer.size)
-            line.drain()
-        }
+    /** Cancel the current attempt without disabling future alerts; ownership lasts through cleanup. */
+    fun stop() { synchronized(lock) { active }?.cancel() }
+
+    /** Terminal cancellation; the owning scope can join all accepted work before releasing resources. */
+    fun close() {
+        val job = synchronized(lock) { closed = true; active }
+        job?.cancel()
     }
 
-    private companion object {
-        const val MINIMUM_INTERVAL_MS = 1_500L
-    }
+    private companion object { const val MINIMUM_INTERVAL_NS = 1_500_000_000L }
 }

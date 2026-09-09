@@ -117,7 +117,10 @@ Pass 36 covers [alert rule configuration](alert-rule-configuration-audit.md): wh
 validation, bounded UTF-8 reads, visible fallback and exclusive default-file creation.
 Pass 37 covers [diagnostic rule policy](diagnostic-rule-policy-audit.md): binary motor bounds,
 explicit fixed/disabled loop policy, derived-source ownership and configured loop keys.
-Next are cross-policy consistency, audio resources, lifecycle and global retention,
+Pass 38 covers [alert audio timing and lifecycle](audio-notifier-audit.md): monotonic cooldown,
+one pending/active playback attempt, cancellation ownership, cached PCM and Java Sound cleanup.
+Next is the remaining core filter math and hot-path work (low-pass, median and slew limiting).
+Studio follow-ups include cross-policy consistency, remaining lifecycle and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence

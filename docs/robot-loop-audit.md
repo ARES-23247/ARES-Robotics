@@ -498,3 +498,11 @@ decisions with configured bounds, honors disabled loop sources, rejects unsuppor
 settings visibly and separates locally derived diagnoses from raw telemetry. Loop records retain
 configured source keys, and ordinary evaluation reuses topic normalization. The fixed detector
 parameters are unchanged; arbitrary temporal customization requires a separate policy contract.
+
+## Thirty-eighth pass: alert audio timing and lifecycle
+
+The [audio audit](audits/audio-notifier-audit.md) replaces wall-clock request throttling with
+monotonic worker-start timing, reserves one playback job, and cancels obsolete audio on stop,
+target reset and disposal. One cached finite waveform replaces repeated synthesis and streaming
+drains. Mocked event/resource tests and waveform analysis do not establish audible device quality
+or bound an unresponsive native provider's open/close calls.

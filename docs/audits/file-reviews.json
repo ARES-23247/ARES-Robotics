@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "f677e9647ccfad106d12671383f1a74568f0e878bb6e115bc4ee3d2ff13dd74c",
+      "sha256": "2b92d3f494ee42ed0f03e0a7e7402757d51c80840ef65b1d246b03ad1e9abf68",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -508,7 +508,14 @@
         "ARESLib-Kotlin/build/audit-pass37-before.log",
         "ARESLib-Kotlin/build/audit-pass37-focused.log",
         "ARESLib-Kotlin/build/audit-pass37-studio.log",
-        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+        "ARESLib-Kotlin/build/audit-pass37-policy.log",
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2136,10 +2143,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
-      "sha256": "fe9aae04bacbdf4768b95bd223c276ae50ffe3f6424eda88f8ce622d1f826422",
+      "sha256": "b3d9ba761cc45e55505575ec2b4d972b1ed4a9fcc42ab672a00399bc590b04bc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed scopes through pass 34: occurrence/peak/CAS transitions, source epochs/order, bounded loop and motor evidence, field freshness/units, persistence retry/drain integration, and independent valid CAN/I2C/vision scalar evaluation. Pass 34 removes duplicate hard-coded evaluations, value-based percentage guessing and the entire recent-value cache/scans while preserving configured keys and custom topics. Remaining scopes: loop/motor configuration semantics, platform thresholds, concurrent lifecycle, global retention, crash durability and full-file contract review. Pass 35 serializes suspending platform configuration with evaluation, preserves alert evidence, ignores terminal configuration and rejects negative battery samples while keeping zero valid. Remaining platform work concerns transport/session context and immutable historical policy identity; loop/motor overrides and general rule validation remain open. Pass 36 replaces ad hoc file IO with validated all-or-default loading and exposes an immutable startup warning. Specialized configuration, context ownership, concurrent lifecycle and global retention remain open. Pass 37 shares scalar comparison with derived motor values, excludes raw telemetry from twelve locally derived keys, honors loop disabling/alias precedence and configured keys, and reuses normalized topics. Temporal/motor detector parameters remain fixed; platform consistency, lifecycle, retention, audio and transport ownership remain open.",
+      "scope": "Reviewed scopes through pass 34: occurrence/peak/CAS transitions, source epochs/order, bounded loop and motor evidence, field freshness/units, persistence retry/drain integration, and independent valid CAN/I2C/vision scalar evaluation. Pass 34 removes duplicate hard-coded evaluations, value-based percentage guessing and the entire recent-value cache/scans while preserving configured keys and custom topics. Remaining scopes: loop/motor configuration semantics, platform thresholds, concurrent lifecycle, global retention, crash durability and full-file contract review. Pass 35 serializes suspending platform configuration with evaluation, preserves alert evidence, ignores terminal configuration and rejects negative battery samples while keeping zero valid. Remaining platform work concerns transport/session context and immutable historical policy identity; loop/motor overrides and general rule validation remain open. Pass 36 replaces ad hoc file IO with validated all-or-default loading and exposes an immutable startup warning. Specialized configuration, context ownership, concurrent lifecycle and global retention remain open. Pass 37 shares scalar comparison with derived motor values, excludes raw telemetry from twelve locally derived keys, honors loop disabling/alias precedence and configured keys, and reuses normalized topics. Temporal/motor detector parameters remain fixed; platform consistency, lifecycle, retention, audio and transport ownership remain open. Pass 38 injects suspend audio playback, uses the engine dispatcher for notifier ownership, cancels audio on stop/target reset and closes it before disposal/drain. Five engine/audio lifecycle regressions executed; overall concurrent engine lifecycle, global retention and transport ownership remain open.",
       "evidence": [
         "docs/audits/alert-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
@@ -2178,7 +2185,14 @@
         "ARESLib-Kotlin/build/audit-pass37-before.log",
         "ARESLib-Kotlin/build/audit-pass37-focused.log",
         "ARESLib-Kotlin/build/audit-pass37-studio.log",
-        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+        "ARESLib-Kotlin/build/audit-pass37-policy.log",
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
@@ -2293,10 +2307,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "92dace19e4c15dab5cb5138e0c0f693e13db34d3cc68a8b3352fd3307f27dec3",
+      "sha256": "b48a8a211599aeaa12e69b20c2cdcae717648c7e149a57128eb58069f28d62fa",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2332,7 +2346,14 @@
         "ARESLib-Kotlin/build/audit-pass37-before.log",
         "ARESLib-Kotlin/build/audit-pass37-focused.log",
         "ARESLib-Kotlin/build/audit-pass37-studio.log",
-        "ARESLib-Kotlin/build/audit-pass37-policy.log"
+        "ARESLib-Kotlin/build/audit-pass37-policy.log",
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2776,6 +2797,96 @@
         "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ],
       "sha256": "5d9660fca540d5d5cc406271851d0590ad16696e49cfc70355a4d85c377fe346"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertAudioNotifier.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire notifier reviewed and executed: monotonic worker-start cooldown, exact/wrapped intervals, one queued/running job, concurrent admission, reusable stop, terminal close, ownership through cleanup and expected/fatal failure handling. Clock timing is attempt timing, not measured audible output.",
+      "evidence": [
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+      ],
+      "sha256": "cd871fc653c54d8b5aa321ca525002d9bf494a9618dce66c31f41d83a2fee7b7"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/JavaSoundAlertTone.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire adapter and waveform generator reviewed and tested with mock Clip devices and spectral checks: cached signed PCM, finite single clip, event identity/duplicates, cancellation, suspended-event timeout, primary/suppressed cleanup failures. Native open/close deadlines, provider Clip support and audible quality require device validation.",
+      "evidence": [
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+      ],
+      "sha256": "d0d7f0854ffa691d7b1b02a776b91a731b451d0144bb00db27f5a13c0a86eb4d"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertAudioNotifierTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire fifteen-method deterministic and eight-thread fixture reviewed and executed. Clock/dispatch/playback injected; cancellation gates and thread pool cleaned on failure. Baseline timing/admission tests and final stop/error/concurrency contracts covered.",
+      "evidence": [
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+      ],
+      "sha256": "dcde0b77f4d596cd68b3b366c6515734b03512c51b97ebcd51c3ca9b7c0a105f"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/JavaSoundAlertToneTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire ten-method mock-device and waveform fixture reviewed and executed: event/cancellation/timeout/resource paths, cached PCM, duration/silence/amplitude and independent spectral frequency checks. Coroutine exception copies retain the original cause and cleanup failures.",
+      "evidence": [
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+      ],
+      "sha256": "b3d910c0b23366477d01b652bf7e9760837a0a90c623c644acf98bcbd7813986"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertAudioLifecycleAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire five-method engine fixture reviewed and executed with injected silent playback: stop, target reset, immediate/joined disposal and failed storage drain. Mock answer avoids nullable argument matcher contamination.",
+      "evidence": [
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+      ],
+      "sha256": "15c540dce4e68f3e6c0f5aa10c1739c8b959b56fc8321b64b33c4fb800fcf88a"
+    },
+    "docs/audits/audio-notifier-audit.md": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 38 report reviewed against baseline/focused corrections, final XML, Kover, Java Sound primary API contracts and policy/inventory. Native provider and hardware limits are explicit; no audible or physical-loop validation claim.",
+      "evidence": [
+        "docs/audits/audio-notifier-audit.md",
+        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+        "ARESLib-Kotlin/build/audit-pass38-before.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+        "ARESLib-Kotlin/build/audit-pass38-focused.log",
+        "ARESLib-Kotlin/build/audit-pass38-studio.log",
+        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+      ],
+      "sha256": "87ffdfd371809a86af1d423bdfef768988a7d35f6e307c07e4f6f84769c3ff70"
     }
   }
 }

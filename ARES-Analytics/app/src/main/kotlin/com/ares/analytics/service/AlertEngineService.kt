@@ -61,6 +61,7 @@ class AlertEngineService(
     private val nt4ClientService: Nt4ClientService,
     private val thresholdsPath: String = AppDataPaths.file("thresholds.json").path,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    audioPlayer: suspend () -> Unit = JavaSoundAlertTone()::play,
 ) {
     /** Rules are indexed by transport-normalized topic while preserving the configured key in alerts. */
     private val rules = ConcurrentHashMap<String, ThresholdRule>()
@@ -86,7 +87,7 @@ class AlertEngineService(
     private val motorDiagnostics = HashMap<RuleIdentity, MotorBinding>()
 
     private val serviceScope = CoroutineScope(dispatcher + SupervisorJob())
-    private val audioNotifier = AlertAudioNotifier()
+    private val audioNotifier = AlertAudioNotifier(dispatcher = dispatcher, play = audioPlayer)
     private val persistence = AlertPersistenceWriter(serviceScope, databaseService::insertAlert)
     val persistenceStatus: StateFlow<AlertPersistenceStatus> = persistence.status
     @Volatile private var disposed = false
@@ -200,6 +201,7 @@ class AlertEngineService(
     /** Called while holding transitionMutex. Old persisted evidence remains in the database. */
     private fun selectTargetEpoch(epoch: Long) {
         if (evaluationTargetEpoch == epoch) return
+        audioNotifier.stop()
         evaluationTargetEpoch = epoch
         motorDiagnostics.clear()
         loopTimeBuffers.clear()
@@ -220,6 +222,7 @@ class AlertEngineService(
      */
     fun stop() {
         engineJob?.cancel()
+        audioNotifier.stop()
     }
 
     /**
@@ -230,6 +233,7 @@ class AlertEngineService(
      */
     fun dispose() {
         disposed = true
+        audioNotifier.close()
         engineJob?.cancel()
         persistence.close()
         serviceScope.cancel()
@@ -239,6 +243,7 @@ class AlertEngineService(
     suspend fun disposeAndJoin(timeoutMs: Long = 5_000L): Boolean {
         require(timeoutMs > 0)
         transitionMutex.withLock { disposed = true }
+        audioNotifier.close()
         engineJob?.cancelAndJoin()
         if (!persistence.finish(timeoutMs)) return false
         serviceScope.coroutineContext[Job]?.cancelAndJoin()
