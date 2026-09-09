@@ -63,7 +63,7 @@ class AutoTuningDigitalTwinTest {
         assertEquals(18, supported.size)
         assertTrue(unsupported.all { it.recommendation?.quality == RecommendationQuality.REJECTED && it.recommendation.topicValues.isEmpty() })
         // Preserve the previous 28/36 acceptance threshold within the mechanisms with a valid proposal contract.
-        assertTrue(summary.readyOrReviewable >= supported.size * 28 / 36)
+        assertTrue("Reviewable=${summary.readyOrReviewable}; rejected=" + supported.filter { it.recommendation?.quality == RecommendationQuality.REJECTED }.map { it.scenario.name to it.recommendation?.stepMetrics }, summary.readyOrReviewable >= supported.size * 28 / 36)
         assertTrue(summary.recoveredWithinTolerance >= 28)
         assertTrue(summary.stableClosedLoops >= 24)
         assertEquals(0, summary.unsafeRecommendations)

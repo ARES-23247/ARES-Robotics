@@ -51,7 +51,7 @@ class GoldenAutoTuningRegressionTest {
         expectedKV: Double,
         expectedKA: Double
     ) {
-        assertNotEquals(RecommendationQuality.REJECTED, recommendation.quality)
+        assertNotEquals("${recommendation.mechanism}: ${recommendation.stepMetrics}; ${recommendation.warnings}", RecommendationQuality.REJECTED, recommendation.quality)
         assertTrue(recommendation.rSquared > 0.999999)
         assertEquals(expectedKS, recommendation.recommendedkS, 1e-6)
         assertEquals(expectedKV, recommendation.recommendedkV, 1e-6)

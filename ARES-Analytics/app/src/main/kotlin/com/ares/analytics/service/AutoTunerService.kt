@@ -39,8 +39,12 @@ data class StepResponseMetrics(
     val modelFit: Double = 0.0
 ) {
     val isUsable: Boolean
-        get() = processGain.isFinite() && abs(processGain) > 1e-6 &&
-            timeConstantMs.isFinite() && timeConstantMs > 0.0
+        get() = processGain.isFinite() && processGain > 1e-6 &&
+            timeConstantMs.isFinite() && timeConstantMs > 0.0 &&
+            deadTimeMs.isFinite() && deadTimeMs >= 0.0 &&
+            riseTimeMs.isFinite() && riseTimeMs > 0.0 &&
+            settlingTimeMs.isFinite() && settlingTimeMs >= 0.0 &&
+            percentOvershoot.isFinite() && percentOvershoot >= 0.0 && modelFit in 0.5..1.0
 }
 
 data class TuningApplyState(
@@ -53,7 +57,7 @@ data class TuningApplyState(
 /**
  * Converts measured SysId and step-response samples into reviewable tuning recommendations.
  * Feedforward coefficients come from [SysIdService]'s OLS fit. Feedback gains come from an
- * identified first-order-plus-dead-time plant and conservative IMC tuning, never fixed constants.
+ * identified first-order-plus-dead-time plant and conservative SIMC PI tuning, never fixed constants.
  */
 class AutoTunerService(
     private val nt4ClientService: Nt4ClientService,
@@ -111,8 +115,9 @@ class AutoTunerService(
         val finite = prepared.rows
         val summary = sysIdService.analyzePreparedData(prepared)
         if (finite.size < MIN_RECOMMENDATION_SAMPLES) return SampleAnalysis(summary, null)
-        val metrics = identifyStepResponse(finite)
-        val gains = calculateImcGains(metrics)
+        val dcGain = if (summary.rSquared >= MIN_REVIEW_R2 && summary.kV > 0.0) (1.0 / summary.kV).takeIf { it.isFinite() } else null
+        val metrics = StepResponseAnalysis.identify(finite, dcGain)
+        val gains = StepResponseAnalysis.gains(metrics)
         val envelope = AutoTuningSafetyPolicy.envelopeFor(mechanism)
         val envelopeViolations = envelope.violations(summary.kS, summary.kV, summary.kA, gains)
         val topicValues = buildTopicValues(mechanism, summary.kS, summary.kV, summary.kA, gains)
@@ -269,106 +274,12 @@ class AutoTunerService(
         SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM -> emptyMap()
     }
 
-    private fun calculateImcGains(metrics: StepResponseMetrics): AutoTunerPIDFGains {
-        if (!metrics.isUsable) return AutoTunerPIDFGains(0.0, 0.0, 0.0)
-        val tau = metrics.timeConstantMs / 1000.0
-        val deadTime = max(metrics.deadTimeMs.takeIf { it.isFinite() }?.div(1000.0) ?: 0.0, 0.001)
-        val processGain = abs(metrics.processGain)
-        val lambda = max(tau * 0.65, deadTime * 3.0)
-        val kP = (tau / (processGain * (lambda + deadTime))).coerceIn(0.0, MAX_KP)
-        val integralTime = tau + deadTime * 0.5
-        val kI = if (integralTime > 1e-6) (kP / integralTime).coerceIn(0.0, MAX_KI) else 0.0
-        val kD = (kP * tau * deadTime / (2.0 * tau + deadTime)).coerceIn(0.0, MAX_KD)
-        return AutoTunerPIDFGains(kP, kI, kD)
-    }
-
-    private fun identifyStepResponse(data: List<AlignedDataRow>): StepResponseMetrics {
-        if (data.size < MIN_RECOMMENDATION_SAMPLES) return StepResponseMetrics()
-        var stepIndex = -1
-        var largestStep = 0.0
-        for (i in 1 until data.size) {
-            val delta = abs(data[i].voltage - data[i - 1].voltage)
-            if (delta > largestStep) {
-                largestStep = delta
-                stepIndex = i
-            }
-        }
-        if (stepIndex < 1 || largestStep < MIN_STEP_VOLTS || data.size - stepIndex < 8) return StepResponseMetrics()
-
-        val baselineWindow = data.subList(max(0, stepIndex - 8), stepIndex)
-        val tailWindow = data.subList(max(stepIndex + 1, data.size - 10), data.size)
-        val baselineVelocity = baselineWindow.map { it.velocity }.average()
-        val targetVelocity = tailWindow.map { it.velocity }.average()
-        val inputBefore = baselineWindow.map { it.voltage }.average()
-        val inputAfter = data.subList(stepIndex, minOf(data.size, stepIndex + 8)).map { it.voltage }.average()
-        val responseDelta = targetVelocity - baselineVelocity
-        val inputDelta = inputAfter - inputBefore
-        if (abs(responseDelta) < 1e-6 || abs(inputDelta) < MIN_STEP_VOLTS) return StepResponseMetrics()
-
-        fun progress(row: AlignedDataRow): Double = (row.velocity - baselineVelocity) / responseDelta
-        fun firstCrossing(level: Double): Int = (stepIndex until data.size).firstOrNull { progress(data[it]) >= level } ?: -1
-        val five = firstCrossing(0.05)
-        val ten = firstCrossing(0.10)
-        val sixtyThree = firstCrossing(0.632)
-        val ninety = firstCrossing(0.90)
-        val startTime = data[stepIndex].timestampMs
-        val deadTimeMs = if (five >= 0) (data[five].timestampMs - startTime).toDouble() else Double.NaN
-        val riseTimeMs = if (ten >= 0 && ninety >= ten) (data[ninety].timestampMs - data[ten].timestampMs).toDouble() else Double.NaN
-        val timeConstantMs = if (sixtyThree >= 0) {
-            (data[sixtyThree].timestampMs - startTime).toDouble() - (deadTimeMs.takeIf { it.isFinite() } ?: 0.0)
-        } else Double.NaN
-        val peak = (stepIndex until data.size).maxOf { progress(data[it]) }
-        val overshoot = max(0.0, (peak - 1.0) * 100.0)
-
-        var settlingTime = Double.NaN
-        for (i in stepIndex until data.size) {
-            var staysSettled = true
-            for (j in i until data.size) {
-                if (abs(progress(data[j]) - 1.0) > 0.02) {
-                    staysSettled = false
-                    break
-                }
-            }
-            if (staysSettled) {
-                settlingTime = (data[i].timestampMs - startTime).toDouble()
-                break
-            }
-        }
-
-        val tauSec = timeConstantMs / 1000.0
-        val delaySec = (deadTimeMs.takeIf { it.isFinite() } ?: 0.0) / 1000.0
-        var ssRes = 0.0
-        var ssTot = 0.0
-        for (i in stepIndex until data.size) {
-            val elapsed = (data[i].timestampMs - startTime) / 1000.0
-            val predictedProgress = if (elapsed <= delaySec || !tauSec.isFinite() || tauSec <= 0.0) 0.0
-                else 1.0 - kotlin.math.exp(-(elapsed - delaySec) / tauSec)
-            val actualProgress = progress(data[i])
-            ssRes += (actualProgress - predictedProgress) * (actualProgress - predictedProgress)
-            ssTot += (actualProgress - 1.0) * (actualProgress - 1.0)
-        }
-        val modelFit = if (ssTot > 1e-9) (1.0 - ssRes / ssTot).coerceIn(0.0, 1.0) else 0.0
-        return StepResponseMetrics(
-            riseTimeMs = riseTimeMs,
-            percentOvershoot = overshoot,
-            settlingTimeMs = settlingTime,
-            deadTimeMs = deadTimeMs,
-            timeConstantMs = timeConstantMs,
-            processGain = responseDelta / inputDelta,
-            modelFit = modelFit
-        )
-    }
-
     companion object {
         private const val MIN_RECOMMENDATION_SAMPLES = 20
-        private const val MIN_STEP_VOLTS = 1.0
         private const val MIN_REVIEW_R2 = 0.70
         private const val MIN_REJECT_R2 = 0.45
         private const val MIN_VALIDATION_R2 = 0.75
         private const val MAX_VALIDATION_DRIFT = 0.25
         private const val READY_CONFIDENCE = 0.78
-        private const val MAX_KP = 50.0
-        private const val MAX_KI = 100.0
-        private const val MAX_KD = 10.0
     }
 }

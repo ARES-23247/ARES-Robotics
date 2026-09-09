@@ -458,14 +458,14 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "c84f01077d111973bbf87e15fdc8638ceb437e34eb6a6479f68c441c4787cada",
+      "sha256": "4460bd49d97c812ed5743c85305daf4153b6f3a95760dc178a7395d9e57d9555",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full accounting and work-queue document reviewed through pass 18. Records model, proposal delivery, simulation, transport and physical work still open; no repository-wide completion claim.",
+      "scope": "Full accounting and work-queue document reviewed through pass 19. Records remaining proposal/model confidence, simulation, transport and physical work, plus both unresolved timing-sensitive test failures; no repository-wide completion claim.",
       "evidence": [
-        "docs/audits/autotuner-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log",
-        "ARESLib-Kotlin/build/audit-pass18-policy.log"
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -948,14 +948,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoTunerService.kt": {
-      "sha256": "0f8f5005eabcee187d61039fce29abfe2ea0dd496e9e2ecc2bc382e2936f781d",
+      "sha256": "26284456f5b40f2d0bdb8529408bf2b6a1db224d65ecd5aa2ff1267a9504792a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 17-18 cover one pure fit, shared preparation/parsing, stale-file recommendation clearing, dimensionally correct feedforward-only drivetrain proposals, supported flywheel mapping, unsupported gravity/custom rejection and canonical proposal value/envelope revalidation. Duplicate direction checks removed. Step-response/IMC math, model confidence, inbox delivery and simulation/import provenance remain open.",
+      "scope": "Passes 17-19 cover shared fitting/preparation/parsing, proposal mapping/envelope revalidation, extracted step-response math, finite positive model usability and independently fitted DC gain integration. Golden and Monte Carlo thresholds unchanged. Proposal eligibility/delivery, legacy apply/rollback, model confidence and import/simulation provenance still need review. Kover 156/177 lines, 103/156 branches.",
       "evidence": [
-        "docs/audits/autotuner-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
@@ -1047,25 +1047,25 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoldenAutoTuningRegressionTest.kt": {
-      "sha256": "b109bbd7a87d076a72a9ea98aee49d05f15a8786d309576545d0e482bec3c7ab",
+      "sha256": "1da22463e5ba743411184b7f3abd982354eb094c5c1d239edf1dee55a38afffd",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full two-method test review and execution. Both known-plant golden gains and quality checks remain; LINEAR now expects three dimensionally valid feedforward keys, FLYWHEEL keeps six keys. Adds owned client/database/import cleanup.",
+      "scope": "Full two-method test review and execution. Both known-plant golden gains and quality checks remain; LINEAR now expects three dimensionally valid feedforward keys, FLYWHEEL keeps six keys. Adds owned client/database/import cleanup. Pass 19 adds model diagnostics to assertion messages and reruns full tests with corrected model/PI math; acceptance, recovery and stability thresholds unchanged.",
       "evidence": [
-        "docs/audits/autotuner-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTuningDigitalTwinTest.kt": {
-      "sha256": "f9da8baf27cdf2abf474295672c6d600f0ceca097de0eb2a7eff237a3904d0db",
+      "sha256": "1ccf71a841bdbee63fdde8810508ebac0f6845dce3d6effe64173dc708db3010",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full five-method test review and execution. All 36 Monte Carlo scenarios still run with unchanged recovery/stability thresholds. Eighteen unsupported mechanism cases must reject proposals; the prior 28/36 acceptance fraction applies to the eighteen supported cases. Determinism, envelope recheck and sparse/gapped inputs remain tested. Adds owned client/database cleanup; does not establish physical simulation fidelity.",
+      "scope": "Full five-method test review and execution. All 36 Monte Carlo scenarios still run with unchanged recovery/stability thresholds. Eighteen unsupported mechanism cases must reject proposals; the prior 28/36 acceptance fraction applies to the eighteen supported cases. Determinism, envelope recheck and sparse/gapped inputs remain tested. Adds owned client/database cleanup; does not establish physical simulation fidelity. Pass 19 adds model diagnostics to assertion messages and reruns full tests with corrected model/PI math; acceptance, recovery and stability thresholds unchanged.",
       "evidence": [
-        "docs/audits/autotuner-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/BoundedProcess.kt": {
@@ -1099,6 +1099,50 @@
         "docs/audits/autotuner-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass18-studio-verified.log",
         "ARESLib-Kotlin/build/audit-pass18-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/StepResponseAnalysis.kt": {
+      "sha256": "7ade0a4c889612974c1384f31ef6875269960acab7ebb3d1db672b22bc9f6d67",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full numerical helper review: finite chronological input, constant-input plateaus, baseline/tail checks, independent DC gain for moving initial state, interpolated crossings, stable R-squared, linear settling and linked-list normalization, consistent capped SIMC PI. Eighteen analytic/boundary/access methods and full Studio gate passed; Kover 137/137 lines, 128/156 branches. Heuristic and physical-model limitations remain explicit in report.",
+      "evidence": [
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/StepResponseMathAuditTest.kt": {
+      "sha256": "e469cbdf5ec4bbf7ab4df0e34a3e065f3b18f226c7d2ca2c72125041668e0922",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full review and execution of 18 analytic, finite/sign/chronology, moving-state, plateau, gain, settling and list-access regression methods. Eleven of twelve initial tests failed against extracted old algorithm. Counts prove algorithmic work, not physical timing.",
+      "evidence": [
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ProjectBuildServiceTest.kt": {
+      "sha256": "0ce82012126a4bb0c5a5a9081100cabda9bb180a7a88890ee8905cc77103871e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped review of replacement-generation lifecycle test, Java probe and PID readiness helper. Five-second first-parent PID timeout occurred before replacement in initial full gate; cause unproven. Adds state/output diagnostics without changing deadlines or assertions. All 19 methods pass targeted rerun and final full gate; remaining file behavior and process-tree coverage still need review.",
+      "evidence": [
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+      ]
+    },
+    "docs/audits/step-response-audit.md": {
+      "sha256": "06386ecf4439ebc599dc64844819e6c1c4034ce5d4f95d71fcd7f947c51fd514",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass 19 report checked against analytic baseline, focused and full-gate XML/logs and Kover. Records primary SIMC reference, model heuristics, linear-work claim, uncovered branches, opt-in skips and unresolved lifecycle timeout; no physical timing or repository completion claim.",
+      "evidence": [
+        "docs/audits/step-response-audit.md",
+        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
+        "ARESLib-Kotlin/build/audit-pass19-policy.log"
       ]
     }
   }

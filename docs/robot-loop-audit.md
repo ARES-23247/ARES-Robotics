@@ -347,3 +347,11 @@ The [eighteenth-pass report](audits/autotuner-input-audit.md) records shared sam
 preparation/import parsing, timestamp/median/range checks, removal of incompatible
 position-controller mappings and unbound gravity/custom proposals, and canonical approval
 revalidation. Step-response models, proposal delivery and simulation fidelity remain open.
+
+## Nineteenth pass: step-response and PI math
+
+The [nineteenth-pass report](audits/step-response-audit.md) records corrected response
+crossings, segmented input plateaus, independently identified gain for moving initial
+states, finite model validation and a consistent first-order PI rule. The late-excursion
+regression proves linear sample access instead of repeated suffix scans. Physical tuning
+and the remaining proposal/provenance workflow are still open.

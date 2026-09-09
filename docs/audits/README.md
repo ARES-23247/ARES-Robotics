@@ -68,7 +68,9 @@ Pass 17 covers [SysId analysis](sysid-analysis-audit.md): identifiable scaled re
 microsecond alignment, FFT endpoints and stable arithmetic, one background fit per motor
 run, and generation-checked result publication. Pass 18 covers [AutoTuner inputs and proposal contracts](autotuner-input-audit.md): shared
 preparation/parsing, timestamp and median/range checks, dimensionally correct declaration
-mappings and approval revalidation. Next are step-response model math, proposal delivery
+mappings and approval revalidation. Pass 19 covers [step-response and PI math](step-response-audit.md): separate rise/delay
+estimates, constant-input plateaus, moving initial states, stable residuals, linear settling
+analysis and consistent SIMC PI gains. Next are proposal delivery/eligibility, legacy states
 and simulation provenance, then logging/transport, advanced descriptor safety and remaining
 Studio math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
@@ -76,6 +78,8 @@ build/release/CI tooling, configuration, documentation, and resources using the 
 as the work queue. Map Kover reports to source files and identify uncovered behavior.
 
 Open validation concerns include the timing-sensitive `TelemetryUpdateE2ETest` failure
-documented in pass 3, Studio opt-in tests, and physical loop/jitter/electrical validation.
+documented in pass 3, the first-parent PID readiness timeout in pass 19
+(`ProjectBuildServiceTest`, cause unproven after passing reruns), Studio opt-in tests, and
+physical loop/jitter/electrical validation.
 The goal remains active until every file has a defensible disposition and all feasible
 checks have completed. Changes remain local; no push, merge, or release is part of this goal.
