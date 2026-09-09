@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.components
 
+import com.ares.analytics.domain.navigation.NavigationTarget
+
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

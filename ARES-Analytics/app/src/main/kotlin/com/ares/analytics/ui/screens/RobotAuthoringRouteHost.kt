@@ -13,7 +13,7 @@ import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.service.GamepadService
 import com.ares.analytics.shared.models.WorkspaceConfig
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.components.controls.ControlsEditorPanel
 import com.ares.analytics.viewmodel.PathPlannerViewModel
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel

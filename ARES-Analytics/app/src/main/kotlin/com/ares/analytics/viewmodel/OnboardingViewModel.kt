@@ -358,6 +358,12 @@ class OnboardingViewModel(
 
     private suspend fun verifyJavaBuildTools() {
         _state.update { it.copy(isVerifyingJava = true) }
+        if (_state.value.league == League.XRP) {
+            val result = managedToolchainService.refresh(League.XRP)
+            _state.update { it.copy(isVerifyingJava = false, javaEnvValid = result.buildReady,
+                javaEnvMsg = result.components.joinToString("\n") { component -> component.detail }, javaMajorVersion = null) }
+            return
+        }
         val result = environmentService.verifyJavaEnvironment()
         val javaReadiness = evaluateJavaBuildTools(result.isValid, result.message)
         _state.update {

@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.LearningCatalog
+
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals

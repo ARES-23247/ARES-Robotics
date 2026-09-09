@@ -6,7 +6,7 @@ import com.ares.analytics.service.AiDiagnosticsService
 import com.ares.analytics.service.SyncEngineService
 import com.ares.analytics.service.tuning.GuidedTuningExperimentSeed
 import com.ares.analytics.shared.models.WorkspaceConfig
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.viewmodel.CloudViewModel
 import com.ares.analytics.viewmodel.ImportCenterViewModel
 import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisViewModel

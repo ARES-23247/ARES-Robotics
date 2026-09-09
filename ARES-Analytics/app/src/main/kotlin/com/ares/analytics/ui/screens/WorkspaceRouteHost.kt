@@ -11,7 +11,7 @@ import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.models.ForensicsResponse
 import com.ares.analytics.shared.models.WorkspaceConfig
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 import com.ares.analytics.viewmodel.DashboardIntent

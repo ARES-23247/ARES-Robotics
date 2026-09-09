@@ -7,6 +7,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class OnboardingPresentationTest {
+    @Test fun `finish action describes the selected project mode`() {
+        assertEquals("Open project", onboardingFinishLabel(com.ares.analytics.viewmodel.ProjectSetupMode.OPEN_EXISTING))
+        assertEquals("Create standalone project", onboardingFinishLabel(com.ares.analytics.viewmodel.ProjectSetupMode.CREATE_NEW))
+        assertEquals("Create Lightbot copy", onboardingFinishLabel(com.ares.analytics.viewmodel.ProjectSetupMode.EXPLORE_LIGHTBOT))
+    }
+
     @Test
     fun `project and robot steps explain their hidden required fields`() {
         assertEquals(

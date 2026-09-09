@@ -1,6 +1,6 @@
-package com.ares.analytics.ui.help
+package com.ares.analytics.domain.learning
 
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser

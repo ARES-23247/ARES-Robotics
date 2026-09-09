@@ -57,8 +57,21 @@ class AresFileChooserNativeTest {
                                 }
                             }
                         }
-                        if (cycle == 0) assertNotNull(AresFileChooserLauncher.testSelectionOverride).invoke(root)
-                        else dialog.dispose()
+                        val canvas = assertNotNull(findCanvas(layer))
+                        if (cycle == 0) {
+                            // Exercise the actual approval button instead of injecting a selected path.
+                            val x = canvas.width - 80
+                            val y = canvas.height - 34
+                            for (id in listOf(java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED)) {
+                                canvas.dispatchEvent(java.awt.event.MouseEvent(canvas, id, System.currentTimeMillis(),
+                                    if (id == java.awt.event.MouseEvent.MOUSE_PRESSED) java.awt.event.InputEvent.BUTTON1_DOWN_MASK else 0,
+                                    x, y, 1, false, java.awt.event.MouseEvent.BUTTON1))
+                            }
+                        } else {
+                            java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().dispatchEvent(
+                                java.awt.event.KeyEvent(canvas, java.awt.event.KeyEvent.KEY_PRESSED,
+                                    System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ESCAPE, java.awt.event.KeyEvent.CHAR_UNDEFINED))
+                        }
                     }
                     val selected = result.get(10, TimeUnit.SECONDS)
                     if (cycle == 0) assertEquals(listOf(root), selected) else assertNull(selected)
@@ -71,6 +84,12 @@ class AresFileChooserNativeTest {
                 }
             }
         } finally { root.deleteRecursively() }
+    }
+
+    private fun findCanvas(component: Component): java.awt.Canvas? {
+        if (component is java.awt.Canvas) return component
+        if (component is Container) component.components.forEach { findCanvas(it)?.let { canvas -> return canvas } }
+        return null
     }
 
     private fun findLayer(component: Component): SkiaLayer? {

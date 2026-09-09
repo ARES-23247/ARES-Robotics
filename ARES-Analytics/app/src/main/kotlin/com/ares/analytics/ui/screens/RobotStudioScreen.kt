@@ -196,9 +196,11 @@ fun RobotStudioScreen(
         subsystems = subsystemTreeItems,
         selection = selection,
         onSelect = { newSelection ->
-            selection = newSelection
             if (newSelection is RobotStudioSelection.Subsystem && newSelection.documentId.isNotBlank()) {
                 subsystemViewModel.selectDocument(newSelection.documentId)
+                selection = RobotStudioSelection.Subsystem(subsystemViewModel.state.value.selectedDocumentId.orEmpty())
+            } else {
+                selection = newSelection
             }
         },
         onAddSubsystem = {

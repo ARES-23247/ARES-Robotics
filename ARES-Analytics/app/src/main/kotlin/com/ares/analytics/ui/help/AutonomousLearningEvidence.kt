@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademyAutonomousSnapshot
+
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.viewmodel.PathPlannerState
 import com.areslib.routine.RoutineValidationSeverity

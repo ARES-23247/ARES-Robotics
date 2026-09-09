@@ -8,7 +8,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.util.Sha256
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.ares.analytics.service.project.persistence.FieldDocumentStore
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult

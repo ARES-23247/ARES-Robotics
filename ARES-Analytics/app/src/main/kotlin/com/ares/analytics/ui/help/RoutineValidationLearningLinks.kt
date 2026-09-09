@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AutonomousMissionCheckpointIds
+
 import com.areslib.routine.RoutineValidationIssue
 
 data class RoutineValidationLearningLink(

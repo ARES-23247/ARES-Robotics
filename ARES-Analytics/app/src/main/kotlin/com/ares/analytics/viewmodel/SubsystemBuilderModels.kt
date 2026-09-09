@@ -283,6 +283,7 @@ data class SubsystemGeneratorState(
     val generatedContentHash: String? = null,
     val status: String? = null,
     val loadError: String? = null,
+    val projectLoaded: Boolean = false,
     val projectRevision: ProjectSessionRevision? = null,
     val aiProposalInProgress: Boolean = false,
     val aiProposal: SubsystemAiProposalReview? = null,

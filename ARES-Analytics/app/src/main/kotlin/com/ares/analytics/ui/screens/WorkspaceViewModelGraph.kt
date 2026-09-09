@@ -10,7 +10,7 @@ import com.ares.analytics.service.DrivebaseDesignAssistant
 import com.ares.analytics.service.SubsystemDesignAssistant
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.viewmodel.CloudViewModel
 import com.ares.analytics.viewmodel.DashboardViewModel
@@ -227,6 +227,7 @@ internal fun rememberWorkspaceViewModelGraph(
     val subsystemGenerator = remember(config.id, config.projectPath, config.league) {
         SubsystemGeneratorViewModel(
             projectPath = config.projectPath,
+            loadOnStart = false,
             league = config.league,
             projectGenerator = services.projectGenerator,
             checkpointRecorder = services.projectVersionControlService,
@@ -236,6 +237,7 @@ internal fun rememberWorkspaceViewModelGraph(
             projectSession = services.projectSession,
         )
     }
+    LaunchedEffect(subsystemGenerator) { subsystemGenerator.reloadAsync().join() }
     val drivebaseBuilder = remember(config.id, config.projectPath, config.robotId, config.league) {
         DrivebaseBuilderViewModel(
             projectPath = config.projectPath,

@@ -1,5 +1,9 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.LearningLab
+import com.ares.analytics.domain.learning.ACADEMY_CATALOG_SCHEMA_VERSION
+import com.ares.analytics.domain.learning.AcademyCatalogCodec
+
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

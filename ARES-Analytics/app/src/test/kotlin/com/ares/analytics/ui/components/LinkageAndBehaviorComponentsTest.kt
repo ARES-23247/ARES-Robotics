@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.components
 
+import com.ares.analytics.domain.project.FieldDocumentMapper
+
 import com.areslib.math.kinematics.TwoDofLinkageKinematics
 import com.areslib.math.kinematics.TwoDofLinkageParameters
 import com.areslib.subsystem.SubsystemLinkageDocument
@@ -46,7 +48,7 @@ class LinkageAndBehaviorComponentsTest {
             restitution = 0.25,
         )
 
-        val canonical = with(com.ares.analytics.viewmodel.field.FieldDocumentMapper) { customType.toCanonical() }
+        val canonical = with(com.ares.analytics.domain.project.FieldDocumentMapper) { customType.toCanonical() }
         assertEquals("frc-reefscape-coral", canonical.id)
         assertEquals("Reefscape Coral", canonical.name)
         assertEquals("cylinder", canonical.shape)

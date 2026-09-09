@@ -30,9 +30,9 @@ import com.ares.analytics.ui.components.pathplanner.MotionProfileLabCard
 import com.ares.analytics.ui.help.DeveloperReferenceCatalog
 import com.ares.analytics.ui.help.GlossaryCatalog
 import com.ares.analytics.ui.help.GlossaryTerm
-import com.ares.analytics.ui.help.LearningCatalog
-import com.ares.analytics.ui.help.LearningLab
-import com.ares.analytics.ui.help.LearningLabGuide
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningLab
+import com.ares.analytics.domain.learning.LearningLabGuide
 import com.ares.analytics.ui.theme.*
 
 @Composable

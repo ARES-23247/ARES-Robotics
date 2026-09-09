@@ -1,6 +1,6 @@
-package com.ares.analytics.ui.help
+package com.ares.analytics.domain.learning
 
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 
 enum class LearningLevel(val label: String, val explanation: String) {
     STARTER("Foundations", "Core kinematics, simulation, and basic controls"),

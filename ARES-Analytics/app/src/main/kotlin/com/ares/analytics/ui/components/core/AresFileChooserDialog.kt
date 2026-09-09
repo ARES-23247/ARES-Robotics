@@ -139,9 +139,20 @@ internal object AresFileChooserLauncher {
             }
 
             dialog.contentPane.add(composePanel)
+            val escapeDispatcher = java.awt.KeyEventDispatcher { event ->
+                val source = event.component
+                if (event.id == java.awt.event.KeyEvent.KEY_PRESSED &&
+                    event.keyCode == java.awt.event.KeyEvent.VK_ESCAPE &&
+                    source != null && javax.swing.SwingUtilities.getWindowAncestor(source) == dialog) {
+                    dialog.dispose()
+                    true
+                } else false
+            }
+            java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(escapeDispatcher)
             try {
                 dialog.isVisible = true
             } finally {
+                java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(escapeDispatcher)
                 dialog.dispose()
                 activeDialog = null
                 testSelectionOverride = null
@@ -175,6 +186,7 @@ fun AresFileChooserContent(
         AresFileChooserState(mode, dialogTitle, initialDirectory, defaultFileName,
             filterDescription, extensions, approveButtonText, onConfirm, onCancel)
     }
+    DisposableEffect(state) { onDispose { state.close() } }
     Surface(modifier = Modifier.fillMaxSize(), color = AresBackground) {
         Column(modifier = Modifier.fillMaxSize()) {
             AresFileChooserNavigation(state)

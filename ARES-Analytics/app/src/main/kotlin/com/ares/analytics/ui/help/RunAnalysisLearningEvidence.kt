@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademyRunAnalysisSnapshot
+
 import com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisState
 
 /** Maps workspace-scoped persisted-run analysis to narrow Academy evidence. */

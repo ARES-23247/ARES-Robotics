@@ -3,7 +3,7 @@ package com.ares.analytics.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
+import com.ares.analytics.domain.learning.AcademyRuntimeSnapshot
 import com.ares.analytics.ui.help.toAcademyAutonomousSnapshot
 import com.ares.analytics.ui.help.toAcademyControlsSnapshot
 import com.ares.analytics.ui.help.toAcademyGraduationSnapshot

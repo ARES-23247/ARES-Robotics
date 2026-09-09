@@ -1,7 +1,11 @@
 package com.ares.analytics.ui.help
 
-import com.ares.analytics.service.LearningProgress
-import com.ares.analytics.service.AcademyLearningAssignment
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningCheckpointEvidence
+import com.ares.analytics.domain.learning.AcademyClassroomToolkit
+
+import com.ares.analytics.domain.learning.LearningProgress
+import com.ares.analytics.domain.learning.AcademyLearningAssignment
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
