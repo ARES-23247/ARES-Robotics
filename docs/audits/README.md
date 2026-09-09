@@ -42,8 +42,9 @@ report. The checker uses a conservative swept footprint, at most 256 interval qu
 and 16 subdivision levels; uncertainty stops at the last proven safe pose. This is a
 desktop kinematic constraint, not contact dynamics or a physical safety sensor.
 
-The next passes should cover XRP simulator lifecycle and device deployment/recovery,
-the remaining MicroPython runtime, then logging/transport and Studio analytics math.
+Pass 5 covers [XRP lifecycle, timing, and hardware adapters](xrp-lifecycle-audit.md), with
+24 additional tests. The next passes should cover device deployment/recovery, the
+remaining MicroPython runtime, then logging/transport and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.

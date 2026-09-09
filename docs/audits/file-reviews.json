@@ -304,6 +304,61 @@
         "ARESLib-Kotlin/build/audit-pass4-scripts.log",
         ".codex-validation/audit-inventory.json"
       ]
+    },
+    "ARES-XRP-Starter/main.py": {
+      "sha256": "1120b28c8913a506207b803cb6adae3fb6320e35f5aec318c94b858ba6404c62",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source inspection. Mocked physical startup, failed bind, cleanup, AP timeout, microsecond loop scheduling and measured periods across wrap and overruns. Entry-point line execution: 75.8%; successful Wi-Fi and physical OTOS/mecanum branches remain unexecuted. No physical hardware evidence.",
+      "evidence": [
+        "docs/audits/xrp-lifecycle-audit.md",
+        "ARES-XRP-Starter/build/audit-pass5-path-trace.log",
+        "ARESLib-Kotlin/build/audit-pass5-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/hardware.py": {
+      "sha256": "74213e2cd58a4b9421f2c598f90b9f90e9aa4641278e16175c8243f3132829b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source inspection and all factory kinds exercised with fake XRPLib/machine modules. Unit conversions checked against XRPLib API docs. Invalid outputs, buzzer retry, optional devices, RGB board isolation/rollback. Line execution 99.6%; physical bus behavior and calibration remain unverified.",
+      "evidence": [
+        "docs/audits/xrp-lifecycle-audit.md",
+        "ARES-XRP-Starter/build/audit-pass5-path-trace.log",
+        "ARESLib-Kotlin/build/audit-pass5-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/simulator/xrp_simulator.py": {
+      "sha256": "2622a24b8c025940c4898da608d8a8980f684dbfd021f67695c41000e431b9ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source inspection. Simulated motor input validity, simulator startup, loop faults/signals, and factory failure cleanup; existing odometry/lease/collision integration tests. Line execution 97.7%. Existing integration dt cap is a simulator fidelity limit.",
+      "evidence": [
+        "docs/audits/xrp-lifecycle-audit.md",
+        "ARES-XRP-Starter/build/audit-pass5-path-trace.log",
+        "ARESLib-Kotlin/build/audit-pass5-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_lifecycle_audit.py": {
+      "sha256": "fd50aaa0967388d0fd0581a9443bedfc61bb2bbbf8659beff420208cd290999e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review. Fake ticks and fake XRPLib avoid device/socket effects; all lifecycle scenarios passed in source and extracted standalone suites.",
+      "evidence": [
+        "docs/audits/xrp-lifecycle-audit.md",
+        "ARES-XRP-Starter/build/audit-pass5-path-trace.log",
+        "ARESLib-Kotlin/build/audit-pass5-standalone.log"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_output_adapter_audit.py": {
+      "sha256": "d9e234004e6584dc6510884a1129f1540c3c7abb9dbb76fa9d32c46cde5a8f5c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review. Output recovery and factory contracts with fake native dependencies; all cases passed in source and extracted standalone suites.",
+      "evidence": [
+        "docs/audits/xrp-lifecycle-audit.md",
+        "ARES-XRP-Starter/build/audit-pass5-path-trace.log",
+        "ARESLib-Kotlin/build/audit-pass5-standalone.log"
+      ]
     }
   }
 }

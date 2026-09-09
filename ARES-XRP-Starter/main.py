@@ -29,8 +29,12 @@ def init_wifi(mode, ssid):
         interface = network.WLAN(network.AP_IF)
         interface.config(essid=ssid, password=_wifi_password(False))
         interface.active(True)
-        while not interface.active():
+        remaining = 150
+        while not interface.active() and remaining > 0:
+            remaining -= 1
             time.sleep(0.1)
+        if not interface.active():
+            raise RuntimeError("Timed out starting the configured Wi-Fi access point")
     elif mode == "STATION":
         interface = network.WLAN(network.STA_IF)
         interface.active(True)
@@ -90,22 +94,26 @@ def main():
         max_linear_speed=PROJECT["max_linear_speed_mps"],
     )
     try:
-        robot.start_server()
+        if not robot.start_server():
+            raise RuntimeError("XRP controller could not bind its control link port")
 
         robot.set_subsystems(create_subsystems(create_xrp_hardware))
         robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
 
         print("[Robot] Ready for ARES Studio Driver Station connection.")
 
-        # 50Hz main loop (20ms)
-        loop_period_sec = 0.02
+        # ticks_diff handles MicroPython's counter wrap. Wall time has only whole
+        # seconds on embedded ports and cannot schedule or measure this 20ms loop.
+        loop_period_us = 20000
+        previous_start = None
         while True:
-            start_time = time.time()
-            robot.step(dt=loop_period_sec)
-            elapsed = time.time() - start_time
-            sleep_time = loop_period_sec - elapsed
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+            start_time = time.ticks_us()
+            period_us = loop_period_us if previous_start is None else max(0, time.ticks_diff(start_time, previous_start))
+            previous_start = start_time
+            robot.step(dt=period_us / 1000000.0)
+            remaining_us = loop_period_us - time.ticks_diff(time.ticks_us(), start_time)
+            if remaining_us > 0:
+                time.sleep_us(remaining_us)
     finally:
         robot.shutdown()
 

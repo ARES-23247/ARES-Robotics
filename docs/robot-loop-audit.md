@@ -249,3 +249,11 @@ translation and the shortest heading arc. It may stop conservatively near contac
 subdivision/work limit. It does not model contact forces, tire slip, or the full physical
 motion between encoder samples. Physical XRP validation and simulator process-lifecycle
 review remain separate work.
+
+## Fifth pass: XRP lifecycle, timing, and hardware adapters
+
+The [fifth-pass report](audits/xrp-lifecycle-audit.md) records measured physical-loop
+periods, wrap-safe scheduling, startup/shutdown fixes, output validation, buzzer recovery,
+independent optional hardware channels, and per-board RGB state. It includes 24 new
+tests, source references for device units, line-execution measurements, and the remaining
+physical-validation boundaries. The file-level audit goal continues beyond this pass.

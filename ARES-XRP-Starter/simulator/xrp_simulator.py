@@ -2,6 +2,7 @@
 """Desktop XRP physics/link process launched by Studio."""
 
 import pathlib
+import math
 import signal
 import sys
 import time
@@ -31,7 +32,8 @@ class SimMotor:
         self.distance_meters = 0.0
 
     def set_effort(self, effort):
-        self.effort = max(-1.0, min(1.0, float(effort)))
+        value = float(effort)
+        self.effort = max(-1.0, min(1.0, value)) if math.isfinite(value) else 0.0
 
     def advance(self, dt):
         self.distance_meters += self.effort * self.max_speed_mps * dt
@@ -43,28 +45,30 @@ class SimMotor:
 
 def main():
     robot, motors = create_simulated_robot()
-    if not robot.start_server():
-        raise RuntimeError("XRP simulator could not bind its control link port")
-    running = True
+    try:
+        if not robot.start_server():
+            raise RuntimeError("XRP simulator could not bind its control link port")
+        running = True
 
-    def stop(*_):
-        nonlocal running
-        running = False
+        def stop(*_):
+            nonlocal running
+            running = False
 
-    signal.signal(signal.SIGINT, stop)
-    if hasattr(signal, "SIGTERM"):
-        signal.signal(signal.SIGTERM, stop)
-    print("ARES XRP simulator ready on port", PROJECT["link_port"], flush=True)
-    last = time.monotonic()
-    while running:
-        now = time.monotonic()
-        dt = min(max(now - last, 0.0), 0.1)
-        last = now
-        for motor in motors:
-            motor.advance(dt)
-        robot.step(dt=dt)
-        time.sleep(max(0.0, 0.02 - (time.monotonic() - now)))
-    robot.drivetrain.stop()
+        signal.signal(signal.SIGINT, stop)
+        if hasattr(signal, "SIGTERM"):
+            signal.signal(signal.SIGTERM, stop)
+        print("ARES XRP simulator ready on port", PROJECT["link_port"], flush=True)
+        last = time.monotonic()
+        while running:
+            now = time.monotonic()
+            dt = min(max(now - last, 0.0), 0.1)
+            last = now
+            for motor in motors:
+                motor.advance(dt)
+            robot.step(dt=dt)
+            time.sleep(max(0.0, 0.02 - (time.monotonic() - now)))
+    finally:
+        robot.shutdown()
 
 
 def create_simulated_robot():
@@ -86,20 +90,24 @@ def create_simulated_robot():
         wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,
         max_linear_speed=PROJECT["max_linear_speed_mps"],
     )
-    robot.set_subsystems(create_subsystems(mock_hardware_factory, simulation=True))
-    collision = FieldCollisionConstraint(
-        ROOT / "deploy" / "paths" / "field.json",
-        robot_length=PROJECT["robot_length_meters"],
-        robot_width=PROJECT["robot_width_meters"],
-    )
-    robot.set_pose_constraint(collision.constrain)
-    robot.field_collision = collision
-    robot.telemetry.set_field_config_handler(collision.apply_payload)
-    robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
-    if DEFAULT_AUTONOMOUS_ID in AUTONOMOUS_ROUTINES:
-        pose = AUTONOMOUS_ROUTINES[DEFAULT_AUTONOMOUS_ID]["starting_pose"]
-        robot.drivetrain.reset_pose(pose["xMeters"], pose["yMeters"], pose["headingRadians"])
-    return robot, motors
+    try:
+        robot.set_subsystems(create_subsystems(mock_hardware_factory, simulation=True))
+        collision = FieldCollisionConstraint(
+            ROOT / "deploy" / "paths" / "field.json",
+            robot_length=PROJECT["robot_length_meters"],
+            robot_width=PROJECT["robot_width_meters"],
+        )
+        robot.set_pose_constraint(collision.constrain)
+        robot.field_collision = collision
+        robot.telemetry.set_field_config_handler(collision.apply_payload)
+        robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
+        if DEFAULT_AUTONOMOUS_ID in AUTONOMOUS_ROUTINES:
+            pose = AUTONOMOUS_ROUTINES[DEFAULT_AUTONOMOUS_ID]["starting_pose"]
+            robot.drivetrain.reset_pose(pose["xMeters"], pose["yMeters"], pose["headingRadians"])
+        return robot, motors
+    except BaseException:
+        robot.shutdown()
+        raise
 
 
 if __name__ == "__main__":
