@@ -68,8 +68,6 @@ class AlertEngineService(
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     /** Rules are indexed by transport-normalized topic while preserving the configured key in alerts. */
     private val rules = ConcurrentHashMap<String, ThresholdRule>()
-    /** Last values are isolated per recording so a new session cannot inherit stale hardware state. */
-    private val recentValues = ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>()
     /** Fixed-size loop evidence, isolated by recording and actual source key. */
     private val loopTimeBuffers = ConcurrentHashMap<RuleIdentity, LoopOverrunWindow>()
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
@@ -128,7 +126,7 @@ class AlertEngineService(
             ThresholdRule("Drive/EKF_Drift_X", "High EKF X Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
             ThresholdRule("Drive/EKF_Drift_Y", "High EKF Y Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
             ThresholdRule(TelemetryMetricCatalog.LOOP_TIME.canonicalKey, "Robot Loop Time Spike (>25ms)", maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS, audibleAlert = false),
-            ThresholdRule("Hardware/I2C/Timeouts", "WARNING: FTC I2C / Lynx Bus Timeout!", maxValue = 0.5, audibleAlert = true)
+            ScalarDiagnosticRules.defaultRule(ScalarDiagnosticKind.I2C_TIMEOUTS, ScalarDiagnosticRules.I2C_KEY)
         )
 
         val motorRules = motorNames.flatMap { motor ->
@@ -182,7 +180,8 @@ class AlertEngineService(
                         val frame = publication.frame
                         if (publication.targetEpoch != epoch || retained.containsKey(publication)) return@withLock
                         val key = normalizeTopic(frame.key)
-                        if (!rules.containsKey(key) && !isCompositeSignal(key)) return@withLock
+                        val scalarKind = ScalarDiagnosticRules.kind(key)
+                        if (!rules.containsKey(key) && !isDiagnosticSignal(key, scalarKind)) return@withLock
                         val identity = RuleIdentity(frame.sessionId, key)
                         val previous = lastSourceOrders[identity]
                         if (previous != null && (frame.timestampUs < previous.timestampUs ||
@@ -193,9 +192,12 @@ class AlertEngineService(
                             ThresholdRule(key, "WARNING: Motor overheating (>70°C)!", maxValue = 70.0, audibleAlert = true)
                         }
                         if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
-                        recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[key] = frame.value
+                        if (scalarKind != null) {
+                            if (!ScalarDiagnosticRules.accepts(scalarKind, frame.value)) return@withLock
+                            rules.getOrPut(key) { ScalarDiagnosticRules.defaultRule(scalarKind, key) }
+                        }
                         evaluateFrame(frame)
-                        evaluateCompositeRules(frame, key, identity)
+                        evaluateLoopFrame(frame, key, identity)
                     }
                 }
             }
@@ -206,7 +208,6 @@ class AlertEngineService(
     private fun selectTargetEpoch(epoch: Long) {
         if (evaluationTargetEpoch == epoch) return
         evaluationTargetEpoch = epoch
-        recentValues.clear()
         motorDiagnostics.clear()
         loopTimeBuffers.clear()
         lastEvaluationTimes.clear()
@@ -274,53 +275,10 @@ class AlertEngineService(
         evaluateRuleState(rule.key, isViolating, value, frame.timestampMs, frame.sessionId, rule)
     }
 
-    /**
-     * CAN, I2C, vision and temporal loop diagnostics. Motor evidence is evaluated separately.
-     *
-     * @param frame Current telemetry frame being processed.
-     */
-    private suspend fun evaluateCompositeRules(frame: TelemetryFrame, normalizedFrameKey: String, sourceIdentity: RuleIdentity) {
-        if (!isCompositeSignal(normalizedFrameKey)) return
+    /** Loop diagnostics require temporal evidence; scalar source rules have already run once. */
+    private suspend fun evaluateLoopFrame(frame: TelemetryFrame, normalizedFrameKey: String, sourceIdentity: RuleIdentity) {
         val ts = frame.timestampMs
         val sessionId = frame.sessionId
-        val sessionValues = recentValues[sessionId] ?: return
-
-        // 2. CAN Bus Utilization & Error Check
-        if ((normalizedFrameKey.startsWith("Diagnostics/CANBus/") && normalizedFrameKey.endsWith("/Utilization")) ||
-            normalizedFrameKey == "Hardware/CAN/Utilization" || normalizedFrameKey == "CAN/Utilization"
-        ) {
-        val canEntry = sessionValues.entries
-            .filter { it.key.startsWith("Diagnostics/CANBus/") && it.key.endsWith("/Utilization") }
-            .maxByOrNull { it.value }
-        val canKey = canEntry?.key ?: "Diagnostics/CANBus/Utilization"
-        val canUtil = canEntry?.value
-            ?: sessionValues["Hardware/CAN/Utilization"]
-            ?: sessionValues["CAN/Utilization"]
-            ?: 0.0
-        val canThreshold = if (canUtil <= 1.5) 0.85 else 85.0
-        val isCanHigh = canUtil > canThreshold
-        val canRule = rules.getOrPut(canKey) {
-            ThresholdRule(canKey, "CRITICAL: CAN Bus Utilization High!", maxValue = canThreshold, audibleAlert = true)
-        }
-        evaluateRuleState(canKey, isCanHigh, canUtil, ts, sessionId, canRule)
-        }
-
-        // 3. FTC I2C / Lynx Timeout Check
-        if (normalizedFrameKey == "Hardware/I2C/Timeouts") {
-        val i2cTimeouts = sessionValues["Hardware/I2C/Timeouts"] ?: 0.0
-        val isI2cError = i2cTimeouts > 0.0
-        val i2cRule = rules.getOrPut("Hardware/I2C/Timeouts") { ThresholdRule("Hardware/I2C/Timeouts", "WARNING: FTC I2C / Lynx Bus Timeout!", maxValue = 0.5, audibleAlert = true) }
-        evaluateRuleState("Hardware/I2C/Timeouts", isI2cError, i2cTimeouts, ts, sessionId, i2cRule)
-        }
-
-        // 5. Limelight Vision Frame Rate Stale Alert (<5 FPS)
-        if (normalizedFrameKey == "Vision/Limelight/FPS") {
-        val limelightFps = sessionValues["Vision/Limelight/FPS"] ?: 30.0
-        val isVisionStale = limelightFps < 5.0
-        val visionRule = rules.getOrPut("Vision/Limelight/FPS") { ThresholdRule("Vision/Limelight/FPS", "WARNING: Limelight Camera Frame Rate Low (<5 FPS)!", minValue = 5.0, audibleAlert = false) }
-        evaluateRuleState("Vision/Limelight/FPS", isVisionStale, limelightFps, ts, sessionId, visionRule)
-        }
-
         // Loop aliases retain source provenance and cannot resolve or count for one another.
         if (normalizedFrameKey in TelemetryMetricCatalog.LOOP_TIME.keys) {
             val loopKey = normalizedFrameKey
@@ -356,13 +314,8 @@ class AlertEngineService(
             state.timestampUs / 1_000L, frame.sessionId, binding.disconnected)
     }
 
-    private fun isCompositeSignal(key: String): Boolean =
-        key.startsWith("Hardware/Motors/") ||
-            key.startsWith("Diagnostics/CANBus/") ||
-            key == "Hardware/CAN/Utilization" ||
-            key == "CAN/Utilization" ||
-            key == "Hardware/I2C/Timeouts" ||
-            key == "Vision/Limelight/FPS" ||
+    private fun isDiagnosticSignal(key: String, scalarKind: ScalarDiagnosticKind?): Boolean =
+        key in motorRoutes || key in motorTemperatureKeys || scalarKind != null ||
             key in TelemetryMetricCatalog.LOOP_TIME.keys
 
     /**

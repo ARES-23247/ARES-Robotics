@@ -467,3 +467,10 @@ slow/failed storage, preserves initial and latest unsaved occurrence records, re
 bounded backoff and reports unsaved alerts. Normal disposal drains and joins accepted writes
 before database closure; failed drains retain retryable state. Global retention, crash
 durability, remaining composite policy and whole-application shutdown remain open.
+
+## Thirty-fourth pass: scalar diagnostic sources and units
+
+The [scalar diagnostic audit](audits/scalar-diagnostic-audit.md) isolates each CAN source,
+fixes ratio units, rejects invalid counts/rates and honors configured limits in one evaluation.
+Per-session cached values and cross-bus filter/max scans are removed. Legacy percentage feeds
+need explicit conversion. Temporal loop/motor configuration and platform policies remain open.

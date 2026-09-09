@@ -109,7 +109,9 @@ complete fresh feedback, exact units/time, independent motor updates, bounded st
 invalid-input recovery and removal of duplicate temperature evaluation.
 Pass 33 covers [alert persistence and shutdown](alert-persistence-audit.md): failure isolation,
 initial/latest occurrence retention, autonomous fair retries, saving status and joined drains.
-Next are remaining composite configuration semantics, CAN/vision domains and global retention,
+Pass 34 covers [CAN, I2C and vision scalar diagnostics](scalar-diagnostic-audit.md): independent
+sources, fixed units, valid domains, configured limits and removal of duplicate/cache scans.
+Next are loop/motor configuration semantics, platform rules and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
