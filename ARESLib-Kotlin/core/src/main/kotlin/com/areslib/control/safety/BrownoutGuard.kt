@@ -36,6 +36,14 @@ class BrownoutGuard(
     val hysteresisVoltage: Double = 0.3,
     val nominalVoltage: Double = 13.0
 ) {
+    init {
+        require(criticalVoltage.isFinite() && criticalVoltage >= 0.0 &&
+            warningVoltage.isFinite() && warningVoltage > criticalVoltage) { "Brownout voltage thresholds must be finite and ordered" }
+        require(minPowerScale in 0.0..1.0) { "Minimum power scale must be within [0, 1]" }
+        require(hysteresisVoltage.isFinite() && hysteresisVoltage >= 0.0) { "Voltage hysteresis must be finite and non-negative" }
+        require(nominalVoltage.isFinite() && nominalVoltage > 0.0) { "Nominal voltage must be finite and positive" }
+    }
+
     /** Current computed power scale factor ($0.0 \dots 1.0$). Multiply motor commands by this factor. */
     var powerScale: Double = 1.0
         private set
@@ -70,7 +78,7 @@ class BrownoutGuard(
             batteryPercent = 0.0
             state = BrownoutState.CRITICAL
             powerScale = 0.0
-            if (previousState == BrownoutState.HEALTHY) tripCount++
+            if (previousState != BrownoutState.CRITICAL) tripCount++
             return
         }
 

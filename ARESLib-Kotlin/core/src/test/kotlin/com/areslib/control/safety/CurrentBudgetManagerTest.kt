@@ -247,7 +247,7 @@ class CurrentBudgetManagerTest {
     }
 
     @Test
-    fun `update with negative or non-finite additional measured current defaults contribution to zero`() {
+    fun `update with negative or non-finite additional measured current fails closed`() {
         // No power on motors, base estimate is 0.0
         manager.register(motor1, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
         motor1.power = 0.0
@@ -262,11 +262,9 @@ class CurrentBudgetManagerTest {
         for (additionalAmps in invalidAdditionalCurrents) {
             manager.update(12.0, additionalMeasuredCurrentAmps = additionalAmps)
 
-            assertTrue(manager.totalEstimatedAmps.isFinite(), "totalEstimatedAmps should be finite for additionalAmps=$additionalAmps")
-            assertFalse(manager.totalEstimatedAmps.isNaN(), "totalEstimatedAmps should not be NaN for additionalAmps=$additionalAmps")
-            assertEquals(0.0, manager.totalEstimatedAmps, 1e-9)
-            assertEquals(CurrentBudgetState.HEALTHY, manager.state)
-            assertEquals(1.0, manager.powerScale, 1e-9)
+            assertTrue(manager.totalEstimatedAmps.isNaN(), "Unknown current must remain distinguishable from zero")
+            assertEquals(CurrentBudgetState.CRITICAL, manager.state)
+            assertEquals(0.0, manager.powerScale, 1e-9)
         }
     }
 

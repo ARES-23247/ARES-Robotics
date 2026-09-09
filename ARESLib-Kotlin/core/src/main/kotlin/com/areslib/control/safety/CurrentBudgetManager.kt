@@ -39,6 +39,13 @@ class CurrentBudgetManager(
     val minPowerScale: Double = 0.2,
     val hysteresisAmps: Double = 1.5
 ) {
+    init {
+        require(warningCurrentAmps.isFinite() && warningCurrentAmps >= 0.0 &&
+            criticalCurrentAmps.isFinite() && criticalCurrentAmps > warningCurrentAmps) { "Current thresholds must be finite and ordered" }
+        require(minPowerScale in 0.0..1.0) { "Minimum power scale must be within [0, 1]" }
+        require(hysteresisAmps.isFinite() && hysteresisAmps >= 0.0) { "Current hysteresis must be finite and non-negative" }
+    }
+
     /** Registered motor slots tracking electrical parameters and estimated current draw. */
     private val slots = ArrayList<MotorSlot>(8)
     private var calibrationIndex = 0
@@ -88,7 +95,9 @@ class CurrentBudgetManager(
      * Call once per loop iteration. Zero heap allocations.
      *
      * @param batteryVoltage Current measured battery voltage in Volts ($V$).
-     * @param enableCalibration If `true`, reads one actual motor current per cycle round-robin to calibrate the model (~2ms per cycle).
+     * @param enableCalibration If `true`, consumes one cached actual motor current per cycle round-robin to calibrate the model.
+     * @param additionalMeasuredCurrentAmps Non-negative measured load outside the model. Invalid
+     * readings mark total current unknown and disable effort until a valid update arrives.
      */
     fun update(
         batteryVoltage: Double,
@@ -98,64 +107,53 @@ class CurrentBudgetManager(
 
         val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
 
-        // Keep the optional measured contribution primitive. Generic takeIf boxes Double on every
-        // invocation, which made the 50 Hz safety path allocate twice whenever calibration ran.
-        val safeAdditionalMeasuredAmps = if (
-            additionalMeasuredCurrentAmps.isFinite() && additionalMeasuredCurrentAmps >= 0.0
-        ) {
-            additionalMeasuredCurrentAmps
-        } else {
-            0.0
+        if (!additionalMeasuredCurrentAmps.isFinite() || additionalMeasuredCurrentAmps < 0.0) {
+            rejectCurrentEstimate()
+            return
         }
+        val safeAdditionalMeasuredAmps = additionalMeasuredCurrentAmps
 
         // 1. Estimate current for each motor from the DC motor model + learned calibrationOffset
         var totalAmps = safeAdditionalMeasuredAmps
         for (i in slots.indices) {
             val slot = slots[i]
-            val rawEstimate = estimateRawCurrent(slot, vBat)
+            slot.appliedVoltage = effectiveAppliedVoltage(slot, vBat)
+            val rawEstimate = estimateCurrentAtVoltage(slot, slot.appliedVoltage)
+            slot.rawEstimatedAmps = rawEstimate
             val estimatedCurrent = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
 
             slot.estimatedAmps = estimatedCurrent
             totalAmps += estimatedCurrent
         }
 
-        // 2. Optional staggered calibration: read ONE motor's actual current per cycle
+        // 2. Calibrate one slot using the same model sample captured above.
         if (enableCalibration && slots.isNotEmpty()) {
-            val idx = calibrationIndex % slots.size
-            val slot = slots[idx]
+            val slot = slots[calibrationIndex]
             try {
                 val actualAmps = slot.motor.currentAmps
-                if (actualAmps.isFinite() && actualAmps >= 0.0) {
-                    val appliedVoltage = effectiveAppliedVoltage(slot, vBat)
-                    
-                    // Skip calibration if sensor returns exactly 0.0 while voltage is applied, 
-                    // indicating missing/un-polled sensor hardware
-                    if (actualAmps == 0.0 &&
-                        (!appliedVoltage.isFinite() || kotlin.math.abs(appliedVoltage) > 0.5)
-                    ) {
-                        // Skip updating calibrationOffset, keep using rawEstimate or last valid estimate
-                        slot.estimatedAmps = slot.estimatedAmps
-                    } else {
-                        slot.lastCalibratedAmps = actualAmps
-                        val rawEstimate = estimateRawCurrent(slot, vBat)
-                        
-                        // Blend error offset: difference between actual and raw model estimate
-                        val currentError = actualAmps - rawEstimate
-                        slot.calibrationOffset = (slot.calibrationOffset * 0.3 + currentError * 0.7)
-                        
-                        // Recalculate this slot's estimate and the total
-                        slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
-                    }
-                    
-                    totalAmps = safeAdditionalMeasuredAmps
-                    for (i in slots.indices) totalAmps += slots[i].estimatedAmps
+                val rawEstimate = slot.rawEstimatedAmps
+                val appliedVoltage = slot.appliedVoltage
+                val missingPoweredReading = actualAmps == 0.0 &&
+                    (!appliedVoltage.isFinite() || kotlin.math.abs(appliedVoltage) > 0.5)
+                if (actualAmps.isFinite() && actualAmps >= 0.0 && rawEstimate.isFinite() &&
+                    slot.motor.isCurrentReadingValid(actualAmps) && !missingPoweredReading) {
+                    val previousEstimate = slot.estimatedAmps
+                    slot.lastCalibratedAmps = actualAmps
+                    val currentError = actualAmps - rawEstimate
+                    slot.calibrationOffset = slot.calibrationOffset * 0.3 + currentError * 0.7
+                    slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
+                    totalAmps += slot.estimatedAmps - previousEstimate
                 }
             } catch (_: Exception) {
-                // Current read failed — stick with estimate
+                // Cached current unavailable: retain this frame's model estimate.
             }
-            calibrationIndex++
+            calibrationIndex = if (calibrationIndex + 1 >= slots.size) 0 else calibrationIndex + 1
         }
 
+        if (!totalAmps.isFinite() || totalAmps < 0.0) {
+            rejectCurrentEstimate()
+            return
+        }
         totalEstimatedAmps = totalAmps
 
         // 3. State machine with hysteresis
@@ -197,6 +195,13 @@ class CurrentBudgetManager(
         }
     }
 
+    private fun rejectCurrentEstimate() {
+        if (state == CurrentBudgetState.HEALTHY) tripCount++
+        state = CurrentBudgetState.CRITICAL
+        totalEstimatedAmps = Double.NaN
+        powerScale = 0.0
+    }
+
     private fun effectiveAppliedVoltage(slot: MotorSlot, batteryVoltage: Double): Double {
         val power = slot.motor.power
         val scale = slot.motor.powerScale
@@ -205,12 +210,16 @@ class CurrentBudgetManager(
     }
 
     private fun estimateRawCurrent(slot: MotorSlot, batteryVoltage: Double): Double {
-        val appliedVoltage = effectiveAppliedVoltage(slot, batteryVoltage)
+        return estimateCurrentAtVoltage(slot, effectiveAppliedVoltage(slot, batteryVoltage))
+    }
+
+    private fun estimateCurrentAtVoltage(slot: MotorSlot, appliedVoltage: Double): Double {
         if (!appliedVoltage.isFinite()) {
             // Unknown commanded effort is treated conservatively as a stall condition.
             return slot.nominalVoltage / slot.resistance
         }
-        val velocity = if (slot.motor.velocity.isFinite()) slot.motor.velocity else 0.0
+        val sampledVelocity = slot.motor.velocity
+        val velocity = if (sampledVelocity.isFinite()) sampledVelocity else 0.0
         val backEmf = slot.kv * velocity
         return kotlin.math.abs(appliedVoltage - backEmf) / slot.resistance
     }
@@ -303,7 +312,9 @@ internal class MotorSlot(
     val nominalVoltage: Double,
     var estimatedAmps: Double = 0.0,
     var lastCalibratedAmps: Double = 0.0,
-    var calibrationOffset: Double = 0.0
+    var calibrationOffset: Double = 0.0,
+    var appliedVoltage: Double = 0.0,
+    var rawEstimatedAmps: Double = 0.0
 )
 
 /** Current budget state machine states. */

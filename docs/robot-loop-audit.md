@@ -132,3 +132,40 @@ Second-pass local validation:
 | FRC starter | 34 tests passed. |
 | Studio shared, gateway, and app | 1,244 tests passed; six opt-in checks skipped. Release version/archive preflight passed. |
 | Repository checks | Source/release policy, guidance integrity, and current documentation links passed. |
+
+## Third pass: electrical safety and cached actuator commands
+
+This pass reviews current estimation/calibration, brownout limiting, default voltage-to-duty
+conversion, FTC motor/servo command caches, registered-current aggregation, and gravity
+feedforward. Runtime edits are confined to `CurrentBudgetManager`, `BrownoutGuard`, `MotorIO`,
+and `CachedHardware`; these were outside both earlier passes.
+
+| Area | Finding and correction |
+| --- | --- |
+| Voltage conversion | `MotorIO.setVoltage` could write non-finite or out-of-range duty. Invalid requests/battery feedback now neutralize; finite voltage requests saturate to [-1, 1]. Adapter enable and feedback checks remain required. |
+| Cached motor commands | NaN was silently ignored, retaining previous nonzero effort. Non-finite requests now become neutral commands. Finite requests are clipped before caching so cache values match accepted duty. |
+| Device configuration | A device reset or motor mode change could clear hardware effort while the cache suppressed the next identical explicit command. Reset, mode, and direction operations invalidate the motor cache; servo device reset invalidates its cache. |
+| Cache tolerance | Zero epsilon sent every identical command; NaN epsilon suppressed ordinary writes. Validate tolerances and explicitly suppress equality. Ten identical commands now produce one write even at zero tolerance. |
+| Servo positions | Invalid first positions could poison a cache if forwarded, while non-finite later positions were silently ignored. Reject non-finite positions explicitly and clip finite positions to [0, 1]. There is no invented universal servo neutral position. |
+| Safety configuration | Invalid threshold ordering, scales, or hysteresis could bypass limiting or return NaN. Reject invalid constructor configuration for both safety managers. |
+| Unknown current | Invalid additional measured current became zero and could release limiting. Unknown or non-finite computed totals now report NaN and disable effort; finite subsequent updates follow the existing recovery state machine. |
+| Calibration | Repeated power/scale/velocity reads and a second full sum were unnecessary. Capture the model once per motor and adjust the total by the calibrated slot's change. Respect the source's cached-reading validity check, and bound the round-robin index instead of letting it overflow. |
+| Brownout counter | Invalid voltage during WARNING entered CRITICAL without incrementing the documented transition counter. Count that transition once, including invalid feedback. |
+
+Nine new regression cases failed before fixes. The complete added coverage also exercises
+stale-but-finite current, arithmetic overflow, command clipping, servo recovery, and the brownout
+counter. One existing test that asserted unknown current was healthy zero was corrected to enforce
+the repository's invalid-current contract.
+
+The calibration regression observes exactly one power, power-scale, velocity, and current getter
+read for the selected motor. These are cached properties, so this demonstrates reduced duplicate
+work, not four saved physical bus transactions. Calibration still consumes only one current source
+per update, without adding hardware polling or allocation to the normal loop.
+
+The DC motor model remains an estimate; fuse temperature, electrical transients, measured supply
+current, and actual bus/loop timing require physical validation. Registered-source aggregation and
+gravity feedforward were inspected without further changes. Command caches assume the wrapper
+owns writes; out-of-band writes through the underlying device cannot be inferred from cached state.
+
+Third-pass isolated candidate: `17.0.3-rc.343862ce3c59`, under the existing unpublished final
+version. This audit does not publish or replace any released artifact.
