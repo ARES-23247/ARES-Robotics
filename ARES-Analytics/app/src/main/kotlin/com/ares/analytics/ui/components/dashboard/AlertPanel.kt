@@ -79,6 +79,10 @@ fun AlertPanel(
 
         HorizontalDivider(color = AresBorder, thickness = 1.dp)
 
+        alertEngineService.configurationWarning?.let { warning ->
+            Text(warning, color = AresGold, style = MaterialTheme.typography.bodyMedium)
+        }
+
         if (persistence.pending > 0 && (persistence.failed || persistence.stopped)) {
             Text(
                 if (persistence.stopped) "${persistence.pending} alerts remain unsaved."

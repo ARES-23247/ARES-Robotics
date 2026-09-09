@@ -9,9 +9,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.File
 import java.util.IdentityHashMap
 import java.util.concurrent.ConcurrentHashMap
 
@@ -65,7 +62,6 @@ class AlertEngineService(
     private val thresholdsPath: String = AppDataPaths.file("thresholds.json").path,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     /** Rules are indexed by transport-normalized topic while preserving the configured key in alerts. */
     private val rules = ConcurrentHashMap<String, ThresholdRule>()
     /** Fixed-size loop evidence, isolated by recording and actual source key. */
@@ -114,13 +110,14 @@ class AlertEngineService(
     private var engineJob: Job? = null
     private val platformThresholds = PlatformAlertThresholds()
 
+    val configurationWarning: String?
+
     init {
-        loadRules()
+        configurationWarning = loadRules()
         startEngine()
     }
 
-    private fun loadRules() {
-        val file = File(thresholdsPath)
+    private fun loadRules(): String? {
         val defaultRules = listOf(
             ThresholdRule(TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey, "Low Battery Voltage (<10.5V)", minValue = 10.5, audibleAlert = true),
             ThresholdRule("Drive/EKF_Drift_X", "High EKF X Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
@@ -138,21 +135,9 @@ class AlertEngineService(
 
         val allDefaults = defaultRules + motorRules
 
-        when {
-            !file.exists() -> {
-                file.parentFile?.mkdirs()
-                file.writeText(json.encodeToString(allDefaults))
-                allDefaults.forEach(::registerRule)
-            }
-            else -> {
-                runCatching {
-                    val loaded = json.decodeFromString<List<ThresholdRule>>(file.readText())
-                    loaded.forEach(::registerRule)
-                }.onFailure {
-                    allDefaults.forEach(::registerRule)
-                }
-            }
-        }
+        val loaded = AlertRuleConfiguration.load(thresholdsPath, allDefaults)
+        loaded.rules.forEach(::registerRule)
+        return loaded.warning
     }
 
     /**

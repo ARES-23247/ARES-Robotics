@@ -482,3 +482,11 @@ refreshes, serializes policy changes, applies XRP minimums to configured battery
 caches coherent rules. Two-sided descriptions retain both bounds; negative feedback is unknown
 while measured zero still alerts. Threshold-file validation and transport/context ownership
 remain open alongside temporal loop/motor policy semantics.
+
+## Thirty-sixth pass: alert rule configuration
+
+The [configuration audit](audits/alert-rule-configuration-audit.md) rejects inconsistent or
+misspelled threshold files before registration, bounds reads and rule counts, preserves existing
+files during initialization races and reports fallback to built-in rules. Filesystem failures
+no longer abort engine startup. Specialized loop/motor policy, cross-policy consistency and
+crash durability remain open; headless warning rendering does not establish a visible window.

@@ -22,12 +22,16 @@ class AlertPersistenceRenderTest {
             "stopped" to AlertPersistenceStatus(2, failed = true, stopped = true),
             "saving" to AlertPersistenceStatus(2),
             "saved" to AlertPersistenceStatus(),
+            "configuration" to AlertPersistenceStatus(),
         )
         val output = File("build/diagnostics/alert-persistence-audit").apply { mkdirs() }
         for ((name, status) in samples) {
             val engine = mock(AlertEngineService::class.java)
             `when`(engine.alerts).thenReturn(MutableStateFlow<List<AlertRecord>>(emptyList()))
             `when`(engine.persistenceStatus).thenReturn(MutableStateFlow(status))
+            `when`(engine.configurationWarning).thenReturn(
+                if (name == "configuration") "Using built-in alert rules. Rule 2 has reversed bounds." else null,
+            )
             val scene = ImageComposeScene(480, 300)
             try {
                 scene.setContent {
