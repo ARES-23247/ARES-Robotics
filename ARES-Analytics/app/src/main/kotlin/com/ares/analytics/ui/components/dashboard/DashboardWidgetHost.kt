@@ -35,6 +35,7 @@ fun DashboardWidgetHost(
     onLayoutChanged: (List<WidgetConfig>) -> Unit,
     onRemoveWidget: (String) -> Unit,
     modifier: Modifier = Modifier,
+    controllerHealth: ControllerHealthObservation? = null,
 ) {
     val renderContext = DashboardWidgetRenderContext(
         services = services,
@@ -44,6 +45,7 @@ fun DashboardWidgetHost(
         dashboardState = dashboardState,
         layout = layout,
         replayFrame = replayFrame,
+        controllerHealth = controllerHealth,
         replaySessionStartMs = replaySessionStartMs,
         matches = matches,
         tuningDeclarations = tuningDeclarations,

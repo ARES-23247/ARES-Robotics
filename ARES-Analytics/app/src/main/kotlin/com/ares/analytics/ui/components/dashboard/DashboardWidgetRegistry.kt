@@ -49,6 +49,7 @@ data class DashboardWidgetRenderContext(
     val onSelectCompareSession: (String?) -> Unit,
     val onOpenKeybindings: () -> Unit,
     val onUpdateProperties: (WidgetConfig, Map<String, String>) -> Unit,
+    val controllerHealth: ControllerHealthObservation? = null,
 ) {
     val liveServices: DashboardLiveWidgetServices
         get() = requireServiceGroup(DashboardWidgetServiceGroup.LIVE, services.live)
@@ -239,6 +240,8 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 league = context.workspace.league,
                 isRobotLinkConnected = context.isRobotLinkConnected,
                 xrpBrownoutThresholdVolts = context.xrpBrownoutThresholdVolts,
+                controllerHealth = context.controllerHealth,
+                replaySelected = context.dashboardState.primarySessionId != null || context.replayFrame != null,
                 modifier = modifier,
             )
         },

@@ -411,3 +411,11 @@ rate baselines, invalid clock intervals, exact byte differences, the replay pref
 and unavailable dashboard drop counts. Controlled virtual-time regressions distinguish
 source counter history from measured interval traffic. This is desktop/headless evidence;
 physical loop timing and remaining health-card source/staleness behavior are still open.
+
+## Twenty-seventh pass: controller health source and presentation
+
+The [controller health audit](audits/controller-health-audit.md) consolidates the dashboard
+summary and card around a bounded observation pipeline. Exact topics, finite domains, explicit
+unknowns, per-topic freshness and live/replay/offline selection replace substring matching and
+competing field updates. Parser, flow and actual headless Compose lifecycle regressions cover
+source transitions and cancellation. This does not establish visible app or hardware behavior.

@@ -91,12 +91,6 @@ internal fun DashboardScreen(
     val replayServices = services.widgets.replay
     var newLayoutName by remember { mutableStateOf("") }
     var offlineGuideDismissed by remember { mutableStateOf(false) }
-    var loopTimeMs by remember { mutableStateOf<Double?>(null) }
-    var batteryVoltage by remember { mutableStateOf<Double?>(null) }
-    var brownoutCount by remember { mutableStateOf<Int?>(null) }
-    var loopOverruns by remember { mutableStateOf<Int?>(null) }
-    var lastUpdateTimestampMs by remember { mutableStateOf(-1L) }
-    var lastUpdateAgeMs by remember { mutableStateOf(-1L) }
     val simulatorState by services.simulator.state.collectAsState()
     val isSimRunning = simulatorState.running
     val isLocalSimulator = isLocalSimulatorSelected
@@ -109,7 +103,6 @@ internal fun DashboardScreen(
     val replaySessionStart by replayEngine.sessionStartTimestampMs.collectAsState()
     val isReplayMode = state.primarySessionId != null || isReplayActive
     val displayedReplayFrame = replayFrame.takeIf { isReplayMode }
-    val latestReplayMode by rememberUpdatedState(isReplayMode)
     val tuningDeclarations by produceState<List<TuningParameterDeclaration>>(emptyList(), currentConfig.projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             services.tuningProfiles.load(currentConfig.projectPath).getOrNull()?.catalog.orEmpty()
@@ -127,44 +120,9 @@ internal fun DashboardScreen(
         }
     }
 
-    // Telemetry flow listener for health metrics and freshness tracking
-    LaunchedEffect(Unit) {
-        scope.launch {
-            liveServices.nt4ClientService.uiTelemetryFlow.collect { frame ->
-                if (latestReplayMode) return@collect
-                lastUpdateTimestampMs = System.currentTimeMillis()
-                val key = frame.key.lowercase()
-                val value = frame.value
-
-                when {
-                    key.contains("looptime") || key.contains("loop_time") -> {
-                        loopTimeMs = value
-                    }
-                    key.contains("batteryvoltage") || key.contains("battery_voltage") -> {
-                        batteryVoltage = value
-                    }
-                    key.contains("brownoutcount") || key.contains("brownout_count") -> {
-                        brownoutCount = value.toInt()
-                    }
-                    key.contains("loopoverruns") || key.contains("loop_overruns") -> {
-                        loopOverruns = value.toInt()
-                    }
-                }
-            }
-        }
-        scope.launch {
-            while (true) {
-                kotlinx.coroutines.delay(500)
-                lastUpdateAgeMs = if (latestReplayMode) {
-                    0L
-                } else if (lastUpdateTimestampMs > 0) {
-                    System.currentTimeMillis() - lastUpdateTimestampMs
-                } else {
-                    -1L
-                }
-            }
-        }
-    }
+    val controllerHealth = rememberControllerHealth(
+        liveServices.nt4ClientService, displayedReplayFrame, isReplayMode, isRobotLinkConnected,
+    )
 
     // Replay integration
     val selectedSessionForDisposal by rememberUpdatedState(state.primarySessionId)
@@ -226,17 +184,6 @@ internal fun DashboardScreen(
         }
     }
 
-    LaunchedEffect(displayedReplayFrame?.sequence) {
-        displayedReplayFrame?.toReplayHealthSnapshot()?.let { replay ->
-            loopTimeMs = replay.loopTimeMs
-            batteryVoltage = replay.batteryVoltage
-            brownoutCount = replay.brownoutCount
-            loopOverruns = replay.loopOverruns
-            lastUpdateTimestampMs = replayFrame?.playheadMs ?: -1L
-            lastUpdateAgeMs = 0L
-        }
-    }
-
     LaunchedEffect(state.importSuccess) {
         if (state.importSuccess) {
             onImportSuccess()
@@ -251,14 +198,14 @@ internal fun DashboardScreen(
         isSimulatorRunning = isSimRunning,
         isReplayActive = isReplayActive || isReplayMode,
         primarySessionId = state.primarySessionId,
-        loopTimeMs = loopTimeMs,
-        batteryVoltage = batteryVoltage,
-        brownoutCount = brownoutCount,
-        loopOverruns = loopOverruns,
+        loopTimeMs = controllerHealth.snapshot.loopTimeMs,
+        batteryVoltage = controllerHealth.snapshot.batteryVoltage,
+        brownoutCount = controllerHealth.snapshot.brownoutCount,
+        loopOverruns = controllerHealth.snapshot.loopOverruns,
         xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
         activeAlerts = state.alerts,
         frameRateHz = frameRateHz,
-        lastUpdateAgeMs = lastUpdateAgeMs,
+        lastUpdateAgeMs = controllerHealth.lastUpdateAgeMs,
         hostIp = if (isLocalSimulator) "127.0.0.1" else currentConfig.nt4Host?.ifBlank { "127.0.0.1" } ?: "127.0.0.1"
     )
 
@@ -322,6 +269,7 @@ internal fun DashboardScreen(
                 xrpBrownoutThresholdVolts = xrpBrownoutThresholdVolts,
                 dashboardState = state,
                 replayFrame = displayedReplayFrame,
+                controllerHealth = controllerHealth,
                 replaySessionStartMs = replaySessionStart,
                 matches = matches,
                 tuningDeclarations = tuningDeclarations,

@@ -89,7 +89,10 @@ set-based console writes and cancelled/failed coordinator attempts.
 Pass 26 covers [dashboard health calculations](dashboard-health-audit.md): observed counter
 baselines, target epochs, invalid/precise clock intervals, unsigned log-byte differences,
 prefetch ratios and unavailable dashboard drop counts.
-Next are health-card live/replay selection and stale/missing metrics, diagnostics/evidence
+Pass 27 covers [controller health sources and presentation](controller-health-audit.md):
+shared live/replay observations, exact aliases, finite domains, unknown states, bounded
+sampling, per-topic freshness, collector lifecycle and platform battery display boundaries.
+Next are dashboard selected-session/frame identity and mission semantics, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining

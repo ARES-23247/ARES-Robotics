@@ -1,34 +1,27 @@
 package com.ares.analytics.ui.components.dashboard
 
 import com.ares.analytics.service.ReplayFrame
-import com.areslib.telemetry.TelemetryTopicConstants
+import com.ares.analytics.shared.TelemetryMetricCatalog
 
-internal data class ReplayHealthSnapshot(
-    val loopTimeMs: Double?,
-    val batteryVoltage: Double?,
-    val brownoutCount: Int?,
-    val loopOverruns: Int?,
-    val ftcRuntime: FtcRuntimeDashboardState,
-)
+internal typealias ReplayHealthSnapshot = ControllerHealthSnapshot
 
-/** Extracts only values present in the recording; missing data never becomes a healthy zero. */
+/** Exact normalized topics only; canonical names precede aliases independently of map order. */
 internal fun ReplayFrame.toReplayHealthSnapshot(): ReplayHealthSnapshot {
-    fun valueMatching(vararg fragments: String): Double? = values.entries.firstOrNull { entry ->
-        val key = entry.key.lowercase()
-        fragments.any(key::contains)
-    }?.value
-
-    return ReplayHealthSnapshot(
-        loopTimeMs = valueMatching("looptime", "loop_time"),
-        batteryVoltage = valueMatching("batteryvoltage", "battery_voltage"),
-        brownoutCount = valueMatching("brownoutcount", "brownout_count")?.toInt(),
-        loopOverruns = valueMatching("loopoverruns", "loop_overruns")?.toInt(),
-        ftcRuntime = FtcRuntimeDashboardState(
-            hubCommandTransport = stringValues[TelemetryTopicConstants.FTC_HUB_COMMAND_TRANSPORT]
-                ?.trim()?.uppercase()?.takeIf(String::isNotEmpty),
-            photonActive = values[TelemetryTopicConstants.FTC_PHOTON_ACTIVE]?.let { it >= 0.5 },
-            limelightProxyConfigured = values[TelemetryTopicConstants.FTC_LIMELIGHT_PROXY_CONFIGURED]?.let { it >= 0.5 },
-            limelightProxyActive = values[TelemetryTopicConstants.FTC_LIMELIGHT_PROXY_ACTIVE]?.let { it >= 0.5 },
-        ),
-    )
+    fun <T> normalizedHealthValues(input: Map<String, T>): Map<String, T> {
+        val result = HashMap<String, T>()
+        val sourceKeys = HashMap<String, String>()
+        for ((key, value) in input) {
+            val normalized = TelemetryMetricCatalog.normalizeTopic(key)
+            if (normalized !in HEALTH_KEY_INDEX) continue
+            val previous = sourceKeys[normalized]
+            if (previous == null || key == normalized || (previous != normalized && key < previous)) {
+                result[normalized] = value
+                sourceKeys[normalized] = key
+            }
+        }
+        return result
+    }
+    val numbers = normalizedHealthValues(values)
+    val strings = normalizedHealthValues(stringValues)
+    return controllerHealthSnapshot(numbers::get, strings::get)
 }

@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "43ed55e7135361c15f613172c9d71fbf305ad55c2f0319957a003a45a07d8711",
+      "sha256": "9f2db213ea5a1fdcd32bb9085d3db720540cad26c87c50274cf9bced12c785cf",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -471,7 +471,8 @@
         "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
         "ARESLib-Kotlin/build/audit-pass24-policy.log",
         "docs/audits/database-coordinator-transactions-audit.md",
-        "docs/audits/dashboard-health-audit.md"
+        "docs/audits/dashboard-health-audit.md",
+        "docs/audits/controller-health-audit.md"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -1804,13 +1805,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SystemHealthCard.kt": {
-      "sha256": "0618c409cdb1bc980824b8ae8fce91c0be8f11cca2ae661bd7c0bc8c4328e76a",
-      "review": "partial",
+      "sha256": "2053f55fa632a345303b82858460e9bce55332fd76afa76a1035c8a6f19b23bb",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 26 traces dashboard drop display and replaces a hard-coded measured zero with nullable unavailable N/A. Compiled and full Studio tests passed, without rendered-window evidence. Other live/replay source arbitration, lifetime/stale values, missing robot counts, numeric validation, topic matching and runtime presentation remain for focused review.",
+      "scope": "Entire card and byte formatter reviewed after replacing competing effects with shared health observation. Unknown metrics, source badges, finite frequency and runtime status presentation, live-only robot log row and standalone hook ownership inspected. Three headless scenes rendered/inspected; full Studio tests passed. Kover 100/144 lines, 45/114 branches; optional runtime rows/fallback and other display branches not all rendered, and no visible-window/hardware claim.",
       "evidence": [
-        "docs/audits/dashboard-health-audit.md",
-        "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
       ]
     },
     "docs/audits/dashboard-health-audit.md": {
@@ -1821,6 +1822,156 @@
       "evidence": [
         "docs/audits/dashboard-health-audit.md",
         "ARESLib-Kotlin/build/audit-pass26-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthModels.kt": {
+      "sha256": "a295846f07f8774707887a58d67f4b2c79ae56f91ba5c900c388681af8ebbe60",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire validated snapshot/source models, recognized topics, numeric/boolean domains and FTC runtime presentation reviewed. Shared parser replaces the unused incremental updater; exact alias priority, unknown feedback and valid active/inactive states covered. Final Studio gate passed; 59/59 lines, 78/82 branches.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthObservation.kt": {
+      "sha256": "7066195cd154fdd9eadfe8387659325a233004e6f810db616a69ad8d9995b6c8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire bounded tracker, live flow, resolver and Compose hook reviewed. 32 new pass tests include per-topic expiry, signed time wrap/backward unknown age, target reset/validation race, retained-frame rejection, 10000-frame publication bounds, cancellation and actual Compose source transitions. 53/54 lines, 58/66 branches; 100ms presentation latency and upstream freshness/atomicity limits documented.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ReplayDashboardModels.kt": {
+      "sha256": "945d9f4824e78b7602d97faac4f6c80e41a4fb288cdd20810ad161dbeeea7efc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire normalized replay extractor reviewed. Only known keys retained, deterministic canonical/alias and normalized spelling priority, invalid canonical remains unknown, one scan of input maps and shared numeric/runtime parser. 13/13 lines, 9/12 branches; historical per-topic age is not inferred.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/PlatformHealthPresentation.kt": {
+      "sha256": "70f171d522166c8a49c8e8e983a9eb54b98f8e8a4ae1af0ce086a6118d502dfe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire display policy and controller titles reviewed. Tests cover all leagues, missing/nonfinite voltage, exact thresholds, invalid XRP configuration, accepted endpoints and caution ceiling. Kover 27/27 lines, 28/28 branches. Thresholds are existing dashboard policy, not verified electrical safety boundaries.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetHost.kt": {
+      "sha256": "0a2a83239585ab18408c2c9845e1b0c24c5003d979642f0757c7b684faf3b2a1",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 27 reviews forwarding the shared screen-owned health observation into render context, avoiding an independent card collector. Full Studio gate passed. Remaining registry-builder allocation, widget lifecycle and layout hosting behavior require full audit.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetRegistry.kt": {
+      "sha256": "b413d806412325d2e713be02f28992f06e8533b7629a47c35e3dac8341c4c775",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 27 reviews the optional controller-health render-context field and system-health renderer arguments, including replay selection during loading. Full Studio/registry tests passed. Other definitions, capabilities, services and registration paths remain pending.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt": {
+      "sha256": "02b6c8065f3ec2e9f004835bbc4cdad4a13039a1f7bb57c8e1dfa60aa886fe16",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 27 replaces duplicated mutable health fields, wall-clock listener/timer and replay effect with the shared controller-health hook; mission snapshot and widget host consume the same observation. Full Studio/mission tests passed. Selected-session/frame identity, other mission/source semantics, alerts, navigation and workspace flows remain for focused review.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HealthSnapshotAuditTest.kt": {
+      "sha256": "930863358354eb50e7a2168af0933c2492df840279ada70fa1a42b63ab1eaeb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 14-method parser/runtime suite reviewed and executed; nine original failures preserved, runtime missing-feedback and normalized duplicate keys verified.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthObservationTest.kt": {
+      "sha256": "2e5fe5292e9c05f3d9564c49e3ade0281bfd4139137e728e0e297c521ad09fe8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 12-method tracker/flow suite reviewed and executed; deterministic target-validation race reproduced and fixed, virtual clocks, bounded output and subscription cleanup tested.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthCompositionTest.kt": {
+      "sha256": "ade43a7c0d6c6bef2515c0b610bd65d1675a9d036f77552d27cd81dae0e2ce98",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire actual headless Compose lifecycle test reviewed and executed with explicit virtual monotonic clock, live/replay/loading/offline transitions, reused sequence numbers, retained history and subscription counts.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthRenderTest.kt": {
+      "sha256": "56984c61d1f7a19809fd95a37354c11e01c263ebe5d5acf22b1d051306301342",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire owned-scene rendering fixture reviewed and executed; offline, replay and selected-runtime/unknown-feedback PNGs manually inspected. Shared observations require no mocked NT4 state subscriptions. Headless evidence only.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/ReplayDashboardModelsTest.kt": {
+      "sha256": "a7a111dac5fd5100aba8537491098a87df4513cd840465390588634953d1f2e1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire existing two-method replay-health regression suite reviewed and executed; missing topics and reconstructed runtime modes now exercise shared validated parser.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/SystemHealthRuntimeStatusTest.kt": {
+      "sha256": "f5d1d400c24967f78f970b00e922d92350bb24bb7b62e0514a93be8595e39b86",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire two-method runtime status suite reviewed and updated to exercise the actual shared tracker/parser rather than removed incremental updater; explicit robot confirmation and proxy state cases passed.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/PlatformHealthPresentationTest.kt": {
+      "sha256": "069d53ae374b06e97ea833aa56fd2152590faf12644aa13e1a36ad7bfd961997",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire seven-method platform display policy suite reviewed and executed, including four new configuration/domain/boundary cases.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
+      ]
+    },
+    "docs/audits/controller-health-audit.md": {
+      "sha256": "d65f9a2bb6548d8d0160a70be9345043a599167e91b51bca2761d2c7a0724e33",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 27 report checked against parser and target-race baselines, focused/full suite results, Kover counters and inspected headless PNGs. Remaining coverage, source identity and hardware/window limitations explicitly recorded.",
+      "evidence": [
+        "docs/audits/controller-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
       ]
     }
   }
