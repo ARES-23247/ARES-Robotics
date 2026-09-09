@@ -414,6 +414,72 @@
         "ARES-XRP-Starter/build/audit-pass6-trace.log",
         "ARESLib-Kotlin/build/audit-pass6-standalone.log"
       ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/telemetry.py": {
+      "sha256": "7460b51eaa28b9eda95203cabc91c2a6b31a56b30df771a742df5bcb208987bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full server source review: framing, socket ownership, freshness/revision leases, handshake, and field transactions. 62 Python tests plus native localhost TCP smoke passed; 90.9% unit-suite line execution, not branch or physical coverage. Candidate 17.0.3-rc.c363e29cff00 consumer gates passed; remaining exception/hardware limits are recorded in the report.",
+      "evidence": [
+        "docs/audits/xrp-transport-audit.md",
+        "ARESLib-Kotlin/build/audit-pass7-micro.log",
+        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_transport_audit.py": {
+      "sha256": "debd439a21ce4838b1abc51fe3344d3fe330bffd54ca9785034b03fc533cb1c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full review and execution of 18 deterministic transport, lease, configuration, and robot/mechanism regressions as part of 62 passing shared Python tests. Socket doubles and controlled clocks; physical radio/actuators remain untested.",
+      "evidence": [
+        "docs/audits/xrp-transport-audit.md",
+        "ARESLib-Kotlin/build/audit-pass7-micro.log",
+        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_safety_boundaries.py": {
+      "sha256": "8ab8efab115441eb181b48e189fb59980e2695ed0ca3b1edb525af2f568a4461",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test/fixture review; safety stop aggregation, battery faults, expiry/restart, shutdown and partial-send/backpressure tests all pass in the 62-test Python suite. Private input fixture updated to bytes; no physical hardware claim.",
+      "evidence": [
+        "docs/audits/xrp-transport-audit.md",
+        "ARESLib-Kotlin/build/audit-pass7-micro.log",
+        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_xrp_micro.py": {
+      "sha256": "a45f6f6a2233aacedf4576236a32690a5f1f4f5ea36184dc2e4cd4405ab9403e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Transport/lifecycle cases reviewed and adapted to byte framing plus pending Start cancellation. All file tests pass in the 62-test suite; remaining kinematics, sensor and subsystem test design still needs full review.",
+      "evidence": [
+        "docs/audits/xrp-transport-audit.md",
+        "ARESLib-Kotlin/build/audit-pass7-micro.log",
+        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
+    },
+    "docs/audits/README.md": {
+      "sha256": "55c3a043348bf06ce78819253db8bae1bde82844115d946dfbf426bfec283020",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full audit-accounting contract and work-queue review, with links verified after the seventh-pass update. Documentation disposition; no executable tests apply.",
+      "evidence": [
+        "docs/audits/xrp-transport-audit.md",
+        "ARESLib-Kotlin/build/audit-pass7-micro.log",
+        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
+    },
+    "docs/audits/xrp-transport-audit.md": {
+      "sha256": "db9a1836c6284d44639829463433398321a1c061038a20a81480158cf10a4b66",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full authored report reviewed against source diff, deterministic regressions, trace, native loopback, Gradle reports, candidate identity and archive checksums. Links checked. Explicitly separates reused results, opt-in skips and unavailable physical evidence.",
+      "evidence": [
+        "docs/audits/xrp-transport-audit.md",
+        "ARESLib-Kotlin/build/audit-pass7-micro.log",
+        "ARESLib-Kotlin/build/audit-pass7-studio.log"
+      ]
     }
   }
 }

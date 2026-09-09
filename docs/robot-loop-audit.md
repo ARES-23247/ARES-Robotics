@@ -264,3 +264,10 @@ The [sixth-pass report](audits/xrp-deployment-audit.md) records stricter API/cap
 preflight, deterministic payload staging, bounded downloads, boot/activation fallback,
 and plan/deployment digest parity. Eighteen new tests extend the interruption model
 through every deployment filesystem mutation. Physical flash durability remains untested.
+
+## Seventh pass: XRP transport and control leases
+
+The [seventh-pass report](audits/xrp-transport-audit.md) records a late-heartbeat lease
+expiry race, pending Start cleanup, bounded byte framing, failed socket setup cleanup,
+and field identity validation before mutation. Eighteen new regressions pass, including
+a robot/mechanism stop-and-restart test. Physical radio and loop timing remain untested.
