@@ -7,10 +7,11 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.League
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -61,7 +62,8 @@ import java.util.concurrent.ConcurrentHashMap
 class AlertEngineService(
     private val databaseService: DatabaseService,
     private val nt4ClientService: Nt4ClientService,
-    private val thresholdsPath: String = AppDataPaths.file("thresholds.json").path
+    private val thresholdsPath: String = AppDataPaths.file("thresholds.json").path,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     /** Rules are indexed by transport-normalized topic while preserving the configured key in alerts. */
@@ -74,7 +76,7 @@ class AlertEngineService(
     private val loopTimeBuffers = ConcurrentHashMap<String, ArrayDeque<TimedLoopSample>>()
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
 
-    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val serviceScope = CoroutineScope(dispatcher + SupervisorJob())
     private val audioNotifier = AlertAudioNotifier()
 
     // Active alert state: AlertId -> AlertRecord
@@ -93,6 +95,10 @@ class AlertEngineService(
         .distinctUntilChanged()
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
 
+    private val transitionMutex = Mutex()
+    private data class RuleIdentity(val sessionId: String, val key: String)
+    // Guard occurrence chronology, including healthy samples that do not create a record.
+    private val lastEvaluationTimes = HashMap<RuleIdentity, Long>()
     private var engineJob: Job? = null
     private val platformThresholds = PlatformAlertThresholds()
 
@@ -145,6 +151,7 @@ class AlertEngineService(
 
         engineJob = serviceScope.launch {
             nt4ClientService.telemetryFlow.collect { frame ->
+                if (frame.stringValue != null || !frame.value.isFinite()) return@collect
                 val normalizedKey = normalizeTopic(frame.key)
                 recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[normalizedKey] = frame.value
                 evaluateFrame(frame)
@@ -198,51 +205,7 @@ class AlertEngineService(
         val violatesMax = maxVal != null && value > maxVal
         val isViolating = violatesMin || violatesMax
 
-        // Atomic lookup-and-update: the find + compute + commit happens inside a single
-        // _alerts.update lambda so a concurrent triage/clear/resolve cannot interleave and
-        // clobber a just-added or just-triaged alert.
-        val outcome = commitAlertTransition { current ->
-            val existingAlert = current.values.firstOrNull {
-                it.sessionId == frame.sessionId && normalizeTopic(it.ruleKey) == normalizeTopic(rule.key) && !it.triaged
-            }
-            when {
-                isViolating && existingAlert == null -> AlertOutcome(
-                    alert = AlertRecord(
-                        alertId = UUID.randomUUID().toString(),
-                        sessionId = frame.sessionId,
-                        ruleKey = rule.key,
-                        triggerTimestampMs = frame.timestampMs,
-                        peakValue = value,
-                        triaged = false
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                isViolating && existingAlert?.resolveTimestampMs != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = null,
-                        durationMs = 0L,
-                        peakValue = maxOf(existingAlert.peakValue, value)
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                isViolating && existingAlert != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        peakValue = if (rule.maxValue != null) maxOf(existingAlert.peakValue, value) else minOf(existingAlert.peakValue, value)
-                    ),
-                    shouldBeep = false
-                )
-                !isViolating && existingAlert?.resolveTimestampMs == null && existingAlert != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = frame.timestampMs,
-                        durationMs = frame.timestampMs - existingAlert.triggerTimestampMs
-                    ),
-                    shouldBeep = false
-                )
-                else -> null
-            }
-        } ?: return
-        persistAlert(outcome.alert)
-        if (outcome.shouldBeep) triggerAudibleAlert()
+        evaluateRuleState(rule.key, isViolating, value, frame.timestampMs, frame.sessionId, rule)
     }
 
     /**
@@ -375,72 +338,22 @@ class AlertEngineService(
         sessionId: String,
         rule: ThresholdRule
     ) {
-        val outcome = commitAlertTransition { current ->
-            val existingAlert = current.values.firstOrNull {
-                it.sessionId == sessionId && normalizeTopic(it.ruleKey) == normalizeTopic(key) && !it.triaged
-            }
-            when {
-                isViolating && existingAlert == null -> AlertOutcome(
-                    alert = AlertRecord(
-                        alertId = UUID.randomUUID().toString(),
-                        sessionId = sessionId,
-                        ruleKey = key,
-                        triggerTimestampMs = ts,
-                        peakValue = value,
-                        triaged = false
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                isViolating && existingAlert?.resolveTimestampMs != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = null,
-                        durationMs = 0L,
-                        peakValue = maxOf(existingAlert.peakValue, value)
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                !isViolating && existingAlert?.resolveTimestampMs == null && existingAlert != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = ts,
-                        durationMs = ts - existingAlert.triggerTimestampMs
-                    ),
-                    shouldBeep = false
-                )
-                else -> null
-            }
-        } ?: return
-        persistAlert(outcome.alert)
-        if (outcome.shouldBeep) triggerAudibleAlert()
+        transitionMutex.withLock {
+            if (!value.isFinite() || ts < 0L) return
+            val identity = RuleIdentity(sessionId, normalizeTopic(key))
+            val previousTime = lastEvaluationTimes[identity]
+            if (previousTime != null && ts < previousTime) return
+            lastEvaluationTimes[identity] = ts
+            val outcome = commitAlertTransition(_alerts) { current ->
+                alertTransition(current, rule, key, sessionId, ts, value, isViolating)
+            } ?: return
+            persistAlert(outcome.alert)
+            if (outcome.shouldBeep) triggerAudibleAlert()
+        }
     }
-
-    /**
-     * The result of computing an alert transition inside the atomic [commitAlertTransition]
-     * lambda: the new [alert] to store and whether an audible beep should fire after commit.
-     */
-    private class AlertOutcome(val alert: AlertRecord, val shouldBeep: Boolean)
 
     private data class TimedCurrentSample(val timestampMs: Long, val amps: Double)
     private data class TimedLoopSample(val timestampMs: Long, val durationMs: Double)
-
-    /**
-     * Atomically applies an alert transition. [compute] receives the current snapshot and
-     * returns the new [AlertRecord] to put (plus beep intent), or null for no-op. The
-     * lookup + map mutation happen inside a single [MutableStateFlow.update] CAS loop so
-     * concurrent mutators (evaluate / triage / clear) cannot interleave.
-     */
-    private inline fun commitAlertTransition(compute: (Map<String, AlertRecord>) -> AlertOutcome?): AlertOutcome? {
-        var outcome: AlertOutcome? = null
-        _alerts.update { current ->
-            val result = compute(current)
-            if (result != null) {
-                outcome = result
-                current.toMutableMap().apply { put(result.alert.alertId, result.alert) }
-            } else {
-                current
-            }
-        }
-        return outcome
-    }
 
     private suspend fun persistAlert(alert: AlertRecord) {
         if (alert.sessionId != "live-telemetry") {
@@ -454,19 +367,23 @@ class AlertEngineService(
      * @param alertId Unique UUID string of the target alert.
      */
     suspend fun triageAlert(alertId: String) {
-        val triaged = commitAlertTransition { current ->
-            val alert = current[alertId] ?: return@commitAlertTransition null
-            AlertOutcome(alert = alert.copy(triaged = true), shouldBeep = false)
-        } ?: return
-        persistAlert(triaged.alert)
+        transitionMutex.withLock {
+            val triaged = commitAlertTransition(_alerts) { current ->
+                val alert = current[alertId] ?: return@commitAlertTransition null
+                AlertOutcome(alert = alert.copy(triaged = true), shouldBeep = false)
+            } ?: return
+            persistAlert(triaged.alert)
+        }
     }
 
     /**
      * Clears all triaged and resolved alerts from the active alert banner queue.
      */
     suspend fun clearAllResolvedAlerts() {
-        _alerts.update { current ->
-            current.filterValues { !it.triaged || it.resolveTimestampMs == null }
+        transitionMutex.withLock {
+            _alerts.update { current ->
+                current.filterValues { !it.triaged || it.resolveTimestampMs == null }
+            }
         }
     }
 

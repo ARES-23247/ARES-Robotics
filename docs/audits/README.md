@@ -95,7 +95,10 @@ sampling, per-topic freshness, collector lifecycle and platform battery display 
 Pass 28 covers [mission summaries and alert presentation](dashboard-mission-audit.md): exact
 selected-frame identity, historical/unknown evidence, current alert filtering and ordering,
 dismissal lifecycle, bounded popup rendering and honest diagnostic units.
-Next are alert-engine windows/source lifecycle, replay timeline readiness, diagnostics/evidence
+Pass 29 covers [alert occurrence transitions](alert-lifecycle-audit.md): acknowledgment and
+resolution, separate recurrence intervals, stable peak excursions, invalid inputs, chronology,
+CAS retries and unchanged-write suppression.
+Next are alert-engine windows/source lifecycle and persistence failure recovery, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
 states, verified project/evidence
 identity, simulation provenance, logging/transport, advanced descriptor safety and remaining

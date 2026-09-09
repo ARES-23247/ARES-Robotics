@@ -427,3 +427,10 @@ selected session, preserves historical and missing evidence, filters resolved/fo
 and fixes deterministic priority and dismissal updates. Bounded lazy popups and cached summary
 calculations remove repeated work. Diagnostics retain source-time and transport distinctions.
 Headless tests and the Studio gate passed; alert-engine and timeline internals remain open.
+
+## Twenty-ninth pass: alert occurrence transitions
+
+The [alert lifecycle audit](audits/alert-lifecycle-audit.md) fixes acknowledgment preventing
+resolution, recurring faults losing historical intervals, divergent scalar/composite peaks,
+and redundant persistence. Shared CAS transitions discard abandoned retry outcomes. Numeric
+and database regressions cover these changes; window/source/failure lifecycle remains open.

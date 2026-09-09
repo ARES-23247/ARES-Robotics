@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "93192125016e3aa5b06a87bef9949c6927563bf41c284c232e8fc47abda7fa12",
+      "sha256": "7e078881685bb607534a3983404d59ddaceae3144590387ce2dff6aa8565bbfe",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -473,7 +473,8 @@
         "docs/audits/database-coordinator-transactions-audit.md",
         "docs/audits/dashboard-health-audit.md",
         "docs/audits/controller-health-audit.md",
-        "docs/audits/dashboard-mission-audit.md"
+        "docs/audits/dashboard-mission-audit.md",
+        "docs/audits/alert-lifecycle-audit.md"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2086,6 +2087,66 @@
         "ARESLib-Kotlin/build/audit-pass28-studio.log",
         "ARESLib-Kotlin/build/audit-pass28-render-final.log",
         "ARESLib-Kotlin/build/audit-pass28-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertTransitions.kt": {
+      "sha256": "27e8660e24eed15f53625fcf0b94d78751d99c6404220c68f243c898ab301a49",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire occurrence reducer, directional peak excursion and CAS commit helper reviewed. Deterministic retry interference and finite extreme/subnormal cases exercised; uncovered alternatives will be reported from Kover.",
+      "evidence": [
+        "docs/audits/alert-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass29-studio.log",
+        "ARESLib-Kotlin/build/audit-pass29-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertEngineService.kt": {
+      "sha256": "c56861345ff56bfdddbc0ac87966fad8c0e426abc5944c7dfb7e3457afe2dabc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scalar/composite transition integration, input numeric/text gate, per-rule millisecond chronology, serialized persistence/triage/clear and controlled dispatcher reviewed. Moving windows, domain/units, raw source chronology/epochs, cache growth, configuration, start/stop and failure recovery remain open.",
+      "evidence": [
+        "docs/audits/alert-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass29-studio.log",
+        "ARESLib-Kotlin/build/audit-pass29-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertLifecycleAuditTest.kt": {
+      "sha256": "cc3e8461bde9e1ebbe7d6f17a73b8a17569ad10edfe1513d28c93e46845de018",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire 14-method controlled-dispatcher fixture and real DuckDB recurrence test reviewed. Nine baseline behavior failures; invalid timestamp fixture corrected to actual TelemetryFrame domain and nonfinite assertions strengthened per sample.",
+      "evidence": [
+        "docs/audits/alert-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass29-studio.log",
+        "ARESLib-Kotlin/build/audit-pass29-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertTransitionsTest.kt": {
+      "sha256": "8bc4ae2fb04d2516e2693a2cb6428480f155ed0c7dc2b8b0a67fc8ce4cf81052",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire eight-method shared transition suite reviewed, covering CAS no-op/retry, unchanged outcome, separate recurrence identity, negative-duration prevention and numeric excursion ordering.",
+      "evidence": [
+        "docs/audits/alert-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass29-studio.log",
+        "ARESLib-Kotlin/build/audit-pass29-policy.log"
+      ]
+    },
+    "docs/audits/alert-lifecycle-audit.md": {
+      "sha256": "0fe3f49a1dbe7b81b24b2579a493a87b9fb2d703d88692a82fdaa93d31cfddaa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire pass 29 report records reproduced defects, fixture corrections, scalar/composite transition scope and explicit source/window/failure limitations. Final tests, Kover counts and repository checks are recorded from observed results.",
+      "evidence": [
+        "docs/audits/alert-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass29-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass29-studio.log",
+        "ARESLib-Kotlin/build/audit-pass29-policy.log"
       ]
     }
   }
