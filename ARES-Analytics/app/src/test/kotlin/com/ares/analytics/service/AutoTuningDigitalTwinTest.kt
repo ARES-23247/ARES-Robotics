@@ -91,7 +91,11 @@ class AutoTuningDigitalTwinTest {
             digitalTwin.generateSamples(scenario)
         )!!
         val tampered = recommendation.copy(
-            recommendedGains = recommendation.recommendedGains.copy(kP = recommendation.safetyEnvelope.maxKP + 1.0),
+            recommendedkV = recommendation.safetyEnvelope.maxKV + 1.0,
+            topicValues = recommendation.topicValues.mapValues { (key, value) ->
+                if (key == com.ares.analytics.service.tuning.TuningParameterKeys.DRIVE_FEEDFORWARD_KV)
+                    recommendation.safetyEnvelope.maxKV + 1.0 else value
+            },
             quality = RecommendationQuality.READY
         )
 

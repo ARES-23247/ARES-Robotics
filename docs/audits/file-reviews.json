@@ -458,14 +458,15 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "4460bd49d97c812ed5743c85305daf4153b6f3a95760dc178a7395d9e57d9555",
+      "sha256": "19631ec4c115ba011387c18d769371634f15e86084e7e30ff92239297f3f9e12",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full accounting and work-queue document reviewed through pass 19. Records remaining proposal/model confidence, simulation, transport and physical work, plus both unresolved timing-sensitive test failures; no repository-wide completion claim.",
+      "scope": "Full accounting/work-queue document reviewed through pass 20. Tracks bounded queue and atomic staging evidence separately from stale approval, project/evidence identity, simulation provenance, broader control/transport and physical work. Prior timing-sensitive failures and the new replay performance-baseline failure remain open.",
       "evidence": [
-        "docs/audits/step-response-audit.md",
-        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -948,14 +949,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoTunerService.kt": {
-      "sha256": "26284456f5b40f2d0bdb8529408bf2b6a1db224d65ecd5aa2ff1267a9504792a",
+      "sha256": "eb4c0e9dfd5428893a047248b1fc9b37be4efc86998942ec497158b0eed3a377",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 17-19 cover shared fitting/preparation/parsing, proposal mapping/envelope revalidation, extracted step-response math, finite positive model usability and independently fitted DC gain integration. Golden and Monte Carlo thresholds unchanged. Proposal eligibility/delivery, legacy apply/rollback, model confidence and import/simulation provenance still need review. Kover 156/177 lines, 103/156 branches.",
+      "scope": "Passes 17-20 cover shared preparation/fitting, mapped proposal and envelope checks, finite step-response/SIMC models and DC gain, feedforward-only eligibility/confidence, retained flywheel feedback gates and truthful bounded-inbox submission result. Six new proposal methods plus full Studio gate pass; 164/185 lines, 125/180 branches. Stale approvals, import/simulation provenance and legacy apply/rollback remain open.",
       "evidence": [
-        "docs/audits/step-response-audit.md",
-        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
@@ -981,14 +983,15 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTunerServiceTest.kt": {
-      "sha256": "ef64dc9b5bc6573293a228eb34af747c7247e37be46e07c46cfcffac26c12eda",
+      "sha256": "9a54a6525e7a0c33d361077419dc2b0ccd1d26d3b91d5e0af488130693e98689",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full four-method test review and focused execution. Replaced rank-deficient single-exponential fixture with a known motor plant driven at multiple voltage levels. Gain recovery, JSONL names, proposal-only approval and teaching-model rejection pass. Owned database/client teardown replaces leaked extra fixtures.",
+      "scope": "Full four-method test review and focused execution. Replaced rank-deficient single-exponential fixture with a known motor plant driven at multiple voltage levels. Gain recovery, JSONL names, proposal-only approval and teaching-model rejection pass. Owned database/client teardown replaces leaked extra fixtures. Pass 20 updates inbox assertions to acknowledged queued delivery without a transient subscriber.",
       "evidence": [
-        "docs/audits/sysid-analysis-audit.md",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
       ]
     },
     "docs/audits/sysid-analysis-audit.md": {
@@ -1058,14 +1061,15 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTuningDigitalTwinTest.kt": {
-      "sha256": "1ccf71a841bdbee63fdde8810508ebac0f6845dce3d6effe64173dc708db3010",
+      "sha256": "6eadd555bbc03a0c3bc65671b64a32d3c49e9104b50ec934125a4aec01e3221c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full five-method test review and execution. All 36 Monte Carlo scenarios still run with unchanged recovery/stability thresholds. Eighteen unsupported mechanism cases must reject proposals; the prior 28/36 acceptance fraction applies to the eighteen supported cases. Determinism, envelope recheck and sparse/gapped inputs remain tested. Adds owned client/database cleanup; does not establish physical simulation fidelity. Pass 19 adds model diagnostics to assertion messages and reruns full tests with corrected model/PI math; acceptance, recovery and stability thresholds unchanged.",
+      "scope": "Full five-method test review and execution. All 36 Monte Carlo scenarios still run with unchanged recovery/stability thresholds. Eighteen unsupported mechanism cases must reject proposals; the prior 28/36 acceptance fraction applies to the eighteen supported cases. Determinism, envelope recheck and sparse/gapped inputs remain tested. Adds owned client/database cleanup; does not establish physical simulation fidelity. Pass 19 adds model diagnostics to assertion messages and reruns full tests with corrected model/PI math; acceptance, recovery and stability thresholds unchanged. Pass 20 safety recheck now tampers a proposed feedforward coefficient and matching map entry instead of an unused drivetrain diagnostic feedback gain; Monte Carlo acceptance/recovery/stability thresholds unchanged.",
       "evidence": [
-        "docs/audits/step-response-audit.md",
-        "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/BoundedProcess.kt": {
@@ -1143,6 +1147,102 @@
         "docs/audits/step-response-audit.md",
         "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
         "ARESLib-Kotlin/build/audit-pass19-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProposalInbox.kt": {
+      "sha256": "da22aa6cf8c0130866c1c6383831aaf17eedc51b45de1f28895d73271b965c7b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full queue review: capacity-eight FIFO, invalid input rejection, immutable values snapshot, pending-count notification, synchronous transfer and acknowledgement, receiver failure/deferred acknowledgement retry and concurrent receiver serialization. Six direct regressions and actual board integration pass; 24/24 lines and 14/14 branches. Process-local proposal count is bounded; byte limits, durable storage and authenticated project identity are not provided.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/ExternalTuningProposalStaging.kt": {
+      "sha256": "c581217a3e5e39c426b568360cd18d559ad1c941508c43c854463f2b6eeaa3c6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full atomic staging helper review: loaded profile, numeric typing and finite bounds, canonical declaration/range/vendor checks, all-or-none staging, conflict rejection, preservation of prior provenance and evidence propagation. Ten pure/integration test methods exercise it and the board; 25/25 lines, 30/30 branches. Downstream promotion/evidence identity remains a separate contract.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewModel.kt": {
+      "sha256": "a5bf9b6ed49733925185f02f5f89a503f9f54b781a8d82a7ac1593c11365ee60",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped external-proposal collector and load-readiness review. Waits for loaded profile, synchronously stages or rejects whole proposals, aggregates rejection messages, clears old catalog on load and invalidates readiness synchronously and guards obsolete load results with atomic request revisions. Defers queue acknowledgement if readiness changes before staging, with reload revision notifications surviving conflation. Actual queue/load, failed-load isolation and controlled out-of-order load tests pass; 119/328 lines, 74/334 branches overall. Nonce/acknowledgement, promotion, profile switch, telemetry and exhaustive load scheduler interleavings remain open.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSignalGenerator.kt": {
+      "sha256": "59f4f4d248cd516e31ee6ba45f3d1c3ae54e2627cf7b408724e6e41028a729b3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped inspection of driver/calibration proposal producers and their inbox return handling. Messages now distinguish queued proposals from board receipt, with explicit unavailable/full/invalid failure feedback. Full Studio gate passed; 69/182 lines, 29/110 branches overall. Producer branch coverage and the motion/arm/lease lifecycle still need dedicated review.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTunerProposalAuditTest.kt": {
+      "sha256": "97ad95432a32c4a8fb5b445d96c20046d98883e47d62828b08e4481ae6e92ea4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method review/execution: smooth identifiable bidirectional excitation without step, retained flywheel model/envelope, diagnostic-only feedback, full-inbox retry and nonfinite/poor-fit refusal.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/tuning/TuningProposalInboxAuditTest.kt": {
+      "sha256": "b5f3c442223294c88f6af28e85d84a2c5a6956b952602eff6d7a5a891661018c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method review/execution: absent receiver FIFO/capacity, immutable snapshot, throwing/unavailable receiver retry, invalid input, and concurrent receiver exactly-once transfer during successful synchronous callbacks. Owned executor shutdown.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/ExternalTuningProposalAuditTest.kt": {
+      "sha256": "a7a1f754cee8af8e05bf51b091dd588f80a3a1d380945b1d2dcef847a5e078c1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ten-method review/execution: atomic typed proposals/evidence, undeclared/range/vendor/type/nonfinite rejection, student conflicts and provenance, readiness, actual board queue delivery and failed-load isolation and a controlled old load completing after a newer profile. Immediate readiness invalidation is asserted. Canonical files unchanged and no NT4 writes; owned scopes/client/database/temp fixtures cleaned.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+      ]
+    },
+    "docs/audits/tuning-proposal-delivery-audit.md": {
+      "sha256": "e169608116e60f8c79151a2c1e2e594ff4b8e2fbd7f1e430838e5b8060e3e29b",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass 20 report checked against source behavior, 50 focused methods, complete gate and Kover; records 22 added tests, fixed test fixtures, unresolved replay performance failure and prior validation concerns and project/provenance/lifecycle limitations. No physical or repository-wide completion claim.",
+      "evidence": [
+        "docs/audits/tuning-proposal-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
       ]
     }
   }

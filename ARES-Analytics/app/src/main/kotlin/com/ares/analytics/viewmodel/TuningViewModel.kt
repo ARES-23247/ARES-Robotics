@@ -12,6 +12,8 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningValue
+import kotlinx.coroutines.CoroutineDispatcher
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -19,6 +21,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -48,7 +53,9 @@ data class TuningState(
     val availableBackups: List<BackupInfo> = emptyList(),
     val isLoading: Boolean = false,
     val saveStatus: String = "",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** Keeps reload completion observable even when intermediate loading emissions conflate. */
+    val loadRevision: Long = 0L
 ) {
     val selectedProfile: TuningProfileDocument?
         get() = profiles.firstOrNull { it.profileId == selectedProfileId }
@@ -95,7 +102,9 @@ class TuningViewModel(
     private val checkpointRecorder: ProjectCheckpointRecorder = ProjectCheckpointRecorder.NONE,
     private val projectSession: ProjectSession? = null,
     private val targetPlatform: ControllerInputPlatform? = null,
+    private val loadDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    private val loadGeneration = AtomicLong()
     private var requestNonce = 0L
     /** Serializes multi-parameter live tests so every Requested value receives a unique nonce. */
     private val requestMutex = Mutex()
@@ -110,11 +119,28 @@ class TuningViewModel(
         }
         proposalInbox?.let { inbox ->
             scope.launch {
-                inbox.proposals.collect { proposal ->
-                    proposal.values.forEach { (key, value) ->
-                        stage(key, value, proposal.source, proposal.summary, proposal.evidencePath, proposal.evidenceSha256)
+                combine(inbox.pendingCount, _state.map { it.loadRevision to (!it.isLoading && it.selectedProfile != null) }.distinctUntilChanged()) {
+                    count, readiness -> count > 0 && readiness.second
+                }.collect { ready ->
+                    if (ready) {
+                        val revision = _state.value.loadRevision
+                        val errors = mutableListOf<String>()
+                        while (_state.value.loadRevision == revision && !_state.value.isLoading && _state.value.selectedProfile != null && inbox.deliverNext { proposal ->
+                            var consumed = false
+                            var rejection: String? = null
+                            _state.update {
+                                consumed = it.loadRevision == revision && !it.isLoading && it.selectedProfile != null
+                                if (consumed) stageExternalTuningProposal(it, proposal).also { next -> rejection = next.errorMessage }
+                                else it
+                            }
+                            if (consumed) rejection?.let(errors::add)
+                            consumed
+                        }) { /* Acknowledge only after synchronous atomic staging or explicit rejection. */ }
+                        if (errors.isEmpty() && _state.value.loadRevision == revision) reviewPromotion()
+                        else if (errors.isNotEmpty()) _state.update {
+                            if (it.loadRevision == revision) it.copy(errorMessage = errors.distinct().joinToString("\n")) else it
+                        }
                     }
-                    reviewPromotion()
                 }
             }
         }
@@ -191,31 +217,41 @@ class TuningViewModel(
         }
     }
 
-    private fun load(projectPath: String) = scope.launch {
-        if (projectPath.isBlank()) {
-            _state.value = TuningState()
-            return@launch
+    private fun load(projectPath: String) {
+        // Invalidate readiness at the call site, before a scope can reorder launches.
+        val generation = loadGeneration.incrementAndGet()
+        _state.update {
+            if (generation != loadGeneration.get()) it
+            else if (projectPath.isBlank()) TuningState(loadRevision = generation)
+            else TuningState(isLoading = true, projectPath = projectPath, selectedProfileId = it.selectedProfileId, loadRevision = generation)
         }
-        _state.update { it.copy(isLoading = true, projectPath = projectPath, errorMessage = null) }
-        val loaded = withContext(Dispatchers.IO) {
-            runCatching {
-                val snapshot = targetPlatform?.let { projectSession?.snapshot(projectPath, it, forceReload = true) }
-                repository.load(projectPath).getOrThrow() to snapshot?.revision
+        if (projectPath.isBlank()) return
+        scope.launch {
+            if (generation != loadGeneration.get()) return@launch
+            val loaded = withContext(loadDispatcher) {
+                runCatching {
+                    val snapshot = targetPlatform?.let { projectSession?.snapshot(projectPath, it, forceReload = true) }
+                    repository.load(projectPath).getOrThrow() to snapshot?.revision
+                }
             }
+            if (generation != loadGeneration.get()) return@launch
+            val result = loaded.map { it.first }
+            val projectRevision = loaded.getOrNull()?.second
+            result.fold(onSuccess = { docs ->
+                val selected = docs.profiles.firstOrNull { it.profileId == _state.value.selectedProfileId } ?: docs.profiles.firstOrNull()
+                _state.update { if (generation != loadGeneration.get()) it else it.copy(
+                    catalog = docs.catalog,
+                    projectRevision = projectRevision,
+                    profiles = docs.profiles,
+                    selectedProfileId = selected?.profileId.orEmpty(),
+                    proposals = emptyMap(), proposalProvenance = emptyMap(), review = null,
+                    isLoading = false, saveStatus = if (selected == null) "Loaded ${docs.catalog.size} declarations; no canonical profile exists yet." else "Loaded ${docs.catalog.size} declared values from ${selected.displayName}.", errorMessage = null
+                ) }
+            }, onFailure = { failure -> _state.update {
+                if (generation != loadGeneration.get()) it else it.copy(isLoading = false,
+                    errorMessage = failure.message ?: "Could not load tuning profiles.")
+            } })
         }
-        val result = loaded.map { it.first }
-        val projectRevision = loaded.getOrNull()?.second
-        result.fold(onSuccess = { docs ->
-            val selected = docs.profiles.firstOrNull { it.profileId == _state.value.selectedProfileId } ?: docs.profiles.firstOrNull()
-            _state.update { it.copy(
-                catalog = docs.catalog,
-                projectRevision = projectRevision,
-                profiles = docs.profiles,
-                selectedProfileId = selected?.profileId.orEmpty(),
-                proposals = emptyMap(), proposalProvenance = emptyMap(), review = null,
-                isLoading = false, saveStatus = if (selected == null) "Loaded ${docs.catalog.size} declarations; no canonical profile exists yet." else "Loaded ${docs.catalog.size} declared values from ${selected.displayName}.", errorMessage = null
-            ) }
-        }, onFailure = { failure -> _state.update { it.copy(isLoading = false, errorMessage = failure.message ?: "Could not load tuning profiles.") } })
     }
 
     private fun selectProfile(profileId: String) {

@@ -355,3 +355,11 @@ crossings, segmented input plateaus, independently identified gain for moving in
 states, finite model validation and a consistent first-order PI rule. The late-excursion
 regression proves linear sample access instead of repeated suffix scans. Physical tuning
 and the remaining proposal/provenance workflow are still open.
+
+## Twentieth pass: tuning proposal eligibility and delivery
+
+The [twentieth-pass report](audits/tuning-proposal-delivery-audit.md) records feedforward-only
+eligibility, bounded local queue delivery, atomic typed proposal staging, preservation of
+student edits and isolation from failed project loads. It distinguishes queue acceptance
+from profile review, robot application and evidence identity. Provenance, stale approvals
+and the remaining board/live-tuning lifecycle are still open.

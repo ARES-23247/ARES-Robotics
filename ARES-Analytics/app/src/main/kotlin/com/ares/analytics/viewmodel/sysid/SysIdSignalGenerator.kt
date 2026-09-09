@@ -149,7 +149,7 @@ class SysIdSignalGenerator(
             summary = "Review driver response recommendations before any live test or profile promotion.",
             values = mapOf(TuningParameterKeys.DRIVER_DEADBAND_EXPONENT to recommendedExponent, TuningParameterKeys.DRIVER_SLEW_RATE_LIMIT to slewVal)
         )) == true
-        _state.update { it.copy(exportStatus = if (accepted) "Sent recommendations to the Tuning proposal board." else "Open Tuning before sending recommendations; no robot or source value changed.") }
+        _state.update { it.copy(exportStatus = if (accepted) "Queued recommendations for the Tuning proposal board." else "Tuning inbox unavailable, full, or proposal invalid. Review pending proposals and retry; no robot or source value changed.") }
     }
 
     suspend fun startRoutine(mechanism: SysIdMechanism, routine: SysIdRoutine) {
@@ -275,7 +275,7 @@ class SysIdSignalGenerator(
             summary = "$calibrationType result. Attach the recorded run and its SHA-256 in Tuning before promotion.",
             values = values
         )) == true
-        _state.update { it.copy(exportStatus = if (accepted) "Sent calibration results to the Tuning proposal board." else "No complete calibration proposal was available; no robot or source value changed.") }
+        _state.update { it.copy(exportStatus = if (accepted) "Queued calibration results for the Tuning proposal board." else "No complete proposal could be queued. Review pending proposals and calibration results, then retry; no robot or source value changed.") }
     }
 
     private fun requireMotionAuthorization(mechanism: SysIdMechanism? = null) {

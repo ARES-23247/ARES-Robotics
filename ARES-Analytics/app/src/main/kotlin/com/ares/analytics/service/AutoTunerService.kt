@@ -119,7 +119,9 @@ class AutoTunerService(
         val metrics = StepResponseAnalysis.identify(finite, dcGain)
         val gains = StepResponseAnalysis.gains(metrics)
         val envelope = AutoTuningSafetyPolicy.envelopeFor(mechanism)
-        val envelopeViolations = envelope.violations(summary.kS, summary.kV, summary.kA, gains)
+        val needsFeedback = mechanism == SysIdMechanism.FLYWHEEL
+        val envelopeViolations = envelope.violations(summary.kS, summary.kV, summary.kA,
+            if (needsFeedback) gains else NO_FEEDBACK)
         val topicValues = buildTopicValues(mechanism, summary.kS, summary.kV, summary.kA, gains)
         val warnings = dataQuality.warnings.toMutableList()
         if (topicValues.isEmpty()) warnings += "This mechanism requires a dedicated model and declaration mapping; gravity or custom mechanism gains cannot target drive/flywheel parameters."
@@ -132,14 +134,18 @@ class AutoTunerService(
         if (!metrics.isUsable) warnings += "No clean step response was found; feedback gains were not recommended."
         if (summary.kV <= 0.0 || summary.kA < 0.0) warnings += "Identified kV/kA signs are physically implausible."
         warnings += envelopeViolations
-        val confidence = (0.60 * summary.rSquared.coerceIn(0.0, 1.0) +
-            0.20 * metrics.modelFit.coerceIn(0.0, 1.0) + 0.20 * dataQuality.score).coerceIn(0.0, 1.0)
+        val confidence = if (needsFeedback) {
+            0.60 * summary.rSquared + 0.20 * metrics.modelFit + 0.20 * dataQuality.score
+        } else {
+            // Normalize the weights of the two models actually used by a feedforward proposal.
+            0.75 * summary.rSquared + 0.25 * dataQuality.score
+        }.let { if (it.isFinite()) it.coerceIn(0.0, 1.0) else 0.0 }
         val physicallyValid = summary.kS.isFinite() && summary.kV.isFinite() && summary.kA.isFinite() &&
             summary.kV > 0.0 && summary.kA >= 0.0
         val quality = when {
-            topicValues.isEmpty() || !dataQuality.passed || envelopeViolations.isNotEmpty() || !metrics.isUsable ||
-                !physicallyValid || summary.rSquared < MIN_REJECT_R2 -> RecommendationQuality.REJECTED
-            confidence >= READY_CONFIDENCE && metrics.isUsable -> RecommendationQuality.READY
+            topicValues.isEmpty() || !dataQuality.passed || envelopeViolations.isNotEmpty() || (needsFeedback && !metrics.isUsable) ||
+                !physicallyValid || summary.rSquared !in MIN_REJECT_R2..1.0 -> RecommendationQuality.REJECTED
+            confidence >= READY_CONFIDENCE && summary.rSquared >= MIN_REVIEW_R2 -> RecommendationQuality.READY
             else -> RecommendationQuality.REVIEW_REQUIRED
         }
 
@@ -193,17 +199,19 @@ class AutoTunerService(
             return
         }
         val envelopeViolations = AutoTuningSafetyPolicy.envelopeFor(rec.mechanism).violations(
-            rec.recommendedkS, rec.recommendedkV, rec.recommendedkA, rec.recommendedGains
+            rec.recommendedkS, rec.recommendedkV, rec.recommendedkA,
+            if (rec.mechanism == SysIdMechanism.FLYWHEEL) rec.recommendedGains else NO_FEEDBACK
         )
         if (rec.quality == RecommendationQuality.REJECTED || !rec.dataQuality.passed ||
             envelopeViolations.isNotEmpty() || rec.topicValues.isEmpty() ||
             rec.topicValues != buildTopicValues(rec.mechanism, rec.recommendedkS, rec.recommendedkV, rec.recommendedkA, rec.recommendedGains) ||
-            rec.confidence !in 0.0..1.0 || rec.rSquared !in MIN_REJECT_R2..1.0 || !rec.stepMetrics.isUsable
+            rec.confidence !in 0.0..1.0 || rec.rSquared !in MIN_REJECT_R2..1.0 ||
+            (rec.mechanism == SysIdMechanism.FLYWHEEL && !rec.stepMetrics.isUsable)
         ) {
             _applyState.value = TuningApplyState(TuningApplyPhase.FAILED, "Rejected recommendations cannot be applied.")
             return
         }
-        proposalInbox.submit(
+        val accepted = proposalInbox.submit(
             ExternalTuningProposal(
                 source = "AutoTuner",
                 summary = "${rec.mechanismName} recommendation from ${rec.logSource}; confidence ${"%.1f".format(rec.confidence * 100)}%.",
@@ -213,8 +221,9 @@ class AutoTunerService(
             )
         )
         _applyState.value = TuningApplyState(
-            phase = TuningApplyPhase.RECOMMENDED,
-            message = "Sent to the Tuning proposal board. Review validation, policy, provenance, and diff before any live test or profile promotion."
+            phase = if (accepted) TuningApplyPhase.RECOMMENDED else TuningApplyPhase.FAILED,
+            message = if (accepted) "Queued for the Tuning proposal board. Open a project profile to review validation, policy, provenance, and diff before any live test or profile promotion."
+                else "The Tuning proposal inbox is full or the proposal is invalid. Review pending proposals, then retry."
         )
     }
 
@@ -275,6 +284,7 @@ class AutoTunerService(
     }
 
     companion object {
+        private val NO_FEEDBACK = AutoTunerPIDFGains(0.0, 0.0, 0.0)
         private const val MIN_RECOMMENDATION_SAMPLES = 20
         private const val MIN_REVIEW_R2 = 0.70
         private const val MIN_REJECT_R2 = 0.45

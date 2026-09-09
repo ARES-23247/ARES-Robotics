@@ -12,12 +12,6 @@ import org.junit.Test
 import java.io.File
 import kotlin.math.sign
 import com.ares.analytics.service.tuning.TuningProposalInbox
-import com.ares.analytics.service.tuning.ExternalTuningProposal
-import kotlinx.coroutines.async
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.flow.first
-import org.junit.Assert.assertFalse
 
 class AutoTunerServiceTest {
     private lateinit var autoTunerService: AutoTunerService
@@ -74,11 +68,10 @@ class AutoTunerServiceTest {
         val inbox = TuningProposalInbox()
         autoTunerService = AutoTunerService(mockNt4Service, SysIdService(database), inbox)
         val recommendation = autoTunerService.analyzeSamples(SysIdMechanism.LINEAR, syntheticBidirectionalRun())!!
-        val proposal = async<ExternalTuningProposal>(start = CoroutineStart.UNDISPATCHED) { withTimeout(2_000) { inbox.proposals.first() } }
 
         autoTunerService.approveAndApplyGains(recommendation)
         assertEquals(TuningApplyPhase.RECOMMENDED, autoTunerService.applyState.value.phase)
-        assertEquals(recommendation.topicValues, proposal.await().values)
+        assertTrue(inbox.deliverNext { assertEquals(recommendation.topicValues, it.values); true })
         assertEquals("AutoTuner approval must not publish any robot topic", latestBefore, mockNt4Service.latestValues.toMap())
     }
 
@@ -101,7 +94,7 @@ class AutoTunerServiceTest {
 
         assertEquals(TuningApplyPhase.FAILED, autoTunerService.applyState.value.phase)
         assertTrue(autoTunerService.applyState.value.message.contains("did not measure", ignoreCase = true))
-        assertFalse(inbox.proposals.replayCache.isNotEmpty())
+        assertEquals(0, inbox.pendingCount.value)
         assertTrue(mockNt4Service.latestValues.isEmpty())
     }
 
