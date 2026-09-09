@@ -506,3 +506,11 @@ monotonic worker-start timing, reserves one playback job, and cancels obsolete a
 target reset and disposal. One cached finite waveform replaces repeated synthesis and streaming
 drains. Mocked event/resource tests and waveform analysis do not establish audible device quality
 or bound an unresponsive native provider's open/close calls.
+
+## Thirty-ninth pass: primitive filter math and repeated work
+
+The [filter audit](audits/primitive-filter-audit.md) fixes finite-value overflow, lost tiny
+low-pass contributions and invalid-time/reset state changes. A maintained sorted window
+replaces full median sorting and gives constant-time getters; slew magnitudes are cached.
+Independent numerical oracles and measured JVM allocation support these changes. Robot
+loop jitter, device heap behavior and physical response remain unmeasured.

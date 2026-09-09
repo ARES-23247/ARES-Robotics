@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "2b92d3f494ee42ed0f03e0a7e7402757d51c80840ef65b1d246b03ad1e9abf68",
+      "sha256": "f687be0ba1e5f54c7e1284856dc595b96e9c1a468a10ba0458c36938a780914c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -515,7 +515,14 @@
         "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
         "ARESLib-Kotlin/build/audit-pass38-focused.log",
         "ARESLib-Kotlin/build/audit-pass38-studio.log",
-        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+        "ARESLib-Kotlin/build/audit-pass38-policy.log",
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass39-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2307,10 +2314,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "b48a8a211599aeaa12e69b20c2cdcae717648c7e149a57128eb58069f28d62fa",
+      "sha256": "54846dc419f5004915b302caabdf9b0cb8d5a04290dde5775572e9266fc2e31d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2353,7 +2360,14 @@
         "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
         "ARESLib-Kotlin/build/audit-pass38-focused.log",
         "ARESLib-Kotlin/build/audit-pass38-studio.log",
-        "ARESLib-Kotlin/build/audit-pass38-policy.log"
+        "ARESLib-Kotlin/build/audit-pass38-policy.log",
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass39-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -2887,6 +2901,176 @@
         "ARESLib-Kotlin/build/audit-pass38-policy.log"
       ],
       "sha256": "87ffdfd371809a86af1d423bdfef768988a7d35f6e307c07e4f6f84769c3ff70"
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/filter/LowPassFilter.kt": {
+      "sha256": "59b87d9165f5e8b17975c7823fca7d886bfa015478fd299fa1fdf55e13d5488e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full-file review: recurrence/window/rate math, invalid time and reset boundaries, finite extremes, initialization and steady-state repeated work. Boundary/oracle/allocation tests and full library/API plus exact-candidate consumer validation passed; physical timing remains unmeasured.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/filter/MedianFilter.kt": {
+      "sha256": "973359ee90ae1c41402ff7ebd717824a3499ff4d5a8e9c14ea1c3093da570cbe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full-file review: recurrence/window/rate math, invalid time and reset boundaries, finite extremes, initialization and steady-state repeated work. Boundary/oracle/allocation tests and full library/API plus exact-candidate consumer validation passed; physical timing remains unmeasured.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/filter/SlewRateLimiter.kt": {
+      "sha256": "63c69c4c358c138d6e3930ccbaddbf77d9160831cff63a76c95e3df32b3798ac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full-file review: recurrence/window/rate math, invalid time and reset boundaries, finite extremes, initialization and steady-state repeated work. Boundary/oracle/allocation tests and full library/API plus exact-candidate consumer validation passed; physical timing remains unmeasured.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/filter/FilterTest.kt": {
+      "sha256": "79fb17b71ccea3da37225f6ec391b5e6f947742f02e41b6056d7d6d37fec23f1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full test-file review: assertions, fixtures and numerical/time/reset or allocation scope checked. Focused and full core suite passed; independent oracles and measured allocation have the stated finite fixture limits.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/filter/MedianFilterTest.kt": {
+      "sha256": "94951a37ed1d297f4c16279eeb608d0e1bcee7fc2d68d3d92db308e27678f8d5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full test-file review: assertions, fixtures and numerical/time/reset or allocation scope checked. Focused and full core suite passed; independent oracles and measured allocation have the stated finite fixture limits.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/filter/SlewRateLimiterTest.kt": {
+      "sha256": "bbead7a9a911fa1ae4a95d36bf3cdfcb96284b7aff5c457e10ac7312cde4c678",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full test-file review: assertions, fixtures and numerical/time/reset or allocation scope checked. Focused and full core suite passed; independent oracles and measured allocation have the stated finite fixture limits.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/filter/PrimitiveFilterAuditTest.kt": {
+      "sha256": "0eca9eb28fc6ae3d5b64c3ef5a876e746d65644c3a09960b359e36c6d67ba686",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full test-file review: assertions, fixtures and numerical/time/reset or allocation scope checked. Focused and full core suite passed; independent oracles and measured allocation have the stated finite fixture limits.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/filter/PrimitiveFilterOracleTest.kt": {
+      "sha256": "91132f77b7fc87482beed9c8e2b2de2ee0738ccc1c9beda048400aa06c3f1e9c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full test-file review: assertions, fixtures and numerical/time/reset or allocation scope checked. Focused and full core suite passed; independent oracles and measured allocation have the stated finite fixture limits.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/filter/PrimitiveFilterAllocationTest.kt": {
+      "sha256": "800967964b2ef03203ea7495b38d7aea850d735568b2d4a247ef838013aa92a4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full test-file review: assertions, fixtures and numerical/time/reset or allocation scope checked. Focused and full core suite passed; independent oracles and measured allocation have the stated finite fixture limits.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
+      "sha256": "29544bfd80ed63b078b81d5d99257a43a591cccff93e8ebc3fdce3e140b4dcc3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+      ]
+    },
+    "release/ares-source-tree.txt": {
+      "sha256": "d657343599d07ce0dc1bb9da54fb48d03e22ac1dedfe77e2c0c5bcc7950e281b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 complete source-identity file reviewed: exact HEAD library subtree f252cc83428a90552c129f0a28269a4b152b3302 matches candidate 17.0.3-rc.f252cc83428a and dependency-ordered validation.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+      ]
+    },
+    "docs/audits/primitive-filter-audit.md": {
+      "sha256": "7aa30eba0a7e21311c484ee1b12039bf895665aa76f68b926164263e0aa9d2c0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 39 full report reviewed against baseline/focused tests, exact candidate source identity, full dependency-ordered validation, coverage, explicit XML manifest, policy output and inventory. Device and complete-repository limitations remain explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-policy.log"
+      ]
     }
   }
 }

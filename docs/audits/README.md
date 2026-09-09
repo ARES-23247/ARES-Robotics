@@ -119,7 +119,11 @@ Pass 37 covers [diagnostic rule policy](diagnostic-rule-policy-audit.md): binary
 explicit fixed/disabled loop policy, derived-source ownership and configured loop keys.
 Pass 38 covers [alert audio timing and lifecycle](audio-notifier-audit.md): monotonic cooldown,
 one pending/active playback attempt, cancellation ownership, cached PCM and Java Sound cleanup.
-Next is the remaining core filter math and hot-path work (low-pass, median and slew limiting).
+Pass 39 covers [primitive filter math and repeated work](primitive-filter-audit.md): stable
+finite weighting and slew steps, invalid-time/reset boundaries, a cached incremental median,
+independent numerical oracles and measured hot-path allocation.
+Next is joystick conditioning and adapter allocation, followed by calibrated interpolation
+and remaining kinematics/estimation.
 Studio follow-ups include cross-policy consistency, remaining lifecycle and global retention,
 upstream connection ownership, replay timeline readiness, diagnostics/evidence
 reads, remaining schema/backup behavior, recording-memory costs, stale approval, legacy
