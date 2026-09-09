@@ -458,14 +458,13 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "e8e2eb4577ac88d5cfac9805845ee51d24a2d6a5d82d534858492d63459041df",
+      "sha256": "e606eca559a423bd62b192d93ad0f488d6ad9c77a9ba14705667708b0cc27d45",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full accounting/work-queue documentation reviewed through pass 13. Shared guidance and links in 174 current documents pass. Remaining descriptor, repository and physical validation is explicitly open.",
+      "scope": "Full coverage-accounting/work-queue document reviewed through pass 14, with collector work explicitly next. Shared guidance and local links pass; no universal test or hardware claim.",
       "evidence": [
-        "docs/audits/xrp-profile-feedforward-audit.md",
-        "ARESLib-Kotlin/build/audit-pass13-studio.log",
-        "ARESLib-Kotlin/build/audit-pass13-policy.log"
+        "docs/audits/studio-calibration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass14-studio.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -821,6 +820,56 @@
         "docs/audits/xrp-profile-feedforward-audit.md",
         "ARESLib-Kotlin/build/audit-pass13-studio.log",
         "ARESLib-Kotlin/build/audit-pass13-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdRegressionSolver.kt": {
+      "sha256": "30abe6f9f28a79bef2377a5b0bdb3e9455d1aa3d697cf33cf40ff50bec6ba3aa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full geometric calibration solver review. Four existing plus 14 new regression methods pass; 139/140 lines and 106/132 branches exercised. Reviewed finite/chronological inputs, centered Pinpoint least squares, wheel geometry regression, scaled sample deviations, encoder scale and stale-result cleanup. Physical model fit quality, estimator influence and sensor collection remain end-to-end limitations.",
+      "evidence": [
+        "docs/audits/studio-calibration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass14-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdRegressionSolverTest.kt": {
+      "sha256": "494a5c33d002bb7ae083bb74dd0dc96f5018ff8867b7c46b57adc4080626c96c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including analytic expectations and error-state assertions. Included in 18 calibration methods and the passing full Studio suite. Does not establish physical calibration accuracy.",
+      "evidence": [
+        "docs/audits/studio-calibration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass14-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdCalibrationAuditTest.kt": {
+      "sha256": "6c23ccba5eac8a89a5b4444fce93971ee4dc83a8320c2e45590ceda72eb00964",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including analytic expectations and error-state assertions. Included in 18 calibration methods and the passing full Studio suite. Does not establish physical calibration accuracy.",
+      "evidence": [
+        "docs/audits/studio-calibration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass14-studio.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
+      "sha256": "93a7583c92709ce8b1fdd2129f9642ff6644997a8e69f19b7912f842ac15278f",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Inspected sample assembly and import paths. Confirmed open incomplete-row acceptance, mapNotNull column shifting, zero-versus-missing acceleration ambiguity and growing collection costs. Requires dedicated fixes/tests; no completion credit from the general Studio suite.",
+      "evidence": [
+        "docs/audits/studio-calibration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass14-studio.log"
+      ]
+    },
+    "docs/audits/studio-calibration-audit.md": {
+      "sha256": "a8c391388b7fcb21c82e0daefd237d6d877e4488f49921f6aa75d99081fe3030",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report checked against baseline/final test XML, Kover counters, source diff, robot producer excerpts and validation logs. Distinguishes headless checks, up-to-date reuse, remaining collector defects and physical limitations.",
+      "evidence": [
+        "docs/audits/studio-calibration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass14-studio.log"
       ]
     }
   }

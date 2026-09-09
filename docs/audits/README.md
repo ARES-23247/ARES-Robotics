@@ -58,8 +58,10 @@ Pass 12 covers the [basic PID controller](pid-controller-audit.md), including si
 anti-windup, invalid-state recovery, overflow, periodic differences, and measured allocations.
 Pass 13 covers [MicroPython profiles and feedforward](xrp-profile-feedforward-audit.md),
 including continuous braking, gravity models, sensor dependencies and finite output.
-The next passes should cover advanced descriptor safety, logging/transport and Studio
-analytics math.
+Pass 14 covers [Studio geometric calibration](studio-calibration-audit.md), including
+identifiability, finite recommendations, sample chronology and stable vision deviations.
+The next pass addresses SysId sample assembly/import, followed by remaining regression,
+logging/transport, advanced descriptor safety and Studio analytics math.
 Continue through all library modules, robot/starter products, Studio modules, generators,
 build/release/CI tooling, configuration, documentation, and resources using the inventory
 as the work queue. Map Kover reports to source files and identify uncovered behavior.

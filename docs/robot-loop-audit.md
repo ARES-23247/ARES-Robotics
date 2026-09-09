@@ -313,3 +313,10 @@ The [thirteenth-pass report](audits/xrp-profile-feedforward-audit.md) records pr
 ignored profile/feedforward declarations, continuous braking and reset behavior, gravity
 models, auxiliary sensor dependencies, finite outputs and reusable reference state.
 Twenty-two new tests pass. Advanced descriptor safety and physical timing remain open.
+
+## Fourteenth pass: Studio geometric calibration
+
+The [fourteenth-pass report](audits/studio-calibration-audit.md) records stale-result
+cleanup, identifiable Pinpoint fitting without its large matrix, chronological samples,
+finite calibration recommendations, stable vision deviations and removal of the track
+heading array. Collector completeness/import and physical calibration remain open.
