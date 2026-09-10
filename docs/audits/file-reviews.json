@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "f9f6b7289d6d4feb71fe72d2a61456a3615a713c23852b9f3a953fe651c6d66f",
+      "sha256": "851d6c7e060b856a32af34a2f8d801f66c649280f90a2f81e339df58acd49206",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2449,7 +2449,8 @@
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/swerve-angle-audit.md",
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3111,10 +3112,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "c626b3a1463ec1e2d3ae5fbedb4d00caddeac732debfae8da73ed76f82df7f54",
+      "sha256": "2ef500af73c1e709eacf1785f39085ab6070061785f24880e03e40a141590013",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3162,14 +3163,15 @@
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/swerve-angle-audit.md",
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "30888772b19a28f9ff80ce03e6dbae789fbbd0b98a44b29a2801937535641f16",
+      "sha256": "2e77d466f9fdc0f53d2e0d02568f289f4b1271b5ae03ff9f0daf67cf5d787d48",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library source-tree identity d09ca4313af7d5236d0377d9a779fe8c2f06fef8 matches source commit 3707cf8d and unique locally validated candidate 17.0.3-rc.d09ca4313af7.",
+      "scope": "Exact library tree 9fb62f05bd44b1fd39beac58eae3dc233829a1fe matches source 681db64c and unique local candidate 17.0.3-rc.9fb62f05bd44.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3217,7 +3219,8 @@
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/swerve-angle-audit.md",
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4466,6 +4469,69 @@
       "scope": "Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates.",
       "evidence": [
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/drive/SwerveHardwareIO.kt": {
+      "sha256": "eca5a719acb62e616b7cf33c4c5e2e9888b127b970bdb8b1368724bf32ac398c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full shared interface and default-method review: four-module cached validity/completeness/finite checks, failure clearing and propagation, buffer sizes/tails, units/order, telemetry ownership, vision fallback and abstract vendor responsibilities. 14 new contract/config methods and existing telemetry/zero-GC methods passed; real vendor freshness and output behavior remain separate.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/drive/SwerveModuleIO.kt": {
+      "sha256": "f446cf0ecfc8bdbe4dc917268d7bd2211b2067b88ac19d51b626b87d9a492d76",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full module IO/inputs source review: mutable caller ownership, units, explicit validity/timestamps and serialized field compatibility; legacy JSON/defaults and roundtrip tested. Sensor-only default output is explicitly no-op and does not establish physical neutral or an actuating adapter contract.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/drivetrain/SwerveModuleConfig.kt": {
+      "sha256": "24e0772f8c7722f64053a9488e934c0d603d8673d12a6e6325bf1a5bab6519c5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full configuration review: nonblank identifiers, finite geometry/calibration, constructor/copy validation and explicit CAN conversion rejection instead of device-zero fallback. FTC names preserved; vendor ranges/collisions and unsafe deserialization require owning-boundary validation.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/SwerveIoContractAuditTest.kt": {
+      "sha256": "150987c1c912fba3141cea946751fe8e03de97b00a6a41435b198be5d1bff24c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review and execution covering shared swerve contract/configuration or existing telemetry fault/validity behavior. Three baseline regressions failed as expected; the focused 20-method gate and 1349-method full library gate passed with recorded allocation/Kover evidence.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/SwerveModuleConfigAuditTest.kt": {
+      "sha256": "de6c5486449b5619a532a45045b29dbec9c10db2347ec13cb044ad680c9b008e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review and execution covering shared swerve contract/configuration or existing telemetry fault/validity behavior. Three baseline regressions failed as expected; the focused 20-method gate and 1349-method full library gate passed with recorded allocation/Kover evidence.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/SwerveHardwareIOTest.kt": {
+      "sha256": "cfe56ff28ec57e9eb5246dded51b70565f9ca674ce3b0592fca63434caf537b0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review and execution covering shared swerve contract/configuration or existing telemetry fault/validity behavior. Three baseline regressions failed as expected; the focused 20-method gate and 1349-method full library gate passed with recorded allocation/Kover evidence.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "docs/audits/swerve-io-contract-audit.md": {
+      "sha256": "eea704166d6e8ece1acced5823ac04333c3a2c5976b7721926792fb78e6cec99",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence.",
+      "evidence": [
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
       ]
     }
   }

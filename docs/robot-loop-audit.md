@@ -589,3 +589,10 @@ captured SDK metadata, expires old/slow samples, neutralizes coupled failures an
 invalidate outputs and report worker join failures. Metadata caching and reusable loop state
 reduce repeated work. Mock failure/allocation tests pass; physical stop response, blocking SDK
 calls and controller-level enable/watchdog behavior remain distinct validation responsibilities.
+
+## Forty-ninth pass: shared swerve IO and configuration
+
+The [shared swerve contract audit](audits/swerve-io-contract-audit.md) rejects incomplete/nonfinite
+cached snapshots and ambiguous CAN identities, preserves unrelated caller storage and validates
+finite module configuration. Regression, serialization, telemetry ownership and allocation checks
+cover the shared contracts; vendor refresh/freshness and physical output behavior remain separate.
