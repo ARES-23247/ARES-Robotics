@@ -220,3 +220,43 @@ output fault before propagating a failed plant step. It does not stamp failed fe
 fresh. Studio's local lab stops, clears voltage controls, retains the last committed displayed
 pose and requires explicit reset after a numerical failure. These are local simulation paths,
 not physical robot safety validation.
+
+## Differential and mecanum wheel calculations
+
+Raw chassis/wheel conversions use meters and seconds, +X forward, +Y left and CCW-positive
+rotation. Differential inverse kinematics projects onto forward and angular motion. Positive
+CCW rotation makes the left wheel slower and the right wheel faster. Mecanum ordering is
+front-left, front-right, back-left/rear-left, back-right/rear-right; no hardware-name remapping
+or field-coordinate transform occurs here.
+
+Finite track widths and wheelbases must be positive. Means use compensated or scaled arithmetic
+where required, preserving finite large velocities and subnormal geometry. Angular conversion
+chooses operation order so an overflowing separation or prematurely underflowed mean/reciprocal
+does not lose a representable result. Raw conversions can still return nonfinite values for
+invalid inputs or genuinely out-of-range components. These are not valid feedback/actuator
+values; callers must enforce the relevant IO/estimator validity contract.
+
+Coupled differential, mecanum and swerve speed normalization preserves ratios to floating-point
+precision. Invalid speed vectors and NaN/nonpositive limits neutralize all participating speeds;
+positive infinity is an unlimited normalization bound. Very small scale factors apply division
+before multiplication to avoid losing representable bounded results. Final finite magnitudes
+are clamped to the requested bound for rounding. Unscaled immutable wheel values retain identity;
+scaled values are independently allocated. Buffered methods reject undersized arrays before
+mutation and leave trailing elements untouched.
+
+The standard XRP differential IO reuses a two-element wheel buffer, reads each chassis field
+once per drive call, scales wheels together before converting to motor power, and rejects
+invalid chassis fields or nonfinite/nonpositive maximum linear speed by commanding both motors
+neutral. Its wheel radius must be finite and positive. Raw setPowers clamps each explicitly
+requested finite power, neutralizing the pair if either is invalid. Failed paired writes or
+incomplete motor refresh attempt both stops before propagating the original failure. stop
+attempts both motors and retains secondary failures as suppressed exceptions. Failed stop
+attempts do not prove physical motors reached neutral.
+
+The standard drive path is single-owner and allocation-free under the measured host fixtures.
+The interface default drive allocates scratch for custom implementations; getWheelDistances
+returns an allocated Pair, and chassis-returning math overloads allocate their result. Motor
+fields consumed for wheel distances are expected to be cached by the concrete adapter. This
+raw IO layer does not grant enable, establish feedback freshness or own the robot's fault latch;
+those remain the controller/adapter's responsibility. Swerve speed normalization preserves
+angle references; the remaining steering solver's allocation and dynamics need a separate review.

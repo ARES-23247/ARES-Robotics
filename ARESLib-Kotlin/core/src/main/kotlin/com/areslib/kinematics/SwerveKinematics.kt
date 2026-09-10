@@ -216,9 +216,9 @@ class SwerveKinematics(
             realMaxSpeed = kotlin.math.max(realMaxSpeed, absSpeed)
         }
         val scale = wheelSpeedScale(realMaxSpeed, maxSpeedMps)
-        if (scale < 1.0) {
+        if (scale.isNaN() || scale < 1.0) {
             for (state in moduleStates) {
-                state.speedMetersPerSecond = if (scale == 0.0) 0.0 else state.speedMetersPerSecond * scale
+                state.speedMetersPerSecond = scaledWheelSpeed(state.speedMetersPerSecond, realMaxSpeed, maxSpeedMps, scale)
             }
         }
     }

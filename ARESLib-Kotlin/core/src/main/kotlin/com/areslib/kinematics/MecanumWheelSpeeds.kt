@@ -37,20 +37,18 @@ data class MecanumWheelSpeeds(
      */
     fun normalize(maxSpeedMetersPerSecond: Double): MecanumWheelSpeeds {
         val maxMagnitude = maxOf(
-            abs(frontLeftMetersPerSecond),
-            abs(frontRightMetersPerSecond),
-            abs(backLeftMetersPerSecond),
-            abs(backRightMetersPerSecond)
+            maxOf(abs(frontLeftMetersPerSecond), abs(frontRightMetersPerSecond)),
+            maxOf(abs(backLeftMetersPerSecond), abs(backRightMetersPerSecond)),
         )
         
         val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
-        if (scale == 0.0) return MecanumWheelSpeeds()
+        if (scale.isNaN()) return MecanumWheelSpeeds()
         if (scale < 1.0) {
             return MecanumWheelSpeeds(
-                frontLeftMetersPerSecond * scale,
-                frontRightMetersPerSecond * scale,
-                backLeftMetersPerSecond * scale,
-                backRightMetersPerSecond * scale
+                scaledWheelSpeed(frontLeftMetersPerSecond, maxMagnitude, maxSpeedMetersPerSecond, scale),
+                scaledWheelSpeed(frontRightMetersPerSecond, maxMagnitude, maxSpeedMetersPerSecond, scale),
+                scaledWheelSpeed(backLeftMetersPerSecond, maxMagnitude, maxSpeedMetersPerSecond, scale),
+                scaledWheelSpeed(backRightMetersPerSecond, maxMagnitude, maxSpeedMetersPerSecond, scale)
             )
         }
         
