@@ -39,6 +39,7 @@ interface NormalizedColorSensor : HardwareDevice {
  */
 open class AnalogInput : HardwareDevice {
     open val voltage: Double = 0.0
+    open val maxVoltage: Double = 3.3
     override fun getManufacturer(): HardwareDevice.Manufacturer = HardwareDevice.Manufacturer.Unknown
     override fun getDeviceName(): String = "AnalogInput"
     override fun getConnectionInfo(): String = ""

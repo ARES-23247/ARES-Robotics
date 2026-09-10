@@ -4,164 +4,209 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.AnalogInput
 import com.areslib.hardware.drive.SwerveModuleIO
 import com.areslib.hardware.drive.SwerveModuleInputs
+import com.areslib.util.RobotClock
 
 /**
- * Physical Swerve Module IO Hardware Adapter for FTC target platforms.
+ * FTC drive/steer pair with a background analog sampler and cached input validity.
+ * Encoder resolution and analog range default to SDK metadata, captured once at construction;
+ * overrides describe the reported drive revolution and analog full scale. Physical polarity
+ * and gear calibration remain the owning robot's configuration.
  *
- * Wraps a drive `DcMotorEx`, steer `DcMotorEx`, and an absolute `AnalogInput` encoder for an FTC Swerve Pod (e.g., Axon, GoBilda Swerve).
- * Utilizes a dedicated 200Hz background thread (`ARES-SwerveModuleIOFtc-Analog-Thread`) for non-blocking analog voltage sampling.
+ * Sampling reads outside locks, with a nominal 5 ms pause between reads. Age is measured from
+ * acquisition start, so a blocked/slow read cannot renew freshness on return. Inputs and commands
+ * belong to one robot-loop thread; close may run on another thread. Nonzero writes require fresh
+ * drive and analog observations. The controller still owns enable/arm, fault recovery and periodic
+ * execution: this adapter is not an independent watchdog.
  *
- * ### Hardware Boundary & Physical Units:
- * - Drive Motor Position: Radians ($rad$) using 2048 CPR tick conversion ($2\pi / 2048$).
- * - Drive Motor Velocity: Radians per second ($rad/s$).
- * - Steer Absolute Encoder: Radians ($rad$) scaled from $0.0\text{V} \dots 3.3\text{V}$ analog absolute voltage:
- *   $$\theta_{steer} = \frac{V_{analog}}{3.3} \cdot 2\pi \text{ rad}$$
- * - Angle Convention: **Counter-Clockwise (CCW) Positive** standard.
- * - Motor Duty Cycle Effort: Normalized ratio $[-1.0, 1.0]$.
- *
- * ### Zero-GC Execution Compliance:
- * High-frequency update functions ([updateInputs], [setDesiredPower]) mutate primitive properties on pre-allocated [SwerveModuleInputs] instances,
- * guaranteeing zero dynamic heap allocations during 50Hz–100Hz execution.
- *
- * @param driveMotor REV Expansion Hub `DcMotorEx` driving wheel rotation.
- * @param steerMotor REV Expansion Hub `DcMotorEx` steering module pod rotation.
- * @param analogEncoder Absolute analog position sensor (e.g. MA3, Lamprey, Axon encoder).
- *
- * @see SwerveModuleIO
- * @see SwerveModuleInputs
+ * Normal updates/writes reuse primitive storage; SDK and exception/log paths may allocate or
+ * block. Borrowed devices are never closed. Close attempts both neutral outputs, invalidates
+ * samples, interrupts the sampler and reports a join timeout rather than claiming termination.
+ * Host tests do not prove physical motor response or real-time deadlines.
  */
-class SwerveModuleIOFtc(
+class SwerveModuleIOFtc @JvmOverloads constructor(
     private val driveMotor: DcMotorEx,
     private val steerMotor: DcMotorEx,
-    private val analogEncoder: AnalogInput
+    private val analogEncoder: AnalogInput,
+    val driveTicksPerRevolution: Double = driveMotor.motorType.ticksPerRev,
+    val analogRangeVolts: Double = analogEncoder.maxVoltage,
+    val sampleTimeoutMs: Long = 100L
 ) : SwerveModuleIO, AutoCloseable {
+    private val radiansPerTick = 2.0 * Math.PI / driveTicksPerRevolution
+    init {
+        require(driveMotor !== steerMotor) { "Drive and steer motors must be distinct devices" }
+        require(driveTicksPerRevolution.isFinite() && driveTicksPerRevolution > 0.0 && radiansPerTick.isFinite()) {
+            "Drive encoder resolution must be finite, positive and convertible to radians"
+        }
+        require(analogRangeVolts.isFinite() && analogRangeVolts > 0.0) { "Analog range must be finite and positive" }
+        require(sampleTimeoutMs > 0L) { "Sample timeout must be positive" }
+    }
 
-
+    private val sampleLock = Any()
+    private val outputLock = Any()
+    @Volatile private var running = true
+    @Volatile private var closed = false
+    @Volatile private var outputsMayBeActive = false
+    private var latestVoltage = 0.0
+    private var latestVoltageValid = false
+    private var analogStartedAtMs = 0L
+    private var driveSnapshotValid = false
+    private var driveStartedAtMs = 0L
     private var lastDrivePosition = 0.0
     private var lastDriveVelocity = 0.0
     private var lastSteerAbsolute = 0.0
-    private var lastWarningTime = 0L
-
-    private val lock = Any()
-    @Volatile private var running = true
-    private var latestVoltage = 0.0
-    private var latestVoltageValid = false
+    private var lastWarningAtMs = 0L
+    private var hasWarned = false
 
     private val samplingThread = Thread {
+        try {
             while (running) {
+                val started = RobotClock.currentTimeMillis()
                 try {
-                    val volt = analogEncoder.voltage
-                    synchronized(lock) {
-                        latestVoltageValid = volt.isFinite() && volt in 0.0..3.3
-                        if (latestVoltageValid) latestVoltage = volt
+                    val voltage = analogEncoder.voltage
+                    synchronized(sampleLock) {
+                        if (running && !closed) {
+                            analogStartedAtMs = started
+                            latestVoltageValid = voltage.isFinite() && voltage in 0.0..analogRangeVolts
+                            if (latestVoltageValid) latestVoltage = voltage
+                        }
                     }
                 } catch (_: Exception) {
-                    synchronized(lock) { latestVoltageValid = false }
+                    synchronized(sampleLock) { latestVoltageValid = false }
                 }
-                try {
-                    Thread.sleep(5)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
+                try { Thread.sleep(5L) }
+                catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
             }
-        }.apply {
-            isDaemon = true
-            name = "ARES-SwerveModuleIOFtc-Analog-Thread"
+        } finally {
+            running = false
+            synchronized(sampleLock) { latestVoltageValid = false }
         }
+    }.apply {
+        isDaemon = true
+        name = "ARES-SwerveModuleIOFtc-Analog-Thread"
+    }
 
     init {
+        neutralizeOutputs()
         samplingThread.start()
     }
 
-    /**
-     * Polling update cycle reading drive position, drive velocity, and absolute steer angle into [SwerveModuleInputs].
-     * Zero-GC allocation loop.
-     *
-     * @param inputs Telemetry struct populated with current physical sensor values.
-     */
+    /** Reads drive signals once each; invalid channels retain values with false validity flags. */
     override fun updateInputs(inputs: SwerveModuleInputs) {
-        var drivePositionValid = false
-        try {
-            val position = driveMotor.currentPosition * 2.0 * Math.PI / 2048.0
-            if (position.isFinite()) {
-                lastDrivePosition = position
-                drivePositionValid = true
-            }
-        } catch (e: Exception) {
-            logWarning("Drive position read failed: ${e.message}")
+        try { refreshInputs(inputs) }
+        catch (failure: Throwable) {
+            synchronized(sampleLock) { driveSnapshotValid = false }
+            inputs.drivePositionValid = false
+            inputs.driveVelocityValid = false
+            inputs.steerAbsoluteValid = false
+            try { synchronized(outputLock) { neutralizeOutputs() } }
+            catch (cleanup: Throwable) { if (cleanup !== failure) failure.addSuppressed(cleanup) }
+            throw failure
         }
+    }
 
-        var driveVelocityValid = false
-        try {
-            val velocity = driveMotor.velocity * 2.0 * Math.PI / 2048.0
-            if (velocity.isFinite()) {
-                lastDriveVelocity = velocity
-                driveVelocityValid = true
-            }
-        } catch (e: Exception) {
-            logWarning("Drive velocity read failed: ${e.message}")
+    private fun refreshInputs(inputs: SwerveModuleInputs) {
+        val started = RobotClock.currentTimeMillis()
+        var positionValid = false
+        var velocityValid = false
+        if (!closed) {
+            try {
+                val position = driveMotor.currentPosition * radiansPerTick
+                if (position.isFinite()) { lastDrivePosition = position; positionValid = true }
+            } catch (failure: Exception) { logWarning("Drive position read", failure) }
+            try {
+                val velocity = driveMotor.velocity * radiansPerTick
+                if (velocity.isFinite()) { lastDriveVelocity = velocity; velocityValid = true }
+            } catch (failure: Exception) { logWarning("Drive velocity read", failure) }
         }
-
+        val now = RobotClock.currentTimeMillis()
         val steerValid: Boolean
-        synchronized(lock) {
-            steerValid = latestVoltageValid
-            if (steerValid) lastSteerAbsolute = (latestVoltage / 3.3) * 2.0 * Math.PI
+        val observationTime: Long
+        synchronized(sampleLock) {
+            val driveFresh = !closed && isFresh(started, now)
+            positionValid = positionValid && driveFresh
+            velocityValid = velocityValid && driveFresh
+            driveStartedAtMs = started
+            driveSnapshotValid = positionValid && velocityValid
+            steerValid = !closed && running && latestVoltageValid && isFresh(analogStartedAtMs, now)
+            if (steerValid) lastSteerAbsolute = latestVoltage / analogRangeVolts * (2.0 * Math.PI)
+            observationTime = if (steerValid) minOf(started, analogStartedAtMs) else started
         }
-
         inputs.drivePositionRads = lastDrivePosition
         inputs.driveVelocityRadsPerSec = lastDriveVelocity
         inputs.steerAbsolutePositionRads = lastSteerAbsolute
-        inputs.drivePositionValid = drivePositionValid
-        inputs.driveVelocityValid = driveVelocityValid
+        inputs.drivePositionValid = positionValid
+        inputs.driveVelocityValid = velocityValid
         inputs.steerAbsoluteValid = steerValid
-        inputs.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-    }
-
-    /**
-     * Commands motor duty-cycle powers for drive and steer actuators.
-     * Zero-GC allocation loop.
-     *
-     * @param drivePower Normalized drive motor power (-1.0 to 1.0).
-     * @param steerPower Normalized steer motor power (-1.0 to 1.0).
-     */
-    override fun setDesiredPower(drivePower: Double, steerPower: Double) {
-        try {
-            driveMotor.power = finitePower(drivePower)
-        } catch (e: Exception) {
-            logWarning("Drive setPower failed: ${e.message}")
-        }
-
-        try {
-            steerMotor.power = finitePower(steerPower)
-        } catch (e: Exception) {
-            logWarning("Steer setPower failed: ${e.message}")
+        // Conservative acquisition-start time, not a new timestamp for a retained analog value.
+        inputs.timestampMs = observationTime
+        if ((!positionValid || !velocityValid || !steerValid) && outputsMayBeActive) {
+            synchronized(outputLock) { neutralizeOutputs() }
         }
     }
 
-    private fun logWarning(msg: String) {
-        val now = com.areslib.util.RobotClock.currentTimeMillis()
-        if (now - lastWarningTime > 2000) {
-            System.err.println("SwerveModuleIOFtc Warning: $msg")
-            lastWarningTime = now
+    /** Commands a coupled normalized pair; invalid/stale/closed commands neutralize both motors. */
+    override fun setDesiredPower(drivePower: Double, steerPower: Double) = synchronized(outputLock) {
+        val now = RobotClock.currentTimeMillis()
+        val ready = synchronized(sampleLock) {
+            !closed && running && driveSnapshotValid && latestVoltageValid &&
+                isFresh(driveStartedAtMs, now) && isFresh(analogStartedAtMs, now)
         }
-    }
-
-    /**
-     * Terminates the analog sampling background thread and unregisters hardware resources.
-     */
-    override fun close() {
-        running = false
-        samplingThread.interrupt()
-        if (Thread.currentThread() !== samplingThread) {
+        if (!ready || !drivePower.isFinite() || !steerPower.isFinite() || (drivePower == 0.0 && steerPower == 0.0)) {
+            neutralizeOutputs()
+        } else {
+            outputsMayBeActive = true
             try {
-                samplingThread.join(100L)
-            } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
+                driveMotor.power = drivePower.coerceIn(-1.0, 1.0)
+                steerMotor.power = steerPower.coerceIn(-1.0, 1.0)
+            } catch (failure: Throwable) {
+                try { neutralizeOutputs() }
+                catch (cleanup: Throwable) { if (cleanup !== failure) failure.addSuppressed(cleanup) }
+                throw failure
             }
         }
     }
 
-    private fun finitePower(power: Double): Double =
-        if (power.isFinite()) power.coerceIn(-1.0, 1.0) else 0.0
+    private fun isFresh(started: Long, now: Long): Boolean =
+        now >= started && now - started in 0..sampleTimeoutMs
+
+    private fun neutralizeOutputs() {
+        outputsMayBeActive = true
+        var failure: Throwable? = null
+        try { driveMotor.power = 0.0 } catch (caught: Throwable) { failure = caught }
+        try { steerMotor.power = 0.0 } catch (caught: Throwable) {
+            val first = failure
+            if (first == null) failure = caught else if (caught !== first) first.addSuppressed(caught)
+        }
+        failure?.let { throw it }
+        outputsMayBeActive = false
+    }
+
+    private fun logWarning(operation: String, failure: Exception) {
+        val now = RobotClock.currentTimeMillis()
+        if (hasWarned && now >= lastWarningAtMs && now - lastWarningAtMs in 0..2000L) return
+        hasWarned = true
+        lastWarningAtMs = now
+        System.err.println("SwerveModuleIOFtc Warning: $operation failed: $failure")
+    }
+
+    /** Attempts both stops and joins only this instance's sampler; repeated calls retry failed stops. */
+    override fun close() {
+        closed = true
+        running = false
+        synchronized(sampleLock) { latestVoltageValid = false; driveSnapshotValid = false }
+        samplingThread.interrupt()
+        var failure: Throwable? = null
+        try { synchronized(outputLock) { neutralizeOutputs() } } catch (caught: Throwable) { failure = caught }
+        if (Thread.currentThread() !== samplingThread) {
+            try {
+                samplingThread.join(100L)
+                check(!samplingThread.isAlive) { "Analog sampling thread did not stop within 100 ms" }
+            } catch (caught: Throwable) {
+                if (caught is InterruptedException) Thread.currentThread().interrupt()
+                val first = failure
+                if (first == null) failure = caught else if (caught !== first) first.addSuppressed(caught)
+            }
+        }
+        failure?.let { throw it }
+    }
 }

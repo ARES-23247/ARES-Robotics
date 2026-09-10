@@ -268,6 +268,29 @@ raw IO layer does not grant enable, establish feedback freshness or own the robo
 those remain the controller/adapter's responsibility. Swerve speed normalization preserves
 angle references; the remaining steering solver's allocation and dynamics need a separate review.
 
+## FTC swerve module acquisition and outputs
+
+`SwerveModuleIOFtc` captures motor ticks-per-revolution and analog range from SDK metadata;
+explicit constructor overrides support calibrated fixtures or reported-shaft conventions.
+The old three-argument constructor remains available but no longer guesses 2048 ticks/rev.
+Metadata must be valid; desktop fixtures supply it or explicit calibration. Construction
+validates first, then attempts both neutral outputs before starting a sampler. Drive and
+steer must be distinct device references. The owner configures physical gearing and polarity.
+
+Drive signals are read once each per update. The analog worker pauses nominally 5 ms between
+reads; this is not a guaranteed 200 Hz sampling rate. Freshness uses acquisition-start times
+and defaults to 100 ms. Slow returns, retained samples, rewind and signed overflow cannot renew
+validity. Output requests require fresh drive and analog snapshots. Invalid vectors, stale
+feedback, closed state and failed paired writes neutralize both motors; failed neutral writes
+remain explicitly unproven and are reported. Input timestamps conservatively identify the
+oldest valid acquisition start rather than a new time for a retained analog value.
+
+Close prevents subsequent actuation, invalidates snapshots, attempts both stops, interrupts and
+joins only the owned worker, and reports a 100 ms join timeout. Borrowed devices remain open.
+An uninterruptible SDK read can outlive close; a timeout is not proof of worker termination.
+The adapter has no independent watchdog or arm controller: the robot owns enable, fault recovery
+and periodic calls. Zero-allocation fixture tests do not establish hardware loop deadlines.
+
 ## Swerve inverse kinematics and angle wrapping
 
 `SwerveKinematics` owns immutable module geometry and requires finite, nonnegative steering

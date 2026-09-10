@@ -481,6 +481,7 @@ public class com/qualcomm/robotcore/hardware/AnalogInput : com/qualcomm/robotcor
 	public fun getConnectionInfo ()Ljava/lang/String;
 	public fun getDeviceName ()Ljava/lang/String;
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getMaxVoltage ()D
 	public fun getVersion ()I
 	public fun getVoltage ()D
 	public fun resetDeviceConfigurationForOpMode ()V
@@ -516,6 +517,7 @@ public final class com/qualcomm/robotcore/hardware/ColorSensor$DefaultImpls {
 
 public abstract interface class com/qualcomm/robotcore/hardware/DcMotor : com/qualcomm/robotcore/hardware/DcMotorSimple {
 	public abstract fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public fun getMotorType ()Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
 	public abstract fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
 	public abstract fun setMode (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)V
 	public abstract fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
@@ -526,6 +528,7 @@ public final class com/qualcomm/robotcore/hardware/DcMotor$DefaultImpls {
 	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DcMotor;)Ljava/lang/String;
 	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DcMotor;)Ljava/lang/String;
 	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DcMotor;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getMotorType (Lcom/qualcomm/robotcore/hardware/DcMotor;)Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
 	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DcMotor;)I
 	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DcMotor;)V
 }
@@ -561,6 +564,7 @@ public final class com/qualcomm/robotcore/hardware/DcMotorEx$DefaultImpls {
 	public static fun getConnectionInfo (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Ljava/lang/String;
 	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Ljava/lang/String;
 	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public static fun getMotorType (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
 	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)I
 	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)V
 	public static fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
@@ -922,6 +926,12 @@ public abstract interface annotation class com/qualcomm/robotcore/hardware/confi
 }
 
 public abstract interface annotation class com/qualcomm/robotcore/hardware/configuration/annotations/I2cDeviceType : java/lang/annotation/Annotation {
+}
+
+public final class com/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType {
+	public fun <init> ()V
+	public final fun getTicksPerRev ()D
+	public final fun setTicksPerRev (D)V
 }
 
 public class com/qualcomm/robotcore/hardware/usb/RobotUsbDevice {

@@ -13,6 +13,10 @@ interface DcMotorSimple : HardwareDevice {
  * Mock representation of an FTC [DcMotor].
  */
 interface DcMotor : DcMotorSimple {
+    /** Minimal SDK metadata boundary; fixtures using encoder units must supply a motor type. */
+    val motorType: com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType
+        get() = throw UnsupportedOperationException("Motor type metadata is not configured in this fixture")
+
     enum class ZeroPowerBehavior {
         BRAKE,
         FLOAT

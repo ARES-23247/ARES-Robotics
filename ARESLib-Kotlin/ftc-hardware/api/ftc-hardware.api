@@ -599,7 +599,14 @@ public final class com/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus : java
 
 public final class com/areslib/ftc/drivetrain/SwerveModuleIOFtc : com/areslib/hardware/drive/SwerveModuleIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;D)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;DD)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;DDJ)V
+	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;DDJILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
+	public final fun getAnalogRangeVolts ()D
+	public final fun getDriveTicksPerRevolution ()D
+	public final fun getSampleTimeoutMs ()J
 	public fun setDesiredPower (DD)V
 	public fun updateInputs (Lcom/areslib/hardware/drive/SwerveModuleInputs;)V
 }
@@ -667,6 +674,7 @@ public final class com/areslib/ftc/hardware/CachedDcMotorEx : com/qualcomm/robot
 	public fun getDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
 	public fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public fun getMotorType ()Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
 	public fun getPower ()D
 	public fun getVelocity ()D
 	public fun getVersion ()I
