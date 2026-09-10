@@ -29,6 +29,16 @@ internal fun followerTarget(distance: Double = 0.0) = PathPoint(Pose2d(), 1.0, d
 
 class HolonomicFollowerEventsTest {
     @Test
+    fun `positive and negative zero thresholds preserve authored tie order`() {
+        val follower = HolonomicPathFollower(FollowerDriveProbe())
+        val seen = mutableListOf<String>()
+        follower.onEventTriggered = { seen.add(it) }
+        follower.startPath(Path(emptyList(), listOf(PathEvent("positive", 0.0), PathEvent("negative", -0.0))))
+        follower.update(followerTarget(), 0.02)
+        assertEquals(listOf("positive", "negative"), seen)
+    }
+
+    @Test
     fun `each occurrence fires in distance order with stable ties and no replay on retreat`() {
         val follower = HolonomicPathFollower(FollowerDriveProbe())
         val seen = mutableListOf<String>()

@@ -60,7 +60,14 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
                     "Path event distance must be finite and nonnegative"
                 }
             }
-            snapshot.sortBy { it.triggerDistanceMeters }
+            // Both signed zeros trigger at the same distance; preserve their authored tie order.
+            snapshot.sortWith { left, right ->
+                when {
+                    left.triggerDistanceMeters < right.triggerDistanceMeters -> -1
+                    left.triggerDistanceMeters > right.triggerDistanceMeters -> 1
+                    else -> 0
+                }
+            }
             events = snapshot
             nextEvent = 0
             revision++
