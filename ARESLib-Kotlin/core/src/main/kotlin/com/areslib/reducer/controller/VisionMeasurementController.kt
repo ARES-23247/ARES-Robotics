@@ -15,7 +15,15 @@ internal data class VisionEstimatorDiagnostics(
     val covarianceBeforeUpdate: DoubleArray?,
     val covarianceAfterUpdate: DoubleArray?,
     val acceptedCountDelta: Int,
-    val rejectedCountDelta: Int
+    val rejectedCountDelta: Int,
+    val lastNis: Double = 0.0,
+    val lastNisDegreesOfFreedom: Int = 0,
+    val lastNisTimestampMs: Long = 0L,
+    val lastNisSourceId: String = "",
+    val lastNisFrameId: Long = 0L,
+    val lastNisTagId: Int = -1,
+    val lastNisSolverType: com.areslib.state.VisionSolverType = com.areslib.state.VisionSolverType.UNKNOWN,
+    val lastNisAccepted: Boolean = false
 )
 
 /** A filtered public action plus private-runtime diagnostics for one camera frame. */
@@ -69,6 +77,9 @@ internal class StoreVisionMeasurementProcessor {
         var lastCovAfter: DoubleArray? = null
         var lastAccepted = false
         var lastReason: String? = null
+        var lastNisMeasurement: VisionMeasurement? = null
+        var lastNis = 0.0
+        var lastNisAccepted = false
 
         if (action.fuseIntoPoseEstimator) {
             for (i in 0 until validMeasurements.size) {
@@ -111,6 +122,14 @@ internal class StoreVisionMeasurementProcessor {
                 )
                 lastAccepted = estimator.lastMeasurementAccepted
                 lastReason = estimator.lastRejectionReason
+                // Early rejection leaves the workspace's previous NIS untouched. Only these
+                // outcomes establish a new finite innovation for this particular observation.
+                if ((lastAccepted || lastReason == "mahalanobis_rejected") &&
+                    estimator.lastNormalizedInnovationSquared.isFinite() && estimator.lastNormalizedInnovationSquared >= 0.0) {
+                    lastNisMeasurement = measurement
+                    lastNis = estimator.lastNormalizedInnovationSquared
+                    lastNisAccepted = lastAccepted
+                }
                 if (lastAccepted) {
                     acceptedCountDelta++
                     val before = lastCovBefore ?: DoubleArray(9).also { lastCovBefore = it }
@@ -141,7 +160,17 @@ internal class StoreVisionMeasurementProcessor {
                 covarianceBeforeUpdate = lastCovBefore,
                 covarianceAfterUpdate = lastCovAfter,
                 acceptedCountDelta = acceptedCountDelta,
-                rejectedCountDelta = rejectedCountDelta
+                rejectedCountDelta = rejectedCountDelta,
+                lastNis = lastNis,
+                lastNisDegreesOfFreedom = lastNisMeasurement?.let {
+                    if (it.solverType == com.areslib.state.VisionSolverType.MEGATAG2) 2 else 3
+                } ?: 0,
+                lastNisTimestampMs = lastNisMeasurement?.timestampMs ?: 0L,
+                lastNisSourceId = lastNisMeasurement?.sourceId ?: "",
+                lastNisFrameId = lastNisMeasurement?.frameId ?: 0L,
+                lastNisTagId = lastNisMeasurement?.tagId ?: -1,
+                lastNisSolverType = lastNisMeasurement?.solverType ?: com.areslib.state.VisionSolverType.UNKNOWN,
+                lastNisAccepted = lastNisAccepted
             )
         )
     }

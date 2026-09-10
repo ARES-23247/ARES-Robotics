@@ -61,6 +61,7 @@ object VisionReducer {
                     )
                 }
             }
+            is RobotAction.PoseUpdate -> if (action.isReset) state.copy(lastNisDegreesOfFreedom = 0) else state
             is ApplyPoseEstimatorRuntimeResult -> {
                 val diagnostics = action.visionDiagnostics ?: return state
                 state.copy(
@@ -71,7 +72,15 @@ object VisionReducer {
                     covarianceAfterUpdate = diagnostics.covarianceAfterUpdate?.let(Matrix3x3Snapshot::from)
                         ?: state.covarianceAfterUpdate,
                     measurementCount = state.measurementCount + diagnostics.acceptedCountDelta,
-                    rejectionCount = state.rejectionCount + diagnostics.rejectedCountDelta
+                    rejectionCount = state.rejectionCount + diagnostics.rejectedCountDelta,
+                    lastNis = diagnostics.lastNis,
+                    lastNisDegreesOfFreedom = diagnostics.lastNisDegreesOfFreedom,
+                    lastNisTimestampMs = diagnostics.lastNisTimestampMs,
+                    lastNisSourceId = diagnostics.lastNisSourceId,
+                    lastNisFrameId = diagnostics.lastNisFrameId,
+                    lastNisTagId = diagnostics.lastNisTagId,
+                    lastNisSolverType = diagnostics.lastNisSolverType,
+                    lastNisAccepted = diagnostics.lastNisAccepted
                 )
             }
             else -> state

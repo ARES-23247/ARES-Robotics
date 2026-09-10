@@ -7,6 +7,10 @@ import com.areslib.state.RobotState
 import com.areslib.state.VisionMeasurement
 import com.areslib.state.VisionSolverType
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonNull
+import com.google.gson.JsonPrimitive
+import com.google.gson.JsonSerializer
+import java.io.BufferedReader
 import java.io.File
 import java.util.zip.GZIPInputStream
 
@@ -55,7 +59,11 @@ data class LocalizationCalibrationSample(
     val nis: Double = Double.NaN,
     /** MegaTag2 translation updates are 2-DOF; full-pose updates are 3-DOF. */
     val nisDegreesOfFreedom: Int = 3,
-    val visionAccepted: Boolean = false
+    val visionAccepted: Boolean = false,
+    /** Offline source identity scopes run IDs when fitting several independent log files. */
+    val sourceId: String? = null,
+    /** Surveyed heading retains signed turn count; false preserves legacy shortest-arc routes. */
+    val truthHeadingUnwrapped: Boolean = false
 ) {
     init {
         require(covariance.size == 9) { "Localization covariance must contain 9 elements" }
@@ -73,14 +81,25 @@ data class LocalizationCalibrationSample(
             truthValid: Boolean = false,
             truthX: Double = Double.NaN,
             truthY: Double = Double.NaN,
-            truthHeading: Double = Double.NaN
+            truthHeading: Double = Double.NaN,
+            truthHeadingUnwrapped: Boolean = false
         ): LocalizationCalibrationSample {
             val drive = state.drive
             var mt1: VisionMeasurement? = null
             var mt2: VisionMeasurement? = null
             var representative: VisionMeasurement? = null
+            val vision = state.vision
+            val hasNis = vision.lastNisDegreesOfFreedom in 1..3 && vision.lastNis.isFinite() && vision.lastNis >= 0.0
+            var nisMeasurement: VisionMeasurement? = null
+            var nisMatches = 0
             for (measurement in measurements) {
-                representative = measurement
+                if (representative == null || measurement.timestampMs >= representative.timestampMs) representative = measurement
+                if (hasNis && measurement.timestampMs == vision.lastNisTimestampMs &&
+                    measurement.sourceId == vision.lastNisSourceId && measurement.frameId == vision.lastNisFrameId &&
+                    measurement.tagId == vision.lastNisTagId && measurement.solverType == vision.lastNisSolverType) {
+                    nisMeasurement = measurement
+                    nisMatches++
+                }
                 when (measurement.solverType) {
                     VisionSolverType.MEGATAG2 -> {
                         mt2 = measurement
@@ -90,6 +109,9 @@ data class LocalizationCalibrationSample(
                     else -> Unit
                 }
             }
+            // Ambiguous/missing packet identity cannot justify attaching an old NIS to this row.
+            if (nisMatches != 1) nisMeasurement = null
+            if (nisMeasurement != null) representative = nisMeasurement
             val mt1Pose = when {
                 mt1?.hasRecoveryPose == true -> mt1.recoveryPose
                 mt1 != null -> mt1.targetPose
@@ -98,9 +120,8 @@ data class LocalizationCalibrationSample(
             val mt2Pose = mt2?.targetPose
             val cov = drive.poseEstimator.copyCovariance()
             val targetSpace = representative?.robotPoseTargetSpace
-            val tagDistance = if (targetSpace == null) Double.NaN else kotlin.math.sqrt(
-                targetSpace.x * targetSpace.x + targetSpace.y * targetSpace.y + targetSpace.z * targetSpace.z
-            )
+            val tagDistance = if (targetSpace == null) Double.NaN else
+                kotlin.math.hypot(kotlin.math.hypot(targetSpace.x, targetSpace.y), targetSpace.z)
             return LocalizationCalibrationSample(
                 timestampMs = timestampMs,
                 platform = platform,
@@ -111,6 +132,7 @@ data class LocalizationCalibrationSample(
                 truthX = truthX,
                 truthY = truthY,
                 truthHeading = truthHeading,
+                truthHeadingUnwrapped = truthHeadingUnwrapped,
                 odometryX = drive.odometryX,
                 odometryY = drive.odometryY,
                 odometryHeading = drive.odometryHeading,
@@ -134,9 +156,9 @@ data class LocalizationCalibrationSample(
                 tagCount = representative?.tagCount ?: 0,
                 tagDistanceMeters = tagDistance,
                 visionLatencyMs = representative?.latencyMs ?: Double.NaN,
-                nis = drive.poseEstimator.lastNormalizedInnovationSquared,
-                nisDegreesOfFreedom = if (representative?.solverType == VisionSolverType.MEGATAG2) 2 else 3,
-                visionAccepted = state.vision.lastMeasurementAccepted
+                nis = if (nisMeasurement == null) Double.NaN else vision.lastNis,
+                nisDegreesOfFreedom = if (nisMeasurement == null) 0 else vision.lastNisDegreesOfFreedom,
+                visionAccepted = if (nisMeasurement == null) vision.lastMeasurementAccepted else vision.lastNisAccepted
             )
         }
     }
@@ -173,6 +195,7 @@ class LocalizationCalibrationRecorder(
         row["TruthX"] = sample.truthX
         row["TruthY"] = sample.truthY
         row["TruthHeading"] = sample.truthHeading
+        row["TruthHeadingUnwrapped"] = sample.truthHeadingUnwrapped
         row["OdomX"] = sample.odometryX
         row["OdomY"] = sample.odometryY
         row["OdomHeading"] = sample.odometryHeading
@@ -227,7 +250,18 @@ data class LocalizationCalibrationReport(
     val consistencyScale: ConsistencyScaleRecommendation,
     val warnings: List<String>
 ) {
-    fun toJson(): String = GsonBuilder().setPrettyPrinting().create().toJson(this)
+    /** Unavailable/nonrepresentable statistics are JSON null, never nonstandard NaN tokens. */
+    fun toJson(): String = CalibrationReportJson.gson.toJson(this)
+}
+
+private object CalibrationReportJson {
+    private val doubles = JsonSerializer<Double> { value, _, _ ->
+        if (value == null || !value.isFinite()) JsonNull.INSTANCE else JsonPrimitive(value)
+    }
+    val gson = GsonBuilder().setPrettyPrinting().serializeNulls()
+        .registerTypeAdapter(Double::class.java, doubles)
+        .registerTypeAdapter(Double::class.javaObjectType, doubles)
+        .create()
 }
 
 /** First-pass multipliers; rerun validation after applying them rather than compounding blindly. */
@@ -250,39 +284,59 @@ object LocalizationCalibrationFitter {
         val mt2 = fitVision(stationary, useMt1 = false)
         if (mt1.sampleCount < 30) warnings += "MegaTag1 fit has fewer than 30 truth-referenced frames"
         if (mt2.sampleCount < 30) warnings += "MegaTag2 fit has fewer than 30 truth-referenced frames"
+        for ((name, fit) in listOf("MegaTag1" to mt1, "MegaTag2" to mt2)) {
+            if (fit.sampleCount >= 2 && (!fit.biasHeading.isFinite() || !fit.stdDevX.isFinite() ||
+                    !fit.stdDevY.isFinite() || !fit.stdDevHeading.isFinite())) {
+                warnings += "$name fit has ambiguous or nonrepresentable statistics"
+            }
+        }
 
         val routes = samples.filter {
             it.truthValid && it.checkpoint != LocalizationCalibrationCheckpoint.NONE &&
                 (it.testType == LocalizationCalibrationTestType.ODOMETRY_TRANSLATION ||
                     it.testType == LocalizationCalibrationTestType.ODOMETRY_ROTATION)
-        }.groupBy { Triple(it.platform, it.testType, it.runId) }
-        var qXSum = 0.0
-        var qYSum = 0.0
-        var qThetaSum = 0.0
+        }.groupBy { RouteKey(it.sourceId, it.platform, it.testType, it.runId) }
+        var qXMean = 0.0
+        var qYMean = 0.0
+        var qThetaMean = 0.0
         var routeCount = 0
         for (route in routes.values) {
-            val start = route.lastOrNull { it.checkpoint == LocalizationCalibrationCheckpoint.START } ?: continue
-            val end = route.lastOrNull { it.checkpoint == LocalizationCalibrationCheckpoint.END } ?: continue
+            val start = route.filter { it.checkpoint == LocalizationCalibrationCheckpoint.START }
+                .maxByOrNull { it.timestampMs } ?: continue
+            val end = route.filter { it.checkpoint == LocalizationCalibrationCheckpoint.END && it.timestampMs > start.timestampMs }
+                .maxByOrNull { it.timestampMs } ?: continue
+            if (!validRoutePose(start) || !validRoutePose(end)) continue
             val truthDx = end.truthX - start.truthX
             val truthDy = end.truthY - start.truthY
-            val truthDHeading = wrapAngle(end.truthHeading - start.truthHeading)
+            val rawTruthDHeading = end.truthHeading - start.truthHeading
             val odomDx = end.odometryX - start.odometryX
             val odomDy = end.odometryY - start.odometryY
-            val odomDHeading = wrapAngle(end.odometryHeading - start.odometryHeading)
+            val rawOdomDHeading = end.odometryHeading - start.odometryHeading
+            if (!rawTruthDHeading.isFinite() || !rawOdomDHeading.isFinite()) continue
+            val truthDHeading = wrapAngle(rawTruthDHeading)
+            val odomDHeading = wrapAngle(rawOdomDHeading)
+            if (!truthDx.isFinite() || !truthDy.isFinite() || !odomDx.isFinite() || !odomDy.isFinite()) continue
             val distance = kotlin.math.hypot(truthDx, truthDy)
             val translationNormalizer = distance.coerceAtLeast(0.05)
-            val headingNormalizer = (distance + kotlin.math.abs(truthDHeading)).coerceAtLeast(0.05)
-            qXSum += square(odomDx - truthDx) / translationNormalizer
-            qYSum += square(odomDy - truthDy) / translationNormalizer
-            qThetaSum += square(wrapAngle(odomDHeading - truthDHeading)) / headingNormalizer
+            val surveyedRotation = if (start.truthHeadingUnwrapped && end.truthHeadingUnwrapped)
+                kotlin.math.abs(rawTruthDHeading) else kotlin.math.abs(truthDHeading)
+            val headingNormalizer = (distance + surveyedRotation).coerceAtLeast(0.05)
+            if (!translationNormalizer.isFinite() || !headingNormalizer.isFinite()) continue
+            val qX = square(odomDx - truthDx) / translationNormalizer
+            val qY = square(odomDy - truthDy) / translationNormalizer
+            val qTheta = square(wrapAngle(odomDHeading - truthDHeading)) / headingNormalizer
+            if (!qX.isFinite() || !qY.isFinite() || !qTheta.isFinite()) continue
             routeCount++
+            qXMean += (qX - qXMean) / routeCount
+            qYMean += (qY - qYMean) / routeCount
+            qThetaMean += (qTheta - qThetaMean) / routeCount
         }
         if (routeCount < 6) warnings += "Process-noise fit has fewer than 6 completed surveyed routes"
         val process = ProcessNoiseCalibrationFit(
             routeCount,
-            if (routeCount == 0) Double.NaN else qXSum / routeCount,
-            if (routeCount == 0) Double.NaN else qYSum / routeCount,
-            if (routeCount == 0) Double.NaN else qThetaSum / routeCount
+            if (routeCount == 0) Double.NaN else qXMean,
+            if (routeCount == 0) Double.NaN else qYMean,
+            if (routeCount == 0) Double.NaN else qThetaMean
         )
 
         val evaluator = LocalizationConsistencyEvaluator()
@@ -302,93 +356,139 @@ object LocalizationCalibrationFitter {
             visionRScale = consistency.meanNormalizedNis,
             processQScale = if (consistency.meanNees.isFinite()) consistency.meanNees / 3.0 else Double.NaN
         )
-        if (consistency.nisCount < 30) warnings += "NIS validation has fewer than 30 accepted observations"
+        if (consistency.nisCount < 30) warnings += "NIS validation has fewer than 30 valid observations"
         if (consistency.neesCount < 30) warnings += "NEES validation has fewer than 30 truth-referenced observations"
         return LocalizationCalibrationReport(mt1, mt2, process, consistency, scales, warnings)
     }
 
+    private data class RouteKey(
+        val sourceId: String?, val platform: LocalizationCalibrationPlatform,
+        val testType: LocalizationCalibrationTestType, val runId: Int
+    )
+
+    private fun validRoutePose(sample: LocalizationCalibrationSample): Boolean =
+        sample.truthX.isFinite() && sample.truthY.isFinite() && sample.truthHeading.isFinite() &&
+            sample.odometryX.isFinite() && sample.odometryY.isFinite() && sample.odometryHeading.isFinite()
+
+    private fun validVisionSample(sample: LocalizationCalibrationSample, useMt1: Boolean): Boolean {
+        if (!sample.truthX.isFinite() || !sample.truthY.isFinite() || !sample.truthHeading.isFinite()) return false
+        val x = if (useMt1) sample.mt1X else sample.mt2X
+        val y = if (useMt1) sample.mt1Y else sample.mt2Y
+        val heading = if (useMt1) sample.mt1Heading else sample.mt2Heading
+        return (if (useMt1) sample.mt1Valid else sample.mt2Valid) && heading.isFinite() &&
+            (x - sample.truthX).isFinite() && (y - sample.truthY).isFinite() &&
+            (heading - sample.truthHeading).isFinite()
+    }
+
     private fun fitVision(samples: List<LocalizationCalibrationSample>, useMt1: Boolean): VisionNoiseCalibrationFit {
-        var count = 0
-        var sx = 0.0; var sy = 0.0; var sh = 0.0
-        var sx2 = 0.0; var sy2 = 0.0; var sh2 = 0.0
+        val xMoments = CalibrationMoments()
+        val yMoments = CalibrationMoments()
+        var sinHeading = 0.0
+        var cosHeading = 0.0
         for (sample in samples) {
-            val valid = if (useMt1) sample.mt1Valid else sample.mt2Valid
-            if (!valid) continue
+            if (!validVisionSample(sample, useMt1)) continue
             val x = if (useMt1) sample.mt1X else sample.mt2X
             val y = if (useMt1) sample.mt1Y else sample.mt2Y
-            val h = if (useMt1) sample.mt1Heading else sample.mt2Heading
-            if (!x.isFinite() || !y.isFinite() || !h.isFinite()) continue
-            val ex = x - sample.truthX
-            val ey = y - sample.truthY
-            val eh = wrapAngle(h - sample.truthHeading)
-            count++
-            sx += ex; sy += ey; sh += eh
-            sx2 += ex * ex; sy2 += ey * ey; sh2 += eh * eh
+            val heading = if (useMt1) sample.mt1Heading else sample.mt2Heading
+            xMoments.add(x - sample.truthX)
+            yMoments.add(y - sample.truthY)
+            val residual = wrapAngle(heading - sample.truthHeading)
+            sinHeading += kotlin.math.sin(residual)
+            cosHeading += kotlin.math.cos(residual)
         }
+        val count = xMoments.count
         if (count == 0) return VisionNoiseCalibrationFit(0, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN)
-        val meanX = sx / count; val meanY = sy / count; val meanH = sh / count
-        val denominator = (count - 1).coerceAtLeast(1).toDouble()
+        // A vanishing resultant has no well-defined circular mean (for example, opposite headings).
+        val meanHeading = if (kotlin.math.hypot(sinHeading, cosHeading) <= count * 1e-12) Double.NaN
+            else wrapAngle(kotlin.math.atan2(sinHeading, cosHeading))
+        var headingSquaredDeviation = 0.0
+        if (meanHeading.isFinite() && count > 1) {
+            for (sample in samples) {
+                if (!validVisionSample(sample, useMt1)) continue
+                val heading = if (useMt1) sample.mt1Heading else sample.mt2Heading
+                val deviation = wrapAngle(wrapAngle(heading - sample.truthHeading) - meanHeading)
+                headingSquaredDeviation += deviation * deviation
+            }
+        }
         return VisionNoiseCalibrationFit(
-            count,
-            meanX,
-            meanY,
-            meanH,
-            kotlin.math.sqrt(((sx2 - count * meanX * meanX) / denominator).coerceAtLeast(0.0)),
-            kotlin.math.sqrt(((sy2 - count * meanY * meanY) / denominator).coerceAtLeast(0.0)),
-            kotlin.math.sqrt(((sh2 - count * meanH * meanH) / denominator).coerceAtLeast(0.0))
+            count, xMoments.mean, yMoments.mean, meanHeading,
+            xMoments.sampleStdDev(), yMoments.sampleStdDev(),
+            if (count < 2 || !meanHeading.isFinite()) Double.NaN
+            else kotlin.math.sqrt(headingSquaredDeviation / (count - 1))
         )
+    }
+
+    private class CalibrationMoments {
+        var count = 0
+        var mean = 0.0
+        private var m2 = 0.0
+        fun add(value: Double) {
+            count++
+            val delta = value - mean
+            mean = if (delta.isFinite()) mean + delta / count
+                else mean * ((count - 1.0) / count) + value / count
+            m2 += delta * (value - mean)
+        }
+        fun sampleStdDev(): Double = if (count < 2) Double.NaN
+            else kotlin.math.sqrt((m2 / (count - 1)).coerceAtLeast(0.0))
     }
 
     private fun square(value: Double) = value * value
 }
 
 object LocalizationCalibrationCsv {
+    /** Streams rows while retaining sample objects; file identity scopes otherwise-local run IDs. */
     fun read(files: List<File>): List<LocalizationCalibrationSample> {
         val samples = ArrayList<LocalizationCalibrationSample>()
-        for (file in files) {
-            val lines = file.inputStream().use { input ->
-                val decoded = if (file.name.endsWith(".gz", ignoreCase = true)) {
-                    GZIPInputStream(input)
-                } else {
-                    input
-                }
-                decoded.bufferedReader(Charsets.UTF_8).use { it.readLines() }
-            }
-            if (lines.isEmpty()) continue
-            val header = lines[0].split(',')
-            val index = header.withIndex().associate { it.value to it.index }
-            for (lineIndex in 1 until lines.size) {
-                val cells = lines[lineIndex].split(',')
-                fun cell(name: String) = cells.getOrNull(index[name] ?: -1).orEmpty()
-                fun double(name: String) = cell(name).toDoubleOrNull() ?: Double.NaN
-                fun int(name: String) = cell(name).toIntOrNull() ?: 0
-                fun bool(name: String) = cell(name).equals("true", ignoreCase = true)
-                try {
-                    samples += LocalizationCalibrationSample(
-                        timestampMs = cell("TimestampMs").toLong(),
-                        platform = LocalizationCalibrationPlatform.valueOf(cell("Platform")),
-                        testType = LocalizationCalibrationTestType.valueOf(cell("TestType")),
-                        runId = int("RunId"),
-                        checkpoint = LocalizationCalibrationCheckpoint.valueOf(cell("Checkpoint")),
-                        truthValid = bool("TruthValid"),
-                        truthX = double("TruthX"), truthY = double("TruthY"), truthHeading = double("TruthHeading"),
-                        odometryX = double("OdomX"), odometryY = double("OdomY"), odometryHeading = double("OdomHeading"),
-                        estimateX = double("EstimateX"), estimateY = double("EstimateY"), estimateHeading = double("EstimateHeading"),
-                        covariance = DoubleArray(9) { double("P$it") },
-                        linearVelocityMps = double("LinearVelocityMps"),
-                        angularVelocityRadPerSec = double("AngularVelocityRadPerSec"),
-                        mt1Valid = bool("Mt1Valid"), mt1X = double("Mt1X"), mt1Y = double("Mt1Y"), mt1Heading = double("Mt1Heading"),
-                        mt2Valid = bool("Mt2Valid"), mt2X = double("Mt2X"), mt2Y = double("Mt2Y"), mt2Heading = double("Mt2Heading"),
-                        tagCount = int("TagCount"), tagDistanceMeters = double("TagDistanceMeters"),
-                        visionLatencyMs = double("VisionLatencyMs"), nis = double("NIS"),
-                        nisDegreesOfFreedom = int("NISDegreesOfFreedom").takeIf { it in 1..3 } ?: 3,
-                        visionAccepted = bool("VisionAccepted")
-                    )
-                } catch (_: RuntimeException) {
-                    // Ignore incomplete/foreign rows; the report's sample-count warnings expose sparse input.
+        for (file in files.distinctBy { it.absoluteFile.normalize().path }) {
+            file.inputStream().use { input ->
+                val decoded = if (file.name.endsWith(".gz", ignoreCase = true)) GZIPInputStream(input) else input
+                decoded.bufferedReader(Charsets.UTF_8).use { reader ->
+                    readRows(reader, file.absoluteFile.normalize().path, samples)
                 }
             }
         }
         return samples
+    }
+
+    private fun readRows(reader: BufferedReader, sourceId: String, samples: MutableList<LocalizationCalibrationSample>) {
+        val header = reader.readLine()?.removePrefix("\uFEFF")?.split(',') ?: return
+        if (header.toSet().size != header.size) return
+        val index = header.withIndex().associate { it.value to it.index }
+        if (!index.keys.containsAll(listOf("TimestampMs", "Platform", "TestType", "RunId", "Checkpoint"))) return
+        while (true) {
+            val line = reader.readLine() ?: break
+            if (line.isBlank()) continue
+            val cells = line.split(',')
+            fun cell(name: String) = cells.getOrNull(index[name] ?: -1).orEmpty()
+            fun double(name: String) = cell(name).toDoubleOrNull() ?: Double.NaN
+            fun int(name: String) = cell(name).toIntOrNull() ?: 0
+            fun bool(name: String) = cell(name).equals("true", ignoreCase = true)
+            try {
+                samples += LocalizationCalibrationSample(
+                    timestampMs = cell("TimestampMs").toLong(),
+                    platform = LocalizationCalibrationPlatform.valueOf(cell("Platform")),
+                    testType = LocalizationCalibrationTestType.valueOf(cell("TestType")),
+                    runId = cell("RunId").toInt(),
+                    checkpoint = LocalizationCalibrationCheckpoint.valueOf(cell("Checkpoint")),
+                    truthValid = bool("TruthValid"),
+                    truthX = double("TruthX"), truthY = double("TruthY"), truthHeading = double("TruthHeading"),
+                    odometryX = double("OdomX"), odometryY = double("OdomY"), odometryHeading = double("OdomHeading"),
+                    estimateX = double("EstimateX"), estimateY = double("EstimateY"), estimateHeading = double("EstimateHeading"),
+                    covariance = DoubleArray(9) { double("P$it") },
+                    linearVelocityMps = double("LinearVelocityMps"),
+                    angularVelocityRadPerSec = double("AngularVelocityRadPerSec"),
+                    mt1Valid = bool("Mt1Valid"), mt1X = double("Mt1X"), mt1Y = double("Mt1Y"), mt1Heading = double("Mt1Heading"),
+                    mt2Valid = bool("Mt2Valid"), mt2X = double("Mt2X"), mt2Y = double("Mt2Y"), mt2Heading = double("Mt2Heading"),
+                    tagCount = int("TagCount"), tagDistanceMeters = double("TagDistanceMeters"),
+                    visionLatencyMs = double("VisionLatencyMs"), nis = double("NIS"),
+                    nisDegreesOfFreedom = if (index.containsKey("NISDegreesOfFreedom")) int("NISDegreesOfFreedom") else 3,
+                    visionAccepted = bool("VisionAccepted"), sourceId = sourceId,
+                    truthHeadingUnwrapped = bool("TruthHeadingUnwrapped")
+                )
+            } catch (_: RuntimeException) {
+                // Ignore incomplete/foreign rows; the report's sample-count warnings expose sparse input.
+            }
+        }
     }
 }

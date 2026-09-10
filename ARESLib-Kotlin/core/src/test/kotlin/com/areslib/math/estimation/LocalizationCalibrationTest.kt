@@ -1,11 +1,13 @@
 package com.areslib.math.estimation
 
-import java.nio.file.Files
+import java.io.File
+import org.junit.jupiter.api.io.TempDir
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LocalizationCalibrationTest {
+    @TempDir lateinit var directory: File
     @Test
     fun `fitter estimates vision bias variance and route-normalized process noise`() {
         val samples = mutableListOf(
@@ -26,7 +28,6 @@ class LocalizationCalibrationTest {
 
     @Test
     fun `recorder CSV round trips into the offline parser`() {
-        val directory = Files.createTempDirectory("localization-calibration").toFile()
         LocalizationCalibrationRecorder(LocalizationCalibrationPlatform.FTC, directory).use { recorder ->
             recorder.record(sample(7, truthX = 2.0, mt1X = 2.1, mt2X = 1.9))
         }

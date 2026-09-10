@@ -186,16 +186,19 @@ public final class com/areslib/frc/vision/FrcLocalizationCalibrationSession : ja
 	public static synthetic fun adjustTruth$default (Lcom/areslib/frc/vision/FrcLocalizationCalibrationSession;DDDILjava/lang/Object;)V
 	public fun close ()V
 	public final fun cycleTestType ()V
+	public final fun getActionPending ()Z
 	public final fun getContinuousRecording ()Z
 	public final fun getDroppedSampleCount ()J
 	public final fun getRunId ()I
+	public final fun getStationaryReady ()Z
 	public final fun getTestType ()Lcom/areslib/math/estimation/LocalizationCalibrationTestType;
 	public final fun getTruthHeading ()D
 	public final fun getTruthX ()D
 	public final fun getTruthY ()D
 	public final fun markEnd (J)V
 	public final fun markStart (J)V
-	public final fun periodic (J)V
+	public final fun periodic (JZ)V
+	public static synthetic fun periodic$default (Lcom/areslib/frc/vision/FrcLocalizationCalibrationSession;JZILjava/lang/Object;)V
 	public final fun seedPoseToTruth (J)V
 	public final fun toggleContinuousRecording ()V
 	public final fun zeroTruth ()V

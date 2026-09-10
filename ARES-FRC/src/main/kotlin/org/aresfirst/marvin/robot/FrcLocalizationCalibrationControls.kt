@@ -47,11 +47,15 @@ class FrcLocalizationCalibrationControls(
         if (rising(10, pov == 270)) session.adjustTruth(deltaX = -0.05)
         if (rising(11, pov == 90)) session.adjustTruth(deltaX = 0.05)
 
-        session.periodic(timestampMs())
+        val driverNeutral = kotlin.math.abs(controller.leftX) <= 0.03 &&
+            kotlin.math.abs(controller.leftY) <= 0.03 && kotlin.math.abs(controller.rightX) <= 0.03
+        session.periodic(timestampMs(), driverNeutral)
 
         telemetry.putString("Calibration/Localization/TestType", session.testType.name)
         telemetry.putNumber("Calibration/Localization/RunId", session.runId.toDouble())
-        telemetry.putBoolean("Calibration/Localization/Recording", session.continuousRecording)
+        telemetry.putBoolean("Calibration/Localization/Recording", session.continuousRecording && session.stationaryReady)
+        telemetry.putBoolean("Calibration/Localization/Stationary", session.stationaryReady)
+        telemetry.putBoolean("Calibration/Localization/ActionPending", session.actionPending)
         telemetry.putNumber("Calibration/Localization/TruthX", session.truthX)
         telemetry.putNumber("Calibration/Localization/TruthY", session.truthY)
         telemetry.putNumber("Calibration/Localization/TruthHeadingRad", session.truthHeading)

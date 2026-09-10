@@ -2541,8 +2541,8 @@ public final class com/areslib/math/estimation/LocalizationCalibrationReport {
 
 public final class com/areslib/math/estimation/LocalizationCalibrationSample {
 	public static final field Companion Lcom/areslib/math/estimation/LocalizationCalibrationSample$Companion;
-	public fun <init> (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZ)V
-	public synthetic fun <init> (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZLjava/lang/String;Z)V
+	public synthetic fun <init> (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZLjava/lang/String;ZIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component10 ()D
 	public final fun component11 ()D
@@ -2569,14 +2569,16 @@ public final class com/areslib/math/estimation/LocalizationCalibrationSample {
 	public final fun component30 ()D
 	public final fun component31 ()I
 	public final fun component32 ()Z
+	public final fun component33 ()Ljava/lang/String;
+	public final fun component34 ()Z
 	public final fun component4 ()I
 	public final fun component5 ()Lcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;
 	public final fun component6 ()Z
 	public final fun component7 ()D
 	public final fun component8 ()D
 	public final fun component9 ()D
-	public final fun copy (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZ)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
-	public static synthetic fun copy$default (Lcom/areslib/math/estimation/LocalizationCalibrationSample;JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZILjava/lang/Object;)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
+	public final fun copy (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZLjava/lang/String;Z)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
+	public static synthetic fun copy$default (Lcom/areslib/math/estimation/LocalizationCalibrationSample;JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDDDDDDD[DDDZDDDZDDDIDDDIZLjava/lang/String;ZIILjava/lang/Object;)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAngularVelocityRadPerSec ()D
 	public final fun getCheckpoint ()Lcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;
@@ -2600,11 +2602,13 @@ public final class com/areslib/math/estimation/LocalizationCalibrationSample {
 	public final fun getOdometryY ()D
 	public final fun getPlatform ()Lcom/areslib/math/estimation/LocalizationCalibrationPlatform;
 	public final fun getRunId ()I
+	public final fun getSourceId ()Ljava/lang/String;
 	public final fun getTagCount ()I
 	public final fun getTagDistanceMeters ()D
 	public final fun getTestType ()Lcom/areslib/math/estimation/LocalizationCalibrationTestType;
 	public final fun getTimestampMs ()J
 	public final fun getTruthHeading ()D
+	public final fun getTruthHeadingUnwrapped ()Z
 	public final fun getTruthValid ()Z
 	public final fun getTruthX ()D
 	public final fun getTruthY ()D
@@ -2615,8 +2619,8 @@ public final class com/areslib/math/estimation/LocalizationCalibrationSample {
 }
 
 public final class com/areslib/math/estimation/LocalizationCalibrationSample$Companion {
-	public final fun capture (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/state/RobotState;Ljava/util/List;Lcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDD)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
-	public static synthetic fun capture$default (Lcom/areslib/math/estimation/LocalizationCalibrationSample$Companion;JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/state/RobotState;Ljava/util/List;Lcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDILjava/lang/Object;)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
+	public final fun capture (JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/state/RobotState;Ljava/util/List;Lcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDZ)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
+	public static synthetic fun capture$default (Lcom/areslib/math/estimation/LocalizationCalibrationSample$Companion;JLcom/areslib/math/estimation/LocalizationCalibrationPlatform;Lcom/areslib/math/estimation/LocalizationCalibrationTestType;ILcom/areslib/state/RobotState;Ljava/util/List;Lcom/areslib/math/estimation/LocalizationCalibrationCheckpoint;ZDDDZILjava/lang/Object;)Lcom/areslib/math/estimation/LocalizationCalibrationSample;
 }
 
 public final class com/areslib/math/estimation/LocalizationCalibrationTestType : java/lang/Enum {
@@ -2911,6 +2915,14 @@ public final class com/areslib/math/estimation/ProcessNoiseCalibrationFit {
 	public final fun getRouteCount ()I
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/math/estimation/StationaryCalibrationGate {
+	public fun <init> ()V
+	public fun <init> (DDJJ)V
+	public synthetic fun <init> (DDJJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun reset ()V
+	public final fun update (JZDDZJ)Z
 }
 
 public final class com/areslib/math/estimation/VisionMahalanobisFilter {
@@ -6120,13 +6132,21 @@ public final class com/areslib/state/VisionSolverType : java/lang/Enum {
 
 public final class com/areslib/state/VisionState {
 	public fun <init> ()V
-	public fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;II)V
-	public synthetic fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;Z)V
+	public synthetic fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component10 ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun component11 ()I
 	public final fun component12 ()I
+	public final fun component13 ()D
+	public final fun component14 ()I
+	public final fun component15 ()J
+	public final fun component16 ()Ljava/lang/String;
+	public final fun component17 ()J
+	public final fun component18 ()I
+	public final fun component19 ()Lcom/areslib/state/VisionSolverType;
 	public final fun component2 ()D
+	public final fun component20 ()Z
 	public final fun component3 ()D
 	public final fun component4 ()Z
 	public final fun component5 ()Ljava/util/List;
@@ -6134,14 +6154,22 @@ public final class com/areslib/state/VisionState {
 	public final fun component7 ()Z
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Lcom/areslib/state/Matrix3x3Snapshot;
-	public final fun copy (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;II)Lcom/areslib/state/VisionState;
-	public static synthetic fun copy$default (Lcom/areslib/state/VisionState;JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIILjava/lang/Object;)Lcom/areslib/state/VisionState;
+	public final fun copy (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;Z)Lcom/areslib/state/VisionState;
+	public static synthetic fun copy$default (Lcom/areslib/state/VisionState;JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZILjava/lang/Object;)Lcom/areslib/state/VisionState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCovarianceAfterUpdate ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun getCovarianceBeforeUpdate ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun getFilterConfig ()Lcom/areslib/hardware/vision/VisionFilterConfig;
 	public final fun getHasTarget ()Z
 	public final fun getLastMeasurementAccepted ()Z
+	public final fun getLastNis ()D
+	public final fun getLastNisAccepted ()Z
+	public final fun getLastNisDegreesOfFreedom ()I
+	public final fun getLastNisFrameId ()J
+	public final fun getLastNisSolverType ()Lcom/areslib/state/VisionSolverType;
+	public final fun getLastNisSourceId ()Ljava/lang/String;
+	public final fun getLastNisTagId ()I
+	public final fun getLastNisTimestampMs ()J
 	public final fun getLastRejectionReason ()Ljava/lang/String;
 	public final fun getLastTargetTimestampMs ()J
 	public final fun getMeasurementCount ()I

@@ -267,7 +267,16 @@ data class VisionState(
     val covarianceBeforeUpdate: Matrix3x3Snapshot? = null,
     val covarianceAfterUpdate: Matrix3x3Snapshot? = null,
     val measurementCount: Int = 0,
-    val rejectionCount: Int = 0
+    val rejectionCount: Int = 0,
+    /** Last computed local NIS in the current vision batch; DOF zero means unavailable. */
+    val lastNis: Double = 0.0,
+    val lastNisDegreesOfFreedom: Int = 0,
+    val lastNisTimestampMs: Long = 0L,
+    val lastNisSourceId: String = "",
+    val lastNisFrameId: Long = 0L,
+    val lastNisTagId: Int = -1,
+    val lastNisSolverType: VisionSolverType = VisionSolverType.UNKNOWN,
+    val lastNisAccepted: Boolean = false
 )
 
 /**

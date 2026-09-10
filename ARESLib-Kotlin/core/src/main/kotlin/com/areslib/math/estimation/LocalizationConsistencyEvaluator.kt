@@ -12,19 +12,19 @@ import com.areslib.math.wrapAngle
  */
 class LocalizationConsistencyEvaluator {
     private var nisCount = 0L
-    private var nisSum = 0.0
-    private var nisDegreesOfFreedomSum = 0L
+    private var nisMean = 0.0
+    private var nisMeanDegreesOfFreedom = 0.0
     private var nisWithin95 = 0L
     private var neesCount = 0L
-    private var neesSum = 0.0
+    private var neesMean = 0.0
     private var neesWithin95 = 0L
 
     fun recordNis(normalizedInnovationSquared: Double, degreesOfFreedom: Int = 3) {
         if (!normalizedInnovationSquared.isFinite() || normalizedInnovationSquared < 0.0) return
         if (degreesOfFreedom !in 1..3) return
         nisCount++
-        nisSum += normalizedInnovationSquared
-        nisDegreesOfFreedomSum += degreesOfFreedom
+        nisMean += (normalizedInnovationSquared - nisMean) / nisCount
+        nisMeanDegreesOfFreedom += (degreesOfFreedom - nisMeanDegreesOfFreedom) / nisCount
         val threshold = when (degreesOfFreedom) {
             1 -> CHI_SQUARE_1_DOF_95
             2 -> CHI_SQUARE_2_DOF_95
@@ -42,22 +42,37 @@ class LocalizationConsistencyEvaluator {
         truthHeading: Double,
         covariance: Matrix3x3
     ): Boolean {
-        val e0 = estimateX - truthX
-        val e1 = estimateY - truthY
-        val e2 = wrapAngle(estimateHeading - truthHeading)
-        if (!e0.isFinite() || !e1.isFinite() || !e2.isFinite()) return false
+        if (!estimateX.isFinite() || !estimateY.isFinite() || !estimateHeading.isFinite() ||
+            !truthX.isFinite() || !truthY.isFinite() || !truthHeading.isFinite()) return false
+        if (!covariance.m00.isFinite() || !covariance.m01.isFinite() || !covariance.m02.isFinite() ||
+            !covariance.m10.isFinite() || !covariance.m11.isFinite() || !covariance.m12.isFinite() ||
+            !covariance.m20.isFinite() || !covariance.m21.isFinite() || !covariance.m22.isFinite()) return false
 
-        val l00Squared = covariance.m00
-        if (!l00Squared.isFinite() || l00Squared <= 1e-18) return false
+        val scale = maxOf(covariance.m00, covariance.m11, covariance.m22)
+        if (scale <= 0.0) return false
+        // Covariance must be symmetric; a lower-triangle factorization alone cannot validate it.
+        if (!symmetric(covariance.m01, covariance.m10, scale) ||
+            !symmetric(covariance.m02, covariance.m20, scale) ||
+            !symmetric(covariance.m12, covariance.m21, scale)) return false
+        val errorScale = kotlin.math.sqrt(scale)
+        val e0 = scaledDifference(estimateX, truthX, errorScale)
+        val e1 = scaledDifference(estimateY, truthY, errorScale)
+        val headingDifference = estimateHeading - truthHeading
+        val e2 = (if (headingDifference.isFinite()) wrapAngle(headingDifference)
+            else wrapAngle(wrapAngle(estimateHeading) - wrapAngle(truthHeading))) / errorScale
+
+        // Normalize P and e together; a fixed absolute pivot cutoff depends on the input units.
+        val l00Squared = covariance.m00 / scale
+        if (l00Squared <= 0.0) return false
         val l00 = kotlin.math.sqrt(l00Squared)
-        val l10 = covariance.m10 / l00
-        val l20 = covariance.m20 / l00
-        val l11Squared = covariance.m11 - l10 * l10
-        if (!l11Squared.isFinite() || l11Squared <= 1e-18) return false
+        val l10 = (covariance.m10 / scale) / l00
+        val l20 = (covariance.m20 / scale) / l00
+        val l11Squared = covariance.m11 / scale - l10 * l10
+        if (!l11Squared.isFinite() || l11Squared <= 0.0) return false
         val l11 = kotlin.math.sqrt(l11Squared)
-        val l21 = (covariance.m21 - l20 * l10) / l11
-        val l22Squared = covariance.m22 - l20 * l20 - l21 * l21
-        if (!l22Squared.isFinite() || l22Squared <= 1e-18) return false
+        val l21 = (covariance.m21 / scale - l20 * l10) / l11
+        val l22Squared = covariance.m22 / scale - l20 * l20 - l21 * l21
+        if (!l22Squared.isFinite() || l22Squared <= 0.0) return false
         val l22 = kotlin.math.sqrt(l22Squared)
 
         // Solve L y = e, then NEES = y^T y. This avoids constructing P^-1.
@@ -67,31 +82,38 @@ class LocalizationConsistencyEvaluator {
         val nees = y0 * y0 + y1 * y1 + y2 * y2
         if (!nees.isFinite() || nees < 0.0) return false
         neesCount++
-        neesSum += nees
+        neesMean += (nees - neesMean) / neesCount
         if (nees <= CHI_SQUARE_3_DOF_95) neesWithin95++
         return true
     }
 
     fun reset() {
         nisCount = 0L
-        nisSum = 0.0
-        nisDegreesOfFreedomSum = 0L
+        nisMean = 0.0
+        nisMeanDegreesOfFreedom = 0.0
         nisWithin95 = 0L
         neesCount = 0L
-        neesSum = 0.0
+        neesMean = 0.0
         neesWithin95 = 0L
     }
 
     fun snapshot(): LocalizationConsistencySnapshot = LocalizationConsistencySnapshot(
         nisCount = nisCount,
-        meanNis = if (nisCount == 0L) Double.NaN else nisSum / nisCount,
-        meanNormalizedNis = if (nisDegreesOfFreedomSum == 0L) Double.NaN
-            else nisSum / nisDegreesOfFreedomSum,
+        meanNis = if (nisCount == 0L) Double.NaN else nisMean,
+        meanNormalizedNis = if (nisCount == 0L) Double.NaN else nisMean / nisMeanDegreesOfFreedom,
         nisCoverage95 = if (nisCount == 0L) Double.NaN else nisWithin95.toDouble() / nisCount,
         neesCount = neesCount,
-        meanNees = if (neesCount == 0L) Double.NaN else neesSum / neesCount,
+        meanNees = if (neesCount == 0L) Double.NaN else neesMean,
         neesCoverage95 = if (neesCount == 0L) Double.NaN else neesWithin95.toDouble() / neesCount
     )
+
+    private fun symmetric(a: Double, b: Double, scale: Double): Boolean =
+        kotlin.math.abs(a / scale - b / scale) <= 1e-12
+
+    private fun scaledDifference(a: Double, b: Double, scale: Double): Double {
+        val difference = a - b
+        return if (difference.isFinite()) difference / scale else a / scale - b / scale
+    }
 
     companion object {
         const val CHI_SQUARE_1_DOF_95 = 3.841458820694124
