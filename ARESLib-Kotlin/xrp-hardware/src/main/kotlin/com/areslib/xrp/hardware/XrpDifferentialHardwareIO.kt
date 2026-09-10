@@ -2,6 +2,7 @@ package com.areslib.xrp.hardware
 
 import com.areslib.kinematics.DifferentialDriveKinematics
 import com.areslib.math.geometry.ChassisSpeeds
+import kotlin.math.abs
 
 /**
  * High-level hardware IO contract for an XRP Differential Drivetrain.
@@ -88,8 +89,9 @@ private fun applyDifferentialDrive(io: XrpDifferentialHardwareIO, speeds: Chassi
         return
     }
     io.kinematics.toWheelSpeeds(vx, omega, output)
-    DifferentialDriveKinematics.normalize(output, maximum)
-    io.setPowers(output[0] / maximum, output[1] / maximum)
+    // Divide directly into power units so subnormal speed bounds cannot quantize a valid ratio.
+    val divisor = maxOf(maximum, maxOf(abs(output[0]), abs(output[1])))
+    io.setPowers(output[0] / divisor, output[1] / divisor)
 }
 
 private inline fun XrpDifferentialHardwareIO.neutralizeOnFailure(operation: () -> Unit) {

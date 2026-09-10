@@ -18,7 +18,8 @@ class XrpMecanumNumericalAuditTest {
             val vx = random.nextDouble() * 8.0 - 4.0
             val vy = random.nextDouble() * 8.0 - 4.0
             val omega = random.nextDouble() * 20.0 - 10.0
-            val limit = 0.01 + random.nextDouble() * 1.99
+            val limit = if (it % 2 == 0) 0.01 + random.nextDouble() * 1.99
+                else Math.scalb(1.0 + random.nextDouble(), random.nextInt(2098) - 1074)
             val k = (BigDecimal(width) + BigDecimal(length)).divide(BigDecimal(2))
             val rotation = k * BigDecimal(omega)
             val forward = BigDecimal(vx)

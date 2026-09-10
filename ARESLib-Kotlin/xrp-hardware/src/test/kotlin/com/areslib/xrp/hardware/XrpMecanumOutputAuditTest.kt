@@ -186,4 +186,20 @@ class XrpMecanumOutputAuditTest {
         }
         assertEquals(0.03, differential.wheelRadiusMeters)
     }
+
+    @Test fun `subnormal maximum speed does not quantize representable mecanum powers`() {
+        val io = StandardXrpMecanumHardwareIO()
+        io.drive(ChassisSpeeds(1.2, 0.4, 0.0), Double.MIN_VALUE)
+        assertEquals(0.5, io.frontLeftMotor.effort, 1e-15)
+        assertEquals(1.0, io.frontRightMotor.effort)
+        assertEquals(1.0, io.backLeftMotor.effort)
+        assertEquals(0.5, io.backRightMotor.effort, 1e-15)
+    }
+
+    @Test fun `subnormal maximum speed does not quantize representable differential powers`() {
+        val io = StandardXrpDifferentialHardwareIO(trackWidthMeters = 2.0)
+        io.drive(ChassisSpeeds(1.5, 0.0, 0.5), Double.MIN_VALUE)
+        assertEquals(0.5, io.leftMotor.effort)
+        assertEquals(1.0, io.rightMotor.effort)
+    }
 }

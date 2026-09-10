@@ -255,6 +255,11 @@ every stop before propagating the original failure. stop attempts every motor an
 secondary failures as suppressed exceptions, without self-suppressing a reused exception.
 Failed stop attempts do not prove physical motors reached neutral.
 
+Drive power is computed directly as wheel speed divided by the larger of the requested maximum
+linear speed and the vector's maximum absolute wheel speed. This avoids a redundant intermediate
+rescaling and preserves representable power ratios even when the configured speed bound is
+subnormal. Nonfinite wheel calculations still neutralize the complete output vector.
+
 The standard drive paths are single-owner and allocation-free under the measured host fixtures.
 Interface default drive methods allocate scratch for custom implementations; getWheelDistances
 returns an allocated Pair, and chassis-returning math overloads allocate their result. Motor

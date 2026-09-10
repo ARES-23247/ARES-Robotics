@@ -2,6 +2,7 @@ package com.areslib.xrp.hardware
 
 import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.geometry.ChassisSpeeds
+import kotlin.math.abs
 
 /**
  * High-level hardware IO contract for a 4-wheel Mecanum XRP Drivetrain.
@@ -86,8 +87,10 @@ private fun applyMecanumDrive(io: XrpMecanumHardwareIO, speeds: ChassisSpeeds, m
         return
     }
     io.kinematics.toWheelSpeeds(vx, vy, omega, output)
-    MecanumKinematics.normalize(output, maximum)
-    io.setPowers(output[0] / maximum, output[1] / maximum, output[2] / maximum, output[3] / maximum)
+    // Convert directly to normalized power; an intermediate tiny speed can round away a
+    // representable power ratio. Invalid wheel vectors reach setPowers as invalid and neutralize.
+    val divisor = maxOf(maximum, maxOf(maxOf(abs(output[0]), abs(output[1])), maxOf(abs(output[2]), abs(output[3]))))
+    io.setPowers(output[0] / divisor, output[1] / divisor, output[2] / divisor, output[3] / divisor)
 }
 
 private inline fun attemptMotorStop(failure: Throwable?, stop: () -> Unit): Throwable? {
