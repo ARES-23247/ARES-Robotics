@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "79eb71464b90932ba5f00e3dcf25c0ce19ed620a7c4e4b2a66250b0eb5b01156",
+      "sha256": "49813fb17ba7ee49ee65d9a927aaef6930d7676eb59fa0f6d7e834113240b150",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree 9466080d5889c1b181ef99a90f922acf7f783dd3 bound to source68690714 candidate17.0.3-rc.9466080d5889;1587librarytests/API/coreKover/localpublication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree 94c8d572d10f182fef61add31d207c88c7ab5add bound to source7728c07e candidate17.0.3-rc.94c8d572d10f;1610librarytests/API/coreKover/localpublication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3303,7 +3303,11 @@
         "docs/audits/task-group-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass63-library.log",
-        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence",
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5254,7 +5258,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "edf4493f9c08d0616639054d6df5061bed65d779b93e8963afd636b5b6ef9746",
+      "sha256": "aee0c903ae351403d3da0b6cdd0804fc978b2c5e24b62926f679dc1934137f6a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5268,7 +5272,8 @@
         "docs/audits/task-timeout-arithmetic-audit.md: pass60 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5658,6 +5663,89 @@
         "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass63-library.log",
         "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/tasks/BlinkIndicatorTask.kt": {
+      "sha256": "9e82fdd82bad8612c4a5d01fc24d9c056f155a1c915107465b1b479fa660e21a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entirefile reviewed: validated constructor, default lifecycle/watchdog/callback restoration, terminal-output gate, negativeelapsed failure, exact modulo phase with overflow-safe ceilhalf period, equalhardwareposition suppression, fresh immutable action timestamps, authoredcolorA terminal behavior.32/32lines32/32branches6/6methods;150focused/1610full/API/consumerspassed. IndependentBigIntegeroracle200periods5samplesseed6401.10Kunchangedphase80bytesfocus0fullwithin256budget; transitionsallocate, noHIL/jitterclaim.",
+      "evidence": [
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/tasks/SetIndicatorColorTask.kt": {
+      "sha256": "dfe4245c12d0af502475ade4259f5847c9a5cee7bed37d38e1c55aa254099328",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entirefile reviewed: blanknamevalidation, default initialization status/watchdog origin, fresh timestamped single Reduxaction, completion flag, lighting resource, current DSL documentation.10/10lines2/2branches3/3methods; reinit/complete callback and watchdog tests plusfullconsumer gates passed.",
+      "evidence": [
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/RobotSequence.kt": {
+      "sha256": "960fefbec2d0220dc220ec9738f50f5c6fb73b0257650dd80bbd29a436f1677b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entirebuilder reviewed: DSL marker, task/resources/dispatch, conditional andtime/distance waits, followpath forwarding, namedcommand metadata/factory delegation,4groupbuilders, lightingmethods, validation, immutablegroup membership afterremoving2intermediatecopies. Inclusive duration/periodceil versus strictwaitUntilfloorquantization; finite/negative/zero/largeinputs andcapturedbuildermutation tested.41/41lines19/20branches24/24methods plus top-level1line1method.150focused/1610full/API/consumerspassed. Delegatedplanner/registry/hardwareimplementationnotcredited.",
+      "evidence": [
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/IndicatorTaskTimingTest.kt": {
+      "sha256": "b2ef59a8ec8fbe7d51edb8ab0e8358b60fc924f9be1d66c66601b5475e2d22cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire13method file reviewed and executed: lifecyclewatchdog/callbacks,terminalgates,exactodd/maxperiods,constructorvalidation,negativeelapsed,positionaliases,freshactions,reinit,BigInteger200period5sampleoracle,and10Kunchangedphaseallocationbudget. Initial10methods9failedoldsource; timestampscontrolpassed. Mockclock/ownedtasks cleaned. Focus80bytes/full0bytes,256budget,unsupportedJMXskip explicit.",
+      "evidence": [
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/RobotSequenceDurationTest.kt": {
+      "sha256": "c1c197f2cd1e72fbd734aba41726482b8a3e88413da4b26dd4daa467c5b06512",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire6method file reviewed/executed: fractionalceilwaiting/fallback/blink, sub-msperiodrejection andceilperiod, strictfractionaltimeoutfloor, nonfinite/negativevalidation, zeroandlargefiniteintegerboundaries. Initial5methods3failedoldsource; strict-timeout/invalid-duration controls passed. Ownedroots/childrenreset andexecutorfailurecleanup verified.",
+      "evidence": [
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/RobotSequenceIntegrationTest.kt": {
+      "sha256": "d80067c881422a9d077bca509c802f3570a9907d4ae2bf742e4942661a8bb386",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire4method file reviewed/executed: nestedcondition/wait/deadlinelighting routine throughExecutor, empty/validfollowpathconstructionwithmockdrivecleanup, capturedparent/childbuildermutation isolation, invaliddistance/names/emptygroup rejection. No native/HIL/window evidence; delegates covered only atbuilderboundary.",
+      "evidence": [
+        "docs/audits/indicator-task-timing-audit.md",
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "docs/audits/indicator-task-timing-audit.md": {
+      "sha256": "444be1321a189564008a70ce0adc7ec07e8a7430a16075540978d506dae749ff",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report checked against reproduced defects, exact phase/duration math, measured allocation limits, full/API/policy/consumer evidence and explicit timestamp/physical timing limits. Unexplainedexpandedbuild1h32wallnotrepresented asrobotlooplatency.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass64-library.log",
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
       ]
     }
   }
