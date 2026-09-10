@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "7ebfc2a3dcc8d0a83772c637e0b8ba710beaee7c08cb47bf9ec31a961079439d",
+      "sha256": "79eb71464b90932ba5f00e3dcf25c0ce19ed620a7c4e4b2a66250b0eb5b01156",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree 2b248e8b8af9109b9385dc3fa08aaed355744123 bound to source2eeb9c2a candidate17.0.3-rc.2b248e8b8af9;1566librarytests/API/coreKover/local publication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree 9466080d5889c1b181ef99a90f922acf7f783dd3 bound to source68690714 candidate17.0.3-rc.9466080d5889;1587librarytests/API/coreKover/localpublication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3299,7 +3299,11 @@
         "docs/audits/task-completion-boundary-audit.md",
         "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass62-library.log",
-        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence",
+        "docs/audits/task-group-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5250,7 +5254,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "36179cbc56ff8074a46d1655549a34718e3d84018d4ee3089974a3d648d9deb0",
+      "sha256": "edf4493f9c08d0616639054d6df5061bed65d779b93e8963afd636b5b6ef9746",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5263,7 +5267,8 @@
         "docs/audits/path-task-loop-audit.md: pass59 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-timeout-arithmetic-audit.md: pass60 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5361,8 +5366,8 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/Task.kt": {
-      "sha256": "f089f1bb4e56ccccb615d5437760392b04cf2d92805cb5880abbb3eeafeb2532",
-      "scope": "Prior path timing/math/marker and initialize/cancel/reset metadata review retained. Pass62 default end coordinates terminal status/deadline; marker completion checks timeout/status and retains ownership through rejected or throwing normal cleanup. New completion/path regressions and all focused/full consumers passed. Aggregate remains partial for resource ownership, other tasks and callback concurrency.",
+      "sha256": "57506058632dfc69ff07fba314584c9fddbd95038be17c33fae64d6a285cb3b9",
+      "scope": "Earlier path/marker/math and lifecycle metadata/completion review retained. Pass63 requiredResources KDoc now explicitly requires fixed per-instance mask matching group construction snapshots. Runtime implementation unchanged thispass; prior focused regressions and full consumers passed. Aggregate remains partial for resource ownership, other task types and callback concurrency.",
       "review": "partial",
       "validation": "passed",
       "evidence": [
@@ -5377,7 +5382,11 @@
         "docs/audits/task-completion-boundary-audit.md",
         "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass62-library.log",
-        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence",
+        "docs/audits/task-group-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/FollowPathFailureTest.kt": {
@@ -5542,15 +5551,19 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskGroupDispatcher.kt": {
-      "sha256": "05e430e0c1da98ca15a5fd3047e5166b478c591ccde940a22aff8f802a6b8752",
+      "sha256": "f527fad95c57f7fbd45d6e075118941cd7974f4942e2b6f9df071d3ef9cc3eb2",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass62 sequential/parallel/race/deadline normal-completion traversal and parent/child timeout propagation reviewed. Four duplicated normal-end blocks consolidated with rejected/throwing end cleanup ownership. All four groups tested at overdue/equality/predicate failure/end crossing cases. Helper16/24lines5/10branches3/3methods. Group identity/equality, duplicate membership, initialization failure, time arithmetic and reentrancy remain partial.",
+      "scope": "Pass62 completion/cleanup review retained. Pass63 group membership snapshots and requiredResources cache inspected; shared handledTasks identityset replaces3redundant value-equality completionsets. Equal/mutablehash/userthrowinghash cases, all4group duplicate/nested/callermutation/reinit cases and linkedinput operationcounts tested.127focused/1587full/API/consumers passed. Full file remains partial for initialization failures, callback reentrancy and time arithmetic.",
       "evidence": [
         "docs/audits/task-completion-boundary-audit.md",
         "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass62-library.log",
-        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence",
+        "docs/audits/task-group-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskCompletionBoundaryTest.kt": {
@@ -5598,6 +5611,53 @@
         "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass62-library.log",
         "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskResources.kt": {
+      "sha256": "b61b3a19b178a9a95e8c400602554ce589a28397086935961d9ece179560a662",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file reviewed:58distinctone-bit resource allocations and bounds; unsignedcustommaskdiagnostics; owned immutable RandomAccess group membership; one resource read per direct child; parallel overlap and union use same snapshot; iterative identity-only traversal rejects repeated nodes through all4built-in group types.43/43lines36/36branches6/6methods across all3classes.127focused/1587full/API/consumerspassed. Constructorcost may revisit descendants; customhiddenchildren and concurrent inputmutation not covered.",
+      "evidence": [
+        "docs/audits/task-group-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskGroupOwnershipTest.kt": {
+      "sha256": "158f5d9c33eac17e347e10ad750fd08459b781eb480377a1ea66dbeb29eb6285",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire17method file reviewed and executed: valueequal tasks remain independent, mutablehash/end uniqueness, duplicateidentity direct/nested/DSL rejection, fixed callerlist membership/cleanup, immutableinternalaccess, groupreuse, userhash/equality nevercalled, nestedresourceconflicts, linkedinput4100->0postconstructionindexedreads, resourcegetter3->1reads. Initial12ownershipmethods failed baseline. Tests own/reset taskregistries; no hardwaretimingclaim.",
+      "evidence": [
+        "docs/audits/task-group-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskResourceMaskTest.kt": {
+      "sha256": "41a07d94322b7f18eed04e7cdf660bb519c859cec89c0f5c78bafd98cb48d71a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire4method file reviewed/executed: all58allocated masks uniqueonebitpositive, exactrangeedges, invalidindexesrejectbeforeshiftwrap, unsignedbit63customdiagnostics and all11built-in names. Initial3methods2rangecontrols passed and unsigneddiagnosticfailed beforefix.",
+      "evidence": [
+        "docs/audits/task-group-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
+      ]
+    },
+    "docs/audits/task-group-ownership-audit.md": {
+      "sha256": "659f1714f7e97d438633591920fe32142929b422b0f8cbde30825a72c09a9f63",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report verified against reproduced ownership/mask defects, source corrections, deterministic operation counts and focused/full/API/policy/consumer evidence; explicit constructor/customtask/hardware limits preserved.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass63-library.log",
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
       ]
     }
   }
