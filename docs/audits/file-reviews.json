@@ -289,25 +289,33 @@
       ]
     },
     "scripts/audit_inventory.py": {
-      "sha256": "7728858107279066b591b2b146a711630523f2ff64ce6308a6ef39e7cda9b035",
+      "sha256": "a5c566b1f2bbdafc9f6b441061299a99cce32f9db2921e921b478469c868d99b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full file inspection; inventory pending/stale evidence, text/binary fingerprints. Repository tooling suite: 44 tests pass. CLI inventory includes 2354 tracked files, reports 29 partial prior reviews, and excludes untracked/build outputs.",
+      "scope": "Full-file review of ledger schema, duplicate-key and constant handling, finite status/digest types, nonblank completion evidence, one-shot path iterables, path validation, ordinary/symlink/self fingerprints, explicit self-refresh, atomic file replacement and CLI failure behavior. Runtime evidence is accounting, not authentication of historical test claims.",
       "evidence": [
         "docs/audits/README.md",
         "ARESLib-Kotlin/build/audit-pass4-scripts.log",
-        ".codex-validation/audit-inventory.json"
+        ".codex-validation/audit-inventory.json",
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
       ]
     },
     "scripts/tests/test_audit_inventory.py": {
       "sha256": "83e467194542ea9b85a867ac4d760815933b0277dc18c82ed24f4cb0bef964ac",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full file inspection; inventory pending/stale evidence, text/binary fingerprints. Repository tooling suite: 44 tests pass. CLI inventory includes 2354 tracked files, reports 29 partial prior reviews, and excludes untracked/build outputs.",
+      "scope": "Full three-method existing regression review: changed/missing/new/deleted accounting, separation of review and validation/evidence, and UTF-8/binary line-ending fingerprint semantics.",
       "evidence": [
         "docs/audits/README.md",
         "ARESLib-Kotlin/build/audit-pass4-scripts.log",
-        ".codex-validation/audit-inventory.json"
+        ".codex-validation/audit-inventory.json",
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
       ]
     },
     "ARES-XRP-Starter/main.py": {
@@ -463,10 +471,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "fc8d4360da150f72c858a5bb0bed2d871fdd7629f3091ece21d1bd44afd962b0",
+      "sha256": "2f45552f20da6fc3579434bacaf50bdfb6f5bf765b01955521fe24f8aa596373",
       "review": "reviewed",
-      "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 interpolation scope recorded, including insertion/read tradeoff and big-number costs; remaining kinematics/estimation, DSL and controller ownership queue retained. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 scope and remaining swerve/XRP review queue recorded; exact-candidate consumer and policy gates passed. Pass 44 index and remaining swerve/XRP motor/sensor/robot queue recorded. Final exact-candidate library, robot/starters, Studio and policy gates passed; up-to-date test reuse, six opt-in skips and coverage limits recorded in report. Pass 45 index and separate simulation/swerve/remaining scope queue updated. Final exact-candidate library/consumer/policy gates passed; up-to-date result reuse, six opt-in skips and coverage/model/physical limits documented.",
+      "validation": "not-applicable",
+      "scope": "Full guidance review/update: explicit scope/evidence types, self-hash representation and refresh, link ownership, atomic-write/concurrency limits, appropriate validation dispositions and current ledger-driven work queue. Stale duplicate status narrative removed while unresolved validation concerns remain explicit.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -564,7 +572,11 @@
         "ARESLib-Kotlin/build/audit-pass45-library.log",
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
-        "ARESLib-Kotlin/build/audit-pass45-policy.log"
+        "ARESLib-Kotlin/build/audit-pass45-policy.log",
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -5091,6 +5103,137 @@
         "ARESLib-Kotlin/build/audit-pass56-studio.log",
         "ARESLib-Kotlin/build/audit-pass56-policy.log",
         "ARESLib-Kotlin/build/audit-pass56-verified-evidence"
+      ]
+    },
+    "scripts/classify_ci_paths.py": {
+      "sha256": "e145c4b730868c29e63a914236a06c121092caf1b915d8a45841edbf28293cb5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file dependency/classification and CLI review: all scopes, policy-only allowlist, manual/review event behavior, conservative root fallback, literal Git paths, full length syntax, NUL/rename diff, fixed-output formatting, summary paths and failure propagation. No hosted scheduler execution claimed.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "scripts/check_ci_results.py": {
+      "sha256": "d2c604c53a9ba61de26166159180872827d26973b6bfaf0806554768f132b3e2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file review of successful/skipped results, required successful classification, failed/cancelled/unknown outcomes, JSON environment loading and CLI exit codes. Local helper/CLI tests and all-five-result dependency inspection passed.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "scripts/tests/test_classify_ci_paths.py": {
+      "sha256": "bb7dc9711f2d2f5e8a8fdc25dbe82343636cbab3e789388d9a6b0af07d3f291d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full twenty-method regression review: all product dependencies and combinations, review/manual events, conservative inputs, source/resource docs, NUL unusual and 4000-plus files, failed diffs and real Git cross-product rename CLI.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "scripts/tests/test_check_ci_results.py": {
+      "sha256": "be57a1ec2c6d35d87f47e44e8228b6cb39ba2d199d81025b18b7fdaa023fb548",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method regression review: pure result aggregation and actual CLI success/failure/cancellation/missing-classification exit codes.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "scripts/tests/test_audit_accounting_boundaries.py": {
+      "sha256": "baa413b3e6277443ec075bcdd46b0e54450241efd8df39f81ffc26ff7ea40a02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method regression review: blank/type-invalid completion evidence, reusable generator path set and self-record hash sensitivity; failures verified against copied pre-pass source, final cases pass.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "scripts/tests/test_audit_ledger_io.py": {
+      "sha256": "d0d34275b57ec3cc8211b26dcbb44296d95e81e7c8326b9d233f6670a79765cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eight-method schema/IO regression review: self-hash exact exclusion and input ownership, formatting normalization, malformed JSON/version, invalid paths/statuses, instrumented symlink target avoidance, atomic replacement failure, real-Git custom-ledger CLI and no automatic self-review grant.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "scripts/tests/test_ci_path_boundaries.py": {
+      "sha256": "476a9b339f9279a77bc2ed73aede52289037057a1fcc7101978fab0bb717b311",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method regression review: literal backslashes, root attribute full matrix and rejection of intermediate object-ID lengths. All methods reproduced failures against pre-pass source and pass after fixes.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    ".github/workflows/ci-scopes.yml": {
+      "sha256": "e05893da93b9334fbec3adbf2af4a8e35dcebd1c000a9a9967868f060850f340",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full reusable workflow configuration review: read-only permission, full-history checkout, PR/queue base selection, current checked-out head, environment-quoted CLI args, and all15 matching job/call outputs. Local YAML mapping checks and actionlint pass; no hosted run claimed.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "docs/ci-test-scopes.md": {
+      "sha256": "2799b0db89c39f64285f8d28d3563cbff75ae874dfb024960aefa65ea8e3a924",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full contract documentation review against classifier, reusable forwarding and scoped caller/result conditions. Source-linked Git attribute and required-check behavior checked against official references. Hosted rulesets and complete caller workflows remain separate review obligations.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "docs/audits/file-reviews.json": {
+      "sha256": "3815daab039e298f0e72903c867db9fc6eff04edc1f761e9390f0231a4fe3216",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
+      "evidence": [
+        "docs/audits/coverage-ci-tooling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "docs/audits/coverage-ci-tooling-audit.md": {
+      "sha256": "60dcb8b27703fb17dbf5df5fc03595933ed4a92536688f9dfdcda42be92db035",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass57 findings, baseline/permission distinction, test and workflow configuration evidence, exact local committed-diff scope preview, schema/self-hash limitations and remaining coverage reviewed against retained sources and command output.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+        "ARESLib-Kotlin/build/audit-pass57-policy.log",
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
       ]
     }
   }
