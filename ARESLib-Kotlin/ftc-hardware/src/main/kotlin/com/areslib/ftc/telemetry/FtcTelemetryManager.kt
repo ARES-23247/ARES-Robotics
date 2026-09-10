@@ -35,8 +35,8 @@ import com.areslib.math.geometry.toFormattedString
  * - `ARES/DriverStation/Telemetry/{i}`: Driver station text console lines.
  *
  * ### Performance Guarantees:
- * Pushes Driver Station console updates asynchronously to an [ArrayBlockingQueue], completely eliminating 15–30ms WiFi socket pauses
- * on main 50Hz control loops.
+ * Sends Driver Station console updates through a bounded latest-snapshot handoff. SDK console
+ * writes run on one background worker; serialization, callbacks and NT4 still consume loop time.
  *
  * @param store Redux state store instance.
  *
@@ -68,37 +68,37 @@ class FtcTelemetryManager(
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
     /** Active action logger recording Redux actions into disk storage. */
-    var actionLogger = ActionLogger(runId, robotId, 0, "BLUE", "Init")
-        private set
+    val actionLogger = ActionLogger(runId, robotId, 0, "BLUE", "Init")
         
     // Timestamp tracking for local Driver Station telemetry throttling
     private var lastLocalTelemetryUpdateMs = 0L
+    private var hasLocalTelemetryTime = false
+    private val closed = java.util.concurrent.atomic.AtomicBoolean(false)
 
     @Volatile private var isRunning = true
-    private val telemetryQueue = java.util.concurrent.ArrayBlockingQueue<List<Pair<String, String>>>(3)
-    @Volatile private var currentLocalTelemetry: Telemetry? = null
+    private class DriverStationFrame(val target: Telemetry,val lines: List<Pair<String,String>>)
+    private val latestDriverStationFrame = java.util.concurrent.atomic.AtomicReference<DriverStationFrame?>()
+    private val driverStationReady = java.util.concurrent.Semaphore(0)
+    private val previousActionListener = store.actionListener
+    private val ownedActionListener: (com.areslib.action.RobotAction) -> Unit = { action ->
+        if (!closed.get()) actionLogger.logAction(action,com.areslib.telemetry.RobotStatusTracker.activeOpMode)
+    }
 
     /** Thread-safe map storing custom telemetry strings displayed on the Driver Station console. */
     val customDriverStationText = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-    private val driverStationThread = kotlin.concurrent.thread(start = true, name = "ARES-DriverStation-Thread") {
+    private val driverStationThread = kotlin.concurrent.thread(start = true, isDaemon = true, name = "ARES-DriverStation-Thread") {
         while (isRunning) {
             try {
-                val snapshot = telemetryQueue.poll(100, java.util.concurrent.TimeUnit.MILLISECONDS)
-                val t = currentLocalTelemetry
-                if (snapshot != null && t != null) {
-                    // Drain the queue to the latest snapshot to avoid falling behind
-                    var latest = snapshot
-                    while (telemetryQueue.isNotEmpty()) {
-                        latest = telemetryQueue.poll() ?: latest
-                    }
-                    latest.forEach { (key, value) ->
-                        t.addData(key, value)
-                    }
-                    t.update()
-                }
+                driverStationReady.acquire()
+                if (!isRunning) break
+                val snapshot = latestDriverStationFrame.getAndSet(null) ?: continue
+                // Select the literal-value SDK overload, not String.format with no arguments.
+                snapshot.lines.forEach { (key,value) -> snapshot.target.addData(key,value as Any) }
+                snapshot.target.update()
             } catch (e: InterruptedException) {
-                // Thread interrupted
+                Thread.currentThread().interrupt()
+                break
             } catch (e: Exception) {
                 // Ignore background telemetry formatting errors
             }
@@ -112,7 +112,7 @@ class FtcTelemetryManager(
 
     init {
         // Intercept and record all dispatched store actions asynchronously
-        store.actionListener = { action -> actionLogger.logAction(action) }
+        store.actionListener = ownedActionListener
         hardwareRegistry.registerCloseable(this)
     }
 
@@ -132,11 +132,9 @@ class FtcTelemetryManager(
         dtSeconds: Double,
         batteryVoltage: Double
     ) {
+        check(!closed.get()) { "Telemetry manager is closed" }
         val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
-        if (detectedMode != actionLogger.mode) {
-            actionLogger.stop()
-            actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
-        }
+        actionLogger.beginMode(detectedMode)
 
         activeBrownoutGuard.update(batteryVoltage)
 
@@ -183,12 +181,10 @@ class FtcTelemetryManager(
         localTelemetry: Telemetry?,
         onSubclassPublish: () -> Unit = {}
     ) {
+        check(!closed.get()) { "Telemetry manager is closed" }
         activeBrownoutGuard = powerBrownoutGuard
         val detectedMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
-        if (detectedMode != actionLogger.mode) {
-            actionLogger.stop()
-            actionLogger = ActionLogger(runId, robotId, 0, "BLUE", detectedMode)
-        }
+        actionLogger.beginMode(detectedMode)
 
         // Throttle NT4 network writes dynamically if enabled.
         // Disk logging keeps accumulating the latest value and commits at the selected logging
@@ -197,67 +193,69 @@ class FtcTelemetryManager(
         val divisor = kotlin.math.max(1, state.tuning.telemetry.telemetryRateDivisor)
         val isNtFrame = enableNetworkStreaming && (telemetryFrameCounter % divisor == 0)
         dataLoggingTelemetry.ntEnabled = isNtFrame
+        try {
+            val estPose = state.drive.poseEstimator.estimatedPose
+            // Subclass-specific telemetry (motor powers, currents, custom subsystems)
+            onSubclassPublish()
 
-        val estPose = state.drive.poseEstimator.estimatedPose
-        // Subclass-specific telemetry (motor powers, currents, custom subsystems)
-        onSubclassPublish()
+            publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, powerBrownoutGuard)
 
-        publisher.publish(state, gamepad1, gamepad2, dtSeconds, batteryVoltage, powerBrownoutGuard)
+            // Vision telemetry status
+            dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
+            dataLoggingTelemetry.putString("Drive/Odometry_Source", com.areslib.telemetry.RobotStatusTracker.odometrySource)
+            dataLoggingTelemetry.putString("Drive/Pinpoint_Status", com.areslib.telemetry.RobotStatusTracker.odometryStatus)
 
-        // Vision telemetry status
-        dataLoggingTelemetry.putString("Vision/Status", visionTracker.lastVisionStatus)
-        dataLoggingTelemetry.putString("Drive/Odometry_Source", com.areslib.telemetry.RobotStatusTracker.odometrySource)
-        dataLoggingTelemetry.putString("Drive/Pinpoint_Status", com.areslib.telemetry.RobotStatusTracker.odometryStatus)
+            // Global custom hardware telemetry (also governed by ntEnabled flag)
+            hardwareRegistry.publishAll(dataLoggingTelemetry)
 
-        // Global custom hardware telemetry (also governed by ntEnabled flag)
-        hardwareRegistry.publishAll(dataLoggingTelemetry)
-
-        // Invoke all registered custom publishers
-        for (i in 0 until customPublishers.size) {
-            customPublishers[i](state, dataLoggingTelemetry)
-        }
-
-        currentLocalTelemetry = localTelemetry
-
-        // Human-readable local driver station console printouts
-        // Non-blocking architecture: string updates are pushed to a background thread queue. 
-        // This completely eliminates the 15-30ms synchronous WiFi socket stalls from `Telemetry.update()`.
-        if (timestamp - lastLocalTelemetryUpdateMs >= 250L) { // 4Hz real-time updates!
-            val snapshot = mutableListOf(
-                "EKF Pose (X, Y, Deg)" to estPose.toFormattedString(),
-                "Raw Pinpoint (X, Y, Deg)" to com.areslib.math.geometry.Pose2d(
-                    state.drive.odometryX,
-                    state.drive.odometryY,
-                    com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
-                ).toFormattedString(),
-                "Odometry Source" to com.areslib.telemetry.RobotStatusTracker.odometrySource,
-                "Pinpoint Status" to com.areslib.telemetry.RobotStatusTracker.odometryStatus,
-                "Limelight Pose (X, Y, Deg)" to (visionTracker.lastLimelightPose?.let { pose ->
-                    val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
-                    "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
-                } ?: "NO TARGET"),
-                "Vision Status" to visionTracker.lastVisionStatus
-            )
-            customDriverStationText.forEach { (k, v) -> snapshot.add(k to v) }
-            if (localTelemetry != null) {
-                telemetryQueue.offer(snapshot)
+            // Invoke all registered custom publishers
+            for (i in 0 until customPublishers.size) {
+                customPublishers[i](state, dataLoggingTelemetry)
             }
+
+            // Human-readable local driver station console printouts
+            // Non-blocking architecture: string updates are handed to the background worker.
+            val localElapsed = timestamp-lastLocalTelemetryUpdateMs
+            if (!hasLocalTelemetryTime || timestamp < lastLocalTelemetryUpdateMs || localElapsed < 0L || localElapsed >= 250L) {
+                val snapshot = mutableListOf(
+                    "EKF Pose (X, Y, Deg)" to estPose.toFormattedString(),
+                    "Raw Pinpoint (X, Y, Deg)" to com.areslib.math.geometry.Pose2d(
+                        state.drive.odometryX,
+                        state.drive.odometryY,
+                        com.areslib.math.geometry.Rotation2d(state.drive.odometryHeading)
+                    ).toFormattedString(),
+                    "Odometry Source" to com.areslib.telemetry.RobotStatusTracker.odometrySource,
+                    "Pinpoint Status" to com.areslib.telemetry.RobotStatusTracker.odometryStatus,
+                    "Limelight Pose (X, Y, Deg)" to (visionTracker.lastLimelightPose?.let { pose ->
+                        val ageSec = (timestamp - visionTracker.lastLimelightTimeMs) / 1000.0
+                        "${pose.toFormattedString()} (${String.format("%.1f", ageSec)}s ago)"
+                    } ?: "NO TARGET"),
+                    "Vision Status" to visionTracker.lastVisionStatus
+                )
+                customDriverStationText.forEach { (k, v) -> snapshot.add(k to v) }
+                if (localTelemetry != null) {
+                    val frame = DriverStationFrame(localTelemetry,snapshot)
+                    if (latestDriverStationFrame.getAndSet(frame) == null) driverStationReady.release()
+                }
             
-            // Publish text console lines to NT4 for ARES-Analytics Driver Station widget
-            for (i in snapshot.indices) {
-                val (k, v) = snapshot[i]
-                dataLoggingTelemetry.putString("ARES/DriverStation/Telemetry/$i", "$k: $v")
+                // Publish text console lines to NT4 for ARES-Analytics Driver Station widget
+                for (i in snapshot.indices) {
+                    val (k, v) = snapshot[i]
+                    dataLoggingTelemetry.putString("ARES/DriverStation/Telemetry/$i", "$k: $v")
+                }
+                lastLocalTelemetryUpdateMs = timestamp
+                hasLocalTelemetryTime = true
             }
-            lastLocalTelemetryUpdateMs = timestamp
+
+            // Finalize frame: disk log always, NT4 flush only on NT frames
+            publishFtcRuntimeStatus()
+            dataLoggingTelemetry.putNumber("Diagnostics/DroppedActions", actionLogger.droppedActionCount.toDouble())
+            dataLoggingTelemetry.update()
+
+        } finally {
+            // Fatal diagnostics and other out-of-band puts must not inherit a failed frame's throttle.
+            dataLoggingTelemetry.ntEnabled = true
         }
-
-        // Finalize frame: disk log always, NT4 flush only on NT frames
-        publishFtcRuntimeStatus()
-        dataLoggingTelemetry.putNumber("Diagnostics/DroppedActions", actionLogger.droppedActionCount.toDouble())
-        dataLoggingTelemetry.update()
-
-        // Reset NT4 enabled for any out-of-band puts between frames
-        dataLoggingTelemetry.ntEnabled = true
     }
 
     private fun publishFtcRuntimeStatus() {
@@ -281,10 +279,21 @@ class FtcTelemetryManager(
      * Stops background Driver Station thread and flushes active log files.
      */
     override fun close() {
+        if (!closed.compareAndSet(false,true)) return
         isRunning = false
+        if (store.actionListener === ownedActionListener) store.actionListener = previousActionListener
+        latestDriverStationFrame.set(null)
         driverStationThread.interrupt()
-        dataLoggingTelemetry.close()
-        actionLogger.stop()
+        var failure: Throwable? = null
+        try { dataLoggingTelemetry.close() } catch (error: Throwable) { failure=error }
+        try { actionLogger.stop() } catch (error: Throwable) {
+            if(failure==null) failure=error else failure.addSuppressed(error)
+        }
+        if (Thread.currentThread() !== driverStationThread) {
+            try { driverStationThread.join(1000) }
+            catch (_: InterruptedException) { Thread.currentThread().interrupt() }
+        }
+        failure?.let { throw it }
     }
 }
 

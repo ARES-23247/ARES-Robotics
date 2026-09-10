@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicLong
  * actions, mutable path points, arrays, lists, and season payloads at the instant [logAction]
  * accepts them. Producer reuse after dispatch therefore cannot rewrite recorded history.
  *
- * Active files end in `.jsonl.active` and are renamed only after [stop] drains all accepted
- * actions. Names contain both the run id and mode. Creation uses `CREATE_NEW` plus a numeric suffix
+ * Active files end in `.jsonl.active`. Their queued records drain before a mode transition or
+ * [stop] exposes the completed file. Names contain both the run id and mode. Creation uses `CREATE_NEW` plus a numeric suffix
  * so equal clock values and repeated run ids never truncate an earlier run; finalization never
  * deletes or replaces an existing completed log.
  */
@@ -36,11 +36,17 @@ class ActionLogger(
     val robotId: String = "",
     val matchNumber: Int = 0,
     val alliance: String = "BLUE",
-    val mode: String = "Init",
+    mode: String = "Init",
     private val logDirectory: File? = null
 ) {
     private val gson = Gson()
-    private val queue = LinkedBlockingQueue<ActionReplay.EncodedAction>(QUEUE_CAPACITY)
+    @Volatile private var requestedMode = mode
+    /** Latest producer mode; each accepted action keeps its own enqueue-time mode. */
+    val mode: String get() = requestedMode
+    private var writerMode = mode
+    private class PendingAction(var action: ActionReplay.EncodedAction? = null, var mode: String = "")
+    private val queue = LinkedBlockingQueue<PendingAction>(QUEUE_CAPACITY)
+    private val actionPool = LinkedBlockingQueue<PendingAction>().apply { repeat(16) { offer(PendingAction()) } }
     private var writer: BufferedWriter? = null
     private var activeLogFile: File? = null
     private var completedLogFile: File? = null
@@ -68,26 +74,7 @@ class ActionLogger(
 
     init {
         try {
-            val javaVendor = System.getProperty("java.vendor") ?: ""
-            val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
-            val logDir = logDirectory ?: if (isAndroid) {
-                File("/sdcard/FIRST/telemetry_logs/")
-            } else {
-                File("./logs/")
-            }
-            Files.createDirectories(logDir.toPath())
-
-            val timestamp = SimpleDateFormat(
-                "yyyy-MM-dd_HH-mm-ss-SSS",
-                Locale.getDefault()
-            ).format(Date(RobotClock.currentTimeMillis()))
-            val safeRunId = sanitize(runId, "no-run-id")
-            val safeMode = sanitize(mode, "Unknown")
-            val baseName = "action_log_${timestamp}_${safeRunId}_${safeMode}"
-            val reservation = reserveUniqueFile(logDir, baseName)
-            activeLogFile = reservation.active
-            completedLogFile = reservation.completed
-            writer = reservation.writer
+            openWriter(writerMode)
             isRunning = true
             startLoggingLoop()
         } catch (e: Exception) {
@@ -98,16 +85,41 @@ class ActionLogger(
         }
     }
 
+    private fun openWriter(fileMode: String) {
+        val javaVendor = System.getProperty("java.vendor") ?: ""
+        val isAndroid = javaVendor.contains("Android", ignoreCase = true) || File("/sdcard").exists()
+        val logDir = logDirectory ?: if (isAndroid) File("/sdcard/FIRST/telemetry_logs/") else File("./logs/")
+        Files.createDirectories(logDir.toPath())
+        val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS",Locale.getDefault())
+            .format(Date(RobotClock.currentTimeMillis()))
+        val safeRunId = sanitize(runId,"no-run-id")
+        val safeMode = sanitize(fileMode,"Unknown")
+        val reservation = reserveUniqueFile(logDir,"action_log_${timestamp}_${safeRunId}_${safeMode}")
+        activeLogFile = reservation.active
+        completedLogFile = reservation.completed
+        writer = reservation.writer
+        writerMode = fileMode
+    }
+
+    /** Selects the mode for subsequent actions without waiting for file IO. */
+    fun beginMode(mode: String) {
+        synchronized(queueStateLock) { if (isRunning) requestedMode = mode }
+    }
+
     /**
      * Snapshots and enqueues [action]. Disk I/O remains on the background worker; queue insertion
      * never blocks. Encoding failures and full/shutdown queues increment [droppedActionCount].
      */
-    fun logAction(action: RobotAction) {
+    fun logAction(action: RobotAction) = logAction(action, mode)
+
+    /** Atomically captures explicit mode and action data before queueing either to the writer. */
+    fun logAction(action: RobotAction, mode: String) {
         synchronized(queueStateLock) {
             if (!isRunning) {
                 droppedActions.incrementAndGet()
                 return
             }
+            requestedMode = mode
             val snapshot = try {
                 ActionReplay.encodeForLog(action)
             } catch (e: Exception) {
@@ -115,7 +127,9 @@ class ActionLogger(
                 System.err.println("ActionLogger: Failed to snapshot ${action.javaClass.name}: ${e.message}")
                 return
             }
-            if (!queue.offer(snapshot)) {
+            val pending = (actionPool.poll() ?: PendingAction()).apply { this.action = snapshot; this.mode = mode }
+            if (!queue.offer(pending)) {
+                recyclePending(pending)
                 droppedActions.incrementAndGet()
             }
         }
@@ -127,9 +141,16 @@ class ActionLogger(
             try {
                 while (isRunning || queue.isNotEmpty()) {
                     try {
-                        val action = queue.poll(100, TimeUnit.MILLISECONDS) ?: continue
-                        beforeWriteForTest?.invoke()
-                        writeAction(action)
+                        val pending = queue.poll(100, TimeUnit.MILLISECONDS) ?: continue
+                        try {
+                            beforeWriteForTest?.invoke()
+                            if (writerMode != pending.mode || writer == null) {
+                                closeWriter()
+                                finalizeLogFile()
+                                openWriter(pending.mode)
+                            }
+                            writeAction(checkNotNull(pending.action),pending.mode)
+                        } finally { recyclePending(pending) }
                     } catch (_: InterruptedException) {
                         wasInterrupted = true
                     } catch (e: Exception) {
@@ -146,7 +167,13 @@ class ActionLogger(
         }
     }
 
-    private fun writeAction(action: ActionReplay.EncodedAction) {
+    private fun recyclePending(pending: PendingAction) {
+        pending.action = null
+        pending.mode = ""
+        actionPool.offer(pending)
+    }
+
+    private fun writeAction(action: ActionReplay.EncodedAction, fileMode: String) {
         val output = writer ?: throw IOException("Action log writer is closed")
         output.write("{\"schema_version\":")
         output.write(ActionReplay.SCHEMA_VERSION.toString())
@@ -159,7 +186,7 @@ class ActionLogger(
         output.write(",\"alliance\":")
         output.write(gson.toJson(alliance))
         output.write(",\"op_mode\":")
-        output.write(gson.toJson(mode))
+        output.write(gson.toJson(fileMode))
         output.write(",\"type\":")
         output.write(gson.toJson(action.type))
         output.write(",\"payload\":")

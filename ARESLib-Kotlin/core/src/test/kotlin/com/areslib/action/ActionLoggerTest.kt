@@ -25,6 +25,41 @@ class ActionLoggerTest {
     @TempDir
     lateinit var tempDir: File
 
+    @Test fun `queued actions preserve mode across nonblocking transitions behind a stalled writer`() {
+        val logger=ActionLogger(runId="mode-capture",logDirectory=tempDir)
+        val entered=CountDownLatch(1)
+        val release=CountDownLatch(1)
+        val failure=java.util.concurrent.atomic.AtomicReference<Throwable?>()
+        logger.beforeWriteForTest={ entered.countDown(); check(release.await(5,TimeUnit.SECONDS)) }
+        val producer=Thread({
+            try {
+                logger.beginMode("Auto")
+                logger.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.BLUE,2L))
+                logger.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.RED,3L),"TeleOp")
+            } catch(error: Throwable) { failure.set(error) }
+        },"audit-owned-action-modes")
+        try {
+            logger.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.RED,1L))
+            assertTrue(entered.await(2,TimeUnit.SECONDS))
+            producer.start()
+            producer.join(1000)
+            assertFalse(producer.isAlive)
+        } finally {
+            release.countDown()
+            producer.join(3000)
+            logger.stop()
+            check(!producer.isAlive)
+        }
+        failure.get()?.let { throw it }
+        val records=tempDir.listFiles().orEmpty().filter { it.extension=="jsonl" }.map { file ->
+            JsonParser.parseString(file.readText().trim()).asJsonObject
+        }
+        assertEquals(mapOf(1L to "Init",2L to "Auto",3L to "TeleOp"),records.associate {
+            it["payload"].asJsonObject["timestampMs"].asLong to it["op_mode"].asString
+        })
+        assertEquals(0L,logger.droppedActionCount)
+    }
+
     @Test
     fun `mutable action is snapshotted and file becomes visible only after drain`() {
         val logger = ActionLogger(

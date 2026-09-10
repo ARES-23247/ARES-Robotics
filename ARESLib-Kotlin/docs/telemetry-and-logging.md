@@ -117,6 +117,24 @@ defaults to retention enabled.
 - Keys first seen after the header are preserved as JSON in `_ExtraFieldsJson` rather than changing row width.
 - Pooled mutable maps returned by logger helpers must not be retained by callers after submission.
 
+Finite doubles use lossless JVM double text, including scientific notation where appropriate;
+CSV serialization does not round sensor values to four decimal places. Presentation rounding
+belongs in the dashboard. Mode-specific CSV and action-log file transitions run on their existing
+writer threads. Each queued record captures its mode, so a slow writer cannot reassign it to a
+later OpMode. Both streams retain bounded queues and reuse their queue envelopes.
+
+`DataLoggingTelemetry` flushes pending throttled values under their original mode before accepting
+new-mode values, and flushes the final pending values on close. The first frame is emitted even at
+replay timestamp zero; clock rewind or elapsed-time overflow restarts the throttle. Close is terminal
+and idempotent for telemetry publication. Counters describe the logger's lifetime across modes.
+
+Initial logger construction and final drain still perform or wait for file IO. Final drain preserves
+accepted records rather than imposing an unreported loss deadline. HardwareRegistry therefore closes
+registered device resources before auxiliary services such as telemetry. FTC Driver Station output
+uses one latest-snapshot slot and a sleeping worker; a slow SDK consumer receives the newest pending
+snapshot. Close detaches only its owned action callback, clears that slot and waits up to one second
+for the Driver Station worker. A blocked SDK call may outlive the join until that call returns.
+
 Monitor `droppedFrameCount` in stress tests. A zero count is expected during ordinary operation, but the bounded queue deliberately favors robot-loop progress over blocking when storage cannot keep up.
 
 The logger publishes operational evidence under `Diagnostics/Logging/*`: `Profile`,

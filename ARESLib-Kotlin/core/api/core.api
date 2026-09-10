@@ -23,6 +23,7 @@ public final class com/areslib/action/ActionLogger {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/io/File;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/io/File;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun beginMode (Ljava/lang/String;)V
 	public final fun getAlliance ()Ljava/lang/String;
 	public final fun getDroppedActionCount ()J
 	public final fun getMatchNumber ()I
@@ -30,6 +31,7 @@ public final class com/areslib/action/ActionLogger {
 	public final fun getRobotId ()Ljava/lang/String;
 	public final fun getRunId ()Ljava/lang/String;
 	public final fun logAction (Lcom/areslib/action/RobotAction;)V
+	public final fun logAction (Lcom/areslib/action/RobotAction;Ljava/lang/String;)V
 	public final fun stop ()V
 }
 

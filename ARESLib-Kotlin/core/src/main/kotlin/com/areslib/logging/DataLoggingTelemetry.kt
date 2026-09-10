@@ -23,9 +23,9 @@ private const val LOG_PRUNED_FILES_TOPIC = "Diagnostics/Logging/PrunedFiles"
  * most recent value for each key wins. Booleans are stored in CSV as `1.0`/`0.0`; double arrays are
  * stored as pipe-delimited strings.
  *
- * This class is designed for one robot-loop owner and is not thread-safe. Mode transitions close the
- * previous logger synchronously before creating the next mode-specific file. [close] drains disk
- * logging before closing the live backend.
+ * This class is designed for one robot-loop owner and is not thread-safe. Mode is captured with
+ * each queued frame; file transitions run on the writer thread. [close] drains disk logging before
+ * closing the live backend and is terminal. Pending throttled values are flushed at mode/close boundaries.
  */
 class DataLoggingTelemetry private constructor(
     private val ntTelemetry: ITelemetry?,
@@ -52,15 +52,18 @@ class DataLoggingTelemetry private constructor(
         runId: String? = null
     ) : this(ntTelemetry, loggingPolicy, logDirectory, runId, Unit)
     
-    private var logger = ARESDataLogger("Init", logDirectory, loggingPolicy, runId)
+    private val logger = ARESDataLogger("Init", logDirectory, loggingPolicy, runId)
     private val currentFrame = java.util.HashMap<String, Any>()
     private val frameLock = Any()
     private var currentMode = "Init"
+    private var closed = false
+    private var hasLogTime = false
+    private var lastFrameTimeMs = 0L
     private val arrayBuilder = java.lang.StringBuilder(128)
 
     /**
      * When false, NT4 network forwarding is suppressed for this frame.
-     * Disk logging still occurs every frame regardless of this flag.
+     * Disk snapshot cadence follows the logging profile independently of this flag.
      * Set by FtcTelemetryManager to throttle WiFi traffic.
      */
     var ntEnabled: Boolean = true
@@ -84,24 +87,28 @@ class DataLoggingTelemetry private constructor(
 
     /** Stores [value] in the current frame and forwards it when network output is enabled. */
     override fun putNumber(key: String, value: Double) {
+        prepareMode()
         synchronized(frameLock) { currentFrame[key] = value }
         if (ntEnabled) ntTelemetry?.putNumber(key, value)
     }
 
     /** Stores [value] numerically in CSV while preserving boolean type on the live backend. */
     override fun putBoolean(key: String, value: Boolean) {
+        prepareMode()
         synchronized(frameLock) { currentFrame[key] = if (value) 1.0 else 0.0 }
         if (ntEnabled) ntTelemetry?.putBoolean(key, value)
     }
 
     /** Stores and optionally forwards a string value. */
     override fun putString(key: String, value: String) {
+        prepareMode()
         synchronized(frameLock) { currentFrame[key] = value }
         if (ntEnabled) ntTelemetry?.putString(key, value)
     }
 
     /** Serializes [value] for CSV and forwards the original array synchronously when enabled. */
     override fun putDoubleArray(key: String, value: DoubleArray) {
+        prepareMode()
         synchronized(frameLock) {
             arrayBuilder.setLength(0)
             for (i in value.indices) {
@@ -130,16 +137,9 @@ class DataLoggingTelemetry private constructor(
 
     /** Commits a due disk frame, handles mode rollover, and flushes enabled live telemetry. */
     override fun update() {
+        prepareMode()
         val now = com.areslib.util.RobotClock.currentTimeMillis()
-
-        // Check if mode transitioned
-        val detectedMode = RobotStatusTracker.activeOpMode
-        if (detectedMode != currentMode) {
-            logger.stop()
-            currentMode = detectedMode
-            logger = ARESDataLogger(currentMode, logDirectory, loggingPolicy, runId)
-            ntTelemetry?.putString("OpMode", currentMode)
-        }
+        lastFrameTimeMs = now
 
         val logMetrics = logger.metricsSnapshot()
         putString(LOG_PROFILE_TOPIC, logMetrics.profile.name)
@@ -153,16 +153,11 @@ class DataLoggingTelemetry private constructor(
         putNumber(LOG_PRUNED_FILES_TOPIC, logMetrics.prunedFiles.toDouble())
         
         // Log the complete frame asynchronously using the GC-free map pool only if interval elapsed
-        if (now - lastLogTimeMs >= minLogIntervalMs) {
+        val elapsed = now - lastLogTimeMs
+        if (!hasLogTime || now < lastLogTimeMs || elapsed < 0L || elapsed >= minLogIntervalMs) {
             lastLogTimeMs = now
-            val map = logger.obtainMap()
-            synchronized(frameLock) {
-                currentFrame["TimestampMs"] = now
-                currentFrame["OpMode"] = currentMode
-                map.putAll(currentFrame)
-                currentFrame.clear()
-            }
-            logger.logFrame(map)
+            hasLogTime = true
+            flushFrame(now)
         }
         
         // Forward the update trigger to live streaming network tables (only on NT-enabled frames)
@@ -173,8 +168,37 @@ class DataLoggingTelemetry private constructor(
      * Drains and closes disk logging, then closes the optional live backend.
      */
     override fun close() {
-        logger.stop()
-        ntTelemetry?.close()
+        if (closed) return
+        closed = true
+        try {
+            flushFrame(lastFrameTimeMs)
+            logger.stop()
+        } finally { ntTelemetry?.close() }
+    }
+
+    private fun prepareMode() {
+        check(!closed) { "Telemetry is closed" }
+        val detectedMode = RobotStatusTracker.activeOpMode
+        if (detectedMode != currentMode) {
+            // Flush the previous mode before a new put can mix fields from two modes.
+            flushFrame(lastFrameTimeMs)
+            currentMode = detectedMode
+            hasLogTime = false
+            ntTelemetry?.putString("OpMode", currentMode)
+        }
+    }
+
+    private fun flushFrame(timestampMs: Long) {
+        val map = synchronized(frameLock) {
+            if (currentFrame.isEmpty()) return
+            logger.obtainMap().also {
+                it.putAll(currentFrame)
+                it["TimestampMs"] = timestampMs
+                it["OpMode"] = currentMode
+                currentFrame.clear()
+            }
+        }
+        logger.logFrame(map, currentMode)
     }
 
     /** Latest disk-writer metrics without waiting for the background queue to drain. */

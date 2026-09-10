@@ -365,8 +365,9 @@ class HardwareRegistry {
 
     /**
      * Stops polling, waits up to one second for its daemon, closes registered resources on a
-     * best-effort basis, and clears all registry state. Safe to call during repeated test/OpMode
-     * teardown; a resource registered in both ownership lists may receive more than one close call.
+     * best-effort basis, and clears all registry state. Registered devices close before auxiliary
+     * services so actuator shutdown cannot wait behind a logger drain. Resources shared between
+     * ownership lists close once by identity. Safe during repeated test/OpMode teardown.
      */
     fun closeAll() {
         val thread = synchronized(this) {
@@ -386,15 +387,6 @@ class HardwareRegistry {
         pollingFailureCounts.clear()
 
         val closedByIdentity = Collections.newSetFromMap(IdentityHashMap<AutoCloseable, Boolean>())
-        for (i in 0 until closeables.size) {
-            val closeable = closeables[i]
-            if (!closedByIdentity.add(closeable)) continue
-            try {
-                closeable.close()
-            } catch (_: Exception) {}
-        }
-        closeables.clear()
-
         for (i in 0 until devicesList.size) {
             val device = devicesList[i]
             if (device is AutoCloseable && closedByIdentity.add(device)) {
@@ -403,6 +395,14 @@ class HardwareRegistry {
                 } catch (_: Exception) {}
             }
         }
+        for (i in 0 until closeables.size) {
+            val closeable = closeables[i]
+            if (!closedByIdentity.add(closeable)) continue
+            try {
+                closeable.close()
+            } catch (_: Exception) {}
+        }
+        closeables.clear()
         devices.clear()
         devicesList.clear()
         devicesNamesList.clear()
