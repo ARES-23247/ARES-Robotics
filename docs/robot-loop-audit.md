@@ -610,3 +610,10 @@ The [Phoenix binding audit](audits/phoenix-reader-binding-audit.md) exercises th
 untested source adapter through vendor mocks: signal mapping/cloning, configured rates,
 time/state ownership and public-constructor failure paths. Production behavior is unchanged.
 Native implementation behavior and physical timing remain outside the mock evidence.
+
+## Fifty-second pass: CTRE output writer
+
+The [CTRE writer audit](audits/ctre-swerve-writer-audit.md) adds local brake attempts for invalid
+motion and failed writes, preserves original errors, and lets explicit brake requests ignore
+unused invalid motion data. Numerical-oracle, request-reuse and allocation tests pass; surrounding
+bridge shutdown, feedback gating and physical stopping remain separate obligations.

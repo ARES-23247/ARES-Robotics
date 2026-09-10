@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "f0d7a5d081d6c89695fd6b8785610011750b44696e866f66bce8ef3d5aa13a38",
+      "sha256": "69bf56e37f66d9e8405c47f22cec3a0156e328e933b800b05e315924ed44148f",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass51: Pass51 Phoenix reader binding evidence, source/fixture/build scope, test/publication isolation and explicit native/hardware limits reviewed against source and preserved gates.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass51: Pass51 Phoenix reader binding evidence, source/fixture/build scope, test/publication isolation and explicit native/hardware limits reviewed against source and preserved gates. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2452,7 +2452,8 @@
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
-        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks",
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3114,67 +3115,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "10ae457da3e06c5db606b7c99a0597e3501501819c0ff9ff20934f08b0984e25",
+      "sha256": "78498a9b9c2fd8426b9f6221fda573ecfa9bdb85d5949e41dcb047bc0637df2a",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence.",
-      "evidence": [
-        "docs/audits/primitive-filter-audit.md",
-        "ARESLib-Kotlin/build/audit-pass39-before.log",
-        "ARESLib-Kotlin/build/audit-pass39-focused.log",
-        "ARESLib-Kotlin/build/audit-pass39-library.log",
-        "ARESLib-Kotlin/build/audit-pass39-studio.log",
-        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass39-policy.log",
-        "docs/audits/joystick-conditioning-audit.md",
-        "ARESLib-Kotlin/build/audit-pass40-before.log",
-        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass40-library.log",
-        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log",
-        "docs/audits/calibrated-interpolation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass41-before.log",
-        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
-        "ARESLib-Kotlin/build/audit-pass41-library.log",
-        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
-        "docs/audits/two-link-arm-audit.md",
-        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
-        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log",
-        "docs/audits/wheel-kinematics-xrp-audit.md",
-        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
-        "ARESLib-Kotlin/build/audit-pass43-library.log",
-        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass43-studio.log",
-        "ARESLib-Kotlin/build/audit-pass43-policy.log",
-        "docs/audits/xrp-mecanum-output-audit.md",
-        "ARESLib-Kotlin/build/audit-pass44-final-focus-complete.log",
-        "ARESLib-Kotlin/build/audit-pass44-library-final.log",
-        "ARESLib-Kotlin/build/audit-pass44-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass44-studio.log",
-        "ARESLib-Kotlin/build/audit-pass44-policy.log",
-        "docs/audits/xrp-jvm-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass45-final-focus.log",
-        "ARESLib-Kotlin/build/audit-pass45-library.log",
-        "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass45-studio.log",
-        "ARESLib-Kotlin/build/audit-pass45-policy.log",
-        "docs/audits/xrp-simulation-control-audit.md",
-        "docs/audits/swerve-angle-audit.md",
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
-        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
-        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
-      ]
-    },
-    "release/ares-source-tree.txt": {
-      "sha256": "31268f6c7e3a1ecbe65e329f48071cfea406ce8c6cb8383ded3697554950f5ca",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Exact library tree ba1d707014f8d2091e3f918d41c92044c28fe92a matches source817a2ac6 and candidate17.0.3-rc.ba1d707014f8. Final library/API/candidate gates passed; runtime JAR entry contents match prior candidate although archive container hashes differ.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3225,7 +3169,68 @@
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
-        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
+      ]
+    },
+    "release/ares-source-tree.txt": {
+      "sha256": "81193296d51eb2cc6f20e12addb40915d3a5237b5fcfc08b9ba7d51b933a7871",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Exact library treea45e33938c0efbf87ca17dc41720beb457505c85 matches source8bd6206f and unique candidate17.0.3-rc.a45e33938c0e; full library/API/local publication passed.",
+      "evidence": [
+        "docs/audits/primitive-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass39-before.log",
+        "ARESLib-Kotlin/build/audit-pass39-focused.log",
+        "ARESLib-Kotlin/build/audit-pass39-library.log",
+        "ARESLib-Kotlin/build/audit-pass39-studio.log",
+        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass39-policy.log",
+        "docs/audits/joystick-conditioning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass40-before.log",
+        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+        "ARESLib-Kotlin/build/audit-pass40-library.log",
+        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass40-policy.log",
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log",
+        "docs/audits/xrp-mecanum-output-audit.md",
+        "ARESLib-Kotlin/build/audit-pass44-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass44-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass44-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass44-studio.log",
+        "ARESLib-Kotlin/build/audit-pass44-policy.log",
+        "docs/audits/xrp-jvm-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass45-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass45-library.log",
+        "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass45-studio.log",
+        "ARESLib-Kotlin/build/audit-pass45-policy.log",
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/swerve-angle-audit.md",
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks",
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4637,6 +4642,64 @@
       "scope": "Pass51 Phoenix reader binding evidence, source/fixture/build scope, test/publication isolation and explicit native/hardware limits reviewed against source and preserved gates.",
       "evidence": [
         "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/drivetrain/SwerveCtreSpeedRequestWriter.kt": {
+      "sha256": "baf126bff329499f790997d49b7c3059122194bd2508ab0e4fbc778c8deb6e56",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full writer review: finite coupled motion/scale, explicit brake precedence, local brake attempts and original failures, frame/scaling arithmetic, fixed field perspective without a second alliance rotation, velocity/position control in both frames, mutable request ownership and reuse. Six new baseline regressions failed; final16focused and full1385library tests passed; Kover39/39lines24/24branches6/6methods. One strict allocation baseline measured400bytes; subsequent zero-byte windows do not resolve its cause. Native timing, physical stopping and owner freshness/enable gating remain outside this writer test scope.",
+      "evidence": [
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreWriterBoundaryTest.kt": {
+      "sha256": "d4daba6d32b6da447013b02d9347bf1767aa5cfa1d43867c0ef8e091e01cfd9d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution covering boundary errors/cleanup, frame and request reuse, exact decimal scaling across2000finite cases, allocation or existing registry-brake/scale behavior as applicable. Public constructor exercised through vendor mock. Four baseline regressions failed; focused14methods and full1383method library gate passed.",
+      "evidence": [
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreWriterNumericalTest.kt": {
+      "sha256": "c0512f083ea2c216ec0571bab13e86ad8d5ca83b02b05b9dbe49a01c69920a73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-method test review and execution: 2000-case exact-decimal scaling with both frames and all scale cases; request/speed identity and public-constructor forwarding; fixed BlueAlliance perspective; velocity/position mode parity; strict warmed allocation windows. Mode/perspective regressions fail before fix; all pass in final focused/full gates. Allocation baseline400byte failure preserved and unresolved, assertion unchanged.",
+      "evidence": [
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreSafetyRequestTest.kt": {
+      "sha256": "0b98bf48beefb63ce40ca3523fce8caef2d06ac262ac142a6515500e25762877",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution covering boundary errors/cleanup, frame and request reuse, exact decimal scaling across2000finite cases, allocation or existing registry-brake/scale behavior as applicable. Public constructor exercised through vendor mock. Four baseline regressions failed; focused14methods and full1383method library gate passed.",
+      "evidence": [
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreZeroGcTest.kt": {
+      "sha256": "426b9da50b6cecdbb41c2e4e53034612431031decbb72da48a33417999b0668e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full existing allocation test review and execution; unsupported measurement now aborts as explicit JUnit skip instead of silent pass. Supported host ran five measured windows with minimum-zero and aggregate fixed-noise bound. The new varying-frame/scale/brake two-window test provides additional current host allocation evidence.",
+      "evidence": [
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover"
+      ]
+    },
+    "docs/audits/ctre-swerve-writer-audit.md": {
+      "sha256": "22385dc800352807fc758360748ecabf7911705d005d0ff4e15a7a7d581088e7",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates.",
+      "evidence": [
+        "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
       ]
     }
   }
