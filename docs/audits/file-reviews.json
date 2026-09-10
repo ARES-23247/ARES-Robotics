@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "f43dae96f70306ccb0b886c7053671b95d66a321338041a15c85ae3d293dd99c",
+      "sha256": "f0d7a5d081d6c89695fd6b8785610011750b44696e866f66bce8ef3d5aa13a38",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass51: Pass51 Phoenix reader binding evidence, source/fixture/build scope, test/publication isolation and explicit native/hardware limits reviewed against source and preserved gates.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2451,7 +2451,8 @@
         "docs/audits/swerve-angle-audit.md",
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
-        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3170,10 +3171,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "2a8ecaffe76195990115ad60f75db4312475717143dde8aa51571990af8a9059",
+      "sha256": "31268f6c7e3a1ecbe65e329f48071cfea406ce8c6cb8383ded3697554950f5ca",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree b847a3d66a66eca4f72e95cd236d16135fd14153 matches source ff23e2ec and unique final local candidate17.0.3-rc.b847a3d66a66; superseded candidate0738d63fd572 not reused.",
+      "scope": "Exact library tree ba1d707014f8d2091e3f918d41c92044c28fe92a matches source817a2ac6 and candidate17.0.3-rc.ba1d707014f8. Final library/API/candidate gates passed; runtime JAR entry contents match prior candidate although archive container hashes differ.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3223,7 +3224,8 @@
         "docs/audits/swerve-angle-audit.md",
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
-        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4584,11 +4586,12 @@
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/drivetrain/SwerveCtreReaderSource.kt": {
       "sha256": "5139c4025af76b7c4f868876d4636c97e30a2dbd40b5f8a11b437a037719e32b",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pinned Phoenix 26.1.1 source/compiled signature trace for 36 signal mappings, clone ownership, configured rates, single vendor-time capture and owning state copy. Compiles against pinned SDK, but native constructor/cloning/configuration/state-copy operations have no executed test coverage (0/34 Kover lines). Native/physical integration remains open; no full-file completion claimed.",
+      "scope": "Full source adapter review and executed vendor-mock integration: all36 signal mappings/clones, configured rates/status failures, borrowed resource ownership, one vendor-time reference, owning state-copy selection and failure propagation. Seven tests pass; Kover34/34lines10/10methods72/82branches. Tests initialize desktop sim runtime but replace device/native API calls; actual JNI clone/configuration/state-copy behavior, CAN timing and physical response remain external limitations.",
       "evidence": [
-        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FRCSwerveHardwareIO.kt": {
@@ -4598,6 +4601,42 @@
       "scope": "Scoped reader integration and correction of unsupported zero-GC acquisition/250Hz read claims. Remaining output, lifecycle, estimator and vision behavior still needs complete review; full library compile/tests cover integration without physical device evidence.",
       "evidence": [
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/PhoenixReaderFixture.kt": {
+      "sha256": "30b840a8c5a53089648cf8f84fb48b8ac06dded9914d140bf7236d82a5078a11",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full fixture/test source review and seven-method integration execution. Mocked final vendor classes bypass device constructors, verify per-channel clone binding and isolation, rates/error handling, one-clock/state API choice, public-reader cache and original exceptions; scoped static mocking and RobotClock restoration clean up after tests.",
+      "evidence": [
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/PhoenixSwerveReaderSourceTest.kt": {
+      "sha256": "78fc8285492fafce4901af87c88bfb546ca814251db3820ca1971bce08154e96",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full fixture/test source review and seven-method integration execution. Mocked final vendor classes bypass device constructors, verify per-channel clone binding and isolation, rates/error handling, one-clock/state API choice, public-reader cache and original exceptions; scoped static mocking and RobotClock restoration clean up after tests.",
+      "evidence": [
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/build.gradle.kts": {
+      "sha256": "3cfb60962c6fae2fd8d20973afe7109a8c7789190db35ca158b776401e83f277",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full Gradle file review: library/publication setup, vendor versus test dependency scopes, desktop native extraction/flattening, WPILib-compatible Windows test JVM fallback, library paths and logging. Full library/API/publication gates execute on Windows; non-Windows branches and physical deployment are not claimed. Mockito remains testImplementation and absent from published POM/module metadata.",
+      "evidence": [
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+      ]
+    },
+    "docs/audits/phoenix-reader-binding-audit.md": {
+      "sha256": "1f3b78fe2a4baf0dce5e03e1bda58bf021d7fa40989638a53d0efeac4e53b88f",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass51 Phoenix reader binding evidence, source/fixture/build scope, test/publication isolation and explicit native/hardware limits reviewed against source and preserved gates.",
+      "evidence": [
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
       ]
     }
   }
