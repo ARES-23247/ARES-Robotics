@@ -1,6 +1,6 @@
 # SysId and control-assist audit
 
-Pass 79: local source fixes validated with focused tests; frozen candidate validation pending.
+Pass 79 complete. Changes and validation artifacts remain local; the broader audit is active.
 
 ## Confirmed corrections
 
@@ -34,7 +34,7 @@ The final core/FTC focused run passed 27 core and 21 FTC tests with zero failure
 It includes a 10,000-sample SysId allocation budget check and existing zero-allocation regressions.
 FTC tests exercise the real NT4 command/token/lease handshake and verify that output processing
 performs no additional motor current polling on the output thread. Legitimate background registry
-polling is excluded from that thread-specific assertion. The FRC sibling-source rerun also passed all 10 tests. Candidate matrix results are pending. Focused evidence is copied under
+polling is excluded from that thread-specific assertion. The FRC sibling-source rerun also passed all 10 tests. Final candidate results follow below. Focused evidence is copied under
 `ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/`.
 
 ## Numerical and physical limits
@@ -57,8 +57,7 @@ work; adjacent ShotSetup/coefficient behavior is reserved for a subsequent pass.
 calibration branches still need their own measurement-validity, scale and timing boundary review.
 FRC output-sample rejection and power-range boundaries remain follow-up scope. Those executors
 retain partial file status rather than gaining complete review credit from focused test success.
-Complete the frozen library/API publication and dependency-ordered consumer validation, then update
-the file ledger with exact evidence and remaining scope. All changes remain local.
+The file ledger records exact evidence and those remaining scopes. All changes remain local.
 
 ## Validation infrastructure correction
 
@@ -67,3 +66,36 @@ It now waits up to two seconds for an observed healthy poll after a failing poll
 registry teardown. All 14 HardwareRegistry tests passed after this test-only correction. Production
 registry code was unchanged. This timing failure is recorded separately from the 28 SysId
 regression methods. The library candidate identity is regenerated to include the corrected test.
+
+## Frozen candidate validation
+
+Source checkpoints: `96de760b` (SysId), `4bb63ea4` (polling test), and `381c11bd` (private JVM constant).
+Library tree: `64ab06568983512c8249f6a849b79a9f27f05d04`.
+Candidate: `17.0.3-rc.64ab06568983`, published only to the isolated local validation repository.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| ARESLib | 1,860 | 0 |
+| FTC and simulator | 111 | 0 |
+| FRC | 136 | 0 |
+| FTC starter and simulator | 14 | 0 |
+| FRC starter | 34 | 0 |
+| Studio shared/gateway/app | 1,790 | 6 |
+
+All groups have zero failures/errors. Library API checks, Kover generation, local candidate
+publication, consumer generated-project verification, FTC assembly, Studio Kover gate/version/file
+size checks, and monorepo source policy passed. Gradle reused valid unchanged task outputs; this is
+not a claim that every task was forced to execute again. No separate dashboard performance rerun
+was needed for this batch, and no new whole-loop performance measurement is claimed.
+
+The six Studio skips are conditional template, native chooser, hardware dashboard and performance
+baseline checks. Source policy verified 240 current documents and 38 historical exemptions.
+Copied test XML, manifests, logs, coverage reports, candidate BOM and identity checks are under
+`ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json` and its sibling files.
+These build artifacts are local; tracked source tests and this report preserve the reproducible
+scope. The 72 focused checks include the separate 14-test polling suite.
+
+The first broad attempt exposed the polling test's timing assumption; the next API check caught a
+new threshold field being public at the JVM boundary despite a private companion. The threshold
+is now explicitly private and the API check passes without expanding the public contract. Future
+batches should run focused API checks before freezing their candidate identity.

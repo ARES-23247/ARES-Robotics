@@ -3237,10 +3237,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "c1e652f793b296be8225e0f439ba2beec97d6042310e61fdf2312ce745af1525",
+      "sha256": "9e7216fabdbb612840eb9f64a52a6b83ae19a8e903714b8b6a80f4a88f2f5fe7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3385,7 +3385,10 @@
         "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
         "docs/audits/vision-noise-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5381,7 +5384,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e5d263492d081bf7fed685f6d0b478488fe5fc35e4d554c5917659dc2f71b63a",
+      "sha256": "bd663fe153b49500a3e98c85e903282bfa540bb971ab385217d6ca85f648421e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5410,7 +5413,8 @@
         "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed",
         "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed",
         "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/vision-noise-ownership-audit.md: pass78 file scopes and canonical self-fingerprint refreshed"
+        "docs/audits/vision-noise-ownership-audit.md: pass78 file scopes and canonical self-fingerprint refreshed",
+        "docs/audits/sysid-control-assist-audit.md: pass79 file scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -7208,6 +7212,104 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/assist/SysIdManager.kt": {
+      "sha256": "a7d0a1db70dafd63e9d1e2504ac1b523aee07354a4e023186b2902b719217309",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full profiles, limits, travel, stall, clock and sample state read. Invalid or omitted current/configuration, elapsed overflow, shared clock ordering, negative epoch and zero-timeout stall, duplicate samples, first-observation baseline and numerical overflow tested. Signed right-endpoint integral and backward derivative are approximations; measured current freshness is executor-owned. Core allocation budget and full candidate suite passed. No physical calibration or terminal-voltage claim.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/SysIdManagerTest.kt": {
+      "sha256": "60a2b97eaf6405641efd05e39504e140708f3ccd7a82bf094963054f6aa6b605",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All existing profile/timeout/travel/current/position/invalid-input tests read and executed. Fixtures now explicitly provide valid zero current for pose/time tests; missing production current no longer defaults to zero.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/SysIdBoundaryAuditTest.kt": {
+      "sha256": "c6c30b27c9e40fb9e458e11175658d3018728dc05975a96a82e85fc897ed602e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All ten boundary/allocation methods read and run: nine failed before corresponding fixes; allocation budget passed. Independent expected derivative, first-sample, duplicate and overflow assertions; supported JMX allocation path executed without skips.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/HardwareRegistryTest.kt": {
+      "sha256": "c7e317da25dbfeb07e286aa5a7fad9552c64aa9ec21324bdbdce5c4256159fa4",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full suite exposed fixed-sleep throwing-device test failure. Changed test waits on observed healthy polling after failure and always tears down; all14 registry tests passed focused and in final library suite. Other registry test bodies retain pending whole-file review; no production registry change.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/calibration/FtcMecanumCalibrationController.kt": {
+      "sha256": "87024891143baf89d2e659801f81ec59a2b6139f007d397401868e41b8f11a88",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Whole file read; SysId current/measurement frame/freshness/sample ownership/supply/global power and mechanism-transition paths reviewed and tested. Neutralize command edges, reject unsupported mechanism and unavailable supply, cache signed samples without repolling provider. Empirical calibration branches still require scale/validity/clock boundary review; no full-file completion credit.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/calibration/FtcMecanumCalibrationControllerTest.kt": {
+      "sha256": "5a4e06d071ba2db8aab6f5f9faa2db6b048b48296b1b321ec242f3d72d7fb36d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All21 methods and NT4 lease/token/server/motor fixtures read and run. Current cache polling assertions restricted to output thread to exclude legitimate registry daemon calls. Tested measured versus commanded motion, signed displacement, stale feedback, coherent logging, invalid supply, global derating and drive-to-flywheel neutralization. Mocks do not prove physical IO freshness.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/robot/FrcSysIdController.kt": {
+      "sha256": "1217323d1955446b7ad86f2ebc318b1cc70e411ebeb64aea6ef9700814d58435",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Whole controller read. Current feedback integration and scalar pose access validated with10 focused tests and final candidate consumer. Hardware/test-mode gating, command edges and tuning retry preserved. Power-range and rejected post-update sample boundaries remain follow-up scope; no physical actuator evidence.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/FrcSysIdControllerTest.kt": {
+      "sha256": "161b703784ba15682bdd21fe3662f5af3ddb39f0852ccb5c863d91622b0d1e5b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All10 methods and fixtures read and run: cached current watchdog/freshness, canonical sample, test mode, tuning retry, consumed command edges and hardware inhibition. Two current regression methods failed before integration.",
+      "evidence": [
+        "docs/audits/sysid-control-assist-audit.md",
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/sysid-control-assist-audit.md": {
+      "sha256": "73c14ad5b85100b231d8188279011b9de7bf150088b274ac5de233536c22670d",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled28 SysId failure-before methods,72 focused checks, candidate validation and explicit empirical/FRC/hardware limitations. Separate observed polling-test timing failure fixed.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
       ]
     }
   }
