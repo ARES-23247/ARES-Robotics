@@ -70,7 +70,7 @@ object TaskCallbacks {
 interface Task {
     val name: String
     val priority: Int get() = 0
-    /** Primitive ownership mask checked when parallel task trees are constructed. */
+    /** Primitive ownership mask, fixed for this instance and checked when task trees are built. */
     val requiredResources: Long get() = TaskResources.NONE
 
     /**
