@@ -2356,7 +2356,7 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "3667d2ba87bd989de2ee27b84612a1d38b1af0461cba5e2e994bb420fbb5ff8b",
+      "sha256": "8fbaa448f594db45c8eaab26268d6362caf77d08b01f85913f98f16f310c975c",
       "review": "partial",
       "validation": "not-applicable",
       "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass51: Pass51 Phoenix reader binding evidence, source/fixture/build scope, test/publication isolation and explicit native/hardware limits reviewed against source and preserved gates. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates.",
@@ -2454,7 +2454,8 @@
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
         "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks",
         "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
-        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs"
+        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs",
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3116,7 +3117,7 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "9ef1167401b99b241d3108dd135df1e2e7d98901c2a7d49a50de7d7817b7fce1",
+      "sha256": "cb3ff0196b2c170f22f800788ac071211703cf91964e0a94786ce75ede6425de",
       "review": "partial",
       "validation": "not-applicable",
       "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates.",
@@ -3172,14 +3173,15 @@
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
         "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
         "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained",
-        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs"
+        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs",
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "0b782476507126351376641878ade483d04584a15015963b0425aa0026f7487e",
+      "sha256": "c14bec75e50e0c731c123d24ba083338f454a5c16b581f921517a29ffe368f51",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree287afbd1d312a9156961810b41fe32974d3bcea3 matches source0226495e and unique candidate17.0.3-rc.287afbd1d312; library1414tests/API/Kover/localpublication passed.",
+      "scope": "Exact library treeae90cbde1043faded8550f78a61fe132e4f4042d bound to sourcef0c20f37 and unique candidate17.0.3-rc.ae90cbde1043. Full library1442tests/API/Kover/isolatedpublication passed; final consumer evidence recorded in pass54 report.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3233,7 +3235,8 @@
         "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks",
         "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
         "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained",
-        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs"
+        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs",
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4762,6 +4765,105 @@
       "scope": "Full test source review and execution in68testfocused/1414testlibrary gates. Covers bridge input/lifecycle/cache/vision behavior or allocation calibration as named, with deterministic clock/vendor mocks, explicit thread cleanup, atomic buffers and failure identities. No physical hardware or native timing inference; see report for individual grids and allocation criterion.",
       "evidence": [
         "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/TrajectoryPlanning.kt": {
+      "sha256": "84662e122e4e16d1a923166c632ea7a9a9461d306ba6634101898c34daef90bf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source review: owned canonical lists/value operations, raw-heading/scalar/distance/time validation, stable bounded interpolation and exact-knot reuse, distance adapter, provider dispatch uniqueness/capability caching, generation budget, waypoint heading fidelity, normalized segment timing and emitted angular-acceleration scaling.55focused methods passed incl28new and17baseline failures; discrete model/reflection/interior-allocation limitations explicit in report.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/SCurveTrajectoryParameterizer.kt": {
+      "sha256": "065c182d23700a247beeb3e01a62f0ef2f9395f41733ef1d45f4ef973b9015fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full spatial seed review: finite raw inputs and limits, bounded/pre-sized ceiling subdivisions, random-access input snapshot, short-path interior samples, heading/tangent/curvature and cumulative distance, velocity sweeps, tiny geometry and centripetal caps, finite-output checks. Existing20 spatial methods and new direct/provider numeric regressions passed; this spatial seed alone does not prove timed jerk or continuous dynamics.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryPlanningTest.kt": {
+      "sha256": "691b4eb49e0e5625ba4cb9b1cc992232ff953b779dc511b19797452b131a8122",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-method review/execution: default finite monotonic generation, automatic fallback, explicit unavailable engines, invalid waypoint diagnostics and tangent-preserving adapter. Combined with28new boundary/numerical methods for materially stronger coverage.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryMathAuditTest.kt": {
+      "sha256": "402ef6feadcb2147ccb4fb30529e78e31da2aa85e7b361c98f2d2b8836483d0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-method review/execution: rotation-limited translational timing consistency and emitted vector acceleration/finite-difference jerk. Supplemented by80irregular heading cases and new high-speed/tiny-speed regressions; no continuous physical proof.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/SCurveTrajectoryParameterizerTest.kt": {
+      "sha256": "5a8b297664449270801a8530fe0c13991eb60108cdf510a9cac0bc2ae3971c05",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full twenty-method review/execution: empty/single input, geometry, curvature/speed seed trends, spacing fallback, accumulated distances and handover speeds. Corrected overclaiming KDoc; broad tolerances are seed regressions, not evidence of continuous jerk bounds.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "docs/audits/trajectory-planning-audit.md": {
+      "sha256": "7b25852b4d6647cddaa7d6f011698813164da53f1793c06dc48caca6f7002a25",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass54 source findings, baseline failures, seeded numeric oracles, ownership/data-reflection behavior, sampling budget and discrete-model limits reviewed against source and retained evidence.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TimedTrajectoryBoundaryTest.kt": {
+      "sha256": "616e33bd647d205a418f1b3a4e9f99aa10fe72050909f2d089b92873678e4320",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TimedTrajectoryContractTest.kt": {
+      "sha256": "09a2fce49d77ad88a6bd52ce98ae0a19ac518a6ac19fbf647736db3a7dc43d52",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryProviderBoundaryTest.kt": {
+      "sha256": "9d91a56e34a38a75e38f6558492487c944d5eb37aac3ff0d5f840fc04109b7b0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryGenerationContractTest.kt": {
+      "sha256": "f87842698b8663fd8c5f5e6e39ea2e2c46528cf5495431f638df53ceceb9a5e5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryNumericalProfileTest.kt": {
+      "sha256": "349912ebec3d54bdb266fee8e6f0bd304b36dcf72123900fc4596813f93048fa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
+      "evidence": [
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
       ]
     }
   }

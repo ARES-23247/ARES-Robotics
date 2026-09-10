@@ -622,3 +622,8 @@ bridge shutdown, feedback gating and physical stopping remain separate obligatio
 
 See [the bridge audit](audits/frc-swerve-bridge-audit.md) for shutdown, feedback gates, pose/vision
 validation, concurrency tests and the revised allocation-probe criterion with retained failures.
+
+## Pass 54: Canonical trajectory planning and spatial generation
+
+See [the trajectory audit](audits/trajectory-planning-audit.md) for numerical timing, interpolation,
+waypoint heading and centripetal-limit fixes, immutable snapshots, bounded generation and validation.
