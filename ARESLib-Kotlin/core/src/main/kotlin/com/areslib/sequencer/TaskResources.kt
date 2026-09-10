@@ -60,7 +60,7 @@ object TaskResources {
 /** Owned random-access membership and its construction-time resource union. */
 internal class TaskGroupMembers(val tasks: List<Task>, val requiredResources: Long)
 
-/** Construction-time resource and identity validation. No traversal runs in the robot tick loop. */
+/** Construction-time resource and identity validation. Group updates do not repeat this traversal. */
 internal object TaskResourceValidator {
     fun snapshot(groupName: String, tasks: List<Task>, parallel: Boolean): TaskGroupMembers {
         val owned = Collections.unmodifiableList(ArrayList(tasks))
