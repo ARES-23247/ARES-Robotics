@@ -334,6 +334,32 @@ is centered in Y, facing positive X, 0.35 m from the negative-X boundary (or at 
 when the half-length is smaller). Reset uses the currently loaded field dimensions. This is
 a fixture pose, not a collision-free placement guarantee for arbitrary obstacles or chassis sizes.
 
+## AprilTag map interchange
+
+Raw `decodeWpilib` and `encodeWpilib` preserve WPILib coordinates. Canonical consumers use
+`decodeForField` and `encodeWpilibForField` instead. WPILib JSON uses the blue-wall corner
+origin with +X inward, +Y left and +Z up. For a centered FTC/XRP field, the configured
+`blueDriverStation` determines the inward direction: WEST is 0 degrees, SOUTH +90, EAST
+180 and NORTH -90. Rendering axis preferences do not alter this robot frame.
+
+For WPILib length L and width W, centered position is `R(theta) * (p - (L/2, W/2))`.
+Orientation is pre-multiplied by `Rz(theta)`, preserving roll/pitch and rotating yaw.
+Quarter-turns swap the destination X/Y extents on rectangular fields. ARES-to-ARES import
+aligns the source and destination blue-wall frames using both documents' station metadata;
+this is a defined import alignment rule, not a measurement of physical field placement.
+Same-frame imports avoid subtracting and re-adding large offsets that would erase small poses.
+
+Limelight `.fmap` transforms are centered in the destination's canonical axes. FRC translation
+uses each supplied source dimension; only a missing axis falls back to the current target
+dimension. Studio replacement adopts each known dimension independently. Merge retains the
+current dimensions and existing tag IDs. Preview coordinates therefore describe the same
+canonical positions that apply will store. Edits, undo and redo invalidate a pending preview;
+applying an unchanged import consumes it without creating a document revision.
+
+Format detection parses text once and rejects ambiguous/unknown shapes. A recognized format's
+validation error is retained rather than being hidden by another parser's failure. All of this
+is file/editor work; it does not run in a periodic control loop or establish camera calibration.
+
 ## XRP JVM lifecycle and device doubles
 
 XrpBaseRobot is an IO lifecycle foundation, not the exported MicroPython runtime or the full

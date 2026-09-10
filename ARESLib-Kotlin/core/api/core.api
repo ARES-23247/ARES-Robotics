@@ -4983,12 +4983,14 @@ public final class com/areslib/state/Alliance : java/lang/Enum {
 public final class com/areslib/state/AprilTagMapCodec {
 	public static final field INSTANCE Lcom/areslib/state/AprilTagMapCodec;
 	public static final fun decodeAresField (Ljava/lang/String;)Lcom/areslib/state/AprilTagMapImportResult;
+	public static final fun decodeForField (Ljava/lang/String;Lcom/areslib/state/RobotFieldConfig;)Lcom/areslib/state/AprilTagMapImportResult;
 	public static final fun decodeLimelightFmap (Ljava/lang/String;)Lcom/areslib/state/AprilTagMapImportResult;
 	public static final fun decodeLimelightFmapForField (Ljava/lang/String;Lcom/areslib/state/RobotFieldConfig;)Lcom/areslib/state/AprilTagMapImportResult;
 	public static final fun decodeWpilib (Ljava/lang/String;)Lcom/areslib/state/AprilTagMapImportResult;
 	public static final fun encodeLimelightFmap (Lcom/areslib/state/RobotFieldConfig;)Ljava/lang/String;
 	public static final fun encodeLimelightFmap (Ljava/util/List;)Ljava/lang/String;
 	public static final fun encodeWpilib (Lcom/areslib/state/RobotFieldConfig;)Ljava/lang/String;
+	public static final fun encodeWpilibForField (Lcom/areslib/state/RobotFieldConfig;)Ljava/lang/String;
 }
 
 public final class com/areslib/state/AprilTagMapFormat : java/lang/Enum {

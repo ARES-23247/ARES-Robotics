@@ -337,6 +337,7 @@ class FieldEditorViewModel(
         _state.value = withValidation(
             transformed.copy(
                 document = document,
+                aprilTagImportPreview = null,
                 isDirty = true,
                 saveStatus = "Unsaved changes",
                 canUndo = history.canUndo,
@@ -447,6 +448,7 @@ class FieldEditorViewModel(
         _state.value = withValidation(
             current.copy(
                 document = document,
+                aprilTagImportPreview = null,
                 selectedElementIds = validSelection,
                 isDirty = true,
                 saveStatus = "Unsaved changes",
@@ -806,9 +808,10 @@ class FieldEditorViewModel(
     }
 
     private fun previewAprilTagMap(intent: FieldEditorIntent.PreviewAprilTagMap) {
-        activeProjectPath = intent.projectPath ?: activeProjectPath
-        activeLeague = intent.league
         try {
+            require(intent.league == activeLeague && (intent.projectPath == null || intent.projectPath == activeProjectPath)) {
+                "Load the target project and league before importing AprilTags"
+            }
             val preview = FieldAprilTagTransfer.decode(
                 content = intent.content,
                 fileName = intent.fileName,
@@ -834,6 +837,8 @@ class FieldEditorViewModel(
 
     private fun applyAprilTagImport(replaceExisting: Boolean) {
         val preview = _state.value.aprilTagImportPreview ?: return
+        // Applying a no-op import must still consume its preview, without adding an undo entry.
+        _state.update { it.copy(aprilTagImportPreview = null) }
         applyEdit { state ->
             val tags = if (replaceExisting) {
                 preview.tags
@@ -843,13 +848,10 @@ class FieldEditorViewModel(
             }
             state.copy(
                 aprilTags = tags,
-                aprilTagImportPreview = null,
-                fieldImageConfig = if (
-                    replaceExisting && preview.fieldLengthMeters != null && preview.fieldWidthMeters != null
-                ) {
+                fieldImageConfig = if (replaceExisting) {
                     state.fieldImageConfig.copy(
-                        widthMeters = preview.fieldLengthMeters,
-                        heightMeters = preview.fieldWidthMeters,
+                        widthMeters = preview.fieldLengthMeters ?: state.fieldImageConfig.widthMeters,
+                        heightMeters = preview.fieldWidthMeters ?: state.fieldImageConfig.heightMeters,
                     )
                 } else {
                     state.fieldImageConfig

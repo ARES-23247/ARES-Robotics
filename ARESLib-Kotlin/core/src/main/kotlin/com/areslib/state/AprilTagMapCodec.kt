@@ -22,7 +22,7 @@ enum class AprilTagMapFormat { ARES_FIELD, LIMELIGHT_FMAP, WPILIB_JSON }
 
 /**
  * Parsed AprilTag layout. Raw foreign-format decoders preserve the file's coordinate frame;
- * the field-aware Limelight decoder translates positions to the target ARES field frame.
+ * field-aware decoders transform positions and orientations to the target ARES field frame.
  *
  * WPILib layouts carry field dimensions but omit tag family, name, and physical size. Limelight
  * maps can carry family, size, and field dimensions; tag names are omitted. Callers must surface
@@ -53,9 +53,30 @@ object AprilTagMapCodec {
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val elementAdapter = gson.getAdapter(JsonElement::class.java)
 
+    /**
+     * Detects one unambiguous format and parses JSON once. WPILib/ARES imports align blue-wall
+     * frames; Limelight transforms are centered in the destination's canonical axes. Returned
+     * dimensions use destination X/Y axes. Display-axis preferences are not coordinate frames.
+     */
     @JvmStatic
-    fun decodeAresField(json: String): AprilTagMapImportResult {
+    fun decodeForField(json: String, field: RobotFieldConfig): AprilTagMapImportResult {
+        requireFieldDimensions(field)
         val root = parseRoot(json)
+        val ares = root.has("schemaVersion") || root.has("apriltags")
+        val wpilib = root.has("tags")
+        val fmap = root.has("fiducials")
+        require(listOf(ares, wpilib, fmap).count { it } == 1) { "AprilTag map must identify exactly one supported format" }
+        return when {
+            ares -> decodeAresField(root, field)
+            wpilib -> AprilTagMapFrames.fromWpilib(decodeWpilib(root), field)
+            else -> AprilTagMapFrames.fromFmap(decodeLimelightFmap(root), field)
+        }
+    }
+
+    @JvmStatic
+    fun decodeAresField(json: String): AprilTagMapImportResult = decodeAresField(parseRoot(json))
+
+    private fun decodeAresField(root: JsonObject, target: RobotFieldConfig? = null): AprilTagMapImportResult {
         require(root.integerMember("schemaVersion") == CURRENT_FIELD_SCHEMA_VERSION) {
             "Unsupported ARES field schema version"
         }
@@ -74,17 +95,19 @@ object AprilTagMapCodec {
         val field = gson.fromJson(root, RobotFieldConfig::class.java)
         requireFieldDimensions(field)
         requireValidTags(field.apriltags)
-        return AprilTagMapImportResult(
+        val decoded = AprilTagMapImportResult(
             format = AprilTagMapFormat.ARES_FIELD,
             tags = field.apriltags,
             fieldLengthMeters = field.resolvedWidthMeters,
             fieldWidthMeters = field.resolvedHeightMeters,
         )
+        return if (target == null) decoded else AprilTagMapFrames.reframe(decoded, field, target)
     }
 
     @JvmStatic
-    fun decodeLimelightFmap(json: String): AprilTagMapImportResult {
-        val root = parseRoot(json)
+    fun decodeLimelightFmap(json: String): AprilTagMapImportResult = decodeLimelightFmap(parseRoot(json))
+
+    private fun decodeLimelightFmap(root: JsonObject): AprilTagMapImportResult {
         val length = root.optionalDimension("fieldlength")
         val width = root.optionalDimension("fieldwidth")
         val tags = root.arrayMember("fiducials").map { item ->
@@ -140,24 +163,13 @@ object AprilTagMapCodec {
      * Decodes a Limelight map into the canonical coordinate frame of [field].
      *
      * Limelight `.fmap` transforms use a field-center origin. ARES FTC and XRP fields use that
-     * same origin, while ARES FRC fields use a corner origin. The target field dimensions are
-     * therefore required to translate FRC positions without guessing.
+     * same origin, while ARES FRC fields use a corner origin. Source field dimensions determine
+     * that offset; the target dimension is used only for an axis omitted by the source file.
      */
     @JvmStatic
     fun decodeLimelightFmapForField(json: String, field: RobotFieldConfig): AprilTagMapImportResult {
         requireFieldDimensions(field)
-        val decoded = decodeLimelightFmap(json)
-        if (field.fieldType != FieldType.FRC) return decoded
-        val halfLength = field.resolvedWidthMeters * 0.5
-        val halfWidth = field.resolvedHeightMeters * 0.5
-        return decoded.copy(
-            tags = decoded.tags.map { tag ->
-                val x = tag.x + halfLength
-                val y = tag.y + halfWidth
-                require(x.isFinite() && y.isFinite()) { "AprilTag ${tag.id} shifted position is not representable" }
-                tag.copy(x = x, y = y)
-            },
-        )
+        return AprilTagMapFrames.fromFmap(decodeLimelightFmap(json), field)
     }
 
     @JvmStatic
@@ -201,8 +213,9 @@ object AprilTagMapCodec {
 
     /** Reads positions in WPILib's blue-wall corner frame; this raw decoder does not select a league. */
     @JvmStatic
-    fun decodeWpilib(json: String): AprilTagMapImportResult {
-        val root = parseRoot(json)
+    fun decodeWpilib(json: String): AprilTagMapImportResult = decodeWpilib(parseRoot(json))
+
+    private fun decodeWpilib(root: JsonObject): AprilTagMapImportResult {
         val field = root.get("field").objectValue("field")
         val length = field.numberMember("length")
         val width = field.numberMember("width")
@@ -245,6 +258,14 @@ object AprilTagMapCodec {
             fieldWidthMeters = width,
             omittedMetadata = setOf("tag family", "tag size", "tag names"),
         )
+    }
+
+    /** Converts a canonical field to WPILib's blue-wall corner frame, including orientation and extents. */
+    @JvmStatic
+    fun encodeWpilibForField(field: RobotFieldConfig): String {
+        requireFieldDimensions(field)
+        requireValidTags(field.apriltags)
+        return encodeWpilib(AprilTagMapFrames.toWpilib(field))
     }
 
     /** Serializes stored positions unchanged; callers must supply WPILib-frame coordinates. */
