@@ -52,10 +52,9 @@ class RobotSequence internal constructor() {
         task(ActionDispatchTask(action, requiredResources))
     }
 
-    /** Waits for a finite, non-negative [duration]. */
+    /** Waits for a finite, non-negative [duration], rounded up to the next whole millisecond. */
     fun waitFor(duration: Duration) {
-        requireFiniteNonNegative(duration, "Wait duration")
-        task(TimeWaitTask(duration.inWholeMilliseconds))
+        task(TimeWaitTask(ceilingMilliseconds(duration, "Wait duration")))
     }
 
     /** Waits until [condition] becomes true. */
@@ -66,19 +65,20 @@ class RobotSequence internal constructor() {
     /**
      * Waits until [condition] becomes true and fails the task after [timeout].
      * A timeout is required at call sites where waiting forever would make an auto unsafe.
+     * Whole-millisecond execution expires at the first integer tick strictly beyond [timeout];
+     * rounding its strict-greater-than threshold down preserves that boundary.
      */
     fun waitUntil(timeout: Duration, condition: (RobotState) -> Boolean) {
         requireFiniteNonNegative(timeout, "Wait timeout")
         task(WaitUntilTask(condition).withTimeout(timeout.inWholeMilliseconds))
     }
 
-    /** Waits for path progress to reach [meters], with a finite fallback [timeout]. */
+    /** Waits for [meters], or the finite fallback [timeout] rounded up to whole milliseconds. */
     fun waitForDistance(meters: Double, timeout: Duration = 10_000.milliseconds) {
         require(meters.isFinite() && meters >= 0.0) {
             "Path distance must be finite and non-negative"
         }
-        requireFiniteNonNegative(timeout, "Path wait timeout")
-        task(PathProgressWaitTask(meters, timeout.inWholeMilliseconds))
+        task(PathProgressWaitTask(meters, ceilingMilliseconds(timeout, "Path wait timeout")))
     }
 
     /** Follows [path] using the shared holonomic follower. */
@@ -122,11 +122,13 @@ class RobotSequence internal constructor() {
 
     /** Sets an indicator immediately. */
     fun setIndicator(name: String, color: IndicatorLightColor) {
-        require(name.isNotBlank()) { "Indicator name must not be blank" }
         task(SetIndicatorColorTask(name, color))
     }
 
-    /** Blinks an indicator for a typed duration and period. */
+    /**
+     * Blinks for the duration and full period rounded up to whole milliseconds. The rounded period
+     * must be at least two milliseconds so both colors can occupy a clock tick.
+     */
     fun blinkIndicator(
         name: String,
         colorA: IndicatorLightColor,
@@ -134,34 +136,33 @@ class RobotSequence internal constructor() {
         duration: Duration,
         period: Duration = 500.milliseconds
     ) {
-        require(name.isNotBlank()) { "Indicator name must not be blank" }
-        requireFiniteNonNegative(duration, "Blink duration")
-        requireFinitePositive(period, "Blink period")
         task(
             BlinkIndicatorTask(
                 lightName = name,
                 colorA = colorA,
                 colorB = colorB,
-                durationMs = duration.inWholeMilliseconds,
-                periodMs = period.inWholeMilliseconds
+                durationMs = ceilingMilliseconds(duration, "Blink duration"),
+                periodMs = ceilingMilliseconds(period, "Blink period")
             )
         )
     }
 
-    internal fun build(): Task = SequentialTaskGroup(tasks.toList())
+    internal fun build(): Task = SequentialTaskGroup(tasks)
 
     private fun childTasks(groupName: String, block: RobotSequence.() -> Unit): List<Task> {
         val child = RobotSequence().apply(block)
         require(child.tasks.isNotEmpty()) { "$groupName group must contain at least one task" }
-        return child.tasks.toList()
+        return child.tasks // Every group constructor takes its own immutable membership snapshot.
     }
 
     private fun requireFiniteNonNegative(duration: Duration, label: String) {
         require(duration.isFinite() && !duration.isNegative()) { "$label must be finite and non-negative" }
     }
 
-    private fun requireFinitePositive(duration: Duration, label: String) {
-        require(duration.isFinite() && duration.isPositive()) { "$label must be finite and positive" }
+    private fun ceilingMilliseconds(duration: Duration, label: String): Long {
+        requireFiniteNonNegative(duration, label)
+        val whole = duration.inWholeMilliseconds
+        return if (whole.milliseconds < duration) Math.addExact(whole, 1L) else whole
     }
 }
 

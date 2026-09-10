@@ -12,27 +12,24 @@ import com.areslib.state.RobotState
  *
  * Usage in auto sequences:
  * ```
- * RobotSequence()
- *     .addTask(SetIndicatorColorTask("indicator", IndicatorLightColor.GREEN))
- *     .addTask(driveForwardTask)
- *     .addTask(SetIndicatorColorTask("indicator", IndicatorLightColor.RED))
- *     .build()
+ * robotSequence {
+ *     setIndicator("indicator", IndicatorLightColor.GREEN)
+ *     task(driveForwardTask)
+ *     setIndicator("indicator", IndicatorLightColor.RED)
+ * }
  * ```
- */
-/**
- * Class implementation for Set Indicator Color Task.
- *
- * Asynchronous superstructure task sequence execution unit.
  */
 class SetIndicatorColorTask(
     private val lightName: String,
     private val color: IndicatorLightColor
 ) : Task {
+    init { require(lightName.isNotBlank()) { "Indicator name must not be blank" } }
     override val name = "SetIndicator($lightName→${color.name})"
     override val requiredResources: Long = TaskResources.LIGHTING
     private var dispatched = false
 
     override fun initialize(state: RobotState): List<RobotAction> {
+        super.initialize(state)
         dispatched = true
         return listOf(RobotAction.SetIndicatorLight(lightName, color.position))
     }
