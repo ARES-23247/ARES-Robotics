@@ -1,218 +1,174 @@
 package com.areslib.frc.drivetrain
 
 import com.areslib.state.DriveState
-import com.ctre.phoenix6.StatusSignal
+import com.areslib.util.RobotClock
 import com.ctre.phoenix6.swerve.SwerveDrivetrain
 
 /**
- * Telemetry reader for CTRE Phoenix 6 [SwerveDrivetrain] hardware platforms.
+ * Single-loop-owned CTRE measurement cache. Only [refresh] acquires vendor data; all getters
+ * consume an owned snapshot. Module order is front-left, front-right, rear-left, rear-right.
+ * Currents are amperes, absolute encoders rotations, IMU angles degrees, wheel/chassis speeds
+ * meters/second and pose meters with CCW-positive heading radians.
  *
- * Configures CANivore CAN-FD signal update frequencies ($50\text{Hz}$ CANcoder absolute positions, $20\text{Hz}$ motor current draws,
- * $20\text{Hz}$ Pigeon2 pitch/roll, and $4\text{Hz}$ hardware fault diagnostics). Phoenix's public
- * grouped-refresh overload allocates a JNI array internally on every call, so [refresh] advances a
- * prebuilt signal array individually to preserve the 50 Hz zero-GC contract.
+ * Status, finite values and valid vendor timestamps are required. Fast feedback expires after
+ * 100 ms; 4 Hz diagnostic signals expire after 750 ms. Cached age includes RobotClock time since
+ * acquisition started, conservatively rejecting slow refreshes and clock rewind/overflow.
+ * These are measurement-validity checks, not an actuator-enable gate or independent watchdog.
  *
- * ### Physical Units & Conventions:
- * - Motor Current: Amperes ($A$).
- * - Module Absolute Encoded Steering: Rotations / Radians ($rad$).
- * - Inclination: Pitch and Roll in Degrees ($^\circ$).
- * - Odometry Position: Meters ($m$).
- * - Chassis Velocities: Meters per second ($m/s$) and Radians per second ($rad/s$).
- * - Heading: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
- *
- * ### Zero-GC Guarantee:
- * [refresh], [getCurrents], [getEncoderPositions], and [getModuleSpeeds] write directly into pre-allocated primitive array targets.
- *
- * @param drivetrain Physical CTRE [SwerveDrivetrain] instance.
- *
- * @see SwerveDrivetrain
- * @see StatusSignal
- * @see DriveState
+ * Cached getters allocate nothing. Refresh uses one Phoenix owning state copy (which allocates)
+ * and creates a new immutable DriveState when its six pose/motion values change. It does not
+ * promise zero-GC native acquisition. Vendor callbacks/other clients cannot mutate returned data.
  */
-class SwerveCtreDrivetrainReader(private val drivetrain: SwerveDrivetrain<*, *, *>) {
+class SwerveCtreDrivetrainReader internal constructor(private val source: SwerveCtreReaderSource) {
+    constructor(drivetrain: SwerveDrivetrain<*, *, *>) : this(PhoenixSwerveReaderSource(drivetrain))
 
-    /** True only when the most recent grouped CTRE refresh completed successfully. */
-    var encoderPositionsValid: Boolean = false
-        private set
-    var currentMeasurementsValid: Boolean = false
-        private set
-    var signalLatencyMs: Double = Double.POSITIVE_INFINITY
-        private set
-
-    private val currentDraw1 = drivetrain.getModule(0).driveMotor.supplyCurrent
-    private val currentDraw2 = drivetrain.getModule(1).driveMotor.supplyCurrent
-    private val currentDraw3 = drivetrain.getModule(2).driveMotor.supplyCurrent
-    private val currentDraw4 = drivetrain.getModule(3).driveMotor.supplyCurrent
-
-    private val absEnc1 = (drivetrain.getModule(0).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
-    private val absEnc2 = (drivetrain.getModule(1).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
-    private val absEnc3 = (drivetrain.getModule(2).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
-    private val absEnc4 = (drivetrain.getModule(3).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition
-
-    private val faultHardware = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_Hardware() }
-    private val faultBrownout = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_BridgeBrownout() }
-    private val faultTemp = Array(4) { i -> drivetrain.getModule(i).driveMotor.getFault_DeviceTemp() }
-    private val steerFaultHardware = Array(4) { i -> drivetrain.getModule(i).steerMotor.getFault_Hardware() }
-    private val steerFaultBrownout = Array(4) { i -> drivetrain.getModule(i).steerMotor.getFault_BridgeBrownout() }
-    private val steerFaultTemp = Array(4) { i -> drivetrain.getModule(i).steerMotor.getFault_DeviceTemp() }
-
-    private val pigeon = drivetrain.pigeon2
-    private val pitchSignal = pigeon.pitch
-    private val rollSignal = pigeon.roll
-    private val yawSignal = pigeon.yaw
-    private val yawRateSignal = pigeon.angularVelocityZWorld
-    private val refreshSignals: Array<StatusSignal<*>> = arrayOf(
-        currentDraw1, currentDraw2, currentDraw3, currentDraw4,
-        absEnc1, absEnc2, absEnc3, absEnc4,
-        pitchSignal, rollSignal, yawSignal, yawRateSignal,
-        faultHardware[0], faultHardware[1], faultHardware[2], faultHardware[3],
-        faultBrownout[0], faultBrownout[1], faultBrownout[2], faultBrownout[3],
-        faultTemp[0], faultTemp[1], faultTemp[2], faultTemp[3],
-        steerFaultHardware[0], steerFaultHardware[1], steerFaultHardware[2], steerFaultHardware[3],
-        steerFaultBrownout[0], steerFaultBrownout[1], steerFaultBrownout[2], steerFaultBrownout[3],
-        steerFaultTemp[0], steerFaultTemp[1], steerFaultTemp[2], steerFaultTemp[3],
-    )
+    private val values = DoubleArray(36)
+    private val pendingValues = DoubleArray(36)
+    private val moduleSpeeds = DoubleArray(4)
+    private var signalsReady = false
+    private var stateReady = false
+    private var startedMs = 0L
+    private var fastAgeMs = Double.POSITIVE_INFINITY
+    private var faultAgeMs = Double.POSITIVE_INFINITY
+    private var encoderAgeMs = Double.POSITIVE_INFINITY
+    private var stateAgeMs = Double.POSITIVE_INFINITY
+    private var cachedDrive = unavailableDrive
 
     init {
-        for (i in 0..3) {
-            drivetrain.getModule(i).driveMotor.supplyCurrent.setUpdateFrequency(20.0, 0.0)
-            drivetrain.getModule(i).steerMotor.supplyCurrent.setUpdateFrequency(20.0, 0.0)
-            (drivetrain.getModule(i).encoder as com.ctre.phoenix6.hardware.CANcoder).absolutePosition.setUpdateFrequency(50.0, 0.0)
-            faultHardware[i].setUpdateFrequency(4.0, 0.0)
-            faultBrownout[i].setUpdateFrequency(4.0, 0.0)
-            faultTemp[i].setUpdateFrequency(4.0, 0.0)
-            
-            steerFaultHardware[i].setUpdateFrequency(4.0, 0.0)
-            steerFaultBrownout[i].setUpdateFrequency(4.0, 0.0)
-            steerFaultTemp[i].setUpdateFrequency(4.0, 0.0)
-        }
-        pitchSignal.setUpdateFrequency(20.0, 0.0)
-        rollSignal.setUpdateFrequency(20.0, 0.0)
+        check(source.configure()) { "CTRE swerve signal update configuration failed" }
     }
 
-    /**
-     * Synchronously refreshes all BaseStatusSignals registered.
-     * Must be called once per loop prior to fetching values.
-     * Zero-GC allocation.
-     */
+    /** All configured signals were successfully refreshed, finite and within their age limits. */
+    val encoderPositionsValid: Boolean get() = signalsFresh()
+    val currentMeasurementsValid: Boolean get() = signalsFresh()
+    /** Conservative age of the oldest cached absolute encoder, or infinity when unavailable. */
+    val signalLatencyMs: Double
+        get() = if (signalsFresh()) encoderAgeMs + elapsedMs() else Double.POSITIVE_INFINITY
+
+    /** Revokes prior validity before IO; a failed acquisition cannot publish a partial snapshot. */
     fun refresh() {
-        var allSignalsValid = true
-        var index = 0
-        while (index < refreshSignals.size) {
-            val signal = refreshSignals[index]
-            signal.refresh()
-            if (!signal.status.isOK) allSignalsValid = false
-            index++
+        signalsReady = false
+        stateReady = false
+        startedMs = RobotClock.currentTimeMillis()
+        var valid = true
+        var fastAge = 0.0
+        var faultAge = 0.0
+        var encoderAge = 0.0
+        for (index in 0 until 36) {
+            source.refresh(index)
+            val value = source.value(index)
+            val ageSeconds = source.latencySeconds(index)
+            val limitSeconds = if (index < 12) FAST_AGE_MS / 1000.0 else FAULT_AGE_MS / 1000.0
+            if (!source.statusOk(index) || !source.timestampValid(index) ||
+                !value.isFinite() || !ageSeconds.isFinite() || ageSeconds < 0.0 || ageSeconds > limitSeconds ||
+                (index >= 12 && value != 0.0 && value != 1.0)) {
+                valid = false
+            }
+            pendingValues[index] = value
+            val ageMs = ageSeconds * 1000.0
+            if (index < 12) fastAge = maxOf(fastAge, ageMs) else faultAge = maxOf(faultAge, ageMs)
+            if (index in 4..7) encoderAge = maxOf(encoderAge, ageMs)
         }
-        encoderPositionsValid = allSignalsValid
-        currentMeasurementsValid = allSignalsValid
-        signalLatencyMs = if (allSignalsValid) {
-            maxOf(
-                absEnc1.timestamp.latency,
-                absEnc2.timestamp.latency,
-                absEnc3.timestamp.latency,
-                absEnc4.timestamp.latency
-            ) * 1_000.0
-        } else {
-            Double.POSITIVE_INFINITY
+
+        // Phoenix's owning copy avoids aliasing its mutable state updated by native telemetry.
+        val state = source.state()
+        val ageSeconds = source.stateAgeSeconds(state)
+        val x = state.Pose.x
+        val y = state.Pose.y
+        val heading = state.Pose.rotation.radians
+        val vx = state.Speeds.vxMetersPerSecond
+        val vy = state.Speeds.vyMetersPerSecond
+        val omega = state.Speeds.omegaRadiansPerSecond
+        var motionValid = x.isFinite() && y.isFinite() && heading.isFinite() && vx.isFinite() &&
+            vy.isFinite() && omega.isFinite() && ageSeconds.isFinite() && ageSeconds >= 0.0 &&
+            ageSeconds <= FAST_AGE_MS / 1000.0 && state.ModuleStates.size == 4
+        if (state.ModuleStates.size == 4) {
+            for (index in 0 until 4) {
+                val speed = state.ModuleStates[index].speedMetersPerSecond
+                moduleSpeeds[index] = speed
+                if (!speed.isFinite()) motionValid = false
+            }
         }
+        if (motionValid && (cachedDrive.odometryX != x || cachedDrive.odometryY != y ||
+            cachedDrive.odometryHeading != heading || cachedDrive.xVelocityMetersPerSecond != vx ||
+            cachedDrive.yVelocityMetersPerSecond != vy || cachedDrive.angularVelocityRadiansPerSecond != omega)) {
+            cachedDrive = cachedDrive.copy(
+                xVelocityMetersPerSecond = vx, yVelocityMetersPerSecond = vy,
+                angularVelocityRadiansPerSecond = omega, odometryX = x, odometryY = y,
+                odometryHeading = heading
+            )
+        }
+        pendingValues.copyInto(values)
+        fastAgeMs = fastAge
+        faultAgeMs = faultAge
+        encoderAgeMs = encoderAge
+        stateAgeMs = ageSeconds * 1000.0
+        stateReady = motionValid
+        signalsReady = valid
     }
 
-    /**
-     * Writes per-module live fault bitfields: bit 0 drive hardware, bit 1 drive brownout,
-     * bit 2 drive temperature, bit 3 steer hardware, bit 4 steer brownout, bit 5 steer temperature.
-     */
+    /** Four cached drive currents; invalid snapshots write NaN. Trailing caller storage is preserved. */
+    fun getCurrents(out: DoubleArray) = copySignals(out, 0)
+
+    /** Four cached absolute steering positions in rotations; invalid snapshots write NaN. */
+    fun getEncoderPositions(out: DoubleArray) = copySignals(out, 4)
+
+    private fun copySignals(out: DoubleArray, offset: Int) {
+        require(out.size >= 4) { "Swerve output must contain four modules" }
+        if (signalsFresh()) values.copyInto(out, 0, offset, offset + 4) else out.fill(Double.NaN, 0, 4)
+    }
+
+    /** Bits 0..5: drive/steer hardware, brownout and temperature. Bit 6 means unavailable feedback. */
     fun getFaults(out: IntArray) {
         require(out.size >= 4) { "Swerve fault output must contain four modules" }
-        for (i in 0..3) {
+        if (!signalsFresh()) {
+            out.fill(0x40, 0, 4)
+            return
+        }
+        for (module in 0 until 4) {
             var bits = 0
-            if (faultHardware[i].value == true) bits = bits or 0x01
-            if (faultBrownout[i].value == true) bits = bits or 0x02
-            if (faultTemp[i].value == true) bits = bits or 0x04
-            if (steerFaultHardware[i].value == true) bits = bits or 0x08
-            if (steerFaultBrownout[i].value == true) bits = bits or 0x10
-            if (steerFaultTemp[i].value == true) bits = bits or 0x20
-            out[i] = bits
+            for (fault in 0 until 6) {
+                if (values[12 + fault * 4 + module] == 1.0) bits = bits or (1 shl fault)
+            }
+            out[module] = bits
         }
     }
 
-    /**
-     * Reads the current draw of all four drive motors into the provided array.
-     *
-     * @param out A 4-element DoubleArray to populate with current draws in $A$.
-     */
-    fun getCurrents(out: DoubleArray) {
-        out[0] = currentDraw1.valueAsDouble
-        out[1] = currentDraw2.valueAsDouble
-        out[2] = currentDraw3.valueAsDouble
-        out[3] = currentDraw4.valueAsDouble
-    }
+    val pitchDegrees: Double get() = if (signalsFresh()) values[8] else Double.NaN
+    val rollDegrees: Double get() = if (signalsFresh()) values[9] else Double.NaN
+    val rawGyroYawDegrees: Double get() = if (signalsFresh()) values[10] else Double.NaN
+    val yawRateDegreesPerSecond: Double get() = if (signalsFresh()) values[11] else Double.NaN
 
-    /**
-     * Reads the absolute encoder positions of the steering modules into the provided array.
-     *
-     * @param out A 4-element DoubleArray to populate with positions in rotations/radians depending on CTR config.
-     */
-    fun getEncoderPositions(out: DoubleArray) {
-        out[0] = absEnc1.valueAsDouble
-        out[1] = absEnc2.valueAsDouble
-        out[2] = absEnc3.valueAsDouble
-        out[3] = absEnc4.valueAsDouble
-    }
-
-    /**
-     * Gets the Pigeon pitch angle.
-     * 
-     * @return Pitch in degrees.
-     */
-    val pitchDegrees: Double
-        get() = pitchSignal.valueAsDouble
-
-    /**
-     * Gets the Pigeon roll angle.
-     * 
-     * @return Roll in degrees.
-     */
-    val rollDegrees: Double
-        get() = rollSignal.valueAsDouble
-
-    /** Raw Pigeon yaw in degrees for gyro-assisted camera localization. */
-    val rawGyroYawDegrees: Double
-        get() = yawSignal.valueAsDouble
-
-    /** Raw Pigeon world-Z angular velocity in degrees per second. */
-    val yawRateDegreesPerSecond: Double
-        get() = yawRateSignal.valueAsDouble
-
-    /**
-     * Reads module wheel speeds into the provided array.
-     * 
-     * @param out A 4-element DoubleArray to populate with speeds in $m/s$.
-     */
+    /** Four cached wheel speeds in m/s from the same state acquisition used by [read]. */
     fun getModuleSpeeds(out: DoubleArray) {
-        out[0] = drivetrain.state.ModuleStates[0].speedMetersPerSecond
-        out[1] = drivetrain.state.ModuleStates[1].speedMetersPerSecond
-        out[2] = drivetrain.state.ModuleStates[2].speedMetersPerSecond
-        out[3] = drivetrain.state.ModuleStates[3].speedMetersPerSecond
+        require(out.size >= 4) { "Swerve speed output must contain four modules" }
+        if (stateFresh()) moduleSpeeds.copyInto(out) else out.fill(Double.NaN, 0, 4)
     }
 
-    /**
-     * Reads the core drivetrain state including odometry and chassis speeds.
-     * Zero-GC if internal CTRE state access avoids allocations.
-     * 
-     * @return The updated [DriveState] populated with coordinates in $m$ and $rad$ (CCW-positive).
-     */
-    fun read(): DriveState {
-        val driveStateObj = drivetrain.state
-        val pose = driveStateObj.Pose
+    /** Immutable cached vendor pose/motion. Unavailable state uses NaN, not a healthy origin. */
+    fun read(): DriveState = if (stateFresh()) cachedDrive else unavailableDrive
 
-        return DriveState(
-            xVelocityMetersPerSecond = driveStateObj.Speeds.vxMetersPerSecond,
-            yVelocityMetersPerSecond = driveStateObj.Speeds.vyMetersPerSecond,
-            angularVelocityRadiansPerSecond = driveStateObj.Speeds.omegaRadiansPerSecond,
-            odometryX = pose.x,
-            odometryY = pose.y,
-            odometryHeading = pose.rotation.radians
+    private fun elapsedMs(): Double {
+        val now = RobotClock.currentTimeMillis()
+        val elapsed = now - startedMs
+        return if (now >= startedMs && elapsed >= 0L) elapsed.toDouble() else Double.POSITIVE_INFINITY
+    }
+
+    private fun signalsFresh(): Boolean {
+        if (!signalsReady) return false
+        val elapsed = elapsedMs()
+        return fastAgeMs + elapsed <= FAST_AGE_MS && faultAgeMs + elapsed <= FAULT_AGE_MS
+    }
+
+    private fun stateFresh(): Boolean = stateReady && stateAgeMs + elapsedMs() <= FAST_AGE_MS
+
+    private companion object {
+        private const val FAST_AGE_MS = 100.0
+        private const val FAULT_AGE_MS = 750.0
+        val unavailableDrive = DriveState(
+            xVelocityMetersPerSecond = Double.NaN, yVelocityMetersPerSecond = Double.NaN,
+            angularVelocityRadiansPerSecond = Double.NaN, odometryX = Double.NaN,
+            odometryY = Double.NaN, odometryHeading = Double.NaN
         )
     }
 }

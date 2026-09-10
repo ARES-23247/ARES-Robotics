@@ -13,7 +13,7 @@ import edu.wpi.first.math.numbers.N3
 /**
  * Hardware IO bridge for FRC CTRE Phoenix 6 Swerve Drivetrains.
  *
- * Integrates CTRE [SwerveDrivetrain] (operating natively on 250Hz CANivore CAN-FD loops) into the pure mathematical
+ * Integrates CTRE [SwerveDrivetrain] into the pure mathematical
  * ARESLib Redux architecture. Handles CANcoder absolute position signals, TalonFX motor current draws, Pigeon2 IMU readings,
  * and periodic signal reads via [SwerveCtreDrivetrainReader] and [SwerveCtreSpeedRequestWriter].
  *
@@ -25,8 +25,10 @@ import edu.wpi.first.math.numbers.N3
  * - Motor Current: Amperes ($A$)
  * - Inclination: Pitch and Roll in Degrees ($^\circ$)
  *
- * ### Zero-GC Guarantee:
- * Reads and writes pass through pre-allocated primitive arrays (`scratchSpeeds`, `scratchCurrents`, etc.) to prevent allocation stalls in 50Hz/250Hz loops.
+ * ### Allocation boundary:
+ * Cached array getters reuse caller storage and the writer reuses request objects. Refresh takes
+ * an owning vendor state copy, which allocates, and replaces immutable pose/motion snapshots when
+ * their values change. This bridge does not promise a zero-GC acquisition loop.
  *
  * @param drivetrain CTRE Phoenix 6 [SwerveDrivetrain] instance.
  *
@@ -94,9 +96,9 @@ class FRCSwerveHardwareIO(private val drivetrain: SwerveDrivetrain<*, *, *>) : S
     override fun getModuleSpeeds(out: DoubleArray) = reader.getModuleSpeeds(out)
 
     /**
-     * Reads the 250Hz synchronized pose from the CTRE drivetrain and maps it into a new [DriveState].
+     * Returns the owned pose/motion snapshot captured by the latest refresh.
      *
-     * @return Updated immutable [DriveState].
+     * @return Cached immutable [DriveState], or unavailable NaN measurements when stale/invalid.
      */
     override fun read(): DriveState = reader.read()
 

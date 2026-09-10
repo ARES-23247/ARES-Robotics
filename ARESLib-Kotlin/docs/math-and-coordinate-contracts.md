@@ -379,3 +379,26 @@ identities instead of substituting device zero; explicit zero remains valid at t
 Vendor-specific address ranges, bus/device uniqueness, geometry plausibility and physical calibration
 are platform responsibilities. Reflection/unsafe deserializers that bypass constructors need their
 own validation. CAN parsing is a setup operation, not part of the checked periodic measurement path.
+
+## CTRE swerve acquisition cache
+
+`SwerveCtreDrivetrainReader.refresh()` revokes prior validity, samples each of its 36 cloned
+status signals once and takes one owning vendor state copy. Getters never refresh signals or
+fetch vendor state. Status, timestamp validity, finite values and age bounds are all required.
+Fast current/encoder/IMU measurements and vendor motion expire after 100 ms; 4 Hz diagnostic
+signals expire after 750 ms. Cached age conservatively includes RobotClock elapsed time since
+acquisition started; clock rewind/overflow and late refreshes cannot renew validity.
+
+The signal group remains unavailable if any configured signal fails validation. Vendor pose/
+wheel motion is checked separately, so a bad diagnostic signal need not discard a fresh finite
+odometry observation. An acquisition exception revokes both groups. Unknown numeric getters
+return NaN; fault bit 6 (0x40) means unavailable instead of reporting a healthy zero fault code.
+Bits 0..5 retain drive/steer hardware, brownout and temperature meanings. All four-entry getters
+reject short buffers before mutation and preserve trailing caller storage.
+
+The Phoenix source adapter owns cloned signal caches and borrows devices. Frequency configuration
+failure rejects construction. It does not request unused steer-current traffic or change the
+odometry-owned yaw/rate update frequencies. Native state is acquired through `getStateCopy()` to
+avoid sharing CTRE's mutable callback state. That copy allocates; changed immutable ARES motion
+snapshots also allocate. Cached getters and unchanged ARES snapshots reuse storage. Real CAN timing,
+bus loading, device response and whole-loop allocation need hardware/runtime measurement.
