@@ -200,6 +200,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
+    private var hasUpdateTimestamp = false
+    private val closed = java.util.concurrent.atomic.AtomicBoolean(false)
     private var hasReadSensorsThisFrame = false
     private var sensorReadDurationNanos = 0L
     private val odometrySourceArbiter = FtcOdometrySourceArbiter()
@@ -233,6 +235,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * Implementations should reuse hardware input buffers and avoid blocking work in this cycle.
      */
     fun readSensors() {
+        check(!closed.get()) { "Robot is closed" }
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
         try {
@@ -424,16 +427,23 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad2 Telemetry snapshot of Driver 2 gamepad inputs.
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
+        check(!closed.get()) { "Robot is closed" }
         fatalUpdateFailure?.let { failure ->
             runCatching { safeHardware() }
             throw failure
         }
         try {
-            lifecycleController.update()
-
             val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            val dtSeconds = if (lastUpdateTime == 0L || timestamp == lastUpdateTime) 0.02 else (timestamp - lastUpdateTime) / 1000.0
+            val elapsed = if (hasUpdateTimestamp) timestamp - lastUpdateTime else 0L
+            check(!hasUpdateTimestamp || (timestamp >= lastUpdateTime && elapsed >= 0L)) {
+                "Robot clock rewound or elapsed control time overflowed"
+            }
+            // Zero is a valid replay timestamp. Retain the nominal first/repeated-frame
+            // interval without treating every frame following timestamp zero as the first.
+            val dtSeconds = if (elapsed == 0L) 0.02 else elapsed / 1000.0
             lastUpdateTime = timestamp
+            hasUpdateTimestamp = true
+            lifecycleController.update()
 
             val sensorsAlreadyRead = hasReadSensorsThisFrame
             val updateStartNanos = com.areslib.util.RobotClock.nanoTime()
@@ -524,6 +534,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      */
     @kotlin.jvm.JvmOverloads
     fun resetPose(pose: Pose2d = Pose2d(), resetHardware: Boolean = false) {
+        check(!closed.get()) { "Robot is closed" }
         pinpointIO?.initialize(pose, resetHardware = resetHardware)
         prepareFallbackOdometry(pose, cachedImuInputs.headingRadians)
         visionTracker.hasInitializedPoseWithVision = true
@@ -555,9 +566,12 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Releases active hardware resources, background HTTP/NT4 threads, and closes telemetry channels.
+     * Releases active hardware resources, background HTTP/NT4 threads, and closes telemetry channels once.
+     * Later update, sensor-read, and pose-reset calls are rejected. The lifecycle owner must
+     * stop an in-flight control callback before closing its resources.
      */
     open fun close() {
+        if (!closed.compareAndSet(false, true)) return
         if (activeInstance === this) activeInstance = null
         closeBestEffort(
             { safeHardware() },
